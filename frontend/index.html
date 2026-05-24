@@ -4127,7 +4127,7 @@ text {
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: 12px; color: #666;">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.4</span>
+                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.5</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -4186,8 +4186,7 @@ text {
                                     <div class="status-value" style="color: #4CAF50;">{{ currentPoolSize }} 只</div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+</div>
 
                     <!-- 访问限速配置 -->
                     <div class="card">
@@ -4209,6 +4208,7 @@ text {
                             </div>
                         </div>
                     </div>
+                </div>
 
                     <!-- datasource: Tushare 数据源配置 -->
                     <div v-else-if="currentSubPage === 'datasource'">
@@ -4272,7 +4272,6 @@ text {
                         <div style="margin-bottom: 12px;">
                             <el-button type="primary" size="small" @click="showAddUser = true">+ 添加用户</el-button>
                         </div>
-                        <div style="max-height: 400px; overflow-y: auto;">
                             <div v-for="user in userList" :key="user.username" class="user-card-enhanced">
                                 <div class="user-info-enhanced">
                                     <div class="user-avatar-large">{{ user.username.charAt(0).toUpperCase() }}</div>
@@ -4316,7 +4315,6 @@ text {
                                     <el-button size="small" @click="showAddUser = true">+ 添加用户</el-button>
                                 </div>
                             </div>
-                        </div>
                     </div>
                     </div>
 
