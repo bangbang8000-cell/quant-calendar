@@ -2571,7 +2571,53 @@ text {
     100% { transform: translateX(400%); }
 }
 
+/* 阶段指示器 */
+.ai-stage-indicator {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    z-index: 10;
+}
+.ai-stage-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e4e7ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 11px;
+}
+.ai-stage-dot.active {
+    background: var(--primary, #667eea);
+    transform: scale(1.2);
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.6);
+}
+.ai-stage-dot.done {
+    background: #67c23a;
+}
+.ai-stage-line {
+    width: 36px;
+    height: 3px;
+    background: #e4e7ed;
+    transition: background 0.4s ease;
+}
+.ai-stage-line.done {
+    background: #67c23a;
+}
+.ai-stage-icon {
+    line-height: 1;
+}
 
+
+/* ==============================
+   响应式 - 平板 (≤ 1024px)
+   ============================== */
 
 /* ========== v1.3.0: 全局配置操作栏样式 ========== */
 .global-config-action-bar {
@@ -4081,7 +4127,7 @@ text {
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: 12px; color: #666;">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.1</span>
+                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.2</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -4306,7 +4352,12 @@ text {
                                     <span style="display: inline-block; vertical-align: middle; margin-right: 10px;">
                                         <span style="display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
                                     </span>
-                                    <span style="vertical-align: middle;">🤖 AI深度分析中... (约3-8秒)</span>
+                                    <span style="vertical-align: middle;">
+                                        <template v-if="aiEvalStage === 'fetching'">📡 正在获取行情数据...</template>
+                                        <template v-else-if="aiEvalStage === 'calculating'">📊 正在计算技术指标...</template>
+                                        <template v-else-if="aiEvalStage === 'analyzing'">🤖 AI 深度分析中...</template>
+                                        <template v-else>🤖 AI评估中...</template>
+                                    </span>
                                 </template>
                                 <template v-else>
                                     💡 智能评股
@@ -4315,6 +4366,20 @@ text {
                             <!-- 按钮底部进度条 -->
                             <div v-if="aiLoading" class="ai-progress-bar">
                                 <div class="ai-progress-fill"></div>
+                            </div>
+                            <!-- 阶段指示器 -->
+                            <div v-if="aiLoading" class="ai-stage-indicator">
+                                <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'fetching' || aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }">
+                                    <span class="ai-stage-icon">📡</span>
+                                </div>
+                                <div class="ai-stage-line" :class="{ done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }"></div>
+                                <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'analyzing' }">
+                                    <span class="ai-stage-icon">📊</span>
+                                </div>
+                                <div class="ai-stage-line" :class="{ done: aiEvalStage === 'analyzing' }"></div>
+                                <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'analyzing' }">
+                                    <span class="ai-stage-icon">🤖</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -5612,6 +5677,7 @@ const menus = ref([
 
                 // ===== AI评估配置 =====
                 const aiLoading = ref(false);
+                const aiEvalStage = ref('');  // '', 'fetching', 'calculating', 'analyzing'
                 const showBatchEvaluate = ref(false);
                 const batchStocks = ref('');
                 const aiConfig = ref({
@@ -6062,6 +6128,19 @@ const menus = ref([
                 async function doAiEvaluate() {
                     if (!stockDetail.value) return;
                     aiLoading.value = true;
+                    aiResult.value = null;
+                    
+                    // 阶段动画 — 模拟前后端分离的进度
+                    const STAGE_DELAY = 1800;  // ms per stage
+                    
+                    aiEvalStage.value = 'fetching';
+                    const stageTimer1 = setTimeout(() => {
+                        if (aiLoading.value) aiEvalStage.value = 'calculating';
+                    }, STAGE_DELAY);
+                    const stageTimer2 = setTimeout(() => {
+                        if (aiLoading.value) aiEvalStage.value = 'analyzing';
+                    }, STAGE_DELAY * 2);
+                    
                     try {
                         const res = await fetch('/api/ai/evaluate', {
                             method: 'POST',
@@ -6075,7 +6154,6 @@ const menus = ref([
                         if (data.success) {
                             aiResult.value = data.data;
                             ElementPlus.ElMessage.success('AI评估完成！');
-                            // 刷新历史
                             loadAiHistory();
                         } else {
                             ElementPlus.ElMessage.error(data.message || '评估失败');
@@ -6083,7 +6161,10 @@ const menus = ref([
                     } catch (e) {
                         ElementPlus.ElMessage.error('评估失败');
                     } finally {
+                        clearTimeout(stageTimer1);
+                        clearTimeout(stageTimer2);
                         aiLoading.value = false;
+                        aiEvalStage.value = '';
                     }
                 }
 
@@ -6929,7 +7010,7 @@ const menus = ref([
                     dashboardData,
                     loading, dates, selectedDate, consensus, searchKeyword,
                     stockDetailVisible, stockDetail,
-                    aiLoading, showBatchEvaluate, batchStocks, aiConfig,
+                    aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     statusCounts, stockPool, aiResult, aiHistory, aiViewGroupBy, aiHistoryByStock, aiHistoryStockCount, expandedStocks,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
