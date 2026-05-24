@@ -855,6 +855,131 @@ class AIEvaluator:
             "provider": f"内置引擎 ({data_source})"
         }
 
+    # ─── 指数评估 ───────────────────────────────────────────────
+
+    def evaluate_index(self, index_code: str, index_name: str, current_price: float = None, pct_chg: float = None) -> Dict:
+        """
+        评估指数 — 复用 K线数据获取 + 内置评估引擎
+        返回前端兼容格式：{ analysis (HTML), suggestion, confidence }
+        """
+        # 获取 K 线数据（指数也走同一通道）
+        market_data = self._fetch_stock_data(index_code)
+
+        has_data = market_data.get("has_kline", False)
+        if not has_data:
+            return {
+                "analysis": f"<p style='color:#999;'>无法获取 {index_name}({index_code}) 的行情数据，请检查 Tushare 连接。</p>",
+                "suggestion": "观望",
+                "confidence": 0
+            }
+
+        # 用内置引擎跑一次评分
+        builtin = self._builtin_evaluate(index_code, index_name, market_data)
+
+        # ── 构建 HTML 分析 ──
+        parts = []
+        l = market_data.get("latest", {})
+
+        # 行情速览
+        parts.append("<div style='margin-bottom:16px;'>")
+        parts.append("<h4 style='margin:0 0 8px 0;'>📊 行情速览</h4>")
+        parts.append("<table style='width:100%;font-size:13px;border-collapse:collapse;'>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>最新价</td><td style='padding:4px 8px;font-weight:600;'>{l.get('close', '-')}</td>")
+        pct = pct_chg if pct_chg is not None else l.get('pct_chg')
+        color = '#E63946' if (pct or 0) >= 0 else '#457B9D'
+        sign = '+' if (pct or 0) >= 0 else ''
+        parts.append(f"<td style='padding:4px 8px;font-weight:600;color:{color};'>{sign}{pct or '-'}%</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MA5 / MA10 / MA20</td><td colspan='2' style='padding:4px 8px;'>{l.get('ma5','-')} / {l.get('ma10','-')} / {l.get('ma20','-')}</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>成交量</td><td colspan='2' style='padding:4px 8px;'>{l.get('volume',0):,} 手</td></tr>")
+        parts.append("</table></div>")
+
+        # 技术指标
+        parts.append("<div style='margin-bottom:16px;'>")
+        parts.append("<h4 style='margin:0 0 8px 0;'>🔬 技术指标</h4>")
+        parts.append("<table style='width:100%;font-size:13px;border-collapse:collapse;'>")
+        rsi = market_data.get("rsi")
+        rsi_color = '#f56c6c' if rsi and rsi >= 70 else '#67c23a' if rsi and rsi <= 30 else '#333'
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>RSI(14)</td><td style='padding:4px 8px;font-weight:600;color:{rsi_color};'>{rsi or '-'}</td>")
+        rsi_desc = '超买区域' if rsi and rsi >= 70 else '超卖区域' if rsi and rsi <= 30 else '中性区间' if rsi and 40 <= rsi <= 60 else '正常'
+        parts.append(f"<td style='padding:4px 8px;color:#999;font-size:12px;'>{rsi_desc}</td></tr>")
+        macd = market_data.get("macd", {})
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MACD</td><td style='padding:4px 8px;font-weight:600;'>DIF {macd.get('dif','-')} DEA {macd.get('dea','-')}</td>")
+        hist = macd.get('hist', 0)
+        hist_color = '#E63946' if hist > 0 else '#457B9D'
+        parts.append(f"<td style='padding:4px 8px;color:{hist_color};font-size:12px;'>{'多头' if hist>0 else '空头'}</td></tr>")
+        ma = market_data.get("ma_alignment", "-")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>均线排列</td><td colspan='2' style='padding:4px 8px;font-weight:600;'>{ma}</td></tr>")
+        if market_data.get("volume_analysis"):
+            v = market_data["volume_analysis"]
+            parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>量比</td><td colspan='2' style='padding:4px 8px;'>{v.get('vol_ratio', '-')}</td></tr>")
+        parts.append("</table></div>")
+
+        # 分维度评分
+        parts.append("<div style='margin-bottom:16px;'>")
+        parts.append("<h4 style='margin:0 0 8px 0;'>📈 各维度评分</h4>")
+        dims = builtin.get("dimensions", {})
+        for name, score in dims.items():
+            bar_color = '#67c23a' if score >= 70 else '#e6a23c' if score >= 50 else '#f56c6c'
+            pct_bar = min(100, max(0, score))
+            parts.append(f"<div style='display:flex;align-items:center;margin-bottom:6px;font-size:12px;'>"
+                         f"<span style='width:80px;color:#666;'>{name}</span>"
+                         f"<div style='flex:1;height:6px;background:#eee;border-radius:3px;margin:0 8px;'>"
+                         f"<div style='width:{pct_bar}%;height:100%;background:{bar_color};border-radius:3px;'></div></div>"
+                         f"<span style='font-weight:600;color:{bar_color};width:30px;text-align:right;'>{score}</span></div>")
+
+        # 总评
+        total = builtin.get("total_score", 50)
+        total_color = '#67c23a' if total >= 75 else '#e6a23c' if total >= 60 else '#f56c6c'
+        parts.append(f"<div style='display:flex;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee;'>"
+                     f"<span style='font-weight:600;color:#333;'>综合评分</span>"
+                     f"<span style='margin-left:12px;font-size:22px;font-weight:700;color:{total_color};'>{total}</span>"
+                     f"<span style='margin-left:8px;color:#999;font-size:12px;'>/100</span></div>")
+        parts.append("</div>")
+
+        # 分析建议
+        analysis = builtin.get("analysis", {})
+        strengths = analysis.get("strengths", [])
+        weaknesses = analysis.get("weaknesses", [])
+        suggestions = analysis.get("suggestions", [])
+
+        if strengths:
+            parts.append("<div style='margin-bottom:12px;'>")
+            parts.append("<h4 style='margin:0 0 6px 0;color:#67c23a;'>✅ 积极因素</h4>")
+            for s in strengths:
+                parts.append(f"<div style='font-size:13px;color:#555;padding:2px 0;'>• {s}</div>")
+            parts.append("</div>")
+
+        if weaknesses:
+            parts.append("<div style='margin-bottom:12px;'>")
+            parts.append("<h4 style='margin:0 0 6px 0;color:#f56c6c;'>⚠️ 风险提示</h4>")
+            for w in weaknesses:
+                parts.append(f"<div style='font-size:13px;color:#555;padding:2px 0;'>• {w}</div>")
+            parts.append("</div>")
+
+        # ── 建议映射 ──
+        level = builtin.get("level", "观望")
+        suggestion_map = {
+            "强烈推荐": "买入",
+            "推荐": "买入",
+            "谨慎推荐": "买入",
+            "中性": "观望",
+            "观望": "卖出"
+        }
+        suggestion = suggestion_map.get(level, "观望")
+
+        # 信心指数 = 评分映射
+        confidence = min(100, max(0, round(total)))
+
+        # 数据源
+        data_src = "📡 Tushare 实时数据" if has_data else "⚠️ 离线模式"
+        parts.append(f"<div style='margin-top:12px;font-size:11px;color:#999;text-align:right;'>数据源: {data_src} | 内置引擎</div>")
+
+        return {
+            "analysis": "\n".join(parts),
+            "suggestion": suggestion,
+            "confidence": confidence
+        }
+
     # ─── 批量评估 ───────────────────────────────────────────────
 
     def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None) -> List[Dict]:

@@ -4127,7 +4127,7 @@ text {
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: 12px; color: #666;">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.2</span>
+                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.3</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -4604,7 +4604,7 @@ text {
 
                 <!-- AI评估结果 -->
                 <div v-if="indexAiResult" class="ai-result-box">
-                    <div class="section-title"><span>🤖</span> AI智能评股结果</div>
+                    <div class="section-title"><span>🤖</span> AI智能指数评估结果</div>
                     <div class="ai-analysis" v-html="indexAiResult.analysis"></div>
                     <div style="margin-top: 16px;">
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
@@ -4617,7 +4617,7 @@ text {
                 <!-- 操作按钮 -->
                 <div style="margin-top: 20px; text-align: center;">
                     <el-button type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading" style="width: 200px;">
-                        🤖 智能评股指数
+                        🤖 智能指数评估
                     </el-button>
                 </div>
             </div>
@@ -5205,9 +5205,13 @@ text {
                     if (!indexDetail.value) return;
                     indexAiLoading.value = true;
                     try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = token
+                            ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                            : { 'Content-Type': 'application/json' };
                         const res = await fetch('/api/ai/evaluate-index', {
                             method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
+                            headers,
                             body: JSON.stringify({
                                 index_code: indexDetail.value.code,
                                 index_name: indexDetail.value.name,

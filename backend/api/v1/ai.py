@@ -4,10 +4,13 @@
 AI 智能评估 API 路由
 """
 from fastapi import APIRouter, Depends, HTTPException
+import logging
 from typing import Dict, Any, List, Optional
 
 from ai_evaluator import ai_evaluator
 from auth import get_admin_user, get_current_active_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai", tags=["AI 智能评估"])
 
@@ -41,6 +44,28 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], _: Dict = Depends(get_cur
         results = ai_evaluator.batch_evaluate(stock_codes)
         return {"success": True, "data": results}
     except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/evaluate-index")
+async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_active_user)):
+    """AI 智能评估指数
+    
+    Args:
+        index_code: 指数代码 (如 000001.SH)
+        index_name: 指数名称 (如 上证综指)
+        current_price: 当前点位 (可选)
+        pct_chg: 涨跌幅 (可选)
+    """
+    try:
+        index_code = req.get("index_code", "")
+        index_name = req.get("index_name", index_code)
+        current_price = req.get("current_price")
+        pct_chg = req.get("pct_chg")
+        result = ai_evaluator.evaluate_index(index_code, index_name, current_price, pct_chg)
+        return {"success": True, "data": result}
+    except Exception as e:
+        logger.error(f"指数评估失败: {e}")
         return {"success": False, "message": str(e)}
 
 
