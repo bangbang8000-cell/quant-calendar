@@ -1,0 +1,4013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <script>
+    // 自动清除 Service Worker（本地应用不需要 PWA）
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            for (const reg of regs) reg.unregister();
+        });
+        // 阻止后续 SW 注册
+        navigator.serviceWorker.register = function() { return Promise.reject(); };
+    }
+    </script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="量化日历">
+    <title>📅 量化日历</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script src="/static/lib/vue.global.prod.min.js"></script>
+    <link rel="stylesheet" href="/static/lib/element-plus.css">
+    <script src="/static/lib/element-plus.min.js"></script>
+    <script src="/static/lib/echarts.min.js"></script>
+    <script src="/static/lib/zh-cn.min.js"></script>
+    <style>
+        /* ===== 全新四套专业配色 ===== */
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #60a5fa;
+            --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
+            --card-border: #bfdbfe;
+        }
+        /* 🔵 专业蓝 - 稳重金融风格 */
+        [data-theme="tech-blue"] {
+            --primary-color: #2563eb;
+            --secondary-color: #60a5fa;
+            --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
+            --card-border: #bfdbfe;
+        }
+        /* 🟢 成长绿 - 清新大气 */
+        [data-theme="spring-green"] {
+            --primary-color: #E63946;
+            --secondary-color: #FF6B6B;
+            --gradient: linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%);
+            --card-border: #fecaca;
+        }
+        /* 🟡 土豪金 - 轻奢质感 */
+        [data-theme="vibrant-orange"] {
+            --primary-color: #D4A843;
+            --secondary-color: #F0C75E;
+            --gradient: linear-gradient(135deg, #B8860B 0%, #D4A843 50%, #F0C75E 100%);
+            --card-border: #F5E6B8;
+        }
+        /* 🌈 斑斓黑 - 炫彩暗夜 */
+        [data-theme="dark-night"] {
+            --primary-color: #374151;
+            --secondary-color: #6b7280;
+            --gradient: linear-gradient(135deg, #111827 0%, #1f2937 50%, #374151 100%);
+            --card-border: #4b5563;
+        }
+
+        /* ===== Element Plus 按钮主题覆盖 ===== */
+        /* 🟢 成长绿 - 主按钮 */
+        [data-theme="spring-green"] .el-button--primary {
+            background-color: #E63946 !important;
+            border-color: #E63946 !important;
+            color: white !important;
+        }
+        [data-theme="spring-green"] .el-button--primary:hover {
+            background-color: #C1121F !important;
+            border-color: #C1121F !important;
+        }
+        [data-theme="spring-green"] .el-button--primary:active {
+            background-color: #780000 !important;
+            border-color: #780000 !important;
+        }
+        /* 🟢 成长绿 - 朴素按钮 */
+        [data-theme="spring-green"] .el-button--primary.is-plain {
+            background-color: rgba(230, 57, 70, 0.1) !important;
+            border-color: rgba(230, 57, 70, 0.3) !important;
+            color: #E63946 !important;
+        }
+        [data-theme="spring-green"] .el-button--primary.is-plain:hover {
+            background-color: rgba(230, 57, 70, 0.2) !important;
+            border-color: #E63946 !important;
+        }
+        /* 🟢 成长绿 - 文字按钮 */
+        [data-theme="spring-green"] .el-button--primary.is-text {
+            color: #E63946 !important;
+        }
+
+        /* 🔵 专业蓝 - 主按钮 */
+        [data-theme="tech-blue"] .el-button--primary {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            color: white !important;
+        }
+        [data-theme="tech-blue"] .el-button--primary:hover {
+            background-color: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+        }
+        [data-theme="tech-blue"] .el-button--primary:active {
+            background-color: #1e40af !important;
+            border-color: #1e40af !important;
+        }
+        /* 🔵 专业蓝 - 朴素按钮 */
+        [data-theme="tech-blue"] .el-button--primary.is-plain {
+            background-color: rgba(37, 99, 235, 0.1) !important;
+            border-color: rgba(37, 99, 235, 0.3) !important;
+            color: #2563eb !important;
+        }
+        [data-theme="tech-blue"] .el-button--primary.is-plain:hover {
+            background-color: rgba(37, 99, 235, 0.2) !important;
+            border-color: #2563eb !important;
+        }
+        /* 🔵 专业蓝 - 文字按钮 */
+        [data-theme="tech-blue"] .el-button--primary.is-text {
+            color: #2563eb !important;
+        }
+
+        /* 🟡 土豪金 - 主按钮 */
+        [data-theme="vibrant-orange"] .el-button--primary {
+            background-color: #D4A843 !important;
+            border-color: #D4A843 !important;
+            color: white !important;
+        }
+        [data-theme="vibrant-orange"] .el-button--primary:hover {
+            background-color: #C49A35 !important;
+            border-color: #C49A35 !important;
+        }
+        [data-theme="vibrant-orange"] .el-button--primary:active {
+            background-color: #B8860B !important;
+            border-color: #B8860B !important;
+        }
+        /* 🟡 土豪金 - 朴素按钮 */
+        [data-theme="vibrant-orange"] .el-button--primary.is-plain {
+            background-color: rgba(212, 168, 67, 0.1) !important;
+            border-color: rgba(212, 168, 67, 0.3) !important;
+            color: #D4A843 !important;
+        }
+        [data-theme="vibrant-orange"] .el-button--primary.is-plain:hover {
+            background-color: rgba(212, 168, 67, 0.2) !important;
+            border-color: #D4A843 !important;
+        }
+        /* 🟡 土豪金 - 文字按钮 */
+        [data-theme="vibrant-orange"] .el-button--primary.is-text {
+            color: #D4A843 !important;
+        }
+
+        /* ⚫ 斑斓黑 - 主按钮 */
+        [data-theme="dark-night"] .el-button--primary {
+            background-color: #374151 !important;
+            border-color: #374151 !important;
+            color: white !important;
+        }
+        [data-theme="dark-night"] .el-button--primary:hover {
+            background-color: #1f2937 !important;
+            border-color: #1f2937 !important;
+        }
+        [data-theme="dark-night"] .el-button--primary:active {
+            background-color: #111827 !important;
+            border-color: #111827 !important;
+        }
+        /* ⚫ 斑斓黑 - 朴素按钮 */
+        [data-theme="dark-night"] .el-button--primary.is-plain {
+            background-color: rgba(55, 65, 81, 0.1) !important;
+            border-color: rgba(55, 65, 81, 0.3) !important;
+            color: #374151 !important;
+        }
+        [data-theme="dark-night"] .el-button--primary.is-plain:hover {
+            background-color: rgba(55, 65, 81, 0.2) !important;
+            border-color: #374151 !important;
+        }
+        /* ⚫ 斑斓黑 - 文字按钮 */
+        [data-theme="dark-night"] .el-button--primary.is-text {
+            color: #374151 !important;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gradient);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        /* ===== 桌面端布局: 左侧导航 + 右侧内容 */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* ===== 桌面端: 左侧导航栏 */
+        .sidebar {
+            width: 220px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 100;
+        }
+        .sidebar-logo {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        .sidebar-logo h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 0 12px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .nav-item:hover {
+            background: rgba(102,126,234,0.1);
+            color: var(--primary-color);
+        }
+        .nav-item.active {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+        .nav-icon { font-size: 18px; }
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #eee;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content {
+            flex: 1;
+            margin-left: 220px;
+            padding: 20px;
+            max-width: calc(100% - 220px);
+        }
+        .page-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ===== 移动端响应式适配 ===== */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content {
+                margin-left: 0;
+                padding: 12px;
+                padding-bottom: 80px;
+                max-width: 100%;
+            }
+            .page-header {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+            .card {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+        }
+
+        /* ===== 移动端底部导航 ===== */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+            }
+        }
+        .mobile-nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 4px 10px 4px;
+            font-size: 11px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .mobile-nav-item.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: linear-gradient(to top, rgba(102,126,234,0.08), transparent);
+        }
+        .mobile-nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* ===== 通用样式 */
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .search-box { margin-bottom: 16px; }
+        .stock-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .stock-list::-webkit-scrollbar { width: 4px; }
+        .stock-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .stock-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stock-item:hover { background: #e9ecef; }
+        .badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            margin-right: 12px;
+            flex-shrink: 0;
+            background: var(--gradient);
+        }
+        /* 弹窗样式 */
+        .el-dialog {
+            width: 95% !important;
+            max-width: 1100px !important;
+        }
+        .el-dialog__header {
+            padding: 16px 20px !important;
+            border-bottom: 1px solid #eee !important;
+        }
+        .el-dialog__title {
+            font-weight: 600 !important;
+            font-size: 17px !important;
+        }
+        .el-dialog__body {
+            padding: 0 !important;
+        }
+        @media (max-width: 768px) {
+            .el-dialog {
+                width: 96% !important;
+                max-width: 96% !important;
+                margin: 2vh auto !important;
+                border-radius: 12px !important;
+            }
+        }
+        /* 登录页 */
+        .login-box {
+            max-width: 400px;
+            margin: 10vh auto;
+            padding: 30px;
+        }
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--gradient);
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+        /* 详情弹窗 */
+        .detail-header {
+            background: var(--gradient);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .detail-header h3 {
+            font-size: 22px;
+            margin: 0;
+            font-weight: 600;
+        }
+        .detail-subtitle {
+            opacity: 0.85;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .score-badge {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-badge .num { font-size: 24px; font-weight: bold; }
+        .score-badge .label { font-size: 11px; opacity: 0.9; }
+        .detail-content { padding: 20px; }
+        .grid-auto {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 12px;
+        }
+        .stat-box {
+            padding: 14px 12px;
+            border-radius: 12px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.08);
+        }
+        .stat-label { color: #666; font-size: 12px; margin-bottom: 4px; }
+        .stat-value { font-size: 18px; font-weight: 600; }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 20px 0 12px 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hold-item {
+            padding: 14px 16px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.05));
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .hold-name { font-weight: 500; font-size: 14px; }
+        .hold-days {
+            padding: 3px 10px;
+            background: var(--gradient);
+            color: white;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        /* K线图样式 */
+        .kline-container {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+        }
+        .kline-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .kline-tab {
+            padding: 6px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .kline-tab:hover {
+            border-color: var(--primary-color, #667eea);
+            color: var(--primary-color, #667eea);
+        }
+        .kline-tab.active {
+            background: var(--gradient);
+            color: white;
+            border-color: transparent;
+            font-weight: 500;
+        }
+        .kline-chart {
+            width: 100%;
+            height: 350px;
+            min-width: 300px !important;
+            min-height: 200px !important;
+            background: white;
+            border-radius: 8px;
+            position: relative;
+        }
+        .kline-loading {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 14px;
+        }
+        .kline-placeholder {
+            text-align: center;
+            padding: 60px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+        /* 响应式：移动端 */
+        @media (max-width: 768px) {
+            .kline-dialog .el-dialog {
+                width: 95% !important;
+                margin-top: 5vh !important;
+            }
+            .kline-chart {
+                height: 280px;
+            }
+            .detail-content {
+                padding: 12px;
+            }
+            .kline-container {
+                padding: 12px;
+            }
+        }
+        /* AI评估标签 */
+        .ai-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        /* 视图切换器 */
+        .view-switcher {
+            display: inline-flex;
+            background: #f0f2f5;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 2px;
+        }
+        .view-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+        }
+        .view-btn.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        /* 状态筛选Tab */
+        .status-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        .status-tab {
+            flex: 1;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #f0f2f5;
+            color: #666;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .status-tab .count {
+            display: inline-block;
+            min-width: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 4px;
+            background: rgba(0,0,0,0.08);
+        }
+        .status-tab.active .count {
+            background: rgba(255,255,255,0.25);
+        }
+        .status-tab.active {
+            background: var(--gradient);
+            color: white;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .status-new { background: #e3f2fd; color: #1976d2; }
+        .status-current { background: #e8f5e9; color: #388e3c; }
+        .status-out { background: #ffebee; color: #c62828; }
+        .strategy-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 400;
+            background: #f0f2f5;
+            color: #555;
+            border: 1px solid #e0e0e0;
+        }
+        /* 用户卡片 */
+        .user-card {
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-name { font-weight: 500; }
+        .user-role {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        /* 主题选择 */
+        .theme-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .theme-item {
+            padding: 16px 12px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .theme-item.active {
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        .theme-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 8px auto;
+        }
+
+        /* ===== 策略总览新样式 ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .stat-content {
+            flex: 1;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* 数据概览 */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .overview-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .overview-subtitle {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 时间统计 */
+        .time-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .time-item {
+            flex: 1;
+        }
+        .time-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .time-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .time-range {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        /* 持仓变动 */
+        .change-stats {
+            display: flex;
+            gap: 12px;
+        }
+        .change-item {
+            flex: 1;
+            text-align: center;
+            padding: 14px;
+            border-radius: 10px;
+        }
+        .change-item.positive {
+            background: #e8f5e9;
+        }
+        .change-item.negative {
+            background: #ffebee;
+        }
+        .change-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .change-item.positive .change-value {
+            color: #2e7d32;
+        }
+        .change-item.negative .change-value {
+            color: #c62828;
+        }
+        .change-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* 策略统计进度条 */
+        .strategy-item {
+            margin-bottom: 18px;
+        }
+        .strategy-item:last-child {
+            margin-bottom: 0;
+        }
+        .strategy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .strategy-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .strategy-count {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .strategy-percent {
+            color: #666;
+            font-weight: 400;
+        }
+        .strategy-progress {
+            width: 100%;
+            height: 8px;
+            background: #f0f2f5;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* 共识度排行 */
+        .consensus-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .consensus-item:last-child {
+            margin-bottom: 0;
+        }
+        .consensus-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+        .consensus-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .consensus-info {
+            flex: 1;
+        }
+        .consensus-code {
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 14px;
+        }
+        .consensus-name {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .consensus-tags {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .strategy-tag {
+            font-size: 11px;
+            padding: 3px 10px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            color: #666;
+        }
+
+        /* ===== 策略总览 移动端适配 ===== */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .stat-card {
+                padding: 16px;
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .stat-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+            }
+            .stat-value {
+                font-size: 22px;
+            }
+            .stat-label {
+                font-size: 12px;
+            }
+            .overview-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .time-stats {
+                gap: 8px;
+            }
+            .time-value {
+                font-size: 20px;
+            }
+            .change-value {
+                font-size: 20px;
+            }
+            .consensus-item {
+                flex-wrap: wrap;
+                padding: 12px;
+                gap: 10px;
+            }
+            .consensus-tags {
+                width: 100%;
+                justify-content: flex-start;
+                padding-left: 54px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .stat-card {
+                flex-direction: row;
+                text-align: left;
+            }
+        }
+
+        /* ===== 智能评股界面新样式 ===== */
+        .ai-history-list {
+            max-height: 650px;
+            overflow-y: auto;
+        }
+        .ai-history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        .ai-history-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+        .ai-history-item.selected {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+        .history-checkbox {
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .checkbox-inner {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            transition: all 0.2s;
+        }
+        .checkbox-inner.checked {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .checkbox-inner.small {
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+        }
+        .history-content {
+            flex: 1;
+            cursor: pointer;
+            min-width: 0;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .stock-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .stock-code {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .stock-name {
+            font-size: 14px;
+            color: #666;
+        }
+        .score-badge-small {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .score-badge-small .score-num {
+            font-size: 18px;
+        }
+        .score-badge-small .score-level {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+        .history-footer {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: #999;
+            flex-wrap: wrap;
+        }
+        .history-actions {
+            flex-shrink: 0;
+        }
+
+        /* 股票分组样式 */
+        .stock-group-card {
+            margin-bottom: 16px;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .stock-group-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .stock-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            cursor: pointer;
+        }
+        .stock-group-info {
+            flex: 1;
+        }
+        .stock-group-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .stock-group-name strong {
+            font-size: 17px;
+            color: #1a1a2e;
+        }
+        .stock-group-fullname {
+            font-size: 14px;
+            color: #666;
+        }
+        .stock-group-stats {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .count-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .latest-score {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .stock-group-expand {
+            color: #999;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+        .stock-group-expand.rotated {
+            transform: rotate(180deg);
+        }
+        .stock-group-records {
+            padding: 0 12px;
+        }
+        .group-record-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s;
+        }
+        .group-record-item:last-child {
+            border-bottom: none;
+        }
+        .group-record-item:hover {
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 0 -4px;
+            padding: 12px 4px;
+        }
+        .group-record-item.selected {
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 8px;
+            margin: 0 -4px;
+            padding: 12px 4px;
+        }
+        .history-checkbox-small {
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .record-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            min-width: 0;
+        }
+        .record-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .record-info {
+            flex: 1;
+        }
+        .record-time {
+            font-size: 13px;
+            color: #333;
+        }
+        .record-provider {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+        .record-score {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .record-level {
+            font-size: 12px;
+            margin-left: 4px;
+        }
+        .record-actions {
+            flex-shrink: 0;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .history-footer {
+                gap: 10px;
+            }
+            .stock-group-stats {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .record-content {
+                flex-wrap: wrap;
+            }
+            .record-score {
+                width: 100%;
+                padding-left: 40px;
+            }
+        }
+    
+    /* ===== 市场行情卡片 ===== */
+    .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .market-card { background: linear-gradient(135deg, #fff5f5 0%, #fff 100%); border: 1px solid #ffe0e0; border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+    .market-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15); }
+    .market-card.up { border-left: 4px solid var(--primary-color, #E63946); }
+    .market-card.down { border-left: 4px solid #457B9D; }
+    .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .market-name { font-weight: 600; color: #333; font-size: 14px; }
+    .market-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #666; }
+    .market-price-row { display: flex; align-items: baseline; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+    .market-price { font-size: 20px; font-weight: 700; color: #333; }
+    .market-chg { font-size: 14px; font-weight: 600; }
+    .market-chg.up { color: var(--primary-color, #E63946); }
+    .market-chg.down { color: #457B9D; }
+    .market-info-row { display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee; }
+    .market-sentiment { background: linear-gradient(135deg, var(--primary-color, #D4AF37) 0%, var(--secondary-color, #B8860B) 100%); color: white; padding: 12px 16px; border-radius: 12px; text-align: center; margin-bottom: 16px; }
+    .market-sentiment-text { font-size: 15px; font-weight: 600; }
+    .market-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666; }
+    
+    /* ===== 市场行情 - 手机响应式适配 ===== */
+    @media (max-width: 768px) {
+        .market-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .market-card { padding: 12px; }
+        .market-price { font-size: 16px; }
+        .market-chg { font-size: 12px; }
+        .market-name { font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+        .market-grid { grid-template-columns: 1fr; gap: 8px; }
+        .market-price-row { justify-content: space-between; }
+    }
+    
+    /* ===== 美林时钟样式 ===== */
+    .merrill-clock-card { background: linear-gradient(135deg, #F8FAFD 0%, #FFF 100%); border: 1px solid #E4E8F0; border-radius: 18px; padding: 24px 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(41, 98, 164, 0.08); }
+    .merrill-clock-header { text-align: center; margin-bottom: 16px; }
+    .merrill-clock-title { font-size: 16px; font-weight: 700; color: #333; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .merrill-clock-container { position: relative; width: 280px; height: 280px; margin: 0 auto 30px auto; }
+    .merrill-clock-svg { width: 100%; height: 100%; }
+    .merrill-clock-info { margin-top: 16px; text-align: center; }
+    
+    /* 可点击的象限 */
+    .stage-quadrant { cursor: pointer; transition: all 0.3s ease; }
+    .stage-quadrant:hover { opacity: 0.8; filter: brightness(1.1); }
+    .stage-label { cursor: pointer; transition: all 0.2s ease; }
+    .stage-label:hover { font-size: 12px; font-weight: 700; }
+    
+    /* 时间信息 */
+    .merrill-timing { margin-top: 16px; padding: 12px; background: #fff8e1; border-radius: 10px; }
+    .timing-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+    .timing-label { color: #666; }
+    .timing-value { font-weight: 600; color: #333; }
+    
+    /* 进度条 */
+    .merrill-progress { margin-top: 12px; }
+    .progress-track { width: 100%; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .progress-text { font-size: 12px; color: #888; text-align: right; }
+    
+    /* 经济指标网格 */
+    .merrill-indicators { margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 12px; }
+    .indicators-title { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 12px; }
+    .indicators-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .indicator-item { text-align: center; padding: 10px; background: white; border-radius: 8px; }
+    .indicator-name { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .indicator-value { font-size: 18px; font-weight: 700; color: #333; }
+    .indicator-value.positive { color: #43a047; }
+    
+    /* 美林时钟四阶段卡片边框 */
+    .merrill-stage-card {
+        background: white;
+        border: 1.5px solid var(--card-border, #e0e4ea);
+        border-radius: 12px;
+        padding: 14px 10px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-align: center;
+    }
+    .merrill-stage-card:hover {
+        border-color: var(--primary-color, #b0b8c8);
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        transform: translateY(-1px);
+    }
+    
+    /* 🎨 专业深蓝主题时钟样式 */
+    .merrill-clock-container {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        margin: 0 auto 30px auto;
+        perspective: 1000px;
+    }
+    .merrill-clock-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 6px 20px rgba(41, 98, 164, 0.15));
+    }
+    .stage-quadrant {
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center;
+    }
+    .stage-quadrant:hover {
+        filter: brightness(1.1);
+    }
+    .stage-quadrant.current-stage {
+        animation: stagePulse 2.5s ease-in-out infinite;
+    }
+    @keyframes stagePulse {
+        0%, 100% { opacity: 0.9; }
+        50% { opacity: 1; filter: brightness(1.05) saturate(1.1); }
+    }
+    /* 指针动画 */
+    .clock-hand {
+        transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform-origin: 110px 110px;
+    }
+    /* 当前徽章 */
+    .current-badge {
+        animation: badgeFloat 3s ease-in-out infinite;
+    }
+    @keyframes badgeFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+    
+    /* ⏱️ 周期时间轴 - 专业蓝金配色 */
+    .cycle-timeline {
+        margin-top: 20px;
+        padding: 18px;
+        background: linear-gradient(135deg, #F5F7FA 0%, #E4E8F0 100%);
+        border-radius: 14px;
+        border: 1px solid #CFD8DC;
+    }
+    .timeline-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #2C3E50;
+        text-align: center;
+        margin-bottom: 14px;
+        letter-spacing: 0.5px;
+    }
+    .timeline-track {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .timeline-segment {
+        flex: 1 1 0;  /* 强制等宽 */
+        min-width: 0;
+        padding: 14px 10px;
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        opacity: 0.6;
+        background: linear-gradient(135deg, #F8FAFD 0%, #EEF2F7 100%);
+    }
+    .timeline-segment:hover {
+        transform: translateY(-2px);
+        opacity: 1;
+        box-shadow: 0 6px 20px rgba(41, 98, 164, 0.2);
+    }
+    .timeline-segment.active {
+        opacity: 1;
+        transform: scale(1.05);
+        box-shadow: 0 6px 22px rgba(41, 98, 164, 0.35);
+        border-color: #2962A4;
+        animation: activeSegment 2.5s ease-in-out infinite;
+    }
+    @keyframes activeSegment {
+        0%, 100% { box-shadow: 0 6px 22px rgba(41, 98, 164, 0.35); }
+        50% { box-shadow: 0 6px 28px rgba(41, 98, 164, 0.5); }
+    }
+    .timeline-segment.completed {
+        opacity: 0.35;
+    }
+    .segment-icon { font-size: 20px; margin-bottom: 4px; }
+    .segment-name { font-size: 11px; font-weight: 700; margin-bottom: 2px; color: #34495E; }
+    .segment-period { font-size: 10px; color: #5D6D7E; margin-bottom: 2px; font-weight: 500; }
+    .segment-duration { font-size: 9px; opacity: 0.8; color: #7F8C8D; }
+    
+    .timeline-progress {
+        margin-top: 10px;
+    }
+    .progress-bar-track {
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, #E8ECEF 0%, #D5DCE3 100%);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2962A4 0%, #3498DB 50%, #5DADE2 100%);
+        border-radius: 4px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+    .progress-bar-fill::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: -2px;
+        width: 12px;
+        height: 12px;
+        background: #FFF;
+        border: 2px solid #2962A4;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(41, 98, 164, 0.4);
+    }
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #5D6D7E;
+        font-weight: 500;
+    }
+    
+    .merrill-hint { margin-top: 12px; font-size: 12px; color: #B8860B; text-align: center; font-weight: 500; }
+    
+    /* 🎨 美林时钟详情弹窗样式 */
+    .merrill-detail-dialog .el-dialog__header {
+        background: linear-gradient(135deg, #F5F7FA 0%, #FFF 100%);
+        border-radius: 16px 16px 0 0;
+        padding: 24px 30px 20px;
+    }
+    .merrill-detail-dialog .el-dialog__headerbtn { top: 24px; right: 30px; }
+    .merrill-detail-dialog .el-dialog__body {
+        padding: 25px 35px 35px;
+    }
+    
+    /* 弹窗宽度自适应，最小800px，最大900px */
+    .merrill-detail-dialog .el-dialog {
+        width: 90%;
+        min-width: 800px;
+        max-width: 900px;
+    }
+    
+    /* 🎨 详情面板统一配色 */
+    .merrill-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 22px;
+        border-radius: 14px;
+        border-left: 5px solid;
+        margin-bottom: 22px;
+        background: linear-gradient(135deg, #F5F7FA 0%, #FFF 100%) !important;
+        border-color: #2962A4 !important;
+    }
+    .stage-badge {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #2962A4 0%, #3498DB 100%) !important;
+        color: white;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(41, 98, 164, 0.3);
+    }
+    
+    .detail-section { margin-bottom: 30px; }
+    .detail-section:last-child { margin-bottom: 0; }
+    .detail-section .section-title { 
+        font-size: 15px; 
+        font-weight: 700; 
+        margin-bottom: 16px; 
+        color: #2C3E50; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        letter-spacing: 0.3px;
+    }
+    
+    /* 经济特征网格 */
+    .characteristics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .char-item { padding: 16px; background: linear-gradient(135deg, #F8FAFD 0%, #EEF2F7 100%); border-radius: 14px; border: 1px solid #E4E8F0; }
+    .char-label { font-size: 11px; color: #7F8C8D; margin-bottom: 6px; font-weight: 600; }
+    .char-value { font-size: 13px; color: #34495E; line-height: 1.6; }
+    
+    /* 资产配置 */
+    .allocation-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .allocation-item { padding: 20px; background: linear-gradient(135deg, #F8FAFD 0%, #FFF 100%); border-radius: 14px; border: 1px solid #E4E8F0; }
+    .allocation-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .asset-name { font-weight: 700; font-size: 14px; color: #2C3E50; }
+    .asset-rank { padding: 5px 14px; color: white; border-radius: 14px; font-size: 11px; font-weight: 700; }
+    .allocation-advice { font-size: 13px; color: #5D6D7E; line-height: 1.6; margin-bottom: 10px; }
+    .allocation-return { font-size: 12px; color: #7F8C8D; }
+    .allocation-return span { color: #27AE60; font-weight: 600; }
+    
+    /* 行业配置 */
+    .sector-list { background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%); border-radius: 14px; padding: 16px 20px; border: 1px solid #FFE082; }
+    .sector-item { padding: 8px 0; font-size: 13px; color: #5D4037; border-bottom: 1px dashed #FFD54F; line-height: 1.5; }
+    .sector-item:last-child { border-bottom: none; }
+    
+    /* 统计网格 */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat-item { text-align: center; padding: 20px 12px; background: linear-gradient(135deg, #F5F7FA 0%, #E4E8F0 100%); border-radius: 14px; border: 1px solid #CFD8DC; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #2C3E50; margin-bottom: 6px; }
+    .stat-label { font-size: 12px; color: #5D6D7E; font-weight: 600; }
+    
+    /* 历史案例 */
+    .case-list { background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); border-radius: 14px; padding: 16px 20px; border: 1px solid #A5D6A7; }
+    .case-item { padding: 8px 0; font-size: 13px; color: #2E7D32; font-weight: 500; line-height: 1.5; }
+    
+    /* 风险提示 */
+    .risk-section .section-title { color: #C62828; }
+    .risk-list { background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%); border-radius: 14px; padding: 16px 20px; border: 1px solid #EF9A9A; }
+    .risk-item { padding: 8px 0; font-size: 13px; color: #B71C1C; font-weight: 500; line-height: 1.5; }
+    
+    /* 响应式适配 */
+    @media (max-width: 768px) {
+        .characteristics-grid, .allocation-grid { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .merrill-detail-dialog .el-dialog { width: 95% !important; }
+        .timeline-track { flex-direction: column; }
+        .timeline-segment { display: flex; align-items: center; gap: 12px; text-align: left; }
+        .segment-icon, .segment-name, .segment-period, .segment-duration { margin: 0; }
+        .merrill-clock-container { width: 260px; height: 260px; }
+    }
+    
+    /* 骨架屏加载动画 */
+    .skeleton-loader { padding: 15px 0 25px 0; }
+    .skeleton-header { height: 80px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); border-radius: 12px; margin-bottom: 20px; animation: skeletonShine 1.5s infinite; background-size: 200% 100%; }
+    .skeleton-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+    .skeleton-item { height: 60px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); border-radius: 8px; animation: skeletonShine 1.5s infinite; background-size: 200% 100%; }
+    .skeleton-large { height: 120px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); border-radius: 12px; animation: skeletonShine 1.5s infinite; background-size: 200% 100%; }
+    @keyframes skeletonShine {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    /* 底部专业蓝金装饰 */
+    .merrill-footer-decoration {
+        margin-top: 30px;
+        text-align: center;
+    }
+    .gold-gradient-bar {
+        height: 3px;
+        background: linear-gradient(90deg, transparent 0%, #2962A4 20%, #3498DB 50%, #2962A4 80%, transparent 100%);
+        border-radius: 2px;
+        margin-bottom: 14px;
+    }
+    .footer-hint {
+        font-size: 11px;
+        color: #7F8C8D;
+        font-style: italic;
+    }
+    
+    .merrill-hint { margin-top: 12px; font-size: 12px; color: #5D6D7E; text-align: center; font-weight: 500; }
+
+    .current-stage { display: inline-block; padding: 8px 20px; background: linear-gradient(135deg, #E63946 0%, #C1121F 100%); color: white; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3); }
+    .stage-desc { font-size: 13px; color: #666; line-height: 1.6; }
+    .stage-allocation { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; padding: 12px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; }
+    .allocation-title { grid-column: 1 / -1; font-size: 12px; font-weight: 600; color: #B8860B; text-align: center; margin-bottom: 4px; }
+    .allocation-item { font-size: 12px; padding: 6px 8px; background: white; border-radius: 6px; text-align: center; color: #666; }
+    
+    /* ===== 通知设置样式 ===== */
+    .notification-settings { background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%); padding: 20px; border-radius: 16px; border: 1px solid #e4e9f2; }
+    .setting-section { margin-bottom: 20px; }
+    .setting-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .setting-input-wrapper { display: flex; gap: 10px; align-items: stretch; }
+    .setting-input { flex: 1; padding: 12px 16px; border: 2px solid #e4e9f2; border-radius: 10px; font-size: 14px; transition: all 0.3s ease; }
+    .setting-input:focus { outline: none; border-color: #E63946; }
+    .setting-btn { padding: 12px 20px; background: linear-gradient(135deg, #E63946 0%, #C1121F 100%); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .setting-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3); }
+    .setting-btn.secondary { background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%); }
+    .switch-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .switch-label { font-size: 14px; color: #333; }
+    .switch-desc { font-size: 12px; color: #999; margin-top: 4px; }
+    .switch-toggle { width: 52px; height: 28px; background: #ddd; border-radius: 14px; position: relative; cursor: pointer; transition: all 0.3s ease; }
+    .switch-toggle.active { background: linear-gradient(135deg, #E63946 0%, #C1121F 100%); }
+    .switch-toggle::after { content: ''; position: absolute; width: 24px; height: 24px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: all 0.3s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .switch-toggle.active::after { left: 26px; }
+
+    /* ===== 市场行情卡片 ===== */
+    
+    /* ===== 市场行情 - 手机响应式适配 ===== */
+    }
+    }
+
+/* 美林强制修复已移除 */
+
+
+/* 美林强制修复已移除 */
+
+
+/* =====================================================
+   🔥 美林时钟样式强制修复 - 最高优先级 + !important
+   ===================================================== */
+
+/* 🔧 1. 时间轴 - 强制等宽 + 间距 */
+.cycle-timeline .timeline-track {
+    display: flex !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+}
+.cycle-timeline .timeline-segment {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+}
+.cycle-timeline .timeline-segment.active {
+    transform: scale(1.02) !important;
+    box-shadow: 0 6px 24px rgba(41, 98, 164, 0.35) !important;
+}
+
+/* 🔧 2. 弹窗 - 强制加大内边距 */
+.merrill-detail-dialog .el-dialog__header {
+    padding: 28px 40px 24px !important;
+}
+.merrill-detail-dialog .el-dialog__body {
+    padding: 0 40px 40px !important;
+}
+.merrill-detail-dialog .el-dialog {
+    width: 900px !important;
+    max-width: 95vw !important;
+    min-width: 800px !important;
+}
+
+/* 🔧 3. 模块间距 */
+.merrill-detail-dialog .detail-section {
+    margin-bottom: 32px !important;
+}
+
+/* 🔧 4. 统计网格 */
+.merrill-detail-dialog .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 18px !important;
+}
+.merrill-detail-dialog .stat-item {
+    padding: 22px 14px !important;
+    border-radius: 16px !important;
+}
+.merrill-detail-dialog .stat-value {
+    font-size: 26px !important;
+    margin-bottom: 8px !important;
+}
+.merrill-detail-dialog .stat-label {
+    font-size: 12px !important;
+}
+
+/* 🔧 5. 其他网格 */
+.merrill-detail-dialog .characteristics-grid,
+.merrill-detail-dialog .allocation-grid {
+    gap: 18px !important;
+}
+.merrill-detail-dialog .char-item,
+.merrill-detail-dialog .allocation-item {
+    padding: 18px !important;
+    border-radius: 16px !important;
+}
+
+/* 🔧 6. 移动端 */
+
+/* 🔧 7. 时间轴内容样式 */
+.segment-icon {
+    font-size: 24px !important;
+    margin-bottom: 8px !important;
+}
+.segment-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin-bottom: 5px !important;
+}
+.segment-period {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
+}
+.segment-duration {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+}
+
+/* 🔧 8. 进度条 */
+.progress-info {
+    margin-top: 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+/* ===== 🎨 v1.1.0 样式增强 ===== */
+
+/* 美林时钟卡片美化 */
+.merrill-clock-card {
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 50%, #FFF3E0 100%) !important;
+    border: 2px solid #E8D5B7 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 8px 32px rgba(212, 175, 55, 0.15) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.merrill-clock-card::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* 系统配置卡片美化 */
+.settings-page .card {
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+    overflow: hidden;
+    border: 1px solid #F0F0F0 !important;
+}
+
+.settings-page .card > div:first-child {
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #F8FAFD 0%, #F0F4F8 100%);
+    border-bottom: 1px solid #E8E8E8;
+}
+
+/* 弹窗增强 */
+.el-dialog {
+    border-radius: 16px !important;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+}
+
+.el-dialog__header {
+    background: linear-gradient(135deg, #F8FAFD 0%, #FFFFFF 100%);
+    border-bottom: 1px solid #E8E8E8;
+    padding: 20px 24px 16px !important;
+}
+
+.el-dialog__body {
+    padding: 24px !important;
+}
+
+/* K线弹窗特殊优化 */
+.kline-dialog .el-dialog {
+    width: 95% !important;
+    max-width: 900px;
+}
+
+/* 版本标记 */
+.version-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    margin-left: 8px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .kline-dialog .el-dialog {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+}
+
+/* ========== 🎨 美林时钟 v1.1.0 优化样式 ========== */
+
+/* 时间轴卡片基础样式 - 修复手机端边框 */
+.timeline-track {
+    display: flex !important;
+    gap: 12px !important;
+    flex-wrap: nowrap;
+}
+
+.timeline-segment {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 18px 15px !important;
+    min-height: 100px !important;
+    border-radius: 14px !important;
+    background-color: #F5F7FA !important;
+    border: 1px solid #CFD8DC !important;
+    box-sizing: border-box !important;
+    cursor: pointer;
+    transition: all 0.3s ease !important;
+}
+
+.timeline-segment:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 当前活跃阶段 - 优化配色：绿色系，避免红绿冲突 */
+.timeline-segment.active {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+    border: 2px solid #4CAF50 !important;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2) !important;
+}
+
+.timeline-segment.active .segment-name {
+    color: #2E7D32 !important;
+    font-weight: 800 !important;
+}
+
+.timeline-segment.active .segment-icon {
+    transform: scale(1.1);
+}
+
+/* 已完成阶段 */
+.timeline-segment.completed {
+    opacity: 0.7;
+    background-color: #ECEFF1 !important;
+}
+
+/* 复苏期卡片专属 - 进度条容器 */
+.stage-progress-wrapper {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(76, 175, 80, 0.3);
+}
+
+.stage-progress-track {
+    height: 8px;
+    background: rgba(76, 175, 80, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stage-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+}
+
+.stage-progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #2E7D32;
+    font-weight: 600;
+}
+
+/* 坐标轴标签增强 */
+text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* 移动端适配 - 确保边框正确显示 */
+@media (max-width: 768px) {
+    .timeline-track {
+        flex-direction: column !important;
+    }
+    
+    .timeline-segment {
+        width: 100% !important;
+        min-width: 100% !important;
+        border: 1px solid #CFD8DC !important;
+    }
+    
+    .timeline-segment.active {
+        border: 2px solid #4CAF50 !important;
+    }
+}
+
+/* ========== 🎨 美林时钟 v1.1.1 手机端修复样式 ========== */
+
+/* 垂直胶囊时间轴容器 */
+.vertical-timeline {
+    position: relative;
+    padding: 20px 15px;
+    background: linear-gradient(135deg, #F8FAFD 0%, #ECEFF1 100%);
+    border-radius: 24px;
+    margin-top: 16px;
+}
+
+/* 进度指示器 - 右上角胶囊 */
+.timeline-progress-indicator {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.progress-pill {
+    width: 100px;
+    height: 16px;
+    background: rgba(76, 175, 80, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px dashed rgba(76, 175, 80, 0.4);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
+    border-radius: 8px;
+    transition: width 0.8s ease;
+}
+
+.progress-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2E7D32;
+}
+
+.progress-percent {
+    font-size: 18px;
+}
+
+/* 四个阶段胶囊容器 */
+.timeline-stages-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 单个阶段项 */
+.timeline-stage-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #E0E0E0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+.timeline-stage-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* 当前活跃阶段 */
+.timeline-stage-item.active {
+    opacity: 1;
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    border: 2px solid #4CAF50;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15);
+}
+
+/* 已完成阶段 */
+.timeline-stage-item.completed {
+    opacity: 0.85;
+}
+
+/* 阶段图标胶囊 */
+.stage-icon-wrapper {
+    width: 56px;
+    height: 96px;
+    background: #F5F7FA;
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #CFD8DC;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.timeline-stage-item.active .stage-icon-wrapper {
+    background: #C8E6C9;
+    border-color: #4CAF50;
+}
+
+.stage-icon {
+    font-size: 28px;
+}
+
+/* 阶段内容 */
+.stage-content {
+    flex: 1;
+}
+
+.stage-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #424242;
+    margin-bottom: 4px;
+}
+
+.timeline-stage-item.active .stage-name {
+    color: #2E7D32;
+}
+
+.stage-period {
+    font-size: 15px;
+    color: #757575;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.stage-duration {
+    font-size: 13px;
+    color: #9E9E9E;
+}
+
+.stage-progress-detail {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(76, 175, 80, 0.3);
+    font-size: 13px;
+    color: #388E3C;
+    font-weight: 600;
+}
+
+/* 桌面端适配 - 恢复横向四卡片 */
+@media (min-width: 769px) {
+    .vertical-timeline {
+        display: none;
+    }
+    
+    /* 桌面端显示原有的横向卡片 - 这里需要恢复原来的timeline-track样式 */
+    .timeline-track {
+        display: flex !important;
+        gap: 12px !important;
+    }
+    
+    .timeline-segment {
+        flex: 1 !important;
+    }
+}
+
+/* 确保手机端只显示垂直时间轴，隐藏原有的横向卡片 */
+@media (max-width: 768px) {
+    .timeline-track {
+        display: none !important;
+    }
+}
+
+/* ========== 🎨 美林时钟 v1.1.2 横向胶囊时间轴 ========== */
+
+/* 横向胶囊容器 */
+.horizontal-timeline {
+    padding: 16px 0;
+}
+
+/* 胶囊行 */
+.timeline-pills-row {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+/* 单个胶囊 */
+.timeline-pill {
+    min-height: 130px !important;
+    flex: 1;
+    min-width: 0;
+    padding: 14px 12px;
+    border-radius: 16px;
+    background: #F5F7FA;
+    border: 2px solid #CFD8DC;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.timeline-pill:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+/* 胶囊图标 */
+.pill-icon {
+    font-size: 28px;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+/* 胶囊文字 */
+.pill-text {
+    width: 100%;
+}
+
+.pill-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #424242;
+    margin-bottom: 3px;
+}
+
+.pill-period {
+    font-size: 12px;
+    color: #757575;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.pill-duration {
+    font-size: 11px;
+    color: #9E9E9E;
+}
+
+/* 当前活跃胶囊 - 复苏期绿色 */
+.timeline-pill.active {
+    opacity: 1;
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    border-color: #4CAF50;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
+}
+
+.timeline-pill.active .pill-name {
+    color: #2E7D32;
+}
+
+/* 复苏期胶囊内的进度条 */
+.pill-progress {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(76, 175, 80, 0.3);
+}
+
+.pill-progress-track {
+    height: 8px;
+    background: rgba(76, 175, 80, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.pill-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+}
+
+.pill-progress-text {
+    font-size: 12px;
+    color: #388E3C;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+/* 已完成的胶囊 */
+.timeline-pill.completed {
+    opacity: 0.85;
+}
+
+/* 各阶段胶囊颜色 */
+.recovery-pill.active {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    border-color: #4CAF50;
+}
+
+.overheat-pill.active {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    border-color: #FF9800;
+}
+
+.stagflation-pill.active {
+    background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%);
+    border-color: #E91E63;
+}
+
+.recession-pill.active {
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+    border-color: #2196F3;
+}
+
+/* 手机端适配 - 2x2 网格 */
+@media (max-width: 600px) {
+    .timeline-pills-row {
+        flex-wrap: wrap;
+    }
+    
+    .timeline-pill {
+    min-height: 130px !important;
+        flex: 1 1 calc(50% - 6px);
+        min-width: calc(50% - 6px);
+    }
+}
+
+/* 超小屏适配 - 垂直单列 */
+@media (max-width: 380px) {
+    .timeline-pills-row {
+        flex-direction: column;
+    }
+    
+    .timeline-pill {
+    min-height: 130px !important;
+        flex: none;
+        width: 100%;
+        flex-direction: row;
+        text-align: left;
+        padding: 12px 16px;
+    }
+    
+    .pill-icon {
+        margin-right: 14px;
+        margin-bottom: 0;
+    }
+    
+    .pill-text {
+        text-align: left;
+    }
+}
+
+/* 隐藏旧的垂直时间轴样式 */
+.vertical-timeline {
+    display: none !important;
+}
+
+/* ========== v1.1.3 美林时钟新样式 ========== */
+.merrill-clock-container {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto 30px auto;
+    padding: 15px 0 25px 0;
+}
+
+.merrill-clock-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.stage-box {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stage-box:hover {
+    filter: brightness(1.05);
+    stroke-width: 3;
+}
+
+
+/* ========== v1.1.5 最终修复 - 解决所有显示问题 ========== */
+
+/* 时钟容器 - 增加底部间距避免和卡片交叉 */
+.merrill-clock-container {
+    max-width: 420px !important;
+    margin: 0 auto 50px auto !important;
+    padding: 10px 0 15px 0 !important;
+}
+
+/* 确保 SVG 自适应 */
+.merrill-clock-svg {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+
+/* 时间轴卡片行 - 强制 flex 拉伸 */
+.timeline-pills-row {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    width: 100% !important;
+}
+
+/* 统一所有卡片尺寸 */
+.timeline-pill {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 115px !important;
+    padding: 14px 10px !important;
+    border-radius: 14px !important;
+    background: #F5F7FA !important;
+    border: 2px solid #CFD8DC !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    opacity: 0.7 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+}
+
+/* 当前阶段高亮 */
+.timeline-pill.active {
+    opacity: 1 !important;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25) !important;
+}
+
+/* 卡片图标 */
+.pill-icon {
+    font-size: 28px !important;
+    line-height: 1 !important;
+    margin-bottom: 4px !important;
+}
+
+/* 卡片文字 */
+.pill-name {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+}
+
+.pill-period {
+    font-size: 12px !important;
+    color: #666 !important;
+}
+
+.pill-duration {
+    font-size: 11px !important;
+    color: #888 !important;
+}
+
+/* 进度条 */
+.pill-progress {
+    margin-top: 8px !important;
+    padding-top: 6px !important;
+    border-top: 1px dashed rgba(76, 175, 80, 0.3) !important;
+    width: 100% !important;
+}
+
+.pill-progress-track {
+    height: 8px !important;
+    background: rgba(76, 175, 80, 0.15) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+}
+
+.pill-progress-fill {
+    height: 100% !important;
+    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%) !important;
+    border-radius: 4px !important;
+    transition: width 0.8s ease !important;
+}
+
+.pill-progress-text {
+    font-size: 11px !important;
+    color: #388E3C !important;
+    font-weight: 700 !important;
+    margin-top: 5px !important;
+}
+
+/* ========== 手机端响应式 ========== */
+@media (max-width: 768px) {
+    .timeline-pills-row {
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+    
+    .timeline-pill {
+        flex: 1 1 calc(50% - 5px) !important;
+        min-height: 105px !important;
+    }
+    
+    .merrill-clock-container {
+        max-width: 360px !important;
+        margin-bottom: 35px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .timeline-pills-row {
+        flex-direction: column !important;
+    }
+    
+    .timeline-pill {
+        flex: none !important;
+        width: 100% !important;
+        flex-direction: row !important;
+        text-align: left !important;
+        padding: 12px 14px !important;
+        min-height: auto !important;
+        justify-content: flex-start !important;
+    }
+    
+    .pill-icon {
+        margin-right: 12px !important;
+        margin-bottom: 0 !important;
+        font-size: 24px !important;
+    }
+    
+    .pill-text {
+        text-align: left !important;
+        flex: 1 !important;
+    }
+    
+    .pill-progress {
+        margin-top: 4px !important;
+        padding-top: 4px !important;
+    }
+}
+
+
+/* ========== v1.1.6 各阶段配色统一 ========== */
+.timeline-pill.active {
+    opacity: 1 !important;
+}
+
+/* 复苏期 - 绿色系，和表盘统一 */
+.timeline-pill.recovery-pill.active {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+    border-color: #4CAF50 !important;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25) !important;
+}
+
+.timeline-pill.recovery-pill.active .pill-name {
+    color: #2E7D32 !important;
+}
+
+/* 过热期 - 橙色系 */
+.timeline-pill.overheat-pill.active {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%) !important;
+    border-color: #FF9800 !important;
+    box-shadow: 0 4px 16px rgba(255, 152, 0, 0.25) !important;
+}
+
+.timeline-pill.overheat-pill.active .pill-name {
+    color: #E65100 !important;
+}
+
+/* 滞胀期 - 粉色系 */
+.timeline-pill.stagflation-pill.active {
+    background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%) !important;
+    border-color: #E91E63 !important;
+    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.25) !important;
+}
+
+.timeline-pill.stagflation-pill.active .pill-name {
+    color: #AD1457 !important;
+}
+
+/* 衰退期 - 蓝色系 */
+.timeline-pill.recession-pill.active {
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
+    border-color: #2196F3 !important;
+    box-shadow: 0 4px 16px rgba(33, 150, 243, 0.25) !important;
+}
+
+.timeline-pill.recession-pill.active .pill-name {
+    color: #1565C0 !important;
+}
+
+
+/* ========== AI 评估按钮加载动画 ========== */
+.ai-eval-btn-wrapper {
+    width: 100%;
+}
+
+.ai-eval-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    min-height: 42px;
+}
+
+/* 按钮底部流动进度条 */
+.ai-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-radius: 0 0 4px 4px;
+}
+
+.ai-progress-fill {
+    height: 100%;
+    width: 30%;
+    background: linear-gradient(90deg, 
+        rgba(102, 126, 234, 0) 0%,
+        rgba(102, 126, 234, 0.8) 20%,
+        rgba(118, 75, 162, 0.9) 50%,
+        rgba(102, 126, 234, 0.8) 80%,
+        rgba(102, 126, 234, 0) 100%);
+    animation: flowBar 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes flowBar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+}
+
+
+
+/* ========== v1.3.0: 全局配置操作栏样式 ========== */
+.global-config-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%);
+    border-top: 2px solid #E8D5B7;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 2000;
+    animation: slideUp 0.3s ease;
+}
+
+.global-config-action-bar.always-show {
+    transform: translateY(0) !important;
+    display: block !important;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.config-action-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.config-change-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #666;
+}
+
+.change-dot {
+    width: 10px;
+    height: 10px;
+    background: #E63946;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.config-action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .config-action-content {
+        padding: 10px 16px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .config-action-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .config-action-buttons .el-button {
+        flex: 1;
+    }
+}
+
+
+/* ========== v1.3.0: 系统状态和 Tushare 配置样式 ========== */
+.system-status-card {
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%);
+    border: 1px solid #E8D5B7;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #F0F0F0;
+    transition: all 0.3s ease;
+}
+
+.status-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* PC端策略筛选复选框两列布局 */
+@media (min-width: 769px) {
+    .el-checkbox-group .el-checkbox {
+        width: 48% !important;
+        margin-right: 2% !important;
+    }
+}
+
+.status-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F5F7FA;
+    border-radius: 10px;
+}
+
+.status-label {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 2px;
+}
+
+.status-value {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.connected {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.status-badge.testing {
+    background: #FFF3E0;
+    color: #E65100;
+}
+
+.status-badge.disconnected {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    /* ===== 全局溢出保护 - 最优先 ===== */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        width: 100% !important;
+    }
+    
+    /* 所有元素使用 border-box，防止 padding 导致溢出 */
+    * {
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+    }
+    
+    /* 主容器宽度限制 */
+    .app-container,
+    .main-container,
+    .content-container {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    
+    /* 系统状态网格 */
+    .status-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    /* 表单标签顶部布局 - 强制覆盖 Element Plus 内联样式 */
+    .el-form-item {
+        margin-bottom: 14px !important;
+    }
+    .el-form-item__label {
+        text-align: left !important;
+        padding-bottom: 6px !important;
+        float: none !important;
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 4px !important;
+        flex: none !important;
+    }
+    .el-form-item__content {
+        margin-left: 0 !important;
+        display: block !important;
+        width: 100% !important;
+        flex: none !important;
+        box-sizing: border-box !important;
+    }
+    /* 强制覆盖 flex 布局 - Element Plus 默认使用 flex */
+    .el-form-item {
+        display: block !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    /* 重置所有表单子元素的 flex 布局 */
+    .el-form-item > * {
+        flex: none !important;
+        width: 100% !important;
+    }
+    /* 卡片容器防止溢出 */
+    .card {
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    /* 卡片标题强制换行 */
+    .card-title {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    /* 卡片标题内的元素宽度自适应 */
+    .card-title > span,
+    .card-title > div {
+        max-width: 100% !important;
+        word-break: break-all !important;
+    }
+    /* 确保所有输入框100%宽度，覆盖内联style */
+    .el-form-item .el-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .el-form-item .el-button {
+        margin-bottom: 8px;
+        width: 100%;
+    }
+    /* 数字输入框100%宽度 - 强制覆盖内联样式 */
+    .el-input-number {
+        width: 100% !important;
+    }
+    .el-input-number .el-input {
+        width: 100% !important;
+    }
+    /* 确保所有输入框100%宽度，覆盖内联style */
+    .el-form-item .el-input {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* 确保密码显示按钮可点击 - 修复输入框内部布局 */
+    .el-input__wrapper {
+        display: flex !important;
+        align-items: center !important;
+        padding-right: 8px !important;
+    }
+    .el-input__suffix {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        z-index: 100 !important;
+        min-width: 36px !important;
+        height: 100% !important;
+    }
+    .el-input__password {
+        cursor: pointer !important;
+        padding: 8px !important;
+        font-size: 16px !important;
+        min-width: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .el-input__inner {
+        padding-right: 40px !important;
+    }
+    /* 下拉选择器箭头按钮适配 */
+    .el-select .el-input__suffix {
+        min-width: 32px !important;
+    }
+    .el-select .el-icon {
+        font-size: 16px !important;
+    }
+    /* 策略筛选复选框单列 - 覆盖内联width */
+    .el-checkbox-group .el-checkbox {
+        width: 100% !important;
+        margin-right: 0 !important;
+        margin-bottom: 8px !important;
+    }
+    /* 开关按钮完整显示 */
+    .el-switch {
+        display: inline-flex !important;
+    }
+    /* ===== 额外的溢出保护 - 针对 Element Plus 特殊组件 ===== */
+    /* 防止日期选择器、时间选择器等组件溢出 */
+    .el-date-editor,
+    .el-time-editor {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* 防止表单验证提示导致溢出 */
+    .el-form-item__error {
+        white-space: normal !important;
+        word-break: break-all !important;
+    }
+    /* 防止按钮组溢出 */
+    .el-button-group {
+        flex-wrap: wrap !important;
+    }
+    .el-button-group .el-button {
+        flex: 1 !important;
+        min-width: auto !important;
+    }
+    /* 开关文字自动换行 */
+    .el-switch__label {
+        white-space: nowrap !important;
+    }
+    /* 单选按钮响应式 */
+    .el-radio-group {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+    .el-radio {
+        margin-right: 0 !important;
+    }
+    /* 下拉选择器响应式修复 */
+    .el-select {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .el-select .el-input {
+        width: 100% !important;
+    }
+    /* 下拉框移动端适配 - 防止超出屏幕 */
+    .el-select-dropdown {
+        max-width: 95vw !important;
+        min-width: auto !important;
+    }
+    .el-select-dropdown__item {
+        white-space: normal !important;
+        word-break: break-all !important;
+        height: auto !important;
+        padding: 10px 12px !important;
+        line-height: 1.4 !important;
+    }
+    /* 下拉分组标题适配 */
+    .el-select-group__title {
+        white-space: normal !important;
+        padding: 8px 12px !important;
+        height: auto !important;
+        line-height: 1.4 !important;
+    }
+    /* 确保下拉框不超出视口右边界 */
+    .el-popper {
+        max-width: 95vw !important;
+    }
+    /* 弹窗移除最小宽度限制 */
+    .merrill-detail-dialog .el-dialog {
+        min-width: auto !important;
+        width: 95% !important;
+    }
+    /* 弹窗统计网格改为2列 */
+    .merrill-detail-dialog .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+    /* 增大可点击元素触摸区域 */
+    .el-button {
+        min-height: 44px;
+    }
+    .el-checkbox__label {
+        padding: 10px 0;
+    }
+    /* 视图切换器按钮优化 */
+    .view-switcher .view-btn {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    /* 股票列表项触摸优化 */
+    .stock-item {
+        min-height: 56px;
+        padding: 14px 12px;
+    }
+    /* 状态筛选标签触摸优化 */
+    .status-tabs {
+        gap: 6px !important;
+        flex-wrap: wrap;  /* 允许标签换行，极端情况保护 */
+    }
+    .status-tab {
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: normal !important;  /* 允许换行 */
+        word-break: break-all;
+        font-size: 12px !important;
+        padding: 6px 4px !important;
+        line-height: 1.3;
+        flex-direction: column;  /* 文字和数字垂直排列 */
+        gap: 2px;
+        min-width: 0 !important;  /* 允许flex子元素收缩 */
+        flex: 1;
+    }
+    .status-tab .count {
+        font-size: 11px !important;
+        margin-left: 0 !important;
+    }
+    /* 输入框高度优化 */
+    .el-input__inner {
+        min-height: 44px;
+    }
+    /* 下拉选择器高度优化 */
+    .el-select .el-input__inner {
+        min-height: 44px;
+    }
+    /* 底部导航栏触摸优化 */
+    .mobile-nav-item {
+        min-height: 56px;
+        padding-top: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    /* 配置说明文字换行优化 */
+    .card code {
+        word-break: break-all;
+        white-space: normal;
+    }
+    /* 状态项内容换行优化 */
+    .status-item {
+        padding: 10px;
+    }
+    .status-item .status-label {
+        font-size: 12px;
+    }
+    .status-item .status-value {
+        font-size: 14px;
+    }
+    /* ===== K线图表移动端适配 ===== */
+    .kline-chart {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+    /* ECharts 容器适配 */
+    [id*="chart"],
+    [id*="Chart"] {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow: hidden !important;
+    }
+    /* 防止弹窗溢出屏幕 */
+    .el-dialog {
+        width: 95% !important;
+        max-width: 95vw !important;
+        margin: 5vh auto !important;
+    }
+    .el-dialog__body {
+        padding: 16px !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+    /* 弹窗统计网格改为1列 */
+    .merrill-detail-dialog .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    /* 经济指标网格1列 */
+    .indicators-grid {
+        grid-template-columns: 1fr;
+    }
+    /* 页面标题字体缩小 */
+    .page-header h2 {
+        font-size: 18px;
+    }
+    /* 配置工具栏进一步优化 */
+    .toolbar-left {
+        flex-direction: column;
+        text-align: center;
+    }
+    /* 按钮更小更紧凑 */
+    .el-button {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+
+/* ========== v1.3.0: 增强版用户管理样式 ========== */
+.user-card-enhanced {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #E8E8E8;
+    transition: all 0.3s ease;
+}
+
+.user-card-enhanced:hover {
+    transform: translateX(4px);
+    border-color: #D4AF37;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
+}
+
+.user-info-enhanced {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.user-avatar-large {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name-enhanced {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.user-role-tag {
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.user-role-tag.admin {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+.user-role-tag.user {
+    background: #E3F2FD;
+    color: #1976D2;
+}
+
+.user-meta-info {
+    font-size: 12px;
+    color: #999;
+    line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.user-status-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #F0F0F0;
+}
+
+.user-actions-enhanced {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 12px;
+    border-top: 1px solid #F5F5F5;
+}
+
+.batch-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%);
+    border-radius: 12px;
+    border: 1px solid #E8D5B7;
+    margin-top: 8px;
+}
+
+.batch-summary {
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .user-actions-enhanced {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    
+    .user-actions-enhanced .el-button {
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .user-meta-info {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+
+/* ========== v1.3.0: 登录检查优化 - 防止登录页闪烁 ========== */
+.auth-checking-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.auth-checking-content {
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+    border: 3px solid #F3F3F3;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ========== v1.3.0: 顶部配置工具栏样式 ========== */
+.config-top-toolbar {
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%);
+    border: 1px solid #E8D5B7;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.config-status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.config-status-icon.dirty {
+    background: #FFEBEE;
+    animation: pulse 1.5s infinite;
+}
+
+.config-status-icon.clean {
+    background: #E8F5E9;
+}
+
+.config-status-text {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.save-time {
+    font-size: 12px;
+    color: #999;
+}
+
+.toolbar-right {
+    display: flex;
+    gap: 10px;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .config-top-toolbar {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .toolbar-left {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .toolbar-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-right .el-button {
+        flex: 1;
+    }
+}
+
+/* ===== v1.5.0: 全局 Header ===== */
+.global-header {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 0 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 56px;
+    gap: 16px;
+}
+
+/* ===== v1.5.0: 二级导航标签栏 ===== */
+.sub-nav-wrapper {
+    display: flex;
+    gap: 4px;
+    height: 100%;
+    align-items: center;
+}
+.sub-nav-tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #666;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+}
+.sub-nav-tab:hover {
+    background: rgba(102,126,234,0.1);
+    color: var(--primary-color);
+}
+.sub-nav-tab.active {
+    background: var(--gradient);
+    color: white;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+}
+
+/* ===== v1.5.0: 用户菜单 ===== */
+.user-menu-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 10px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.user-menu-wrapper:hover {
+    background: rgba(102,126,234,0.08);
+}
+.user-menu-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+.user-menu-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+}
+.user-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 200;
+    overflow: hidden;
+}
+.user-menu-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+}
+.user-menu-item:hover {
+    background: rgba(102,126,234,0.08);
+}
+.user-menu-item.danger {
+    color: #e74c3c;
+}
+
+/* ===== v1.5.0: Header 日期选择器区域 ===== */
+.header-date-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.header-date-area .el-date-editor {
+    width: 170px;
+}
+
+/* ===== v1.5.0: 移动端 Header 适配 ===== */
+@media (max-width: 768px) {
+    .global-header {
+        padding: 0 8px;
+        height: auto;
+        min-height: 48px;
+        flex-wrap: wrap;
+        gap: 6px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+    .sub-nav-wrapper {
+        order: 1;
+        width: 100%;
+        overflow-x: auto;
+        gap: 2px;
+        padding: 4px 0;
+    }
+    .sub-nav-tab {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    .user-menu-wrapper {
+        order: 2;
+        margin-left: auto;
+    }
+    .user-menu-name { display: none; }
+    .header-date-area {
+        order: 3;
+        width: 100%;
+        justify-content: flex-end;
+        padding: 4px 0;
+    }
+}
+</style>
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页 -->
+        <div v-if="!currentUser" class="app-container" style="justify-content: center; align-items: center;">
+            <div class="card login-box">
+                <div class="login-icon">📈</div>
+                <div class="login-title">量化日历</div>
+                <el-form @submit.prevent="handleLogin">
+                    <el-form-item>
+                        <el-input v-model="loginForm.username" placeholder="用户名" size="large" prefix-icon="User" />
+                    </el-form-item>
+                    <el-form-item>
+                        <el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" show-password />
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" size="large" style="width: 100%" @click="handleLogin" :loading="logining">
+                            登 录
+                        </el-button>
+                    </el-form-item>
+                </el-form>
+                <div style="text-align: center; color: #999; font-size: 13px;">
+                    默认账号: admin / admin
+                </div>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <template v-else>
+            <div class="app-container" style="justify-content:center;align-items:center;">
+                <p style="font-size:24px;color:white;">Main interface renders OK</p>
+                <p style="color:white;">User: {{ currentUser?.username }}</p>
+                <p style="color:white;">Page: {{ currentPage }} / {{ currentSubPage }}</p>
+            </div>
+        </template>
+
+        <!-- 股票详情弹窗 -->
+        <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="850px" class="kline-dialog">
+            <div v-if="stockDetail">
+                <div class="detail-header">
+                    <div>
+                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: 600;">{{ stockDetail.stock }} <span style="font-size: 16px; opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
+                        <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
+                    </div>
+                    <div class="score-badge">
+                        <div class="num">{{ stockDetail.score_data?.score || '-' }}</div>
+                        <div class="label">{{ stockDetail.score_data?.level || '未评估' }}</div>
+                    </div>
+                </div>
+                <div class="detail-content">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                        <div class="ai-eval-btn-wrapper" style="position: relative;">
+                            <el-button type="primary" @click="doAiEvaluate" :loading="aiLoading" class="ai-eval-btn" style="width: 100%; position: relative; overflow: hidden;">
+                                <template v-if="aiLoading">
+                                    <span style="display: inline-block; vertical-align: middle; margin-right: 10px;">
+                                        <span style="display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                                    </span>
+                                    <span style="vertical-align: middle;">🤖 AI深度分析中... (约3-8秒)</span>
+                                </template>
+                                <template v-else>
+                                    💡 智能评股
+                                </template>
+                            </el-button>
+                            <!-- 按钮底部进度条 -->
+                            <div v-if="aiLoading" class="ai-progress-bar">
+                                <div class="ai-progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI评估结果炫酷展示 -->
+                    <div v-if="aiResult" style="background: var(--gradient); color: white; padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                        <!-- 顶部总评 -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                            <div>
+                                <div style="font-size: 14px; opacity: 0.85; margin-bottom: 4px;">综合评估结论</div>
+                                <div style="font-size: 24px; font-weight: 700;">{{ aiResult.result.level }}</div>
+                                <div style="font-size: 12px; opacity: 0.75; margin-top: 4px;">{{ aiResult.result.provider }}</div>
+                            </div>
+                            <!-- 炫酷评分仪表盘 -->
+                            <div style="width: 100px; height: 100px; position: relative;">
+                                <svg viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score / 100) * 264 + ' 264'" style="transition: all 0.8s ease;"/>
+                                </svg>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div style="font-size: 28px; font-weight: 800; line-height: 1;">{{ aiResult.result.total_score }}</div>
+                                    <div style="font-size: 10px; opacity: 0.85;">分</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9维度评分卡片 -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px; font-weight: 500;">📊 九大维度评分</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                <div v-for="(score, name) in aiResult.result.dimensions" :key="name" style="background: rgba(255,255,255,0.18); padding: 12px 8px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                                    <div style="font-size: 22px; font-weight: 700; margin-bottom: 4px;">{{ score }}</div>
+                                    <div style="font-size: 11px; opacity: 0.9;">{{ name }}</div>
+                                    <div style="height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                                        <div :style="{width: score + '%', height: '100%', background: 'white', borderRadius: '2px'}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 投资建议 -->
+                        <div style="background: rgba(255,255,255,0.12); padding: 16px; border-radius: 12px; backdrop-filter: blur(10px);">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">🎯 投资建议</div>
+                            <div style="font-size: 13px; line-height: 1.8;">
+                                <div v-if="aiResult.result.analysis.strengths.length > 0" style="margin-bottom: 8px;">
+                                    <strong style="opacity: 0.95;">✅ 优势：</strong>{{ aiResult.result.analysis.strengths.join('，') }}
+                                </div>
+                                <div v-if="aiResult.result.analysis.weaknesses.length > 0" style="margin-bottom: 8px;">
+                                    <strong style="opacity: 0.95;">⚠️ 风险：</strong>{{ aiResult.result.analysis.weaknesses.join('，') }}
+                                </div>
+                                <div>
+                                    <strong style="opacity: 0.95;">💡 操作建议：</strong>{{ aiResult.result.analysis.suggestions.join('；') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-title"><span>📈</span> 今日行情与均线</div>
+                    <div class="grid-auto">
+                        <div class="stat-box">
+                            <div class="stat-label">收盘价</div>
+                            <div class="stat-value">{{ stockDetail.daily_data?.close.toFixed(2) }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">涨跌幅</div>
+                            <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? '#f56c6c' : '#67c23a'}">
+                                {{ stockDetail.daily_data?.pct_chg.toFixed(2) }}%
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">最高/最低</div>
+                            <div style="font-size: 15px; font-weight: 600;">
+                                <span style="color: #f56c6c;">{{ stockDetail.daily_data?.high.toFixed(2) }}</span>
+                                <span style="color: #999; margin: 0 4px;">/</span>
+                                <span style="color: #67c23a;">{{ stockDetail.daily_data?.low.toFixed(2) }}</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">成交量</div>
+                            <div class="stat-value" style="font-size: 16px;">{{ Math.round(stockDetail.daily_data?.vol / 10000).toLocaleString() }}万</div>
+                        </div>
+                    </div>
+
+                    <!-- K线图区域 -->
+                    <div class="section-title"><span>🕯️</span> K线图与均线</div>
+                    <div class="kline-container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div class="kline-tabs">
+                                <button 
+                                    v-for="tab in klinePeriods" 
+                                    :key="tab.value"
+                                    :class="['kline-tab', {active: currentKlinePeriod === tab.value}]"
+                                    @click="switchKlinePeriod(tab.value)"
+                                >
+                                    {{ tab.label }}
+                                </button>
+                            </div>
+                            <el-button v-if="!stockKlineLoaded" type="primary" size="small" @click="loadStockKline(currentKlinePeriod)" :loading="klineLoading">
+                                📉 加载K线
+                            </el-button>
+                        </div>
+                        <div v-if="stockKlineLoaded" class="kline-chart" id="stockKlineChart"></div>
+                        <div v-if="klineLoading" class="kline-loading">
+                            <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
+                        </div>
+                        <div v-if="!stockKlineLoaded && !klineLoading" class="kline-placeholder">
+                            <div style="color: #999; font-size: 14px;">👆 点击"加载K线"按钮查看蜡烛图与均线</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title"><span>📋</span> 策略持仓记录</div>
+                    <div v-for="h in stockDetail.history" :key="h.strategy" class="hold-item">
+                        <span class="hold-name">{{ h.strategy_name }}</span>
+                        <span class="hold-days">{{ h.hold_count }} 天</span>
+                    </div>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- 添加/编辑用户弹窗 -->
+        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="400px">
+            <el-form label-width="80px" style="padding: 15px 0 25px 0;">
+                <el-form-item label="用户名">
+                    <el-input v-model="userForm.username" :disabled="!!editingUser" placeholder="输入用户名" />
+                </el-form-item>
+                <el-form-item label="密码">
+                    <el-input v-model="userForm.password" type="password" placeholder="留空则不修改" show-password />
+                </el-form-item>
+                <el-form-item label="角色">
+                    <el-select v-model="userForm.role" style="width: 100%;">
+                        <el-option label="管理员" value="admin" />
+                        <el-option label="普通用户" value="user" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="默认主题">
+                    <el-select v-model="userForm.theme" style="width: 100%;">
+                        <el-option v-for="(theme, key) in themes" :key="key" :label="theme.name" :value="key" />
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="showAddUser = false">取消</el-button>
+                <el-button type="primary" @click="saveUser" :loading="savingUser">保存</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 批量评估弹窗 -->
+        <el-dialog v-model="showBatchEvaluate" title="🤖 批量AI评估" width="500px">
+            <div style="padding: 15px 0 25px 0;">
+                <el-form label-width="100px">
+                    <el-form-item label="股票列表">
+                        <el-input
+                            v-model="batchStocks"
+                            type="textarea"
+                            :rows="5"
+                            placeholder="输入股票代码，多个用换行或空格分隔&#10;例如：&#10;600000.SH&#10;000001.SZ"
+                        />
+                    </el-form-item>
+                </el-form>
+                <div style="text-align: right; margin-top: 20px;">
+                    <el-button @click="showBatchEvaluate = false">取消</el-button>
+                    <el-button type="primary" @click="doBatchEvaluate" :loading="aiLoading">开始评估</el-button>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- 指数详情弹窗 -->
+        <el-dialog v-model="indexDetailVisible" title="📈 指数详情分析" width="850px" class="kline-dialog">
+            <div v-if="indexDetail">
+                <!-- 头部信息 -->
+                <div class="detail-header">
+                    <div>
+                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: 600;">{{ indexDetail.name }} <span style="font-size: 16px; opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
+                        <div class="detail-subtitle">📊 {{ indexDetail.market }} 市场指数</div>
+                    </div>
+                    <div class="detail-score">
+                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
+                        <div class="label">{{ indexDetail.pct_chg >= 0 ? '上涨' : '下跌' }}</div>
+                    </div>
+                </div>
+
+                <!-- 指数基本信息 -->
+                <div class="stats-grid" style="margin-top: 16px;">
+                    <div class="stat-box">
+                        <div class="stat-label">最新点位</div>
+                        <div class="stat-value">{{ Number(indexDetail.close).toFixed(2) }}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">涨跌额</div>
+                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">
+                            {{ indexDetail.change >= 0 ? '+' : '' }}{{ Number(indexDetail.change).toFixed(2) }}
+                        </div>
+                    </div>
+                    <div class="stat-box" v-if="indexDetail.vol">
+                        <div class="stat-label">成交量</div>
+                        <div class="stat-value">{{ Math.round(indexDetail.vol / 10000).toLocaleString() }}万</div>
+                    </div>
+                    <div class="stat-box" v-if="indexDetail.amount">
+                        <div class="stat-label">成交额</div>
+                        <div class="stat-value">{{ Math.round(indexDetail.amount / 10000).toLocaleString() }}亿</div>
+                    </div>
+                </div>
+
+                <!-- K线图区域 -->
+                <div class="section-title" style="margin-top: 20px;"><span>🕯️</span> K线图与均线</div>
+                <div class="kline-container">
+                    <div class="kline-tabs">
+                        <button 
+                            v-for="tab in klinePeriods" 
+                            :key="tab.value"
+                            :class="['kline-tab', {active: currentKlinePeriod === tab.value}]"
+                            @click="switchIndexKlinePeriod(tab.value)"
+                        >
+                            {{ tab.label }}
+                        </button>
+                    </div>
+                    <div class="kline-chart" id="indexKlineChart"></div>
+                    <div v-if="indexKlineLoading" class="kline-loading">
+                        <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
+                    </div>
+                </div>
+
+                <!-- AI评估结果 -->
+                <div v-if="indexAiResult" class="ai-result-box">
+                    <div class="section-title"><span>🤖</span> AI智能评股结果</div>
+                    <div class="ai-analysis" v-html="indexAiResult.analysis"></div>
+                    <div style="margin-top: 16px;">
+                        <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
+                            📌 {{ indexAiResult.suggestion || '暂无' }}
+                        </el-tag>
+                        <span style="margin-left: 12px; color: #666; font-size: 13px;">信心指数: {{ indexAiResult.confidence || 75 }}%</span>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <el-button type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading" style="width: 200px;">
+                        🤖 智能评股指数
+                    </el-button>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- 自动评股设置弹窗 -->
+        <el-dialog v-model="showAutoEvaluateSettings" title="⚙️ 自动评股设置" width="520px">
+            <div style="padding: 15px 0 25px 0;">
+                <el-form label-width="120px">
+                    <el-form-item label="启用自动评股">
+                        <el-switch v-model="autoEvaluateConfig.enabled" active-text="已开启" inactive-text="已关闭" />
+                    </el-form-item>
+                    <template v-if="autoEvaluateConfig.enabled">
+                        <el-form-item label="执行周期">
+                            <el-select v-model="autoEvaluateConfig.schedule_type" style="width: 100%;">
+                                <el-option label="每个交易日执行" value="daily" />
+                                <el-option label="每周一执行" value="weekly" />
+                                <el-option label="每月1号执行" value="monthly" />
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="执行时间">
+                            <el-time-picker
+                                v-model="autoEvaluateConfig.schedule_time"
+                                format="HH:mm"
+                                value-format="HH:mm"
+                                placeholder="选择执行时间"
+                                style="width: 100%;"
+                            />
+                        </el-form-item>
+                        <el-form-item label="评估范围">
+                            <div style="margin-bottom: 10px;">
+                                <el-radio-group v-model="autoEvaluateScope">
+                                    <el-radio label="all">全部策略持仓股票</el-radio>
+                                    <el-radio label="strategy">指定策略持仓</el-radio>
+                                </el-radio-group>
+                            </div>
+                            <div v-if="autoEvaluateScope === 'strategy'" style="background: #f5f7fa; padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">选择要评估的策略：</div>
+                                <el-checkbox-group v-model="autoEvaluateConfig.selected_strategies">
+                                    <el-row :gutter="8">
+                                        <el-col :span="12" v-for="strategy in strategyList" :key="strategy.key">
+                                            <el-checkbox :label="strategy.key" :border="true" style="margin-bottom: 6px; width: 100%;">
+                                                {{ strategy.name }}
+                                            </el-checkbox>
+                                        </el-col>
+                                    </el-row>
+                                </el-checkbox-group>
+                            </div>
+                        </el-form-item>
+                        <el-form-item label="结果推送">
+                            <el-switch v-model="autoEvaluateConfig.push_to_feishu" active-text="推送到飞书" inactive-text="不推送" />
+                            <div style="font-size: 12px; color: #999; margin-top: 6px;">
+                                需要先在飞书推送配置中设置Webhook地址
+                            </div>
+                        </el-form-item>
+                    </template>
+                </el-form>
+            </div>
+            <template #footer>
+                <el-button @click="showAutoEvaluateSettings = false">取消</el-button>
+                <el-button type="primary" @click="saveAutoEvaluateConfig" :loading="savingConfig">
+                    💾 保存设置
+                </el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 美林时钟阶段详情弹窗 -->
+        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.icon || '📊') + ' ' + (merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
+            <!-- 骨架屏加载 -->
+            <div v-if="!merrillDetailData.name" class="skeleton-loader">
+                <div class="skeleton-header"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton-item" v-for="i in 5" :key="i"></div>
+                </div>
+                <div class="skeleton-large"></div>
+            </div>
+            <!-- 完整内容 -->
+            <div v-else style="padding: 15px 0 25px 0;">
+                <!-- 阶段概览 -->
+                <div class="merrill-detail-header" :style="{backgroundColor: merrillDetailData.bg_color, borderLeftColor: merrillDetailData.color}">
+                    <div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px;">{{ merrillDetailData.name }}</h3>
+                        <p style="margin: 0; color: #666; font-size: 14px;">{{ merrillDetailData.description }}</p>
+                    </div>
+                    <div class="stage-badge" :style="{backgroundColor: merrillDetailData.color}">
+                        {{ merrillDetailData.criteria?.growth }} / {{ merrillDetailData.criteria?.inflation }}
+                    </div>
+                </div>
+
+                <!-- 经济特征 -->
+                <div class="detail-section">
+                    <div class="section-title">📊 经济特征</div>
+                    <div class="characteristics-grid">
+                        <div v-for="(value, key) in merrillDetailData.characteristics" :key="key" class="char-item">
+                            <div class="char-label">{{ getCharLabel(key) }}</div>
+                            <div class="char-value">{{ value }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 资产配置建议 -->
+                <div class="detail-section">
+                    <div class="section-title">💼 资产配置建议</div>
+                    <div class="allocation-grid">
+                        <div v-for="(info, asset) in merrillDetailData.allocation" :key="asset" class="allocation-item">
+                            <div class="allocation-header">
+                                <span class="asset-name">{{ getAssetName(asset) }}</span>
+                                <span class="asset-rank" :style="{backgroundColor: getRankColor(info.rank)}">排名 #{{ info.rank }}</span>
+                            </div>
+                            <div class="allocation-advice">{{ info.advice }}</div>
+                            <div class="allocation-return">预期收益：<span>{{ info.expected_return }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 行业配置建议 -->
+                <div class="detail-section">
+                    <div class="section-title">🏭 行业配置建议</div>
+                    <div class="sector-list">
+                        <div v-for="(advice, index) in merrillDetailData.sector_advice" :key="index" class="sector-item">
+                            {{ advice }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史统计 -->
+                <div class="detail-section">
+                    <div class="section-title">📜 历史统计</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.avg_duration_months }}个月</div>
+                            <div class="stat-label">历史平均持续时间</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.stock_avg_return * 100).toFixed(0) }}%</div>
+                            <div class="stat-label">股票平均年化收益</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.bond_avg_return * 100).toFixed(0) }}%</div>
+                            <div class="stat-label">债券平均年化收益</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.best_sector }}</div>
+                            <div class="stat-label">历史表现最佳板块</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 典型历史案例 -->
+                <div v-if="merrillDetailData.case_studies?.length" class="detail-section">
+                    <div class="section-title">📚 典型历史案例</div>
+                    <div class="case-list">
+                        <div v-for="(cs, index) in merrillDetailData.case_studies" :key="index" class="case-item">
+                            📌 {{ cs }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 风险提示 -->
+                <div class="detail-section risk-section">
+                    <div class="section-title">⚠️ 风险提示</div>
+                    <div class="risk-list">
+                        <div v-for="(risk, index) in merrillDetailData.risks" :key="index" class="risk-item">
+                            {{ risk }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 底部金色装饰 -->
+                <div class="merrill-footer-decoration">
+                    <div class="gold-gradient-bar"></div>
+                    <div class="footer-hint">
+                        <span>💡 美林时钟是经典的经济周期分析框架，仅供参考不构成投资建议</span>
+                    </div>
+                </div>
+            </div>
+            <!-- 骨架屏加载 -->
+            <div v-if="!merrillDetailData.name" class="skeleton-loader">
+                <div class="skeleton-header"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton-item" v-for="i in 5" :key="i"></div>
+                </div>
+                <div class="skeleton-large"></div>
+            </div>
+        </el-dialog>
+
+        <!-- v1.5.0: 修改密码弹窗 -->
+        <el-dialog v-model="showChangePassword" title="🔑 修改密码" width="420px" :close-on-click-modal="false">
+            <el-form :model="changePasswordForm" label-width="80px">
+                <el-form-item label="当前密码">
+                    <el-input v-model="changePasswordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password />
+                </el-form-item>
+                <el-form-item label="新密码">
+                    <el-input v-model="changePasswordForm.newPassword" type="password" placeholder="至少6位" show-password />
+                </el-form-item>
+                <el-form-item label="确认密码">
+                    <el-input v-model="changePasswordForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password @keyup.enter="doChangePassword" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="showChangePassword = false">取消</el-button>
+                <el-button type="primary" @click="doChangePassword" :loading="changingPassword">确认修改</el-button>
+            </template>
+        </el-dialog>
+
+    
+</div>
+
+    <script>
+    // Token 自动附加拦截器 - 修复 401 问题
+    (function() {
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const url = args[0];
+            const options = args[1] || {};
+            
+            // 只给 /api 请求加 Token
+            if (url.startsWith('/api/')) {
+                const token = localStorage.getItem('quant_token');
+                if (token) {
+                    options.headers = options.headers || {};
+                    options.headers['Authorization'] = 'Bearer ' + token;
+                }
+            }
+            
+            return originalFetch.apply(this, args);
+        };
+    })();
+</script>
+<script>
+        const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+
+        

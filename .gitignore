@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+venv/
+versions/
+.deps_installed
+*.backup*
+*.tar.gz
+TUSHARE_TOKEN.txt
+data/
+.env
+frontend/index.html.*.backup
+frontend/index.html.original.*
