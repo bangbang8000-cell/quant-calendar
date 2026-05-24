@@ -3615,7 +3615,8 @@ text {
 
                 <!-- 页面0: 策略总览 -->
                 <div v-if="currentPage === 'strategies'">
-                    <div class="page-header">
+                                        <div v-if="currentSubPage === 'overview'">
+<div class="page-header">
                         <div class="page-title">📈 策略总览</div>
                         <span style="color: #666; font-size: 13px;">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
                     </div>
@@ -3653,7 +3654,6 @@ text {
                     </div>
 
                     <!-- 子页: 策略总览 -->
-                    <div v-if="currentSubPage === 'overview'">
 
                     <!-- 数据概览卡片 -->
                     <div class="card">
@@ -4127,7 +4127,7 @@ text {
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: 12px; color: #666;">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.3</span>
+                                <span style="font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3px 10px; border-radius: 10px;">v1.5.4</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -4185,6 +4185,27 @@ text {
                                     <div class="status-label">在池股票</div>
                                     <div class="status-value" style="color: #4CAF50;">{{ currentPoolSize }} 只</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 访问限速配置 -->
+                    <div class="card">
+                        <div class="card-title">🚦 访问限速配置</div>
+                        <el-form label-width="160px">
+                            <el-form-item label="API 限流 (次/分钟/IP)">
+                                <el-input-number v-model="rateLimitConfig.api_limit" :min="10" :max="10000" :step="50" @change="rateLimitDirty = true" />
+                                <div style="font-size: 12px; color: #999; margin-top: 8px;">当前设置: 每分钟 {{ rateLimitConfig.api_limit }} 次请求</div>
+                            </el-form-item>
+                        </el-form>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">🎨 主题选择</div>
+                        <div class="theme-list">
+                            <div v-for="(theme, key) in themes" :key="key" class="theme-item" :class="{active: currentTheme === key}" @click="changeTheme(key)">
+                                <div class="theme-color" :style="{background: theme.gradient}"></div>
+                                <div style="font-size: 13px; font-weight: 500;">{{ theme.name }}</div>
                             </div>
                         </div>
                     </div>
@@ -4299,26 +4320,6 @@ text {
                     </div>
                     </div>
 
-                    <!-- 访问限速配置 -->
-                    <div class="card">
-                        <div class="card-title">🚦 访问限速配置</div>
-                        <el-form label-width="160px">
-                            <el-form-item label="API 限流 (次/分钟/IP)">
-                                <el-input-number v-model="rateLimitConfig.api_limit" :min="10" :max="10000" :step="50" @change="rateLimitDirty = true" />
-                                <div style="font-size: 12px; color: #999; margin-top: 8px;">当前设置: 每分钟 {{ rateLimitConfig.api_limit }} 次请求</div>
-                            </el-form-item>
-                        </el-form>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-title">🎨 主题选择</div>
-                        <div class="theme-list">
-                            <div v-for="(theme, key) in themes" :key="key" class="theme-item" :class="{active: currentTheme === key}" @click="changeTheme(key)">
-                                <div class="theme-color" :style="{background: theme.gradient}"></div>
-                                <div style="font-size: 13px; font-weight: 500;">{{ theme.name }}</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

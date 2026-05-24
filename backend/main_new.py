@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # 创建 FastAPI 应用
 app = FastAPI(
     title="量化选股日历 API",
-    version="1.5.3",
+    version="1.5.4",
     description="基于美林时钟经济周期理论的智能选股系统",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -83,7 +83,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "1.5.3",
+        "version": "1.5.4",
         "message": "量化选股日历服务运行中"
     }
 
