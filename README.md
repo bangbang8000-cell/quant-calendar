@@ -38,14 +38,14 @@
 </p>
 
 
-**量化日历** — 日视图 + K 线图，选股结果按日期展开，内置 MA/成交量/快捷时间范围
+**量化日历** — 日、周、月、年视图，选股结果按日期展开，内置 MA/成交量/快捷时间范围
 
 <p align="center">
   <img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%" />
 </p>
 
 
-**AI 评估历史** — 多模型串行评股记录，技术指标自动注入（RSI/MACD/布林带/KDJ），按用户隔离
+**AI 评估** — 多模型串行评股记录，技术指标自动注入（RSI/MACD/布林带/KDJ），按用户隔离
 
 <p align="center">
   <img src="assets/screenshots/评估历史.png" alt="AI评估历史" width="90%" />
