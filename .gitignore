@@ -1,3 +1,7 @@
+# ==========================================
+# 量化选股日历 - Git 忽略规则
+# ==========================================
+
 # Python
 __pycache__/
 *.pyc
@@ -25,8 +29,8 @@ env/
 *.swo
 *~
 
-# Data files (user-generated, may contain personal data)
-data/
+# User data (generated at runtime)
+quant-calendar-ops/data/
 *.db
 *.sqlite3
 
@@ -36,33 +40,30 @@ data/
 # Archives & releases
 *.tar.gz
 *.zip
-versions/
+quant-calendar-ops/releases/
+quant-calendar-ops/versions/
 
 # Backup files
 *.backup*
 *.bak
-frontend/index.html.original.*
-frontend/lib/*.backup*
+*.original*
+*_bak*
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Docker
-docker-compose.override.yml
+# Dev scripts (local only)
+quant-calendar-ops/dev.sh
+quant-calendar-ops/dev.bat
+quant-calendar-ops/start.sh
+quant-calendar-ops/start.bat
 
-# Dependencies marker
-.deps_installed
-TUSHARE_TOKEN.txt
-
-# Frontend libs (tracked via specific files, not bulk)
-# Add specific lib files to git if needed
-
-# Development plans (local only)
+# Dev plans
 .hermes/
 PLAN.md
 
-# Frontend historical versions
-frontend/index.html.v*
-frontend/index.html.*bak*
+# Pytest cache
+.pytest_cache/
 
+# qresult CSV source (tracked via Git LFS or direct, decide per release)
