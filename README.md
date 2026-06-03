@@ -32,15 +32,28 @@
 ## 界面预览
 
 <p align="center">
-  <img src="assets/screenshots/策略总览.png" alt="策略总览" width="48%" />
-  <img src="assets/screenshots/量化日历.png" alt="量化日历" width="48%" />
-</p>
-<p align="center">
-  <img src="assets/screenshots/评估历史.png" alt="AI评估历史" width="48%" />
-  <img src="assets/screenshots/系统配置.png" alt="系统配置" width="48%" />
+  <img src="assets/screenshots/策略总览.png" alt="策略总览" width="90%" />
 </p>
 
-> 从左到右、从上到下：策略总览（共识榜 + 股票池）、量化日历（日视图 + K线）、AI 评估历史、系统配置（数据源 + 飞书推送）
+> **策略总览** — 4 策略共识榜 + 股票池，高共识股票一眼识别，支持按策略/行业/市值多维度筛选
+
+<p align="center">
+  <img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%" />
+</p>
+
+> **量化日历** — 日视图 + K 线图，选股结果按日期展开，内置 MA/成交量/快捷时间范围
+
+<p align="center">
+  <img src="assets/screenshots/评估历史.png" alt="AI评估历史" width="90%" />
+</p>
+
+> **AI 评估历史** — 多模型串行评股记录，技术指标自动注入（RSI/MACD/布林带/KDJ），按用户隔离
+
+<p align="center">
+  <img src="assets/screenshots/系统配置.png" alt="系统配置" width="90%" />
+</p>
+
+> **系统配置** — 双数据源热备（sxsc_tushare + tushare + akshare），飞书 Webhook 推送，AI 模型管理
 
 ## 快速开始
 
