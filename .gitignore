@@ -58,6 +58,7 @@ quant-calendar-ops/dev.sh
 quant-calendar-ops/dev.bat
 quant-calendar-ops/start.sh
 quant-calendar-ops/start.bat
+quant-calendar-ops/release.sh
 
 # Dev plans
 .hermes/
