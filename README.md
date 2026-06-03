@@ -31,29 +31,32 @@
 
 ## 界面预览
 
+**策略总览** — 4 策略共识榜 + 股票池，高共识股票一眼识别，支持按策略/行业/市值多维度筛选
+
 <p align="center">
   <img src="assets/screenshots/策略总览.png" alt="策略总览" width="90%" />
 </p>
 
-> **策略总览** — 4 策略共识榜 + 股票池，高共识股票一眼识别，支持按策略/行业/市值多维度筛选
+
+**量化日历** — 日视图 + K 线图，选股结果按日期展开，内置 MA/成交量/快捷时间范围
 
 <p align="center">
   <img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%" />
 </p>
 
-> **量化日历** — 日视图 + K 线图，选股结果按日期展开，内置 MA/成交量/快捷时间范围
+
+**AI 评估历史** — 多模型串行评股记录，技术指标自动注入（RSI/MACD/布林带/KDJ），按用户隔离
 
 <p align="center">
   <img src="assets/screenshots/评估历史.png" alt="AI评估历史" width="90%" />
 </p>
 
-> **AI 评估历史** — 多模型串行评股记录，技术指标自动注入（RSI/MACD/布林带/KDJ），按用户隔离
+
+**系统配置** — 双数据源热备（sxsc_tushare + tushare + akshare），飞书 Webhook 推送，AI 模型管理
 
 <p align="center">
   <img src="assets/screenshots/系统配置.png" alt="系统配置" width="90%" />
 </p>
-
-> **系统配置** — 双数据源热备（sxsc_tushare + tushare + akshare），飞书 Webhook 推送，AI 模型管理
 
 ## 快速开始
 
