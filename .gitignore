@@ -1,14 +1,68 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
-*.log
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
 venv/
-versions/
-.deps_installed
-*.backup*
-*.tar.gz
-TUSHARE_TOKEN.txt
-data/
+.venv/
+env/
 .env
-frontend/index.html.*.backup
+
+# Environment files (secrets)
+.env
+*.env.local
+*.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data files (user-generated, may contain personal data)
+data/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Archives & releases
+*.tar.gz
+*.zip
+versions/
+
+# Backup files
+*.backup*
+*.bak
 frontend/index.html.original.*
+frontend/lib/*.backup*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Dependencies marker
+.deps_installed
+TUSHARE_TOKEN.txt
+
+# Frontend libs (tracked via specific files, not bulk)
+# Add specific lib files to git if needed
+
+# Development plans (local only)
+.hermes/
+PLAN.md
+
+# Frontend historical versions
+frontend/index.html.v*
+frontend/index.html.*bak*
+

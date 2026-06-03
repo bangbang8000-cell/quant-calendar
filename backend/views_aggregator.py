@@ -20,37 +20,14 @@ class ViewsAggregator:
         self.data_file = data_file
         self.daily_data = {}  # date -> stocks
         self.all_dates = []
+        self._cache = {}  # 视图结果缓存: key="view_date" → result dict
         self._load_data()
 
     def _load_data(self):
         """从data_parser加载历史共识数据"""
         try:
             from data_parser import parser
-            self.all_dates = parser.get_available_dates()
-            self.daily_data = {}
-            
-            # 从所有日期中提取共识数据
-            for d in self.all_dates:
-                holdings = parser.get_holdings_by_date(d)
-                # 计算共识股票池
-                stock_set = set()
-                stock_info = {}  # code -> {name, strategy_count}
-                
-                for strategy_id, strategy_data in holdings.items():
-                    for s in strategy_data.get('stocks', []):
-                        code = s if isinstance(s, str) else (s.get('code') or s.get('stock', ''))
-                        name = '' if isinstance(s, str) else s.get('name', '')
-                        if code:
-                            stock_set.add(code)
-                            if code not in stock_info:
-                                stock_info[code] = {'name': name, 'strategies': set()}
-                            stock_info[code]['strategies'].add(strategy_id)
-                
-                self.daily_data[d] = [
-                    {'stock': code, 'name': info['name'], 'strategy_count': len(info['strategies']), 'strategies': [STRATEGY_CONFIG.get(sid, {}).get('name', sid) for sid in info['strategies']]}
-                    for code, info in stock_info.items()
-                ]
-                
+            self._build_from_parser(parser)
             print(f"✅ 加载完成: {len(self.all_dates)}个交易日, {sum(len(v) for v in self.daily_data.values())}条股票记录")
         except Exception as e:
             print(f"加载数据失败: {e}")
@@ -58,6 +35,44 @@ class ViewsAggregator:
             traceback.print_exc()
             self.daily_data = {}
             self.all_dates = []
+
+    def _build_from_parser(self, parser):
+        """从 parser 构建内部数据结构（供 _load_data 和 reload 共用）"""
+        self.all_dates = parser.get_available_dates()
+        self.daily_data = {}
+
+        for d in self.all_dates:
+            holdings = parser.get_holdings_by_date(d)
+            stock_set = set()
+            stock_info = {}
+
+            for strategy_id, strategy_data in holdings.items():
+                for s in strategy_data.get('stocks', []):
+                    code = s if isinstance(s, str) else (s.get('code') or s.get('stock', ''))
+                    name = '' if isinstance(s, str) else s.get('name', '')
+                    if code:
+                        stock_set.add(code)
+                        if code not in stock_info:
+                            stock_info[code] = {'name': name, 'strategies': set()}
+                        stock_info[code]['strategies'].add(strategy_id)
+
+            self.daily_data[d] = [
+                {'stock': code, 'name': info['name'], 'strategy_count': len(info['strategies']), 'strategies': [STRATEGY_CONFIG.get(sid, {}).get('name', sid) for sid in info['strategies']]}
+                for code, info in stock_info.items()
+            ]
+
+    def reload(self) -> dict:
+        """重新从 DataParser 加载数据"""
+        from data_parser import parser
+        self._build_from_parser(parser)
+        self._cache.clear()  # 清空视图缓存
+        stats = {
+            "dates_count": len(self.all_dates),
+            "stocks_count": sum(len(v) for v in self.daily_data.values()),
+            "latest_date": self.all_dates[-1] if self.all_dates else None
+        }
+        print(f"✅ ViewsAggregator 刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}条股票记录")
+        return stats
 
     def _get_week_range(self, date_str: str) -> List[str]:
         """获取某一天所在周的所有交易日"""
@@ -127,49 +142,193 @@ class ViewsAggregator:
         }
 
     def get_day_view(self, date: str) -> Dict:
-        """日视图"""
+        """日视图（含已出池股票）"""
+        cache_key = f"day_{date}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         stocks = self.daily_data.get(date, [])
-        # 格式化
+        # 格式化当前持仓
         formatted = []
+        curr_codes = set()
         for s in stocks:
-            formatted.append({
-                'code': s.get('stock', '') or s.get('code', ''),
-                'name': s.get('name', ''),
-                'strategy_count': s.get('strategy_count', 1),
-                'strategies': s.get('strategies', []),
-                'days_count': 1,
-                'first_appear': date,
-                'last_appear': date
-            })
-        return {
+            code = s.get('stock', '') or s.get('code', '')
+            if code:
+                curr_codes.add(code)
+                formatted.append({
+                    'code': code,
+                    'name': s.get('name', ''),
+                    'strategy_count': s.get('strategy_count', 1),
+                    'strategies': s.get('strategies', []),
+                    'days_count': 1,
+                    'first_appear': date,
+                    'last_appear': date
+                })
+        # 收集已出池股票（前一日在池、当日不在池）
+        try:
+            curr_idx = self.all_dates.index(date)
+            if curr_idx > 0:
+                prev_date = self.all_dates[curr_idx - 1]
+                for s in self.daily_data.get(prev_date, []):
+                    code = s.get('stock', '') or s.get('code', '')
+                    if code and code not in curr_codes:
+                        formatted.append({
+                            'code': code,
+                            'name': s.get('name', ''),
+                            'strategy_count': s.get('strategy_count', 1),
+                            'strategies': s.get('strategies', []),
+                            'days_count': 1,
+                            'first_appear': prev_date,
+                            'last_appear': prev_date
+                        })
+        except Exception:
+            pass
+        result = {
             'view': 'day',
             'date': date,
             'total': len(formatted),
             'stocks': formatted
         }
+        self._cache[cache_key] = result
+        return result
 
     def get_week_view(self, date: str) -> Dict:
-        """周视图"""
+        """周视图（含已出池股票）"""
+        cache_key = f"week_{date}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         week_dates = self._get_week_range(date)
         result = self._aggregate_stocks(week_dates)
         result['view'] = 'week'
         result['week_start'] = week_dates[0] if week_dates else date
+        # 收集已出池股票（前一周在池、本周不在池）
+        try:
+            curr_idx = self.all_dates.index(date)
+            prev_week_end = curr_idx - len(week_dates) - 1
+            prev_week_start = max(0, prev_week_end - 5)
+            prev_week_dates = self.all_dates[prev_week_start:prev_week_end + 1] if prev_week_end >= 0 else []
+            prev_stocks = set()
+            for d in prev_week_dates:
+                for s in self.daily_data.get(d, []):
+                    code = s.get('stock', '') or s.get('code', '')
+                    if code: prev_stocks.add(code)
+            curr_codes = set(s['code'] for s in result['stocks'])
+            out_codes = prev_stocks - curr_codes
+            for code in out_codes:
+                # 从历史数据中取最后一次出现的信息
+                info = None
+                for d in reversed(self.all_dates[:curr_idx]):
+                    for s in self.daily_data.get(d, []):
+                        if (s.get('stock', '') or s.get('code', '')) == code:
+                            info = s
+                            break
+                    if info: break
+                if info:
+                    result['stocks'].append({
+                        'code': code,
+                        'name': info.get('name', ''),
+                        'strategy_count': info.get('strategy_count', 1),
+                        'strategies': info.get('strategies', []),
+                        'days_count': 1,
+                        'first_appear': prev_week_dates[0] if prev_week_dates else d,
+                        'last_appear': d if info else (prev_week_dates[-1] if prev_week_dates else date)
+                    })
+            result['total'] = len(result['stocks'])
+        except Exception:
+            pass
+        self._cache[cache_key] = result
         return result
 
     def get_month_view(self, date: str) -> Dict:
-        """月视图"""
+        """月视图（含已出池股票）"""
+        cache_key = f"month_{date}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         month_dates = self._get_month_range(date)
         result = self._aggregate_stocks(month_dates)
         result['view'] = 'month'
         result['month'] = date[:7]
+        # 收集已出池股票（上月有、本月没有的）
+        curr_month = date[:7]
+        try:
+            curr_idx = self.all_dates.index(date)
+            prev_month = None
+            for i in range(curr_idx - 1, -1, -1):
+                d = self.all_dates[i]
+                if not d.startswith(curr_month):
+                    prev_month = d[:7]
+                    break
+            if prev_month:
+                prev_stocks = set()
+                for d in self.all_dates:
+                    if d.startswith(prev_month):
+                        for s in self.daily_data.get(d, []):
+                            code = s.get('stock', '') or s.get('code', '')
+                            if code: prev_stocks.add(code)
+                curr_codes = set(s['code'] for s in result['stocks'])
+                out_codes = prev_stocks - curr_codes
+                for code in out_codes:
+                    info = None
+                    for d in reversed(self.all_dates):
+                        if d.startswith(prev_month):
+                            for s in self.daily_data.get(d, []):
+                                if (s.get('stock', '') or s.get('code', '')) == code:
+                                    info = s; break
+                            if info: break
+                    if info:
+                        result['stocks'].append({
+                            'code': code, 'name': info.get('name', ''),
+                            'strategy_count': info.get('strategy_count', 1),
+                            'strategies': info.get('strategies', []),
+                            'days_count': 1,
+                            'first_appear': d, 'last_appear': d
+                        })
+                result['total'] = len(result['stocks'])
+        except Exception:
+            pass
+        self._cache[cache_key] = result
         return result
 
     def get_year_view(self, date: str) -> Dict:
-        """年视图"""
+        """年视图（含已出池股票）"""
+        cache_key = f"year_{date}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         year_dates = self._get_year_range(date)
         result = self._aggregate_stocks(year_dates)
         result['view'] = 'year'
         result['year'] = date[:4]
+        # 收集已出池股票（去年有、今年没有）+ 新入池由 calculate_status 处理
+        curr_year = date[:4]
+        prev_year = str(int(curr_year) - 1)
+        try:
+            prev_stocks = set()
+            for d in self.all_dates:
+                if d.startswith(prev_year):
+                    for s in self.daily_data.get(d, []):
+                        code = s.get('stock', '') or s.get('code', '')
+                        if code: prev_stocks.add(code)
+            curr_codes = set(s['code'] for s in result['stocks'])
+            out_codes = prev_stocks - curr_codes
+            for code in out_codes:
+                info = None
+                for d in reversed(self.all_dates):
+                    if d.startswith(prev_year):
+                        for s in self.daily_data.get(d, []):
+                            if (s.get('stock', '') or s.get('code', '')) == code:
+                                info = s; break
+                        if info: break
+                if info:
+                    result['stocks'].append({
+                        'code': code, 'name': info.get('name', ''),
+                        'strategy_count': info.get('strategy_count', 1),
+                        'strategies': info.get('strategies', []),
+                        'days_count': 1,
+                        'first_appear': d, 'last_appear': d
+                    })
+            result['total'] = len(result['stocks'])
+        except Exception:
+            pass
+        self._cache[cache_key] = result
         return result
 
     def calculate_status(self, stock_code: str, current_date: str, view: str = 'day') -> str:
@@ -244,8 +403,22 @@ class ViewsAggregator:
                 return 'out'
 
         elif view == 'year':
-            # 年视图：简化处理，一律显示为current
-            return 'current'
+            # 年视图：和去年对比
+            curr_year = current_date[:4]
+            prev_year = str(int(curr_year) - 1)
+            prev_stocks = set()
+            curr_stocks = set()
+            for d in self.all_dates:
+                if d.startswith(prev_year):
+                    prev_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
+                if d.startswith(curr_year):
+                    curr_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
+
+            if stock_code in curr_stocks and stock_code not in prev_stocks:
+                return 'new'
+            elif stock_code in curr_stocks:
+                return 'current'
+            return 'out'
 
         return 'current'
 

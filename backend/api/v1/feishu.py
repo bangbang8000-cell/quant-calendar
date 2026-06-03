@@ -45,7 +45,7 @@ pusher = FeishuPusher()
 
 # 简化版配置存储
 feishu_config = {
-    "webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/d8f53b39-6daa-4209-8228-31f7680d6b20",
+    "webhook_url": "",  # 通过"系统配置 → 飞书推送"页面配置
     "enabled": True,
     "push_time": "09:00",
     "daily_push": True,

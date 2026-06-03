@@ -1,109 +1,119 @@
-# 量化选股日历 - 部署指南
+# 量化选股日历 v1.9.3 — 部署指南
 
-## ⚠️ 重要：为什么移动后会出问题？
+## 快速部署
 
-程序包含以下**不跟随打包**或**不能跨环境复用**的内容：
-
-1. **`.env` 隐藏文件** - 包含所有配置（JWT密钥、Tushare token、数据库路径等）
-2. **`venv/` 虚拟环境** - 254MB，包含Python依赖，不能跨机器/系统使用
-3. **`__pycache__` 缓存文件** - 3800+个编译缓存，不需要打包
-4. **`data/` 数据库文件** - SQLite数据库和缓存，需要保留但要注意路径
-5. **日志文件 `*.log`** - 运行时生成
-
----
-
-## 🚀 正确部署步骤
-
-### 1. 解压发布包
 ```bash
-tar -xzf quant-calendar-release-xxx.tar.gz
-cd quant-calendar
-```
+# 1. 解压
+tar -xzf quant-calendar-v1.9.3.tar.gz
+cd quant-calendar-ops
 
-### 2. 创建并激活虚拟环境
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或 Windows: venv\Scripts\activate
-```
-
-### 3. 安装依赖
-```bash
-pip install -r requirements.txt
-```
-
-### 4. 配置 `.env` 文件
-> **重要：** 发布包中已包含 `.env.example`，请复制为 `.env` 并修改：
-```bash
-cp .env.example .env
-# 编辑 .env，填入你的 TUSHARE_TOKEN 等配置
-```
-
-### 5. 启动服务
-```bash
+# 2. 安装依赖
 cd backend
-python main.py
-# 或使用 uvicorn:
-uvicorn main:app --host 0.0.0.0 --port 8000
+pip install -r requirements.txt --break-system-packages
+
+# 3. 配置数据源 Token
+# 登录后在「系统配置 → 数据源」页面填入 Tushare Token
+
+# 4. 启动
+python3 main_new.py --port 8000
 ```
 
----
+浏览器打开 http://localhost:8000
 
-## 📦 发布包结构
+## 生产部署
 
-```
-quant-calendar/
-├── backend/              # 后端代码
-│   ├── main.py          # 主入口
-│   ├── paths.py         # 路径配置（自动计算相对路径）
-│   ├── api/             # API路由
-│   └── ...
-├── frontend/            # 前端静态文件
-│   ├── index.html
-│   ├── manifest.json
-│   └── sw.js
-├── data/                # 数据目录（初始为空或包含基础数据）
-│   └── quant_calendar.db
-├── requirements.txt     # Python依赖
-├── .env.example         # 环境配置模板
-├── DEPLOYMENT.md        # 本文档
-└── README.md
-```
-
----
-
-## 🔧 常见问题解决
-
-### Q1: ModuleNotFoundError: No module named 'xxx'
-**A:** 依赖没安装，重新执行：
 ```bash
-pip install -r requirements.txt
+# 后台运行
+cd backend
+nohup python3 main_new.py --port 8000 > /tmp/quant-calendar.log 2>&1 &
+
+# 或使用 systemd
+sudo tee /etc/systemd/system/quant-calendar.service << 'EOF'
+[Unit]
+Description=量化选股日历
+After=network.target
+
+[Service]
+Type=simple
+User=evergreen
+WorkingDirectory=/home/evergreen/.openclaw/workspace/quant-calendar-ops/backend
+ExecStart=/usr/bin/python3 main_new.py --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now quant-calendar
 ```
 
-### Q2: 找不到文件 / FileNotFoundError
-**A:** 确保从正确的目录启动，`paths.py` 会自动计算相对路径：
+## 包结构
+
+```
+quant-calendar-ops/
+├── backend/               # FastAPI 后端
+│   ├── main_new.py       # 主入口（唯一入口）
+│   ├── config.py          # 全局配置
+│   ├── paths.py           # 路径计算
+│   ├── auth.py            # JWT 认证
+│   ├── user_manager.py    # 用户/组管理
+│   ├── market_data.py     # 行情数据（缓存 + Tushare）
+│   ├── data_sources.py    # 多数据源管理（sxsc_tushare / tushare）
+│   ├── merrill_clock.py   # 美林时钟周期评估
+│   ├── ai_evaluator.py    # AI 多模型评股
+│   ├── scheduler.py       # 定时任务（自动评股/飞书推送）
+│   ├── rate_limit.py      # 速率限制
+│   └── api/v1/            # API 路由
+│       ├── router.py
+│       ├── auth.py        # 登录/用户 API
+│       ├── calendar.py    # 选股日历 API
+│       ├── merrill.py     # 美林时钟 API
+│       ├── ai.py          # AI 评股 API
+│       ├── datasource.py  # 数据源配置 API
+│       ├── groups.py      # 分组管理 API
+│       └── user_config.py # 用户配置 API
+├── frontend/              # Vue 3 SPA（单文件）
+│   └── index.html         # ~9800 行，Vue 3 + Element Plus + ECharts
+├── data/                  # 数据目录（运行时生成）
+│   ├── users.json         # 用户数据
+│   ├── groups.json        # 用户组配置
+│   └── users/{username}/  # 每用户数据（自选股/评股历史）
+├── requirements.txt       # Python 依赖
+├── release.sh             # 发布脚本
+├── README.md
+└── DEPLOYMENT.md
+```
+
+## 常见问题
+
+### 服务无法启动
 ```bash
-# 正确：从项目根目录或 backend 目录启动
-cd /path/to/quant-calendar/backend
-python main.py
+# 检查端口占用
+ss -tlnp | grep 8000
+fuser -k 8000/tcp  # 强制释放
+
+# 清除缓存重启
+cd backend
+find . -name '__pycache__' -type d -exec rm -rf {} +
+python3 main_new.py --port 8000
 ```
 
-### Q3: 数据库是空的 / 没有数据
-**A:** 需要先运行数据采集脚本，或复制原有的 `data/` 目录。
+### Tushare 数据获取失败
+- 登录后在「系统配置 → 数据源」页面配置 Tushare Token
+- 或直接编辑 `backend/config.py`（不推荐，会被代码更新覆盖）
 
-### Q4: Tushare 数据获取失败
-**A:** 检查 `.env` 中的 `TUSHARE_TOKEN` 是否正确。
+### 页面空白/乱码
+1. 首先检查服务健康：`curl http://localhost:8000/api/health`
+2. 强制刷新浏览器：Ctrl+Shift+R
+3. 检查浏览器控制台 JS 错误
 
-### Q5: 端口被占用
-**A:** 修改 `.env` 中的 `PORT`，或启动时指定：
-```bash
-uvicorn main:app --port 8080
-```
+### 修改前端后不生效
+- 前端是单文件 SPA，修改后必须重启后端服务
+- 浏览器可能有缓存：Ctrl+Shift+R 强制刷新
 
----
+## 版本信息
 
-## 📝 版本信息
-
-- 版本: v1.3.0 (相对路径版)
-- 更新日期: 2026-05-20
-- 特性: 全相对路径，可部署到任何目录
+- **版本**: v1.9.3
+- **更新日期**: 2026-06-02
+- **入口文件**: `backend/main_new.py`（不是 `main.py`）
+- **特性**: 美林时钟 v2 / 双数据源 / AI 多模型 / 用户组管理 / 4套主题

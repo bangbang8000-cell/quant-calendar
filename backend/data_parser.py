@@ -94,6 +94,64 @@ class DataParser:
         self.date_list = sorted(all_dates)
         print(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
     
+    def reload(self) -> dict:
+        """重新加载所有策略数据（原子替换，失败不回滚旧数据）"""
+        # 构建临时数据
+        temp_holdings = {}
+        temp_stock_info = defaultdict(lambda: {'strategies': set(), 'hold_days': defaultdict(int)})
+        temp_date_list = []
+        all_dates = set()
+
+        for strategy_id, config in STRATEGY_CONFIG.items():
+            filepath = None
+            found_file = None
+            for filename in config['files']:
+                test_path = os.path.join(DATA_DIR, filename)
+                if os.path.exists(test_path):
+                    filepath = test_path
+                    found_file = filename
+                    break
+
+            if not filepath:
+                print(f"⚠️ 找不到 {config['name']} 的任何数据文件")
+                continue
+
+            print(f"✅ 加载: {found_file}")
+            temp_holdings[strategy_id] = {}
+
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                headers = next(reader)[1:]
+                for row in reader:
+                    if not row or not row[0]:
+                        continue
+                    date = row[0].strip()
+                    stocks = set()
+                    for idx, value in enumerate(row[1:]):
+                        if idx < len(headers) and value and float(value) > 0:
+                            stock_code = headers[idx].strip()
+                            stocks.add(stock_code)
+                            temp_stock_info[stock_code]['strategies'].add(strategy_id)
+                            temp_stock_info[stock_code]['hold_days'][strategy_id] += 1
+                    if stocks:
+                        temp_holdings[strategy_id][date] = stocks
+                        all_dates.add(date)
+
+        temp_date_list = sorted(all_dates)
+
+        # 原子替换
+        self.holdings_data = temp_holdings
+        self.stock_info = temp_stock_info
+        self.date_list = temp_date_list
+
+        stats = {
+            "dates_count": len(self.date_list),
+            "stocks_count": len(self.stock_info),
+            "latest_date": self.date_list[-1] if self.date_list else None
+        }
+        print(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
+        return stats
+
     def get_available_dates(self) -> List[str]:
         """获取所有可用日期"""
         return self.date_list

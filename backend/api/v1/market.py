@@ -5,6 +5,9 @@
 """
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 from auth import get_admin_user
 from market_data import market_data, get_kline_data
@@ -47,6 +50,19 @@ async def get_merrill_history():
         return {"success": False, "message": str(e)}
 
 
+@router.post("/merrill-clock/reevaluate")
+async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
+    """强制重评估美林时钟（忽略缓存）"""
+    try:
+        result = merrill_clock.reevaluate(force=True)
+        result['success'] = True
+        result['message'] = '重评估完成'
+        return result
+    except Exception as e:
+        logger.error(f"美林时钟重评估失败: {e}")
+        return {"success": False, "message": f"重评估失败: {str(e)}"}
+
+
 @router.get("/kline/{ts_code}")
 async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     """获取K线数据（支持股票和指数）
@@ -60,6 +76,62 @@ async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     if data:
         return {"success": True, "data": data, "period": period}
     return {"success": False, "message": "获取K线数据失败"}
+
+
+# v1.8.0: 多数据源配置 API
+@router.get('/datasource/config')
+async def get_datasource_config(_: Dict = Depends(get_admin_user)):
+    """获取所有数据源配置（含 config.py 同步的 token）"""
+    from data_sources import data_source_manager
+    from config import settings
+    config = data_source_manager.get_config()
+    # 回填 config.py 中的 token（若 datasource_config.json 中为空）
+    if config.get('sources', {}).get('tushare', {}).get('token', '') == '':
+        config['sources']['tushare']['token'] = settings.TUSHARE_TOKEN or ''
+    if config.get('sources', {}).get('sxsc_tushare', {}).get('token', '') == '':
+        config['sources']['sxsc_tushare']['token'] = settings.SXSC_TUSHARE_TOKEN or ''
+    return {"success": True, "config": config}
+
+
+@router.post('/datasource/config')
+async def save_datasource_config(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
+    """保存数据源配置（空token保留原值）"""
+    from data_sources import data_source_manager
+    try:
+        # 保留已有 token：如果提交的 token 为空，使用现有值
+        sources = req.get('sources', {})
+        existing = data_source_manager.config.get('sources', {})
+        for src_name in ['sxsc_tushare', 'tushare']:
+            src_cfg = sources.get(src_name, {})
+            if src_cfg.get('token', '') == '' and src_name in existing:
+                src_cfg['token'] = existing[src_name].get('token', '')
+        data_source_manager.save_config(req)
+        return {"success": True, "message": "数据源配置已保存"}
+    except Exception as e:
+        return {"success": False, "message": f"保存失败: {str(e)}"}
+
+
+@router.post('/datasource/test/{source}')
+async def test_datasource(source: str, _: Dict = Depends(get_admin_user)):
+    """测试指定数据源连接"""
+    from data_sources import data_source_manager
+    result = data_source_manager.test_connection(source)
+    return result
+
+
+@router.get('/datasource/status')
+async def get_datasource_status():
+    """获取数据源状态"""
+    from data_sources import data_source_manager
+    status = {}
+    for src in ['sxsc_tushare', 'tushare', 'akshare']:
+        cfg = data_source_manager._get_source_config(src)
+        status[src] = {
+            "enabled": cfg.get('enabled', True),
+            "connected": src in data_source_manager._clients,
+            "error": data_source_manager._errors.get(src, None),
+        }
+    return {"success": True, "status": status, "source_order": ["sxsc_tushare", "tushare", "akshare"]}
 
 
 # v1.3.0: Tushare 数据源配置 API

@@ -5,11 +5,17 @@
 """
 
 import asyncio
+import os
+import logging
 from datetime import datetime
 from typing import Optional, Callable
 from data_parser import parser
 from feishu_push import FeishuPusher
 from ai_evaluator import ai_evaluator
+from views_aggregator import views_aggregator
+from paths import EXTERNAL_DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 
 class Scheduler:
@@ -39,7 +45,7 @@ class Scheduler:
             if now.hour == 9 and now.minute == 0:
                 dates = parser.get_available_dates()
                 if dates:
-                    print(f"📤 执行每日推送任务: {dates[-1]}")
+                    logger.info(f"📤 执行每日推送任务: {dates[-1]}")
                     self.pusher.send_daily_report(dates[-1])
                 # 等待1分钟避免重复执行
                 await asyncio.sleep(60)
@@ -66,7 +72,7 @@ class Scheduler:
                     await asyncio.sleep(60)
                     continue
                 
-                print(f"🤖 开始自动评股任务: {now}")
+                logger.info(f"🤖 开始自动评股任务: {now}")
                 
                 try:
                     # 获取要评估的股票列表
@@ -87,23 +93,23 @@ class Scheduler:
                     all_stocks = list(set(selected_stocks) | strategy_stocks)
                     
                     if not all_stocks:
-                        print("⚠️ 自动评股: 没有要评估的股票")
+                        logger.warning(" 自动评股: 没有要评估的股票")
                         await asyncio.sleep(60)
                         continue
                     
-                    print(f"📊 自动评股: 评估 {len(all_stocks)} 只股票")
+                    logger.info(f"📊 自动评股: 评估 {len(all_stocks)} 只股票")
                     
                     # 批量评估
-                    results = ai_evaluator.batch_evaluate(all_stocks)
+                    results = ai_evaluator.batch_evaluate(all_stocks, username='auto_scheduler')
                     
                     # 推送到飞书
                     if config.get('push_to_feishu', True):
                         await self._push_ai_evaluation_report(results)
                     
-                    print(f"✅ 自动评股完成: {len(results)} 条记录")
+                    logger.info(f"✅ 自动评股完成: {len(results)} 条记录")
                     
                 except Exception as e:
-                    print(f"❌ 自动评股失败: {e}")
+                    logger.error(f" 自动评股失败: {e}")
                 
                 # 等待1分钟避免重复执行
                 await asyncio.sleep(60)
@@ -144,9 +150,9 @@ class Scheduler:
             report += f"\n⏰ 评估时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             
             self.pusher.send_text(report)
-            print("✅ AI评估报告已推送到飞书")
+            logger.info("✅ AI评估报告已推送到飞书")
         except Exception as e:
-            print(f"❌ 推送AI报告失败: {e}")
+            logger.error(f" 推送AI报告失败: {e}")
     
     async def weekly_report_task(self):
         """每周报告任务"""
@@ -154,25 +160,141 @@ class Scheduler:
             now = datetime.now()
             # 周六 10:00 推送周报
             if now.weekday() == 5 and now.hour == 10 and now.minute == 0:
-                print("📤 执行每周报告任务")
+                logger.info("📤 执行每周报告任务")
                 # 生成周报逻辑
                 await asyncio.sleep(60)
             await asyncio.sleep(30)
     
+    async def data_refresh_task(self):
+        """定时刷新策略数据任务"""
+        last_refresh_date = None
+        while self.running:
+            try:
+                from data_refresh_config import load_config
+                config = load_config()
+                
+                if not config.get('scheduled_enabled', False):
+                    await asyncio.sleep(60)
+                    continue
+                
+                now = datetime.now()
+                schedule_time = config.get('scheduled_time', '22:00')
+                target_hour, target_minute = map(int, schedule_time.split(':'))
+                
+                if now.hour == target_hour and now.minute == target_minute:
+                    today = now.strftime('%Y-%m-%d')
+                    if last_refresh_date != today:
+                        last_refresh_date = today
+                        logger.info(f"⏰ 定时刷新: {now}")
+                        try:
+                            parser.reload()
+                            views_aggregator.reload()
+                            from data_refresh_config import update_refresh_status
+                            update_refresh_status(True, f"定时刷新成功 {today}")
+                            logger.info(f"✅ 定时刷新完成")
+                        except Exception as e:
+                            logger.error(f" 定时刷新失败: {e}")
+                    await asyncio.sleep(60)
+                
+                await asyncio.sleep(30)
+            except Exception as e:
+                logger.info(f"定时刷新任务异常: {e}")
+                await asyncio.sleep(60)
+    
+    async def file_watch_task(self):
+        """文件变动监听任务（轮询 CSV 文件 mtime）"""
+        import os
+        
+        # 建立初始 mtime 快照
+        file_mtimes = {}
+        csv_extensions = ('.csv',)
+        
+        def scan_files():
+            """扫描策略数据目录中的 CSV 文件"""
+            mtimes = {}
+            if os.path.isdir(EXTERNAL_DATA_DIR):
+                for fname in os.listdir(EXTERNAL_DATA_DIR):
+                    if fname.endswith(csv_extensions):
+                        fpath = os.path.join(EXTERNAL_DATA_DIR, fname)
+                        try:
+                            mtimes[fpath] = os.path.getmtime(fpath)
+                        except OSError:
+                            pass
+            return mtimes
+        
+        # 建立基线
+        file_mtimes = scan_files()
+        
+        while self.running:
+            try:
+                from data_refresh_config import load_config
+                config = load_config()
+                
+                if not config.get('watch_enabled', False):
+                    await asyncio.sleep(60)
+                    continue
+                
+                current_mtimes = scan_files()
+                
+                # 检测变动
+                changed = False
+                for fpath, mtime in current_mtimes.items():
+                    if fpath not in file_mtimes or file_mtimes[fpath] != mtime:
+                        changed = True
+                        logger.info(f"📁 检测到文件变动: {os.path.basename(fpath)}")
+                        break
+                
+                # 检测新增文件
+                if not changed:
+                    for fpath in current_mtimes:
+                        if fpath not in file_mtimes:
+                            changed = True
+                            logger.info(f"📁 检测到新文件: {os.path.basename(fpath)}")
+                            break
+                
+                # 检测删除文件
+                if not changed:
+                    for fpath in file_mtimes:
+                        if fpath not in current_mtimes:
+                            changed = True
+                            logger.info(f"📁 检测到文件删除: {os.path.basename(fpath)}")
+                            break
+                
+                if changed:
+                    logger.info("🔄 触发文件变动刷新...")
+                    try:
+                        parser.reload()
+                        views_aggregator.reload()
+                        from data_refresh_config import update_refresh_status
+                        update_refresh_status(True, "文件变动触发刷新")
+                        logger.info("✅ 文件变动刷新完成")
+                    except Exception as e:
+                        logger.error(f" 文件变动刷新失败: {e}")
+                
+                # 更新快照
+                file_mtimes = current_mtimes
+                await asyncio.sleep(60)  # 每60秒检查一次
+                
+            except Exception as e:
+                logger.info(f"文件监听任务异常: {e}")
+                await asyncio.sleep(60)
+    
     async def start(self):
         """启动调度器"""
         self.running = True
-        print("⏰ 定时任务调度器已启动")
+        logger.info("⏰ 定时任务调度器已启动")
         
         # 启动所有任务
         asyncio.create_task(self.daily_report_task())
         asyncio.create_task(self.weekly_report_task())
         asyncio.create_task(self.auto_evaluate_task())
+        asyncio.create_task(self.data_refresh_task())
+        asyncio.create_task(self.file_watch_task())
     
     async def stop(self):
         """停止调度器"""
         self.running = False
-        print("⏰ 定时任务调度器已停止")
+        logger.info("⏰ 定时任务调度器已停止")
 
 
 # 全局单例
@@ -181,7 +303,7 @@ scheduler = Scheduler()
 
 if __name__ == '__main__':
     async def test():
-        print("测试调度器...")
+        logger.info("测试调度器...")
         # 测试推送（不等待定时，直接发送）
         scheduler.pusher.send_daily_report()
     

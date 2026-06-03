@@ -123,24 +123,13 @@ class MarketData:
     
     def __init__(self):
         self.cache = self._load_cache()
-        # 尝试导入标准tushare
-        try:
-            import tushare as ts
-            if settings.TUSHARE_TOKEN:
-                ts.set_token(settings.TUSHARE_TOKEN)
-                self.pro = ts.pro_api()
-                self.tushare_available = True
-                logger.info("✅ Tushare Pro连接成功")
-            else:
-                logger.warning("⚠️ Tushare token未配置，使用模拟数据")
-                self.tushare_available = False
-                self.pro = None
-        except Exception as e:
-            logger.warning(f"⚠️ Tushare不可用: {e}")
-            import traceback
-            logger.warning(traceback.format_exc())
-            self.tushare_available = False
-            self.pro = None
+        # 使用统一数据源管理器
+        from data_sources import data_source_manager
+        self.ds_manager = data_source_manager
+        # 向后兼容：标记 tushare 可用性
+        self.tushare_available = 'tushare' in data_source_manager._clients
+        self.pro = data_source_manager._clients.get('tushare', None)
+        logger.info(f"✅ MarketData 初始化完成，数据源: {list(data_source_manager._clients.keys())}")
     
     def update_tushare_token(self, token: str):
         """动态更新 Tushare Token"""
@@ -157,31 +146,12 @@ class MarketData:
         return True, "无需更新"
 
     def test_tushare_connection(self) -> dict:
-        """测试 Tushare 连接"""
-        if not self.tushare_available:
-            return {
-                "success": False,
-                "message": "Tushare 未配置或不可用",
-                "available": False
-            }
-        
-        try:
-            import tushare as ts
-            pro = ts.pro_api()
-            # 简单测试：获取交易日历
-            result = pro.trade_cal(start_date='20240101', end_date='20240105')
-            return {
-                "success": True,
-                "message": "✅ 连接测试成功",
-                "available": True,
-                "data_count": len(result)
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "message": f"❌ 连接失败: {str(e)}",
-                "available": False
-            }
+        """测试 Tushare 连接（向后兼容）"""
+        return self.test_datasource_connection('tushare')
+
+    def test_datasource_connection(self, source_name: str = 'tushare') -> dict:
+        """测试指定数据源连接"""
+        return self.ds_manager.test_connection(source_name)
     
     def _load_cache(self):
         """加载缓存"""
@@ -215,37 +185,23 @@ class MarketData:
     def get_index_daily(self, ts_code, trade_date=None):
         """获取指数日线数据"""
         cache_key = f"index_{ts_code}_{trade_date or 'latest'}"
-        
+
         # 检查缓存是否有效
         if self._is_cache_valid(cache_key):
             return self.cache[cache_key]['data']
-        
-        if self.tushare_available:
-            try:
-                # 从API获取
-                df = self.pro.index_daily(
-                    ts_code=ts_code,
-                    trade_date=trade_date,
-                    limit=10
-                )
-                
-                if df is not None and len(df) > 0:
-                    # 按日期排序取最新
-                    df = df.sort_values('trade_date', ascending=False)
-                    latest = df.iloc[0].to_dict()
-                    
-                    # 存入缓存
-                    self.cache[cache_key] = {
-                        'fetch_time': datetime.now().isoformat(),
-                        'data': latest
-                    }
-                    self._save_cache()
-                    
-                    return latest
-            except Exception as e:
-                logger.error(f"获取指数数据失败 {ts_code}: {e}")
-        
-        # API不可用或获取失败时使用模拟数据
+
+        # 使用统一数据源管理器
+        result = self.ds_manager.get_index_daily(ts_code, trade_date)
+        if result:
+            # 存入缓存
+            self.cache[cache_key] = {
+                'fetch_time': datetime.now().isoformat(),
+                'data': result
+            }
+            self._save_cache()
+            return result
+
+        # 所有数据源都失败，使用模拟数据
         return self._get_mock_data(ts_code)
     
     def _get_mock_data(self, ts_code):
@@ -260,12 +216,12 @@ class MarketData:
             '000905.SH': 7800,
         }
         base = base_points.get(ts_code, 3000)
-        
+
         # 随机波动 ±2%
         change_pct = np.random.uniform(-0.02, 0.02)
         point = base * (1 + change_pct)
         change_amount = base * change_pct
-        
+
         return {
             'ts_code': ts_code,
             'trade_date': datetime.now().strftime('%Y%m%d'),
@@ -277,7 +233,8 @@ class MarketData:
             'low': round(point * (1 - abs(np.random.uniform(0, 0.01))), 2),
             'vol': round(np.random.uniform(1000000, 5000000), 0),
             'amount': round(np.random.uniform(100000, 500000), 0),
-            '_is_mock': True
+            'data_source': 'mock',
+            'mock_reason': '所有数据源(sxsc-tushare/tushare/akshare)均不可用'
         }
     
     def get_market_overview(self, date=None):
@@ -307,7 +264,9 @@ class MarketData:
                 'change': index_data.get('change', 0),
                 'vol': index_data.get('vol', 0),
                 'amount': index_data.get('amount', 0),
-                'is_mock': index_data.get('_is_mock', False),
+                'is_mock': index_data.get('data_source') == 'mock',
+                'data_source': index_data.get('data_source', 'unknown'),
+                'mock_reason': index_data.get('mock_reason', ''),
                 'trade_date': index_data.get('trade_date', '')
             })
         
@@ -371,68 +330,13 @@ def _is_index_code(ts_code):
 
 
 def get_kline_data(ts_code, period='daily', limit=60):
-    """获取K线数据（支持股票和指数）
-    period: daily=日线, weekly=周线, monthly=月线
-    """
+    """获取K线数据（支持股票和指数），通过统一数据源管理器"""
     try:
-        import tushare as ts
-        import pandas as pd
-        from config import settings
-        
-        if settings.TUSHARE_TOKEN:
-            ts.set_token(settings.TUSHARE_TOKEN)
-            pro = ts.pro_api()
-        else:
-            logger.warning("⚠️ Tushare token未配置，无法获取K线数据")
-            return None
-        
-        is_index = _is_index_code(ts_code)
-        
-        # 根据类型和周期选择API
-        if is_index:
-            # 指数使用 index_* API
-            if period == 'weekly':
-                df = pro.index_weekly(ts_code=ts_code, limit=limit)
-            elif period == 'monthly':
-                df = pro.index_monthly(ts_code=ts_code, limit=limit)
-            else:
-                df = pro.index_daily(ts_code=ts_code, limit=limit)
-        else:
-            # 股票使用普通 daily / weekly / monthly API
-            if period == 'weekly':
-                df = pro.weekly(ts_code=ts_code, limit=limit)
-            elif period == 'monthly':
-                df = pro.monthly(ts_code=ts_code, limit=limit)
-            else:
-                df = pro.daily(ts_code=ts_code, limit=limit)
-        
-        if df is None or len(df) == 0:
-            return None
-        
-        # 按日期升序排列
-        df = df.sort_values('trade_date', ascending=True).reset_index(drop=True)
-        
-        # 计算均线
-        df['ma5'] = df['close'].rolling(window=5).mean()
-        df['ma10'] = df['close'].rolling(window=10).mean()
-        df['ma20'] = df['close'].rolling(window=20).mean()
-        
-        # 转换为前端需要的格式
-        kline_data = []
-        for _, row in df.iterrows():
-            kline_data.append([
-                str(row['trade_date']),  # 日期
-                float(row['open']),      # 开盘
-                float(row['close']),     # 收盘
-                float(row['low']),       # 最低
-                float(row['high']),      # 最高
-                float(row['vol']),       # 成交量
-                float(row.get('ma5', 0)) if pd.notna(row.get('ma5')) else None,
-                float(row.get('ma10', 0)) if pd.notna(row.get('ma10')) else None,
-                float(row.get('ma20', 0)) if pd.notna(row.get('ma20')) else None,
-            ])
-        
-        return kline_data
+        from data_sources import data_source_manager
+        result = data_source_manager.get_kline_data(ts_code, period, limit)
+        if result and result.get('data'):
+            return result['data']  # 直接返回 kline 数组列表，与旧接口兼容
+        return None
     except Exception as e:
         import logging
         logging.error(f"获取K线数据失败 {ts_code} {period}: {e}")

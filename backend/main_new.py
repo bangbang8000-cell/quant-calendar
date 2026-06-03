@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API",
-    version="1.5.5",
+    title="量化选股日历 API v1.9.3",
+    version="1.9.3",
     description="基于美林时钟经济周期理论的智能选股系统",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -46,6 +46,16 @@ app.add_middleware(
     max_age=600,
 )
 logger.info(f"✅ CORS 配置已加载，允许的源: {settings.cors_origin_list}")
+
+# v1.8: 安全响应头中间件
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # 启用速率限制
 setup_rate_limiter(app)
@@ -83,7 +93,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "1.5.5",
+        "version": "1.9.3",
         "message": "量化选股日历服务运行中"
     }
 

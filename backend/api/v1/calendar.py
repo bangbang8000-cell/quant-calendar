@@ -79,6 +79,18 @@ async def get_stock_history(stock_code: str, date: Optional[str] = None):
     return history
 
 
+@router.get("/stock/{stock_code}/score")
+async def get_stock_score(stock_code: str, date: Optional[str] = None):
+    """轻量端点：仅返回股票评分数据，用于弹窗内刷新"""
+    import datetime as _dt
+    if not date:
+        date = _dt.date.today().strftime('%Y-%m-%d')
+    daily_data = stock_manager.get_daily_data(stock_code, date)
+    ma_data = stock_manager.get_ma_data(stock_code, date, days=30)
+    score_data = stock_manager.calculate_score(daily_data, ma_data)
+    return {"success": True, "score_data": score_data, "date": date}
+
+
 @router.get("/{date}/compare")
 async def compare_strategies(date: str):
     """多策略对比分析"""

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # JWT 认证配置
-    SECRET_KEY: str = "quant-calendar-secret-key-change-in-production-2026"
+    SECRET_KEY: str = ""  # v1.8: 留空 → 自动生成，或从 .env 读取
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24小时
     
@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     TUSHARE_TOKEN: str = ""
     TUSHARE_ENDPOINT: str = "http://api.tushare.pro"
     TUSHARE_TIMEOUT: int = 30
+
+    # 多数据源配置（v1.8.0）
+    SXSC_TUSHARE_TOKEN: str = ""
+    SXSC_TUSHARE_ENABLED: bool = True
+    AKSHARE_ENABLED: bool = True
     
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -60,7 +65,9 @@ class Settings(BaseSettings):
 # 全局配置实例
 settings = Settings()
 
-# 安全检查：如果是生产环境且使用默认密钥，发出警告
-if not settings.DEBUG and settings.SECRET_KEY == "quant-calendar-secret-key-change-in-production-2026":
+# v1.8: 安全 — 启动时检测密钥，缺失则自动生成
+if not settings.SECRET_KEY:
+    import secrets
+    settings.SECRET_KEY = secrets.token_hex(32)
     import warnings
-    warnings.warn("⚠️ 生产环境请修改默认 SECRET_KEY！")
+    warnings.warn("⚠️ 已自动生成随机 SECRET_KEY，重启后不变（建议写入 .env）")

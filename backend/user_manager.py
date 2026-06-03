@@ -14,12 +14,12 @@ from paths import USERS_FILE as DATA_FILE
 THEMES = {
     "tech-blue": {
         "name": "专业蓝",
-        "primary": "#667eea",
-        "secondary": "#764ba2",
-        "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        "primary": "#1d4ed8",
+        "secondary": "#60a5fa",
+        "gradient": "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%)"
     },
-    "spring-green": {
-        "name": "新年红",
+    "rose-red": {
+        "name": "玫瑰红",
         "primary": "#E63946",
         "secondary": "#C1121F",
         "gradient": "linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%)"
@@ -49,6 +49,18 @@ class UserManager:
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
                 self.users = json.load(f)
+            # v1.7.5: 确保访客账户始终存在
+            if "guest" not in self.users:
+                self.users["guest"] = {
+                    "username": "guest",
+                    "password": self._hash_password("guest"),
+                    "role": "guest",
+                    "theme": "tech-blue",
+                    "enabled": True,
+                    "locked": True,
+                    "created_at": "2026-05-15"
+                }
+                self._save_users()
         else:
             # 初始化默认用户
             self.users = {
@@ -59,6 +71,16 @@ class UserManager:
                     "theme": "tech-blue",
                     "created_at": "2026-01-01"
                 }
+            }
+            # v1.7.5: 自动创建访客账户
+            self.users["guest"] = {
+                "username": "guest",
+                "password": self._hash_password("guest"),
+                "role": "guest",
+                "theme": "tech-blue",
+                "enabled": True,
+                "locked": True,
+                "created_at": "2026-05-15"
             }
             self._save_users()
 
@@ -111,7 +133,7 @@ class UserManager:
             users.append(user)
         return users
 
-    def add_user(self, username: str, password: str, role: str = "user", theme: str = "tech-blue") -> bool:
+    def add_user(self, username: str, password: str, role: str = "user", theme: str = "tech-blue", group: str = None) -> bool:
         """添加用户"""
         if username in self.users:
             return False
@@ -124,12 +146,20 @@ class UserManager:
             "theme": theme,
             "created_at": "2026-05-15"
         }
+        # group 字段：默认与 role 同名
+        if group:
+            self.users[username]["group"] = group
+        else:
+            self.users[username]["group"] = role
         self._save_users()
         return True
 
-    def update_user(self, username: str, password: str = None, role: str = None, theme: str = None) -> bool:
+    def update_user(self, username: str, password: str = None, role: str = None, theme: str = None, group: str = None) -> bool:
         """更新用户信息"""
         if username not in self.users:
+            return False
+        # v1.7.5: guest 角色不可变更
+        if username == "guest" and role and role != "guest":
             return False
         if password:
             self.users[username]["password"] = self._hash_password(password)
@@ -137,13 +167,15 @@ class UserManager:
             self.users[username]["role"] = role
         if theme:
             self.users[username]["theme"] = theme
+        if group:
+            self.users[username]["group"] = group
         self._save_users()
         return True
 
     def delete_user(self, username: str) -> bool:
         """删除用户"""
-        if username not in self.users or username == "admin":
-            return False  # 不允许删除admin
+        if username not in self.users or username in ("admin", "guest"):
+            return False  # 不允许删除admin/guest
         del self.users[username]
         self._save_users()
         return True

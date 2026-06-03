@@ -2,19 +2,134 @@
 # -*- coding: utf-8 -*-
 """
 AI股票评估模块
-支持：Coding Plan 内置评估 + 自定义OpenAI兼容API
-v1.5.2: 基于Tushare真实数据，废弃随机数值
+v1.7.0: 纯大模型体系，支持多 provider fallback
+- 移除内置引擎，所有评估通过 LLM API
+- 多模型管理：启用/禁用/优先级/探测
+- 评估历史增强：原始数据 + 原始 LLM 响应
 """
 import json
 import hashlib
 import re
+import os
 import time
 import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
+from dataclasses import dataclass, field, asdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
+
+# ─── 模型配置管理 ──────────────────────────────────────────────
+
+@dataclass
+class ModelProvider:
+    """单个 AI 模型配置"""
+    id: str                          # 唯一标识，如 "ark-code-latest"
+    provider: str                    # 提供商名称，如 "字节Coding Plan"
+    model: str                       # 模型名，如 "ark-code-latest"
+    base_url: str                    # API 端点
+    api_key: str                     # API Key
+    enabled: bool = True             # 是否启用
+    priority: int = 0                # 优先级（越小越优先）
+    timeout: int = 60                # 超时秒数
+    max_tokens: int = 4096           # 最大 token
+    locked: bool = False             # 预置模型锁定，不可删除
+    
+    def to_dict(self) -> Dict:
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, d: Dict) -> "ModelProvider":
+        return cls(
+            id=d.get("id", ""),
+            provider=d.get("provider", ""),
+            model=d.get("model", ""),
+            base_url=d.get("base_url", ""),
+            api_key=d.get("api_key", ""),
+            enabled=d.get("enabled", True),
+            priority=d.get("priority", 0),
+            timeout=d.get("timeout", 60),
+            max_tokens=d.get("max_tokens", 4096),
+            locked=d.get("locked", False),
+        )
+
+# 默认模型列表（预配字节CodingPlan + DeepSeek，其余为模板）
+DEFAULT_MODELS = [
+    ModelProvider(
+        id="ark-code-latest",
+        provider="字节Coding Plan",
+        model="ark-code-latest",
+        base_url="https://ark.cn-beijing.volces.com/api/coding/v3",
+        api_key="",  # 通过前端 AI模型配置页面填写你的 Key
+        enabled=True, priority=0,
+    ),
+    ModelProvider(
+        id="deepseek-v4-pro",
+        provider="DeepSeek",
+        model="deepseek-v4-pro",
+        base_url="https://api.deepseek.com/v1",
+        api_key="",  # 通过前端 AI模型配置页面填写你的 Key
+        enabled=True, priority=1,
+    ),
+    ModelProvider(
+        id="deepseek-chat",
+        provider="DeepSeek",
+        model="deepseek-chat",
+        base_url="https://api.deepseek.com/v1",
+        api_key="",
+        enabled=False, priority=2,
+    ),
+    ModelProvider(
+        id="deepseek-reasoner",
+        provider="DeepSeek R1",
+        model="deepseek-reasoner",
+        base_url="https://api.deepseek.com/v1",
+        api_key="",
+        enabled=False, priority=3,
+    ),
+    ModelProvider(
+        id="gpt-4o",
+        provider="OpenAI",
+        model="gpt-4o",
+        base_url="https://api.openai.com/v1",
+        api_key="",
+        enabled=False, priority=4,
+    ),
+    ModelProvider(
+        id="claude-sonnet-4",
+        provider="Anthropic",
+        model="claude-sonnet-4-20250514",
+        base_url="https://api.anthropic.com/v1",
+        api_key="",
+        enabled=False, priority=5,
+    ),
+    ModelProvider(
+        id="qwen-plus",
+        provider="通义千问",
+        model="qwen-plus",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        api_key="",
+        enabled=False, priority=6,
+    ),
+    ModelProvider(
+        id="glm-4",
+        provider="智谱GLM",
+        model="glm-4",
+        base_url="https://open.bigmodel.cn/api/paas/v4",
+        api_key="",
+        enabled=False, priority=7,
+    ),
+    ModelProvider(
+        id="moonshot-v1",
+        provider="Moonshot",
+        model="moonshot-v1-8k",
+        base_url="https://api.moonshot.cn/v1",
+        api_key="",
+        enabled=False, priority=8,
+    ),
+]
 
 # 技术指标计算用常量
 RSI_PERIOD = 14
@@ -71,13 +186,16 @@ def _ma(data, period):
 
 class AIEvaluator:
     def __init__(self, config_file: str = None):
-        from paths import AI_CONFIG_FILE, AI_EVALUATION_HISTORY_FILE
+        from paths import AI_CONFIG_FILE, AI_EVALUATION_HISTORY_FILE, DATA_DIR
         if config_file is None:
             config_file = AI_CONFIG_FILE
         self.config_file = config_file
         self.history_file = AI_EVALUATION_HISTORY_FILE
+        self._data_dir = DATA_DIR
+        self._models_file = os.path.join(DATA_DIR, "ai_models.json")
         self.config = self._load_config()
         self.history = self._load_history()
+        self._models_cache: Optional[List[ModelProvider]] = None
 
     def _load_config(self) -> Dict:
         """加载AI配置"""
@@ -99,18 +217,113 @@ class AIEvaluator:
             json.dump(self.config, f, ensure_ascii=False, indent=2)
         return True
 
-    def _load_history(self) -> List:
-        """加载评估历史"""
+    # ─── 模型管理 ───────────────────────────────────────────────
+
+    def _load_models(self) -> List[ModelProvider]:
+        """加载模型配置列表"""
         try:
-            with open(self.history_file, 'r', encoding='utf-8') as f:
+            with open(self._models_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                models = [ModelProvider.from_dict(m) for m in data.get("models", [])]
+                if models:
+                    return models
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+        # 首次加载：写入默认配置
+        self._save_models(DEFAULT_MODELS)
+        return list(DEFAULT_MODELS)
+
+    def _save_models(self, models: List[ModelProvider]):
+        """保存模型配置列表"""
+        os.makedirs(os.path.dirname(self._models_file), exist_ok=True)
+        data = {"models": [m.to_dict() for m in models], "updated_at": datetime.now().isoformat()}
+        with open(self._models_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._models_cache = models
+
+    def get_models(self) -> List[Dict]:
+        """获取所有模型配置（返回排序后的启用列表在前）"""
+        models = self._load_models()
+        # 按 priority 排序
+        models.sort(key=lambda m: m.priority)
+        return [m.to_dict() for m in models]
+
+    def update_models(self, models_data: List[Dict]) -> List[Dict]:
+        """批量更新模型配置（保留已有模型的 locked 状态）"""
+        # 加载现有模型，获取 locked 状态
+        existing = {m.id: m.locked for m in self._load_models()}
+        models = [ModelProvider.from_dict(m) for m in models_data]
+        # 重新分配 priority 为列表顺序
+        for i, m in enumerate(models):
+            m.priority = i
+            # 保留已有模型的 locked 状态
+            if m.id in existing:
+                m.locked = existing[m.id]
+        self._save_models(models)
+        return [m.to_dict() for m in models]
+
+    def get_enabled_models(self) -> List[ModelProvider]:
+        """获取所有已启用的模型（按优先级排序）"""
+        models = self._load_models()
+        enabled = [m for m in models if m.enabled]
+        enabled.sort(key=lambda m: m.priority)
+        return enabled
+
+    def test_model_connection(self, model_id: str) -> Dict:
+        """探测单个模型连接"""
+        models = self._load_models()
+        model = next((m for m in models if m.id == model_id), None)
+        if not model:
+            return {"success": False, "message": f"模型 {model_id} 不存在"}
+        if not model.api_key:
+            return {"success": False, "message": "未配置 API Key"}
+        
+        start = time.time()
+        try:
+            endpoint = model.base_url.rstrip("/") + "/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {model.api_key}"
+            }
+            payload = {
+                "model": model.model,
+                "messages": [{"role": "user", "content": "ping"}],
+                "max_tokens": 5,
+            }
+            resp = requests.post(endpoint, headers=headers, json=payload, timeout=15)
+            latency = round((time.time() - start) * 1000)
+            if resp.status_code == 200:
+                return {"success": True, "message": f"连接正常 ({latency}ms)", "latency_ms": latency}
+            else:
+                return {"success": False, "message": f"HTTP {resp.status_code}: {resp.text[:200]}", "latency_ms": latency}
+        except requests.Timeout:
+            return {"success": False, "message": "连接超时 (15s)", "latency_ms": 15000}
+        except Exception as e:
+            return {"success": False, "message": str(e)[:200], "latency_ms": round((time.time() - start) * 1000)}
+
+    def _load_history(self) -> List:
+        """加载评估历史（已废弃，保留向后兼容）"""
+        return self._load_history_for('default')
+
+    def _load_history_for(self, username: str) -> List:
+        """加载指定用户的评估历史"""
+        try:
+            path = self._history_path(username)
+            with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except:
             return []
 
-    def _save_history(self):
-        """保存评估历史"""
-        with open(self.history_file, 'w', encoding='utf-8') as f:
-            json.dump(self.history, f, ensure_ascii=False, indent=2)
+    def _save_history_for(self, username: str, history: List):
+        """保存指定用户的评估历史"""
+        path = self._history_path(username)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+
+    def _history_path(self, username: str) -> str:
+        from paths import DATA_DIR
+        return os.path.join(DATA_DIR, "users", username, "ai_evaluation_history.json")
 
     # ─── 数据获取 ───────────────────────────────────────────────
 
@@ -240,32 +453,19 @@ class AIEvaluator:
             result["error"] = f"获取 K 线失败: {str(e)}"
             logger.error(f"获取K线数据异常 {stock_code}: {e}")
 
-        # 2) 基本面数据 (PE, PB, 换手率)
+        # 2) 基本面数据 (PE, PB, 换手率) — 使用统一数据源管理器
         try:
-            from config import settings
-            import tushare as ts
-            if settings.TUSHARE_TOKEN:
-                ts.set_token(settings.TUSHARE_TOKEN)
-                pro = ts.pro_api()
-                df = pro.daily_basic(
-                    ts_code=stock_code,
-                    limit=5,
-                    fields='trade_date,pe,pb,turnover_rate,total_mv'
-                )
-                if df is not None and len(df) > 0:
-                    result["has_fundamentals"] = True
-                    latest_f = df.iloc[0]
-                    result["fundamentals"] = {
-                        "pe": float(latest_f.get("pe", 0)) if latest_f.get("pe") else None,
-                        "pb": float(latest_f.get("pb", 0)) if latest_f.get("pb") else None,
-                        "turnover_rate": float(latest_f.get("turnover_rate", 0)) if latest_f.get("turnover_rate") else None,
-                        "total_mv": float(latest_f.get("total_mv", 0)) if latest_f.get("total_mv") else None,
-                    }
-                    # 近5日平均换手率
-                    if "turnover_rate" in df.columns and len(df) >= 2:
-                        valids = [float(v) for v in df["turnover_rate"] if v and str(v) != 'nan']
-                        if valids:
-                            result["fundamentals"]["turnover_avg_5d"] = round(sum(valids) / len(valids), 2)
+            from data_sources import data_source_manager
+            fund = data_source_manager.get_daily_basic(stock_code, limit=5)
+            if fund:
+                result["has_fundamentals"] = True
+                result["fundamentals"] = {
+                    "pe": float(fund.get("pe", 0)) if fund.get("pe") else None,
+                    "pb": float(fund.get("pb", 0)) if fund.get("pb") else None,
+                    "turnover_rate": float(fund.get("turnover_rate", 0)) if fund.get("turnover_rate") else None,
+                    "total_mv": float(fund.get("total_mv", 0)) if fund.get("total_mv") else None,
+                    "data_source": fund.get("data_source", "unknown"),
+                }
         except Exception as e:
             logger.warning(f"获取基本面数据异常 {stock_code}: {e}")
 
@@ -273,18 +473,65 @@ class AIEvaluator:
 
     # ─── 评估入口 ───────────────────────────────────────────────
 
-    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None) -> Dict:
+    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default') -> Dict:
         """
-        评估单只股票
+        评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
         """
         # 1) 获取真实数据
         market_data = self._fetch_stock_data(stock_code)
 
-        # 2) 根据配置选择评估方式
-        if self.config.get("provider") == "custom" and self.config.get("apiKey"):
-            result = self._llm_evaluate(stock_code, stock_name, market_data)
+        # 2) 遍历启用模型，按优先级尝试
+        enabled_models = self.get_enabled_models()
+        if not enabled_models:
+            result = {
+                "total_score": 0,
+                "level": "无可用模型",
+                "level_color": "#f56c6c",
+                "dimensions": {},
+                "analysis": {"strengths": [], "weaknesses": [], "suggestions": []},
+                "detailed_report": "未配置任何启用的AI模型，请在系统配置中启用至少一个模型。",
+                "provider": "无"
+            }
+            model_used = None
+            model_provider = "无"
+            llm_latency_ms = 0
+            llm_raw = None
         else:
-            result = self._builtin_evaluate(stock_code, stock_name, market_data)
+            result = None
+            model_used = None
+            model_provider = ""
+            llm_latency_ms = 0
+            llm_raw = None
+            errors = []
+
+            for model in enabled_models:
+                try:
+                    t0 = time.time()
+                    result, raw_response = self._call_llm(model, stock_code, stock_name, market_data)
+                    llm_latency_ms = round((time.time() - t0) * 1000)
+                    model_used = model.id
+                    model_provider = model.provider
+                    llm_raw = raw_response
+                    logger.info(f"评估 {stock_code} 成功: {model.id} ({llm_latency_ms}ms)")
+                    break
+                except Exception as e:
+                    err_msg = f"{model.id}: {str(e)[:100]}"
+                    errors.append(err_msg)
+                    logger.warning(f"评估 {stock_code} 失败: {err_msg}")
+
+            if result is None:
+                # 全部模型失败
+                result = {
+                    "total_score": 0,
+                    "level": "评估失败",
+                    "level_color": "#f56c6c",
+                    "dimensions": {},
+                    "analysis": {"strengths": [], "weaknesses": [], "suggestions": []},
+                    "detailed_report": f"所有模型均评估失败: {'; '.join(errors[:3])}",
+                    "provider": "评估失败"
+                }
+                model_used = None
+                model_provider = "评估失败"
 
         # 3) 保存历史
         record = {
@@ -293,6 +540,10 @@ class AIEvaluator:
             "stock_name": stock_name,
             "evaluate_time": datetime.now().isoformat(),
             "result": result,
+            "model_used": model_used,
+            "model_provider": model_provider,
+            "llm_latency_ms": llm_latency_ms,
+            "llm_raw_response": llm_raw,
             "market_data_snapshot": {
                 "has_kline": market_data.get("has_kline", False),
                 "has_fundamentals": market_data.get("has_fundamentals", False),
@@ -302,112 +553,68 @@ class AIEvaluator:
                 "ma_alignment": market_data.get("ma_alignment"),
             }
         }
-        self.history.insert(0, record)
-        if len(self.history) > 500:
-            self.history = self.history[:500]
-        self._save_history()
+        history = self._load_history_for(username)
+        history.insert(0, record)
+        if len(history) > 500:
+            history = history[:500]
+        self._save_history_for(username, history)
 
         return record
 
-    # ─── LLM 评估 ───────────────────────────────────────────────
+    # ─── LLM 调用 ───────────────────────────────────────────────
 
-    def _llm_evaluate(self, stock_code: str, stock_name: str, market_data: Dict) -> Dict:
+    def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict):
         """
-        使用大模型API评估股票，注入真实行情数据
+        调用指定模型进行评估，返回 (parsed_result, raw_response_text)
         """
-        try:
-            # 构建数据化的 prompt
-            data_section = self._build_data_prompt(market_data)
-
-            prompt = f"""请作为专业的股票分析师，基于以下真实行情数据对股票进行多维度评估。
-
-## 股票信息
-- 股票代码：{stock_code}
-- 股票名称：{stock_name}
+        data_section = self._build_data_prompt(market_data)
+        prompt = f"""量化评估 {stock_name}({stock_code})，严格基于下方数据：
 
 {data_section}
 
-## 评分要求
-请从以下9个维度进行评分（0-100分），必须严格基于上述数据而非猜测：
+## 输出要求（JSON）
+1. 9维度评分(0-100)，加权计算 total_score
+2. level: 强烈推荐/推荐/谨慎推荐/中性/观望
+3. level_color: #67c23a/#85ce61/#e6a23c/#909399/#f56c6c
+4. analysis: strengths/weaknesses/suggestions 各1-3条，每条≤12字
+5. detailed_report: ≤100字凝练综述
 
-1. **趋势强度**（15%权重）— 结合均线排列、价格涨跌幅判断趋势方向和强度
-2. **均线排列**（15%权重）— 分析 MA5/MA10/MA20 的排列形态
-3. **成交量**（12%权重）— 判断量价配合度、换手率活跃度
-4. **波动率**（10%权重）— 评估近期振幅、RSI 超买超卖程度
-5. **资金流向**（12%权重）— 根据成交量变化推测资金动向
-6. **行业热度**（10%权重）— 结合所属板块近期表现综合判断
-7. **策略共识度**（12%权重）— 多指标信号的一致性
-8. **持仓稳定性**（8%权重）— 结合 MACD、RSI 判断趋势稳定性
-9. **价格位置**（6%权重）— 当前价在60日区间的位置
+权重：趋势15% 均线10% 成交量15% 动能风险10% 量价关系12% 中期趋势10% 指标共振12% 稳定性8% 位置8%
 
-请以严格 JSON 格式返回（不要含任何其他文字）：
-{{
-    "total_score": 综合加权总分（0-100，保留1位小数）,
-    "level": "评级（强烈推荐/推荐/谨慎推荐/中性/观望）",
-    "level_color": "#67c23a 或 #85ce61 或 #e6a23c 或 #909399 或 #f56c6c",
-    "dimensions": {{
-        "趋势强度": 分数,
-        "均线排列": 分数,
-        "成交量": 分数,
-        "波动率": 分数,
-        "资金流向": 分数,
-        "行业热度": 分数,
-        "策略共识度": 分数,
-        "持仓稳定性": 分数,
-        "价格位置": 分数
-    }},
-    "analysis": {{
-        "strengths": ["基于数据的优势1", "优势2"],
-        "weaknesses": ["基于数据的风险1", "风险2"],
-        "suggestions": ["基于数据的建议1", "建议2"]
-    }},
-    "detailed_report": "200-300字的综合分析报告，引用具体数据指标",
-    "provider": "AI 大模型"
-}}"""
+严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85,...}}}},"analysis":{{{{"strengths":["量价配合好","均线多头"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"]}}}},"detailed_report":"80字内综述"}}}}"""
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.config['apiKey']}"
-            }
+        endpoint = model.base_url.rstrip("/") + "/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {model.api_key}"
+        }
+        payload = {
+            "model": model.model,
+            "messages": [
+                {"role": "system", "content": "你是专业量化分析师。严格基于数据评估，输出凝练。只返回JSON。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": model.max_tokens,
+        }
 
-            payload = {
-                "model": self.config.get("model", "ark-code-latest"),
-                "messages": [
-                    {"role": "system", "content": "你是专业的量化股票分析师，严格基于提供的真实数据进行分析，不编造信息。输出严格 JSON 格式。"},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.3,
-                "max_tokens": 3000
-            }
+        resp = requests.post(endpoint, headers=headers, json=payload, timeout=model.timeout)
+        resp.raise_for_status()
+        result = resp.json()
+        content = result["choices"][0]["message"]["content"]
+        raw_response = content
 
-            endpoint = self.config.get("endpoint", "https://ark.cn-beijing.volces.com/api/coding/v3")
-            if not endpoint.endswith("/chat/completions"):
-                endpoint = endpoint.rstrip("/") + "/chat/completions"
+        # 解析 JSON 响应
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            llm_result = json.loads(json_match.group())
+            if "provider" not in llm_result:
+                llm_result["provider"] = model.provider
+            return llm_result, raw_response
+        else:
+            raise ValueError(f"LLM 返回无法解析为 JSON: {content[:200]}")
 
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=90)
-            response.raise_for_status()
-
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-
-            # 解析 JSON 响应
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                llm_result = json.loads(json_match.group())
-                if "provider" not in llm_result:
-                    llm_result["provider"] = "AI 大模型"
-                return llm_result
-            else:
-                # 降级
-                fallback = self._builtin_evaluate(stock_code, stock_name, market_data)
-                fallback["provider"] = "AI 大模型(解析降级)"
-                fallback["detailed_report"] = content
-                return fallback
-
-        except Exception as e:
-            fallback = self._builtin_evaluate(stock_code, stock_name, market_data)
-            fallback["provider"] = f"内置引擎 (AI不可用: {str(e)[:60]})"
-            return fallback
+    # ─── 内置评估（已废弃，保留供 evaluate_index 使用）─────────
 
     def _build_data_prompt(self, data: Dict) -> str:
         """将 market_data 转为 LLM 可读的文本"""
@@ -497,14 +704,14 @@ class AIEvaluator:
         """
         dims = [
             {"name": "趋势强度", "weight": 0.15},
-            {"name": "均线排列", "weight": 0.15},
-            {"name": "成交量", "weight": 0.12},
-            {"name": "波动率", "weight": 0.10},
-            {"name": "资金流向", "weight": 0.12},
-            {"name": "行业热度", "weight": 0.10},
-            {"name": "策略共识度", "weight": 0.12},
+            {"name": "均线排列", "weight": 0.10},
+            {"name": "成交量", "weight": 0.15},
+            {"name": "动能风险", "weight": 0.10},
+            {"name": "量价关系", "weight": 0.12},
+            {"name": "中期趋势", "weight": 0.10},
+            {"name": "指标共振", "weight": 0.12},
             {"name": "持仓稳定性", "weight": 0.08},
-            {"name": "价格位置", "weight": 0.06},
+            {"name": "价格位置", "weight": 0.08},
         ]
 
         has_data = market_data.get("has_kline", False)
@@ -612,7 +819,7 @@ class AIEvaluator:
                     vol_score = max(15, vol_score - 5)  # 过低
         scores["成交量"] = max(10, min(95, vol_score))
 
-        # ── 波动率 ──
+        # ── 动能风险（RSI动量 + 日内振幅） ──
         vola_score = 50
         if has_data:
             rsi = market_data.get("rsi", 50)
@@ -638,9 +845,9 @@ class AIEvaluator:
                     vola_score = max(15, vola_score - 15)
                 elif amplitude > 4:
                     vola_score = max(20, vola_score - 8)
-        scores["波动率"] = max(10, min(95, vola_score))
+        scores["动能风险"] = max(10, min(95, vola_score))
 
-        # ── 资金流向 ──
+        # ── 量价关系 ──
         fund_score = 50
         if has_data and market_data.get("volume_analysis"):
             v = market_data["volume_analysis"]
@@ -654,10 +861,10 @@ class AIEvaluator:
                 fund_score = 25
             elif pct and pct < 0:
                 fund_score = 40
-        scores["资金流向"] = max(10, min(95, fund_score))
+        scores["量价关系"] = max(10, min(95, fund_score))
 
-        # ── 行业热度 ──
-        # 没有行业对比数据，参考整体趋势
+        # ── 中期趋势 ──
+        # 基于中短期涨跌幅评估趋势持续性
         industry_score = 50
         if has_data:
             pct_5d = market_data.get("pct_5d", 0)
@@ -671,10 +878,10 @@ class AIEvaluator:
                     industry_score = 30
                 elif pct_5d < 0:
                     industry_score = 40
-        scores["行业热度"] = max(10, min(95, industry_score))
+        scores["中期趋势"] = max(10, min(95, industry_score))
 
-        # ── 策略共识度 ──
-        consensus_score = 50
+        # ── 指标共振 ──
+        # 多技术指标的方向一致性
         if has_data:
             ma = market_data.get("ma_alignment", "")
             rsi = market_data.get("rsi", 50)
@@ -714,7 +921,7 @@ class AIEvaluator:
                     consensus_score = 65
                 else:
                     consensus_score = 35
-        scores["策略共识度"] = max(10, min(95, consensus_score))
+        scores["指标共振"] = max(10, min(95, consensus_score))
 
         # ── 持仓稳定性 ──
         stability_score = 50
@@ -982,29 +1189,47 @@ class AIEvaluator:
 
     # ─── 批量评估 ───────────────────────────────────────────────
 
-    def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None) -> List[Dict]:
-        """批量评估"""
+    def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
+        """批量并行评估"""
         results = []
-        for code in stock_codes:
-            name = (stock_info_map or {}).get(code, code)
-            result = self.evaluate_stock(code, name)
-            results.append(result)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
+            for code in stock_codes:
+                name = (stock_info_map or {}).get(code, code)
+                futures[executor.submit(self.evaluate_stock, code, name, None, username)] = code
+            
+            for future in as_completed(futures):
+                code = futures[future]
+                try:
+                    result = future.result()
+                except Exception as e:
+                    result = {"stock_code": code, "success": False, "error": str(e)}
+                results.append(result)
         return results
 
     # ─── 历史管理 ───────────────────────────────────────────────
 
-    def get_history(self, limit: int = 50) -> List[Dict]:
+    def get_history(self, username: str = 'default', limit: int = 50) -> List[Dict]:
         """获取评估历史"""
-        return self.history[:limit]
-
-    def delete_history(self, record_id: str) -> bool:
+        history = self._load_history_for(username)
+        return history[:limit]
+    def delete_history(self, username: str, record_id: str) -> bool:
         """删除单条评估记录"""
-        initial_count = len(self.history)
-        self.history = [h for h in self.history if h.get("id") != record_id]
-        if len(self.history) < initial_count:
-            self._save_history()
+        history = self._load_history_for(username)
+        before = len(history)
+        history = [r for r in history if r.get("id") != record_id]
+        if len(history) < before:
+            self._save_history_for(username, history)
             return True
         return False
+
+    def get_last_evaluation(self, username: str, stock_code: str) -> Optional[Dict]:
+        """获取某只股票的最近一次评估"""
+        history = self._load_history_for(username)
+        for r in history:
+            if r.get("stock_code") == stock_code:
+                return r
+        return None
 
     # ─── 连接测试 ───────────────────────────────────────────────
 

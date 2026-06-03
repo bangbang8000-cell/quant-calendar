@@ -6,7 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from typing import Dict, Any
 
-from auth import login_user, get_current_active_user, get_admin_user
+from auth import login_user, get_current_active_user, get_admin_user, get_non_guest_user
 from rate_limit import check_login_rate_limit
 from user_manager import user_manager
 
@@ -26,6 +26,11 @@ async def login(request: Request, req: Dict[str, str]):
     
     token = login_user(req.get("username", ""), req.get("password", ""))
     if token:
+        try:
+            from .user_config import init_user_config
+            init_user_config(req.get("username"))
+        except Exception:
+            pass
         return {
             "success": True,
             "data": token,
@@ -57,7 +62,9 @@ async def list_users(_: Dict = Depends(get_admin_user)):
                 "created_at": u.get("created_at", ""),
                 "last_login_at": u.get("last_login_at", ""),
                 "login_count": u.get("login_count", 0),
-                "enabled": u.get("enabled", True)
+                "enabled": u.get("enabled", True),
+                "locked": u.get("locked", False),
+                "group": u.get("group", u.get("role", "user"))
             }
             for u in user_manager.users.values()
         ]
@@ -71,11 +78,18 @@ async def add_user(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     password = req.get("password")
     role = req.get("role", "user")
     theme = req.get("theme", "tech-blue")
+    group = req.get("group")
     
     if not password:
         return {"success": False, "message": "密码不能为空"}
     
-    success = user_manager.add_user(username, password, role, theme)
+    success = user_manager.add_user(username, password, role, theme, group)
+    if success:
+        try:
+            from .user_config import init_user_config
+            init_user_config(username)
+        except Exception:
+            pass
     return {"success": success, "message": "添加成功" if success else "用户名已存在"}
 
 
@@ -99,7 +113,8 @@ async def update_user(
         username, 
         req.get("password"), 
         role, 
-        req.get("theme")
+        req.get("theme"),
+        req.get("group")
     )
     return {"success": success, "message": "更新成功" if success else "用户不存在"}
 
@@ -132,8 +147,8 @@ async def reset_user_password(
         return {"success": False, "message": "普通管理员不能重置 admin 密码"}
     
     new_password = req.get('new_password', '')
-    if len(new_password) < 3:
-        return {"success": False, "message": "密码长度至少3位"}
+    if len(new_password) < 6:
+        return {"success": False, "message": "密码长度至少6位"}
     
     user_manager.users[username]["password"] = user_manager._hash_password(new_password)
     user_manager._save_users()
@@ -145,7 +160,7 @@ async def reset_user_password(
 @router.post("/auth/change-password")
 async def change_password(
     req: Dict[str, str],
-    current_user: Dict = Depends(get_current_active_user)
+    current_user: Dict = Depends(get_non_guest_user)
 ):
     """当前登录用户修改密码"""
     old_password = req.get("old_password", "")

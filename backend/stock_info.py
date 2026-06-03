@@ -125,7 +125,7 @@ class StockInfoManager:
                     "ts_code": ts_code,
                     "trade_date": trade_date.replace('-', '')
                 },
-                "fields": "ts_code,trade_date,open,high,low,close,vol,amount,change,pct_chg"
+                "fields": "ts_code,trade_date,open,high,low,close,pre_close,vol,amount,change,pct_chg,turnover_rate"
             }
             
             response = requests.post(url, json=params, timeout=10)
@@ -166,6 +166,7 @@ class StockInfoManager:
                     return None
                 
                 closes = [item[2] for item in items if item[2]]  # 收盘价列表
+                vols = [item[3] for item in items if len(item) > 3 and item[3]]  # 成交量列表
                 
                 # 计算均线
                 ma_data = {}
@@ -176,6 +177,10 @@ class StockInfoManager:
                     ma_data['ma14'] = round(sum(closes[:14]) / 14, 2)
                 if len(closes) >= 20:
                     ma_data['ma20'] = round(sum(closes[:20]) / 20, 2)
+                
+                # 计算5日均量
+                if len(vols) >= 5:
+                    ma_data['vol5'] = round(sum(vols[:5]) / 5, 0)
                 
                 ma_data['current_price'] = closes[0] if closes else None
                 ma_data['data_count'] = len(closes)
@@ -309,8 +314,36 @@ class StockInfoManager:
                 amplitude_score -= 5
                 details.append(f'剧烈波动{amplitude:.1f}% -5分')
         
+        # 6. 量价配合评分 (15分)
+        vol_score = 0
+        if vol and ma_data.get('vol5') and ma_data['vol5'] > 0:
+            vol_ratio = vol / ma_data['vol5']
+            if vol_ratio >= 2.0 and pct_chg > 0:
+                vol_score += 12
+                details.append(f'放量上涨(量比{vol_ratio:.1f}) +12分')
+            elif vol_ratio >= 1.5 and pct_chg > 0:
+                vol_score += 8
+                details.append(f'温和放量上涨(量比{vol_ratio:.1f}) +8分')
+            elif vol_ratio >= 1.5 and pct_chg < 0:
+                vol_score -= 10
+                details.append(f'放量下跌(量比{vol_ratio:.1f}) -10分')
+            elif vol_ratio >= 0.8 and pct_chg > 0:
+                vol_score += 5
+                details.append(f'平量上涨(量比{vol_ratio:.1f}) +5分')
+            elif vol_ratio < 0.5:
+                vol_score -= 8
+                details.append(f'极度缩量(量比{vol_ratio:.1f}) -8分')
+            elif vol_ratio < 0.7:
+                vol_score -= 3
+                details.append(f'缩量(量比{vol_ratio:.1f}) -3分')
+            else:
+                vol_score += 3
+                details.append(f'正常量能(量比{vol_ratio:.1f}) +3分')
+        else:
+            details.append('无均量数据，跳过量价评分')
+
         # 计算总分
-        total_score = max(0, min(100, score + price_score + ma_score + change_score + kline_score + amplitude_score))
+        total_score = max(0, min(100, score + price_score + ma_score + change_score + kline_score + amplitude_score + vol_score))
         
         # 评级
         if total_score >= 80:

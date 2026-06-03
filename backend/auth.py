@@ -94,6 +94,11 @@ async def get_current_active_user(current_user: Optional[Dict[str, Any]] = Depen
             detail="未登录或登录已过期",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not current_user.get("enabled", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账号已被禁用，请联系管理员",
+        )
     return current_user
 
 
@@ -106,6 +111,19 @@ async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_acti
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要管理员权限",
+        )
+    return current_user
+
+
+async def get_non_guest_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    """禁止访客访问
+    
+    用于需要非访客权限的接口 (user/admin)
+    """
+    if current_user.get("role") == "guest":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="访客账户无此操作权限",
         )
     return current_user
 

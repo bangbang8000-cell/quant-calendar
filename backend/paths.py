@@ -25,12 +25,14 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 STOCK_INFO_FILE = os.path.join(DATA_DIR, "stock_info.json")
 MERRILL_CACHE_FILE = os.path.join(DATA_DIR, "merrill_cache.json")
 MERRILL_HISTORY_FILE = os.path.join(DATA_DIR, "merrill_history.json")
+MERRILL_SNAPSHOT_FILE = os.path.join(DATA_DIR, "merrill_snapshots.json")  # v1.8
 MARKET_CACHE_FILE = os.path.join(DATA_DIR, "market_cache.json")
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 CONSENSUS_DATA_FILE = os.path.join(DATA_DIR, "consensus_data.json")
 AI_CONFIG_FILE = os.path.join(DATA_DIR, "ai_config.json")
 AI_EVALUATION_HISTORY_FILE = os.path.join(DATA_DIR, "ai_evaluation_history.json")
 AUTO_EVALUATE_CONFIG_FILE = os.path.join(DATA_DIR, "auto_evaluate_config.json")
+GROUPS_FILE = os.path.join(DATA_DIR, "groups.json")
 
 # 前端文件
 INDEX_HTML_FILE = os.path.join(FRONTEND_DIR, "index.html")

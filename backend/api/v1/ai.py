@@ -5,6 +5,7 @@ AI 智能评估 API 路由
 """
 from fastapi import APIRouter, Depends, HTTPException
 import logging
+import asyncio
 from typing import Dict, Any, List, Optional
 
 from ai_evaluator import ai_evaluator
@@ -16,32 +17,25 @@ router = APIRouter(prefix="/ai", tags=["AI 智能评估"])
 
 
 @router.post("/evaluate")
-async def ai_evaluate_stock(req: Dict[str, str], _: Dict = Depends(get_current_active_user)):
-    """AI 评估单只股票
-    
-    Args:
-        stock_code: 股票代码
-        stock_name: 股票名称 (可选)
-    """
+async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_current_active_user)):
+    """AI 评估单只股票"""
     try:
         stock_code = req.get("stock_code", "")
         stock_name = req.get("stock_name", stock_code)
-        result = ai_evaluator.evaluate_stock(stock_code, stock_name)
+        result = await asyncio.to_thread(
+            ai_evaluator.evaluate_stock, stock_code, stock_name, None, user["username"]
+        )
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "message": str(e)}
 
 
 @router.post("/batch-evaluate")
-async def ai_batch_evaluate(req: Dict[str, List[str]], _: Dict = Depends(get_current_active_user)):
-    """批量 AI 评估股票
-    
-    Args:
-        stock_codes: 股票代码列表
-    """
+async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
+    """批量 AI 评估股票"""
     try:
         stock_codes = req.get("stock_codes", [])
-        results = ai_evaluator.batch_evaluate(stock_codes)
+        results = await asyncio.to_thread(ai_evaluator.batch_evaluate, stock_codes, None, 5, user["username"])
         return {"success": True, "data": results}
     except Exception as e:
         return {"success": False, "message": str(e)}
@@ -70,32 +64,44 @@ async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_a
 
 
 @router.get("/history")
-async def get_ai_history(limit: int = 50, _: Dict = Depends(get_current_active_user)):
-    """获取评估历史记录"""
+async def get_ai_history(limit: int = 50, user: Dict = Depends(get_current_active_user)):
+    """获取当前用户的评估历史"""
     return {
         "success": True,
-        "data": ai_evaluator.get_history(limit)
+        "data": ai_evaluator.get_history(user["username"], limit)
     }
 
 
 @router.delete("/history/{record_id}")
-async def delete_ai_history(record_id: str, _: Dict = Depends(get_current_active_user)):
+async def delete_ai_history(record_id: str, user: Dict = Depends(get_current_active_user)):
     """删除单条评估记录"""
     try:
-        success = ai_evaluator.delete_history(record_id)
+        success = ai_evaluator.delete_history(user["username"], record_id)
         return {"success": success, "message": "删除成功" if success else "删除失败"}
     except Exception as e:
         return {"success": False, "message": str(e)}
 
 
+@router.get("/history/last/{stock_code}")
+async def get_last_evaluation(stock_code: str, user: Dict = Depends(get_current_active_user)):
+    """获取某只股票的最近一次评估记录"""
+    try:
+        record = ai_evaluator.get_last_evaluation(user["username"], stock_code)
+        if record:
+            return {"success": True, "data": record}
+        return {"success": True, "data": None}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
 @router.post("/history/batch-delete")
-async def batch_delete_ai_history(req: Dict[str, List[str]], _: Dict = Depends(get_current_active_user)):
+async def batch_delete_ai_history(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
     """批量删除评估记录"""
     try:
         ids = req.get("ids", [])
         success_count = 0
         for record_id in ids:
-            if ai_evaluator.delete_history(record_id):
+            if ai_evaluator.delete_history(user["username"], record_id):
                 success_count += 1
         return {
             "success": True,
@@ -107,8 +113,8 @@ async def batch_delete_ai_history(req: Dict[str, List[str]], _: Dict = Depends(g
 
 
 @router.get("/auto-config")
-async def get_auto_evaluate_config(_: Dict = Depends(get_admin_user)):
-    """获取自动评股配置"""
+async def get_auto_evaluate_config():
+    """获取自动评股配置（无需登录）"""
     try:
         config = ai_evaluator.get_auto_config()
         return {"success": True, "data": config}
@@ -117,7 +123,7 @@ async def get_auto_evaluate_config(_: Dict = Depends(get_admin_user)):
 
 
 @router.post("/auto-config")
-async def save_auto_evaluate_config(config: Dict[str, Any], _: Dict = Depends(get_admin_user)):
+async def save_auto_evaluate_config(config: Dict[str, Any]):
     """保存自动评股配置"""
     try:
         ai_evaluator.save_auto_config(config)
@@ -147,3 +153,35 @@ async def test_ai_api(_: Dict = Depends(get_current_active_user)):
     """测试 AI API 连接"""
     result = ai_evaluator.test_connection()
     return result
+
+# ─── 模型管理 API ──────────────────────────────────────────────
+
+@router.get("/models")
+async def get_models():
+    """获取所有 AI 模型配置（无需登录）"""
+    try:
+        models = ai_evaluator.get_models()
+        return {"success": True, "data": models}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/models")
+async def save_models(req: Dict[str, Any]):
+    """保存模型配置列表"""
+    try:
+        models_data = req.get("models", [])
+        models = ai_evaluator.update_models(models_data)
+        return {"success": True, "data": models, "message": "模型配置已保存"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/models/test/{model_id}")
+async def test_model(model_id: str):
+    """探测单个模型连接（无需登录）"""
+    try:
+        result = ai_evaluator.test_model_connection(model_id)
+        return result
+    except Exception as e:
+        return {"success": False, "message": str(e)}
