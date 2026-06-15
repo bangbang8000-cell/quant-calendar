@@ -6,6 +6,7 @@
 
 import os
 import csv
+import time
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -42,6 +43,8 @@ class DataParser:
         self.holdings_data = {}  # strategy -> {date -> set(stocks)}
         self.date_list = []
         self.stock_info = defaultdict(lambda: {'strategies': set(), 'hold_days': defaultdict(int)})
+        self._last_load_time = 0   # 上次加载时间戳，用于自动检测文件更新
+        self._csv_files = []        # 监控的 CSV 文件列表
         self._load_all_data()
     
     def _load_all_data(self):
@@ -92,6 +95,16 @@ class DataParser:
                         all_dates.add(date)
         
         self.date_list = sorted(all_dates)
+        
+        # 记录所有 CSV 文件路径用于 mtime 监控
+        self._csv_files = []
+        for config in STRATEGY_CONFIG.values():
+            for filename in config['files']:
+                test_path = os.path.join(DATA_DIR, filename)
+                if os.path.exists(test_path):
+                    self._csv_files.append(test_path)
+        self._last_load_time = time.time()
+        
         print(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
     
     def reload(self) -> dict:
@@ -149,15 +162,30 @@ class DataParser:
             "stocks_count": len(self.stock_info),
             "latest_date": self.date_list[-1] if self.date_list else None
         }
+        self._last_load_time = time.time()
         print(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
         return stats
 
+    def _check_and_reload(self):
+        """检查 CSV 文件是否有更新，有则自动 reload"""
+        if not self._csv_files:
+            return
+        try:
+            latest_mtime = max(os.path.getmtime(f) for f in self._csv_files if os.path.exists(f))
+            if latest_mtime > self._last_load_time:
+                print(f"🔄 检测到数据文件更新 (mtime={latest_mtime} > last={self._last_load_time})，自动重新加载...")
+                self.reload()
+        except Exception:
+            pass  # 静默失败，不影响正常读取
+    
     def get_available_dates(self) -> List[str]:
         """获取所有可用日期"""
+        self._check_and_reload()
         return self.date_list
     
     def get_holdings_by_date(self, date: str, strategy: Optional[str] = None) -> Dict:
         """获取指定日期的持仓"""
+        self._check_and_reload()
         result = {}
         
         if strategy:
@@ -183,6 +211,7 @@ class DataParser:
     
     def get_strategy_consensus(self, date: str) -> Dict:
         """获取指定日期的策略共识度分析"""
+        self._check_and_reload()
         stock_counts = defaultdict(list)
         
         for strategy_id in STRATEGY_CONFIG.keys():
@@ -204,6 +233,7 @@ class DataParser:
     
     def get_stock_history(self, stock_code: str) -> Dict:
         """获取单只股票的持仓历史"""
+        self._check_and_reload()
         history = []
         
         for strategy_id in STRATEGY_CONFIG.keys():
@@ -231,6 +261,7 @@ class DataParser:
     
     def get_date_summary(self, date: str) -> Dict:
         """获取某日的汇总数据"""
+        self._check_and_reload()
         holdings = self.get_holdings_by_date(date)
         
         all_stocks = set()

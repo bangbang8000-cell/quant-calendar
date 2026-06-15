@@ -92,6 +92,24 @@ class ViewsAggregator:
         year_month = date_str[:7]  # YYYY-MM
         return [d for d in self.all_dates if d.startswith(year_month)]
 
+    def _resolve_date(self, date_str: str) -> str:
+        """将非交易日日期解析为同周期内的首个交易日。
+        若 date_str 已是交易日则直接返回；否则查找同月/同年的首个交易日。
+        """
+        if date_str in self.daily_data:
+            return date_str
+        # 月内查找
+        month = date_str[:7]
+        for d in self.all_dates:
+            if d.startswith(month):
+                return d
+        # 年内查找
+        year = date_str[:4]
+        for d in self.all_dates:
+            if d.startswith(year):
+                return d
+        return date_str  # 无法解析则返回原值
+
     def _get_year_range(self, date_str: str) -> List[str]:
         """获取某年的所有交易日"""
         year = date_str[:4]
@@ -165,7 +183,8 @@ class ViewsAggregator:
                 })
         # 收集已出池股票（前一日在池、当日不在池）
         try:
-            curr_idx = self.all_dates.index(date)
+            resolved = self._resolve_date(date)
+            curr_idx = self.all_dates.index(resolved)
             if curr_idx > 0:
                 prev_date = self.all_dates[curr_idx - 1]
                 for s in self.daily_data.get(prev_date, []):
@@ -202,7 +221,8 @@ class ViewsAggregator:
         result['week_start'] = week_dates[0] if week_dates else date
         # 收集已出池股票（前一周在池、本周不在池）
         try:
-            curr_idx = self.all_dates.index(date)
+            resolved = self._resolve_date(date)
+            curr_idx = self.all_dates.index(resolved)
             prev_week_end = curr_idx - len(week_dates) - 1
             prev_week_start = max(0, prev_week_end - 5)
             prev_week_dates = self.all_dates[prev_week_start:prev_week_end + 1] if prev_week_end >= 0 else []
@@ -250,7 +270,8 @@ class ViewsAggregator:
         # 收集已出池股票（上月有、本月没有的）
         curr_month = date[:7]
         try:
-            curr_idx = self.all_dates.index(date)
+            resolved = self._resolve_date(date)
+            curr_idx = self.all_dates.index(resolved)
             prev_month = None
             for i in range(curr_idx - 1, -1, -1):
                 d = self.all_dates[i]
@@ -340,8 +361,14 @@ class ViewsAggregator:
         """
         try:
             curr_idx = self.all_dates.index(current_date)
-        except:
-            return 'current'
+        except ValueError:
+            # 非交易日：尝试解析为同期首个交易日
+            resolved = self._resolve_date(current_date)
+            try:
+                curr_idx = self.all_dates.index(resolved)
+                current_date = resolved
+            except ValueError:
+                return 'current'
 
         if view == 'day':
             # 日视图：和前一天对比

@@ -563,6 +563,48 @@
             border-color: var(--border-light) !important;
         }
 
+        /* v1.10: hover 微升效果 */
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        [data-theme="dark-night"] .hover-lift:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        /* v1.10: 暗色主题 — 概览卡片 */
+        [data-theme="dark-night"] .stat-card {
+            background: var(--bg-card-header) !important;
+        }
+        [data-theme="dark-night"] .watchlist-score-badge {
+            border: 1px solid var(--border-light);
+        }
+        /* v1.12: 暗色主题 — 系统配置页 */
+        [data-theme="dark-night"] .config-top-toolbar {
+            background: linear-gradient(135deg, rgba(212,175,55,0.12) 0%, var(--bg-card-header) 100%);
+            border-color: rgba(212,175,55,0.2);
+            box-shadow: 0 2px 8px rgba(212,175,55,0.05);
+        }
+        [data-theme="dark-night"] .system-status-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card-header) 100%);
+            border-color: rgba(212,175,55,0.15);
+        }
+        /* v1.12: 暗色主题 — 用户卡片 */
+        [data-theme="dark-night"] .user-card-enhanced {
+            background: var(--bg-card-header);
+            border-color: var(--border-light);
+        }
+        [data-theme="dark-night"] .user-role-tag.admin {
+            background: rgba(220,38,38,0.2) !important;
+            color: #ef5350 !important;
+        }
+        [data-theme="dark-night"] .user-role-tag.user {
+            background: rgba(37,99,235,0.2) !important;
+            color: #64b5f6 !important;
+        }
+        [data-theme="dark-night"] .user-group-tag {
+            opacity: 0.9;
+        }
+
         /* ===== Element Plus 语义色按钮全局覆盖 ===== */
         .el-button--success {
             background-color: var(--el-success) !important;
@@ -1332,6 +1374,112 @@
             border-top: 1px solid var(--border-light);
         }
 
+        /* v1.11: 时间覆盖条 */
+        .time-coverage-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .time-bar-label {
+            font-size: var(--font-sm);
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            font-family: var(--font-mono);
+        }
+        .time-bar-track {
+            flex: 1;
+            height: 8px;
+            min-width: 80px;
+            background: var(--bg-hover);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .time-bar-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+        .time-bar-info {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            white-space: nowrap;
+        }
+
+        /* v1.11: 多维度换手统计 */
+        .pool-change-multi {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .pool-change-col {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            background: var(--bg-card-header);
+            border-radius: 10px;
+            text-align: center;
+        }
+        .pool-change-period {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+            font-weight: var(--font-medium);
+        }
+        .pool-change-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+        .pool-change-val {
+            font-weight: var(--font-bold);
+            font-size: var(--font-md);
+        }
+        .pool-change-val.up { color: #2e7d32; }
+        .pool-change-val.down { color: #c62828; }
+        .pool-change-label {
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+        }
+        [data-theme="dark-night"] .pool-change-val.up { color: #66bb6a; }
+        [data-theme="dark-night"] .pool-change-val.down { color: #ef5350; }
+
+        /* v1.11: 统计趋势徽标 */
+        .stat-trend {
+            font-size: var(--font-xs);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: var(--font-semibold);
+        }
+        .stat-trend.up {
+            background: rgba(46,125,50,0.1);
+            color: #2e7d32;
+        }
+        .stat-trend.down {
+            background: rgba(198,40,40,0.1);
+            color: #c62828;
+        }
+        .stat-trend.flat {
+            background: rgba(0,0,0,0.05);
+            color: var(--text-tertiary);
+        }
+        [data-theme="dark-night"] .stat-trend.up {
+            background: rgba(46,125,50,0.2);
+            color: #66bb6a;
+        }
+        [data-theme="dark-night"] .stat-trend.down {
+            background: rgba(198,40,40,0.2);
+            color: #ef5350;
+        }
+        [data-theme="dark-night"] .stat-trend.flat {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-tertiary);
+        }
+
         /* 持仓变动 */
         .change-stats {
             display: flex;
@@ -1344,10 +1492,10 @@
             border-radius: 10px;
         }
         .change-item.positive {
-            background: #e8f5e9;
+            background: rgba(46,125,50,0.08);
         }
         .change-item.negative {
-            background: #ffebee;
+            background: rgba(198,40,40,0.08);
         }
         .change-value {
             font-size: var(--font-xl);
@@ -1358,6 +1506,19 @@
         }
         .change-item.negative .change-value {
             color: #c62828;
+        }
+        /* v1.11: 暗色主题 — 持仓变动卡片 */
+        [data-theme="dark-night"] .change-item.positive {
+            background: rgba(46,125,50,0.18);
+        }
+        [data-theme="dark-night"] .change-item.negative {
+            background: rgba(198,40,40,0.18);
+        }
+        [data-theme="dark-night"] .change-item.positive .change-value {
+            color: #66bb6a;
+        }
+        [data-theme="dark-night"] .change-item.negative .change-value {
+            color: #ef5350;
         }
         .change-label {
             font-size: var(--font-sm);
@@ -1371,6 +1532,9 @@
         }
         .strategy-item:last-child {
             margin-bottom: 0;
+        }
+        .strategy-item:hover .strategy-name {
+            color: var(--primary-color);
         }
         .strategy-header {
             display: flex;
@@ -1510,6 +1674,24 @@
                 justify-content: flex-start;
                 padding-left: 54px;
             }
+            /* v1.11: 移动端新组件 */
+            .time-coverage-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .time-bar-track { width: 100%; }
+            .pool-change-multi {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .pool-change-col {
+                min-width: auto;
+            }
+            .stat-trend {
+                font-size: 10px;
+                padding: 1px 6px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1523,6 +1705,106 @@
         }
 
         /* ===== 智能评股界面新样式 ===== */
+        /* v1.10: 自选列表 */
+        .watchlist-search-results {
+            background: var(--bg-card-header);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .watchlist-search-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .watchlist-search-item:hover { background: var(--bg-hover); }
+        .watchlist-add-hint { color: var(--primary-color); font-size: var(--font-sm); }
+        .watchlist-sort-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0 12px 0;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 8px;
+        }
+        .watchlist-sort-label { font-size: var(--font-xs); color: var(--text-tertiary); white-space: nowrap; }
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: background 0.15s;
+            border-radius: 6px;
+        }
+        .watchlist-item:hover { background: var(--bg-hover); }
+        .watchlist-item-selected { background: var(--bg-selected) !important; }
+        .watchlist-checkbox {
+            cursor: pointer;
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-heavy);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .watchlist-item-selected .watchlist-checkbox {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .watchlist-checkbox-check { color: #fff; font-size: var(--font-sm); font-weight: bold; }
+        .watchlist-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .watchlist-code {
+            font-weight: var(--font-semibold);
+            font-size: var(--font-md);
+        }
+        .watchlist-name {
+            color: var(--text-tertiary);
+            font-size: var(--font-sm);
+        }
+        .watchlist-status { font-size: 13px; }
+        .watchlist-score-badge {
+            font-size: var(--font-xs);
+            font-weight: var(--font-bold);
+            padding: 2px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .watchlist-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .watchlist-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-tertiary);
+        }
+        .watchlist-empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .watchlist-empty-title { font-size: var(--font-md); color: var(--text-secondary); }
+        .watchlist-empty-hint { font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 4px; }
+        /* 暗色主题：自选列表 */
+        [data-theme="dark-night"] .watchlist-item:hover { background: var(--bg-card-header); }
+        [data-theme="dark-night"] .watchlist-search-item:hover { background: rgba(255,255,255,0.05); }
+
+        /* 原有样式 */
         .ai-history-list {
             max-height: 650px;
             overflow-y: auto;
@@ -3698,6 +3980,52 @@ text {
     justify-content: center;
     flex-shrink: 0;
 }
+/* v1.12: 用户卡片主题变体 */
+.user-avatar-large.avatar-rose { background: #FEE2E2; color: #DC2626; }
+.user-avatar-large.avatar-orange { background: #FEF3C7; color: #92400E; }
+.user-avatar-large.avatar-dark { background: #1E293B; color: #E2E8F0; }
+.user-avatar-large.avatar-blue { background: #DBEAFE; color: #1E40AF; }
+[data-theme="dark-night"] .user-avatar-large.avatar-rose { background: rgba(220,38,38,0.2); color: #ef5350; }
+[data-theme="dark-night"] .user-avatar-large.avatar-orange { background: rgba(217,119,6,0.2); color: #fbbf24; }
+[data-theme="dark-night"] .user-avatar-large.avatar-blue { background: rgba(37,99,235,0.2); color: #64b5f6; }
+
+.user-group-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+.user-group-tag.group-admin { background: #FEE2E2; color: #DC2626; }
+.user-group-tag.group-guest { background: #F3F4F6; color: #6B7280; }
+.user-group-tag.group-user { background: #DBEAFE; color: #2563EB; }
+[data-theme="dark-night"] .user-group-tag.group-admin { background: rgba(220,38,38,0.2); color: #ef5350; }
+[data-theme="dark-night"] .user-group-tag.group-guest { background: rgba(107,114,128,0.2); color: #9CA3AF; }
+[data-theme="dark-night"] .user-group-tag.group-user { background: rgba(37,99,235,0.2); color: #64b5f6; }
+
+.user-disabled-badge {
+    background: #FEE2E2;
+    color: #DC2626;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+[data-theme="dark-night"] .user-disabled-badge {
+    background: rgba(220,38,38,0.2);
+    color: #ef5350;
+}
+
+.user-theme-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 6px;
+}
+.user-theme-dot.dot-rose { background: #E63946; }
+.user-theme-dot.dot-orange { background: #D4A843; }
+.user-theme-dot.dot-dark { background: #818CF8; }
+.user-theme-dot.dot-blue { background: #1D4ED8; }
 
 .user-details {
     flex: 1;
@@ -4172,6 +4500,8 @@ text {
                         <el-date-picker v-else-if="currentSubPage === 'yearly'"
                             v-model="selectedDate" type="year" format="YYYY" value-format="YYYY-MM-DD"
                             placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
+                        <el-button size="small" @click="refreshCalendarData" :loading="loading" style="margin-left:8px" title="重新加载最新持仓数据">🔄 刷新</el-button>
+                        <span v-if="lastLoadTime" style="font-size:12px;color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
                     </div>
 
                     <!-- 用户菜单 (右上角) -->
@@ -4206,10 +4536,13 @@ text {
                                         <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
                         <div class="page-title">📈 策略总览</div>
-                        <span style="color: var(--text-secondary); font-size: 13px;">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="color: var(--text-secondary); font-size: 13px;">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
+                            <span v-if="timeSinceRefresh" style="color: var(--text-tertiary); font-size: 11px;">{{ timeSinceRefresh }}</span>
+                        </div>
                     </div>
 
-                    <!-- 核心数据卡片 -->
+                    <!-- 核心数据卡片 (v1.11: +趋势徽标) -->
                     <div class="dashboard-grid">
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
@@ -4235,7 +4568,10 @@ text {
                         <div class="stat-card">
                             <div class="stat-icon">💎</div>
                             <div class="stat-content">
-                                <div class="stat-value">{{ currentPoolSize }}</div>
+                                <div style="display:flex;align-items:baseline;gap:8px;">
+                                    <div class="stat-value">{{ currentPoolSize }}</div>
+                                    <span v-if="poolChangeBadge" :class="poolChangeBadge.dir" class="stat-trend">{{ poolChangeBadge.text }}</span>
+                                </div>
                                 <div class="stat-label">当前在池股票</div>
                             </div>
                         </div>
@@ -4243,59 +4579,70 @@ text {
 
                     <!-- 子页: 策略总览 -->
 
-                    <!-- 数据概览卡片 -->
+                    <!-- 数据概览卡片 (v1.11 重构: 时间轴+多维度换手) -->
                     <div class="card">
                         <div class="card-title">📋 数据概览</div>
-                        <div class="overview-grid">
-                            <!-- 时间周期覆盖 -->
-                            <div class="overview-section">
-                                <div class="overview-subtitle">⏰ 时间周期覆盖</div>
-                                <div class="time-stats">
-                                    <div class="time-item">
-                                        <div class="time-value">{{ dashboardData.time_coverage?.days || 0 }}</div>
-                                        <div class="time-label">交易日</div>
-                                    </div>
-                                    <div class="time-item">
-                                        <div class="time-value">{{ dashboardData.time_coverage?.months || 0 }}</div>
-                                        <div class="time-label">自然月</div>
-                                    </div>
-                                    <div class="time-item">
-                                        <div class="time-value">{{ dashboardData.time_coverage?.years || 0 }}</div>
-                                        <div class="time-label">年度</div>
-                                    </div>
-                                </div>
-                                <div class="time-range">
-                                    {{ dashboardData.time_coverage?.start_date }} ~ {{ dashboardData.time_coverage?.end_date }}
-                                </div>
+                        <!-- 时间覆盖条 -->
+                        <div class="time-coverage-bar">
+                            <div class="time-bar-label">{{ dashboardData.time_coverage?.start_date }}</div>
+                            <div class="time-bar-track">
+                                <div class="time-bar-fill" :style="{width: timeBarPercent + '%'}"></div>
                             </div>
-
-                            <!-- 持仓变动 -->
-                            <div class="overview-section">
-                                <div class="overview-subtitle">🔄 持仓变动</div>
-                                <div class="change-stats">
-                                    <div class="change-item positive">
-                                        <div class="change-value">+{{ dashboardData.pool_changes?.new_count || 0 }}</div>
-                                        <div class="change-label">新入池</div>
-                                    </div>
-                                    <div class="change-item negative">
-                                        <div class="change-value">-{{ dashboardData.pool_changes?.out_count || 0 }}</div>
-                                        <div class="change-label">已出池</div>
-                                    </div>
-                                </div>
+                            <div class="time-bar-label">{{ dashboardData.time_coverage?.end_date }}</div>
+                            <div class="time-bar-info">{{ dashboardData.time_coverage?.days || 0 }}交易日 · {{ dashboardData.time_coverage?.months || 0 }}月 · {{ dashboardData.time_coverage?.years || 0 }}年</div>
+                        </div>
+                        <!-- 持仓变动 多时间维度 -->
+                        <div class="pool-change-multi">
+                            <div class="pool-change-col">
+                                <div class="pool-change-period">今日变动</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.new_count || 0 }}</span><span class="pool-change-label">新入池</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.out_count || 0 }}</span><span class="pool-change-label">已出池</span></div>
+                            </div>
+                            <div class="pool-change-col">
+                                <div class="pool-change-period">本周累计</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.weekly_new || 0 }}</span><span class="pool-change-label">新入池</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.weekly_out || 0 }}</span><span class="pool-change-label">已出池</span></div>
+                            </div>
+                            <div class="pool-change-col">
+                                <div class="pool-change-period">本月累计</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.monthly_new || 0 }}</span><span class="pool-change-label">新入池</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.monthly_out || 0 }}</span><span class="pool-change-label">已出池</span></div>
                             </div>
                         </div>
                     </div>
 
-<!-- 各策略选股数量 -->
+<!-- 各策略选股数量 (v1.11: 可点击跳转) -->
                     <div class="card">
-                        <div class="card-title">📈 各策略选股统计</div>
-                        <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item">
+                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size:12px;color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
+                        <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item" @click="navigateToStrategyFilter(item.strategy_name)" style="cursor:pointer;">
                             <div class="strategy-header">
-                                <span class="strategy-name">{{ item.strategy_name }}</span>
-                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">({{ item.percentage }}%)</span></span>
+                                <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:11px;color:var(--text-tertiary);margin-left:4px;">→</span></span>
+                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ item.percentage }}%)</span></span>
                             </div>
                             <div class="strategy-progress">
                                 <div class="progress-bar" :style="{width: item.percentage + '%'}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 策略共识度 TOP5 (v1.11: 嵌入概览) -->
+                    <div class="card">
+                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span>🏆 策略共识度 TOP5</span>
+                            <span @click="currentSubPage = 'consensus'" style="font-size:12px;color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
+                        </div>
+                        <div v-if="filteredConsensusRank.length === 0" class="empty-state">暂无共识数据</div>
+                        <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
+                            <div class="consensus-badge">{{ item.strategy_count }}</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">{{ item.code }}</div>
+                                <div class="consensus-name">{{ item.name }}
+                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span>
+                                </div>
+                            </div>
+                            <div class="consensus-tags">
+                                <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
                             </div>
                         </div>
                     </div>
@@ -4341,14 +4688,20 @@ text {
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 7px;">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
-                                <span>均值 {{ merrillData.timing.avg_duration_months }}月</span>
+                                <span v-if="merrillData.next_stage_prediction?.transition_probability > 0.2" style="color: var(--el-warning); font-weight: var(--font-semibold);">
+                                    →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(0) }}%
+                                </span>
+                                <span v-else>均值 {{ merrillData.timing.avg_duration_months }}月</span>
                             </div>
                             <div style="width: 100%; height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden;">
-                                <div :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', background: merrillData.color || '#4CAF50'}" 
+                                <div :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', 
+                                              background: (merrillData.timing.progress_percent || 0) > 100 ? 
+                                                'linear-gradient(90deg, ' + (merrillData.color || '#4CAF50') + ', #FF9800)' : 
+                                                (merrillData.color || '#4CAF50')}" 
                                      style="height: 100%; border-radius: 4px; transition: width 0.5s;"></div>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
-                                <span>{{ merrillData.timing.progress_percent || 0 }}%</span>
+                                <span>{{ merrillData.timing.progress_percent || 0 }}%<template v-if="(merrillData.timing.progress_percent || 0) > 100"> ⚠超期</template></span>
                                 <span v-if="merrillData.timing.predicted_end">预计结束 {{ merrillData.timing.predicted_end.base || merrillData.timing.predicted_end }}</span>
                             </div>
                         </div>
@@ -4398,7 +4751,7 @@ text {
                             <span>
                                 <span v-if="marketData.is_trading_day" style="color:var(--color-primary,#E63946);font-weight:600;">● 交易日</span>
                                 <span v-else style="color:var(--text-tertiary);">○ 非交易日</span>
-                                <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:#0ca678;font-weight:600;">🕐 交易中</span>
+                                <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:var(--color-neutral,#0ca678);font-weight:600;">🕐 交易中</span>
                                 <span v-if="!marketData.in_trading_hours && marketData.is_trading_day" style="margin-left:8px;color:var(--text-tertiary);">已收盘</span>
                             </span>
                             <span style="font-size:11px;color:var(--text-tertiary);">{{ marketData.date }}</span>
@@ -4434,7 +4787,7 @@ text {
                             <div class="consensus-badge">{{ item.strategy_count }}</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:#D4A843;font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
+                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
                             </div>
                             <div class="consensus-tags">
                                 <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -4486,7 +4839,7 @@ text {
                                             <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                             <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                         </div>
-                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:#D4A843;font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
+                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
                                     </div>
                                     <div class="consensus-tags">
                                         <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -4536,7 +4889,7 @@ text {
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
-                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:#D4A843;font-size:13px;" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
+                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
                                             </span>
                                         </template>
                                         <span v-if="item.names.length > 5 && !expandedStrategies[item.strategy]" 
@@ -4573,45 +4926,103 @@ text {
 
                         <!-- 统计卡片 -->
                         <div class="dashboard-grid" style="margin-bottom: 20px;">
-                            <div class="stat-card">
-                                <div class="stat-icon">📋</div>
+                            <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--color-primary);">
+                                <div class="stat-icon" style="background: rgba(99,102,241,0.12); color: var(--color-primary);">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistory.length }}</div>
                                     <div class="stat-label">总评估数</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📈</div>
+                            <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--el-success);">
+                                <div class="stat-icon" style="background: rgba(103,194,58,0.12); color: var(--el-success);">📈</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistoryStockCount }}</div>
                                     <div class="stat-label">覆盖股票</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">⭐</div>
+                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid #D4A843;">
+                                <div class="stat-icon" style="background: rgba(212,168,67,0.12); color: #D4A843;">⭐</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
                                     <div class="stat-label">自选股</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--gradient)' : 'var(--bg-hover)'}">
-                                    {{ autoEvaluateConfig.enabled ? '✅' : '⏸️' }}
+                            <div class="stat-card" @click="showAutoEvaluateSettings = true" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
+                                <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'rgba(230,162,60,0.15)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
+                                    {{ autoEvaluateConfig.enabled ? '⚡' : '⏸️' }}
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value">{{ autoEvaluateConfig.enabled ? '已开启' : '已关闭' }}</div>
+                                    <div class="stat-value" style="font-size:15px;">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
                                     <div class="stat-label">自动评股</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">🗑️</div>
-                                <div class="stat-content">
-                                    <div class="stat-value">{{ selectedHistoryIds.length }}</div>
-                                    <div class="stat-label">已选择</div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- 最近评估 -->
+                        <div class="card" style="margin-bottom: 16px;" v-if="aiHistory.length > 0">
+                            <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+                                <span>🕐 最近评估</span>
+                                <el-button size="small" text @click="currentSubPage = 'history'">查看全部 →</el-button>
+                            </div>
+                            <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;">
+                                <div v-for="item in aiHistory.slice(0,3)" :key="item.id" @click="viewAiResult(item)" style="flex:0 0 220px;background:var(--bg-card-header);border-radius:10px;padding:14px;cursor:pointer;border:1px solid var(--border-light);transition:all 0.2s;" class="hover-lift">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                        <span style="font-weight:var(--font-semibold);font-size:var(--font-md);">{{ item.stock_code }}</span>
+                                        <span :style="{color:item.result.level_color,fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ item.result.total_score }}</span>
+                                    </div>
+                                    <div style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:6px;">{{ item.stock_name }}</div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span :style="{background:item.result.level_color+'20',color:item.result.level_color,padding:'2px 8px',borderRadius:'10px',fontSize:'var(--font-xs)'}">{{ item.result.level }}</span>
+                                        <span style="font-size:var(--font-xs);color:var(--text-tertiary);">{{ (item.evaluate_time||'').split('T')[0] }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 评分分布 + 快捷操作 双栏 -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                            <!-- 评分分布 -->
+                            <div class="card" v-if="aiHistory.length > 0">
+                                <div class="card-title">📊 评分分布</div>
+                                <div v-for="bar in scoreDistribution" :key="bar.label" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                    <span style="font-size:var(--font-xs);color:var(--text-secondary);width:48px;text-align:right;flex-shrink:0;">{{ bar.label }}</span>
+                                    <div style="flex:1;height:18px;background:var(--border-light);border-radius:9px;overflow:hidden;">
+                                        <div :style="{width:bar.pct+'%',height:'100%',background:bar.color,borderRadius:'9px',transition:'width 0.6s ease',minWidth:bar.count>0?'4px':'0'}"></div>
+                                    </div>
+                                    <span style="font-size:var(--font-xs);color:var(--text-tertiary);width:28px;flex-shrink:0;">{{ bar.count }}</span>
+                                </div>
+                            </div>
+                            <!-- 快捷操作 -->
+                            <div class="card">
+                                <div class="card-title">⚡ 快捷操作</div>
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    <div v-if="watchlist.length > 0" style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:4px;">从自选中选择股票快速评估：</div>
+                                    <el-select v-if="watchlist.length > 0" v-model="quickEvalStock" placeholder="选择自选股..." size="small" style="width:100%;" clearable>
+                                        <el-option v-for="s in watchlist" :key="s.code" :label="s.code + ' ' + s.name" :value="s.code" />
+                                    </el-select>
+                                    <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评股</el-button>
+                                    <div v-if="watchlist.length === 0" style="text-align:center;padding:20px 0;color:var(--text-tertiary);">
+                                        <div style="font-size:36px;margin-bottom:8px;">⭐</div>
+                                        <div style="font-size:var(--font-sm);">还没有自选股</div>
+                                        <el-button size="small" @click="currentSubPage = 'watchlist'" style="margin-top:8px;">去添加自选 →</el-button>
+                                    </div>
+                                    <div style="border-top:1px solid var(--border-light);margin-top:4px;padding-top:10px;">
+                                        <el-button size="small" @click="showBatchEvaluate = true" style="width:100%;">✨ 批量评估（输入代码）</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 空状态：无任何评估记录 -->
+                        <div v-if="aiHistory.length === 0" class="card" style="text-align:center;padding:40px 20px;">
+                            <div style="font-size:64px;margin-bottom:16px;">🤖</div>
+                            <div style="font-size:var(--font-lg);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">欢迎使用智能评股</div>
+                            <div style="font-size:var(--font-md);color:var(--text-secondary);margin-bottom:20px;">对股票进行AI深度分析，获取九维度评分与投资建议</div>
+                            <div style="display:flex;gap:12px;justify-content:center;">
+                                <el-button type="primary" @click="currentSubPage = 'watchlist'">⭐ 管理自选股</el-button>
+                                <el-button @click="showBatchEvaluate = true">✨ 批量评估</el-button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- history: 评估历史记录 -->
@@ -4810,7 +5221,7 @@ text {
                     </div>
                     </div>
 
-                    <!-- watchlist: 我的自选 (v1.8.0) -->
+                    <!-- watchlist: 我的自选 (v1.10) -->
                     <div v-else-if="currentSubPage === 'watchlist'">
                         <!-- 批量操作工具栏 -->
                         <div class="card" style="margin-bottom: 16px;">
@@ -4836,28 +5247,47 @@ text {
                             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                                 <el-input v-model="watchlistSearch" placeholder="输入股票代码或名称搜索..." size="small" style="flex:1" @input="searchStockForWatchlist" clearable />
                             </div>
-                            <div v-if="watchlistResults.length" style="background: var(--bg-card-header); border-radius: 8px; padding: 8px; margin-bottom: 12px; max-height: 200px; overflow-y: auto;">
-                                <div v-for="r in watchlistResults" :key="r.code" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; cursor: pointer; border-radius: 4px;" 
-                                    @click="addToWatchlist(r.code, r.name); watchlistResults = watchlistResults.filter(x => x.code !== r.code); watchlistSearch = ''"
-                                    class="hover-row">
+                            <div v-if="watchlistResults.length" class="watchlist-search-results">
+                                <div v-for="r in watchlistResults" :key="r.code" class="watchlist-search-item hover-row" @click="addSearchResult(r)">
                                     <span><strong>{{ r.code }}</strong> <span style="color: var(--text-tertiary);">{{ r.name }}</span></span>
-                                    <span style="color: var(--primary-color); font-size: var(--font-sm);">+ 添加</span>
+                                    <span class="watchlist-add-hint">+ 添加</span>
                                 </div>
                             </div>
+                            <!-- 排序栏 -->
+                            <div v-if="watchlist.length > 1" class="watchlist-sort-bar">
+                                <span class="watchlist-sort-label">排序:</span>
+                                <el-radio-group v-model="watchlistSort" size="small">
+                                    <el-radio-button label="default">默认</el-radio-button>
+                                    <el-radio-button label="name">名称</el-radio-button>
+                                    <el-radio-button label="added">加入时间</el-radio-button>
+                                    <el-radio-button label="score">评分</el-radio-button>
+                                </el-radio-group>
+                            </div>
+                            <!-- 空状态 -->
+                            <div v-if="watchlist.length === 0" class="watchlist-empty">
+                                <div class="watchlist-empty-icon">⭐</div>
+                                <div class="watchlist-empty-title">暂无自选股</div>
+                                <div class="watchlist-empty-hint">在上方搜索框输入股票代码或名称添加</div>
+                            </div>
                             <!-- 自选列表 -->
-                            <div v-if="watchlist.length === 0" class="empty-state">暂无自选股，搜索股票代码或名称添加</div>
                             <div v-else>
-                                <div v-for="stock in watchlist" :key="stock.code" @click="showStockKline(stock.code, stock.name)" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-light); cursor: pointer;" :style="{background: selectedWatchlistCodes.includes(stock.code) ? 'var(--bg-selected)' : ''}">
-                                    <div @click.stop="toggleSelectWatchlist(stock.code)" style="cursor: pointer; margin-right: 10px; width: 18px; height: 18px; border: 2px solid var(--border-heavy); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" :style="{background: selectedWatchlistCodes.includes(stock.code) ? 'var(--primary-color)' : '', borderColor: selectedWatchlistCodes.includes(stock.code) ? 'var(--primary-color)' : ''}">
-                                        <span v-if="selectedWatchlistCodes.includes(stock.code)" style="color: white; font-size: var(--font-sm);">✓</span>
+                                <div v-for="stock in sortedWatchlist" :key="stock.code" class="watchlist-item" @click="showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code)}">
+                                    <div class="watchlist-checkbox" @click.stop="toggleSelectWatchlist(stock.code)">
+                                        <span v-if="selectedWatchlistCodes.includes(stock.code)" class="watchlist-checkbox-check">✓</span>
                                     </div>
-                                    <span style="flex: 1;"><strong>{{ stock.code }}</strong> <span style="color: var(--text-tertiary); margin-left: 8px;">{{ stock.name }}</span>
-                                        <span v-if="batchRunning && batchStatuses[stock.code]==='running'" title="评估中" style="font-size:13px;margin-left:6px;display:inline-block;animation:spin 1s linear infinite;">⏳</span>
-                                        <span v-else-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:13px;margin-left:6px;">🤖</span>
-                                    </span>
-                                    <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评股</el-button>
-                                    <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)" style="margin-left: 4px;">📈 K线</el-button>
-                                    <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)" style="margin-left: 4px;">🗑️</el-button>
+                                    <div class="watchlist-info">
+                                        <span class="watchlist-code">{{ stock.code }}</span>
+                                        <span class="watchlist-name">{{ stock.name }}</span>
+                                        <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning">⏳</span>
+                                        <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
+                                            {{ getWatchlistScore(stock.code).score }}
+                                        </span>
+                                    </div>
+                                    <div class="watchlist-actions">
+                                        <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评股</el-button>
+                                        <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
+                                        <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4900,8 +5330,8 @@ text {
                             </span>
                         </div>
                         <div class="toolbar-right" v-if="currentUser?.role !== 'guest'">
-                            <el-button @click="resetAllConfig" :disabled="!globalConfigDirty" size="small">♻️ 重置变更</el-button>
-                            <el-button type="primary" @click="saveAllConfig" :loading="configSaving" size="large">💾 保存全部配置</el-button>
+                            <el-button @click="resetAllConfig" :disabled="!globalConfigDirty" size="large" type="warning">♻️ 重置变更</el-button>
+                            <el-button type="primary" @click="saveAllConfig" :loading="configSaving" size="large">💾 全部保存</el-button>
                         </div>
                     </div>
 
@@ -4911,7 +5341,7 @@ text {
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: var(--font-sm); color: var(--text-secondary);">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: var(--font-sm); font-weight: var(--font-medium); background: var(--gradient-brand); color: white; padding: 3px 10px; border-radius: 10px;">v1.9.3</span>
+                                <span style="font-size: var(--font-sm); font-weight: var(--font-medium); background: var(--gradient-brand); color: white; padding: 3px 10px; border-radius: 10px;">v1.9.4</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -4929,7 +5359,7 @@ text {
                                     <div class="status-value" style="color: var(--primary-color);">{{ dashboardData.stats?.strategy_count || '---' }} 个</div>
                                 </div>
                             </div>
-                            <div class="status-item">
+                            <div class="status-item" @click="currentSubPage = 'autoeval'" style="cursor:pointer;" title="点击配置 AI 自动评股">
                                 <div class="status-icon">🤖</div>
                                 <div class="status-info">
                                     <div class="status-label">AI服务</div>
@@ -4938,7 +5368,7 @@ text {
                                     </div>
                                 </div>
                             </div>
-                            <div class="status-item">
+                            <div class="status-item" @click="currentSubPage = 'feature'" style="cursor:pointer;" title="点击配置飞书推送">
                                 <div class="status-icon">📢</div>
                                 <div class="status-info">
                                     <div class="status-label">飞书推送</div>
@@ -4947,7 +5377,7 @@ text {
                                     </div>
                                 </div>
                             </div>
-                            <div class="status-item">
+                            <div class="status-item" @click="currentSubPage = 'datasource'" style="cursor:pointer;" title="点击配置数据源">
                                 <div class="status-icon">📊</div>
                                 <div class="status-info">
                                     <div class="status-label">Tushare</div>
@@ -5061,7 +5491,7 @@ text {
                         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
                             <el-button size="small" type="primary" @click="loadAiModels">🔄 刷新</el-button>
                             <el-button size="small" type="success" @click="testAllModels" :loading="testingAllModels">🧪 探测全部</el-button>
-                            <el-button size="small" @click="saveAiModels" :loading="savingAiModels">💾 保存</el-button>
+                            <el-button size="small" type="primary" @click="saveAiModels" :loading="savingAiModels">💾 保存</el-button>
                             <el-button size="small" type="success" @click="addModel" style="margin-left:auto;">➕ 新增模型</el-button>
                         </div>
                         <div v-if="aiModelsError" style="color:var(--el-danger);padding:16px;text-align:center;">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiModels">重试</el-button></div>
@@ -5172,8 +5602,9 @@ text {
                     </div>
                 </div>
 
-                    <!-- 策略筛选卡片 (feature 子页) -->
-                    <div v-else-if="currentSubPage === 'feature'" class="card">
+                    <!-- feature 子页: 功能开关与配置 -->
+                    <div v-else-if="currentSubPage === 'feature'">
+                        <div class="card">
                         <div class="card-title">🎛️ 策略筛选</div>
                         <div style="margin-bottom: 12px;">
                             <el-checkbox-group v-model="strategyFilter.selected">
@@ -5198,6 +5629,7 @@ text {
                                 <span>📅 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
 </div>
+                    </div>
 
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card" style="margin-top: 16px;">
@@ -5293,16 +5725,16 @@ text {
                         </div>
                             <div v-for="user in filteredUsers" :key="user.username" class="user-card-enhanced" :style="{opacity: user.enabled === false ? 0.55 : 1}">
                                 <div class="user-info-enhanced">
-                                    <div class="user-avatar-large" :style="{background: user.theme === 'rose-red' ? '#FEE2E2' : user.theme === 'vibrant-orange' ? '#FEF3C7' : user.theme === 'dark-night' ? '#1E293B' : '#DBEAFE', color: user.theme === 'dark-night' ? '#E2E8F0' : 'var(--text-primary)'}">{{ user.username.charAt(0).toUpperCase() }}</div>
+                                    <div class="user-avatar-large" :class="'avatar-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : user.theme === 'dark-night' ? 'dark' : 'blue')">{{ user.username.charAt(0).toUpperCase() }}</div>
                                     <div class="user-details">
                                         <div class="user-name-enhanced">
                                             {{ user.username }}
                                             <span class="user-role-tag" :class="user.role">
                                                 {{ user.role === 'admin' ? '管理员' : '普通用户' }}
                                             </span>
-                                            <span class="user-group-tag" :style="{background: user.group === 'admin' ? '#FEE2E2' : user.group === 'guest' ? '#F3F4F6' : '#DBEAFE', color: user.group === 'admin' ? '#DC2626' : user.group === 'guest' ? '#6B7280' : '#2563EB', fontSize:'10px', padding:'1px 6px', borderRadius:'4px', marginLeft:'4px'}">{{ getGroupName(user.group || user.role) }}</span>
-                                            <span v-if="user.enabled === false" style="background: #FEE2E2; color: #DC2626; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">已禁用</span>
-                                            <span v-if="user.theme" :style="{display: 'inline-block', width: 10, height: 10, borderRadius: '50%', marginLeft: 6, background: user.theme === 'rose-red' ? '#E63946' : user.theme === 'vibrant-orange' ? '#D4A843' : user.theme === 'dark-night' ? '#818CF8' : '#1D4ED8'}" :title="themes[user.theme]?.name || user.theme"></span>
+                                            <span class="user-group-tag" :class="'group-' + (user.group === 'admin' ? 'admin' : user.group === 'guest' ? 'guest' : 'user')">{{ getGroupName(user.group || user.role) }}</span>
+                                            <span v-if="user.enabled === false" class="user-disabled-badge">已禁用</span>
+                                            <span v-if="user.theme" class="user-theme-dot" :class="'dot-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : user.theme === 'dark-night' ? 'dark' : 'blue')" :title="themes[user.theme]?.name || user.theme"></span>
                                         </div>
                                         <div class="user-meta-info">
                                             <span v-if="user.created_at" style="margin-right: 12px;">
@@ -5326,7 +5758,7 @@ text {
                                     </div>
                                 </div>
                                 <div class="user-actions-enhanced">
-                                    <el-button size="small" @click="editUser(user)">编辑</el-button>
+                                    <el-button size="small" type="primary" @click="editUser(user)">编辑</el-button>
                                     <el-button size="small" type="warning" @click="resetUserPassword(user)">重置密码</el-button>
                                     <el-button v-if="user.username !== 'admin'" size="small" type="danger" @click="deleteUser(user.username)">删除</el-button>
                                 </div>
@@ -5366,7 +5798,7 @@ text {
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                                        <el-button size="small" @click="openMemberManager(gid)">🔢 成员管理</el-button>
+                                        <el-button size="small" type="primary" @click="openMemberManager(gid)">🔢 成员管理</el-button>
                                         <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单配置</el-button>
                                         <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                                     </div>
@@ -5394,8 +5826,8 @@ text {
                         <div class="card">
                             <div class="card-title">📌 软件版本</div>
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-                                <span style="font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px;">v1.9.3</span>
-                                <span style="color: var(--text-secondary); font-size: var(--font-md);">📅 发布日期：2026-06-02</span>
+                                <span style="font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px;">v{{ appVersion }}</span>
+                                <span style="color: var(--text-secondary); font-size: var(--font-md);">📅 服务运行中</span>
                             </div>
                         </div>
                         <div class="card">
@@ -5457,8 +5889,7 @@ text {
                         <div class="card">
                             <div class="card-title">📧 联系与反馈</div>
                             <div style="color: var(--text-secondary); line-height: 1.8; font-size: var(--font-md);">
-                                <p style="margin: 0 0 4px 0;">• 飞书推送通道支持消息反馈</p>
-                                <p style="margin: 0;">• 维护团队：Evergreen 量化团队</p>
+                                <p style="margin: 0;">• 维护团队：犇犇量化团队</p>
                             </div>
                         </div>
                     </div>
@@ -5815,13 +6246,14 @@ text {
                     <div style="height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
                         <div :style="{width:(batchTotal>0?batchCompleted/batchTotal*100:0)+'%',height:'100%',background:'var(--gradient-brand)',borderRadius:'3px',transition:'width 0.4s ease'}"></div>
                     </div>
-                    <div style="margin-top:12px;max-height:200px;overflow-y:auto;">
+                    <div style="margin-top:12px;max-height:240px;overflow-y:auto;">
                         <div v-for="(status,code) in batchStatuses" :key="code" style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--font-sm);">
                             <span v-if="status==='running'" style="color:var(--color-primary);">⏳</span>
                             <span v-else-if="status==='success'" style="color:var(--el-success);">✅</span>
                             <span v-else-if="status==='error'" style="color:var(--el-danger);">❌</span>
                             <span v-else style="color:var(--text-tertiary);">⏸</span>
-                            <span style="color:var(--text-primary);">{{ code }}</span>
+                            <span style="color:var(--text-primary);flex:1;">{{ code }}</span>
+                            <span v-if="status==='success' && batchResults[code] && batchResults[code].result" style="font-weight:var(--font-bold);font-size:var(--font-sm);" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ batchResults[code].result.total_score }}分</span>
                         </div>
                     </div>
                 </div>
@@ -5979,33 +6411,67 @@ text {
                     </div>
                 </div>
 
-                <!-- v2.0: 当前周期状态（实时数据） -->
-                <div v-if="merrillData.timing" class="detail-section" style="margin-top: 4px;">
-                    <div class="section-title">⏱️ 当前周期实时状态</div>
+                <!-- ★ 当前周期状态：活跃阶段=实时进度，非活跃阶段=上一轮历史 -->
+                <!-- 活跃阶段：实时进度 -->
+                <div v-if="merrillDetailData._isCurrent && merrillDetailData._currentTiming" class="detail-section" style="margin-top: 4px;">
+                    <div class="section-title">📍 当前周期实时进度</div>
                     <div style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;">
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillData.timing.current_stage_start_date || '—' }}</div>
+                            <div class="stat-value">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
                             <div class="stat-label">周期起始日</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillData.timing.duration_days }}天</div>
+                            <div class="stat-value">{{ merrillDetailData._currentTiming.duration_days }}天</div>
                             <div class="stat-label">已持续</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value" :style="{color: merrillData.color}">{{ merrillData.timing.maturity || '—' }}</div>
+                            <div class="stat-value" :style="{color: merrillDetailData.color}">{{ merrillDetailData._currentTiming.maturity || '—' }}</div>
                             <div class="stat-label">成熟度</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillData.timing.predicted_end?.base || merrillData.timing.predicted_end || '—' }}</div>
+                            <div class="stat-value">{{ merrillDetailData._currentTiming.predicted_end?.base || merrillDetailData._currentTiming.predicted_end || '—' }}</div>
                             <div class="stat-label">预测结束日</div>
                         </div>
                     </div>
-                    <div v-if="merrillData.confidence" style="margin-top: 12px; display: flex; gap: 18px; align-items: center; font-size: 13px; flex-wrap: wrap;">
-                        <span>置信度：<b :style="{color: confidenceColor}">{{ merrillData.confidence.level }}</b></span>
-                        <span>加权评分：<b>{{ merrillData.confidence.weighted_score?.toFixed(2) || '—' }}</b></span>
-                        <span>距象限中心：<b>{{ merrillData.confidence.distance_from_center?.toFixed(2) || '—' }}</b></span>
-                        <span>边界接近度：<b>{{ merrillData.confidence.boundary_proximity?.toFixed(2) || '—' }}</b></span>
-                        <span v-if="merrillData.next_stage_prediction?.next_stage">⚠️ 预警：<b>{{ merrillData.next_stage_prediction.next_stage }}</b> ({{ (merrillData.next_stage_prediction.transition_probability*100)?.toFixed(0) || 0 }}%)</span>
+                    <div style="margin-top: 12px; display: flex; gap: 18px; align-items: center; font-size: 13px; flex-wrap: wrap;">
+                        <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
+                        <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ merrillDetailData._currentTiming.progress_percent }}%</b></span>
+                        <span v-if="merrillDetailData._nextPrediction?.next_stage" style="color: var(--el-warning); font-weight: var(--font-semibold);">
+                            ⚠️ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(0) || 0 }}%
+                        </span>
+                    </div>
+                    <!-- 过渡警告横幅 -->
+                    <div v-if="merrillDetailData._currentTiming.progress_percent > 80 && merrillDetailData._nextPrediction?.transition_probability > 0.15" 
+                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, #FFF3E0, #FFEBEE); border-radius: 8px; border-left: 4px solid #FF9800; font-size: 13px;">
+                        <b style="color: #E65100;">⚠️ 周期切换预警</b>
+                        <span style="color: var(--text-secondary); margin-left: 8px;">
+                            当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
+                            预测下一阶段为<b style="color: #FF9800;">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
+                            （概率 {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(0) || 0 }}%）
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 非活跃阶段：上一轮时间范围 -->
+                <div v-else-if="merrillDetailData._lastPeriod" class="detail-section" style="margin-top: 4px;">
+                    <div class="section-title">📅 上一轮时间范围</div>
+                    <div style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ merrillDetailData._lastPeriod.start || '—' }}</div>
+                            <div class="stat-label">开始时间</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ merrillDetailData._lastPeriod.end || '—' }}</div>
+                            <div class="stat-label">结束时间</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ merrillDetailData._lastPeriod.duration || '—' }}</div>
+                            <div class="stat-label">持续时长</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" :style="{color: merrillDetailData.color}">{{ merrillDetailData._lastPeriod.note || '—' }}</div>
+                            <div class="stat-label">阶段特征</div>
+                        </div>
                     </div>
                 </div>
 
@@ -6297,7 +6763,7 @@ text {
                         lightColor: '#E8F5E9',
                         duration: '~18个月', 
                         order: 0,
-                        period: '2019-2020.10 & 2025-2026',
+                        period: '2024.9-至今(当前) & 2020-2021',
                         avgMonths: 18
                     },
                     overheat: { 
@@ -6307,7 +6773,7 @@ text {
                         lightColor: '#FFF3E0',
                         duration: '~14个月', 
                         order: 1,
-                        period: '2020.11-2021',
+                        period: '2021 Q3-Q4',
                         avgMonths: 12
                     },
                     stagflation: { 
@@ -6325,9 +6791,9 @@ text {
                         icon: '❄️', 
                         color: '#2196F3', 
                         lightColor: '#E3F2FD',
-                        duration: '~24个月', 
+                        duration: '~20个月', 
                         order: 3,
-                        period: '2023-2024',
+                        period: '2023-2024.9',
                         avgMonths: 18
                     }
                 };
@@ -6358,7 +6824,12 @@ text {
                         sector_advice: ['优先配置：食品饮料、医药生物、新能源', '其次关注：TMT、高端制造、社服零售', '谨慎配置：周期品、煤炭钢铁、金融地产'],
                         risks: ['政策转向风险：通胀超预期回升可能导致货币政策收紧', '复苏不及预期：需求恢复力度弱于市场预期', '海外市场波动：美联储加息引发全球流动性收紧'],
                         historical_stats: { avg_duration_months: 18, stock_avg_return: 0.25, bond_avg_return: 0.06, best_sector: '消费/TMT' },
-                        case_studies: ['2019-2020.10：贸易战缓和，疫前温和复苏', '2025-2026：政策发力，新一轮复苏周期（当前阶段）', '历史参考：2016年供给侧改革驱动的行业出清复苏']
+                        case_studies: [
+                            '2024年9月至今：政策大转向（降准降息组合拳），新一轮复苏周期（当前阶段，已持续21个月）',
+                            '2020年Q2-2021年Q2：疫后V型反弹复苏（约12个月）',
+                            '2019年：贸易战缓和，疫前温和复苏（约12个月）'
+                        ],
+                        _lastPeriod: { start: '2020-04', end: '2021-06', duration: '~14个月', note: '疫后V型反弹' }
                     },
                     overheat: {
                         name: '过热期', stage_cn: '过热', icon: '🔥',
@@ -6381,7 +6852,11 @@ text {
                         sector_advice: ['优先配置：有色金属、煤炭、石油石化', '其次关注：银行、地产、建筑建材', '谨慎配置：成长股、高估值科技板块'],
                         risks: ['通胀超预期：上游价格上涨挤压中下游利润', '政策过快收紧：引发经济硬着陆风险', '企业盈利拐点确认后的估值下杀'],
                         historical_stats: { avg_duration_months: 14, stock_avg_return: 0.12, bond_avg_return: 0.02, best_sector: '周期/资源品' },
-                        case_studies: ['2020.11-2021：全球大放水，新能源超级牛市，周期品涨价', '上一轮：2007年经济全面过热，CPI曾达8.7%']
+                        case_studies: [
+                            '2021年Q3-Q4：全球大放水，PPI峰值13.5%，周期品暴涨（约6个月）',
+                            '2007年：经济全面过热，CPI曾达8.7%（约12个月）'
+                        ],
+                        _lastPeriod: { start: '2021-07', end: '2021-12', duration: '~6个月', note: 'PPI峰值13.5%' }
                     },
                     stagflation: {
                         name: '滞胀期', stage_cn: '滞胀', icon: '⚠️',
@@ -6404,7 +6879,11 @@ text {
                         sector_advice: ['优先配置：必选消费、医药、公用事业', '其次关注：黄金、农林牧渔、军工', '谨慎配置：周期成长、高弹性科技板块'],
                         risks: ['滞胀深化风险：经济下行+通胀高企的双重压力', '企业信用风险：盈利下滑+融资成本上升共振', '政策失误风险：紧缩过度或宽松不及预期'],
                         historical_stats: { avg_duration_months: 12, stock_avg_return: -0.10, bond_avg_return: 0.03, best_sector: '必选消费/防御' },
-                        case_studies: ['2022年：美联储加息+俄乌战争+国内封控，典型滞胀', '历史参考：2011-2012年四万亿后遗症期']
+                        case_studies: [
+                            '2022年：美联储加息+俄乌战争+国内封控，典型滞胀环境（约12个月）',
+                            '2011-2012年：四万亿后遗症，高通胀+增速下滑（约12个月）'
+                        ],
+                        _lastPeriod: { start: '2022-01', end: '2022-12', duration: '~12个月', note: '封控+全球加息' }
                     },
                     recession: {
                         name: '衰退期', stage_cn: '衰退', icon: '❄️',
@@ -6427,7 +6906,12 @@ text {
                         sector_advice: ['优先配置：债券（利率债为主）、银行', '其次关注：地产、基建等政策受益板块', '谨慎配置：大宗商品、强周期板块'],
                         risks: ['衰退超预期：经济下滑幅度大于市场预期', '政策传导不畅：宽货币到宽信用的时滞拉长', '尾部风险暴露：信用违约事件频发'],
                         historical_stats: { avg_duration_months: 24, stock_avg_return: 0.05, bond_avg_return: 0.10, best_sector: '金融/债券' },
-                        case_studies: ['2023-2024：地产下行+消费疲软，通缩压力显著', '历史参考：2018年去杠杆+贸易战双杀', '历史参考：2020年一季度新冠疫情冲击']
+                        case_studies: [
+                            '2022年初-2024年9月：地产深度调整+疫情封控+通缩压力（约33个月，本轮复苏前一阶段）',
+                            '2018年：去杠杆+中美贸易战双杀（约12个月）',
+                            '2020年Q1：新冠疫情冲击（约3个月）'
+                        ],
+                        _lastPeriod: { start: '2022-01', end: '2024-09', duration: '~33个月', note: '地产危机+通缩' }
                     }
                 };
                 
@@ -6446,24 +6930,19 @@ text {
                     return angles[merrillData.value.stage] || 0;
                 }
                 
-                // ===== 周期进度计算（复苏期：2025年初至今）=====
+                // ===== 周期进度计算（动态从后端读取）=====
                 function getCycleProgress() {
-                    // 复苏期预测总时长：24个月
-                    // 当前已进行：17个月
-                    const elapsedMonths = 17;
-                    const stageTotalMonths = 24;
-                    const progress = (elapsedMonths / stageTotalMonths * 100).toFixed(1);
-                    return Math.min(100, progress);
+                    return merrillData.value?.timing?.progress_percent || 0;
                 }
                 
                 // 获取当前阶段已进行的月数
                 function getCurrentStageMonths() {
-                    return 17;  // 2025初至今：约17个月
+                    return merrillData.value?.timing?.duration_months || 0;
                 }
                 
                 // 获取当前阶段预测总月数
                 function getStageTotalMonths() {
-                    return 24;  // 复苏期预测总时长
+                    return merrillData.value?.timing?.avg_duration_months || 18;
                 }
                 
                 // ===== 判断阶段是否完成 =====
@@ -7048,38 +7527,57 @@ text {
                 // ===== 显示阶段详情弹窗 =====
                 async function showStageDetail(stage) {
                     showMerrillDetail.value = true;
-                    // 锁定背景滚动（保存当前位置）
-                    const scrollY = window.scrollY;
+                    // 锁定背景滚动（仅 overflow:hidden，不破坏 body 的 CSS 背景/主题色）
+                    document.documentElement.style.overflow = 'hidden';
                     document.body.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    document.body.style.top = `-${scrollY}px`;
-                    document.body.style.width = '100%';
                     // 优先使用前端预设数据（确保弹窗有内容）
                     merrillDetailData.value = merrillStagesPreset[stage] || merrillStagesPreset.recovery;
                     
+                    // ★ 注入前端特有的实时数据（API 不提供这些字段）
+                    const isActive = merrillData.value?.stage === stage;
+                    merrillDetailData.value._isCurrent = isActive;
+                    if (isActive && merrillData.value) {
+                        merrillDetailData.value._nextPrediction = merrillData.value.next_stage_prediction;
+                        merrillDetailData.value._confidence = merrillData.value.confidence;
+                        merrillDetailData.value._stage = merrillData.value.stage;
+                        merrillDetailData.value._dimensions = merrillData.value.dimension_scores;
+                    }
+                    
                     // 🔥 弹窗打开后强制重新渲染样式（解决布局问题）
                     setTimeout(() => {
-                        // 强制等宽应用到所有时间轴卡片
                         document.querySelectorAll('.timeline-segment').forEach(el => {
                             el.style.flex = '1 1 0';
                             el.style.width = '0';
                             el.style.minWidth = '0';
                         });
-                        
-                        // 强制重绘
                         document.body.style.display = 'none';
-                        setTimeout(() => {
-                            document.body.style.display = '';
-                        }, 10);
+                        setTimeout(() => { document.body.style.display = ''; }, 10);
                     }, 100);
                     
-                    // 后台异步请求API更新（如果有）
+                    // 后台异步请求API更新（含 _is_current, _current_timing, _lastPeriod 等动态数据）
                     try {
                         const res = await fetch(`/api/market/merrill-clock/stage/${stage}`);
                         const data = await res.json();
                         if (data.success && data.data) {
-                            // 合并API数据（保留预设的字段）
-                            merrillDetailData.value = { ...merrillStagesPreset[stage], ...data.data };
+                            // 合并API数据（保留预设字段 + API 覆盖）
+                            const apiData = { ...merrillStagesPreset[stage], ...data.data };
+                            // ★ 映射后端 snake_case → 前端 camelCase
+                            if (apiData._is_current !== undefined) {
+                                apiData._isCurrent = apiData._is_current;
+                            }
+                            if (apiData._current_timing) {
+                                apiData._currentTiming = apiData._current_timing;
+                            }
+                            // 保留前端注入的实时数据（API 不提供）
+                            if (merrillDetailData.value._nextPrediction)
+                                apiData._nextPrediction = merrillDetailData.value._nextPrediction;
+                            if (merrillDetailData.value._confidence)
+                                apiData._confidence = merrillDetailData.value._confidence;
+                            if (merrillDetailData.value._stage)
+                                apiData._stage = merrillDetailData.value._stage;
+                            if (merrillDetailData.value._dimensions)
+                                apiData._dimensions = merrillDetailData.value._dimensions;
+                            merrillDetailData.value = apiData;
                         }
                     } catch (e) {
                         console.log('使用本地预设数据，API不可用');
@@ -7260,6 +7758,7 @@ const allMenuDefs = [
                 const viewCache = new Map();   // 客户端视图缓存: key="view_date" → data
                 const dates = ref([]);
                 const selectedDate = ref('');
+                const lastLoadTime = ref('');  // 上次数据加载时间
                 const consensus = ref([]);
                 const searchKeyword = ref('');
                 const stockDetailVisible = ref(false);
@@ -7285,6 +7784,7 @@ const allMenuDefs = [
                 const batchCompleted = ref(0);
                 const batchCurrent = ref('');
                 const batchStatuses = ref({});
+                const batchResults = ref({});  // v1.10: 批量结果详情
                 const aiConfig = ref({
                     provider: 'codingplan',
                     apiKey: '',
@@ -7486,6 +7986,49 @@ const allMenuDefs = [
                     });
                 });
 
+                // ===== v1.11: 策略总览增强 =====
+                // 池子趋势徽标
+                const poolChangeBadge = computed(() => {
+                    const changes = (dashboardData.value || {}).pool_changes || {};
+                    const net = (changes.new_count || 0) - (changes.out_count || 0);
+                    if (net > 0) return { dir: 'up', text: '↑' + net };
+                    if (net < 0) return { dir: 'down', text: '↓' + Math.abs(net) };
+                    return { dir: 'flat', text: '→0' };
+                });
+                // 时间覆盖进度条百分比
+                const timeBarPercent = computed(() => {
+                    const cov = (dashboardData.value || {}).time_coverage || {};
+                    const start = new Date(cov.start_date);
+                    const end = new Date(cov.end_date);
+                    const now = new Date();
+                    if (!start.getTime() || !end.getTime()) return 100;
+                    if (now >= end) return 100;
+                    if (now <= start) return 0;
+                    const total = end - start;
+                    const elapsed = now - start;
+                    return Math.round(elapsed / total * 100);
+                });
+                // 上次刷新时间文字
+                const lastRefreshTime = ref(null);
+                const timeSinceRefresh = computed(() => {
+                    if (!lastRefreshTime.value) return '';
+                    const sec = Math.floor((Date.now() - lastRefreshTime.value) / 1000);
+                    if (sec < 60) return sec + '秒前刷新';
+                    if (sec < 3600) return Math.floor(sec/60) + '分钟前刷新';
+                    return Math.floor(sec/3600) + '小时前刷新';
+                });
+                // 点击策略跳转日历筛选
+                function navigateToStrategyFilter(strategyName) {
+                    // 设置策略筛选为仅该策略
+                    strategyFilter.value.selected = [strategyName];
+                    strategyFilter.value.mode = 'union';
+                    localStorage.setItem('quant_strategy_filter_selected', JSON.stringify([strategyName]));
+                    localStorage.setItem('quant_strategy_filter_mode', 'union');
+                    // 跳转到日历页
+                    currentPage.value = 'calendar';
+                    currentSubPage.value = 'daily';
+                }
+
                 // ===== 主题切换 =====
                 function applyTheme(theme) {
                     currentTheme.value = theme;
@@ -7643,12 +8186,16 @@ const allMenuDefs = [
 
                 function switchView(view) {
                     currentView.value = view;
-                    // 确保日期格式正确
+                    // 确保日期为同期首个交易日（而非 -01/-01-01 硬编码）
                     let currentDate = selectedDate.value || dates.value[dates.value.length - 1];
                     if (view === 'year') {
-                        selectedDate.value = currentDate.substring(0, 4) + '-01-01';
+                        const yearPrefix = currentDate.substring(0, 4);
+                        const firstDate = dates.value.find(d => d.startsWith(yearPrefix));
+                        selectedDate.value = firstDate || currentDate;
                     } else if (view === 'month') {
-                        selectedDate.value = currentDate.substring(0, 7) + '-01';
+                        const monthPrefix = currentDate.substring(0, 7);
+                        const firstDate = dates.value.find(d => d.startsWith(monthPrefix));
+                        selectedDate.value = firstDate || currentDate;
                     }
                     setTimeout(loadConsensusData, 50);
                 }
@@ -7669,11 +8216,15 @@ const allMenuDefs = [
                     const newIdx = idx + direction * step;
                     if (newIdx >= 0 && newIdx < allDates.length) {
                         const newDate = allDates[newIdx];
-                        // 月/年视图需要对齐到月/年起始
+                        // 月/年视图需要对齐到同月/年首个交易日（而非 -01/-01-01 硬编码）
                         if (currentView.value === 'month') {
-                            selectedDate.value = newDate.substring(0, 7) + '-01';
+                            const monthPrefix = newDate.substring(0, 7);
+                            const firstDate = allDates.find(d => d.startsWith(monthPrefix));
+                            selectedDate.value = firstDate || newDate;
                         } else if (currentView.value === 'year') {
-                            selectedDate.value = newDate.substring(0, 4) + '-01-01';
+                            const yearPrefix = newDate.substring(0, 4);
+                            const firstDate = allDates.find(d => d.startsWith(yearPrefix));
+                            selectedDate.value = firstDate || newDate;
                         } else {
                             selectedDate.value = newDate;
                         }
@@ -7709,7 +8260,22 @@ const allMenuDefs = [
                         if (dates.value.length > 0) {
                             selectedDate.value = dates.value[dates.value.length - 1];
                         }
+                        lastLoadTime.value = new Date().toLocaleTimeString();
                     } catch (e) { console.error(e); }
+                }
+
+                async function refreshCalendarData() {
+                    // 触发后端数据刷新，然后重新加载日历数据
+                    try {
+                        await fetch('/api/data-refresh/reload', { method: 'POST' });
+                        lastLoadTime.value = '刷新中...';
+                        viewCache.clear();
+                        await loadDates();
+                        await loadConsensusData();
+                        lastLoadTime.value = new Date().toLocaleTimeString();
+                    } catch(e) {
+                        console.error('数据刷新失败', e);
+                    }
                 }
 
                 async function loadConsensusData() {
@@ -7945,8 +8511,43 @@ const allMenuDefs = [
                     feishu_webhook: ''
                 });
                 // v1.8.0: 自选股
+                const quickEvalStock = ref('');  // v1.10: 快捷评股下拉
+                const watchlistSort = ref('default');  // v1.10: 自选排序
                 const watchlist = ref([]);
                 const watchlistCodes = computed(() => new Set(watchlist.value.map(s => s.code)));
+                // v1.10: 排序后的自选列表
+                const sortedWatchlist = computed(() => {
+                    const list = [...watchlist.value];
+                    if (watchlistSort.value === 'name') {
+                        list.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+                    } else if (watchlistSort.value === 'added') {
+                        list.sort((a, b) => (b.added_at || '').localeCompare(a.added_at || ''));
+                    } else if (watchlistSort.value === 'score') {
+                        list.sort((a, b) => {
+                            const sa = getLatestScore(a.code);
+                            const sb = getLatestScore(b.code);
+                            return sb - sa;
+                        });
+                    }
+                    return list;
+                });
+                // v1.10: 获取某股票最近评分和颜色
+                function getWatchlistScore(code) {
+                    const records = aiHistory.value.filter(r => r.stock_code === code);
+                    if (records.length === 0) return null;
+                    const latest = records.reduce((a, b) => (a.evaluate_time > b.evaluate_time) ? a : b);
+                    return { score: latest.result.total_score, color: latest.result.level_color };
+                }
+                function getLatestScore(code) {
+                    const s = getWatchlistScore(code);
+                    return s ? s.score : 0;
+                }
+                // v1.10: 搜索结果添加（提取模板逻辑）
+                function addSearchResult(r) {
+                    addToWatchlist(r.code, r.name);
+                    watchlistResults.value = watchlistResults.value.filter(x => x.code !== r.code);
+                    watchlistSearch.value = '';
+                }
                 // 已评估股票集合（来自AI历史）
                 const evaluatedCodes = computed(() => new Set(aiHistory.value.map(r => r.stock_code)));
                 // K线已加载集合（当前session）
@@ -8311,34 +8912,44 @@ const allMenuDefs = [
                     }
                 }
                 async function watchlistEvaluate(code, name) {
-                    // 检查是否有历史评估记录
-                    const historyRecords = aiHistory.value.filter(r => r.stock_code === code);
-                    if (historyRecords.length > 0) {
-                        // 加载最近一次评估结果
-                        const latest = historyRecords.reduce((a, b) =>
-                            (a.evaluate_time > b.evaluate_time) ? a : b
-                        );
-                        aiResult.value = latest;
-                        stockKlineLoaded.value = false;
-                        if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
-                        const today = new Date().toISOString().split('T')[0];
-                        const date = selectedDate.value || today;
-                        try {
-                            const res = await fetch(`/api/calendar/stock/${encodeURIComponent(code)}?date=${date}`);
-                            stockDetail.value = await res.json();
-                        } catch(e) {
-                            stockDetail.value = { stock: code, name, total_days: 0, history: [] };
-                        }
-                        stockDetailTab.value = 'ai';
-                        stockDetailVisible.value = true;
-                        setTimeout(async () => { await loadStockKline('daily'); refreshStockScore(); }, 500);
-                    } else {
-                        // 无历史：运行新鲜评估
+                    // v1.10: 始终触发新评估，弹窗展示完整结果
+                    aiLoading.value = true;
+                    aiResult.value = null;
+                    stockKlineLoaded.value = false;
+                    if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
+                    const today = new Date().toISOString().split('T')[0];
+                    const date = selectedDate.value || today;
+                    try {
+                        const res = await fetch(`/api/calendar/stock/${encodeURIComponent(code)}?date=${date}`);
+                        stockDetail.value = await res.json();
+                    } catch(e) {
                         stockDetail.value = { stock: code, name, total_days: 0 };
-                        stockDetailVisible.value = true;
-                        await nextTick();
-                        doAiEvaluate();
                     }
+                    stockDetailTab.value = 'ai';
+                    stockDetailVisible.value = true;
+                    await nextTick();
+                    // 触发新评估
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const evalRes = await fetch('/api/ai/evaluate', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                            body: JSON.stringify({ stock_code: code, stock_name: name })
+                        });
+                        const evalData = await evalRes.json();
+                        if (evalData.success) {
+                            aiResult.value = evalData.data;
+                            loadAiHistory();
+                        } else {
+                            ElementPlus.ElMessage.error(evalData.message || '评估失败');
+                        }
+                    } catch(e) {
+                        ElementPlus.ElMessage.error('评估失败');
+                    } finally {
+                        aiLoading.value = false;
+                    }
+                    // 加载K线
+                    setTimeout(async () => { await loadStockKline('daily'); refreshStockScore(); }, 500);
                 }
                 async function batchEvaluateWatchlist() {
                     if (watchlist.value.length === 0) return;
@@ -8502,6 +9113,57 @@ const allMenuDefs = [
 
                 const aiHistoryStockCount = computed(() => Object.keys(aiHistoryByStock.value).length);
 
+                // v1.10: 评分分布（用于 Overview 仪表盘）
+                const scoreDistribution = computed(() => {
+                    const total = aiHistory.value.length;
+                    if (total === 0) return [];
+                    const bins = [
+                        { label: '90+', min: 90, max: 100, color: 'var(--el-success)' },
+                        { label: '80-89', min: 80, max: 89, color: '#67c23a' },
+                        { label: '70-79', min: 70, max: 79, color: '#b3e19d' },
+                        { label: '60-69', min: 60, max: 69, color: 'var(--el-warning)' },
+                        { label: '<60', min: 0, max: 59, color: 'var(--el-danger)' },
+                    ];
+                    return bins.map(b => {
+                        const count = aiHistory.value.filter(r => r.result.total_score >= b.min && r.result.total_score <= b.max).length;
+                        return { ...b, count, pct: Math.round(count / total * 100) };
+                    });
+                });
+
+                // v1.10: 快捷评股
+                async function quickEvaluate() {
+                    if (!quickEvalStock.value) return;
+                    const stock = watchlist.value.find(s => s.code === quickEvalStock.value);
+                    if (!stock) return;
+                    aiLoading.value = true;
+                    aiResult.value = null;
+                    try {
+                        stockDetail.value = { stock: stock.code, name: stock.name, total_days: 0 };
+                        stockDetailVisible.value = true;
+                        stockDetailTab.value = 'ai';
+                        await nextTick();
+                        // 借用 doAiEvaluate 逻辑
+                        const token = localStorage.getItem('quant_token');
+                        const res = await fetch('/api/ai/evaluate', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                            body: JSON.stringify({ stock_code: stock.code, stock_name: stock.name })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            aiResult.value = data.data;
+                            loadAiHistory();
+                            quickEvalStock.value = '';
+                        } else {
+                            ElementPlus.ElMessage.error(data.message || '评估失败');
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('评估失败');
+                    } finally {
+                        aiLoading.value = false;
+                    }
+                }
+
                 // 切换日期展开
                 function toggleDateExpand(date) {
                     const idx = expandedDates.value.indexOf(date);
@@ -8597,41 +9259,69 @@ const allMenuDefs = [
                     batchCompleted.value = 0;
                     batchCurrent.value = '';
                     batchStatuses.value = {};
-                    stockCodes.forEach(c => batchStatuses.value[c] = 'pending');
+                    batchResults.value = {};
+                    stockCodes.forEach(c => { batchStatuses.value[c] = 'pending'; batchResults.value[c] = null; });
                     
-                    let successCount = 0;
                     const token = localStorage.getItem('quant_token');
-                    for (const code of stockCodes) {
-                        batchCurrent.value = code;
-                        batchStatuses.value[code] = 'running';
-                        try {
-                            const res = await fetch('/api/ai/evaluate', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                                body: JSON.stringify({ stock_code: code.trim(), stock_name: code.trim() })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                                successCount++;
-                                batchStatuses.value[code] = 'success';
-                            } else {
-                                batchStatuses.value[code] = 'error';
+                    // v1.10: 使用后端批量API并发评估
+                    try {
+                        const res = await fetch('/api/ai/batch-evaluate', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                            body: JSON.stringify({ stock_codes: stockCodes })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            for (const r of data.data) {
+                                batchCompleted.value++;
+                                batchCurrent.value = r.stock_code;
+                                if (r.success) {
+                                    batchStatuses.value[r.stock_code] = 'success';
+                                    batchResults.value[r.stock_code] = r;
+                                } else {
+                                    batchStatuses.value[r.stock_code] = 'error';
+                                }
                             }
-                        } catch (e) {
-                            batchStatuses.value[code] = 'error';
+                        } else {
+                            // 降级：单只逐个评估
+                            for (const code of stockCodes) {
+                                batchCurrent.value = code;
+                                batchStatuses.value[code] = 'running';
+                                try {
+                                    const sr = await fetch('/api/ai/evaluate', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                                        body: JSON.stringify({ stock_code: code.trim(), stock_name: code.trim() })
+                                    });
+                                    const sd = await sr.json();
+                                    if (sd.success) {
+                                        batchStatuses.value[code] = 'success';
+                                        batchResults.value[code] = sd.data;
+                                    } else {
+                                        batchStatuses.value[code] = 'error';
+                                    }
+                                } catch (e) {
+                                    batchStatuses.value[code] = 'error';
+                                }
+                                batchCompleted.value++;
+                            }
                         }
-                        batchCompleted.value++;
+                    } catch (e) {
+                        // 网络失败：标记全部为错误
+                        stockCodes.forEach(c => {
+                            batchStatuses.value[c] = 'error';
+                            batchCompleted.value++;
+                        });
                     }
                     
                     batchCurrent.value = '';
                     await loadAiHistory();
                     
+                    const successCount = Object.values(batchStatuses.value).filter(s => s === 'success').length;
                     setTimeout(() => {
                         ElementPlus.ElMessage.success(`评估完成 ${successCount}/${stockCodes.length}`);
                         batchRunning.value = false;
-                        showBatchEvaluate.value = false;
-                        batchStocks.value = '';
-                    }, 800);
+                    }, 500);
                 }
 
                 // ===== 分组管理 =====
@@ -8861,6 +9551,7 @@ const allMenuDefs = [
                 const stockCount = ref(null);
                 const tradeDateCount = ref(null);
                 const aiStatus = ref('pending');
+                const appVersion = ref('...'); // v1.12: 从 /api/health 动态获取
                 const showImportDialog = ref(false);
                 const rateLimitConfig = ref({ api_limit: 600 });
                 const rateLimitDirty = ref(false);
@@ -9155,84 +9846,102 @@ const allMenuDefs = [
                 // ===== 系统配置页函数 =====
                 async function saveAllConfig() {
                     configSaving.value = true;
-                    try {
-                        const token = localStorage.getItem('quant_token');
-                        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                        
-                        // 1. 保存用户专属配置到 per-user 端点
-                        const userConfig = {
-                            tushare: tushareConfig.value,
-                            feishu: feishuConfig.value,
-                            ai: aiConfig.value,
-                            rate_limit: rateLimitConfig.value,
-                            auto_evaluate: autoEvaluateConfig.value,
-                            theme: currentTheme.value,
-                            icon_system: iconSystem.value,
-                            research_menu_enabled: researchMenuEnabled.value
-                        };
-                        await fetch('/api/user/config', {
+                    const token = localStorage.getItem('quant_token');
+                    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+                    // v1.12: 并行保存，容错不中断
+                    const saves = [
+                        fetch('/api/user/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
-                            body: JSON.stringify({ config: userConfig })
-                        });
-
-                        // 2. 同时同步到全局端点（兼容旧的 admin 端点，供后端各个模块使用）
-                        await fetch('/api/market/tushare/config', {
+                            body: JSON.stringify({ config: {
+                                tushare: tushareConfig.value,
+                                feishu: feishuConfig.value,
+                                ai: aiConfig.value,
+                                rate_limit: rateLimitConfig.value,
+                                auto_evaluate: autoEvaluateConfig.value,
+                                theme: currentTheme.value,
+                                icon_system: iconSystem.value,
+                                research_menu_enabled: researchMenuEnabled.value
+                            }})
+                        }).then(r => ['userConfig', r.ok]),
+                        fetch('/api/market/tushare/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
                             body: JSON.stringify(tushareConfig.value)
-                        });
-                        // v1.8.0: 保存多数据源配置
-                        await fetch('/api/market/datasource/config', {
+                        }).then(r => ['tushare', r.ok]),
+                        fetch('/api/market/datasource/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
                             body: JSON.stringify({ sources: datasourceConfig.value })
-                        });
-                        await fetch('/api/feishu/config', {
+                        }).then(r => ['datasource', r.ok]),
+                        fetch('/api/feishu/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
                             body: JSON.stringify(feishuConfig.value)
-                        });
-                        await fetch('/api/ai/config', {
+                        }).then(r => ['feishu', r.ok]),
+                        fetch('/api/ai/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
                             body: JSON.stringify(aiConfig.value)
-                        });
-                        await fetch('/api/system/rate-limit', {
+                        }).then(r => ['ai', r.ok]),
+                        fetch('/api/system/rate-limit', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...headers },
                             body: JSON.stringify(rateLimitConfig.value)
-                        });
-                        rateLimitDirty.value = false;
-                        
-                        // 保存 AI 模型配置
-                        await saveAiModels();
-                        
-// 5. 保存策略筛选配置
-                        localStorage.setItem('quant_strategy_filter_selected', JSON.stringify(strategyFilter.value.selected));
-                        localStorage.setItem('quant_strategy_filter_mode', strategyFilter.value.mode);
+                        }).then(r => ['rateLimit', r.ok]),
+                        saveAiModels().then(() => ['aiModels', true], () => ['aiModels', false])
+                    ];
 
-                        // 6. 保存主题到后端
-                        if (currentUser.value) {
-                            await fetch(`/api/users/${currentUser.value.username}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json', ...headers },
-                                body: JSON.stringify({ theme: currentTheme.value })
-                            });
-                        }
+                    const results = await Promise.allSettled(saves);
+                    const ok = results.filter(r => r.status === 'fulfilled' && r.value[1]).length;
+                    const fail = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value[1])).length;
 
-                        globalConfigDirty.value = false;
-                        lastSavedTime.value = new Date().toLocaleString('zh-CN');
-                        ElementPlus.ElMessage.success('✅ 全部配置已保存');
-                    } catch (e) {
-                        ElementPlus.ElMessage.error('❌ 保存失败: ' + e.message);
-                    } finally {
-                        configSaving.value = false;
+                    rateLimitDirty.value = false;
+                    // 策略筛选保存到 localStorage
+                    localStorage.setItem('quant_strategy_filter_selected', JSON.stringify(strategyFilter.value.selected));
+                    localStorage.setItem('quant_strategy_filter_mode', strategyFilter.value.mode);
+                    // 主题同步到用户后端
+                    if (currentUser.value) {
+                        fetch(`/api/users/${currentUser.value.username}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', ...headers },
+                            body: JSON.stringify({ theme: currentTheme.value })
+                        }).catch(() => {});
+                    }
+
+                    globalConfigDirty.value = false;
+                    lastSavedTime.value = new Date().toLocaleString('zh-CN');
+                    configSaving.value = false;
+                    // v1.12: 静默保存（仅在状态栏体现，不弹 toast）
+                    if (fail > 0) {
+                        console.error(`[saveAllConfig] ${ok}/${ok+fail} 项保存成功，${fail} 项失败`);
                     }
                 }
-                function resetAllConfig() {
-                    globalConfigDirty.value = false;
-                    ElementPlus.ElMessage.info('♻️ 配置已重置');
+                async function resetAllConfig() {
+                    // v1.12: 真正从后端重新加载配置
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                        const res = await fetch('/api/user/config', { headers });
+                        const data = await res.json();
+                        if (data.success && data.config) {
+                            const c = data.config;
+                            if (c.tushare) tushareConfig.value = { ...tushareConfig.value, ...c.tushare };
+                            if (c.feishu) feishuConfig.value = { ...feishuConfig.value, ...c.feishu };
+                            if (c.ai) aiConfig.value = { ...aiConfig.value, ...c.ai };
+                            if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
+                            if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
+                            if (c.theme) applyTheme(c.theme);
+                            if (c.icon_system) { iconSystem.value = c.icon_system; localStorage.setItem('icon_system', c.icon_system); }
+                            if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
+                        }
+                        globalConfigDirty.value = false;
+                        rateLimitDirty.value = false;
+                    } catch (e) {
+                        console.error('[resetAllConfig] 重新加载配置失败:', e);
+                        globalConfigDirty.value = false;
+                    }
                 }
                 async function testTushareConnection() {
                     tushareStatus.value = 'testing';
@@ -9443,6 +10152,7 @@ const allMenuDefs = [
                         const res = await fetch('/api/dashboard');
                         const dashResp = await res.json();
                         dashboardData.value = dashResp.success ? dashResp.data : dashResp;
+                        lastRefreshTime.value = Date.now();
                     } catch (e) {
                         console.error('加载总览数据失败', e);
                     }
@@ -9457,8 +10167,14 @@ const allMenuDefs = [
 
                 // 监听页面切换
                 watch(currentPage, async (page) => {
+                    // v1.11: 清除旧轮询定时器
+                    if (strategyPollTimer) { clearInterval(strategyPollTimer); strategyPollTimer = null; }
                     if (page === 'strategies') {
                         await loadDashboardData();
+                        // 启动5分钟静默轮询
+                        strategyPollTimer = setInterval(() => {
+                            loadDashboardData().catch(() => {});
+                        }, 5 * 60 * 1000);
                     } else if (page === 'calendar') {
                         if (selectedDate.value) await loadConsensusData();
                     } else if (page === 'ai') {
@@ -9505,6 +10221,11 @@ const allMenuDefs = [
                     // 恢复本地主题
                     const savedTheme = localStorage.getItem('quant_theme');
                     if (savedTheme) applyTheme(savedTheme);
+
+                    // v1.12: 加载服务版本号
+                    fetch('/api/health').then(r => r.json()).then(d => {
+                        if (d.version) appVersion.value = d.version;
+                    }).catch(() => {});
 
                     // ===== 第1波: 不依赖用户身份的并行加载 =====
                     const p1 = Promise.all([
@@ -9567,6 +10288,8 @@ const allMenuDefs = [
                 
                 // v2.0: 美林时钟定时刷新（每5分钟）
                 let merrillRefreshTimer;
+                // v1.11: 策略总览定时刷新（每5分钟）
+                let strategyPollTimer;
                 
                 // 加载已保存的配置
                 const savedConfig = localStorage.getItem('merrill_clock_config');
@@ -9586,6 +10309,7 @@ const allMenuDefs = [
                 
                 onUnmounted(() => {
                     if (merrillRefreshTimer) clearInterval(merrillRefreshTimer);
+                    if (strategyPollTimer) clearInterval(strategyPollTimer);
                 });
 
                 // 监听设置页
@@ -9664,12 +10388,8 @@ const allMenuDefs = [
                 // 美林时钟弹窗关闭时恢复背景滚动
                 watch(showMerrillDetail, (val) => {
                     if (!val) {
-                        const top = parseInt(document.body.style.top || '0') * -1;
+                        document.documentElement.style.overflow = '';
                         document.body.style.overflow = '';
-                        document.body.style.position = '';
-                        document.body.style.top = '';
-                        document.body.style.width = '';
-                        window.scrollTo(0, top || 0);
                     }
                 });
 
@@ -9699,13 +10419,14 @@ const allMenuDefs = [
                     currentUser, loginForm, logining, guestLogining,
                     themes, currentTheme,
                     dashboardData,
-                    loading, loadingView, dates, selectedDate, consensus, searchKeyword,
+                    loading, loadingView, dates, selectedDate, lastLoadTime, consensus, searchKeyword,
                     stockDetailVisible, stockDetailTab, stockDetail,
-                    aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, aiConfig,
+                    aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers,
                     statusCounts, stockPool, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
+                    scoreDistribution, quickEvalStock, quickEvaluate,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
                     toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand,
                     selectedWatchlistCodes, clearWatchlistSelection, toggleSelectWatchlist,
@@ -9713,10 +10434,11 @@ const allMenuDefs = [
                     batchRemoveWatchlist, batchEvaluateSelected, batchReevaluateHistory, batchAddToWatchlist,
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
                     handleLogin, handleGuestLogin, handleLogout, changeTheme, switchView, onDateChange, navigateDate, disabledDate,
-                    loadDashboardData, loadConsensusData, showStockDetail,
+                    loadDashboardData, loadConsensusData, refreshCalendarData, showStockDetail,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
                     watchlist, watchlistCodes, watchlistSearch, watchlistResults, watchlistSearching,
+                    watchlistSort, sortedWatchlist, getWatchlistScore, addSearchResult,
                     evaluatedCodes, klineLoadedCodes, markKlineLoaded,
                     loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist,
                     searchStockForWatchlist, toggleWatchlist, batchEvaluateWatchlist, watchlistEvaluate, showStockKline,
@@ -9728,7 +10450,7 @@ const allMenuDefs = [
                     selectedPreset, applyPreset, onProviderChange, providerInfo,
                     // v1.3.0 settings page
                     globalConfigDirty, lastSavedTime, tushareConfig, tushareStatus, syncingData,
-                    stockCount, tradeDateCount, aiStatus, showImportDialog,
+                    stockCount, tradeDateCount, aiStatus, appVersion, showImportDialog,
                     rateLimitConfig, rateLimitDirty, rateLimitSaving, loadRateLimit, saveRateLimit,
                     saveAllConfig, resetAllConfig, testTushareConnection, syncStockData,
                     loadTushareConfig, loadFeishuConfig, loadSystemStatus, loadAiConfig,
@@ -9742,6 +10464,8 @@ const allMenuDefs = [
                     strategyFilter, strategyFilterOptions, strategyFilterCounts, strategyPreviewCount, saveStrategyFilter,
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,
+                    // v1.11: 策略总览增强
+                    poolChangeBadge, timeBarPercent, timeSinceRefresh, navigateToStrategyFilter,
                     // v1.5.0
                     currentSubPage, showUserMenu, subPageNames,
                     // v1.9.2: 图标系统

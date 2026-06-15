@@ -122,6 +122,29 @@ class Scheduler:
             if not results:
                 return
             
+            # 从自动评股配置中获取 webhook URL
+            config = ai_evaluator.get_auto_config()
+            webhook = config.get('feishu_webhook', '')
+            if not webhook:
+                # 回退到全局飞书配置的 webhook
+                try:
+                    from feishu_push import FeishuPusher
+                    import json, os
+                    from paths import DATA_DIR
+                    feishu_config_file = os.path.join(DATA_DIR, "feishu_config.json")
+                    if os.path.exists(feishu_config_file):
+                        with open(feishu_config_file) as f:
+                            fc = json.load(f)
+                        webhook = fc.get('webhook_url', '')
+                except Exception:
+                    pass
+            
+            if not webhook:
+                logger.warning(" 自动评股推送: 未配置飞书 Webhook")
+                return
+            
+            self.pusher.set_webhook(webhook)
+            
             # 生成报告
             total_count = len(results)
             avg_score = sum(r['result']['total_score'] for r in results) / total_count

@@ -63,6 +63,48 @@ async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
         return {"success": False, "message": f"重评估失败: {str(e)}"}
 
 
+@router.post("/merrill-clock/start-date")
+async def set_merrill_start_date(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
+    """手动设置美林时钟当前阶段的开始日期
+    
+    Body: {"date": "2024-09-24", "stage": "recovery"}
+    """
+    try:
+        date_str = req.get('date', '')
+        if not date_str:
+            return {"success": False, "message": "请提供日期 date 字段"}
+        stage = req.get('stage')
+        result = merrill_clock.set_stage_start(date_str, stage)
+        if 'error' in result:
+            return {"success": False, "message": result['error']}
+        # 强制重评估以刷新 timing
+        merrill_clock.reevaluate(force=True)
+        return {"success": True, "data": result}
+    except ValueError as e:
+        return {"success": False, "message": f"日期格式错误: {str(e)}"}
+    except Exception as e:
+        logger.error(f"设置美林时钟开始日期失败: {e}")
+        return {"success": False, "message": f"设置失败: {str(e)}"}
+
+
+@router.post("/merrill-clock/seed-history")
+async def seed_merrill_history(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
+    """预置美林时钟历史转移记录
+    
+    Body: {"transitions": [{"from_stage": "recession", "to_stage": "recovery", 
+           "from_name": "衰退期", "to_name": "复苏期", "transition_date": "2024-09-24"}]}
+    """
+    try:
+        transitions = req.get('transitions', [])
+        if not transitions:
+            return {"success": False, "message": "请提供 transitions 数组"}
+        merrill_clock.seed_history(transitions)
+        return {"success": True, "message": f"已预置 {len(transitions)} 条历史记录"}
+    except Exception as e:
+        logger.error(f"预置历史记录失败: {e}")
+        return {"success": False, "message": f"预置失败: {str(e)}"}
+
+
 @router.get("/kline/{ts_code}")
 async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     """获取K线数据（支持股票和指数）
