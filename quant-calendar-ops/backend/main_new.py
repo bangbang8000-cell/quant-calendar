@@ -14,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from contextlib import asynccontextmanager
 import logging
 
 from config import settings
@@ -27,13 +28,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ===== 应用生命周期管理 (v1.10: lifespan 替代 on_event) =====
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用启动/关闭生命周期"""
+    from scheduler import scheduler
+    await scheduler.start()
+    logger.info("⏰ 定时任务调度器已启动")
+    logger.info("🚀 量化选股日历服务启动完成")
+    yield
+    await scheduler.stop()
+    logger.info("⏰ 定时任务调度器已停止")
+
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API v1.9.4",
-    version="1.9.4",
+    title="量化选股日历 API v1.9.5",
+    version="1.9.5",
     description="基于美林时钟经济周期理论的智能选股系统",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS 安全配置
@@ -47,7 +61,7 @@ app.add_middleware(
 )
 logger.info(f"✅ CORS 配置已加载，允许的源: {settings.cors_origin_list}")
 
-# v1.8: 安全响应头中间件
+# v1.10: 安全响应头中间件
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -55,6 +69,17 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # Report-Only 模式：先观察不阻断，Phase 4 清理 inline style 后切为 enforce
+    response.headers["Content-Security-Policy-Report-Only"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https:; "
+        "font-src 'self' https://cdn.jsdelivr.net; "
+        "frame-ancestors 'none'"
+    )
     return response
 
 # 启用速率限制
@@ -93,27 +118,9 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "1.9.4",
+        "version": "1.9.5",
         "message": "量化选股日历服务运行中"
     }
-
-
-# ===== 应用启动事件 =====
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时执行"""
-    from scheduler import scheduler
-    await scheduler.start()
-    logger.info("⏰ 定时任务调度器已启动")
-    logger.info("🚀 量化选股日历服务启动完成")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """应用关闭时执行"""
-    from scheduler import scheduler
-    await scheduler.stop()
-    logger.info("⏰ 定时任务调度器已停止")
 
 
 if __name__ == "__main__":

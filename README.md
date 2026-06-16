@@ -2,7 +2,7 @@
   <h1 align="center">📅 量化选股日历</h1>
   <p align="center"><strong>Quant Calendar</strong> — 美林时钟 × 多因子策略 × AI 智能评估</p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-1.9.4-blue" alt="version">
+    <img src="https://img.shields.io/badge/version-1.9.5-blue" alt="version">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
     <img src="https://img.shields.io/badge/python-3.10+-blue" alt="python">
     <img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue">

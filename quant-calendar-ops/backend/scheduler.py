@@ -7,7 +7,7 @@
 import asyncio
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Callable
 from data_parser import parser
 from feishu_push import FeishuPusher
@@ -41,15 +41,20 @@ class Scheduler:
         """每日报告任务"""
         while self.running:
             now = datetime.now()
-            # 每个交易日 9:00 推送
-            if now.hour == 9 and now.minute == 0:
-                dates = parser.get_available_dates()
-                if dates:
-                    logger.info(f"📤 执行每日推送任务: {dates[-1]}")
-                    self.pusher.send_daily_report(dates[-1])
-                # 等待1分钟避免重复执行
-                await asyncio.sleep(60)
-            await asyncio.sleep(30)
+            # 计算到下一个 9:00 的秒数
+            target = now.replace(hour=9, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait = (target - now).total_seconds()
+            await asyncio.sleep(max(wait, 10))
+            
+            if not self.running:
+                break
+            dates = parser.get_available_dates()
+            if dates:
+                logger.info(f"📤 执行每日推送任务: {dates[-1]}")
+                self.pusher.send_daily_report(dates[-1])
+            await asyncio.sleep(60)  # 避开重复触发
     
     async def auto_evaluate_task(self):
         """自动评股任务"""
@@ -57,22 +62,26 @@ class Scheduler:
             now = datetime.now()
             config = ai_evaluator.get_auto_config()
             
-            # 检查是否启用自动评股
             if not config.get('enabled', False):
-                await asyncio.sleep(60)
+                # 未启用时每小时检查一次（而非每60秒空转）
+                await asyncio.sleep(3600)
                 continue
             
             schedule_time = config.get('schedule_time', '09:00')
             target_hour, target_minute = map(int, schedule_time.split(':'))
             
-            # 检查是否到执行时间
-            if now.hour == target_hour and now.minute == target_minute:
-                # 避免重复执行
-                if not self._should_execute_today():
-                    await asyncio.sleep(60)
-                    continue
-                
-                logger.info(f"🤖 开始自动评股任务: {now}")
+            # 计算到目标时间的秒数
+            target = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait = (target - now).total_seconds()
+            await asyncio.sleep(max(wait, 10))
+            
+            if not self.running:
+                break
+            
+            if self._should_execute_today():
+                logger.info(f"🤖 开始自动评股任务: {datetime.now()}")
                 
                 try:
                     # 获取要评估的股票列表
@@ -113,8 +122,6 @@ class Scheduler:
                 
                 # 等待1分钟避免重复执行
                 await asyncio.sleep(60)
-            
-            await asyncio.sleep(30)
     
     async def _push_ai_evaluation_report(self, results):
         """推送AI评估报告到飞书"""
@@ -181,12 +188,18 @@ class Scheduler:
         """每周报告任务"""
         while self.running:
             now = datetime.now()
-            # 周六 10:00 推送周报
-            if now.weekday() == 5 and now.hour == 10 and now.minute == 0:
-                logger.info("📤 执行每周报告任务")
-                # 生成周报逻辑
-                await asyncio.sleep(60)
-            await asyncio.sleep(30)
+            # 计算到下一个周六 10:00 的秒数
+            days_until_saturday = (5 - now.weekday()) % 7
+            if days_until_saturday == 0 and now.hour >= 10:
+                days_until_saturday = 7  # 本周六已过，等下周六
+            target = now.replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=days_until_saturday)
+            wait = (target - now).total_seconds()
+            await asyncio.sleep(max(wait, 10))
+            
+            if not self.running:
+                break
+            logger.info("📤 执行每周报告任务")
+            await asyncio.sleep(60)  # 避开重复触发
     
     async def data_refresh_task(self):
         """定时刷新策略数据任务"""
@@ -197,29 +210,36 @@ class Scheduler:
                 config = load_config()
                 
                 if not config.get('scheduled_enabled', False):
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(3600)  # 未启用时每小时检查
                     continue
                 
                 now = datetime.now()
                 schedule_time = config.get('scheduled_time', '22:00')
                 target_hour, target_minute = map(int, schedule_time.split(':'))
                 
-                if now.hour == target_hour and now.minute == target_minute:
-                    today = now.strftime('%Y-%m-%d')
-                    if last_refresh_date != today:
-                        last_refresh_date = today
-                        logger.info(f"⏰ 定时刷新: {now}")
-                        try:
-                            parser.reload()
-                            views_aggregator.reload()
-                            from data_refresh_config import update_refresh_status
-                            update_refresh_status(True, f"定时刷新成功 {today}")
-                            logger.info(f"✅ 定时刷新完成")
-                        except Exception as e:
-                            logger.error(f" 定时刷新失败: {e}")
-                    await asyncio.sleep(60)
+                # 计算到目标时间的秒数
+                target = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+                if target <= now:
+                    target += timedelta(days=1)
+                wait = (target - now).total_seconds()
+                await asyncio.sleep(max(wait, 10))
                 
-                await asyncio.sleep(30)
+                if not self.running:
+                    break
+                
+                today = datetime.now().strftime('%Y-%m-%d')
+                if last_refresh_date != today:
+                    last_refresh_date = today
+                    logger.info(f"⏰ 定时刷新: {today}")
+                    try:
+                        parser.reload()
+                        views_aggregator.reload()
+                        from data_refresh_config import update_refresh_status
+                        update_refresh_status(True, f"定时刷新成功 {today}")
+                        logger.info("✅ 定时刷新完成")
+                    except Exception as e:
+                        logger.error(f" 定时刷新失败: {e}")
+                await asyncio.sleep(60)
             except Exception as e:
                 logger.info(f"定时刷新任务异常: {e}")
                 await asyncio.sleep(60)
