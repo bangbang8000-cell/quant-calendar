@@ -196,6 +196,8 @@ class AIEvaluator:
         self.config = self._load_config()
         self.history = self._load_history()
         self._models_cache: Optional[List[ModelProvider]] = None
+        self._index_eval_file = os.path.join(DATA_DIR, "index_eval_cache.json")
+        self._index_eval_cache: Dict = self._load_index_eval_cache()
 
     def _load_config(self) -> Dict:
         """加载AI配置"""
@@ -209,6 +211,38 @@ class AIEvaluator:
                 "endpoint": "",
                 "model": "gpt-3.5-turbo"
             }
+
+    def _load_index_eval_cache(self) -> Dict:
+        """加载指数评估缓存，清理超过30天的条目"""
+        try:
+            with open(self._index_eval_file, 'r', encoding='utf-8') as f:
+                cache = json.load(f)
+            # 清理30天前的记录
+            today = datetime.now().strftime('%Y-%m-%d')
+            cutoff = None
+            for key in list(cache.keys()):
+                parts = key.rsplit('_', 1)
+                if len(parts) == 2 and parts[1] < today:
+                    # 日期格式为 YYYY-MM-DD，简单字符串比较
+                    pass
+            # 保留最近30天
+            from datetime import timedelta
+            thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            cleaned = {k: v for k, v in cache.items() if k.rsplit('_', 1)[-1] >= thirty_days_ago}
+            if len(cleaned) != len(cache):
+                self._save_index_eval_cache(cleaned)
+            return cleaned
+        except:
+            return {}
+
+    def _save_index_eval_cache(self, cache: Dict = None):
+        """保存指数评估缓存"""
+        try:
+            data = cache if cache is not None else self._index_eval_cache
+            with open(self._index_eval_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning(f"保存指数评估缓存失败: {e}")
 
     def save_config(self, config: Dict):
         """保存AI配置"""
@@ -1064,11 +1098,20 @@ class AIEvaluator:
 
     # ─── 指数评估 ───────────────────────────────────────────────
 
-    def evaluate_index(self, index_code: str, index_name: str, current_price: float = None, pct_chg: float = None) -> Dict:
+    def evaluate_index(self, index_code: str, index_name: str, current_price: float = None, pct_chg: float = None, force: bool = False) -> Dict:
         """
         评估指数 — 复用 K线数据获取 + 内置评估引擎
         返回前端兼容格式：{ analysis (HTML), suggestion, confidence }
+        同日同指数自动缓存，force=True 强制刷新
         """
+        # ── 检查缓存 ──
+        today = datetime.now().strftime('%Y-%m-%d')
+        cache_key = f"{index_code}_{today}"
+        if not force and cache_key in self._index_eval_cache:
+            cached = self._index_eval_cache[cache_key]
+            logger.info(f"📋 指数评估缓存命中: {index_code} ({today})")
+            return cached
+
         # 获取 K 线数据（指数也走同一通道）
         market_data = self._fetch_stock_data(index_code)
 
@@ -1163,13 +1206,13 @@ class AIEvaluator:
                 parts.append(f"<div style='font-size:13px;color:#555;padding:2px 0;'>• {w}</div>")
             parts.append("</div>")
 
-        # ── 建议映射 ──
+        # ── 建议映射（5级精确映射）──
         level = builtin.get("level", "观望")
         suggestion_map = {
             "强烈推荐": "买入",
-            "推荐": "买入",
-            "谨慎推荐": "买入",
-            "中性": "观望",
+            "推荐": "增持",
+            "谨慎推荐": "观望",
+            "中性": "减持",
             "观望": "卖出"
         }
         suggestion = suggestion_map.get(level, "观望")
@@ -1179,13 +1222,18 @@ class AIEvaluator:
 
         # 数据源
         data_src = "📡 Tushare 实时数据" if has_data else "⚠️ 离线模式"
-        parts.append(f"<div style='margin-top:12px;font-size:11px;color:#999;text-align:right;'>数据源: {data_src} | 内置引擎</div>")
+        parts.append(f"<div style='margin-top:12px;font-size:11px;color:#999;text-align:right;'>数据源: {data_src} | 技术指标引擎</div>")
 
-        return {
+        result = {
             "analysis": "\n".join(parts),
             "suggestion": suggestion,
-            "confidence": confidence
+            "confidence": confidence,
+            "eval_date": today
         }
+        # ── 写入缓存 ──
+        self._index_eval_cache[cache_key] = result
+        self._save_index_eval_cache()
+        return result
 
     # ─── 批量评估 ───────────────────────────────────────────────
 

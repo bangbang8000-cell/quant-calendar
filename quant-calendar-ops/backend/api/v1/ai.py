@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import logging
 import asyncio
 from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 from ai_evaluator import ai_evaluator
 from auth import get_admin_user, get_current_active_user
@@ -78,6 +79,19 @@ async def delete_ai_history(record_id: str, user: Dict = Depends(get_current_act
     try:
         success = ai_evaluator.delete_history(user["username"], record_id)
         return {"success": success, "message": "删除成功" if success else "删除失败"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/index-eval/{index_code}")
+async def get_index_evaluation(index_code: str, _: Dict = Depends(get_current_active_user)):
+    """获取指数最近评估结果（从缓存）"""
+    try:
+        today = datetime.now().strftime('%Y-%m-%d')
+        cache_key = f"{index_code}_{today}"
+        if cache_key in ai_evaluator._index_eval_cache:
+            return {"success": True, "data": ai_evaluator._index_eval_cache[cache_key]}
+        return {"success": True, "data": None}
     except Exception as e:
         return {"success": False, "message": str(e)}
 

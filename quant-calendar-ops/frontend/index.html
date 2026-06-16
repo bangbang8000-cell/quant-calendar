@@ -4787,7 +4787,7 @@ text {
                             <div class="consensus-badge">{{ item.strategy_count }}</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
+                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
                             </div>
                             <div class="consensus-tags">
                                 <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -4816,7 +4816,7 @@ text {
                                 <div class="status-tab" :class="{active: statusFilter === 'all'}" @click="statusFilter = 'all'">全部 <span class="count">{{ statusCounts.all }}</span></div>
                                 <div class="status-tab" :class="{active: statusFilter === 'new'}" @click="statusFilter = 'new'">✨ 新入池 <span class="count">{{ statusCounts.newCount }}</span></div>
                                 <div class="status-tab" :class="{active: statusFilter === 'current'}" @click="statusFilter = 'current'">✅ 当前持仓 <span class="count">{{ statusCounts.current }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'out'}" @click="statusFilter = 'out'">↩️ 已出池 <span class="count">{{ statusCounts.out }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'out'}" @click="statusFilter = 'out'">📤 已出池 <span class="count">{{ statusCounts.out }}</span></div>
                             </div>
 
                             <div class="search-box">
@@ -4839,7 +4839,7 @@ text {
                                             <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                             <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                         </div>
-                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📊</span></div>
+                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
                                     </div>
                                     <div class="consensus-tags">
                                         <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -4852,7 +4852,7 @@ text {
                     <!-- 股票池管理视图 -->
                     <template v-else>
                         <div class="card">
-                            <div class="card-title">📋 股票池管理</div>
+                            <div class="card-title">💎 股票池管理</div>
                             <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
                                     <div class="stat-value" style="font-size: 22px;">{{ statusCounts.all }}</div>
@@ -4889,7 +4889,7 @@ text {
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
-                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
+                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                             </span>
                                         </template>
                                         <span v-if="item.names.length > 5 && !expandedStrategies[item.strategy]" 
@@ -5092,7 +5092,7 @@ text {
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -5146,7 +5146,7 @@ text {
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -5199,7 +5199,7 @@ text {
                                                 <div class="stock-info">
                                                     <span class="stock-code">{{ record.stock_code }}</span>
                                                     <span class="stock-name">{{ record.stock_name }}</span>
-                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📊</span>
+                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                 </div>
                                                 <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                     <span class="score-num">{{ record.result.total_score }}</span>
@@ -5298,15 +5298,15 @@ text {
                 <div v-if="currentPage === 'research'">
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">🔬 量化研究</div>
-                        <div class="empty-state">📊 敬请期待</div>
+                        <div class="empty-state">🔬 敬请期待</div>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
                         <div class="card-title">⚙️ 策略编写</div>
                         <div class="empty-state">🛠️ 敬请期待</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
-                        <div class="card-title">📊 策略回测</div>
-                        <div class="empty-state">📈 敬请期待</div>
+                        <div class="card-title">🔬 策略回测</div>
+                        <div class="empty-state">🔬 敬请期待</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title">📋 回测记录</div>
@@ -5623,10 +5623,10 @@ text {
                         <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--text-primary);">
                             <div style="margin-bottom: 6px; font-weight: var(--font-medium);">🔍 预览匹配股票数</div>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                <span>📅 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
+                                <span>☀️ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
                                 <span>📅 周视图: <strong>{{ strategyPreviewCount.week ?? '-' }}</strong></span>
-                                <span>📅 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
-                                <span>📅 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
+                                <span>🗓️ 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
+                                <span>📆 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
 </div>
                     </div>
@@ -5709,7 +5709,7 @@ text {
                     </div>
                     </div>
 
-                    <!-- user: 用户管理 -->
+                    <!-- user: 用户与权限 -->
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card" style="text-align: center; padding: 40px;">
                             <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
@@ -5717,11 +5717,26 @@ text {
                         </div>
                         <div v-else>
                         <div class="card">
-                        <div class="card-title">👥 用户管理</div>
+                            <div class="card-title">👥 用户与权限</div>
+                            <p style="color: var(--text-secondary);">用户列表: {{ userList.length }} 个用户 | 分组: {{ Object.keys(allGroups).length }} 个</p>
+                        </div>
+
+                    <!-- Tab 切换 -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                        <el-button :type="userPageTab === 'users' ? 'primary' : ''" size="small" @click="userPageTab = 'users'">👥 用户列表</el-button>
+                        <el-button :type="userPageTab === 'groups' ? 'primary' : ''" size="small" @click="userPageTab = 'groups'">📋 分组配置</el-button>
+                    </div>
+
+                    <!-- 用户列表 Tab -->
+                    <div v-if="userPageTab === 'users'">
+                    <div class="card">
+                        <div class="card-title">👥 用户列表 ({{ userList.length }}人)</div>
                         <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center;">
-                            <el-input v-model="userSearch" placeholder="搜索用户名..." clearable size="small" style="width: 220px;" />
+                            <el-input v-model="userSearch" placeholder="搜索用户名..." clearable size="small" style="width: 160px;" />
+                            <el-select v-model="groupFilter" placeholder="分组" clearable size="small" style="width: 120px;">
+                                <el-option v-for="(g, gid) in allGroups" :key="gid" :label="g.name" :value="gid" />
+                            </el-select>
                             <el-button type="primary" size="small" @click="showAddUser = true">+ 添加用户</el-button>
-                            <span style="margin-left: auto; color: var(--text-tertiary); font-size: var(--font-sm);">共 {{ userList.length }} 个用户</span>
                         </div>
                             <div v-for="user in filteredUsers" :key="user.username" class="user-card-enhanced" :style="{opacity: user.enabled === false ? 0.55 : 1}">
                                 <div class="user-info-enhanced">
@@ -5765,46 +5780,45 @@ text {
                             </div>
                     </div>
                     </div>
-                    </div>
 
-                    <!-- groups: 分组管理 (v1.9.2) -->
-                    <div v-else-if="currentSubPage === 'groups'">
-                        <div v-if="currentUser?.role !== 'admin'" class="card" style="text-align: center; padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
-                            <div style="color: var(--text-secondary);">仅管理员可访问此页面</div>
-                        </div>
-                        <div v-else>
-                            <div class="card" style="margin-bottom: 16px;">
-                                <div class="card-title">🔐 分组管理</div>
-                                <div style="display: flex; gap: 12px; align-items: center;">
-                                    <span style="color: var(--text-tertiary); font-size: var(--font-sm);">共 {{ groupCount }} 个组</span>
-                                    <el-button type="primary" size="small" @click="showAddGroup = true">+ 新建分组</el-button>
+                    <!-- 分组配置 Tab -->
+                    <div v-if="userPageTab === 'groups'">
+
+                    <!-- 分组列表 -->
+                    <div v-for="(g, gid) in allGroups" :key="gid" class="card" style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <strong style="font-size: var(--font-lg);">{{ g.name }}</strong>
+                                    <span style="font-size:10px;color:var(--text-tertiary);">{{ gid }}</span>
+                                    <span v-if="g.locked" style="font-size:10px;color:#9CA3AF;">🔒</span>
                                 </div>
-                                </div>
-                            <!-- 分组卡片 -->
-                            <div v-for="(g, gid) in allGroups" :key="gid" class="card" style="margin-bottom: 12px;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
-                                    <div style="flex: 1; min-width: 200px;">
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                            <span :style="{fontSize:'20px'}">{{ gid === 'admin' ? '🔴' : gid === 'guest' ? '⚫' : '🔵' }}</span>
-                                            <strong style="font-size: var(--font-lg);">{{ g.name }}</strong>
-                                            <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg-hover);color:var(--text-tertiary);">{{ gid }}</span>
-                                            <span v-if="g.locked" style="font-size:10px;color:#9CA3AF;">🔒</span>
-                                        </div>
-                                        <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 8px;">{{ g.description }}</div>
-                                        <div style="display: flex; gap: 16px; font-size: var(--font-sm); color: var(--text-tertiary);">
-                                            <span>👥 成员: {{ getGroupMemberCount(gid) }}人</span>
-                                            <span>📋 菜单: {{ getMenuEnabledCount(g) }}/{{ Object.keys(g.visible_menus).length }} 开启</span>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                                        <el-button size="small" type="primary" @click="openMemberManager(gid)">🔢 成员管理</el-button>
-                                        <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单配置</el-button>
-                                        <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
-                                    </div>
+                                <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 6px;">{{ g.description }}</div>
+                                <div style="font-size: var(--font-sm); color: var(--text-tertiary);">
+                                    成员 {{ getGroupMemberCount(gid) }}人 · 菜单 {{ getMenuEnabledCount(g) }}/{{ Object.keys(g.visible_menus || {}).length }}
                                 </div>
                             </div>
+                            <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+                                <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
+                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
+                                <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
+                            </div>
                         </div>
+                        <!-- 成员列表（锁定组始终显示，非锁定组展开后显示） -->
+                        <div v-if="g.locked || expandedGroups[gid]" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light);">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <span v-for="u in userList.filter(u => (u.group || u.role) === gid)" :key="u.username"
+                                    style="padding: 3px 10px; background: var(--bg-page); border-radius: 12px; font-size: 12px;">
+                                    {{ u.username }}<span v-if="u.role==='admin'" style="color:var(--primary-color);"> · 管理</span>
+                                </span>
+                                <span v-if="getGroupMemberCount(gid) === 0" style="color: var(--text-tertiary); font-size: 12px;">暂无成员</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="Object.keys(allGroups).length === 0" style="color: var(--text-tertiary); padding: 20px; text-align: center;">暂无分组数据</div>
+                    </div>
+
+                    </div>
                     </div>
 
                     <!-- about: 关于 -->
@@ -5827,7 +5841,7 @@ text {
                             <div class="card-title">📌 软件版本</div>
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                 <span style="font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px;">v{{ appVersion }}</span>
-                                <span style="color: var(--text-secondary); font-size: var(--font-md);">📅 服务运行中</span>
+                                <span style="color: var(--text-secondary); font-size: var(--font-md);">🟢 服务运行中</span>
                             </div>
                         </div>
                         <div class="card">
@@ -6066,7 +6080,7 @@ text {
                                 </div>
                             </div>
                             <div style="background:var(--bg-card-header);border-radius:10px;padding:16px;margin-bottom:16px;">
-                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:10px;">📊 九维度评分</div>
+                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:10px;">🔬 九维度评分</div>
                                 <div v-for="(score,name) in aiResult.result.dimensions" :key="name" style="display:flex;align-items:center;margin-bottom:6px;gap:10px;">
                                     <span style="font-size:var(--font-sm);color:var(--text-secondary);width:76px;flex-shrink:0;text-align:right;">{{ name }}</span>
                                     <div style="flex:1;height:12px;background:var(--border-light);border-radius:6px;overflow:hidden;">
@@ -6104,36 +6118,6 @@ text {
                     </div>  <!-- close ai tab -->
                 </div>
             </div>
-        </el-dialog>
-
-        <!-- 成员管理弹窗 -->
-        <el-dialog v-model="memberDialog" :title="'🔢 ' + (allGroups[selectedMemberGroup]?.name || '') + ' — 成员管理'" width="500px">
-            <div style="padding: 15px 0;">
-                <div style="margin-bottom: 16px; font-weight: 600;">当前成员 ({{ groupMembers.length }}人):</div>
-                <div v-if="groupMembers.length === 0" style="color: var(--text-tertiary); padding: 16px; text-align: center;">暂无成员</div>
-                <div v-for="m in groupMembers" :key="m.username" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; margin-bottom: 6px; background: var(--bg-hover); border-radius: 8px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span :style="{width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:'600',background: m.theme === 'rose-red' ? '#FEE2E2' : m.theme === 'dark-night' ? '#1E293B' : '#DBEAFE', color: m.theme === 'dark-night' ? '#E2E8F0' : 'var(--text-primary)'}">{{ m.username.charAt(0).toUpperCase() }}</span>
-                        <div>
-                            <div style="font-weight: 500;">{{ m.username }}</div>
-                            <div style="font-size: var(--font-xs); color: var(--text-tertiary);">{{ m.role === 'admin' ? '管理员' : '普通用户' }}</div>
-                        </div>
-                    </div>
-                    <el-button v-if="m.username !== 'admin' && m.username !== 'guest'" size="small" type="danger" @click="removeMemberFromGroup(m.username)">移除</el-button>
-                </div>
-                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-light);">
-                    <div style="margin-bottom: 8px; font-weight: 600; font-size: var(--font-sm);">+ 添加成员:</div>
-                    <div style="display: flex; gap: 8px;">
-                        <el-select v-model="addMemberUsername" placeholder="选择用户..." style="flex: 1;" size="small">
-                            <el-option v-for="u in availableUsersForGroup" :key="u.username" :label="u.username" :value="u.username" />
-                        </el-select>
-                        <el-button type="primary" size="small" @click="addMemberToGroup" :disabled="!addMemberUsername">添加</el-button>
-                    </div>
-                </div>
-            </div>
-            <template #footer>
-                <el-button @click="memberDialog = false">关闭</el-button>
-            </template>
         </el-dialog>
 
         <!-- 菜单配置弹窗 -->
@@ -6335,7 +6319,7 @@ text {
                 <!-- 操作按钮 -->
                 <div style="margin-top: 20px; text-align: center;">
                     <el-button type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading" style="width: 200px;">
-                        🤖 智能指数评估
+                        🔬 技术指标评估
                     </el-button>
                 </div>
             </div>
@@ -6389,7 +6373,7 @@ text {
         </el-dialog>
 
         <!-- 美林时钟阶段详情弹窗 -->
-        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.icon || '📊') + ' ' + (merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
+        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.icon || '🔬') + ' ' + (merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
             <!-- 骨架屏加载 -->
             <div v-if="!merrillDetailData.name" class="skeleton-loader">
                 <div class="skeleton-header"></div>
@@ -7027,6 +7011,8 @@ text {
                     indexDetail.value = indexData;
                     indexAiResult.value = null;
                     currentKlinePeriod.value = 'daily';
+                    // 自动加载今日缓存评估
+                    loadCachedIndexEval(indexData.code);
                     // 先销毁旧图表
                     if (indexKlineChart) {
                         indexKlineChart.dispose();
@@ -7039,8 +7025,21 @@ text {
                     }, 500);
                 }
                 
+                // ===== 加载缓存的指数评估 =====
+                async function loadCachedIndexEval(indexCode) {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                        const res = await fetch('/api/ai/index-eval/' + indexCode, { headers });
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            indexAiResult.value = data.data;
+                        }
+                    } catch(e) { /* 静默失败，用户可手动点击按钮 */ }
+                }
+
                 // ===== 指数AI智能评股 =====
-                async function doIndexAiEvaluate() {
+                async function doIndexAiEvaluate() {  // 技术指标评估（内置引擎）
                     if (!indexDetail.value) return;
                     indexAiLoading.value = true;
                     try {
@@ -7668,7 +7667,7 @@ const allMenuDefs = [
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history'] },
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'strategy-write', 'backtest', 'backtest-history'] },
-                    { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'groups', 'user', 'about'], guestSubPages: ['status', 'about'] }
+                    { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -7745,7 +7744,7 @@ const allMenuDefs = [
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史',
                     'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录',
-                    'status': '系统状态', 'autoeval': '自动评股', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户管理', 'groups': '分组管理', 'about': '关于'
+                    'status': '系统状态', 'autoeval': '自动评股', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
 
                 // ===== 主题 =====
@@ -7843,11 +7842,74 @@ const allMenuDefs = [
                 // ===== 用户管理 =====
                 const userList = ref([]);
                 const userSearch = ref('');
+                const groupFilter = ref('');
+                const userPageTab = ref('users');
+                const expandedGroups = ref({});
+                const addMemberGroupMap = ref({});
                 const filteredUsers = computed(() => {
-                    if (!userSearch.value) return userList.value;
+                    let list = userList.value;
+                    if (groupFilter.value) {
+                        list = list.filter(u => (u.group || u.role) === groupFilter.value);
+                    }
+                    if (!userSearch.value) return list;
                     const kw = userSearch.value.toLowerCase();
-                    return userList.value.filter(u => u.username.toLowerCase().includes(kw));
+                    return list.filter(u => u.username.toLowerCase().includes(kw));
                 });
+                function toggleGroupExpand(gid) {
+                    expandedGroups.value = { ...expandedGroups.value, [gid]: !expandedGroups.value[gid] };
+                }
+                async function removeMemberFromGroupInline(username, gid) {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const res = await fetch('/api/groups/' + gid + '/members/' + username, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            await loadUsers();
+                            await loadAllGroups();
+                        } else {
+                            ElementPlus.ElMessage.error(data.message);
+                        }
+                    } catch(e) { ElementPlus.ElMessage.error('移除失败'); }
+                }
+                async function addMemberToGroupInline(gid) {
+                    const username = addMemberGroupMap.value[gid];
+                    if (!username) return;
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const res = await fetch('/api/groups/' + gid + '/members', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ username })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            await loadUsers();
+                            await loadAllGroups();
+                            addMemberGroupMap.value = { ...addMemberGroupMap.value, [gid]: '' };
+                        } else {
+                            ElementPlus.ElMessage.error(data.message);
+                        }
+                    } catch(e) { ElementPlus.ElMessage.error('添加失败'); }
+                }
+                async function changeUserGroup(user, newGroup) {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const res = await fetch('/api/users/' + user.username, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ group: newGroup })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            await loadUsers();
+                        } else {
+                            ElementPlus.ElMessage.error(data.message);
+                        }
+                    } catch(e) { ElementPlus.ElMessage.error('分组变更失败'); }
+                }
                 const showAddUser = ref(false);
                 const editingUser = ref(null);
                 const userForm = ref({ username: '', password: '', role: 'user', theme: 'tech-blue' });
@@ -10277,6 +10339,7 @@ const allMenuDefs = [
                                     await withTimeout(loadConsensusData(), 2000, 'consensus');
                                 }
                                 await withTimeout(loadUsers(), 2000, 'users');
+                                loadAllGroups().catch(() => {});
                                 await withTimeout(loadAiHistory(), 2000, 'aiHistory');
                             } catch (e) {
                                 console.warn('[init] user data load failed:', e.message);
@@ -10380,8 +10443,7 @@ const allMenuDefs = [
                         if (sub === 'autoeval') loadAutoEvaluateConfig();
                         if (sub === 'datasource') loadDatasourceConfig();
                         if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); }
-                        if (sub === 'user') loadUsers();
-                        if (sub === 'groups') { loadAllGroups(); loadUsers(); }
+                        if (sub === 'user') { loadAllGroups(); loadUsers(); }
                     }
                 });
 
@@ -10403,7 +10465,7 @@ const allMenuDefs = [
                     // v1.8.0: 数据刷新配置
                     dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
                     loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
-                    indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
+                    indexDetailVisible, indexDetail, indexAiResult, indexAiLoading, loadCachedIndexEval,
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
                     loadStockKline, switchKlinePeriod, loadIndexKline, switchIndexKlinePeriod,
@@ -10423,7 +10485,8 @@ const allMenuDefs = [
                     stockDetailVisible, stockDetailTab, stockDetail,
                     aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
-                    userSearch, filteredUsers,
+                    userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,
+                    toggleGroupExpand, removeMemberFromGroupInline, addMemberToGroupInline, changeUserGroup,
                     statusCounts, stockPool, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
                     scoreDistribution, quickEvalStock, quickEvaluate,
