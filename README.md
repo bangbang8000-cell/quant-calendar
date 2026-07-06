@@ -69,28 +69,28 @@ python main_new.py --port 8000
 <details open>
 <summary><b>策略总览</b> — 4 策略共识榜 + 股票池 + 入池/出池统计</summary>
 <p align="center">
-  <img src="assets/screenshots/策略总览.png" alt="策略总览" width="90%">
+  <img src="assets/screenshots/策略总览.jpg" alt="策略总览" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>量化日历</b> — 日/周/月/年视图 × 股票池 × 内置 K 线</summary>
 <p align="center">
-  <img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%">
+  <img src="assets/screenshots/量化日历.jpg" alt="量化日历" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>AI 智能评估</b> — 多模型串行评股 × 评估历史追溯</summary>
 <p align="center">
-  <img src="assets/screenshots/评估历史.png" alt="AI评估" width="90%">
+  <img src="assets/screenshots/评估历史.jpg" alt="AI评估" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>系统配置</b> — 双数据源热备 × 飞书推送 × AI 模型管理</summary>
 <p align="center">
-  <img src="assets/screenshots/系统配置.png" alt="系统配置" width="90%">
+  <img src="assets/screenshots/系统配置.jpg" alt="系统配置" width="90%">
 </p>
 </details>
 
