@@ -117,7 +117,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "2.1.0",
+        "version": "2.1.1",
         "message": "量化选股日历服务运行中"
     }
 
