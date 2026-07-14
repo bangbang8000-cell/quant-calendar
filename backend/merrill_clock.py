@@ -837,7 +837,7 @@ class MerrillClock:
                             csd = datetime.fromisoformat(self.history['current_stage_start'])
                             end_date = csd.strftime('%Y-%m-%d')
                         except Exception:
-                        logger.exception("美林时钟指标计算失败")
+                            logger.exception("美林时钟指标计算失败")
                             pass
                 
                 info['_lastPeriod'] = {

@@ -450,19 +450,19 @@ class DataSourceManager:
                         try:
                             result['pe'] = float(val)
                         except Exception:
-                        logger.debug("数据源回退尝试")
+                            logger.debug("数据源回退尝试")
                             pass
                     elif '市净率' in item:
                         try:
                             result['pb'] = float(val)
                         except Exception:
-                        logger.debug("数据源回退尝试")
+                            logger.debug("数据源回退尝试")
                             pass
                     elif '总市值' in item:
                         try:
                             result['total_mv'] = float(val) / 10000  # 元→万元
                         except Exception:
-                        logger.debug("数据源回退尝试")
+                            logger.debug("数据源回退尝试")
                             pass
                 return result
             except Exception as e:
