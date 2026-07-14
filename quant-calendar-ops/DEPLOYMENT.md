@@ -1,10 +1,10 @@
-# 量化选股日历 v1.9.4 — 部署指南
+# 量化选股日历 v1.9.6 — 部署指南
 
 ## 快速部署
 
 ```bash
 # 1. 解压
-tar -xzf quant-calendar-v1.9.4.tar.gz
+tar -xzf quant-calendar-v1.9.6.tar.gz
 cd quant-calendar-ops
 
 # 2. 安装依赖
@@ -113,7 +113,7 @@ python3 main_new.py --port 8000
 
 ## 版本信息
 
-- **版本**: v1.9.4
+- **版本**: v1.9.6
 - **更新日期**: 2026-06-17
 - **入口文件**: `backend/main_new.py`（不是 `main.py`）
 - **特性**: 美林时钟 v2 / 双数据源 / AI 多模型 / 用户组管理 / 4套主题

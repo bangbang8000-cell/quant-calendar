@@ -945,6 +945,7 @@ class AIEvaluator:
             elif pct and pct < 0:
                 bearish_signals += 1
 
+            consensus_score = 50  # default neutral when <3 signals
             total = bullish_signals + bearish_signals
             if total >= 3:
                 if bullish_signals >= 3:
