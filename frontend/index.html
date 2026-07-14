@@ -2328,7 +2328,8 @@
                         const res = await fetch('/api/search?q=' + encodeURIComponent(queryString));
                         const data = await res.json();
                         if (data.success && data.results) {
-                            cb(data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; }));
+                            const results = data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; });
+                            cb(results);
                         } else { cb([]); }
                     } catch(e) { cb([]); }
                 }
