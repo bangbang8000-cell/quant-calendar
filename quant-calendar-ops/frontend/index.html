@@ -630,6 +630,15 @@
                                     <el-select v-if="watchlist.length > 0" v-model="quickEvalStock" placeholder="选择自选股..." size="small" style="width:100%;" clearable>
                                         <el-option v-for="s in watchlist" :key="s.code" :label="s.code + ' ' + s.name" :value="s.code" />
                                     </el-select>
+                                    <div v-if="watchlist.length > 0" style="display:flex;gap:8px;align-items:center;">
+                                        <span style="font-size:var(--font-xs);color:var(--text-tertiary);white-space:nowrap;">策略:</span>
+                                        <el-radio-group v-model="evalStrategy" size="small">
+                                            <el-radio-button value="default">综合</el-radio-button>
+                                            <el-radio-button value="trend">趋势</el-radio-button>
+                                            <el-radio-button value="value">价值</el-radio-button>
+                                            <el-radio-button value="short_term">短线</el-radio-button>
+                                        </el-radio-group>
+                                    </div>
                                     <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评股</el-button>
                                     <div v-if="watchlist.length === 0" style="text-align:center;padding:20px 0;color:var(--text-tertiary);">
                                         <div style="font-size:36px;margin-bottom:8px;">⭐</div>
@@ -971,7 +980,7 @@
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: var(--font-sm); color: var(--text-secondary);">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: var(--font-sm); font-weight: var(--font-medium); background: var(--gradient-brand); color: white; padding: 3px 10px; border-radius: 10px;">v1.9.6</span>
+                                <span style="font-size: var(--font-sm); font-weight: var(--font-medium); background: var(--gradient-brand); color: white; padding: 3px 10px; border-radius: 10px;">v2.0.0</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -1707,6 +1716,17 @@
                                 <div style="flex:1;min-width:180px;">
                                     <div style="font-size:var(--font-xl);font-weight:var(--font-bold);color:var(--text-primary);margin-bottom:8px;">{{ aiResult.result.level }}</div>
                                     <div style="font-size:var(--font-md);color:var(--text-secondary);line-height:1.7;">{{ aiResult.result.detailed_report || '' }}</div>
+                                    <!-- 评估历史对比 -->
+                                    <div v-if="evalHistoryComparison" style="margin-top:8px;padding:6px 10px;background:var(--border-light);border-radius:6px;font-size:var(--font-xs);color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px;">
+                                        📈 上次{{ evalHistoryComparison.prevScore }}分 → 本次{{ evalHistoryComparison.currScore }}分
+                                        <span :style="{color:evalHistoryComparison.diff>0?'var(--el-success)':evalHistoryComparison.diff<0?'var(--el-danger)':'var(--text-tertiary)'}">
+                                            {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ Math.abs(evalHistoryComparison.diff) }}
+                                        </span>
+                                    </div>
+                                    <!-- 操作检查清单 -->
+                                    <div v-if="checklistItems.length" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px;">
+                                        <span v-for="c in checklistItems" :key="c.label" style="font-size:var(--font-xs);color:var(--text-secondary);">{{ c.icon }} {{ c.label }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div style="background:var(--bg-card-header);border-radius:10px;padding:16px;margin-bottom:16px;">
@@ -1735,6 +1755,49 @@
                                     <div v-for="s in aiResult.result.analysis.suggestions" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
                                     <div v-if="!aiResult.result.analysis.suggestions.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
                                 </div>
+                            </div>
+                            <!-- 信号归因条 -->
+                            <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
+                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ aiResult.result.signal_attribution.technical }}%</span>
+                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ aiResult.result.signal_attribution.fundamentals }}%</span>
+                                    <span v-if="aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">市场情绪 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
+                                </div>
+                                <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
+                                    🟢 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
+                                    <span v-if="aiResult.result.signal_attribution.strongest_bearish" style="margin-left:12px;">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
+                                </div>
+                            </div>
+                            <!-- 狙击点卡片 -->
+                            <div v-if="aiResult.result.analysis?.sniper_points" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
+                                <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🎯 理想买入</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ aiResult.result.analysis.sniper_points.ideal_buy }}</div>
+                                </div>
+                                <div style="background:rgba(245,108,108,0.08);border:1px solid rgba(245,108,108,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🛑 止损</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ aiResult.result.analysis.sniper_points.stop_loss }}</div>
+                                </div>
+                                <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🏁 目标</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ aiResult.result.analysis.sniper_points.take_profit }}</div>
+                                </div>
+                            </div>
+                            <!-- 仓位建议 -->
+                            <div v-if="aiResult.result.analysis?.position_advice" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;">
+                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
+                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">👤 空仓者</div>
+                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.no_position }}</div>
+                                </div>
+                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
+                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">📦 持仓者</div>
+                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.has_position }}</div>
+                                </div>
+                            </div>
+                            <!-- 数据质量提示 -->
+                            <div v-if="aiResult.result.data_quality_note" style="margin-top:12px;padding:8px 12px;background:var(--border-light);border-radius:8px;font-size:var(--font-xs);color:var(--text-tertiary);text-align:center;">
+                                📋 {{ aiResult.result.data_quality_note }}
                             </div>
                         </div>
                         <div v-else style="text-align: center; color: var(--text-tertiary); padding: 40px;">
@@ -4064,15 +4127,66 @@ const allMenuDefs = [
                         if (data.success && data.data) {
                             aiResult.value = data.data;
                             lastEvalTime.value = data.data.evaluate_time;
+                            // 加载历史对比
+                            updateEvalComparison(stockCode, data.data);
+                            // 生成操作检查清单
+                            updateChecklist(data.data);
                         }
                     } catch(e) {
-                        // 静默失败，无历史记录也正常
+                        // 静默失败
                     }
+                }
+
+                // 评估历史对比：比较本次与上次同一股票的评分
+                async function updateEvalComparison(stockCode, currentResult) {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                        const res = await fetch(`/api/ai/history?stock=${encodeURIComponent(stockCode)}&limit=2`, { headers });
+                        const data = await res.json();
+                        if (data.success && data.data && data.data.length >= 2) {
+                            const prev = data.data[1];  // 第二新的记录
+                            const currScore = currentResult.result?.total_score || 0;
+                            const prevScore = prev.result?.total_score || 0;
+                            if (currScore > 0 && prevScore > 0) {
+                                evalHistoryComparison.value = {
+                                    prevScore, currScore,
+                                    diff: currScore - prevScore
+                                };
+                            }
+                        }
+                    } catch(e) { /* 静默 */ }
+                }
+
+                // 操作检查清单：根据评估维度生成 ✅⚠️❌
+                function updateChecklist(result) {
+                    const dims = result.result?.dimensions || {};
+                    const items = [];
+                    const rules = [
+                        { key: '趋势强度', label: '趋势强度', good: 70, warn: 50 },
+                        { key: '均线排列', label: '均线排列', good: 70, warn: 50 },
+                        { key: '成交量', label: '量能配合', good: 70, warn: 50 },
+                        { key: '动能风险', label: '动能风险', good: 70, warn: 40 },
+                        { key: '指标共振', label: '指标共振', good: 70, warn: 50 },
+                        { key: '稳定性', label: '持仓稳定', good: 70, warn: 50 },
+                    ];
+                    for (const rule of rules) {
+                        const score = dims[rule.key];
+                        if (score !== undefined) {
+                            items.push({
+                                icon: score >= rule.good ? '✅' : score >= rule.warn ? '⚠️' : '❌',
+                                label: `${rule.label} ${score}分`
+                            });
+                        }
+                    }
+                    checklistItems.value = items;
                 }
 
                 // ===== AI评估 =====
                 const aiResult = ref(null);
                 const lastEvalTime = ref('');
+                const evalHistoryComparison = ref(null);  // {prevScore, currScore, diff}
+                const checklistItems = ref([]);  // [{icon, label}]
                 const aiHistory = ref([]);
                 const selectedHistoryIds = ref([]);
                 const expandedDates = ref([]);  // 已展开的日期 (YYYY-MM-DD)
@@ -4229,6 +4343,7 @@ const allMenuDefs = [
                 });
                 // v1.8.0: 自选股
                 const quickEvalStock = ref('');  // v1.10: 快捷评股下拉
+                const evalStrategy = ref('default');  // v1.10: 评估策略
                 const watchlistSort = ref('default');  // v1.10: 自选排序
                 const watchlist = ref([]);
                 const watchlistCodes = computed(() => new Set(watchlist.value.map(s => s.code)));
@@ -4318,7 +4433,8 @@ const allMenuDefs = [
                             headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
                             body: JSON.stringify({
                                 stock_code: stockDetail.value.stock,
-                                stock_name: stockDetail.value.name || stockDetail.value.stock
+                                stock_name: stockDetail.value.name || stockDetail.value.stock,
+                                strategy: evalStrategy.value
                             })
                         });
                         const data = await res.json();
@@ -4864,7 +4980,7 @@ const allMenuDefs = [
                         const res = await fetch('/api/ai/evaluate', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                            body: JSON.stringify({ stock_code: stock.code, stock_name: stock.name })
+                            body: JSON.stringify({ stock_code: stock.code, stock_name: stock.name, strategy: evalStrategy.value })
                         });
                         const data = await res.json();
                         if (data.success) {
@@ -6160,7 +6276,7 @@ const allMenuDefs = [
                     toggleGroupExpand, removeMemberFromGroupInline, addMemberToGroupInline, changeUserGroup,
                     statusCounts, stockPool, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
-                    scoreDistribution, quickEvalStock, quickEvaluate,
+                    scoreDistribution, quickEvalStock, evalStrategy, checklistItems, evalHistoryComparison, quickEvaluate,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
                     toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand,
                     selectedWatchlistCodes, clearWatchlistSelection, toggleSelectWatchlist,

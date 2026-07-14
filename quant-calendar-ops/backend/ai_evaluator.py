@@ -507,9 +507,11 @@ class AIEvaluator:
 
     # ─── 评估入口 ───────────────────────────────────────────────
 
-    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default') -> Dict:
+    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
         """
         评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
+        
+        strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         # 1) 获取真实数据
         market_data = self._fetch_stock_data(stock_code)
@@ -541,7 +543,8 @@ class AIEvaluator:
             for model in enabled_models:
                 try:
                     t0 = time.time()
-                    result, raw_response = self._call_llm(model, stock_code, stock_name, market_data)
+                    result, raw_response = self._call_llm(model, stock_code, stock_name, market_data, strategy)
+                    result = self._calibrate_decision(result, market_data, stock_code, username)
                     llm_latency_ms = round((time.time() - t0) * 1000)
                     model_used = model.id
                     model_provider = model.provider
@@ -597,12 +600,37 @@ class AIEvaluator:
 
     # ─── LLM 调用 ───────────────────────────────────────────────
 
-    def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict):
+    def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
         """
         调用指定模型进行评估，返回 (parsed_result, raw_response_text)
+        
+        strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         data_section = self._build_data_prompt(market_data)
-        prompt = f"""量化评估 {stock_name}({stock_code})，严格基于下方数据：
+        
+        # 策略特定的权重调整提示
+        strategy_hints = {
+            'default': '',
+            'trend': '\n## 策略偏好：趋势跟踪\n- 趋势强度和均线排列权重加倍（各30%）\n- 重点关注均线多头排列和趋势延续性\n- 忽略短期波动，关注中期趋势方向',
+            'value': '\n## 策略偏好：价值挖掘\n- 基本面指标权重加倍（PE/PB/ROE等）\n- 重点关注估值合理性和安全边际\n- 趋势指标仅作参考，不作为主要判断依据',
+            'short_term': '\n## 策略偏好：短线狙击\n- RSI和量比权重加倍\n- 重点关注量价关系和短期动能\n- 忽略长期趋势，关注1-3日内的买卖点',
+        }
+        strategy_hint = strategy_hints.get(strategy, '')
+        
+        # 市场阶段感知
+        now = datetime.now()
+        hour = now.hour
+        weekday = now.weekday()
+        if weekday >= 5:
+            phase_note = '\n## 市场阶段：非交易日\n- 数据为最近交易日收盘数据\n- 给出盘前计划，不要伪造盘中走势\n- 置信度适度降低'
+        elif hour < 9:
+            phase_note = '\n## 市场阶段：盘前\n- 数据为上一交易日收盘数据\n- 给出盘前交易计划\n- 关注隔夜消息和开盘预期'
+        elif 9 <= hour < 11 or 13 <= hour < 15:
+            phase_note = '\n## 市场阶段：盘中交易\n- 基于实时数据评估\n- 可给出立即行动/等待确认建议\n- 关注盘中量价变化'
+        else:
+            phase_note = '\n## 市场阶段：盘后\n- 复盘今日走势\n- 给出明日交易计划\n- 关注收盘形态和量能'
+        
+        prompt = f"""量化评估 {stock_name}({stock_code})，严格基于下方数据：{strategy_hint}{phase_note}
 
 {data_section}
 
@@ -612,10 +640,14 @@ class AIEvaluator:
 3. level_color: #67c23a/#85ce61/#e6a23c/#909399/#f56c6c
 4. analysis: strengths/weaknesses/suggestions 各1-3条，每条≤12字
 5. detailed_report: ≤100字凝练综述
+6. sniper_points: 根据支撑/压力位给出 {{ideal_buy, stop_loss, take_profit}} 三个具体价格
+7. position_advice: 分持仓建议 {{no_position, has_position}} 各≤25字
+8. signal_attribution: 各因素贡献度 {{technical(0-100), fundamentals(0-100), market_sentiment(0-100), strongest_bullish, strongest_bearish}}
+9. data_quality_note: 感知数据时效性的一句话（如有缓存数据请注明）
 
 权重：趋势15% 均线10% 成交量15% 动能风险10% 量价关系12% 中期趋势10% 指标共振12% 稳定性8% 位置8%
 
-严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85,...}}}},"analysis":{{{{"strengths":["量价配合好","均线多头"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"]}}}},"detailed_report":"80字内综述"}}}}"""
+严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85}}}},"analysis":{{{{"strengths":["量价配合好"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"],"sniper_points":{{{{"ideal_buy":"32.50","stop_loss":"30.80","take_profit":"36.00"}}}},"position_advice":{{{{"no_position":"32.50附近建仓3成","has_position":"持有止损上移32元"}}}}}}}},"signal_attribution":{{{{"technical":60,"fundamentals":25,"market_sentiment":15,"strongest_bullish":"均线多头排列","strongest_bearish":"成交量萎缩"}}}},"data_quality_note":"K线为实时数据","detailed_report":"80字综述"}}}}"""
 
         endpoint = model.base_url.rstrip("/") + "/chat/completions"
         headers = {
@@ -647,6 +679,83 @@ class AIEvaluator:
             return llm_result, raw_response
         else:
             raise ValueError(f"LLM 返回无法解析为 JSON: {content[:200]}")
+
+    # ─── 决策稳定性校准 ─────────────────────────────────────────
+
+    def _calibrate_decision(self, llm_result: Dict, market_data: Dict, stock_code: str, username: str = 'default') -> Dict:
+        """对 LLM 评估结果进行后处理校准，防止单日涨跌导致的过度切换。
+
+        规则：
+        1. 高分 + 高位 + 无量 → 降级
+        2. 高分 + RSI过热 → 降级
+        3. 中性 + 多头排列 + 正常RSI → 升级
+        4. 同一股票连续评估分数波动>20 → 标记稳定性警告
+        """
+        result = dict(llm_result)  # 不修改原始
+        level = result.get("level", "")
+        total_score = result.get("total_score", 50)
+        calibrations = []
+
+        # 获取价格位置
+        price_range = market_data.get("price_range", {})
+        close = price_range.get("close", 0)
+        max60 = price_range.get("max60", close)
+        min60 = price_range.get("min60", close)
+        if max60 and min60 and max60 != min60:
+            price_position = round((close - min60) / (max60 - min60) * 100, 1)
+        else:
+            price_position = 50
+
+        rsi = market_data.get("rsi", 50)
+        ma_align = market_data.get("ma_alignment", "")
+        vol_analysis = market_data.get("volume_analysis", {})
+        vol_ratio = vol_analysis.get("vol_ratio", 1.0)
+
+        # 规则1: 高分 + 高位(>90%) + 缩量 → 降级
+        if level in ("强烈推荐", "推荐") and price_position > 90 and vol_ratio < 1.0:
+            old_level = level
+            level_map = {"强烈推荐": "推荐", "推荐": "谨慎推荐"}
+            result["level"] = level_map.get(level, level)
+            result["level_color"] = {"强烈推荐": "#67c23a", "推荐": "#67c23a", "谨慎推荐": "#e6a23c"}.get(result["level"], result.get("level_color"))
+            calibrations.append(f"价格处于60日高位({price_position}%)+缩量，{old_level}→{result['level']}")
+
+        # 规则2: 高分 + RSI>70 → 降级
+        if level in ("强烈推荐", "推荐") and rsi > 70:
+            old_level = level
+            level_map = {"强烈推荐": "推荐", "推荐": "谨慎推荐"}
+            result["level"] = level_map.get(level, level)
+            result["level_color"] = {"强烈推荐": "#67c23a", "推荐": "#67c23a", "谨慎推荐": "#e6a23c"}.get(result["level"], result.get("level_color"))
+            calibrations.append(f"RSI过热({rsi})，{old_level}→{result['level']}")
+
+        # 规则3: 观望/中性 + 多头排列 + RSI正常(30-70) + 量正常 → 升级
+        if level in ("中性", "观望") and "多头" in ma_align and 30 <= rsi <= 70 and vol_ratio >= 0.8:
+            result["level"] = "谨慎推荐"
+            result["level_color"] = "#e6a23c"
+            calibrations.append(f"多头排列+RSI正常({rsi})+量正常，{level}→谨慎推荐")
+
+        # 规则4: 连续评估波动检测
+        try:
+            history = self._load_history_for(username)
+            prev_eval = None
+            for h in history:
+                if h.get("stock_code") == stock_code:
+                    prev_eval = h
+                    break
+            if prev_eval:
+                prev_score = prev_eval.get("result", {}).get("total_score", 0)
+                if prev_score > 0 and abs(total_score - prev_score) > 20:
+                    calibrations.append(f"评分波动较大: 上次{prev_score}→本次{total_score} (差{abs(total_score-prev_score)})")
+        except Exception:
+            pass
+
+        if calibrations:
+            result["_calibration_notes"] = calibrations
+            # 合并到 detailed_report
+            if "detailed_report" in result:
+                result["detailed_report"] += f" [校准: {'; '.join(calibrations)}]"
+            logger.info(f"决策校准 {stock_code}: {'; '.join(calibrations)}")
+
+        return result
 
     # ─── 内置评估（已废弃，保留供 evaluate_index 使用）─────────
 
@@ -727,6 +836,27 @@ class AIEvaluator:
         if data.get("error") and not data.get("has_kline"):
             lines.append(f"\n⚠️ 数据获取异常：{data['error']}")
             lines.append("请基于有限信息进行评估，无法判断的维度给中性分。")
+
+        # 数据质量标记
+        quality_notes = []
+        if data.get("has_kline"):
+            quality_notes.append("K线：实时数据")
+        else:
+            quality_notes.append("K线：不可用，评估受限")
+        if data.get("has_fundamentals"):
+            fund_src = data.get("fundamentals", {}).get("data_source", "未知")
+            if fund_src in ("cache", "tushare_cache"):
+                quality_notes.append(f"基本面：{fund_src}(可能略有延迟)")
+            else:
+                quality_notes.append(f"基本面：{fund_src}")
+        else:
+            quality_notes.append("基本面：不可用")
+        if data.get("rsi") is not None:
+            quality_notes.append("技术指标：已计算")
+        if quality_notes:
+            lines.append(f"\n### 📊 数据质量\n" + "\n".join(f"- {n}" for n in quality_notes))
+            if not data.get("has_kline") or not data.get("has_fundamentals"):
+                lines.append("- ⚠️ 部分数据缺失，请适度降低置信度")
 
         return "\n".join(lines)
 

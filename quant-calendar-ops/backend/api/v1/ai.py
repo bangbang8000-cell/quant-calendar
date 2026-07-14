@@ -22,8 +22,9 @@ async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_curren
     try:
         stock_code = req.get("stock_code", "")
         stock_name = req.get("stock_name", stock_code)
+        strategy = req.get("strategy", "default")
         result = await asyncio.to_thread(
-            ai_evaluator.evaluate_stock, stock_code, stock_name, None, user["username"]
+            ai_evaluator.evaluate_stock, stock_code, stock_name, None, user["username"], strategy
         )
         return {"success": True, "data": result}
     except Exception as e:
