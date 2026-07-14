@@ -17,6 +17,7 @@ from .user_config import router as user_config_router
 from .data_refresh import router as data_refresh_router
 from .watchlist import router as watchlist_router
 from .groups import router as groups_router
+from .search import router as search_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -34,5 +35,6 @@ api_router.include_router(user_config_router, prefix="/user")
 api_router.include_router(watchlist_router)
 api_router.include_router(data_refresh_router)
 api_router.include_router(groups_router)
+api_router.include_router(search_router)
 
 __all__ = ["api_router"]

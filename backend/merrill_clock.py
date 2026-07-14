@@ -45,7 +45,7 @@ STAGES = {
             '海外市场波动风险'
         ],
         'historical_stats': {
-            'avg_duration_months': 12,
+            'avg_duration_months': 18,
             'std_duration_months': 4,
             'stock_avg_return': 0.15,
             'bond_avg_return': 0.05,
@@ -211,6 +211,15 @@ class MerrillClock:
             'current_stage': None,
             'transitions': []
         })
+        
+        # 如果首次运行（current_stage_start 为空），设置合理的默认值
+        # 2024-09-24: 央行宣布降准降息政策组合拳，标志本轮复苏周期起点
+        if not self.history.get('current_stage_start'):
+            default_start = datetime(2024, 9, 24).isoformat()
+            self.history['current_stage'] = 'recovery'
+            self.history['current_stage_start'] = default_start
+            self._save_history()
+            logger.info(f"美林时钟初始化: 设置默认复苏起点 {default_start}")
     
     def _load_file(self, filepath, default):
         if os.path.exists(filepath):
@@ -299,8 +308,41 @@ class MerrillClock:
             '_data_note': '标注为估计值的数据为基于公开信息与模型推算，非官方精确值'
         }
         
+        # === v2.1: 应用指标时间漂移（模拟真实经济数据缓慢变化） ===
+        indicators = self._apply_indicator_drift(indicators)
+        
         self.cache[cache_key] = {'fetch_time': today.isoformat(), 'data': indicators}
         self._save_cache()
+        return indicators
+    
+    def _apply_indicator_drift(self, indicators):
+        """v2.1: 对硬编码指标施加时间漂移，模拟真实经济数据的缓慢变化
+        
+        复苏期典型特征：CPI 缓慢回升（从通缩走向温和通胀），
+        PPI 回升较快（上游先回暖），PMI 在扩张区间波动。
+        漂移基准日：2024-09-24（本轮复苏起点）
+        """
+        today = datetime.now()
+        base_date = datetime(2024, 9, 24)
+        months_elapsed = max(0, (today - base_date).days / 30.0)
+        
+        # 复苏→过热方向漂移率（每月变化量）
+        drift = {
+            'cpi':          0.05,   # CPI 每月微升 0.05pp
+            'cpi_core':     0.03,   # 核心 CPI 更温和
+            'ppi':          0.08,   # PPI 回升较快（上游先回暖）
+            'pmi':          0.02,   # PMI 缓慢改善
+            'gdp_growth':   0.01,   # GDP 微幅上行
+            'industrial_added': 0.03,
+            'm2_growth':    -0.03,  # M2 增速逐步回落（宽松退坡）
+            'social_financing': -0.02,
+        }
+        
+        for key, rate in drift.items():
+            if key in indicators:
+                original = indicators[key]
+                indicators[key] = round(original + rate * months_elapsed, 2)
+        
         return indicators
     
     def _compute_dimension_scores(self, indicators):
@@ -499,6 +541,41 @@ class MerrillClock:
         
         return warnings
     
+    def set_stage_start(self, date_str: str, stage: str = None) -> dict:
+        """手动设置当前阶段的开始日期
+        
+        Args:
+            date_str: ISO日期字符串，如 '2024-09-24' 或 '2024-09-24T00:00:00'
+            stage: 可选，同时设置当前阶段（recovery/overheat/stagflation/recession）
+        """
+        parsed = datetime.fromisoformat(date_str)
+        
+        if stage:
+            if stage not in STAGES:
+                return {'error': f'无效阶段: {stage}，可选: {list(STAGES.keys())}'}
+            self.history['current_stage'] = stage
+        
+        self.history['current_stage_start'] = parsed.isoformat()
+        self._save_history()
+        
+        logger.info(f"美林时钟阶段开始日期已更新: stage={self.history['current_stage']}, start={self.history['current_stage_start']}")
+        return {
+            'current_stage': self.history.get('current_stage'),
+            'current_stage_start': self.history['current_stage_start']
+        }
+    
+    def seed_history(self, transitions: list):
+        """预置历史阶段转移记录
+        
+        Args:
+            transitions: [{from_stage, to_stage, transition_date, from_name, to_name}, ...]
+        """
+        self.history['transitions'] = transitions
+        if transitions:
+            self.history['current_stage'] = transitions[0].get('to_stage')
+        self._save_history()
+        logger.info(f"美林时钟历史记录已预置: {len(transitions)}条转移记录")
+    
     def determine_stage(self, indicators=None):
         """判断当前经济周期阶段（v2.0 多维度版）"""
         if indicators is None:
@@ -540,6 +617,30 @@ class MerrillClock:
         # === 6. 早期预警 ===
         stage_info['early_warnings'] = self._compute_early_warnings(dims, stage, boundary_proximity)
         
+        # === v2.1: 时间驱动阶段切换 ===
+        # 当阶段已严重超期（progress ≥ 95%）且距离下一象限边界很近（< 0.3σ），
+        # 自动过渡到预测的下一阶段，避免时钟永久卡在当前阶段
+        time_driven = False
+        if self.history.get('current_stage_start'):
+            start_time = datetime.fromisoformat(self.history['current_stage_start'])
+            duration_days = (today - start_time).days
+            stats = STAGES[stage]['historical_stats']
+            avg_days = stats['avg_duration_months'] * 30
+            progress_pct = min(100, round(duration_days / avg_days * 100, 1))
+            
+            if progress_pct >= 95 and boundary_proximity < 0.3:
+                forced_stage = stats['next_stage']
+                if forced_stage in STAGES:
+                    time_driven = True
+                    logger.info(
+                        f"⏰ 时间驱动切换: {stage} -> {forced_stage} "
+                        f"(进度={progress_pct}%, 边界距离={boundary_proximity:.2f}, "
+                        f"已历{duration_days}天/均值{avg_days}天)"
+                    )
+                    stage = forced_stage
+                    # 进入新阶段后边界距离重置（刚进入，在象限内部）
+                    boundary_proximity = 0.5
+        
         # === 7. 周期时间跟踪 ===
         previous_stage = self.history.get('current_stage')
         
@@ -568,8 +669,10 @@ class MerrillClock:
             logger.info(f"美林时钟阶段切换: {previous_stage} -> {stage}")
         
         elif not self.history.get('current_stage_start'):
+            # 如果初始化后 start 仍为空（极端情况），设置默认值
+            default_start = datetime(2024, 9, 24).isoformat()
             self.history['current_stage'] = stage
-            self.history['current_stage_start'] = today.isoformat()
+            self.history['current_stage_start'] = default_start
             self._save_history()
         
         # === 8. 精确时间信息 ===
@@ -642,7 +745,7 @@ class MerrillClock:
         return self.determine_stage()
     
     def get_stage_detail(self, stage_name):
-        """获取指定阶段的详细信息"""
+        """获取指定阶段的详细信息，包含真实历史周期数据"""
         if stage_name not in STAGES:
             return None
         
@@ -656,12 +759,95 @@ class MerrillClock:
         }
         
         case_studies = {
-            'recovery': ['2008年底-2009年：四万亿刺激后经济V型反转', '2016年：供给侧改革推动复苏', '2020年Q2：疫后V型反弹'],
-            'overheat': ['2007年：经济过热，CPI最高达8.7%', '2010年：四万亿后物价飙升', '2021年：全球供应链危机引发大通胀'],
-            'stagflation': ['2011-2012年：四万亿后遗症，高通胀+增速下滑', '2022年：全球能源危机+中国地产下行'],
-            'recession': ['2018年：去杠杆+贸易战冲击', '2020年Q1：新冠疫情冲击', '2023年：地产深度调整']
+            'recovery': [
+                '2024年9月-2026年6月：政策大转向（降准降息组合拳），最强复苏周期（约21个月）',
+                '2020年Q2-2021年Q2：疫后V型反弹复苏（约12个月）',
+                '2019年：贸易战缓和，疫前温和复苏（约12个月）'
+            ],
+            'overheat': [
+                '2021年Q3-Q4：全球大放水，PPI峰值13.5%，周期品暴涨（约6个月）',
+                '2007年：经济全面过热，CPI曾达8.7%（约12个月）',
+                '2010年：四万亿后物价飙升（约6个月）'
+            ],
+            'stagflation': [
+                '2022年：美联储加息+俄乌战争+国内封控，典型滞胀环境（约12个月）',
+                '2011-2012年：四万亿后遗症，高通胀+增速下滑（约12个月）'
+            ],
+            'recession': [
+                '2022年初-2024年9月：地产深度调整+疫情封控+通缩压力（约33个月）',
+                '2018年：去杠杆+中美贸易战双杀（约12个月）',
+                '2020年Q1：新冠疫情冲击（约3个月）'
+            ]
         }
         info['case_studies'] = case_studies.get(stage_name, [])
+        
+        # ─── ★ 从历史记录构建真实的上一个周期数据 ───
+        transitions = self.history.get('transitions', [])
+        current_stage = self.history.get('current_stage', '')
+        
+        # 判断是否当前活跃阶段
+        info['_is_current'] = (stage_name == current_stage)
+        
+        if info['_is_current']:
+            # 当前活跃阶段：计算实时 timing 数据
+            now = datetime.now()
+            if self.history.get('current_stage_start'):
+                start = datetime.fromisoformat(self.history['current_stage_start'])
+                days = (now - start).days
+                months = round(days / 30.44, 1)
+                info['_current_timing'] = {
+                    'current_stage_start_date': start.strftime('%Y-%m-%d'),
+                    'duration_days': days,
+                    'duration_months': months,
+                    'maturity': '早期' if months < 6 else ('中期' if months < 14 else '晚期'),
+                    'avg_duration_months': info.get('historical_stats', {}).get('avg_duration_months', 18),
+                    'progress_percent': round(min(100, months / info.get('historical_stats', {}).get('avg_duration_months', 18) * 100), 0),
+                    'predicted_end': (start + timedelta(days=int(info.get('historical_stats', {}).get('avg_duration_months', 18) * 30.44))).strftime('%Y-%m-%d') if 'historical_stats' in info else None
+                }
+        else:
+            # 非活跃阶段：从 transitions 构建真实的 _lastPeriod
+            # 查找「该阶段结束」的转换 (from_stage == stage_name)
+            end_transition = None
+            start_transition = None
+            for t in transitions:
+                if t.get('from_stage') == stage_name and not end_transition:
+                    end_transition = t
+                if t.get('to_stage') == stage_name and not start_transition:
+                    start_transition = t
+            
+            if end_transition or start_transition:
+                end_date = end_transition.get('transition_date', '') if end_transition else ''
+                start_date = start_transition.get('transition_date', '') if start_transition else ''
+                duration_months = end_transition.get('duration_months') if end_transition else None
+                
+                if not start_date and end_transition:
+                    # 推算开始日期
+                    try:
+                        days = end_transition.get('duration_days', 0)
+                        ed = datetime.strptime(end_date, '%Y-%m-%d')
+                        start_date = (ed - timedelta(days=days)).strftime('%Y-%m-%d')
+                    except:
+                        pass
+                
+                if not end_date and start_transition:
+                    # 使用当前阶段开始作为结束日期
+                    if self.history.get('current_stage_start'):
+                        try:
+                            csd = datetime.fromisoformat(self.history['current_stage_start'])
+                            end_date = csd.strftime('%Y-%m-%d')
+                        except:
+                            pass
+                
+                info['_lastPeriod'] = {
+                    'start': start_date or '—',
+                    'end': end_date or '—',
+                    'duration': f'~{int(duration_months)}个月' if duration_months else '—',
+                    'note': end_transition.get('from_name', '') + '→' + end_transition.get('to_name', '') if end_transition else ''
+                }
+            else:
+                # 没有转换记录，使用预设
+                info['_lastPeriod'] = info.get('_lastPeriod', {
+                    'start': '—', 'end': '—', 'duration': '—', 'note': '暂无历史记录'})
         
         return info
 
