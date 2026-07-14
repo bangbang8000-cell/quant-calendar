@@ -53,7 +53,7 @@ def _load_base_config() -> dict:
                 saved = json.load(f)
             _deep_merge(config, saved)
         except Exception as e:
-            print(f"⚠️  加载 admin 基础配置失败: {e}")
+            logger.warning(f"加载 admin 基础配置失败: {e}")
 
     # 2. 兜底：加载全局配置文件（兼容旧数据）
     global_files = {
@@ -107,7 +107,7 @@ def load_user_config(username: str) -> dict:
             user_override.pop("inherits", None)
             _deep_merge(base, user_override)
         except Exception as e:
-            print(f"⚠️  加载用户 {username} 配置失败: {e}")
+            logger.warning(f"加载用户 {username} 配置失败: {e}")
     return base
 
 
@@ -129,10 +129,10 @@ def save_user_config(username: str, config: dict) -> bool:
     try:
         with open(user_config_path, 'w', encoding='utf-8') as f:
             json.dump(filtered, f, ensure_ascii=False, indent=2)
-        print(f"✅ 用户 {username} 配置已保存")
+        logger.info(f"用户 {username} 配置已保存")
         return True
     except Exception as e:
-        print(f"⚠️  保存用户 {username} 配置失败: {e}")
+        logger.warning(f"保存用户 {username} 配置失败: {e}")
         return False
 
 
@@ -158,7 +158,7 @@ def init_user_config(username: str):
     os.makedirs(user_dir, exist_ok=True)
     config_path = _get_user_config_path(username)
     if not os.path.exists(config_path):
-        print(f"✅ 为用户 {username} 创建配置目录")
+        logger.info(f"为用户 {username} 创建配置目录")
 
 
 # ===== API 路由 =====

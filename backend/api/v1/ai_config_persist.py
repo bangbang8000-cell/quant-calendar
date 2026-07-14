@@ -10,9 +10,9 @@ def load_ai_config(ai_config):
             with open(AI_CONFIG_FILE, 'r', encoding='utf-8') as f:
                 saved = json.load(f)
                 ai_config.update(saved)
-                print("✅ 已加载 AI 配置")
+                logger.info("已加载 AI 配置")
         except Exception as e:
-            print(f"⚠️  加载 AI 配置失败: {e}")
+            logger.warning(f"加载 AI 配置失败: {e}")
 
 def save_ai_config(ai_config):
     try:
