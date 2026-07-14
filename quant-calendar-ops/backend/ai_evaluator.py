@@ -254,11 +254,16 @@ class AIEvaluator:
     # ─── 模型管理 ───────────────────────────────────────────────
 
     def _load_models(self) -> List[ModelProvider]:
-        """加载模型配置列表"""
+        """加载模型配置列表（自动解密 API Key）"""
+        from crypto_utils import decrypt_value
         try:
             with open(self._models_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                models = [ModelProvider.from_dict(m) for m in data.get("models", [])]
+                models = []
+                for m in data.get("models", []):
+                    provider = ModelProvider.from_dict(m)
+                    provider.api_key = decrypt_value(provider.api_key)
+                    models.append(provider)
                 if models:
                     return models
         except (FileNotFoundError, json.JSONDecodeError):
@@ -268,9 +273,13 @@ class AIEvaluator:
         return list(DEFAULT_MODELS)
 
     def _save_models(self, models: List[ModelProvider]):
-        """保存模型配置列表"""
+        """保存模型配置列表（自动加密 API Key）"""
+        from crypto_utils import encrypt_value
         os.makedirs(os.path.dirname(self._models_file), exist_ok=True)
-        data = {"models": [m.to_dict() for m in models], "updated_at": datetime.now().isoformat()}
+        model_dicts = [m.to_dict() for m in models]
+        for d in model_dicts:
+            d["api_key"] = encrypt_value(d.get("api_key", ""))
+        data = {"models": model_dicts, "updated_at": datetime.now().isoformat()}
         with open(self._models_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         self._models_cache = models

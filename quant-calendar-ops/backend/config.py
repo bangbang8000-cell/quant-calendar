@@ -40,14 +40,14 @@ class Settings(BaseSettings):
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
     
-    # 数据库配置
-    DATABASE_URL: str = "sqlite:///./data/quant_calendar.db"
-    
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
     
     # 飞书 Webhook 配置 (可选)
     FEISHU_WEBHOOK_URL: str = ""
+    
+    # 加密密钥
+    FERNET_KEY: str = ""
     
     # 策略数据目录配置
     QUANT_DATA_DIR: str = "../qresult"
@@ -65,9 +65,27 @@ class Settings(BaseSettings):
 # 全局配置实例
 settings = Settings()
 
-# v1.8: 安全 — 启动时检测密钥，缺失则自动生成
+# v2.1: 安全 — 启动时检测密钥，缺失则自动生成并持久化到 .env
 if not settings.SECRET_KEY:
     import secrets
-    settings.SECRET_KEY = secrets.token_hex(32)
-    import warnings
-    warnings.warn("⚠️ 已自动生成随机 SECRET_KEY，重启后不变（建议写入 .env）")
+    new_key = secrets.token_hex(32)
+    settings.SECRET_KEY = new_key
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+    try:
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        has_key = any(line.startswith('SECRET_KEY=') for line in lines)
+        if not has_key:
+            with open(env_path, 'a', encoding='utf-8') as f:
+                f.write(f'\nSECRET_KEY={new_key}\n')
+        else:
+            with open(env_path, 'w', encoding='utf-8') as f:
+                for line in lines:
+                    if line.startswith('SECRET_KEY='):
+                        f.write(f'SECRET_KEY={new_key}\n')
+                    else:
+                        f.write(line)
+        os.environ['SECRET_KEY'] = new_key
+    except Exception:
+        import warnings
+        warnings.warn("无法写入 .env，SECRET_KEY 仅对当前进程有效")
