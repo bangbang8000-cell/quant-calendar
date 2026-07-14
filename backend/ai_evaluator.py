@@ -204,7 +204,8 @@ class AIEvaluator:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载AI配置失败")
             return {
                 "provider": "codingplan",
                 "apiKey": "",
@@ -232,7 +233,8 @@ class AIEvaluator:
             if len(cleaned) != len(cache):
                 self._save_index_eval_cache(cleaned)
             return cleaned
-        except:
+        except Exception:
+            logger.exception("加载指数评估缓存失败")
             return {}
 
     def _save_index_eval_cache(self, cache: Dict = None):
@@ -356,7 +358,8 @@ class AIEvaluator:
             path = self._history_path(username)
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载评估历史失败")
             return []
 
     def _save_history_for(self, username: str, history: List):
@@ -1461,7 +1464,8 @@ class AIEvaluator:
         try:
             with open(auto_config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载自动评股配置失败")
             return {
                 "enabled": False,
                 "schedule_type": "daily",
@@ -1479,7 +1483,8 @@ class AIEvaluator:
             with open(auto_config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             return True
-        except:
+        except Exception:
+            logger.exception("保存自动评股配置失败")
             return False
 
 

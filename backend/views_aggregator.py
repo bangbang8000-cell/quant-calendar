@@ -340,7 +340,8 @@ class ViewsAggregator:
         """
         try:
             curr_idx = self.all_dates.index(current_date)
-        except:
+        except Exception:
+            logger.exception("聚合视图数据失败")
             return 'current'
 
         if view == 'day':

@@ -40,9 +40,6 @@ class Settings(BaseSettings):
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
     
-    # 数据库配置
-    DATABASE_URL: str = "sqlite:///./data/quant_calendar.db"
-    
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
     

@@ -826,7 +826,8 @@ class MerrillClock:
                         days = end_transition.get('duration_days', 0)
                         ed = datetime.strptime(end_date, '%Y-%m-%d')
                         start_date = (ed - timedelta(days=days)).strftime('%Y-%m-%d')
-                    except:
+                    except Exception:
+                        logger.exception("美林时钟指标计算失败")
                         pass
                 
                 if not end_date and start_transition:
@@ -835,7 +836,8 @@ class MerrillClock:
                         try:
                             csd = datetime.fromisoformat(self.history['current_stage_start'])
                             end_date = csd.strftime('%Y-%m-%d')
-                        except:
+                        except Exception:
+                        logger.exception("美林时钟指标计算失败")
                             pass
                 
                 info['_lastPeriod'] = {
