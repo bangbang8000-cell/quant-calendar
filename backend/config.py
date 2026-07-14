@@ -46,7 +46,10 @@ class Settings(BaseSettings):
     # 飞书 Webhook 配置 (可选)
     FEISHU_WEBHOOK_URL: str = ""
     
-    # 策略数据目录配置
+    # 加密密钥
+    FERNET_KEY: str = ""
+
+    # v2.1: 允许 .env 中的额外配置项（向后兼容）
     QUANT_DATA_DIR: str = "../qresult"
     
     @property
