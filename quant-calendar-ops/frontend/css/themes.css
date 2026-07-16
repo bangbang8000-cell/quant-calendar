@@ -1929,7 +1929,7 @@
     
     /* ===== 市场行情卡片 ===== */
     .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-    .market-card { background: linear-gradient(135deg, #fff5f5 0%, #fff 100%); border: 1px solid #ffe0e0; border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+    .market-card { background: var(--bg-card); border: 1px solid var(--border-light, #ffe0e0); border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
     .market-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15); }
     .market-card.up { border-left: 4px solid var(--primary-color, #E63946); }
     .market-card.down { border-left: 4px solid #457B9D; }
@@ -2287,7 +2287,7 @@
     .allocation-item { font-size: var(--font-sm); padding: 6px 8px; background: var(--bg-card); border-radius: 6px; text-align: center; color: var(--text-secondary); }
     
     /* ===== 通知设置样式 ===== */
-    .notification-settings { background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%); padding: 20px; border-radius: 16px; border: 1px solid #e4e9f2; }
+    .notification-settings { background: var(--bg-card); padding: 20px; border-radius: 16px; border: 1px solid var(--border-light, #e4e9f2); }
     .setting-section { margin-bottom: 20px; }
     .setting-title { font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .setting-input-wrapper { display: flex; gap: 10px; align-items: stretch; }
@@ -4275,5 +4275,26 @@ text {
         width: 100%;
         justify-content: flex-end;
         padding: 4px 0;
+    }
+}
+
+
+/* ===== 移动端: 弹窗宽度适配 ===== */
+@media (max-width: 768px) {
+    .kline-dialog .el-dialog,
+    .merrill-detail-dialog .el-dialog {
+        width: 95% !important;
+        margin-top: 10px !important;
+    }
+    .el-dialog {
+        width: 92% !important;
+    }
+}
+
+/* ===== 移动端: 表单标签宽度 ===== */
+@media (max-width: 480px) {
+    .el-form-item .el-form-item__label {
+        width: 60px !important;
+        font-size: 12px;
     }
 }

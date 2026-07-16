@@ -492,7 +492,7 @@
                                     <div class="stat-label" style="font-size: var(--font-sm);">总股票数</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: #43e97b;">{{ statusCounts.newCount }}</div>
+                                    <div class="stat-value" style="font-size: 22px; color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">新入池</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
@@ -573,8 +573,8 @@
                                     <div class="stat-label">覆盖股票</div>
                                 </div>
                             </div>
-                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid #D4A843;">
-                                <div class="stat-icon" style="background: rgba(212,168,67,0.12); color: #D4A843;">⭐</div>
+                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid var(--color-gold, #D4A843);">
+                                <div class="stat-icon" style="background: rgba(212,168,67,0.12); color: var(--color-gold, #D4A843);">⭐</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
                                     <div class="stat-label">自选股</div>
@@ -594,7 +594,7 @@
                         <!-- 最近评估 -->
                         <div class="card" style="margin-bottom: 16px;" v-if="aiHistory.length > 0">
                             <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-                                <span>🕐 最近评估</span>
+                                <span>🕒 最近评估</span>
                                 <el-button size="small" text @click="currentSubPage = 'history'">查看全部 →</el-button>
                             </div>
                             <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;">
@@ -734,7 +734,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -788,7 +788,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -841,7 +841,7 @@
                                                 <div class="stock-info">
                                                     <span class="stock-code">{{ record.stock_code }}</span>
                                                     <span class="stock-name">{{ record.stock_name }}</span>
-                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:#D4A843;font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
                                                 </div>
                                                 <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                     <span class="score-num">{{ record.result.total_score }}</span>
@@ -1071,11 +1071,11 @@
                         <div class="card-title">🎯 图标系统</div>
                         <div class="theme-list">
                             <div class="theme-item" :class="{active: iconSystem === 'emoji'}" @click="switchIconSystem('emoji')">
-                                <div class="theme-color" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);"></div>
+                                <div class="theme-color" style="background: var(--gradient-brand);"></div>
                                 <div style="font-size: 13px; font-weight: var(--font-medium);">原生<span v-if="iconSystem === 'emoji'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'ink'}" @click="switchIconSystem('ink')">
-                                <div class="theme-color" style="background: linear-gradient(135deg, #f5f0eb, #e8e0d5);"></div>
+                                <div class="theme-color" style="background: linear-gradient(135deg, var(--bg-hover, #f5f0eb), var(--bg-card, #e8e0d5));"></div>
                                 <div style="font-size: 13px; font-weight: var(--font-medium);">墨韵<span v-if="iconSystem === 'ink'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'edge'}" @click="switchIconSystem('edge')">
@@ -1381,7 +1381,7 @@
                         </div>
                             <div v-for="user in filteredUsers" :key="user.username" class="user-card-enhanced" :style="{opacity: user.enabled === false ? 0.55 : 1}">
                                 <div class="user-info-enhanced">
-                                    <div class="user-avatar-large" :class="'avatar-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : 'blue')">{{ user.username.charAt(0).toUpperCase() }}</div>
+                                    <div class="user-avatar-large" :class="'avatar-' + ({'rose-red':'rose','vibrant-orange':'orange','tech-blue':'blue','classic-white':'blue','classic-red':'rose','classic-gold':'orange'}[user.theme] || 'blue')">{{ user.username.charAt(0).toUpperCase() }}</div>
                                     <div class="user-details">
                                         <div class="user-name-enhanced">
                                             {{ user.username }}
@@ -1563,7 +1563,7 @@
 </template>
 
         <!-- 股票详情弹窗 -->
-        <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="850px" class="kline-dialog">
+        <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="800px" class="kline-dialog">
             <div v-if="stockDetail">
                 <div class="detail-header">
                     <div>
@@ -1944,7 +1944,7 @@
         </el-dialog>
 
         <!-- 指数详情弹窗 -->
-        <el-dialog v-model="indexDetailVisible" title="📈 指数详情分析" width="850px" class="kline-dialog">
+        <el-dialog v-model="indexDetailVisible" title="📈 指数详情分析" width="800px" class="kline-dialog">
             <div v-if="indexDetail">
                 <!-- 头部信息 -->
                 <div class="detail-header">
