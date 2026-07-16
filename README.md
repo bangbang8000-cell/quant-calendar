@@ -8,6 +8,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
     <a href="#"><img src="https://img.shields.io/badge/python-3.10+-blue" alt="python"></a>
     <a href="#"><img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue"></a>
+    <a href="#"><img src="https://img.shields.io/badge/docker-✓-2496ed" alt="docker"></a>
     <a href="#"><img src="https://img.shields.io/badge/A股-量化选股-red" alt="a-shares"></a>
     <a href="https://github.com/bangbang8000-cell/quant-calendar/stargazers"><img src="https://img.shields.io/github/stars/bangbang8000-cell/quant-calendar?style=social" alt="stars"></a>
   </p>
@@ -72,7 +73,8 @@
 | 数据导出 | 各视图数据一键导出 CSV |
 | 飞书推送 | Webhook 定时推送每日选股报告 |
 | 多用户 | 管理组/用户组/访客组，独立自选股和评估历史 |
-| 主题 | 4 套主题 + 暗色模式 |
+| 主题 | 7 套主题 |
+| 初始化向导 | 首次启动引导配置密码、AI Key、Tushare Token |
 | 安全 | JWT + bcrypt + CSP + HSTS |
 
 ---
@@ -83,6 +85,9 @@
 quant-calendar/
 ├── README.md
 ├── quant-calendar-ops/          ← 应用代码
+│   ├── Dockerfile               ← Docker 镜像定义
+│   ├── docker-entrypoint.sh     ← 容器入口脚本
+│   ├── docker-compose.yml       ← Compose 编排
 │   ├── backend/                 ← FastAPI 后端 (Python)
 │   │   ├── main_new.py          ← 主入口
 │   │   ├── merrill_clock.py     ← 美林时钟引擎
@@ -120,25 +125,44 @@ quant-calendar/
 
 ## 快速开始
 
-环境要求：Python 3.10+，[Tushare Pro](https://tushare.pro/) 账号（免费注册获取 Token）。
+### Docker（推荐）
 
 ```bash
-# 克隆仓库
+docker pull ghcr.io/bangbang8000-cell/quant-calendar:latest
+
+docker run -d --name quant-calendar -p 8000:8000 \
+  -v quant-calendar-data:/app/data \
+  ghcr.io/bangbang8000-cell/quant-calendar:latest
+```
+
+浏览器打开 http://localhost:8000，登录后跟随初始化向导配置 Tushare Token 和 AI Key。
+
+如需使用自己的策略数据：
+```bash
+docker run -d --name quant-calendar -p 8000:8000 \
+  -v quant-calendar-data:/app/data \
+  -v /path/to/your/qresult:/data/qresult:ro \
+  ghcr.io/bangbang8000-cell/quant-calendar:latest
+```
+
+GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
+
+### 源码安装
+
+环境要求：Python 3.10+，[Tushare Pro](https://tushare.pro/) 账号。
+
+```bash
 git clone https://github.com/bangbang8000-cell/quant-calendar.git
 cd quant-calendar/quant-calendar-ops/backend
 
-# 安装依赖
 pip install -r requirements.txt
 
-# 配置
 cp .env.example .env
-# 编辑 .env，填入 TUSHARE_TOKEN=*** 启动
+# 编辑 .env，填入 TUSHARE_TOKEN=***
 python main_new.py --port 8000
-
-# 浏览器打开 http://localhost:8000
 ```
 
-不需要 MySQL、Redis、Docker、GPU。
+无需 MySQL、Redis、GPU。
 
 ### 默认账号
 
@@ -153,7 +177,6 @@ python main_new.py --port 8000
 
 ## 路线图
 
-- Docker 一键部署
 - PostgreSQL 存储后端（可选替代 JSON）
 - 策略回测收益归因可视化
 - 移动端 PWA 离线支持
