@@ -1131,9 +1131,9 @@
                         <p style="color: var(--text-secondary); font-size: var(--font-sm); margin: 0 0 16px 0;">管理用于智能评股的大模型。按优先级串行调用，模型1失败→模型2。至少需启用一个。</p>
                         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
                             <el-button size="small" type="primary" @click="loadAiModels">🔄 刷新</el-button>
-                            <el-button size="small" type="success" @click="testAllModels" :loading="testingAllModels">🧪 探测全部</el-button>
+                            <el-button size="small" type="primary" @click="testAllModels" :loading="testingAllModels">🧪 探测全部</el-button>
                             <el-button size="small" type="primary" @click="saveAiModels" :loading="savingAiModels">💾 保存</el-button>
-                            <el-button size="small" type="success" @click="addModel" style="margin-left:auto;">➕ 新增模型</el-button>
+                            <el-button size="small" type="primary" @click="addModel" style="margin-left:auto;">➕ 新增模型</el-button>
                         </div>
                         <div v-if="aiModelsError" style="color:var(--el-danger);padding:16px;text-align:center;">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiModels">重试</el-button></div>
                         <div v-if="!aiModelsError && aiModels.length===0" style="color:var(--text-tertiary);padding:20px;text-align:center;">加载中...</div>
