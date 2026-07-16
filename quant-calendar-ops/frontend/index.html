@@ -141,6 +141,9 @@
                         <span v-if="currentUser?.role === 'guest'" style="font-size:var(--font-xs); color:var(--badge-info-text); background:var(--badge-info-bg); padding:1px 8px; border-radius:8px; margin-left:4px;">访客</span>
                         <span style="font-size: var(--font-xs); color: var(--text-tertiary);">▼</span>
                         <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop>
+                            <div class="user-menu-item" v-if="currentUser?.role === 'admin'" @click="showUserMenu = false; resetSetupWizard()">
+                                ⚙️ 重新运行初始化向导
+                            </div>
                             <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" @click="showUserMenu = false; showChangePassword = true">
                                 🔑 修改密码
                             </div>
@@ -2266,6 +2269,77 @@
         </el-dialog>
 
         <!-- v1.5.0: 修改密码弹窗 -->
+        <!-- v2.2: 初始化向导 -->
+        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="500px" :close-on-click-modal="false" :show-close="false">
+            <div style="min-height: 280px;">
+                <!-- 步骤 1: 修改密码 -->
+                <div v-if="setupStep === 1">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 48px; margin-bottom: 8px;">🔐</div>
+                        <div style="font-weight: 600; font-size: 16px;">管理员密码</div>
+                        <div style="color: #999; margin-top: 4px;">建议修改默认密码以保证安全</div>
+                    </div>
+                    <el-form :model="setupForm" label-position="top">
+                        <el-form-item label="新密码（留空则保持不变）">
+                            <el-input v-model="setupForm.newPassword" type="password" placeholder="至少4位，留空保持默认" show-password />
+                        </el-form-item>
+                    </el-form>
+                    <div style="text-align: center; margin-top: 12px;">
+                        <el-button type="primary" @click="setupStep = 2" size="large">下一步</el-button>
+                        <el-button @click="setupStep = 2" size="large" style="margin-left: 8px;">跳过</el-button>
+                    </div>
+                </div>
+
+                <!-- 步骤 2: AI 模型 -->
+                <div v-if="setupStep === 2">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 48px; margin-bottom: 8px;">🤖</div>
+                        <div style="font-weight: 600; font-size: 16px;">AI 大模型配置</div>
+                        <div style="color: #999; margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
+                    </div>
+                    <el-form :model="setupForm" label-position="top">
+                        <el-form-item label="提供商">
+                            <el-select v-model="setupForm.aiProvider" style="width: 100%">
+                                <el-option label="DeepSeek" value="deepseek" />
+                                <el-option label="OpenAI" value="openai" />
+                                <el-option label="其他兼容接口" value="custom" />
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="API Key">
+                            <el-input v-model="setupForm.aiKey" placeholder="sk-..." show-password />
+                        </el-form-item>
+                        <el-form-item label="接口地址" v-if="setupForm.aiProvider === 'custom'">
+                            <el-input v-model="setupForm.aiEndpoint" placeholder="https://api.example.com/v1" />
+                        </el-form-item>
+                    </el-form>
+                    <div style="text-align: center; margin-top: 12px;">
+                        <el-button @click="setupStep = 1" size="large">上一步</el-button>
+                        <el-button type="primary" @click="setupStep = 3" size="large" style="margin-left: 8px;">下一步</el-button>
+                        <el-button @click="setupStep = 3" size="large" style="margin-left: 8px;">跳过</el-button>
+                    </div>
+                </div>
+
+                <!-- 步骤 3: Tushare -->
+                <div v-if="setupStep === 3">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 48px; margin-bottom: 8px;">📊</div>
+                        <div style="font-weight: 600; font-size: 16px;">Tushare 数据源</div>
+                        <div style="color: #999; margin-top: 4px;">用于获取行情数据和股票信息</div>
+                    </div>
+                    <el-form :model="setupForm" label-position="top">
+                        <el-form-item label="Tushare Token">
+                            <el-input v-model="setupForm.tushareToken" placeholder="在 tushare.pro 注册获取" show-password />
+                        </el-form-item>
+                    </el-form>
+                    <div style="text-align: center; margin-top: 12px;">
+                        <el-button @click="setupStep = 2" size="large">上一步</el-button>
+                        <el-button type="success" @click="completeSetupWizard" size="large" style="margin-left: 8px;">完成初始化</el-button>
+                        <el-button @click="completeSetupWizard" size="large" style="margin-left: 8px;">跳过</el-button>
+                    </div>
+                </div>
+            </div>
+        </el-dialog>
+
         <el-dialog v-model="showChangePassword" title="🔑 修改密码" width="420px" :close-on-click-modal="false">
             <el-form :model="changePasswordForm" label-width="80px">
                 <el-form-item label="当前密码">
@@ -3450,6 +3524,11 @@ const allMenuDefs = [
                 const changePasswordForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' });
                 const changingPassword = ref(false);
 
+                // ===== v2.2: 初始化向导 =====
+                const showSetupWizard = ref(false);
+                const setupForm = ref({ newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-chat', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' });
+                const setupStep = ref(1);
+
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
                     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
@@ -3824,6 +3903,61 @@ const allMenuDefs = [
                     }
                 }
 
+                // ===== v2.2: 初始化向导 =====
+                async function checkSetupWizard() {
+                    try {
+                        const res = await fetch('/api/setup/status', {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.needed) {
+                            setupForm.value = { newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-chat', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' };
+                            setupStep.value = 1;
+                            showSetupWizard.value = true;
+                        }
+                    } catch (e) { /* 静默忽略 */ }
+                }
+
+                async function completeSetupWizard() {
+                    try {
+                        const body = {
+                            new_password: setupForm.value.newPassword,
+                            ai_key: setupForm.value.aiKey,
+                            ai_provider: setupForm.value.aiProvider,
+                            ai_model: setupForm.value.aiModel,
+                            ai_endpoint: setupForm.value.aiEndpoint,
+                            tushare_token: setupForm.value.tushareToken
+                        };
+                        const res = await fetch('/api/setup/complete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` },
+                            body: JSON.stringify(body)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showSetupWizard.value = false;
+                            ElementPlus.ElMessage.success('初始化完成');
+                            await loadUserConfig();
+                        } else {
+                            ElementPlus.ElMessage.error(data.message || '保存失败');
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('保存失败');
+                    }
+                }
+
+                async function resetSetupWizard() {
+                    try {
+                        const res = await fetch('/api/setup/reset', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                            showSetupWizard.value = true;
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('重置失败');
+                    }
+                }
+
                 // ===== 登录登出 =====
                 async function handleLogin() {
                     if (!loginForm.value.username || !loginForm.value.password) {
@@ -3847,6 +3981,10 @@ const allMenuDefs = [
                             await loadDates();
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('登录成功!');
+                            // v2.2: 检查是否需要初始化向导
+                            if (data.user.role === 'admin') {
+                                setTimeout(checkSetupWizard, 500);
+                            }
                         } else {
                             ElementPlus.ElMessage.error(data.message || '登录失败');
                         }
@@ -6334,7 +6472,9 @@ const allMenuDefs = [
                     openMemberManager, loadGroupMembers, addMemberToGroup, removeMemberFromGroup, availableUsersForGroup,
                     subPageCache, onParentToggle, allMenuDefs,
                     openMenuConfig, saveMenuConfig, deleteGroupConfig, createGroup,
-                    showChangePassword, changePasswordForm, changingPassword, doChangePassword
+                    showChangePassword, changePasswordForm, changingPassword, doChangePassword,
+                    // v2.2: 初始化向导
+                    showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard, resetSetupWizard,
                 };
             }
         });

@@ -27,9 +27,13 @@ COPY quant-calendar-ops/backend/ ./backend/
 COPY quant-calendar-ops/frontend/ ./frontend/
 COPY quant-calendar-ops/tests/ ./tests/
 COPY quant-calendar-ops/docs/ ./docs/
+COPY quant-calendar-ops/libs/ ./libs/
 
 # 复制策略数据（内置一份，可被 volume 覆盖）
 COPY qresult/ /data/qresult/
+
+# 安装本地包（非 PyPI 发布）
+RUN pip install --no-cache-dir ./libs/sxsc_tushare/ --break-system-packages
 
 # 设置权限
 RUN mkdir -p /app/data && \

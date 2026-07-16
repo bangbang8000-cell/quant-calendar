@@ -7,9 +7,12 @@ v1.5.7: 多用户配置分离模块
 """
 import json
 import os
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from auth import get_current_active_user, get_admin_user
 from paths import DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["用户配置"])
 
