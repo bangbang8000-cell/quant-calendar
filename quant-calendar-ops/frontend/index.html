@@ -658,8 +658,8 @@
                         <!-- 空状态：无任何评估记录 -->
                         <div v-if="aiHistory.length === 0" class="card" style="text-align:center;padding:40px 20px;">
                             <div style="font-size:64px;margin-bottom:16px;">🤖</div>
-                            <div style="font-size:var(--font-lg);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">欢迎使用智能评股</div>
-                            <div style="font-size:var(--font-md);color:var(--text-secondary);margin-bottom:20px;">对股票进行AI深度分析，获取九维度评分与投资建议</div>
+                            <div style="font-size:var(--font-lg);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">智能评股</div>
+                            <div style="font-size:var(--font-md);color:var(--text-secondary);margin-bottom:20px;">多模型串行评估，技术指标自动注入</div>
                             <div style="display:flex;gap:12px;justify-content:center;">
                                 <el-button type="primary" @click="currentSubPage = 'watchlist'">⭐ 管理自选股</el-button>
                                 <el-button @click="showBatchEvaluate = true">✨ 批量评估</el-button>
@@ -909,7 +909,7 @@
                             <div v-if="watchlist.length === 0" class="watchlist-empty">
                                 <div class="watchlist-empty-icon">⭐</div>
                                 <div class="watchlist-empty-title">暂无自选股</div>
-                                <div class="watchlist-empty-hint">在上方搜索框输入股票代码或名称添加</div>
+                                <div class="watchlist-empty-hint">搜索股票代码或名称添加</div>
                             </div>
                             <!-- 自选列表 -->
                             <div v-else>
@@ -1128,7 +1128,7 @@
                     <!-- AI 模型管理 -->
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">🤖 AI 模型管理</div>
-                        <p style="color: var(--text-secondary); font-size: var(--font-sm); margin: 0 0 16px 0;">管理用于智能评股的大模型。按优先级串行调用，模型1失败→模型2。至少需启用一个。</p>
+                        <p style="color: var(--text-secondary); font-size: var(--font-sm); margin: 0 0 16px 0;">按优先级串行调用，首个可用模型返回结果。</p>
                         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
                             <el-button size="small" type="primary" @click="loadAiModels">🔄 刷新</el-button>
                             <el-button size="small" type="primary" @click="testAllModels" :loading="testingAllModels">🧪 探测全部</el-button>
@@ -1167,7 +1167,7 @@
                     <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span>🔢 数据源优先级:</span>
                         <span style="font-weight: var(--font-medium);">① sxsc-tushare → ② tushare → ③ akshare</span>
-                        <span style="color: var(--text-tertiary); margin-left: auto;">查询时按此顺序依次尝试，首个成功响应即返回</span>
+                        <span style="color: var(--text-tertiary); margin-left: auto;">按优先级依次尝试</span>
                     </div>
 
                     <!-- sxsc-tushare 卡片 -->
@@ -1333,7 +1333,7 @@
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
                                 <el-switch v-model="dataRefreshConfig.watch_enabled" @change="saveDataRefreshConfig" size="small" />
-                                <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 4px;">检测CSV文件变化后自动刷新</span>
+                                <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
                             </div>
                         </div>
                     </div>
@@ -1470,11 +1470,11 @@
                                 <p style="margin: 0 0 12px 0;">基于<strong style="color: var(--text-primary);">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p style="margin: 0;"><strong style="color: var(--text-primary);">核心功能：</strong></p>
                                 <ul style="margin: 6px 0 0 0; padding-left: 20px;">
-                                    <li>🌀 美林时钟 — 五维度宏观评分，实时追踪经济周期阶段</li>
-                                    <li>🎯 多策略选股 — 覆盖动量、反转、成长、价值等多因子策略</li>
-                                    <li>🤖 AI 智能评股 — 基于大模型的深度个股分析与评分</li>
-                                    <li>📢 飞书推送 — 每日定时推送选股结果与市场摘要</li>
-                                    <li>📡 Tushare 数据源 — 专业金融数据接口，覆盖 A 股全量行情</li>
+                                    美林时钟 — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换
+                                    多策略选股 — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证
+                                    AI 评股 — 多模型串行评估，技术指标自动注入
+                                    飞书推送 — 定时推送每日选股报告
+                                    数据源 — Tushare Pro / sxsc / akshare 三源热备
                                 </ul>
                             </div>
                         </div>
@@ -1686,7 +1686,7 @@
                             <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
                         </div>
                         <div v-if="!stockKlineLoaded && !klineLoading" class="kline-placeholder">
-                            <div style="color: var(--text-tertiary); font-size: var(--font-base);">👆 点击"加载K线"按钮查看蜡烛图与均线</div>
+                            <div style="color: var(--text-tertiary); font-size: var(--font-base);">点击加载K线查看</div>
                         </div>
                     </div>
 
@@ -1808,7 +1808,7 @@
                                 <div style="margin-bottom: 8px;">最近评估：{{ aiResult.result.level }}</div>
                                 <div style="font-size: var(--font-sm);">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
                             </div>
-                            <div v-else>点击「💡 智能评股」按钮获取 AI 评估</div>
+                            <div v-else>点击 AI 评估按钮获取分析结果</div>
                         </div>
                     </div>  <!-- close ai tab -->
                 </div>
@@ -2254,7 +2254,7 @@
                 <div class="merrill-footer-decoration">
                     <div class="gold-gradient-bar"></div>
                     <div class="footer-hint">
-                        <span>💡 美林时钟是经典的经济周期分析框架，仅供参考不构成投资建议</span>
+                        <span>美林时钟仅供参考，不构成投资建议</span>
                     </div>
                 </div>
             </div>
@@ -3117,7 +3117,7 @@
                         chartVar.value = echarts.init(el);
                         renderKlineChart(chartVar.value, data.data, currentKlinePeriod.value, chartKey === 'indexKlineChart');
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ K线加载失败: ' + e.message);
+                        ElementPlus.ElMessage.error('K线加载失败');
                     } finally {
                         loadingVar.value = false;
                     }
@@ -3139,7 +3139,7 @@
                         stockKlineChart = echarts.init(el);
                         renderKlineChart(stockKlineChart, data.data, period);
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ K线加载失败: ' + e.message);
+                        ElementPlus.ElMessage.error('K线加载失败');
                     } finally {
                         klineLoading.value = false;
                     }
@@ -3251,7 +3251,7 @@
                         indexKlineChart = echarts.init(el);
                         renderKlineChart(indexKlineChart, data.data, period, true);
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ 指数K线加载失败: ' + e.message);
+                        ElementPlus.ElMessage.error('指数K线加载失败');
                     } finally {
                         indexKlineLoading.value = false;
                     }
@@ -3388,14 +3388,14 @@
                         const data = await res.json();
                         if (data.success || data.status === 'ok') {
                             feishuTestMessage.value = '✅ 测试消息已发送，请查看飞书';
-                            ElementPlus.ElMessage.success('✅ 测试消息已发送！');
+                            ElementPlus.ElMessage.success('测试消息已发送');
                         } else {
                             feishuTestMessage.value = '❌ ' + (data.message || '测试失败');
                             ElementPlus.ElMessage.error(feishuTestMessage.value);
                         }
                     } catch (e) {
                         feishuTestMessage.value = '❌ 连接失败';
-                        ElementPlus.ElMessage.error('❌ 飞书连接失败');
+                        ElementPlus.ElMessage.error('飞书连接失败');
                     }
                     feishuTestStatus.value = 'idle';
                 }
@@ -3412,7 +3412,7 @@
                         });
                         const result = await res.json();
                         // 保存结果在UI展示
-                    } catch (e) { ElementPlus.ElMessage.error('❌ 保存失败，请重试'); }
+                    } catch (e) { ElementPlus.ElMessage.error('保存失败'); }
                 }
 
                 // v1.9.2: 图标系统映射
@@ -3980,7 +3980,7 @@ const allMenuDefs = [
                             await loadUserConfig();
                             await loadDates();
                             await loadConsensusData();
-                            ElementPlus.ElMessage.success('登录成功!');
+                            ElementPlus.ElMessage.success('登录成功');
                             // v2.2: 检查是否需要初始化向导
                             if (data.user.role === 'admin') {
                                 setTimeout(checkSetupWizard, 500);
@@ -4013,7 +4013,7 @@ const allMenuDefs = [
                             await loadUserConfig();
                             await loadDates();
                             await loadConsensusData();
-                            ElementPlus.ElMessage.success('访客登录成功!');
+                            ElementPlus.ElMessage.success('访客登录成功');
                         } else {
                             ElementPlus.ElMessage.error(data.message || '登录失败');
                         }
@@ -4460,7 +4460,7 @@ const allMenuDefs = [
                         _testing: false,
                         testResult: undefined
                     });
-                    ElementPlus.ElMessage.success('新模型已添加，请填写配置后保存');
+                    ElementPlus.ElMessage.success('模型已添加');
                 }
 
                 function deleteModel(idx) {
@@ -5547,12 +5547,12 @@ const allMenuDefs = [
                         const data = await res.json();
                         if (data.success) {
                             rateLimitDirty.value = false;
-                            ElementPlus.ElMessage.success('✅ 限流配置已更新');
+                            ElementPlus.ElMessage.success('限流配置已更新');
                         } else {
                             ElementPlus.ElMessage.error(data.message || '保存失败');
                         }
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ 保存失败');
+                        ElementPlus.ElMessage.error('保存失败');
                     } finally {
                         rateLimitSaving.value = false;
                     }
@@ -5581,13 +5581,13 @@ const allMenuDefs = [
                         
                         if (data.success) {
                             configChanged.value = false;
-                            ElementPlus.ElMessage.success('✅ AI配置已保存并同步到服务器');
+                            ElementPlus.ElMessage.success('AI配置已保存');
                         } else {
-                            ElementPlus.ElMessage.warning('⚠️ 已保存到本地，但服务器同步失败: ' + (data.message || ''));
+                            ElementPlus.ElMessage.warning('已保存到本地，同步失败');
                         }
                     } catch (e) {
                         localStorage.setItem('quant_ai_config', JSON.stringify(aiConfig.value));
-                        ElementPlus.ElMessage.warning('⚠️ 已保存到本地（离线模式）');
+                        ElementPlus.ElMessage.warning('已保存到本地（离线）');
                         console.error('保存配置失败:', e);
                     } finally {
                         configSaving.value = false;
@@ -5602,12 +5602,12 @@ const allMenuDefs = [
                         const res = await fetch('/api/ai/test', { headers });
                         const data = await res.json();
                         if (data.success) {
-                            ElementPlus.ElMessage.success('✅ ' + (data.message || 'API连接正常'));
+                            ElementPlus.ElMessage.success(data.message || 'API连接正常');
                         } else {
-                            ElementPlus.ElMessage.error('❌ ' + (data.message || '测试失败'));
+                            ElementPlus.ElMessage.error(data.message || '测试失败');
                         }
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ 连接失败，请检查网络或API地址');
+                        ElementPlus.ElMessage.error('连接失败');
                     } finally {
                         aiLoading.value = false;
                     }
@@ -5628,7 +5628,7 @@ const allMenuDefs = [
                     a.download = `quant-calendar-config-${new Date().toISOString().slice(0,10)}.json`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    ElementPlus.ElMessage.success('✅ 配置已导出');
+                    ElementPlus.ElMessage.success('配置已导出');
                 }
 
                 // ===== 配置导入 =====
@@ -5656,9 +5656,9 @@ const allMenuDefs = [
                                 currentTheme.value = config.theme;
                                 changeTheme(config.theme);
                             }
-                            ElementPlus.ElMessage.success('✅ 配置已导入并应用');
+                            ElementPlus.ElMessage.success('配置已导入');
                         } catch (err) {
-                            ElementPlus.ElMessage.error('❌ 导入失败：文件格式错误');
+                            ElementPlus.ElMessage.error('导入失败：格式错误');
                         }
                     };
                     reader.readAsText(file);
@@ -5729,7 +5729,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) {
-                            ElementPlus.ElMessage.success('保存成功!');
+                            ElementPlus.ElMessage.success('保存成功');
                             // 如果编辑的是当前用户且主题变更，同步更新本地状态
                             if (currentUser.value && userForm.value.username === currentUser.value.username) {
                                 const newTheme = userForm.value.theme;
@@ -5766,7 +5766,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) {
-                            ElementPlus.ElMessage.success('删除成功!');
+                            ElementPlus.ElMessage.success('删除成功');
                             await loadUsers();
                         }
                     } catch(e) { console.error('[deleteUser]', e); }
@@ -5782,7 +5782,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) {
-                            ElementPlus.ElMessage.success('✅ 状态已更新');
+                            ElementPlus.ElMessage.success('状态已更新');
                         } else {
                             ElementPlus.ElMessage.error(data.message || '操作失败');
                         }
@@ -5807,7 +5807,7 @@ const allMenuDefs = [
                             });
                             const data = await res.json();
                             if (data.success) {
-                                ElementPlus.ElMessage.success('✅ 密码已重置');
+                                ElementPlus.ElMessage.success('密码已重置');
                             } else {
                                 ElementPlus.ElMessage.error(data.message || '重置失败');
                             }
@@ -5926,13 +5926,13 @@ const allMenuDefs = [
                         tushareStatus.value = data.success ? 'connected' : 'disconnected';
                         if (data.success) {
                             const detail = data.data_count ? ` (获取到 ${data.data_count} 条数据)` : '';
-                            ElementPlus.ElMessage.success('✅ Tushare 连接成功' + detail);
+                            ElementPlus.ElMessage.success('Tushare 连接成功' + detail);
                         } else {
-                            ElementPlus.ElMessage.error('❌ ' + (data.message || '连接失败'));
+                            ElementPlus.ElMessage.error(data.message || '连接失败');
                         }
                     } catch (e) {
                         tushareStatus.value = 'disconnected';
-                        ElementPlus.ElMessage.error('❌ 连接失败: ' + e.message);
+                        ElementPlus.ElMessage.error('连接失败');
                     }
                 }
                 // 静默检测 Tushare 连接（不弹提示）
@@ -5958,10 +5958,10 @@ const allMenuDefs = [
                             stockCount.value = parseInt(data.message.match(/\d+/)?.[0] || '0');
                             ElementPlus.ElMessage.success(data.message);
                         } else {
-                            ElementPlus.ElMessage.error(data.message || '❌ 同步失败');
+                            ElementPlus.ElMessage.error(data.message || '同步失败');
                         }
                     } catch (e) {
-                        ElementPlus.ElMessage.error('❌ 同步失败: ' + e.message);
+                        ElementPlus.ElMessage.error('同步失败');
                     } finally {
                         syncingData.value = false;
                     }
@@ -6027,13 +6027,13 @@ const allMenuDefs = [
                         const data = await res.json();
                         datasourceStatus.value[source] = data.success ? 'connected' : 'disconnected';
                         if (data.success) {
-                            ElementPlus.ElMessage.success(`✅ ${source} 连接成功: ${data.message}`);
+                            ElementPlus.ElMessage.success(`${source} 连接成功`);
                         } else {
-                            ElementPlus.ElMessage.error(`❌ ${source}: ${data.message}`);
+                            ElementPlus.ElMessage.error(`${source}: ${data.message}`);
                         }
                     } catch (e) {
                         datasourceStatus.value[source] = 'disconnected';
-                        ElementPlus.ElMessage.error(`❌ ${source} 连接失败: ${e.message}`);
+                        ElementPlus.ElMessage.error(`${source} 连接失败`);
                     }
                 }
                 async function loadFeishuConfig() {

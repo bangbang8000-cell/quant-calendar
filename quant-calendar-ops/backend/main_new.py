@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="量化选股日历 API v2.1.2",
     version="2.1.2",
-    description="基于美林时钟经济周期理论的智能选股系统",
+    description="基于美林时钟的量化选股系统",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,

@@ -200,15 +200,15 @@ async def sync_tushare_data(_: Dict = Depends(get_admin_user)):
         if success:
             return {
                 "success": True,
-                "message": f"✅ 同步成功，共 {len(stock_manager.stock_map)} 只股票"
+                "message": f"同步成功，共 {len(stock_manager.stock_map)} 只股票"
             }
         else:
             return {
                 "success": False,
-                "message": "❌ 同步失败，请检查 Tushare Token 和网络连接"
+                "message": "同步失败"
             }
     except Exception as e:
         return {
             "success": False,
-            "message": f"❌ 同步异常: {str(e)}"
+            "message": f"同步异常"
         }

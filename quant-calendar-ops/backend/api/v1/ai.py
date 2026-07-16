@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AI 智能评估 API 路由
+AI 评估 API
 """
 from fastapi import APIRouter, Depends, HTTPException
 import logging
@@ -13,7 +13,7 @@ from auth import get_admin_user, get_current_active_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/ai", tags=["AI 智能评估"])
+router = APIRouter(prefix="/ai", tags=["AI 评估"])
 
 
 @router.post("/evaluate")
@@ -44,7 +44,7 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_
 
 @router.post("/evaluate-index")
 async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_active_user)):
-    """AI 智能评估指数
+    """AI 评估指数
     
     Args:
         index_code: 指数代码 (如 000001.SH)

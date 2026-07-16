@@ -90,7 +90,7 @@ def _is_non_empty(val) -> bool:
 
 
 def _deep_merge(base: dict, override: dict):
-    """深度合并，override 中的值覆盖 base"""
+    """递归合并 override 到 base"""
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
             _deep_merge(base[key], value)
