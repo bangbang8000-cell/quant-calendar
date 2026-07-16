@@ -135,63 +135,248 @@
         }
         /* 🟡 土豪金 - 轻奢质感 */
         [data-theme="vibrant-orange"] {
-            --primary-color: #D4A843;
-            --secondary-color: #F0C75E;
-            --gradient: linear-gradient(135deg, #B8860B 0%, #D4A843 50%, #F0C75E 100%);
-            --card-border: #fde68a;
-            --text-primary: #1c1917; --text-secondary: #78716c; --text-tertiary: #a8a29e;
-            --text-link: #92400e;
-            --bg-page: #fffbeb; --bg-card: #fff;
-            --bg-card-header: #fefce8;
+            --primary-color: #b8922a;
+            --secondary-color: #e6c450;
+            --gradient: linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%);
+            --card-border: #e8d5a3;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #a0947c;
+            --text-link: #8b6914;
+            --bg-page: #fdfaf3; --bg-card: #fff;
+            --bg-card-header: #fdf8ec;
             --bg-sidebar: rgba(255,255,255,0.95);
             --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
             --bg-dialog: rgba(255,255,255,0.95);
-            --bg-input: #fff; --bg-hover: #fef3c7;
-            --bg-selected: rgba(212,168,67,0.08); --bg-stripe: #fffbeb;
-            --border-light: #fef3c7; --border-base: #fde68a; --border-heavy: #fcd34d;
-            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
-            --gradient-brand: linear-gradient(135deg, #D4A843 0%, #B8860B 100%);
-            --badge-success-bg: #FFF8E1; --badge-success-text: #B8860B;
-            --badge-warning-bg: #FFF3E0; --badge-warning-text: #E65100;
-            --badge-danger-bg: #FFEBEE; --badge-danger-text: #C62828;
-            --badge-info-bg: #E3F2FD; --badge-info-text: #1976D2;
-            --badge-gold-bg: #FFFDF5; --color-gold: #D4AF37;
-            --gold-light: #E8D5B7; --gold-bg: #FFFDF5;
-            --el-success: #B8860B; --el-warning: #E65100;
-            --el-danger: #C62828; --el-info: #1976D2;
+            --bg-input: #fff; --bg-hover: #fef5e0;
+            --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
+            --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64;
+            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.08);
+            --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
+            --badge-success-bg: #e8f5e9; --badge-success-text: #2e7d32;
+            --badge-warning-bg: #fff3e0; --badge-warning-text: #e65100;
+            --badge-danger-bg: #ffebee; --badge-danger-text: #c62828;
+            --badge-info-bg: #e3f2fd; --badge-info-text: #1976d2;
+            --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
+            --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
+            --el-success: #4caf50; --el-warning: #ff9800;
+            --el-danger: #c62828; --el-info: #1976d2;
         }
-        /* 🌈 斑斓黑 - 炫彩暗夜 */
-        [data-theme="dark-night"] {
-            --primary-color: #818cf8;
-            --secondary-color: #c7d2fe;
-            --gradient: linear-gradient(135deg, #111827 0%, #1f2937 50%, #374151 100%);
-            --card-border: #4b5563;
-            --text-primary: #f3f4f6; --text-secondary: #d1d5db; --text-tertiary: #9ca3af;
-            --text-link: #a5b4fc;
-            --bg-page: #0f1723; --bg-card: #1e293b;
-            --bg-card-header: #111827;
-            --bg-sidebar: rgba(15,23,35,0.98);
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-page) 100%);
-            --bg-dialog: rgba(30,41,59,0.98);
-            --bg-input: #334155; --bg-hover: #475569;
-            --bg-selected: rgba(129,140,248,0.15); --bg-stripe: #1a2332;
-            --border-light: #334155; --border-base: #475569; --border-heavy: #64748b;
-            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.5);
-            --gradient-brand: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-            --badge-success-bg: #064e3b; --badge-success-text: #6ee7b7;
-            --badge-warning-bg: #451a03; --badge-warning-text: #f59e0b;
-            --badge-danger-bg: #450a0a; --badge-danger-text: #fca5a5;
-            --badge-info-bg: #1e1b4b; --badge-info-text: #a5b4fc;
-            --badge-gold-bg: #1c1917; --color-gold: #D4AF37;
-            --gold-light: #4b5563; --gold-bg: #1f2937;
-            --el-success: #6ee7b7; --el-warning: #f59e0b;
-            --el-danger: #fca5a5; --el-info: #818cf8;
-            /* 覆盖 Element Plus 内置变量 — 修复选择器等组件文字褐色问题 */
-            --el-text-color-primary: #f3f4f6; --el-text-color-regular: #d1d5db;
-            --el-text-color-secondary: #9ca3af; --el-text-color-placeholder: #6b7280;
-            --el-border-color: #4b5563; --el-border-color-light: #374151;
-            --el-fill-color: #374151; --el-fill-color-light: #2d3748;
-            --el-bg-color: #1e293b; --el-bg-color-overlay: #1e293b;
+        /* ⚪ 经典白 - 纯净白底+蓝色点缀 */
+        [data-theme="classic-white"] {
+            --primary-color: #2563eb;
+            --secondary-color: #60a5fa;
+            --gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --card-border: #dbeafe;
+            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
+            --text-link: #2563eb;
+            --bg-page: #ffffff; --bg-card: #ffffff;
+            --bg-card-header: #f8fafc;
+            --bg-sidebar: #f8fafc;
+            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --bg-dialog: rgba(255,255,255,0.98);
+            --bg-input: #f8fafc; --bg-hover: #eff6ff;
+            --bg-selected: rgba(37,99,235,0.06); --bg-stripe: #f8fafc;
+            --border-light: #e2e8f0; --border-base: #cbd5e1; --border-heavy: #94a3b8;
+            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
+            --gradient-brand: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
+            --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b;
+            --el-danger: #dc2626; --el-info: #2563eb;
+        }
+        /* ⚪ 经典白 - ElementPlus按钮 */
+        [data-theme="classic-white"] .el-button--primary {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .el-button--primary:hover {
+            background-color: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+        }
+        [data-theme="classic-white"] .el-button--primary:active {
+            background-color: #1e40af !important;
+            border-color: #1e40af !important;
+        }
+        [data-theme="classic-white"] .el-button--primary.is-plain {
+            background-color: rgba(37, 99, 235, 0.08) !important;
+            border-color: rgba(37, 99, 235, 0.25) !important;
+            color: #2563eb !important;
+        }
+        [data-theme="classic-white"] .el-button--primary.is-plain:hover {
+            background-color: rgba(37, 99, 235, 0.15) !important;
+            border-color: #2563eb !important;
+        }
+        [data-theme="classic-white"] .el-button--primary.is-text {
+            color: #2563eb !important;
+        }
+        /* ⚪ 经典白 — 用gradient-brand覆盖白底白字 */
+        [data-theme="classic-white"] .nav-item.active {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .status-tab.active {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .consensus-badge {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .stat-icon {
+            background: var(--gradient-brand) !important;
+        }
+        [data-theme="classic-white"] .user-avatar {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .login-icon {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .detail-header {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .hold-days {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .kline-tab.active {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+        [data-theme="classic-white"] .sub-nav-tab.active {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.3) !important;
+        }
+        [data-theme="classic-white"] .user-menu-avatar {
+            background: var(--gradient-brand) !important;
+            color: white !important;
+        }
+
+        /* ⚪ 经典白（红） — 白底+红色点缀 */
+        [data-theme="classic-red"] {
+            --primary-color: #dc2626;
+            --secondary-color: #f87171;
+            --gradient: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+            --card-border: #fecaca;
+            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
+            --text-link: #dc2626;
+            --bg-page: #ffffff; --bg-card: #ffffff;
+            --bg-card-header: #fef2f2;
+            --bg-sidebar: #fef2f2;
+            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --bg-dialog: rgba(255,255,255,0.98);
+            --bg-input: #fef2f2; --bg-hover: #fee2e2;
+            --bg-selected: rgba(220,38,38,0.06); --bg-stripe: #fef2f2;
+            --border-light: #fecaca; --border-base: #fca5a5; --border-heavy: #f87171;
+            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
+            --gradient-brand: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
+            --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b;
+            --el-danger: #dc2626; --el-info: #2563eb;
+        }
+        [data-theme="classic-red"] .el-button--primary {
+            background-color: #dc2626 !important; border-color: #dc2626 !important; color: white !important;
+        }
+        [data-theme="classic-red"] .el-button--primary:hover {
+            background-color: #b91c1c !important; border-color: #b91c1c !important;
+        }
+        [data-theme="classic-red"] .el-button--primary:active {
+            background-color: #991b1b !important; border-color: #991b1b !important;
+        }
+        [data-theme="classic-red"] .el-button--primary.is-plain {
+            background-color: rgba(220,38,38,0.08) !important; border-color: rgba(220,38,38,0.25) !important; color: #dc2626 !important;
+        }
+        [data-theme="classic-red"] .el-button--primary.is-plain:hover {
+            background-color: rgba(220,38,38,0.15) !important; border-color: #dc2626 !important;
+        }
+        [data-theme="classic-red"] .el-button--primary.is-text { color: #dc2626 !important; }
+        [data-theme="classic-red"] .nav-item.active,
+        [data-theme="classic-red"] .sub-nav-tab.active,
+        [data-theme="classic-red"] .status-tab.active,
+        [data-theme="classic-red"] .consensus-badge,
+        [data-theme="classic-red"] .stat-icon,
+        [data-theme="classic-red"] .user-avatar,
+        [data-theme="classic-red"] .user-menu-avatar,
+        [data-theme="classic-red"] .login-icon,
+        [data-theme="classic-red"] .detail-header,
+        [data-theme="classic-red"] .hold-days,
+        [data-theme="classic-red"] .kline-tab.active {
+            background: var(--gradient-brand) !important; color: white !important;
+        }
+        [data-theme="classic-red"] .sub-nav-tab.active {
+            box-shadow: 0 2px 8px rgba(220,38,38,0.3) !important;
+        }
+
+        /* ⚪ 经典白（金） — 白底+金色点缀 */
+        [data-theme="classic-gold"] {
+            --primary-color: #b8922a;
+            --secondary-color: #e6c450;
+            --gradient: linear-gradient(135deg, #fdfaf3 0%, #fef9ed 100%);
+            --card-border: #e8d5a3;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #a0947c;
+            --text-link: #8b6914;
+            --bg-page: #ffffff; --bg-card: #ffffff;
+            --bg-card-header: #fdf8ec;
+            --bg-sidebar: #fdfaf3;
+            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --bg-dialog: rgba(255,255,255,0.98);
+            --bg-input: #fdf8ec; --bg-hover: #fef5e0;
+            --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
+            --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
+            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
+            --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
+            --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b;
+            --el-danger: #dc2626; --el-info: #2563eb;
+        }
+        [data-theme="classic-gold"] .el-button--primary {
+            background-color: #b8922a !important; border-color: #b8922a !important; color: white !important;
+        }
+        [data-theme="classic-gold"] .el-button--primary:hover {
+            background-color: #9a7a1e !important; border-color: #9a7a1e !important;
+        }
+        [data-theme="classic-gold"] .el-button--primary:active {
+            background-color: #8b6914 !important; border-color: #8b6914 !important;
+        }
+        [data-theme="classic-gold"] .el-button--primary.is-plain {
+            background-color: rgba(184,146,42,0.08) !important; border-color: rgba(184,146,42,0.25) !important; color: #b8922a !important;
+        }
+        [data-theme="classic-gold"] .el-button--primary.is-plain:hover {
+            background-color: rgba(184,146,42,0.15) !important; border-color: #b8922a !important;
+        }
+        [data-theme="classic-gold"] .el-button--primary.is-text { color: #b8922a !important; }
+        [data-theme="classic-gold"] .nav-item.active,
+        [data-theme="classic-gold"] .sub-nav-tab.active,
+        [data-theme="classic-gold"] .status-tab.active,
+        [data-theme="classic-gold"] .consensus-badge,
+        [data-theme="classic-gold"] .stat-icon,
+        [data-theme="classic-gold"] .user-avatar,
+        [data-theme="classic-gold"] .user-menu-avatar,
+        [data-theme="classic-gold"] .login-icon,
+        [data-theme="classic-gold"] .detail-header,
+        [data-theme="classic-gold"] .hold-days,
+        [data-theme="classic-gold"] .kline-tab.active {
+            background: var(--gradient-brand) !important; color: white !important;
+        }
+        [data-theme="classic-gold"] .sub-nav-tab.active {
+            box-shadow: 0 2px 8px rgba(184,146,42,0.3) !important;
         }
 
         /* ===== Element Plus 按钮主题覆盖 ===== */
@@ -282,300 +467,36 @@
             color: #D4A843 !important;
         }
 
-        /* ⚫ 斑斓黑 - 主按钮 */
-        [data-theme="dark-night"] .el-button--primary {
-            background-color: #6366f1 !important;
-            border-color: #6366f1 !important;
-            color: white !important;
-        }
-        [data-theme="dark-night"] .el-button--primary:hover {
-            background-color: #4f46e5 !important;
-            border-color: #4f46e5 !important;
-        }
-        [data-theme="dark-night"] .el-button--primary:active {
-            background-color: #4338ca !important;
-            border-color: #4338ca !important;
-        }
-        /* ⚫ 斑斓黑 - 朴素按钮 */
-        [data-theme="dark-night"] .el-button--primary.is-plain {
-            background-color: rgba(99, 102, 241, 0.1) !important;
-            border-color: rgba(99, 102, 241, 0.3) !important;
-            color: var(--primary-color) !important;
-        }
-        [data-theme="dark-night"] .el-button--primary.is-plain:hover {
-            background-color: rgba(99, 102, 241, 0.2) !important;
-            border-color: #6366f1 !important;
-        }
-        /* ⚫ 斑斓黑 - 文字按钮 */
-        [data-theme="dark-night"] .el-button--primary.is-text {
-            color: var(--primary-color) !important;
-        }
 
-        /* ===== 斑斓黑 - 浅色背景暗黑覆盖（不影响亮色主题） ===== */
-        [data-theme="dark-night"] .market-card {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .merrill-clock-card {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .merrill-detail-dialog .el-dialog__header {
-            background: var(--bg-card-header) !important;
-        }
-        [data-theme="dark-night"] .merrill-detail-header {
-            background: var(--bg-card) !important;
-        }
-        [data-theme="dark-night"] .allocation-item {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .notification-settings {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-dialog__header {
-            background: var(--bg-card-header) !important;
-            border-bottom-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .stat-item {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .setting-input {
-            border-color: var(--border-base) !important;
-            background: var(--bg-input) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .setting-input:focus {
-            border-color: var(--primary-color) !important;
-        }
-        [data-theme="dark-night"] .switch-toggle {
-            background: var(--border-heavy) !important;
-        }
-        [data-theme="dark-night"] .switch-toggle.active {
-            background: var(--gradient-brand) !important;
-        }
 
         /* ===== 斑斓黑 - Element Plus 组件暗黑覆盖 ===== */
         /* Dialog */
-        [data-theme="dark-night"] .el-dialog {
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-dialog__body {
-            color: var(--text-primary) !important;
-            background: var(--bg-card) !important;
-        }
-        [data-theme="dark-night"] .el-dialog__title {
-            color: var(--text-primary) !important;
-        }
         /* Input */
-        [data-theme="dark-night"] .el-input__inner {
-            background: var(--bg-input) !important;
-            border-color: var(--border-base) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-input__inner:focus {
-            border-color: var(--primary-color) !important;
-        }
-        [data-theme="dark-night"] .el-input__inner::placeholder {
-            color: var(--text-tertiary) !important;
-        }
         /* Select */
-        [data-theme="dark-night"] .el-select .el-input__inner {
-            background: var(--bg-input) !important;
-            border-color: var(--border-base) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-select-dropdown {
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-select-dropdown__item {
-            color: var(--text-primary) !important;
-            --el-select-option-color: var(--text-primary);
-        }
-        [data-theme="dark-night"] .el-select-dropdown__item.is-hovering {
-            background: var(--bg-hover) !important;
-        }
-        [data-theme="dark-night"] .el-select-dropdown__item.selected {
-            color: var(--primary-color) !important;
-        }
         /* Table */
-        [data-theme="dark-night"] .el-table {
-            background: var(--bg-card) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-table th {
-            background: var(--bg-card-header) !important;
-            color: var(--text-secondary) !important;
-            border-bottom-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-table td {
-            border-bottom-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-table tr {
-            background: var(--bg-card) !important;
-        }
-        [data-theme="dark-night"] .el-table--striped .el-table__body tr.el-table__row--striped td {
-            background: rgba(255,255,255,0.02) !important;
-        }
-        [data-theme="dark-night"] .el-table__body tr:hover > td {
-            background: var(--bg-hover) !important;
-        }
         /* Dropdown */
-        [data-theme="dark-night"] .el-dropdown-menu {
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-dropdown-menu__item {
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-dropdown-menu__item:hover {
-            background: var(--bg-hover) !important;
-            color: var(--primary-color) !important;
-        }
         /* Pagination */
-        [data-theme="dark-night"] .el-pagination button {
-            background: var(--bg-input) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-pager li {
-            background: var(--bg-input) !important;
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-pager li.active {
-            background: var(--primary-color) !important;
-            color: #fff !important;
-        }
         /* Message box / Notification */
-        [data-theme="dark-night"] .el-message-box {
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-message-box__title {
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-message-box__message {
-            color: var(--text-secondary) !important;
-        }
         /* Cascader */
-        [data-theme="dark-night"] .el-cascader-menu {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .el-cascader-node {
-            color: var(--text-primary) !important;
-        }
-        [data-theme="dark-night"] .el-cascader-node:hover {
-            background: var(--bg-hover) !important;
-        }
         /* Tag */
-        [data-theme="dark-night"] .el-tag {
-            background: var(--bg-hover) !important;
-            border-color: var(--border-light) !important;
-            color: var(--text-secondary) !important;
-        }
         /* Drawer */
-        [data-theme="dark-night"] .el-drawer {
-            background: var(--bg-card) !important;
-        }
-        [data-theme="dark-night"] .el-drawer__title {
-            color: var(--text-primary) !important;
-        }
         /* Radio / Checkbox label */
-        [data-theme="dark-night"] .el-radio__label,
-        [data-theme="dark-night"] .el-checkbox__label {
-            color: var(--text-primary) !important;
-        }
         /* Card (Element Plus) */
-        [data-theme="dark-night"] .el-card {
-            background: var(--bg-card) !important;
-            border-color: var(--border-light) !important;
-            color: var(--text-primary) !important;
-        }
         /* Form labels */
-        [data-theme="dark-night"] .el-form-item__label {
-            color: var(--text-primary) !important;
-        }
         /* Loading mask — 暗色半透明遮罩，替代默认白色 */
-        [data-theme="dark-night"] .el-loading-mask {
-            background-color: rgba(15, 23, 35, 0.85) !important;
-        }
         /* K-line chart — 白底 → 暗色背景 */
-        [data-theme="dark-night"] .kline-chart {
-            background: var(--bg-card) !important;
-        }
-        [data-theme="dark-night"] .kline-placeholder {
-            background: var(--bg-card) !important;
-        }
         /* Sidebar — 浅灰渐变 → 暗色 */
-        [data-theme="dark-night"] .sidebar {
-            background: var(--bg-sidebar) !important;
-        }
         /* Stock group card — 浅灰边框+渐变头 → 暗色 */
-        [data-theme="dark-night"] .stock-group-card {
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .stock-group-header {
-            background: var(--bg-card-header) !important;
-        }
         /* 智能评股：统计卡片 + 详情评分 */ 
-        [data-theme="dark-night"] .stat-box {
-            background: var(--bg-hover) !important;
-        }
-        [data-theme="dark-night"] .score-badge {
-            background: var(--bg-hover) !important;
-        }
-        [data-theme="dark-night"] .ai-history-item {
-            border-color: var(--border-light) !important;
-        }
-        [data-theme="dark-night"] .date-group-header {
-            border-color: var(--border-light) !important;
-        }
 
         /* v1.10: hover 微升效果 */
         .hover-lift:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        [data-theme="dark-night"] .hover-lift:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
         /* v1.10: 暗色主题 — 概览卡片 */
-        [data-theme="dark-night"] .stat-card {
-            background: var(--bg-card-header) !important;
-        }
-        [data-theme="dark-night"] .watchlist-score-badge {
-            border: 1px solid var(--border-light);
-        }
         /* v1.12: 暗色主题 — 系统配置页 */
-        [data-theme="dark-night"] .config-top-toolbar {
-            background: linear-gradient(135deg, rgba(212,175,55,0.12) 0%, var(--bg-card-header) 100%);
-            border-color: rgba(212,175,55,0.2);
-            box-shadow: 0 2px 8px rgba(212,175,55,0.05);
-        }
-        [data-theme="dark-night"] .system-status-card {
-            background: linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card-header) 100%);
-            border-color: rgba(212,175,55,0.15);
-        }
         /* v1.12: 暗色主题 — 用户卡片 */
-        [data-theme="dark-night"] .user-card-enhanced {
-            background: var(--bg-card-header);
-            border-color: var(--border-light);
-        }
-        [data-theme="dark-night"] .user-role-tag.admin {
-            background: rgba(220,38,38,0.2) !important;
-            color: #ef5350 !important;
-        }
-        [data-theme="dark-night"] .user-role-tag.user {
-            background: rgba(37,99,235,0.2) !important;
-            color: #64b5f6 !important;
-        }
-        [data-theme="dark-night"] .user-group-tag {
-            opacity: 0.9;
-        }
 
         /* ===== Element Plus 语义色按钮全局覆盖 ===== */
         .el-button--success {
@@ -1417,8 +1338,6 @@
             font-size: var(--font-xs);
             color: var(--text-secondary);
         }
-        [data-theme="dark-night"] .pool-change-val.up { color: #66bb6a; }
-        [data-theme="dark-night"] .pool-change-val.down { color: #ef5350; }
 
         /* v1.11: 统计趋势徽标 */
         .stat-trend {
@@ -1437,18 +1356,6 @@
         }
         .stat-trend.flat {
             background: rgba(0,0,0,0.05);
-            color: var(--text-tertiary);
-        }
-        [data-theme="dark-night"] .stat-trend.up {
-            background: rgba(46,125,50,0.2);
-            color: #66bb6a;
-        }
-        [data-theme="dark-night"] .stat-trend.down {
-            background: rgba(198,40,40,0.2);
-            color: #ef5350;
-        }
-        [data-theme="dark-night"] .stat-trend.flat {
-            background: rgba(255,255,255,0.08);
             color: var(--text-tertiary);
         }
 
@@ -1480,18 +1387,6 @@
             color: #c62828;
         }
         /* v1.11: 暗色主题 — 持仓变动卡片 */
-        [data-theme="dark-night"] .change-item.positive {
-            background: rgba(46,125,50,0.18);
-        }
-        [data-theme="dark-night"] .change-item.negative {
-            background: rgba(198,40,40,0.18);
-        }
-        [data-theme="dark-night"] .change-item.positive .change-value {
-            color: #66bb6a;
-        }
-        [data-theme="dark-night"] .change-item.negative .change-value {
-            color: #ef5350;
-        }
         .change-label {
             font-size: var(--font-sm);
             color: var(--text-secondary);
@@ -1773,8 +1668,6 @@
         .watchlist-empty-title { font-size: var(--font-md); color: var(--text-secondary); }
         .watchlist-empty-hint { font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 4px; }
         /* 暗色主题：自选列表 */
-        [data-theme="dark-night"] .watchlist-item:hover { background: var(--bg-card-header); }
-        [data-theme="dark-night"] .watchlist-search-item:hover { background: rgba(255,255,255,0.05); }
 
         /* 原有样式 */
         .ai-history-list {
@@ -2414,8 +2307,6 @@
     /* ===== 市场行情卡片 ===== */
     
     /* ===== 市场行情 - 手机响应式适配 ===== */
-    }
-    }
 
 /* 美林强制修复已移除 */
 
@@ -3957,9 +3848,6 @@ text {
 .user-avatar-large.avatar-orange { background: #FEF3C7; color: #92400E; }
 .user-avatar-large.avatar-dark { background: #1E293B; color: #E2E8F0; }
 .user-avatar-large.avatar-blue { background: #DBEAFE; color: #1E40AF; }
-[data-theme="dark-night"] .user-avatar-large.avatar-rose { background: rgba(220,38,38,0.2); color: #ef5350; }
-[data-theme="dark-night"] .user-avatar-large.avatar-orange { background: rgba(217,119,6,0.2); color: #fbbf24; }
-[data-theme="dark-night"] .user-avatar-large.avatar-blue { background: rgba(37,99,235,0.2); color: #64b5f6; }
 
 .user-group-tag {
     font-size: 10px;
@@ -3970,9 +3858,6 @@ text {
 .user-group-tag.group-admin { background: #FEE2E2; color: #DC2626; }
 .user-group-tag.group-guest { background: #F3F4F6; color: #6B7280; }
 .user-group-tag.group-user { background: #DBEAFE; color: #2563EB; }
-[data-theme="dark-night"] .user-group-tag.group-admin { background: rgba(220,38,38,0.2); color: #ef5350; }
-[data-theme="dark-night"] .user-group-tag.group-guest { background: rgba(107,114,128,0.2); color: #9CA3AF; }
-[data-theme="dark-night"] .user-group-tag.group-user { background: rgba(37,99,235,0.2); color: #64b5f6; }
 
 .user-disabled-badge {
     background: #FEE2E2;
@@ -3981,10 +3866,6 @@ text {
     padding: 1px 6px;
     border-radius: 4px;
     margin-left: 4px;
-}
-[data-theme="dark-night"] .user-disabled-badge {
-    background: rgba(220,38,38,0.2);
-    color: #ef5350;
 }
 
 .user-theme-dot {

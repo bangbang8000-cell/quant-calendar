@@ -980,7 +980,6 @@
                             <span>🖥️ 系统状态</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span v-if="dashboardData.latest_date" style="font-size: var(--font-sm); color: var(--text-secondary);">📅 {{ dashboardData.latest_date }}</span>
-                                <span style="font-size: var(--font-sm); font-weight: var(--font-medium); background: var(--gradient-brand); color: white; padding: 3px 10px; border-radius: 10px;">v2.0.0</span>
                             </div>
                         </div>
                         <div class="status-grid">
@@ -1379,7 +1378,7 @@
                         </div>
                             <div v-for="user in filteredUsers" :key="user.username" class="user-card-enhanced" :style="{opacity: user.enabled === false ? 0.55 : 1}">
                                 <div class="user-info-enhanced">
-                                    <div class="user-avatar-large" :class="'avatar-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : user.theme === 'dark-night' ? 'dark' : 'blue')">{{ user.username.charAt(0).toUpperCase() }}</div>
+                                    <div class="user-avatar-large" :class="'avatar-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : 'blue')">{{ user.username.charAt(0).toUpperCase() }}</div>
                                     <div class="user-details">
                                         <div class="user-name-enhanced">
                                             {{ user.username }}
@@ -1388,7 +1387,7 @@
                                             </span>
                                             <span class="user-group-tag" :class="'group-' + (user.group === 'admin' ? 'admin' : user.group === 'guest' ? 'guest' : 'user')">{{ getGroupName(user.group || user.role) }}</span>
                                             <span v-if="user.enabled === false" class="user-disabled-badge">已禁用</span>
-                                            <span v-if="user.theme" class="user-theme-dot" :class="'dot-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : user.theme === 'dark-night' ? 'dark' : 'blue')" :title="themes[user.theme]?.name || user.theme"></span>
+                                            <span v-if="user.theme" class="user-theme-dot" :class="'dot-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : 'blue')" :title="themes[user.theme]?.name || user.theme"></span>
                                         </div>
                                         <div class="user-meta-info">
                                             <span v-if="user.created_at" style="margin-right: 12px;">
@@ -2328,7 +2327,8 @@
                         const res = await fetch('/api/search?q=' + encodeURIComponent(queryString));
                         const data = await res.json();
                         if (data.success && data.results) {
-                            cb(data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; }));
+                            const results = data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; });
+                            cb(results);
                         } else { cb([]); }
                     } catch(e) { cb([]); }
                 }
@@ -2801,7 +2801,8 @@
                     // 从CSS变量读取主题色（跟随主题切换）
                     const rootStyle = getComputedStyle(document.documentElement);
                     const primaryColor = rootStyle.getPropertyValue('--primary-color').trim() || '#2563eb';
-                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark-night';
+                    const isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().match(/^#[0-9a-fA-F]{6}$/) ? 
+                        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().slice(1,3), 16) < 80 : false;
                     const tooltipBg = isDark ? 'rgba(30,41,59,0.96)' : 'rgba(255,255,255,0.96)';
                     const tooltipBorder = isDark ? '#4b5563' : '#ddd';
                     
@@ -5765,7 +5766,8 @@ const allMenuDefs = [
                             if (c.ai) aiConfig.value = { ...aiConfig.value, ...c.ai };
                             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
                             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
-                            if (c.theme) applyTheme(c.theme);
+                            // Only apply config theme if user hasn't manually selected one
+                            if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
                             if (c.icon_system) { iconSystem.value = c.icon_system; localStorage.setItem('icon_system', c.icon_system); }
                             if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
                         }
@@ -5948,7 +5950,7 @@ const allMenuDefs = [
                             }
                             if (c.ai) aiConfig.value = { ...aiConfig.value, ...c.ai };
                             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
-                            if (c.theme) applyTheme(c.theme);
+                            if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
                             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
                             if (c.icon_system) { iconSystem.value = c.icon_system; localStorage.setItem('icon_system', c.icon_system); }
                             if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }

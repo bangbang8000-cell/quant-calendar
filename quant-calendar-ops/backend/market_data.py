@@ -159,7 +159,8 @@ class MarketData:
             try:
                 with open(CACHE_FILE, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
+            except Exception:
+                logger.exception("获取K线数据异常")
                 pass
         return {}
     
@@ -306,27 +307,7 @@ if __name__ == '__main__':
 
 
 # ===== K线数据获取 =====
-def _is_index_code(ts_code):
-    """判断是否为指数代码"""
-    # 指数代码规则：
-    # 上证指数类: 000xxx.SH (如 000001.SH, 000016.SH, 000300.SH)
-    # 深证指数类: 399xxx.SZ (如 399001.SZ, 399006.SZ)
-    # 科创50: 000688.SH
-    # 股票: 600xxx.SH, 000xxx.SZ, 300xxx.SZ, 688xxx.SH
-    
-    # 上海市场: 000开头 = 指数, 600/688开头 = 股票
-    if ts_code.endswith('.SH'):
-        if ts_code.startswith('000') or ts_code.startswith('0000'):
-            return True  # 000001.SH, 000300.SH 等是指数
-        return False  # 600xxx, 688xxx 是股票
-    
-    # 深圳市场: 399开头 = 指数, 000/300开头 = 股票
-    if ts_code.endswith('.SZ'):
-        if ts_code.startswith('399'):
-            return True  # 399001.SZ, 399006.SZ 等是指数
-        return False  # 000xxx, 300xxx 是股票
-    
-    return False
+from data_sources import _is_index_code  # 统一使用 data_sources 版本
 
 
 def get_kline_data(ts_code, period='daily', limit=60):

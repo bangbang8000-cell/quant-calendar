@@ -132,7 +132,8 @@ class DataSourceManager:
                     try:
                         from config import settings
                         token = getattr(settings, 'SXSC_TUSHARE_TOKEN', '')
-                    except:
+                    except Exception:
+                        logger.debug("数据源回退尝试")
                         pass
                 timeout = sxsc.get('timeout', 30)
                 if token:
@@ -153,7 +154,8 @@ class DataSourceManager:
                     try:
                         from config import settings
                         token = getattr(settings, 'TUSHARE_TOKEN', '')
-                    except:
+                    except Exception:
+                        logger.debug("数据源回退尝试")
                         pass
                 if token:
                     ts.set_token(token)
@@ -447,17 +449,20 @@ class DataSourceManager:
                     if '市盈率' in item:
                         try:
                             result['pe'] = float(val)
-                        except:
+                        except Exception:
+                            logger.debug("数据源回退尝试")
                             pass
                     elif '市净率' in item:
                         try:
                             result['pb'] = float(val)
-                        except:
+                        except Exception:
+                            logger.debug("数据源回退尝试")
                             pass
                     elif '总市值' in item:
                         try:
                             result['total_mv'] = float(val) / 10000  # 元→万元
-                        except:
+                        except Exception:
+                            logger.debug("数据源回退尝试")
                             pass
                 return result
             except Exception as e:

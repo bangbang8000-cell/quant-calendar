@@ -204,7 +204,8 @@ class AIEvaluator:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载AI配置失败")
             return {
                 "provider": "codingplan",
                 "apiKey": "",
@@ -232,7 +233,8 @@ class AIEvaluator:
             if len(cleaned) != len(cache):
                 self._save_index_eval_cache(cleaned)
             return cleaned
-        except:
+        except Exception:
+            logger.exception("加载指数评估缓存失败")
             return {}
 
     def _save_index_eval_cache(self, cache: Dict = None):
@@ -254,11 +256,17 @@ class AIEvaluator:
     # ─── 模型管理 ───────────────────────────────────────────────
 
     def _load_models(self) -> List[ModelProvider]:
-        """加载模型配置列表"""
+        """加载模型配置列表（自动解密 API Key）"""
+        from crypto_utils import decrypt_value
         try:
             with open(self._models_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                models = [ModelProvider.from_dict(m) for m in data.get("models", [])]
+                models = []
+                for m in data.get("models", []):
+                    provider = ModelProvider.from_dict(m)
+                    # 解密 API Key（明文兼容）
+                    provider.api_key = decrypt_value(provider.api_key)
+                    models.append(provider)
                 if models:
                     return models
         except (FileNotFoundError, json.JSONDecodeError):
@@ -268,9 +276,14 @@ class AIEvaluator:
         return list(DEFAULT_MODELS)
 
     def _save_models(self, models: List[ModelProvider]):
-        """保存模型配置列表"""
+        """保存模型配置列表（自动加密 API Key）"""
+        from crypto_utils import encrypt_value
         os.makedirs(os.path.dirname(self._models_file), exist_ok=True)
-        data = {"models": [m.to_dict() for m in models], "updated_at": datetime.now().isoformat()}
+        model_dicts = [m.to_dict() for m in models]
+        # 加密 API Key
+        for d in model_dicts:
+            d["api_key"] = encrypt_value(d.get("api_key", ""))
+        data = {"models": model_dicts, "updated_at": datetime.now().isoformat()}
         with open(self._models_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         self._models_cache = models
@@ -345,7 +358,8 @@ class AIEvaluator:
             path = self._history_path(username)
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载评估历史失败")
             return []
 
     def _save_history_for(self, username: str, history: List):
@@ -1450,7 +1464,8 @@ class AIEvaluator:
         try:
             with open(auto_config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
+            logger.exception("加载自动评股配置失败")
             return {
                 "enabled": False,
                 "schedule_type": "daily",
@@ -1468,7 +1483,8 @@ class AIEvaluator:
             with open(auto_config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             return True
-        except:
+        except Exception:
+            logger.exception("保存自动评股配置失败")
             return False
 
 

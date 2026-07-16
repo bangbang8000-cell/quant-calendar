@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
 
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API v2.0.0",
-    version="2.0.0",
+    title="量化选股日历 API v2.1.2",
+    version="2.1.2",
     description="基于美林时钟经济周期理论的智能选股系统",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -70,8 +70,7 @@ async def security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    # Report-Only 模式：先观察不阻断，Phase 4 清理 inline style 后切为 enforce
-    response.headers["Content-Security-Policy-Report-Only"] = (
+    response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
@@ -118,7 +117,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "2.0.0",
+        "version": "2.1.2",
         "message": "量化选股日历服务运行中"
     }
 

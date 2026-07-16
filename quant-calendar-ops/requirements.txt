@@ -1,4 +1,4 @@
-# 量化选股日历 v2.0.0 依赖
+# 量化选股日历 v2.1.0 依赖
 fastapi>=0.100.0
 uvicorn>=0.23.2
 pandas>=2.0.0
@@ -10,7 +10,6 @@ python-jose[cryptography]>=3.3.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 slowapi>=0.1.9
-sqlalchemy>=2.0.0
 aiofiles>=23.0.0
-apscheduler>=3.10.0
 tushare>=1.4.0
+cryptography>=41.0.0

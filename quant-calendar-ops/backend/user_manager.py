@@ -30,12 +30,26 @@ THEMES = {
         "secondary": "#F0C75E",
         "gradient": "linear-gradient(135deg, #B8860B 0%, #D4A843 50%, #F0C75E 100%)"
     },
-    "dark-night": {
-        "name": "斑斓黑",
-        "primary": "#434343",
-        "secondary": "#000000",
-        "gradient": "linear-gradient(135deg, #434343 0%, #000000 100%)"
-    }
+
+    "classic-white": {
+        "name": "经典白（蓝）",
+        "primary": "#2563eb",
+        "secondary": "#60a5fa",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #2563eb 55%)"
+    },
+    "classic-red": {
+        "name": "经典白（红）",
+        "primary": "#dc2626",
+        "secondary": "#f87171",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #dc2626 55%)"
+    },
+    "classic-gold": {
+        "name": "经典白（金）",
+        "primary": "#b8922a",
+        "secondary": "#e6c450",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #b8922a 55%)"
+    },
+
 }
 
 
