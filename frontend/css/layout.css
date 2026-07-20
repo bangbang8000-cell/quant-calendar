@@ -1,0 +1,93 @@
+/* ===== layout.css v3.0 ===== */
+/* Spatial system: header, content area, cards, grids */
+
+/* ─── Page Header ─── */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.page-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* ─── Card Grid ─── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-4);
+}
+.card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+}
+.card-grid .card { margin-bottom: 0; }
+
+/* ─── Stat Card ─── */
+.stat-card {
+  text-align: center;
+  padding: var(--sp-5) var(--sp-4);
+}
+.stat-card .stat-icon {
+  margin: 0 auto var(--sp-3) auto;
+}
+.stat-card .stat-value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+.stat-card .stat-label {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--sp-1);
+}
+
+/* ─── Table Container ─── */
+.table-container {
+  overflow-x: auto;
+}
+.table-container .el-table {
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+/* ─── Flex Utility ─── */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+/* ─── Spacing Utilities ─── */
+.mt-2 { margin-top: var(--sp-2); }
+.mt-4 { margin-top: var(--sp-4); }
+.mb-2 { margin-bottom: var(--sp-2); }
+.mb-4 { margin-bottom: var(--sp-4); }
+.gap-2 { gap: var(--sp-2); }
+.gap-4 { gap: var(--sp-4); }
