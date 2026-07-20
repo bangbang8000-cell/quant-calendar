@@ -1,0 +1,213 @@
+{
+  "project": "quant-calendar UI Redesign v3.0",
+  "plan_file": "docs/superpowers/plans/2026-07-20-ui-redesign-v3.md",
+  "spec_file": "docs/superpowers/specs/2026-07-20-ui-redesign-v3.md",
+  "working_dir": "d:\\mycoding\\quant-calendar\\quant-calendar-dev",
+  "ops_dir": "d:\\mycoding\\quant-calendar\\quant-calendar-ops",
+  "publish_script": "d:\\mycoding\\quant-calendar\\publish-dev-to-ops.cmd",
+  "dev_port": 8001,
+  "ops_port": 8000,
+  "dev_start_cmd": "d:\\mycoding\\quant-calendar\\quant-calendar-dev\\start-dev.cmd",
+  "ops_start_cmd": "d:\\mycoding\\quant-calendar\\quant-calendar-ops\\start-ops.cmd",
+  "backend_entry": "backend\\main_new.py",
+  "ci_lint": "ruff check backend/ --select=E,F,W --ignore=E501",
+  "ci_test": "python -m pytest tests/ -v --tb=short",
+  "last_updated": "2026-07-20T00:00:00+08:00",
+  "tasks": {
+    "t01": {
+      "title": "备份 themes.css + 创建 tokens.css",
+      "status": "completed",
+      "files": {
+        "create": ["frontend/css/tokens.css"],
+        "copy": [{"src": "frontend/css/themes.css", "dst": "frontend/css/themes.css.bak"}],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 tokens.css，删除 themes.css.bak（或恢复原名），删除 index.html 中 tokens.css 引用行",
+      "verify": "启动 dev 服务 → 打开 http://localhost:8001 → 确认无白屏 → F12 Network 确认 tokens.css 200 → 5页面可切换",
+      "depends_on": []
+    },
+    "t02": {
+      "title": "重写 themes.css — 7 主题语义变量",
+      "status": "pending",
+      "files": {
+        "rewrite": ["frontend/css/themes.css"]
+      },
+      "rollback": "复制 themes.css.bak 覆盖 themes.css",
+      "verify": "刷新页面 → 逐一切换 7 个主题 → 每个主题下卡片/表格/按钮颜色正确 → dark-pro 深色正常",
+      "depends_on": ["t01"]
+    },
+    "t03": {
+      "title": "创建 layout.css",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/css/layout.css"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 layout.css，删除 index.html 中 layout.css 引用行",
+      "verify": "刷新页面 → 侧边栏 220px 正常 → 卡片 hover 上浮 → 5 页面布局正常",
+      "depends_on": ["t02"]
+    },
+    "t04": {
+      "title": "创建 animations.css",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/css/animations.css"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 animations.css，删除 index.html 中 animations.css 引用行",
+      "verify": "刷新页面 → F12 Network 确认 animations.css 200",
+      "depends_on": ["t03"]
+    },
+    "t05": {
+      "title": "创建 responsive.css",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/css/responsive.css"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 responsive.css，删除 index.html 中 responsive.css 引用行",
+      "verify": "DevTools 模拟 → iPhone 12(390px)侧边栏隐藏/底部导航 → iPad(768px)侧边栏折叠/卡片2列 → Desktop(1024px+)侧边栏展开/卡片4列",
+      "depends_on": ["t04"]
+    },
+    "t06": {
+      "title": "精简 themes.js",
+      "status": "pending",
+      "files": {
+        "rewrite": ["frontend/js/themes.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "从 git 或备份恢复 themes.js 原内容",
+      "verify": "刷新页面 → 无 JS 错误 → 侧边栏图标正常 → 主题切换正常",
+      "depends_on": ["t01"]
+    },
+    "t07": {
+      "title": "创建 icons.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/icons.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 icons.js，删除 index.html 中 icons.js 引用行",
+      "verify": "刷新页面 → 侧边栏图标使用 SVG → 切换到 emoji 正常 → 所有图标可见",
+      "depends_on": ["t06"]
+    },
+    "t08": {
+      "title": "增强 core.js",
+      "status": "pending",
+      "files": {
+        "modify": ["frontend/js/core.js"]
+      },
+      "rollback": "从备份恢复 core.js",
+      "verify": "F12 Console 执行 window.__quantModules.core.showToast('测试','success') → Toast 出现并 3s 消失",
+      "depends_on": ["t01"]
+    },
+    "t09": {
+      "title": "创建 useAuth.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useAuth.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useAuth.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 登录功能正常 → 访客登录正常",
+      "depends_on": ["t08"]
+    },
+    "t10": {
+      "title": "创建 useTheme.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useTheme.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useTheme.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 主题切换正常 → 图标系统切换正常",
+      "depends_on": ["t07", "t09"]
+    },
+    "t11": {
+      "title": "创建 useNavigation.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useNavigation.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useNavigation.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 菜单切换正常 → 侧边栏折叠/展开 → localStorage 持久化",
+      "depends_on": ["t10"]
+    },
+    "t12": {
+      "title": "创建 useCalendar.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useCalendar.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useCalendar.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 量化日历页数据加载正常 → 搜索/日期切换正常",
+      "depends_on": ["t11"]
+    },
+    "t13": {
+      "title": "创建 useDashboard.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useDashboard.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useDashboard.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 策略总览页数据加载正常 → 图表渲染正常",
+      "depends_on": ["t11"]
+    },
+    "t14": {
+      "title": "创建 useAI.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useAI.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useAI.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → AI 评估页数据加载正常 → 评估功能正常",
+      "depends_on": ["t11"]
+    },
+    "t15": {
+      "title": "创建 useWatchlist.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useWatchlist.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useWatchlist.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 自选股功能正常",
+      "depends_on": ["t11"]
+    },
+    "t16": {
+      "title": "创建 useSystem.js",
+      "status": "pending",
+      "files": {
+        "create": ["frontend/js/composables/useSystem.js"],
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "删除 useSystem.js，删除 index.html 中对应 script 引用",
+      "verify": "刷新页面 → 系统配置页正常 → 用户管理正常",
+      "depends_on": ["t11"]
+    },
+    "t17": {
+      "title": "重构 index.html",
+      "status": "pending",
+      "files": {
+        "modify": ["frontend/index.html"]
+      },
+      "rollback": "从备份恢复 index.html",
+      "verify": "完整冒烟：登录→5页面切换→侧边栏折叠→页面过渡动画→7主题→骨架屏→移动端3设备",
+      "depends_on": ["t09", "t10", "t11", "t12", "t13", "t14", "t15", "t16"]
+    },
+    "t18": {
+      "title": "发布到 ops 并验证",
+      "status": "pending",
+      "files": {
+        "publish": ["publish-dev-to-ops.cmd"]
+      },
+      "rollback": "从 quant-calendar-dev 重新复制文件到 ops",
+      "verify": "启动 ops → http://localhost:8000 → 完整冒烟测试 → CI 测试通过",
+      "depends_on": ["t17"]
+    }
+  }
+}
