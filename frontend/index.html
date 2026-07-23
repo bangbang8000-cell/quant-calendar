@@ -4876,14 +4876,12 @@ const allMenuDefs = [
                 }
 
                 function onModelToggle(model) {
-                    // Auto re-sort enabled models to top by priority
-                    // Priority 0 = first enabled
+                    // 仅更新优先级，不重新排序（避免 v-for 渲染混乱）
                     const enabled = aiModels.value.filter(m => m.enabled);
                     enabled.forEach((m, i) => m.priority = i);
                     const disabled = aiModels.value.filter(m => !m.enabled);
                     disabled.forEach((m, i) => m.priority = enabled.length + i);
-                    // Re-sort
-                    aiModels.value.sort((a, b) => a.priority - b.priority);
+                    // 排序延迟到保存时执行
                 }
 
                 async function testModel(model) {
