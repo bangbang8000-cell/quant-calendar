@@ -188,8 +188,8 @@
 <div class="page-header">
                         <div class="page-title">📈 策略总览</div>
                         <div style="display:flex;align-items:center;gap:12px;">
-                            <span style="color: var(--text-secondary); font-size: 13px;">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
-                            <span v-if="timeSinceRefresh" style="color: var(--text-tertiary); font-size: 11px;">{{ timeSinceRefresh }}</span>
+                            <span style="color: var(--text-secondary); font-size: var(--font-base);">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
+                            <span v-if="timeSinceRefresh" style="color: var(--text-tertiary); font-size: var(--font-xs);">{{ timeSinceRefresh }}</span>
                         </div>
                     </div>
 
@@ -267,7 +267,7 @@
                         <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size:12px;color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item" @click="navigateToStrategyFilter(item.strategy_name)" style="cursor:pointer;">
                             <div class="strategy-header">
-                                <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:11px;color:var(--text-tertiary);margin-left:4px;">→</span></span>
+                                <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:4px;">→</span></span>
                                 <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ item.percentage }}%)</span></span>
                             </div>
                             <div class="strategy-progress">
@@ -327,17 +327,17 @@
                         </div>
 
                         <!-- 描述 -->
-                        <div v-if="merrillData.description" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; text-align: center; padding: 8px 0;">
+                        <div v-if="merrillData.description" style="font-size: var(--font-base); color: var(--text-secondary); line-height: 1.6; text-align: center; padding: 8px 0;">
                             {{ merrillData.description }}
                         </div>
 
                         <!-- 时间 + 进度 -->
                         <div v-if="merrillData.timing" style="margin-top: 12px; padding: 12px; background: var(--badge-gold-bg); border-radius: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-base); margin-bottom: 6px;">
                                 <span style="color: var(--text-secondary);">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
                                 <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: 12px; padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 7px;">
+                            <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 7px;">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
                                 <span v-if="merrillData.next_stage_prediction?.transition_probability > 0.2" style="color: var(--el-warning); font-weight: var(--font-semibold);">
                                     →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(0) }}%
@@ -351,7 +351,7 @@
                                                 (merrillData.color || '#4CAF50')}" 
                                      style="height: 100%; border-radius: 4px; transition: width 0.5s;"></div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                            <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">
                                 <span>{{ merrillData.timing.progress_percent || 0 }}%<template v-if="(merrillData.timing.progress_percent || 0) > 100"> ⚠超期</template></span>
                                 <span v-if="merrillData.timing.predicted_end">预计结束 {{ merrillData.timing.predicted_end.base || merrillData.timing.predicted_end }}</span>
                             </div>
@@ -359,14 +359,14 @@
 
                         <!-- 多维度评分 -->
                         <div v-if="merrillData.dimension_scores" style="margin-top: 14px; padding: 12px; background: var(--bg-card-header); border-radius: 10px;">
-                            <div style="font-size: 13px; font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px;">📊 多维度评分</div>
+                            <div style="font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px;">📊 多维度评分</div>
                             <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px;">
                                 <span style="width: 40px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
                                 <div style="flex: 1; height: 10px; background: var(--border-light); border-radius: 5px; overflow: hidden;">
                                     <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 5px; transition: width 0.5s;"></div>
                                 </div>
                                 <span :style="{color: dim.scoreColor}" style="width: 35px; text-align: right; font-weight: var(--font-medium);">+{{ dim.scoreStr }}</span>
-                                <span :style="{color: dim.color}" style="width: 36px; text-align: right; font-weight: var(--font-medium); font-size: 11px;">{{ dim.level }}</span>
+                                <span :style="{color: dim.color}" style="width: 36px; text-align: right; font-weight: var(--font-medium); font-size: var(--font-xs);">{{ dim.level }}</span>
                             </div>
                         </div>
 
@@ -374,7 +374,7 @@
                         <div v-if="merrillData.confidence" style="margin-top: 10px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <span style="font-size: 12px; color: var(--text-secondary);">置信度</span>
-                                <span :style="{color: confidenceColor}" style="font-weight: var(--font-semibold); font-size: 13px;">{{ merrillData.confidence.level || '—' }}</span>
+                                <span :style="{color: confidenceColor}" style="font-weight: var(--font-semibold); font-size: var(--font-base);">{{ merrillData.confidence.level || '—' }}</span>
                             </div>
                             <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
                                 <span style="color: var(--text-secondary);">→预测</span>
@@ -405,7 +405,7 @@
                                 <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:var(--color-neutral,#0ca678);font-weight:600;">🕐 交易中</span>
                                 <span v-if="!marketData.in_trading_hours && marketData.is_trading_day" style="margin-left:8px;color:var(--text-tertiary);">已收盘</span>
                             </span>
-                            <span style="font-size:11px;color:var(--text-tertiary);">{{ marketData.date }}</span>
+                            <span style="font-size:var(--font-xs);color:var(--text-tertiary);">{{ marketData.date }}</span>
                         </div>
                         <div class="market-sentiment" v-if="marketData.market_sentiment">
                             <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
@@ -466,9 +466,9 @@
                             
                             <!-- 状态筛选 -->
                             <div class="status-tabs">
-                                <div class="status-tab" :class="{active: statusFilter === 'all'}" @click="statusFilter = 'all'">全部 <span class="count">{{ statusCounts.all }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'new'}" @click="statusFilter = 'new'">✨ 新入池 <span class="count">{{ statusCounts.newCount }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'current'}" @click="statusFilter = 'current'">✅ 当前持仓 <span class="count">{{ statusCounts.current }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'all'}" @click="statusFilter = 'all'">📋 全部 <span class="count">{{ statusCounts.all }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'new'}" @click="statusFilter = 'new'">🆕 新入池 <span class="count">{{ statusCounts.newCount }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'current'}" @click="statusFilter = 'current'">📌 当前持仓 <span class="count">{{ statusCounts.current }}</span></div>
                                 <div class="status-tab" :class="{active: statusFilter === 'out'}" @click="statusFilter = 'out'">📤 已出池 <span class="count">{{ statusCounts.out }}</span></div>
                             </div>
 
@@ -532,8 +532,8 @@
                             <div v-else>
                                 <div v-for="item in strategyDistribution" :key="item.strategy" style="margin-bottom: 12px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; border: 1px solid var(--border-light);">
                                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                        <span style="font-weight: var(--font-semibold); font-size: 13px;">{{ item.strategy }}</span>
-                                        <span style="background: var(--primary-color); color: white; border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: var(--font-semibold); min-width: 20px; text-align: center;">{{ item.count }}</span>
+                                        <span style="font-weight: var(--font-semibold); font-size: var(--font-base);">{{ item.strategy }}</span>
+                                        <span style="background: var(--primary-color); color: white; border-radius: 12px; padding: 1px 8px; font-size: var(--font-xs); font-weight: var(--font-semibold); min-width: 20px; text-align: center;">{{ item.count }}</span>
                                     </div>
                                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                         <template v-for="(stock, si) in item.names" :key="stock.code">
@@ -542,16 +542,16 @@
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
-                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                             </span>
                                         </template>
                                         <span v-if="item.names.length > 5 && !expandedStrategies[item.strategy]" 
-                                            style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--text-tertiary); font-size: 11px; cursor: pointer;"
+                                            style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--text-tertiary); font-size: var(--font-xs); cursor: pointer;"
                                             @click="expandedStrategies[item.strategy] = true">
                                             +{{ item.names.length - 5 }}只 展开 ▾
                                         </span>
                                         <span v-if="item.names.length > 5 && expandedStrategies[item.strategy]"
-                                            style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--primary-color); font-size: 11px; cursor: pointer;"
+                                            style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--primary-color); font-size: var(--font-xs); cursor: pointer;"
                                             @click="expandedStrategies[item.strategy] = false">
                                             收起 ▴
                                         </span>
@@ -572,7 +572,7 @@
                     <div v-if="currentSubPage === 'overview'">
                         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px;">
                             <el-button size="small" @click="showBatchEvaluate = true">
-                                <span style="margin-right: 4px;">✨</span>批量评估
+                                批量评估
                             </el-button>
                             <el-button size="small" @click="showAutoEvaluateSettings = true">
                                 <span style="margin-right: 4px;">⚙️</span>自动评股
@@ -604,7 +604,7 @@
                             </div>
                             <div class="stat-card" @click="showAutoEvaluateSettings = true" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
                                 <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'rgba(230,162,60,0.15)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
-                                    {{ autoEvaluateConfig.enabled ? '⚡' : '⏸️' }}
+                                    {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
                                 <div class="stat-content">
                                     <div class="stat-value" style="font-size:15px;">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
@@ -649,7 +649,7 @@
                             </div>
                             <!-- 快捷操作 -->
                             <div class="card">
-                                <div class="card-title">⚡ 快捷操作</div>
+                                <div class="card-title">🔧 快捷操作</div>
                                 <div style="display:flex;flex-direction:column;gap:10px;">
                                     <div v-if="watchlist.length > 0" style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:4px;">从自选中选择股票快速评估：</div>
                                     <el-select v-if="watchlist.length > 0" v-model="quickEvalStock" placeholder="选择自选股..." size="small" style="width:100%;" clearable>
@@ -671,7 +671,7 @@
                                         <el-button size="small" @click="currentSubPage = 'watchlist'" style="margin-top:8px;">去添加自选 →</el-button>
                                     </div>
                                     <div style="border-top:1px solid var(--border-light);margin-top:4px;padding-top:10px;">
-                                        <el-button size="small" @click="showBatchEvaluate = true" style="width:100%;">✨ 批量评估（输入代码）</el-button>
+                                        <el-button size="small" @click="showBatchEvaluate = true" style="width:100%;">批量评估（输入代码）</el-button>
                                     </div>
                                 </div>
                             </div>
@@ -684,7 +684,7 @@
                             <div style="font-size:var(--font-md);color:var(--text-secondary);margin-bottom:20px;">多模型串行评估，技术指标自动注入</div>
                             <div style="display:flex;gap:12px;justify-content:center;">
                                 <el-button type="primary" @click="currentSubPage = 'watchlist'">⭐ 管理自选股</el-button>
-                                <el-button @click="showBatchEvaluate = true">✨ 批量评估</el-button>
+                                <el-button @click="showBatchEvaluate = true">批量评估</el-button>
                             </div>
                         </div>
                     </div>
@@ -756,7 +756,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -810,7 +810,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -863,7 +863,7 @@
                                                 <div class="stock-info">
                                                     <span class="stock-code">{{ record.stock_code }}</span>
                                                     <span class="stock-name">{{ record.stock_name }}</span>
-                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:13px;margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:11px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:11px;margin-left:2px;">📈</span>
+                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                 </div>
                                                 <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                     <span class="score-num">{{ record.result.total_score }}</span>
@@ -988,7 +988,7 @@
                     <div class="config-top-toolbar">
                         <div class="toolbar-left">
                             <span class="config-status-icon" :class="{ dirty: globalConfigDirty, clean: !globalConfigDirty }">
-                                {{ globalConfigDirty ? '✏️' : '✅' }}
+                                {{ globalConfigDirty ? '✏️' : '' }}
                             </span>
                             <span class="config-status-text">
                                 {{ globalConfigDirty ? '有未保存的配置变更' : '配置已保存' }}
@@ -1031,7 +1031,7 @@
                                 <div class="status-info">
                                     <div class="status-label">AI服务</div>
                                     <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ aiStatus === 'ok' ? '✅ 正常' : '⏳ 需配置' }}
+                                        {{ aiStatus === 'ok' ? '正常' : '⏳ 需配置' }}
                                     </div>
                                 </div>
                             </div>
@@ -1040,7 +1040,7 @@
                                 <div class="status-info">
                                     <div class="status-label">飞书推送</div>
                                     <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ feishuConfig.webhook_url ? '✅ 已配置' : '⏳ 未配置' }}
+                                        {{ feishuConfig.webhook_url ? '已配置' : '⏳ 未配置' }}
                                     </div>
                                 </div>
                             </div>
@@ -1049,7 +1049,7 @@
                                 <div class="status-info">
                                     <div class="status-label">Tushare</div>
                                     <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ tushareStatus === 'connected' ? '✅ 已连接' : '⏳ 未连接' }}
+                                        {{ tushareStatus === 'connected' ? '已连接' : '⏳ 未连接' }}
                                     </div>
                                 </div>
                             </div>
@@ -1085,7 +1085,7 @@
                         <div class="theme-list">
                             <div v-for="(theme, key) in themes" :key="key" class="theme-item" :class="{active: currentTheme === key}" @click="changeTheme(key)">
                                 <div class="theme-color" :style="{background: theme.gradient}"></div>
-                                <div style="font-size: 13px; font-weight: var(--font-medium);">{{ theme.name }}
+                                <div style="font-size: var(--font-base); font-weight: var(--font-medium);">{{ theme.name }}
                                     <span v-if="currentUser?.theme === key" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">默认</span>
                                 </div>
                                 <span v-if="currentTheme === key" class="theme-current-badge">当前</span>
@@ -1098,19 +1098,19 @@
                         <div class="theme-list">
                             <div class="theme-item" :class="{active: iconSystem === 'emoji'}" @click="switchIconSystem('emoji')">
                                 <div class="theme-color" style="background: var(--gradient-brand);"></div>
-                                <div style="font-size: 13px; font-weight: var(--font-medium);">原生<span v-if="iconSystem === 'emoji'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
+                                <div style="font-size: var(--font-base); font-weight: var(--font-medium);">原生<span v-if="iconSystem === 'emoji'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'ink'}" @click="switchIconSystem('ink')">
                                 <div class="theme-color" style="background: linear-gradient(135deg, var(--bg-hover, #f5f0eb), var(--bg-card, #e8e0d5));"></div>
-                                <div style="font-size: 13px; font-weight: var(--font-medium);">墨韵<span v-if="iconSystem === 'ink'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
+                                <div style="font-size: var(--font-base); font-weight: var(--font-medium);">墨韵<span v-if="iconSystem === 'ink'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'edge'}" @click="switchIconSystem('edge')">
                                 <div class="theme-color" style="background: linear-gradient(135deg, #6366f1, #4f46e5);"></div>
-                                <div style="font-size: 13px; font-weight: var(--font-medium);">锋线<span v-if="iconSystem === 'edge'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
+                                <div style="font-size: var(--font-base); font-weight: var(--font-medium);">锋线<span v-if="iconSystem === 'edge'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'crystal'}" @click="switchIconSystem('crystal')">
                                 <div class="theme-color" style="background: linear-gradient(135deg, #a78bfa, #7c3aed);"></div>
-                                <div style="font-size: 13px; font-weight: var(--font-medium);">叠彩<span v-if="iconSystem === 'crystal'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
+                                <div style="font-size: var(--font-base); font-weight: var(--font-medium);">叠彩<span v-if="iconSystem === 'crystal'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                         </div>
                     </div>
@@ -1190,7 +1190,7 @@
                     <!-- datasource: 多数据源配置 -->
                     <div v-else-if="currentSubPage === 'datasource'">
                     <!-- 优先级说明条 -->
-                    <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: var(--font-base); color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span>🔢 数据源优先级:</span>
                         <span style="font-weight: var(--font-medium);">① sxsc-tushare → ② tushare → ③ akshare</span>
                         <span style="color: var(--text-tertiary); margin-left: auto;">按优先级依次尝试</span>
@@ -1202,7 +1202,7 @@
                             <span>🔗 sxsc-tushare（券商版）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.sxsc_tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">✅ 已连接</span>
+                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
                                 <span v-else-if="datasourceStatus.sxsc_tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
                                 <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
                             </div>
@@ -1226,7 +1226,7 @@
                             <span>📡 tushare（标准版 Pro）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">✅ 已连接</span>
+                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
                                 <span v-else-if="datasourceStatus.tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
                                 <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
                             </div>
@@ -1253,12 +1253,12 @@
                             <span>🌐 akshare（开源免费）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.akshare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: 12px;">✅ 可用</span>
+                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: 12px;">可用</span>
                                 <span v-else-if="datasourceStatus.akshare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
                                 <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
                             </div>
                         </div>
-                        <div style="font-size: 13px; color: var(--text-secondary); padding: 8px 0 12px 0;">
+                        <div style="font-size: var(--font-base); color: var(--text-secondary); padding: 8px 0 12px 0;">
                             开源免费数据接口，从东方财富等公开网站获取数据，无需 Token
                         </div>
                         <el-form label-width="80px">
@@ -1281,13 +1281,13 @@
                             </el-checkbox-group>
                         </div>
                         <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <span style="font-size: 13px; color: var(--text-secondary);">过滤方式：</span>
+                            <span style="font-size: var(--font-base); color: var(--text-secondary);">过滤方式：</span>
                             <el-radio-group v-model="strategyFilter.mode">
                                 <el-radio label="union">并集（任一匹配）</el-radio>
                                 <el-radio label="intersection">交集（全部匹配）</el-radio>
                             </el-radio-group>
                         </div>
-                        <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--text-primary);">
+                        <div style="background: var(--bg-card-header); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: var(--font-base); color: var(--text-primary);">
                             <div style="margin-bottom: 6px; font-weight: var(--font-medium);">🔍 预览匹配股票数</div>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <span>☀️ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
@@ -1302,23 +1302,23 @@
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">⏱️ 美林时钟</div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary); font-size: 13px;">
+                            <span style="color: var(--text-secondary); font-size: var(--font-base);">
                                 上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong>
                             </span>
                             <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">
                                 🔄 手动重评估
                             </el-button>
                         </div>
-                        <div v-if="merrillReevalResult" style="font-size: 13px; margin-bottom: 10px; padding: 8px 12px; background: var(--el-fill-color-light); border-radius: 6px;" :style="{color: merrillReevalResult.includes('❌') ? 'var(--el-danger)' : 'var(--el-success)'}">
+                        <div v-if="merrillReevalResult" style="font-size: var(--font-base); margin-bottom: 10px; padding: 8px 12px; background: var(--el-fill-color-light); border-radius: 6px;" :style="{color: merrillReevalResult.includes('失败') ? 'var(--el-danger)' : 'var(--el-success)'}">
                             {{ merrillReevalResult }}
                         </div>
                         <div style="display: flex; align-items: center; gap: 16px;">
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">自动刷新</label>
+                                <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">自动刷新</label>
                                 <el-switch v-model="merrillClockConfig.autoRefresh" @change="saveMerrillClockConfig" size="small" />
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">间隔</label>
+                                <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">间隔</label>
                                 <el-select v-model="merrillClockConfig.refreshInterval" @change="saveMerrillClockConfig" size="small" style="width: 100px;" :disabled="!merrillClockConfig.autoRefresh">
                                     <el-option :value="300" label="5分钟" />
                                     <el-option :value="600" label="10分钟" />
@@ -1333,10 +1333,10 @@
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">🔄 策略数据刷新</div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary); font-size: 13px;">
+                            <span style="color: var(--text-secondary); font-size: var(--font-base);">
                                 上次刷新: <strong>{{ dataRefreshConfig.last_refresh || '—' }}</strong>
                                 <span v-if="dataRefreshConfig.last_refresh_status" style="margin-left: 6px; font-size: 12px;" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
-                                    {{ dataRefreshConfig.last_refresh_status.startsWith('failed') ? '❌' : '✅' }}
+                                    {{ dataRefreshConfig.last_refresh_status.startsWith('failed') ? '失败' : '' }}
                                 </span>
                             </span>
                             <el-button size="small" type="primary" @click="triggerDataReload" :loading="dataRefreshReloading">
@@ -1347,17 +1347,17 @@
                             <!-- 定时刷新 -->
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
-                                    <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">定时刷新</label>
+                                    <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">定时刷新</label>
                                     <el-switch v-model="dataRefreshConfig.scheduled_enabled" @change="saveDataRefreshConfig" size="small" />
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 6px;">
-                                    <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">时间</label>
+                                    <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">时间</label>
                                     <el-time-picker v-model="dataRefreshConfig.scheduled_time" @change="saveDataRefreshConfig" size="small" format="HH:mm" value-format="HH:mm" style="width: 110px;" :disabled="!dataRefreshConfig.scheduled_enabled" placeholder="22:00" />
                                 </div>
                             </div>
                             <!-- 文件变动监听 -->
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <label style="font-size: 13px; color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
+                                <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
                                 <el-switch v-model="dataRefreshConfig.watch_enabled" @change="saveDataRefreshConfig" size="small" />
                                 <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
                             </div>
@@ -1368,7 +1368,7 @@
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">🔬 策略研究菜单</div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--text-secondary); font-size: 13px;">
+                            <span style="color: var(--text-secondary); font-size: var(--font-base);">
                                 {{ researchMenuEnabled ? '已显示策略研究菜单' : '已隐藏策略研究菜单' }}
                             </span>
                             <el-switch v-model="researchMenuEnabled" @change="toggleResearchMenu" size="small" />
@@ -1508,7 +1508,7 @@
                             <div class="card-title">📌 软件版本</div>
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                 <span style="font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px;">v{{ appVersion }}</span>
-                                <span style="color: var(--text-secondary); font-size: var(--font-md);">🟢 服务运行中</span>
+                                <span style="color: #4CAF50; font-size: var(--font-md);">● 服务运行中</span>
                             </div>
                         </div>
                         <div class="card">
@@ -1522,7 +1522,7 @@
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">🟢</span>
+                                    <span style="font-size: 22px; color: var(--el-success);">▣</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Vue 3</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">前端框架</div>
@@ -1621,7 +1621,7 @@
                             💡 智能评股
                         </el-button>
                         <el-button size="small" @click="toggleWatchlist(stockDetail.stock, stockDetail.name)" :type="watchlistCodes.has(stockDetail.stock) ? 'success' : 'primary'">
-                            {{ watchlistCodes.has(stockDetail.stock) ? '✅ 已自选' : '⭐ 加入自选' }}
+                            {{ watchlistCodes.has(stockDetail.stock) ? '★ 已自选' : '⭐ 加入自选' }}
                         </el-button>
                     </div>
                     <!-- 按钮底部进度条 -->
@@ -1770,7 +1770,7 @@
                             </div>
                             <div class="ai-eval-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
                                 <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-success);margin-bottom:10px;">✅ 优势</div>
+                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-success);margin-bottom:10px;">▸ 优势</div>
                                     <div v-for="s in aiResult.result.analysis.strengths" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
                                     <div v-if="!aiResult.result.analysis.strengths.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
                                 </div>
@@ -1794,7 +1794,7 @@
                                     <span v-if="aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">市场情绪 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
                                 </div>
                                 <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
-                                    🟢 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
+                                    <span style="color: #4CAF50;">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
                                     <span v-if="aiResult.result.signal_attribution.strongest_bearish" style="margin-left:12px;">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
                                 </div>
                             </div>
@@ -1955,8 +1955,8 @@
                     <div style="margin-top:12px;max-height:240px;overflow-y:auto;">
                         <div v-for="(status,code) in batchStatuses" :key="code" style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--font-sm);">
                             <span v-if="status==='running'" style="color:var(--color-primary);">⏳</span>
-                            <span v-else-if="status==='success'" style="color:var(--el-success);">✅</span>
-                            <span v-else-if="status==='error'" style="color:var(--el-danger);">❌</span>
+                            <span v-else-if="status==='success'" style="color:var(--el-success);">●</span>
+                            <span v-else-if="status==='error'" style="color:var(--el-danger);">✕</span>
                             <span v-else style="color:var(--text-tertiary);">⏸</span>
                             <span style="color:var(--text-primary);flex:1;">{{ code }}</span>
                             <span v-if="status==='success' && batchResults[code] && batchResults[code].result" style="font-weight:var(--font-bold);font-size:var(--font-sm);" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ batchResults[code].result.total_score }}分</span>
@@ -2034,7 +2034,7 @@
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
                             📌 {{ indexAiResult.suggestion || '暂无' }}
                         </el-tag>
-                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: 13px;">信心指数: {{ indexAiResult.confidence || 75 }}%</span>
+                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: var(--font-base);">信心指数: {{ indexAiResult.confidence || 75 }}%</span>
                     </div>
                 </div>
 
@@ -2139,7 +2139,7 @@
                             <div class="stat-label">预测结束日</div>
                         </div>
                     </div>
-                    <div style="margin-top: 12px; display: flex; gap: 18px; align-items: center; font-size: 13px; flex-wrap: wrap;">
+                    <div style="margin-top: 12px; display: flex; gap: 18px; align-items: center; font-size: var(--font-base); flex-wrap: wrap;">
                         <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
                         <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ merrillDetailData._currentTiming.progress_percent }}%</b></span>
                         <span v-if="merrillDetailData._nextPrediction?.next_stage" style="color: var(--el-warning); font-weight: var(--font-semibold);">
@@ -2148,7 +2148,7 @@
                     </div>
                     <!-- 过渡警告横幅 -->
                     <div v-if="merrillDetailData._currentTiming.progress_percent > 80 && merrillDetailData._nextPrediction?.transition_probability > 0.15" 
-                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, #FFF3E0, #FFEBEE); border-radius: 8px; border-left: 4px solid #FF9800; font-size: 13px;">
+                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, #FFF3E0, #FFEBEE); border-radius: 8px; border-left: 4px solid #FF9800; font-size: var(--font-base);">
                         <b style="color: #E65100;">⚠️ 周期切换预警</b>
                         <span style="color: var(--text-secondary); margin-left: 8px;">
                             当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
@@ -2195,7 +2195,7 @@
                 <!-- v2.0: 多维度评分详情 -->
                 <div v-if="merrillData.dimension_scores" class="detail-section">
                     <div class="section-title">🎯 多维度评分详情</div>
-                    <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px;">
+                    <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: var(--font-base);">
                         <span style="width: 50px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
                         <div style="flex: 1; height: 14px; background: var(--border-light); border-radius: 7px; overflow: hidden;">
                             <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 7px; transition: width 0.5s;"></div>
@@ -3414,14 +3414,14 @@
                         });
                         const data = await res.json();
                         if (data.success || data.status === 'ok') {
-                            feishuTestMessage.value = '✅ 测试消息已发送，请查看飞书';
+                            feishuTestMessage.value = '测试消息已发送，请查看飞书';
                             ElementPlus.ElMessage.success('测试消息已发送');
                         } else {
-                            feishuTestMessage.value = '❌ ' + (data.message || '测试失败');
+                            feishuTestMessage.value = (data.message || '测试失败');
                             ElementPlus.ElMessage.error(feishuTestMessage.value);
                         }
                     } catch (e) {
-                        feishuTestMessage.value = '❌ 连接失败';
+                        feishuTestMessage.value = '连接失败';
                         ElementPlus.ElMessage.error('飞书连接失败');
                     }
                     feishuTestStatus.value = 'idle';
@@ -4328,7 +4328,7 @@ const allMenuDefs = [
                         const score = dims[rule.key];
                         if (score !== undefined) {
                             items.push({
-                                icon: score >= rule.good ? '✅' : score >= rule.warn ? '⚠️' : '❌',
+                                icon: score >= rule.good ? '●' : score >= rule.warn ? '▲' : '✕',
                                 label: `${rule.label} ${score}分`
                             });
                         }
@@ -4983,15 +4983,15 @@ const allMenuDefs = [
                         const res = await fetch('/api/market/merrill-clock/reevaluate', { method: 'POST' });
                         const data = await res.json();
                         if (data.success) {
-                            merrillReevalResult.value = '✅ 重评估完成：' + (data.stage_name || data.stage);
+                            merrillReevalResult.value = '重评估完成：' + (data.stage_name || data.stage);
                             await fetchMerrillClock();
                             ElementPlus.ElMessage.success('重评估完成');
                         } else {
-                            merrillReevalResult.value = '❌ ' + (data.message || '重评估失败');
+                            merrillReevalResult.value = (data.message || '重评估失败');
                             ElementPlus.ElMessage.error(data.message || '重评估失败');
                         }
                     } catch (e) {
-                        merrillReevalResult.value = '❌ 请求失败';
+                        merrillReevalResult.value = '请求失败';
                         ElementPlus.ElMessage.error('重评估请求失败');
                     } finally {
                         merrillReevalLoading.value = false;
