@@ -19,6 +19,7 @@ from .watchlist import router as watchlist_router
 from .groups import router as groups_router
 from .search import router as search_router
 from .setup_wizard import router as setup_router
+from .chat import router as chat_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -38,5 +39,6 @@ api_router.include_router(data_refresh_router)
 api_router.include_router(groups_router)
 api_router.include_router(search_router)
 api_router.include_router(setup_router)
+api_router.include_router(chat_router)
 
 __all__ = ["api_router"]

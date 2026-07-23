@@ -885,6 +885,191 @@
                     </div>
                     </div>
 
+                    <!-- chat_history: 问股历史 (v2.4) -->
+                    <div v-else-if="currentSubPage === 'chat_history'">
+                        <!-- 批量操作工具栏 -->
+                        <div class="card" style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="color: var(--text-secondary);">
+                                    <span v-if="selectedChatIds.length > 0">已选择 <strong style="color: var(--primary-color);">{{ selectedChatIds.length }}</strong> 条对话</span>
+                                    <span v-else>可选多条记录进行批量操作</span>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <el-button size="small" @click="selectAllChatSessions">{{ selectedChatIds.length === allChatSessionsFlat.length ? '取消全选' : '全选' }}</el-button>
+                                    <el-button v-if="selectedChatIds.length > 0" size="small" type="danger" @click="deleteSelectedChatSessions">🗑️ 批量删除</el-button>
+                                    <el-button v-if="selectedChatIds.length > 0" size="small" @click="selectedChatIds = []">取消选择</el-button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">💬 AI 问股历史 <span style="font-weight: normal; color: var(--text-tertiary); font-size: var(--font-sm); margin-left: 8px;">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span></div>
+                        <div v-if="allChatSessionsFlat.length === 0" class="empty-state">
+                            <div style="font-size: 64px; margin-bottom: 20px;">💬</div>
+                            <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">暂无问股记录</div>
+                            <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">
+                                在股票详情页点击「AI 问股」开始对话
+                            </div>
+                        </div>
+
+                        <!-- 视图切换 -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;" v-if="allChatSessionsFlat.length > 0">
+                            <el-button size="small" @click="chatHistoryView = 'date'" :type="chatHistoryView === 'date' ? 'primary' : ''">📅 按日期</el-button>
+                            <el-button size="small" @click="chatHistoryView = 'month'" :type="chatHistoryView === 'month' ? 'primary' : ''">📆 按月</el-button>
+                            <el-button size="small" @click="chatHistoryView = 'stock'" :type="chatHistoryView === 'stock' ? 'primary' : ''">📈 按股票</el-button>
+                        </div>
+
+                        <!-- 按日期聚合 -->
+                        <div v-if="chatHistoryView === 'date' && allChatSessionsFlat.length > 0" class="ai-history-list">
+                            <template v-for="(sessions, date) in chatGroupedByDate" :key="date">
+                                <div class="date-group-card" :style="{marginBottom: '8px'}">
+                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                        <div @click.stop="toggleSelectChatDate(date)" class="history-checkbox" style="display: flex; align-items: center;">
+                                            <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
+                                                {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
+                                            </div>
+                                        </div>
+                                        <div style="flex:1;" @click="toggleChatDateExpand(date)">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📅 {{ date }}</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                            </div>
+                                        </div>
+                                        <div @click="toggleChatDateExpand(date)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatDates.includes(date) ? 'rotate(90deg)' : ''}">▶</div>
+                                    </div>
+                                    <div v-if="expandedChatDates.includes(date)" class="date-group-records" style="padding: 4px 0 4px 34px;">
+                                        <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
+                                            <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
+                                                <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
+                                                    {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
+                                                </div>
+                                            </div>
+                                            <div class="history-content" @click="viewChatSession(session)">
+                                                <div class="history-header">
+                                                    <div class="stock-info">
+                                                        <span class="stock-code">{{ session.stock_code }}</span>
+                                                        <span class="stock-name">{{ session.stock_name }}</span>
+                                                    </div>
+                                                    <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                        <span class="score-num">{{ session.msg_count }}</span>
+                                                        <span class="score-level">条消息</span>
+                                                    </span>
+                                                </div>
+                                                <div class="history-footer">
+                                                    <span class="history-time">🕐 {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
+                                                    <span class="history-provider">💬 {{ session.first_msg }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="history-actions">
+                                                <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- 按月聚合 -->
+                        <div v-else-if="chatHistoryView === 'month' && allChatSessionsFlat.length > 0" class="ai-history-list">
+                            <template v-for="(sessions, month) in chatGroupedByMonth" :key="month">
+                                <div class="date-group-card" :style="{marginBottom: '8px'}">
+                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                        <div @click.stop="toggleSelectChatMonth(month)" class="history-checkbox" style="display: flex; align-items: center;">
+                                            <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
+                                                {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
+                                            </div>
+                                        </div>
+                                        <div style="flex:1;" @click="toggleChatMonthExpand(month)">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📆 {{ month }}</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                            </div>
+                                        </div>
+                                        <div @click="toggleChatMonthExpand(month)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatMonths.includes(month) ? 'rotate(90deg)' : ''}">▶</div>
+                                    </div>
+                                    <div v-if="expandedChatMonths.includes(month)" class="date-group-records" style="padding: 4px 0 4px 34px;">
+                                        <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
+                                            <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
+                                                <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
+                                                    {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
+                                                </div>
+                                            </div>
+                                            <div class="history-content" @click="viewChatSession(session)">
+                                                <div class="history-header">
+                                                    <div class="stock-info">
+                                                        <span class="stock-code">{{ session.stock_code }}</span>
+                                                        <span class="stock-name">{{ session.stock_name }}</span>
+                                                    </div>
+                                                    <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                        <span class="score-num">{{ session.msg_count }}</span>
+                                                        <span class="score-level">条消息</span>
+                                                    </span>
+                                                </div>
+                                                <div class="history-footer">
+                                                    <span class="history-time">🕐 {{ session.created_at?.split('T')[0] }} {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
+                                                    <span class="history-provider">💬 {{ session.first_msg }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="history-actions">
+                                                <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- 按股票聚合 -->
+                        <div v-else-if="allChatSessionsFlat.length > 0" class="ai-history-list">
+                            <div v-for="(sessions, code) in chatGroupedByStock" :key="code" style="border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; gap: 10px;">
+                                    <div @click.stop="toggleSelectChatStock(code)" class="history-checkbox" style="display: flex; align-items: center;">
+                                        <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
+                                            {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
+                                        </div>
+                                    </div>
+                                    <div style="flex:1; display: flex; align-items: center; gap: 8px; cursor: pointer;" @click="toggleChatStockExpand(code)">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <strong>{{ code }}</strong>
+                                            <span style="color: var(--text-tertiary);">{{ sessions[0].stock_name }}</span>
+                                            <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}次</span>
+                                        </div>
+                                    </div>
+                                    <span style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
+                                </div>
+                                <div v-if="expandedChatStocks.includes(code)" style="padding: 4px 0 4px 12px;">
+                                    <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
+                                        <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
+                                            <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
+                                                {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
+                                            </div>
+                                        </div>
+                                        <div class="history-content" @click="viewChatSession(session)">
+                                            <div class="history-header">
+                                                <div class="stock-info">
+                                                    <span class="stock-code">{{ session.stock_code }}</span>
+                                                    <span class="stock-name">{{ session.stock_name }}</span>
+                                                </div>
+                                                <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                    <span class="score-num">{{ session.msg_count }}</span>
+                                                    <span class="score-level">条消息</span>
+                                                </span>
+                                            </div>
+                                            <div class="history-footer">
+                                                <span class="history-time">🕐 {{ session.created_at?.split('T')[0] }} {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
+                                                <span class="history-provider">💬 {{ session.first_msg }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="history-actions">
+                                            <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
                     <!-- watchlist: 我的自选 (v1.10) -->
                     <div v-else-if="currentSubPage === 'watchlist'">
                         <!-- 批量操作工具栏 -->
@@ -1616,6 +1801,9 @@
                         <el-button size="small" :type="stockDetailTab === 'ai' ? 'primary' : ''" @click="stockDetailTab = 'ai'">
                             🤖 评估结果
                         </el-button>
+                        <el-button size="small" :type="stockDetailTab === 'chat' ? 'primary' : ''" @click="stockDetailTab = 'chat'">
+                            💬 AI 问股
+                        </el-button>
                         <div style="flex: 1;"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
                             💡 智能评股
@@ -1838,6 +2026,37 @@
                             <div v-else>点击 AI 评估按钮获取分析结果</div>
                         </div>
                     </div>  <!-- close ai tab -->
+
+                    <!-- Tab: AI 问股对话 -->
+                    <div v-if="stockDetailTab === 'chat'">
+                        <div class="card" style="margin-bottom:12px;">
+                            <div class="card-title" style="margin:0 0 12px 0;">💬 AI 智能问股</div>
+                            <!-- Quick prompts -->
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+                                <el-button size="small" @click="askStockQuick('trend')">📈 趋势分析</el-button>
+                                <el-button size="small" @click="askStockQuick('fundamental')">📊 基本面</el-button>
+                                <el-button size="small" @click="askStockQuick('comprehensive')">🔬 综合分析</el-button>
+                            </div>
+                            <!-- Chat messages -->
+                            <div v-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
+                                <div v-for="(msg, mi) in stockChatMessages" :key="mi" style="margin-bottom:10px;">
+                                    <div v-if="msg.role==='user'" style="text-align:right;">
+                                        <span style="display:inline-block;background:var(--primary-color);color:#fff;padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>
+                                    </div>
+                                    <div v-else style="display:flex;gap:6px;">
+                                        <span>🤖</span>
+                                        <div style="flex:1;font-size:var(--font-sm);line-height:1.5;max-height:200px;overflow-y:auto;" v-html="renderMarkdown(msg.content)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Input -->
+                            <div style="display:flex;gap:8px;">
+                                <el-input v-model="stockChatInput" placeholder="输入问题，如：这股趋势怎么样" @keyup.enter="askStockSend" size="small" style="flex:1;" />
+                                <el-button type="primary" size="small" @click="askStockSend" :loading="stockChatLoading">发送</el-button>
+                            </div>
+                            <div v-if="stockChatError" style="color:var(--el-danger);font-size:var(--font-xs);margin-top:6px;">{{ stockChatError }}</div>
+                        </div>
+                    </div>  <!-- close chat tab -->
                 </div>
             </div>
         </el-dialog>
@@ -3161,7 +3380,7 @@
                         markKlineLoaded(stockDetail.value.stock);
                         await nextTick();
                         const el = document.getElementById('stockKlineChart');
-                        if (!el) return;  // 容器可能被v-if隐藏
+                        if (!el) return;
                         if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
                         stockKlineChart = echarts.init(el);
                         renderKlineChart(stockKlineChart, data.data, period);
@@ -3466,7 +3685,7 @@
 const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history'] },
+                    { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'strategy-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'about'], guestSubPages: ['status', 'about'] }
                 ];
@@ -3544,11 +3763,276 @@ const allMenuDefs = [
                 const setupForm = ref({ newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-chat', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' });
                 const setupStep = ref(1);
 
+                // ===== v2.4: AI 问股 =====
+                const chatSessions = ref([]);
+                const chatHistoryView = ref('date');
+                const selectedChatIds = ref([]);
+                const expandedChatDates = ref([]);
+                const expandedChatMonths = ref([]);
+                const expandedChatStocks = ref([]);
+
+                const allChatSessionsFlat = computed(() => {
+                    const flat = [];
+                    for (const s of chatSessions.value) {
+                        if (s.messages) {
+                            flat.push({
+                                id: s.id,
+                                stock_code: s.stock_code,
+                                stock_name: s.stock_name,
+                                first_msg: s.messages[0]?.content?.substring(0, 50) || '',
+                                msg_count: s.messages.length,
+                                created_at: s.created_at,
+                                date: (s.created_at || '').substring(0, 10),
+                                month: (s.created_at || '').substring(0, 7),
+                                messages: s.messages,
+                            });
+                        }
+                    }
+                    return flat;
+                });
+
+                const chatGroupedByDate = computed(() => {
+                    const g = {};
+                    for (const s of allChatSessionsFlat.value) {
+                        const d = s.date || '未知';
+                        if (!g[d]) g[d] = [];
+                        g[d].push(s);
+                    }
+                    // Sort by date desc
+                    const sorted = {};
+                    Object.keys(g).sort((a,b) => b.localeCompare(a)).forEach(k => sorted[k] = g[k]);
+                    return sorted;
+                });
+
+                const chatGroupedByMonth = computed(() => {
+                    const g = {};
+                    for (const s of allChatSessionsFlat.value) {
+                        const m = s.month || '未知';
+                        if (!g[m]) g[m] = [];
+                        g[m].push(s);
+                    }
+                    const sorted = {};
+                    Object.keys(g).sort((a,b) => b.localeCompare(a)).forEach(k => sorted[k] = g[k]);
+                    return sorted;
+                });
+
+                const chatGroupedByStock = computed(() => {
+                    const g = {};
+                    for (const s of allChatSessionsFlat.value) {
+                        const k = `${s.stock_name}(${s.stock_code})`;
+                        if (!g[k]) g[k] = [];
+                        g[k].push(s);
+                    }
+                    return g;
+                });
+
+                function toggleSelectChat(id) {
+                    const idx = selectedChatIds.value.indexOf(id);
+                    if (idx >= 0) selectedChatIds.value.splice(idx, 1);
+                    else selectedChatIds.value.push(id);
+                }
+                function toggleSelectChatDate(date) {
+                    const sessions = chatGroupedByDate.value[date] || [];
+                    const allSelected = sessions.every(s => selectedChatIds.value.includes(s.id));
+                    if (allSelected) {
+                        selectedChatIds.value = selectedChatIds.value.filter(id => !sessions.some(s => s.id === id));
+                    } else {
+                        for (const s of sessions) {
+                            if (!selectedChatIds.value.includes(s.id)) selectedChatIds.value.push(s.id);
+                        }
+                    }
+                }
+                function toggleSelectChatMonth(month) {
+                    const sessions = chatGroupedByMonth.value[month] || [];
+                    const allSelected = sessions.every(s => selectedChatIds.value.includes(s.id));
+                    if (allSelected) {
+                        selectedChatIds.value = selectedChatIds.value.filter(id => !sessions.some(s => s.id === id));
+                    } else {
+                        for (const s of sessions) {
+                            if (!selectedChatIds.value.includes(s.id)) selectedChatIds.value.push(s.id);
+                        }
+                    }
+                }
+                function toggleSelectChatStock(code) {
+                    const sessions = chatGroupedByStock.value[code] || [];
+                    const allSelected = sessions.every(s => selectedChatIds.value.includes(s.id));
+                    if (allSelected) {
+                        selectedChatIds.value = selectedChatIds.value.filter(id => !sessions.some(s => s.id === id));
+                    } else {
+                        for (const s of sessions) {
+                            if (!selectedChatIds.value.includes(s.id)) selectedChatIds.value.push(s.id);
+                        }
+                    }
+                }
+                function toggleChatDateExpand(date) {
+                    const i = expandedChatDates.value.indexOf(date);
+                    if (i >= 0) expandedChatDates.value.splice(i, 1);
+                    else expandedChatDates.value.push(date);
+                }
+                function toggleChatMonthExpand(month) {
+                    const i = expandedChatMonths.value.indexOf(month);
+                    if (i >= 0) expandedChatMonths.value.splice(i, 1);
+                    else expandedChatMonths.value.push(month);
+                }
+                function toggleChatStockExpand(code) {
+                    const i = expandedChatStocks.value.indexOf(code);
+                    if (i >= 0) expandedChatStocks.value.splice(i, 1);
+                    else expandedChatStocks.value.push(code);
+                }
+                function selectAllChatSessions() {
+                    if (selectedChatIds.value.length === allChatSessionsFlat.value.length) {
+                        selectedChatIds.value = [];
+                    } else {
+                        selectedChatIds.value = allChatSessionsFlat.value.map(s => s.id);
+                    }
+                }
+                async function deleteSelectedChatSessions() {
+                    for (const id of [...selectedChatIds.value]) {
+                        await deleteChatSession(id);
+                    }
+                    selectedChatIds.value = [];
+                }
+                function viewChatSession(session) {
+                    stockDetail.value = { stock: session.stock_code, name: session.stock_name };
+                    stockDetailVisible.value = true;
+                    stockDetailTab.value = 'chat';
+                    stockKlineLoaded.value = false;
+                    if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
+                    stockChatMessages.value = session.messages?.map(m => ({role: m.role, content: m.content})) || [];
+                }
+
+                // Stock detail chat
+                const stockChatInput = ref('');
+                const stockChatMessages = ref([]);
+                const stockChatLoading = ref(false);
+                const stockChatError = ref('');
+
+                async function askStockSend() {
+                    const msg = stockChatInput.value.trim();
+                    if (!msg || stockChatLoading.value) return;
+                    stockChatError.value = '';
+                    stockChatMessages.value.push({ role: 'user', content: msg });
+                    stockChatInput.value = '';
+                    stockChatLoading.value = true;
+                    // Add placeholder for streaming response
+                    const aiIdx = stockChatMessages.value.length;
+                    stockChatMessages.value.push({ role: 'assistant', content: '' });
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+                        const res = await fetch('/api/ai/chat/stream', {
+                            method: 'POST', headers,
+                            body: JSON.stringify({ stock_code: stockDetail.value?.stock || '', message: msg })
+                        });
+                        const reader = res.body.getReader();
+                        const decoder = new TextDecoder();
+                        let buffer = '';
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop() || '';
+                            for (const line of lines) {
+                                if (line.startsWith('data: ')) {
+                                    try {
+                                        const data = JSON.parse(line.slice(6));
+                                        if (data.token) {
+                                            stockChatMessages.value[aiIdx].content += data.token;
+                                        } else if (data.done) {
+                                            console.log('Stream done:', data.session_id);
+                                        } else if (data.error) {
+                                            stockChatError.value = data.error;
+                                        }
+                                    } catch(e) {}
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        if (!stockChatMessages.value[aiIdx].content)
+                            stockChatMessages.value[aiIdx].content = '网络错误: ' + e.message;
+                    }
+                    stockChatLoading.value = false;
+                }
+
+                async function askStockQuick(mode) {
+                    stockChatError.value = '';
+                    stockChatLoading.value = true;
+                    const msgs = { trend: '帮我做一下技术趋势分析', fundamental: '帮我看看基本面情况', comprehensive: '帮我做个综合分析' };
+                    stockChatMessages.value.push({ role: 'user', content: msgs[mode] || msgs.comprehensive });
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+                        const res = await fetch('/api/ai/chat/quick', {
+                            method: 'POST', headers,
+                            body: JSON.stringify({ stock_code: stockDetail.value?.stock || '', mode })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            stockChatMessages.value.push({ role: 'assistant', content: data.reply || '无回复' });
+                        }
+                    } catch (e) {
+                        stockChatError.value = '网络错误: ' + e.message;
+                    }
+                    stockChatLoading.value = false;
+                }
+
+                async function loadChatHistory() {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                        const res = await fetch('/api/ai/chat/history?view=date', { headers });
+                        if (res.ok) {
+                            const groups = await res.json();
+                            const sessions = [];
+                            for (const group of groups) {
+                                for (const s of (group.items || [])) {
+                                    try {
+                                        const dres = await fetch('/api/ai/chat/history/' + s.id, { headers });
+                                        if (dres.ok) { const d = await dres.json(); s.messages = d.messages || []; }
+                                    } catch { }
+                                    sessions.push(s);
+                                }
+                            }
+                            chatSessions.value = sessions;
+                        }
+                    } catch (e) { console.error(e); }
+                }
+
+                async function deleteChatSession(id) {
+                    try {
+                        const token = localStorage.getItem('quant_token');
+                        await fetch('/api/ai/chat/history/' + id, {
+                            method: 'DELETE',
+                            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                        });
+                        chatSessions.value = chatSessions.value.filter(s => s.id !== id);
+                    } catch (e) { console.error('deleteChatSession:', e); }
+                }
+
+                function renderMarkdown(md) {
+                    if (!md) return '';
+                    let html = md
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+                        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+                        .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                        .replace(/`([^`]+)`/g, '<code>$1</code>')
+                        .replace(/^- (.+)$/gm, '<li>$1</li>')
+                        .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                        .replace(/\n/g, '<br>');
+                    return html;
+                }
+
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
                     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
-                    'watchlist': '我的自选', 'history': '评估历史',
+                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
                     'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录',
                     'status': '系统状态', 'autoeval': '自动评股', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
@@ -5226,6 +5710,7 @@ const allMenuDefs = [
                         };
                     }
                     stockDetailVisible.value = true;
+                    stockDetailTab.value = 'ai';
                     // 弹窗打开后加载K线
                     setTimeout(async () => {
                         await loadStockKline('daily');
@@ -6376,6 +6861,7 @@ const allMenuDefs = [
                         if (sub === 'watchlist') { loadWatchlist(); loadAiHistory(); setTimeout(preloadWatchlistKline, 500); }
                         if (sub === 'history') loadAiHistory();
                         if (sub === 'overview') { loadAiHistory(); loadWatchlist(); }
+                        if (sub === 'chat_history') loadChatHistory();
                     }
                     // 系统配子页切换
                     if (page === 'system' && currentUser.value?.role === 'admin') {
@@ -6384,6 +6870,14 @@ const allMenuDefs = [
                         if (sub === 'datasource') loadDatasourceConfig();
                         if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); }
                         if (sub === 'user') { loadAllGroups(); loadUsers(); }
+                    }
+                });
+
+                // K线标签切换时自动加载
+                watch(stockDetailTab, (tab, oldTab) => {
+                    if (tab === 'kline' && oldTab && oldTab !== 'kline' && stockDetailVisible.value) {
+                        stockKlineLoaded.value = false;
+                        setTimeout(() => loadStockKline('daily'), 50);
                     }
                 });
 
@@ -6492,6 +6986,15 @@ const allMenuDefs = [
                     showChangePassword, changePasswordForm, changingPassword, doChangePassword,
                     // v2.2: 初始化向导
                     showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard, resetSetupWizard,
+                    // v2.4: AI 问股
+                    chatSessions, chatHistoryView, selectedChatIds,
+                    expandedChatDates, expandedChatMonths, expandedChatStocks,
+                    allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
+                    toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
+                    toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,
+                    selectAllChatSessions, deleteSelectedChatSessions, viewChatSession,
+                    loadChatHistory, deleteChatSession, renderMarkdown,
+                    stockChatInput, stockChatMessages, stockChatLoading, stockChatError, askStockSend, askStockQuick,
                 };
             }
         });

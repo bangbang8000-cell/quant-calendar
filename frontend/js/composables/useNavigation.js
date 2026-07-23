@@ -5,7 +5,7 @@
   const ALL_MENU_DEFS = [
     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-    { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history'] },
+    { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'strategy-write', 'backtest', 'backtest-history'] },
     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'about'], guestSubPages: ['status', 'about'] }
   ];
