@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
 
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API v2.5.2",
-    version="2.5.2",
+    title="量化选股日历 API v3.0.0",
+    version="3.0.0",
     description="基于美林时钟的量化选股系统",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -117,7 +117,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "2.5.2",
+        "version": "3.0.0",
         "message": "量化选股日历服务运行中"
     }
 

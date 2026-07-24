@@ -25,11 +25,11 @@
     <script src="/static/lib/element-plus.min.js"></script>
     <script src="/static/lib/echarts.min.js"></script>
     <script src="/static/lib/zh-cn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.2">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.2">
-    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.2">
-    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.2">
-    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.2">
+    <link rel="stylesheet" href="/static/css/tokens.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/themes.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/layout.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/animations.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=3.0.0">
 
     <!-- Module JS -->
     <script src="/static/js/themes.js?v=2.5.2"></script>
@@ -41,6 +41,7 @@
     <script src="/static/js/ai.js"></script>
     <script src="/static/js/system.js"></script>
     <script src="/static/js/users.js"></script>
+    <script src="/static/js/merrill.js?v=3.0.0"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -2737,304 +2738,9 @@
                     }
                 });
                 
-                // ===== 美林时钟数据 =====
-                // 基于中国2019-2026真实经济周期：复苏→过热→滞胀→衰退→复苏
-                const merrillData = ref({
-                    stage: 'recovery',
-                    stage_cn: '复苏',
-                    stage_name: '复苏期',
-                    name: '复苏期',
-                    icon: '🌱',
-                    color: '#27AE60',
-                    description: '2025年开启新一轮复苏周期，政策发力，经济触底回升',
-                    timing: {
-                        current_stage_start_date: '2025年初',
-                        duration_days: 500,
-                        avg_duration_months: 18,
-                        progress_percent: 72
-                    },
-                    indicators: { 
-                        pmi: 50.8, gdp_growth: 5.3, cpi: 0.8, m2_growth: 9.8
-                    }
-                });
-                const stages = [
-                    {key: 'recession', name: '衰退期', icon: '❄️', color: '#64B5F6', bg: '#E3F2FD', textColor: '#1565C0', tagline: '债券为王 · 现金次之'},
-                    {key: 'recovery', name: '复苏期', icon: '🌱', color: '#81C784', bg: '#E8F5E9', textColor: '#2E7D32', tagline: '股票为王 · 现金贬值'},
-                    {key: 'overheat', name: '过热期', icon: '🔥', color: '#FFB74D', bg: '#FFF3E0', textColor: '#E65100', tagline: '商品为王 · 债券贬值'},
-                    {key: 'stagflation', name: '滞胀期', icon: '⚠️', color: '#F48FB1', bg: '#FCE4EC', textColor: '#C2185B', tagline: '现金为王 · 商品次之'}
-                ];
-                const indicatorList = computed(() => {
-                    const ind = merrillData.value.indicators || {};
-                    return [
-                        {key: 'pmi', label: 'PMI', value: ind.pmi?.toFixed(1), color: ind.pmi >= 50 ? '#43a047' : '#E53935'},
-                        {key: 'gdp', label: 'GDP增速', value: ind.gdp_growth?.toFixed(1) + '%', color: '#43a047'},
-                        {key: 'cpi', label: 'CPI同比', value: ind.cpi?.toFixed(1) + '%', color: ind.cpi > 1.2 ? '#E53935' : '#43a047'},
-                        {key: 'm2', label: 'M2增速', value: ind.m2_growth?.toFixed(1) + '%', color: '#43a047'}
-                    ];
-                });
-                
-                // v2.0: 多维度评分列表（增长/通胀/流动性/就业/外部）
-                const dimensionScoreList = computed(() => {
-                    const scores = merrillData.value.dimension_scores || {};
-                    const dims = [
-                        {key: 'growth', label: '增长'},
-                        {key: 'inflation', label: '通胀'},
-                        {key: 'liquidity', label: '流动性'},
-                        {key: 'employment', label: '就业'},
-                        {key: 'external', label: '外部'}
-                    ];
-                    const levelColors = { '宽松': '#43a047', '中位': '#FF9800', '偏低': '#E53935', '高增长': '#43a047', '承压': '#E53935', '不利': '#E53935' };
-                    return dims.map(d => {
-                        const dim = scores[d.key] || {};
-                        const z = dim.score || 0;
-                        const barWidth = Math.min(100, Math.max(5, (z + 2) * 25)); // z-score -2~2 → 5~100%
-                        const barColor = z >= 0.3 ? '#66BB6A' : z >= -0.3 ? '#FFB74D' : '#EF5350';
-                        const scoreColor = z >= 0 ? '#66BB6A' : '#EF5350';
-                        return {
-                            key: d.key, label: d.label,
-                            scoreStr: z.toFixed(2),
-                            level: dim.level || '—',
-                            barWidth, barColor, scoreColor,
-                            color: levelColors[dim.level] || '#888888'
-                        };
-                    });
-                });
-                
-                // v2.0: 置信度颜色映射
-                const confidenceColor = computed(() => {
-                    const lvl = merrillData.value.confidence?.level || '';
-                    return lvl === '高' ? '#43a047' : lvl === '中' ? '#FF9800' : lvl === '低' ? '#E53935' : 'var(--text-secondary)';
-                });
-                const timelineStages = {
-                    recovery: { 
-                        name: '复苏期', 
-                        icon: '🌱', 
-                        color: '#2E7D32', 
-                        lightColor: '#E8F5E9',
-                        duration: '~18个月', 
-                        order: 0,
-                        period: '2024.9-至今(当前) & 2020-2021',
-                        avgMonths: 18
-                    },
-                    overheat: { 
-                        name: '过热期', 
-                        icon: '🔥', 
-                        color: '#FF9800', 
-                        lightColor: '#FFF3E0',
-                        duration: '~14个月', 
-                        order: 1,
-                        period: '2021 Q3-Q4',
-                        avgMonths: 12
-                    },
-                    stagflation: { 
-                        name: '滞胀期', 
-                        icon: '⚠️', 
-                        color: '#E53935', 
-                        lightColor: '#FFEBEE',
-                        duration: '~12个月', 
-                        order: 2,
-                        period: '2022全年',
-                        avgMonths: 12
-                    },
-                    recession: { 
-                        name: '衰退期', 
-                        icon: '❄️', 
-                        color: '#2196F3', 
-                        lightColor: '#E3F2FD',
-                        duration: '~20个月', 
-                        order: 3,
-                        period: '2023-2024.9',
-                        avgMonths: 18
-                    }
-                };
-                
-                // 完整周期约6年 = 72个月
-                const FULL_CYCLE_MONTHS = 72;
-                
-                // 四阶段完整预设数据（弹窗使用）
-                const merrillStagesPreset = {
-                    recovery: {
-                        name: '复苏期', stage_cn: '复苏', icon: '🌱',
-                        description: '经济增长加速，通胀仍在低位，企业盈利改善，是股票投资的黄金时期',
-                        color: '#27AE60', bg_color: '#E8F8F0',
-                        criteria: { growth: '经济增长上行', inflation: '通胀下行' },
-                        characteristics: {
-                            gdp: 'GDP增速回升，环比改善明显',
-                            corporate: '企业盈利触底回升，利润率持续改善',
-                            inventory: '库存去化完成，进入主动补库存周期',
-                            employment: '就业市场回暖，失业率持续下降',
-                            policy: '货币政策保持宽松，财政政策积极发力'
-                        },
-                        allocation: {
-                            stock: { rank: 1, advice: '超配，首选成长股和大消费板块', expected_return: '高' },
-                            bond: { rank: 2, advice: '标配，关注可转债和高等级信用债', expected_return: '中高' },
-                            commodity: { rank: 4, advice: '低配观望，仅关注工业金属品种', expected_return: '低' },
-                            cash: { rank: 3, advice: '保持适度流动性，等待加仓机会', expected_return: '中' }
-                        },
-                        sector_advice: ['优先配置：食品饮料、医药生物、新能源', '其次关注：TMT、高端制造、社服零售', '谨慎配置：周期品、煤炭钢铁、金融地产'],
-                        risks: ['政策转向风险：通胀超预期回升可能导致货币政策收紧', '复苏不及预期：需求恢复力度弱于市场预期', '海外市场波动：美联储加息引发全球流动性收紧'],
-                        historical_stats: { avg_duration_months: 18, stock_avg_return: 0.25, bond_avg_return: 0.06, best_sector: '消费/TMT' },
-                        case_studies: [
-                            '2024年9月至今：政策大转向（降准降息组合拳），新一轮复苏周期（当前阶段，已持续21个月）',
-                            '2020年Q2-2021年Q2：疫后V型反弹复苏（约12个月）',
-                            '2019年：贸易战缓和，疫前温和复苏（约12个月）'
-                        ],
-                        _lastPeriod: { start: '2020-04', end: '2021-06', duration: '~14个月', note: '疫后V型反弹' }
-                    },
-                    overheat: {
-                        name: '过热期', stage_cn: '过热', icon: '🔥',
-                        description: '经济增长放缓但仍处高位，通胀持续上行，大宗商品是最佳选择',
-                        color: '#F39C12', bg_color: '#FEF5E7',
-                        criteria: { growth: '经济增长上行', inflation: '通胀上行' },
-                        characteristics: {
-                            gdp: 'GDP增速仍处高位但边际放缓',
-                            corporate: '企业盈利峰值，增速开始筑顶回落',
-                            inventory: '主动加库存，产销两旺，价格上涨',
-                            employment: '充分就业，工资上涨压力开始显现',
-                            policy: '货币政策开始收紧，进入加息周期'
-                        },
-                        allocation: {
-                            stock: { rank: 2, advice: '标配，转向周期股和价值蓝筹', expected_return: '中高' },
-                            bond: { rank: 4, advice: '低配，缩短久期，防御为主', expected_return: '低' },
-                            commodity: { rank: 1, advice: '超配，首选工业金属和能源品', expected_return: '高' },
-                            cash: { rank: 3, advice: '保持流动性以备回调机会', expected_return: '中' }
-                        },
-                        sector_advice: ['优先配置：有色金属、煤炭、石油石化', '其次关注：银行、地产、建筑建材', '谨慎配置：成长股、高估值科技板块'],
-                        risks: ['通胀超预期：上游价格上涨挤压中下游利润', '政策过快收紧：引发经济硬着陆风险', '企业盈利拐点确认后的估值下杀'],
-                        historical_stats: { avg_duration_months: 14, stock_avg_return: 0.12, bond_avg_return: 0.02, best_sector: '周期/资源品' },
-                        case_studies: [
-                            '2021年Q3-Q4：全球大放水，PPI峰值13.5%，周期品暴涨（约6个月）',
-                            '2007年：经济全面过热，CPI曾达8.7%（约12个月）'
-                        ],
-                        _lastPeriod: { start: '2021-07', end: '2021-12', duration: '~6个月', note: 'PPI峰值13.5%' }
-                    },
-                    stagflation: {
-                        name: '滞胀期', stage_cn: '滞胀', icon: '⚠️',
-                        description: '经济增长明显放缓，通胀高企，现金为王，防御型资产表现较好',
-                        color: '#E74C3C', bg_color: '#FDF2F2',
-                        criteria: { growth: '经济增长下行', inflation: '通胀上行' },
-                        characteristics: {
-                            gdp: 'GDP增速明显回落，下行压力持续加大',
-                            corporate: '企业盈利增速大幅下滑，甚至负增长',
-                            inventory: '被动加库存，去库存压力开始显现',
-                            employment: '就业市场开始恶化，裁员潮出现',
-                            policy: '政策两难：控通胀还是稳增长？'
-                        },
-                        allocation: {
-                            stock: { rank: 4, advice: '低配，仅必选消费等高防御板块', expected_return: '低/负' },
-                            bond: { rank: 2, advice: '标配，票息策略为主', expected_return: '中' },
-                            commodity: { rank: 2, advice: '标配，农业品和贵金属避险', expected_return: '中' },
-                            cash: { rank: 1, advice: '超配，现金为王，等待黎明', expected_return: '高（相对）' }
-                        },
-                        sector_advice: ['优先配置：必选消费、医药、公用事业', '其次关注：黄金、农林牧渔、军工', '谨慎配置：周期成长、高弹性科技板块'],
-                        risks: ['滞胀深化风险：经济下行+通胀高企的双重压力', '企业信用风险：盈利下滑+融资成本上升共振', '政策失误风险：紧缩过度或宽松不及预期'],
-                        historical_stats: { avg_duration_months: 12, stock_avg_return: -0.10, bond_avg_return: 0.03, best_sector: '必选消费/防御' },
-                        case_studies: [
-                            '2022年：美联储加息+俄乌战争+国内封控，典型滞胀环境（约12个月）',
-                            '2011-2012年：四万亿后遗症，高通胀+增速下滑（约12个月）'
-                        ],
-                        _lastPeriod: { start: '2022-01', end: '2022-12', duration: '~12个月', note: '封控+全球加息' }
-                    },
-                    recession: {
-                        name: '衰退期', stage_cn: '衰退', icon: '❄️',
-                        description: '经济增长停滞甚至负增长，通胀见顶回落，债券是最佳配置选择',
-                        color: '#3498DB', bg_color: '#EBF5FB',
-                        criteria: { growth: '经济增长下行', inflation: '通胀下行' },
-                        characteristics: {
-                            gdp: 'GDP增速创阶段新低，甚至出现负增长',
-                            corporate: '企业亏损面扩大，盈利在底部徘徊',
-                            inventory: '主动去库存，价格战激烈，现金为王',
-                            employment: '失业率明显上升，就业压力巨大',
-                            policy: '货币政策转向宽松，强力刺激政策出台'
-                        },
-                        allocation: {
-                            stock: { rank: 3, advice: '标配，关注早周期和政策受益板块', expected_return: '中' },
-                            bond: { rank: 1, advice: '超配，利率债+高等级信用债', expected_return: '高' },
-                            commodity: { rank: 4, advice: '低配，仅黄金有避险价值', expected_return: '低' },
-                            cash: { rank: 2, advice: '保持流动性，左侧布局，等待拐点', expected_return: '中' }
-                        },
-                        sector_advice: ['优先配置：债券（利率债为主）、银行', '其次关注：地产、基建等政策受益板块', '谨慎配置：大宗商品、强周期板块'],
-                        risks: ['衰退超预期：经济下滑幅度大于市场预期', '政策传导不畅：宽货币到宽信用的时滞拉长', '尾部风险暴露：信用违约事件频发'],
-                        historical_stats: { avg_duration_months: 24, stock_avg_return: 0.05, bond_avg_return: 0.10, best_sector: '金融/债券' },
-                        case_studies: [
-                            '2022年初-2024年9月：地产深度调整+疫情封控+通缩压力（约33个月，本轮复苏前一阶段）',
-                            '2018年：去杠杆+中美贸易战双杀（约12个月）',
-                            '2020年Q1：新冠疫情冲击（约3个月）'
-                        ],
-                        _lastPeriod: { start: '2022-01', end: '2024-09', duration: '~33个月', note: '地产危机+通缩' }
-                    }
-                };
-                
-                // ===== 美林时钟详情弹窗 =====
-                const showMerrillDetail = ref(false);
-                const merrillDetailData = ref({});
-                
-                // ===== 时钟角度计算 =====
-                function getStageAngle() {
-                    const angles = {
-                        recovery: Math.PI / 4,
-                        overheat: 3 * Math.PI / 4,
-                        stagflation: 5 * Math.PI / 4,
-                        recession: 7 * Math.PI / 4
-                    };
-                    return angles[merrillData.value.stage] || 0;
-                }
-                
-                // ===== 周期进度计算（动态从后端读取）=====
-                function getCycleProgress() {
-                    return merrillData.value?.timing?.progress_percent || 0;
-                }
-                
-                // 获取当前阶段已进行的月数
-                function getCurrentStageMonths() {
-                    return merrillData.value?.timing?.duration_months || 0;
-                }
-                
-                // 获取当前阶段预测总月数
-                function getStageTotalMonths() {
-                    return merrillData.value?.timing?.avg_duration_months || 18;
-                }
-                
-                // ===== 判断阶段是否完成 =====
-                function isStageCompleted(stage) {
-                    const currentOrder = timelineStages[merrillData.value.stage]?.order || 0;
-                    const targetOrder = timelineStages[stage]?.order || 0;
-                    return targetOrder < currentOrder;
-                }
-                
-                // 特征标签映射
-                const charLabels = {
-                    gdp: 'GDP增长',
-                    corporate: '企业盈利',
-                    inventory: '库存周期',
-                    employment: '就业市场',
-                    policy: '货币政策'
-                };
-                
-                // 资产名称映射
-                const assetNames = {
-                    stock: '📈 股票',
-                    bond: '📜 债券',
-                    commodity: '🛢️ 大宗商品',
-                    cash: '💰 现金'
-                };
-                
-                // 获取特征标签
-                function getCharLabel(key) {
-                    return charLabels[key] || key;
-                }
-                
-                // 获取资产名称
-                function getAssetName(key) {
-                    return assetNames[key] || key;
-                }
-                
-                // 获取排名颜色
-                function getRankColor(rank) {
-                    const colors = ['#43a047', '#f57c00', '#1976d2', '#757575'];
-                    return colors[rank - 1] || colors[3];
-                }
-                
+                // v3.0: 美林时钟模块 - 从 merrill.js 加载
+                const merrill = useMerrillClock();
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh } = merrill;
                 // ===== 飞书配置数据 =====
                 const feishuConfig = ref({
                     webhook_url: '',
@@ -3551,105 +3257,6 @@
                     currentKlinePeriod.value = period;
                     await loadIndexKline(period);
                 }
-                async function fetchMerrillClock() {
-                    try {
-                        const res = await fetch('/api/market/merrill-clock');
-                        const data = await res.json();
-                        // 合并本地预设默认值和API返回数据
-                        const stage = data.stage || 'recovery';
-                        const preset = merrillStagesPreset[stage] || merrillStagesPreset.recovery;
-                        merrillData.value = {
-                            ...preset,
-                            ...data,
-                            stage_cn: data.stage_cn || preset.stage_cn,
-                            stage_name: data.stage_name || preset.name,
-                            name: data.name || preset.name
-                        };
-                        merrillClockLastUpdated.value = new Date().toLocaleTimeString('zh-CN');
-                        
-                        // v2.0: 阶段变更检测与通知
-                        if (merrillPrevStage.value && merrillPrevStage.value !== stage) {
-                            const stageNames = { recovery: '复苏期', expansion: '过热期', stagflation: '滞胀期', recession: '衰退期' };
-                            const oldName = stageNames[merrillPrevStage.value] || merrillPrevStage.value;
-                            const newName = stageNames[stage] || stage;
-                            ElementPlus.ElMessage({
-                                message: `🔔 美林时钟阶段切换：${oldName} → ${newName}`,
-                                type: 'warning',
-                                duration: 6000,
-                                showClose: true
-                            });
-                        }
-                        merrillPrevStage.value = stage;
-                    } catch (e) {
-                        console.error('获取美林时钟失败，使用本地默认:', e);
-                        // 失败时使用本地预设数据
-                        merrillData.value = {
-                            ...merrillStagesPreset.recovery,
-                            indicators: { pmi: 51.2, gdp_growth: 5.2, cpi: 0.8, m2_growth: 10.5 }
-                        };
-                    }
-                }
-                
-                // ===== 显示阶段详情弹窗 =====
-                async function showStageDetail(stage) {
-                    showMerrillDetail.value = true;
-                    // 锁定背景滚动（仅 overflow:hidden，不破坏 body 的 CSS 背景/主题色）
-                    document.documentElement.style.overflow = 'hidden';
-                    document.body.style.overflow = 'hidden';
-                    // 优先使用前端预设数据（确保弹窗有内容）
-                    merrillDetailData.value = merrillStagesPreset[stage] || merrillStagesPreset.recovery;
-                    
-                    // ★ 注入前端特有的实时数据（API 不提供这些字段）
-                    const isActive = merrillData.value?.stage === stage;
-                    merrillDetailData.value._isCurrent = isActive;
-                    if (isActive && merrillData.value) {
-                        merrillDetailData.value._nextPrediction = merrillData.value.next_stage_prediction;
-                        merrillDetailData.value._confidence = merrillData.value.confidence;
-                        merrillDetailData.value._stage = merrillData.value.stage;
-                        merrillDetailData.value._dimensions = merrillData.value.dimension_scores;
-                    }
-                    
-                    // 🔥 弹窗打开后强制重新渲染样式（解决布局问题）
-                    setTimeout(() => {
-                        document.querySelectorAll('.timeline-segment').forEach(el => {
-                            el.style.flex = '1 1 0';
-                            el.style.width = '0';
-                            el.style.minWidth = '0';
-                        });
-                        document.body.style.display = 'none';
-                        setTimeout(() => { document.body.style.display = ''; }, 10);
-                    }, 100);
-                    
-                    // 后台异步请求API更新（含 _is_current, _current_timing, _lastPeriod 等动态数据）
-                    try {
-                        const res = await fetch(`/api/market/merrill-clock/stage/${stage}`);
-                        const data = await res.json();
-                        if (data.success && data.data) {
-                            // 合并API数据（保留预设字段 + API 覆盖）
-                            const apiData = { ...merrillStagesPreset[stage], ...data.data };
-                            // ★ 映射后端 snake_case → 前端 camelCase
-                            if (apiData._is_current !== undefined) {
-                                apiData._isCurrent = apiData._is_current;
-                            }
-                            if (apiData._current_timing) {
-                                apiData._currentTiming = apiData._current_timing;
-                            }
-                            // 保留前端注入的实时数据（API 不提供）
-                            if (merrillDetailData.value._nextPrediction)
-                                apiData._nextPrediction = merrillDetailData.value._nextPrediction;
-                            if (merrillDetailData.value._confidence)
-                                apiData._confidence = merrillDetailData.value._confidence;
-                            if (merrillDetailData.value._stage)
-                                apiData._stage = merrillDetailData.value._stage;
-                            if (merrillDetailData.value._dimensions)
-                                apiData._dimensions = merrillDetailData.value._dimensions;
-                            merrillDetailData.value = apiData;
-                        }
-                    } catch (e) {
-                        console.log('使用本地预设数据，API不可用');
-                    }
-                }
-                
                 // ===== 测试飞书Webhook =====
                 async function testFeishuWebhook() {
                     if (!feishuConfig.value.webhook_url) {
@@ -5070,16 +4677,6 @@ const allMenuDefs = [
                 const watchlistResults = ref([]);
                 const watchlistSearching = ref(false);
                 
-                // v2.0: 美林时钟配置
-                const merrillClockConfig = ref({
-                    autoRefresh: true,
-                    refreshInterval: 300  // 秒
-                });
-                const merrillClockLastUpdated = ref('');
-                const merrillReevalResult = ref('');
-                const merrillReevalLoading = ref(false);
-                const merrillPrevStage = ref('');  // v2.0: 阶段变更检测
-
                 // v1.8.0: 数据刷新配置
                 const dataRefreshConfig = ref({
                     scheduled_enabled: false,
@@ -5484,45 +5081,6 @@ const allMenuDefs = [
                         const data = await res.json();
                         watchlistResults.value = (data.results || []).filter(r => !watchlistCodes.value.has(r.code));
                     } catch (e) {} finally { watchlistSearching.value = false; }
-                }
-
-                // v2.0: 保存美林时钟配置
-                function saveMerrillClockConfig() {
-                    localStorage.setItem('merrill_clock_config', JSON.stringify({
-                        autoRefresh: merrillClockConfig.value.autoRefresh,
-                        refreshInterval: merrillClockConfig.value.refreshInterval
-                    }));
-                    // 重启定时器
-                    if (merrillClockConfig.value.autoRefresh) {
-                        clearInterval(merrillRefreshTimer);
-                        merrillRefreshTimer = setInterval(fetchMerrillClock, merrillClockConfig.value.refreshInterval * 1000);
-                    } else {
-                        clearInterval(merrillRefreshTimer);
-                    }
-                    ElementPlus.ElMessage.success('美林时钟配置已保存');
-                }
-                
-                // v2.0: 手动触发重评估
-                async function doMerrillReevaluate() {
-                    merrillReevalLoading.value = true;
-                    merrillReevalResult.value = '';
-                    try {
-                        const res = await fetch('/api/market/merrill-clock/reevaluate', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.success) {
-                            merrillReevalResult.value = '重评估完成：' + (data.stage_name || data.stage);
-                            await fetchMerrillClock();
-                            ElementPlus.ElMessage.success('重评估完成');
-                        } else {
-                            merrillReevalResult.value = (data.message || '重评估失败');
-                            ElementPlus.ElMessage.error(data.message || '重评估失败');
-                        }
-                    } catch (e) {
-                        merrillReevalResult.value = '请求失败';
-                        ElementPlus.ElMessage.error('重评估请求失败');
-                    } finally {
-                        merrillReevalLoading.value = false;
-                    }
                 }
 
                 // v1.8.0: 加载数据刷新配置
@@ -6764,8 +6322,11 @@ const allMenuDefs = [
                             2000, 'themes'
                         ),
                         withTimeout(fetchMarketData(), 3000, 'marketData'),
-                        withTimeout(fetchMerrillClock(), 3000, 'merrillClock'),
-                    ]);
+                        withTimeout(fetchMerrillStages(), 2000, 'merrillStages'),
+                    ]).then(() => {
+                        // 阶段配置加载完成后，再加载时钟数据
+                        withTimeout(fetchMerrillClock(), 3000, 'merrillClock');
+                    });
                     loadAiConfig();
                     loadAiModels();
 
@@ -6817,29 +6378,13 @@ const allMenuDefs = [
                     console.log('[DEBUG] onMounted complete');
                 });
                 
-                // v2.0: 美林时钟定时刷新（每5分钟）
-                let merrillRefreshTimer;
                 // v1.11: 策略总览定时刷新（每5分钟）
                 let strategyPollTimer;
                 
-                // 加载已保存的配置
-                const savedConfig = localStorage.getItem('merrill_clock_config');
-                if (savedConfig) {
-                    try {
-                        const cfg = JSON.parse(savedConfig);
-                        merrillClockConfig.value = { ...merrillClockConfig.value, ...cfg };
-                    } catch(e) {}
-                }
-                
-                if (merrillClockConfig.value.autoRefresh) {
-                    merrillRefreshTimer = setInterval(() => {
-                        console.log('[美林时钟] 定时刷新...');
-                        fetchMerrillClock();
-                    }, merrillClockConfig.value.refreshInterval * 1000);
-                }
+                // v3.0: 美林时钟自动刷新（由 merrill.js 模块管理）
+                startAutoRefresh();
                 
                 onUnmounted(() => {
-                    if (merrillRefreshTimer) clearInterval(merrillRefreshTimer);
                     if (strategyPollTimer) clearInterval(strategyPollTimer);
                 });
 

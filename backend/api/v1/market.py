@@ -28,6 +28,13 @@ async def get_merrill_clock():
     return merrill_clock.determine_stage()
 
 
+@router.get("/merrill-clock/stages")
+async def get_merrill_stages():
+    """v3.0: 获取美林时钟四阶段配置（统一数据源）"""
+    from merrill_clock import STAGES
+    return {"success": True, "data": STAGES}
+
+
 @router.get("/merrill-clock/stage/{stage_name}")
 async def get_merrill_stage_detail(stage_name: str):
     """获取指定经济周期阶段的详细信息"""

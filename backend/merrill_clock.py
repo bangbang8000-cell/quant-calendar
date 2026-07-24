@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-美林时钟模块 v2.0
-多维度经济周期判断 + 精确周期时间跟踪 + 动态重评估
+美林时钟模块 v3.0
+多维度经济周期判断 + 精确周期时间跟踪 + 动态重评估 + AKShare真实数据
 """
 import json
 import os
@@ -264,6 +264,128 @@ class MerrillClock:
         except Exception as e:
             logger.warning(f"保存快照失败: {e}")
     
+    def _fetch_real_macro_data(self):
+        """v3.0: 从 AKShare 获取真实宏观数据，失败返回 None"""
+        try:
+            import akshare as ak
+            
+            result = {}
+            
+            # === PMI（制造业采购经理指数） ===
+            try:
+                pmi_df = ak.macro_china_pmi()
+                if pmi_df is not None and len(pmi_df) > 0:
+                    latest = pmi_df.iloc[-1]
+                    pmi_val = float(latest.get('制造业', 0))
+                    non_pmi_val = float(latest.get('非制造业', 0)) if '非制造业' in latest.index else 0
+                    if pmi_val > 0:
+                        result['pmi'] = pmi_val
+                    if non_pmi_val > 0:
+                        result['pmi_non_manufacturing'] = non_pmi_val
+            except Exception as e:
+                logger.warning(f"AKShare PMI 获取失败: {e}")
+            
+            # === CPI ===
+            try:
+                cpi_df = ak.macro_china_cpi_yearly()
+                if cpi_df is not None and len(cpi_df) > 0:
+                    latest = cpi_df.iloc[-1]
+                    result['cpi'] = float(latest.get('全国', 0))
+            except Exception as e:
+                logger.warning(f"AKShare CPI 获取失败: {e}")
+            
+            # === PPI ===
+            try:
+                ppi_df = ak.macro_china_ppi_yearly()
+                if ppi_df is not None and len(ppi_df) > 0:
+                    latest = ppi_df.iloc[-1]
+                    result['ppi'] = float(latest.get('全国', 0))
+            except Exception as e:
+                logger.warning(f"AKShare PPI 获取失败: {e}")
+            
+            # === M2 货币供应量 ===
+            try:
+                m2_df = ak.macro_china_money_supply()
+                if m2_df is not None and len(m2_df) > 0:
+                    latest = m2_df.iloc[-1]
+                    m2_yoy = float(latest.get('M2同比', latest.get('M2', 0)))
+                    if m2_yoy > 0:
+                        result['m2_growth'] = m2_yoy
+            except Exception as e:
+                logger.warning(f"AKShare M2 获取失败: {e}")
+            
+            # === GDP ===
+            try:
+                gdp_df = ak.macro_china_gdp()
+                if gdp_df is not None and len(gdp_df) > 0:
+                    latest = gdp_df.iloc[-1]
+                    result['gdp_growth'] = float(latest.get('国内生产总值同比增长', 0))
+            except Exception as e:
+                logger.warning(f"AKShare GDP 获取失败: {e}")
+            
+            # === 工业增加值 ===
+            try:
+                ind_df = ak.macro_china_industrial_production()
+                if ind_df is not None and len(ind_df) > 0:
+                    latest = ind_df.iloc[-1]
+                    result['industrial_added'] = float(latest.get('工业增加值同比增长', 0))
+            except Exception as e:
+                logger.warning(f"AKShare 工业增加值 获取失败: {e}")
+            
+            # === 贸易差额（出口/进口） ===
+            try:
+                trade_df = ak.macro_china_trade_balance()
+                if trade_df is not None and len(trade_df) > 0:
+                    latest = trade_df.iloc[-1]
+                    exports = float(latest.get('出口', latest.get('出口金额', 0)))
+                    imports = float(latest.get('进口', latest.get('进口金额', 0)))
+                    if exports > 0:
+                        # 尝试计算同比增长（需要前一月数据）
+                        if len(trade_df) >= 2:
+                            prev = trade_df.iloc[-2]
+                            prev_exports = float(prev.get('出口', prev.get('出口金额', 0)))
+                            prev_imports = float(prev.get('进口', prev.get('进口金额', 0)))
+                            if prev_exports > 0:
+                                result['exports_growth'] = round((exports - prev_exports) / prev_exports * 100, 1)
+                            if prev_imports > 0:
+                                result['imports_growth'] = round((imports - prev_imports) / prev_imports * 100, 1)
+            except Exception as e:
+                logger.warning(f"AKShare 贸易数据 获取失败: {e}")
+            
+            # === 社会融资规模 ===
+            try:
+                sf_df = ak.macro_china_shrzgm()
+                if sf_df is not None and len(sf_df) > 0:
+                    latest = sf_df.iloc[-1]
+                    result['social_financing'] = float(latest.get('社会融资规模存量同比增长', 0))
+            except Exception as e:
+                logger.warning(f"AKShare 社融 获取失败: {e}")
+            
+            # === 城镇调查失业率 ===
+            try:
+                unemp_df = ak.macro_china_urban_unemployment()
+                if unemp_df is not None and len(unemp_df) > 0:
+                    latest = unemp_df.iloc[-1]
+                    result['surveyed_unemployment'] = float(latest.get('城镇调查失业率', 0))
+            except Exception as e:
+                logger.warning(f"AKShare 失业率 获取失败: {e}")
+            
+            if result:
+                result['_data_source'] = 'AKShare实时数据'
+                result['_data_note'] = '数据来源于国家统计局/央行公开数据，通过AKShare获取'
+                logger.info(f"✅ AKShare 宏观数据获取成功: {len(result)}项指标")
+                return result
+            else:
+                logger.warning("AKShare 未获取到任何有效数据")
+                return None
+                
+        except ImportError:
+            logger.warning("AKShare 未安装，使用默认数据")
+            return None
+        except Exception as e:
+            logger.error(f"AKShare 宏观数据获取异常: {e}")
+            return None
+    
     def get_economic_indicators(self):
         """获取经济指标（多维度采集）"""
         today = datetime.now()
@@ -308,8 +430,16 @@ class MerrillClock:
             '_data_note': '标注为估计值的数据为基于公开信息与模型推算，非官方精确值'
         }
         
-        # === v2.1: 应用指标时间漂移（模拟真实经济数据缓慢变化） ===
-        indicators = self._apply_indicator_drift(indicators)
+        # === v3.0: 优先从 AKShare 获取真实数据 ===
+        real_data = self._fetch_real_macro_data()
+        if real_data:
+            # 合并真实数据（保留默认值中 AKShare 未覆盖的字段）
+            indicators.update(real_data)
+            logger.info("美林时钟: 已使用 AKShare 真实宏观数据")
+        else:
+            # === v2.1: 应用指标时间漂移（模拟真实经济数据缓慢变化） ===
+            indicators = self._apply_indicator_drift(indicators)
+            logger.info("美林时钟: 使用默认数据+时间漂移")
         
         self.cache[cache_key] = {'fetch_time': today.isoformat(), 'data': indicators}
         self._save_cache()

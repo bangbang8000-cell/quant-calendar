@@ -2030,42 +2030,44 @@
         .market-price-row { justify-content: space-between; }
     }
     
-    /* ===== 美林时钟样式 ===== */
-    .merrill-clock-card { background: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%); border: 1px solid var(--border-light); border-radius: 18px; padding: 24px 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    .merrill-clock-header { text-align: center; margin-bottom: 16px; }
-    .merrill-clock-title { font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .merrill-clock-container { position: relative; width: 280px; height: 280px; margin: 0 auto 30px auto; }
-    .merrill-clock-svg { width: 100%; height: 100%; }
-    .merrill-clock-info { margin-top: 16px; text-align: center; }
+    /* ===== 美林时钟 v3.0 样式 ===== */
     
-    /* 可点击的象限 */
-    .stage-quadrant { cursor: pointer; transition: all 0.3s ease; }
-    .stage-quadrant:hover { opacity: 0.8; filter: brightness(1.1); }
-    .stage-label { cursor: pointer; transition: all 0.2s ease; }
-    .stage-label:hover { font-size: var(--font-sm); font-weight: var(--font-bold); }
+    /* 主卡片 */
+    .merrill-main-card { overflow: hidden; }
     
-    /* 时间信息 */
-    .merrill-timing { margin-top: 16px; padding: 12px; background: var(--badge-gold-bg); border-radius: 10px; }
-    .timing-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: var(--font-base); }
-    .timing-label { color: var(--text-secondary); }
-    .timing-value { font-weight: var(--font-semibold); color: var(--text-primary); }
+    /* 头部 */
+    .merrill-main-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 16px;
+    }
+    .merrill-main-title {
+        font-size: var(--font-md); font-weight: var(--font-bold);
+        color: var(--text-primary); display: flex; align-items: center; gap: 6px;
+    }
+    .merrill-stage-badge {
+        padding: 3px 12px; border-radius: 12px; color: white;
+        font-size: var(--font-sm); font-weight: var(--font-semibold);
+    }
     
-    /* 进度条 */
-    .merrill-progress { margin-top: 12px; }
-    .progress-track { width: 100%; height: 8px; background: var(--bg-hover); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
-    .progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-    .progress-text { font-size: var(--font-sm); color: var(--text-secondary); text-align: right; }
+    /* 四象限时钟 */
+    .merrill-clock-wrapper {
+        display: flex; justify-content: center;
+        margin-bottom: 18px;
+    }
+    .merrill-clock-svg {
+        width: min(280px, 100%); height: auto;
+        max-height: 280px;
+    }
+    .clock-quadrant {
+        cursor: pointer; transition: opacity var(--transition-base);
+    }
+    .clock-quadrant:hover { opacity: 0.85; }
     
-    /* 经济指标网格 */
-    .merrill-indicators { margin-top: 16px; padding: 16px; background: var(--bg-card-header); border-radius: 12px; }
-    .indicators-title { font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 12px; }
-    .indicators-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .indicator-item { text-align: center; padding: 10px; background: var(--bg-card); border-radius: 8px; }
-    .indicator-name { font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 4px; }
-    .indicator-value { font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); }
-    .indicator-value.positive { color: var(--el-success); }
-    
-    /* 美林时钟四阶段卡片边框 */
+    /* 阶段卡片网格 */
+    .merrill-stage-grid {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 8px; margin-bottom: 14px;
+    }
     .merrill-stage-card {
         background: var(--bg-card);
         border: 1.5px solid var(--card-border, #e0e4ea);
@@ -2077,148 +2079,97 @@
     }
     .merrill-stage-card:hover {
         border-color: var(--primary-color, #b0b8c8);
-        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
         transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .merrill-stage-card.active {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+    .merrill-stage-icon { font-size: 24px; margin-bottom: 4px; }
+    .merrill-stage-name { font-size: var(--font-base); font-weight: var(--font-semibold); margin-bottom: 2px; }
+    .merrill-stage-desc { font-size: var(--font-xs); color: var(--text-tertiary); }
+    
+    /* 阶段描述 */
+    .merrill-stage-description {
+        font-size: var(--font-base); color: var(--text-secondary);
+        line-height: 1.6; text-align: center; padding: 8px 0;
     }
     
-    /* 🎨 专业深蓝主题时钟样式 */
-    .merrill-clock-container {
-        position: relative;
-        width: 300px;
-        height: 300px;
-        margin: 0 auto 30px auto;
-        perspective: 1000px;
+    /* 时间面板 */
+    .merrill-timing-panel {
+        margin-top: 12px; padding: 12px;
+        background: var(--badge-gold-bg); border-radius: 10px;
     }
-    .merrill-clock-svg {
-        width: 100%;
-        height: 100%;
-        filter: drop-shadow(0 6px 20px rgba(41, 98, 164, 0.15));
+    .merrill-timing-header {
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: var(--font-base); margin-bottom: 6px;
     }
-    .stage-quadrant {
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        transform-origin: center;
+    .merrill-timing-date { color: var(--text-secondary); }
+    .merrill-timing-maturity {
+        font-weight: var(--font-semibold); font-size: 12px;
+        padding: 1px 8px; border-radius: 8px; background: var(--bg-card);
     }
-    .stage-quadrant:hover {
-        filter: brightness(1.1);
+    .merrill-timing-info {
+        display: flex; justify-content: space-between;
+        font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 7px;
     }
-    .stage-quadrant.current-stage {
-        animation: stagePulse 2.5s ease-in-out infinite;
+    .merrill-timing-prediction {
+        color: var(--el-warning); font-weight: var(--font-semibold);
     }
-    @keyframes stagePulse {
-        0%, 100% { opacity: 0.9; }
-        50% { opacity: 1; filter: brightness(1.05) saturate(1.1); }
+    .merrill-progress-track {
+        width: 100%; height: 8px; background: var(--border-light);
+        border-radius: 4px; overflow: hidden;
     }
-    /* 指针动画 */
-    .clock-hand {
-        transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-        transform-origin: 110px 110px;
+    .merrill-progress-bar {
+        height: 100%; border-radius: 4px; transition: width 0.5s ease;
     }
-    /* 当前徽章 */
-    .current-badge {
-        animation: badgeFloat 3s ease-in-out infinite;
-    }
-    @keyframes badgeFloat {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-3px); }
+    .merrill-progress-footer {
+        display: flex; justify-content: space-between;
+        font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;
     }
     
-    /* ⏱️ 周期时间轴 - 专业蓝金配色 */
-    .cycle-timeline {
-        margin-top: 20px;
-        padding: 18px;
-        background: linear-gradient(135deg, var(--bg-stripe) 0%, var(--bg-hover) 100%);
-        border-radius: 14px;
-        border: 1px solid var(--border-light);
+    /* 多维度评分 */
+    .merrill-dimension-panel {
+        margin-top: 14px; padding: 12px;
+        background: var(--bg-card-header); border-radius: 10px;
     }
-    .timeline-title {
-        font-size: var(--font-base);
-        font-weight: var(--font-bold);
-        color: var(--text-primary);
-        text-align: center;
-        margin-bottom: 14px;
-        letter-spacing: 0.5px;
+    .merrill-dimension-title {
+        font-size: var(--font-base); font-weight: var(--font-semibold);
+        color: var(--text-primary); margin-bottom: 10px;
     }
-    .timeline-track {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 16px;
+    .merrill-dimension-row {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 6px; font-size: 12px;
     }
-    .timeline-segment {
-        flex: 1 1 0;  /* 强制等宽 */
-        min-width: 0;
-        padding: 14px 10px;
-        border-radius: 12px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-        opacity: 0.6;
-        background: linear-gradient(135deg, var(--bg-stripe) 0%, var(--bg-hover) 100%);
+    .merrill-dim-label { width: 40px; flex-shrink: 0; color: var(--text-secondary); }
+    .merrill-dim-bar-track {
+        flex: 1; height: 10px; background: var(--border-light);
+        border-radius: 5px; overflow: hidden;
     }
-    .timeline-segment:hover {
-        transform: translateY(-2px);
-        opacity: 1;
-        box-shadow: 0 6px 20px rgba(41, 98, 164, 0.2);
+    .merrill-dim-bar {
+        height: 100%; border-radius: 5px; transition: width 0.5s ease;
     }
-    .timeline-segment.active {
-        opacity: 1;
-        transform: scale(1.05);
-        box-shadow: 0 6px 22px rgba(41, 98, 164, 0.35);
-        border-color: var(--primary-color);
-        animation: activeSegment 2.5s ease-in-out infinite;
+    .merrill-dim-score {
+        width: 35px; text-align: right; font-weight: var(--font-medium);
     }
-    @keyframes activeSegment {
-        0%, 100% { box-shadow: 0 6px 22px rgba(41, 98, 164, 0.35); }
-        50% { box-shadow: 0 6px 28px rgba(41, 98, 164, 0.5); }
-    }
-    .timeline-segment.completed {
-        opacity: 0.35;
-    }
-    .segment-icon { font-size: var(--font-lg); margin-bottom: 4px; }
-    .segment-name { font-size: var(--font-xs); font-weight: var(--font-bold); margin-bottom: 2px; color: var(--text-primary); }
-    .segment-period { font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 2px; font-weight: var(--font-medium); }
-    .segment-duration { font-size: var(--font-xs); opacity: 0.8; color: var(--text-tertiary); }
-    
-    .timeline-progress {
-        margin-top: 10px;
-    }
-    .progress-bar-track {
-        width: 100%;
-        height: 8px;
-        background: linear-gradient(90deg, var(--bg-hover) 0%, var(--border-base) 100%);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 10px;
-    }
-    .progress-bar-fill {
-        height: 100%;
-        background: var(--gradient-brand);
-        border-radius: 4px;
-        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-    }
-    .progress-bar-fill::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: -2px;
-        width: 12px;
-        height: 12px;
-        background: var(--bg-card);
-        border: 2px solid var(--primary-color);
-        border-radius: 50%;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .progress-info {
-        display: flex;
-        justify-content: space-between;
+    .merrill-dim-level {
+        width: 36px; text-align: right; font-weight: var(--font-medium);
         font-size: var(--font-xs);
-        color: var(--text-secondary);
-        font-weight: var(--font-medium);
     }
     
-    .merrill-hint { margin-top: 12px; font-size: var(--font-sm); color: var(--color-gold); text-align: center; font-weight: var(--font-medium); }
+    /* 置信度面板 */
+    .merrill-confidence-panel {
+        margin-top: 10px; padding: 10px 12px;
+        background: var(--bg-card-header); border-radius: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .merrill-confidence-left { display: flex; align-items: center; gap: 6px; }
+    .merrill-confidence-right { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+    .merrill-confidence-label { font-size: 12px; color: var(--text-secondary); }
+    .merrill-confidence-value { font-weight: var(--font-semibold); font-size: var(--font-base); }
+    .merrill-confidence-prediction { font-weight: var(--font-semibold); color: var(--el-warning); }
+    .merrill-confidence-prob { color: var(--text-secondary); }
     
     /* 🎨 美林时钟详情弹窗样式 v2.0 - CSS变量驱动 */
     .merrill-detail-dialog .el-dialog__header {
@@ -2315,10 +2266,6 @@
         .characteristics-grid, .allocation-grid { grid-template-columns: 1fr; }
         .stats-grid { grid-template-columns: repeat(2, 1fr); }
         .merrill-detail-dialog .el-dialog { width: 95% !important; }
-        .timeline-track { flex-direction: column; }
-        .timeline-segment { display: flex; align-items: center; gap: 12px; text-align: left; }
-        .segment-icon, .segment-name, .segment-period, .segment-duration { margin: 0; }
-        .merrill-clock-container { width: 260px; height: 260px; }
     }
     
     /* 骨架屏加载动画 */
@@ -2351,12 +2298,6 @@
     
     .merrill-hint { margin-top: 12px; font-size: var(--font-sm); color: var(--text-secondary); text-align: center; font-weight: var(--font-medium); }
 
-    .current-stage { display: inline-block; padding: 8px 20px; background: var(--gradient-brand); color: white; border-radius: 20px; font-size: var(--font-base); font-weight: var(--font-semibold); margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .stage-desc { font-size: var(--font-base); color: var(--text-secondary); line-height: 1.6; }
-    .stage-allocation { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; padding: 12px; background: var(--gold-bg); border-radius: 8px; }
-    .allocation-title { grid-column: 1 / -1; font-size: var(--font-sm); font-weight: var(--font-semibold); color: var(--color-gold); text-align: center; margin-bottom: 4px; }
-    .allocation-item { font-size: var(--font-sm); padding: 6px 8px; background: var(--bg-card); border-radius: 6px; text-align: center; color: var(--text-secondary); }
-    
     /* ===== 通知设置样式 ===== */
     .notification-settings { background: var(--bg-card); padding: 20px; border-radius: 16px; border: 1px solid var(--border-light, #e4e9f2); }
     .setting-section { margin-bottom: 20px; }
@@ -2379,36 +2320,11 @@
     
     /* ===== 市场行情 - 手机响应式适配 ===== */
 
-/* 美林强制修复已移除 */
-
-
-/* 美林强制修复已移除 */
-
-
 /* =====================================================
    🔥 美林时钟样式强制修复 - 最高优先级 + !important
    ===================================================== */
 
-/* 🔧 1. 时间轴 - 强制等宽 + 间距 */
-.cycle-timeline .timeline-track {
-    display: flex !important;
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-    width: 100% !important;
-}
-.cycle-timeline .timeline-segment {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    width: 0 !important;
-    padding: 16px 12px !important;
-    border-radius: 14px !important;
-}
-.cycle-timeline .timeline-segment.active {
-    transform: scale(1.02) !important;
-    box-shadow: 0 6px 24px rgba(41, 98, 164, 0.35) !important;
-}
-
-/* 🔧 2. 弹窗 - 强制加大内边距 */
+/* 🔧 1. 弹窗 - 强制加大内边距 */
 .merrill-detail-dialog .el-dialog__header {
     padding: 28px 40px 24px !important;
 }
@@ -2483,56 +2399,7 @@
     }
 }
 
-/* 🔧 7. 时间轴内容样式 */
-.segment-icon {
-    font-size: var(--font-xl) !important;
-    margin-bottom: 8px !important;
-}
-.segment-name {
-    font-size: var(--font-base) !important;
-    font-weight: var(--font-bold) !important;
-    margin-bottom: 5px !important;
-}
-.segment-period {
-    font-size: var(--font-xs) !important;
-    font-weight: var(--font-medium) !important;
-    margin-bottom: 4px !important;
-}
-.segment-duration {
-    font-size: var(--font-xs) !important;
-    font-weight: var(--font-medium) !important;
-}
-
-/* 🔧 8. 进度条 */
-.progress-info {
-    margin-top: 10px !important;
-    font-size: var(--font-base) !important;
-    font-weight: var(--font-semibold) !important;
-}
-
 /* ===== 🎨 v1.1.0 样式增强 ===== */
-
-/* 美林时钟卡片美化 */
-.merrill-clock-card {
-    background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--bg-card) 50%, var(--badge-warning-bg) 100%) !important;
-    border: 2px solid var(--gold-light) !important;
-    border-radius: 20px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.merrill-clock-card::before {
-    content: '';
-    position: absolute;
-    top: -30px;
-    right: -30px;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle, var(--gold-bg) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-}
 
 /* 系统配置卡片美化 */
 .settings-page .card {
@@ -2594,688 +2461,10 @@
     }
 }
 
-/* ========== 🎨 美林时钟 v1.1.0 优化样式 ========== */
-
-/* 时间轴卡片基础样式 - 修复手机端边框 */
-.timeline-track {
-    display: flex !important;
-    gap: 12px !important;
-    flex-wrap: nowrap;
-}
-
-.timeline-segment {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    padding: 18px 15px !important;
-    min-height: 100px !important;
-    border-radius: 14px !important;
-    background-color: var(--bg-card-header) !important;
-    border: 1px solid #CFD8DC !important;
-    box-sizing: border-box !important;
-    cursor: pointer;
-    transition: all 0.3s ease !important;
-}
-
-.timeline-segment:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* 当前活跃阶段 - 优化配色：绿色系，避免红绿冲突 */
-.timeline-segment.active {
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
-    border: 2px solid #4CAF50 !important;
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2) !important;
-}
-
-.timeline-segment.active .segment-name {
-    color: #2E7D32 !important;
-    font-weight: 800 !important;
-}
-
-.timeline-segment.active .segment-icon {
-    transform: scale(1.1);
-}
-
-/* 已完成阶段 */
-.timeline-segment.completed {
-    opacity: 0.7;
-    background-color: #ECEFF1 !important;
-}
-
-/* 复苏期卡片专属 - 进度条容器 */
-.stage-progress-wrapper {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(76, 175, 80, 0.3);
-}
-
-.stage-progress-track {
-    height: 8px;
-    background: rgba(76, 175, 80, 0.15);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.stage-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
-    border-radius: 4px;
-    transition: width 0.8s ease;
-}
-
-.stage-progress-info {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
-    font-size: var(--font-xs);
-    color: #2E7D32;
-    font-weight: var(--font-semibold);
-}
-
 /* 坐标轴标签增强 */
 text {
     font-family: var(--font-sans);
 }
-
-/* 移动端适配 - 确保边框正确显示 */
-@media (max-width: 768px) {
-    .timeline-track {
-        flex-direction: column !important;
-    }
-    
-    .timeline-segment {
-        width: 100% !important;
-        min-width: 100% !important;
-        border: 1px solid #CFD8DC !important;
-    }
-    
-    .timeline-segment.active {
-        border: 2px solid #4CAF50 !important;
-    }
-}
-
-/* ========== 🎨 美林时钟 v1.1.1 手机端修复样式 ========== */
-
-/* 垂直胶囊时间轴容器 */
-.vertical-timeline {
-    position: relative;
-    padding: 20px 15px;
-    background: linear-gradient(135deg, #F8FAFD 0%, #ECEFF1 100%);
-    border-radius: 24px;
-    margin-top: 16px;
-}
-
-/* 进度指示器 - 右上角胶囊 */
-.timeline-progress-indicator {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.progress-pill {
-    width: 100px;
-    height: 16px;
-    background: rgba(76, 175, 80, 0.2);
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px dashed rgba(76, 175, 80, 0.4);
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
-    border-radius: 8px;
-    transition: width 0.8s ease;
-}
-
-.progress-label {
-    font-size: var(--font-base);
-    font-weight: var(--font-bold);
-    color: #2E7D32;
-}
-
-.progress-percent {
-    font-size: var(--font-md);
-}
-
-/* 四个阶段胶囊容器 */
-.timeline-stages-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* 单个阶段项 */
-.timeline-stage-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 16px;
-    background: var(--bg-card);
-    border-radius: 16px;
-    border: 1px solid var(--border-light);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    opacity: 0.6;
-}
-
-.timeline-stage-item:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* 当前活跃阶段 */
-.timeline-stage-item.active {
-    opacity: 1;
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
-    border: 2px solid #4CAF50;
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15);
-}
-
-/* 已完成阶段 */
-.timeline-stage-item.completed {
-    opacity: 0.85;
-}
-
-/* 阶段图标胶囊 */
-.stage-icon-wrapper {
-    width: 56px;
-    height: 96px;
-    background: var(--bg-card-header);
-    border-radius: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #CFD8DC;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-}
-
-.timeline-stage-item.active .stage-icon-wrapper {
-    background: #C8E6C9;
-    border-color: var(--color-success);
-}
-
-.stage-icon {
-    font-size: var(--font-2xl);
-}
-
-/* 阶段内容 */
-.stage-content {
-    flex: 1;
-}
-
-.stage-name {
-    font-size: var(--font-lg);
-    font-weight: 800;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-}
-
-.timeline-stage-item.active .stage-name {
-    color: #2E7D32;
-}
-
-.stage-period {
-    font-size: var(--font-base);
-    color: #757575;
-    margin-bottom: 2px;
-    font-weight: var(--font-medium);
-}
-
-.stage-duration {
-    font-size: var(--font-base);
-    color: #9E9E9E;
-}
-
-.stage-progress-detail {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed rgba(76, 175, 80, 0.3);
-    font-size: var(--font-base);
-    color: #388E3C;
-    font-weight: var(--font-semibold);
-}
-
-/* 桌面端适配 - 恢复横向四卡片 */
-@media (min-width: 769px) {
-    .vertical-timeline {
-        display: none;
-    }
-    
-    /* 桌面端显示原有的横向卡片 - 这里需要恢复原来的timeline-track样式 */
-    .timeline-track {
-        display: flex !important;
-        gap: 12px !important;
-    }
-    
-    .timeline-segment {
-        flex: 1 !important;
-    }
-}
-
-/* 确保手机端只显示垂直时间轴，隐藏原有的横向卡片 */
-@media (max-width: 768px) {
-    .timeline-track {
-        display: none !important;
-    }
-}
-
-/* ========== 🎨 美林时钟 v1.1.2 横向胶囊时间轴 ========== */
-
-/* 横向胶囊容器 */
-.horizontal-timeline {
-    padding: 16px 0;
-}
-
-/* 胶囊行 */
-.timeline-pills-row {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    justify-content: space-between;
-    align-items: stretch;
-}
-
-/* 单个胶囊 */
-.timeline-pill {
-    min-height: 130px !important;
-    flex: 1;
-    min-width: 0;
-    padding: 14px 12px;
-    border-radius: 16px;
-    background: var(--bg-card-header);
-    border: 2px solid #CFD8DC;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 0.7;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-}
-
-.timeline-pill:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-}
-
-/* 胶囊图标 */
-.pill-icon {
-    font-size: var(--font-2xl);
-    line-height: 1;
-    margin-bottom: 2px;
-}
-
-/* 胶囊文字 */
-.pill-text {
-    width: 100%;
-}
-
-.pill-name {
-    font-size: var(--font-base);
-    font-weight: 800;
-    color: var(--text-primary);
-    margin-bottom: 3px;
-}
-
-.pill-period {
-    font-size: var(--font-sm);
-    color: #757575;
-    margin-bottom: 2px;
-    font-weight: var(--font-medium);
-}
-
-.pill-duration {
-    font-size: var(--font-xs);
-    color: #9E9E9E;
-}
-
-/* 当前活跃胶囊 - 复苏期绿色 */
-.timeline-pill.active {
-    opacity: 1;
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
-    border-color: var(--color-success);
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
-}
-
-.timeline-pill.active .pill-name {
-    color: #2E7D32;
-}
-
-/* 复苏期胶囊内的进度条 */
-.pill-progress {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px dashed rgba(76, 175, 80, 0.3);
-}
-
-.pill-progress-track {
-    height: 8px;
-    background: rgba(76, 175, 80, 0.15);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.pill-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
-    border-radius: 4px;
-    transition: width 0.8s ease;
-}
-
-.pill-progress-text {
-    font-size: var(--font-sm);
-    color: #388E3C;
-    font-weight: var(--font-bold);
-    margin-top: 6px;
-}
-
-/* 已完成的胶囊 */
-.timeline-pill.completed {
-    opacity: 0.85;
-}
-
-/* 各阶段胶囊颜色 */
-.recovery-pill.active {
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
-    border-color: var(--color-success);
-}
-
-.overheat-pill.active {
-    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
-    border-color: var(--color-warning);
-}
-
-.stagflation-pill.active {
-    background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%);
-    border-color: #E91E63;
-}
-
-.recession-pill.active {
-    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-    border-color: #2196F3;
-}
-
-/* 手机端适配 - 2x2 网格 */
-@media (max-width: 600px) {
-    .timeline-pills-row {
-        flex-wrap: wrap;
-    }
-    
-    .timeline-pill {
-    min-height: 130px !important;
-        flex: 1 1 calc(50% - 6px);
-        min-width: calc(50% - 6px);
-    }
-}
-
-/* 超小屏适配 - 垂直单列 */
-@media (max-width: 380px) {
-    .timeline-pills-row {
-        flex-direction: column;
-    }
-    
-    .timeline-pill {
-    min-height: 130px !important;
-        flex: none;
-        width: 100%;
-        flex-direction: row;
-        text-align: left;
-        padding: 12px 16px;
-    }
-    
-    .pill-icon {
-        margin-right: 14px;
-        margin-bottom: 0;
-    }
-    
-    .pill-text {
-        text-align: left;
-    }
-}
-
-/* 隐藏旧的垂直时间轴样式 */
-.vertical-timeline {
-    display: none !important;
-}
-
-/* ========== v1.1.3 美林时钟新样式 ========== */
-.merrill-clock-container {
-    position: relative;
-    width: 100%;
-    max-width: 380px;
-    margin: 0 auto 30px auto;
-    padding: 15px 0 25px 0;
-}
-
-.merrill-clock-svg {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.stage-box {
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.stage-box:hover {
-    filter: brightness(1.05);
-    stroke-width: 3;
-}
-
-
-/* ========== v1.1.5 最终修复 - 解决所有显示问题 ========== */
-
-/* 时钟容器 - 增加底部间距避免和卡片交叉 */
-.merrill-clock-container {
-    max-width: 420px !important;
-    margin: 0 auto 50px auto !important;
-    padding: 10px 0 15px 0 !important;
-}
-
-/* 确保 SVG 自适应 */
-.merrill-clock-svg {
-    width: 100% !important;
-    height: auto !important;
-    display: block !important;
-}
-
-/* 时间轴卡片行 - 强制 flex 拉伸 */
-.timeline-pills-row {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 12px !important;
-    justify-content: space-between !important;
-    align-items: stretch !important;
-    width: 100% !important;
-}
-
-/* 统一所有卡片尺寸 */
-.timeline-pill {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    width: 100% !important;
-    min-height: 115px !important;
-    padding: 14px 10px !important;
-    border-radius: 14px !important;
-    background: var(--bg-card-header) !important;
-    border: 2px solid #CFD8DC !important;
-    text-align: center !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    opacity: 0.7 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    box-sizing: border-box !important;
-}
-
-/* 当前阶段高亮 */
-.timeline-pill.active {
-    opacity: 1 !important;
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25) !important;
-}
-
-/* 卡片图标 */
-.pill-icon {
-    font-size: var(--font-2xl) !important;
-    line-height: 1 !important;
-    margin-bottom: 4px !important;
-}
-
-/* 卡片文字 */
-.pill-name {
-    font-size: var(--font-base) !important;
-    font-weight: 800 !important;
-}
-
-.pill-period {
-    font-size: var(--font-sm) !important;
-    color: var(--text-secondary) !important;
-}
-
-.pill-duration {
-    font-size: var(--font-xs) !important;
-    color: var(--text-secondary) !important;
-}
-
-/* 进度条 */
-.pill-progress {
-    margin-top: 8px !important;
-    padding-top: 6px !important;
-    border-top: 1px dashed rgba(76, 175, 80, 0.3) !important;
-    width: 100% !important;
-}
-
-.pill-progress-track {
-    height: 8px !important;
-    background: rgba(76, 175, 80, 0.15) !important;
-    border-radius: 4px !important;
-    overflow: hidden !important;
-}
-
-.pill-progress-fill {
-    height: 100% !important;
-    background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%) !important;
-    border-radius: 4px !important;
-    transition: width 0.8s ease !important;
-}
-
-.pill-progress-text {
-    font-size: var(--font-xs) !important;
-    color: #388E3C !important;
-    font-weight: var(--font-bold) !important;
-    margin-top: 5px !important;
-}
-
-/* ========== 手机端响应式 ========== */
-@media (max-width: 768px) {
-    .timeline-pills-row {
-        flex-wrap: wrap !important;
-        gap: 10px !important;
-    }
-    
-    .timeline-pill {
-        flex: 1 1 calc(50% - 5px) !important;
-        min-height: 105px !important;
-    }
-    
-    .merrill-clock-container {
-        max-width: 360px !important;
-        margin-bottom: 35px !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .timeline-pills-row {
-        flex-direction: column !important;
-    }
-    
-    .timeline-pill {
-        flex: none !important;
-        width: 100% !important;
-        flex-direction: row !important;
-        text-align: left !important;
-        padding: 12px 14px !important;
-        min-height: auto !important;
-        justify-content: flex-start !important;
-    }
-    
-    .pill-icon {
-        margin-right: 12px !important;
-        margin-bottom: 0 !important;
-        font-size: var(--font-xl) !important;
-    }
-    
-    .pill-text {
-        text-align: left !important;
-        flex: 1 !important;
-    }
-    
-    .pill-progress {
-        margin-top: 4px !important;
-        padding-top: 4px !important;
-    }
-}
-
-
-/* ========== v1.1.6 各阶段配色统一 ========== */
-.timeline-pill.active {
-    opacity: 1 !important;
-}
-
-/* 复苏期 - 绿色系，和表盘统一 */
-.timeline-pill.recovery-pill.active {
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
-    border-color: var(--color-success) !important;
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25) !important;
-}
-
-.timeline-pill.recovery-pill.active .pill-name {
-    color: #2E7D32 !important;
-}
-
-/* 过热期 - 橙色系 */
-.timeline-pill.overheat-pill.active {
-    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%) !important;
-    border-color: var(--color-warning) !important;
-    box-shadow: 0 4px 16px rgba(255, 152, 0, 0.25) !important;
-}
-
-.timeline-pill.overheat-pill.active .pill-name {
-    color: #E65100 !important;
-}
-
-/* 滞胀期 - 粉色系 */
-.timeline-pill.stagflation-pill.active {
-    background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%) !important;
-    border-color: #E91E63 !important;
-    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.25) !important;
-}
-
-.timeline-pill.stagflation-pill.active .pill-name {
-    color: #AD1457 !important;
-}
-
-/* 衰退期 - 蓝色系 */
-.timeline-pill.recession-pill.active {
-    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important;
-    border-color: #2196F3 !important;
-    box-shadow: 0 4px 16px rgba(33, 150, 243, 0.25) !important;
-}
-
-.timeline-pill.recession-pill.active .pill-name {
-    color: #1565C0 !important;
-}
-
 
 /* ========== AI 评估按钮加载动画 ========== */
 .ai-eval-btn-wrapper {
