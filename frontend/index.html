@@ -25,15 +25,15 @@
     <script src="/static/lib/element-plus.min.js"></script>
     <script src="/static/lib/echarts.min.js"></script>
     <script src="/static/lib/zh-cn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.1">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.1">
-    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.1">
-    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.1">
-    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.1">
+    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.2">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.2">
+    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.2">
+    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.2">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.2">
 
     <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.5.1"></script>
-    <script src="/static/js/icons.js?v=2.5.1"></script>
+    <script src="/static/js/themes.js?v=2.5.2"></script>
+    <script src="/static/js/icons.js?v=2.5.2"></script>
     <script src="/static/js/core.js"></script>
     <script src="/static/js/charts.js"></script>
     <script src="/static/js/calendar.js"></script>
@@ -87,7 +87,7 @@
             </div>
 
             <!-- 主内容区 -->
-            <div class="main-content" :class="{ expanded: sidebarCollapsed }">
+            <div class="main-content" :class="{ expanded: sidebarCollapsed }" @touchstart="onTouchStart" @touchend="onTouchEnd">
 
                 <!-- v1.5.0: 全局 Header — 二级导航 + 用户菜单 -->
                 <div class="global-header">
@@ -2701,6 +2701,32 @@
                     if (stockKlineChart) stockKlineChart.resize();
                     if (indexKlineChart) indexKlineChart.resize();
                 });
+
+                // 触摸手势：左右滑动切换页面（仅移动端）
+                const touchStartX = ref(0);
+                const touchStartY = ref(0);
+                function onTouchStart(e) {
+                    if (!isMobile.value) return;
+                    touchStartX.value = e.touches[0].clientX;
+                    touchStartY.value = e.touches[0].clientY;
+                }
+                function onTouchEnd(e) {
+                    if (!isMobile.value) return;
+                    const diffX = touchStartX.value - e.changedTouches[0].clientX;
+                    const diffY = touchStartY.value - e.changedTouches[0].clientY;
+                    // 仅水平滑动有效（|diffX| > |diffY| 且 |diffX| > 80px）
+                    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 80) {
+                        const menuKeys = menus.value.map(function(m) { return m.key; });
+                        const idx = menuKeys.indexOf(currentPage.value);
+                        if (diffX > 0 && idx < menuKeys.length - 1) {
+                            currentPage.value = menuKeys[idx + 1];
+                            currentSubPage.value = '';
+                        } else if (diffX < 0 && idx > 0) {
+                            currentPage.value = menuKeys[idx - 1];
+                            currentSubPage.value = '';
+                        }
+                    }
+                }
 
                 // 窗口关闭前确认（防止未保存配置丢失）
                 window.addEventListener('beforeunload', (e) => {
@@ -7012,6 +7038,8 @@ const allMenuDefs = [
                     selectAllChatSessions, deleteSelectedChatSessions, viewChatSession,
                     loadChatHistory, deleteChatSession, renderMarkdown,
                     stockChatInput, stockChatMessages, stockChatLoading, stockChatError, askStockSend, askStockQuick,
+                    // v2.5.2: 触摸手势
+                    onTouchStart, onTouchEnd,
                 };
             }
         });

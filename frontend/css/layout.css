@@ -61,6 +61,20 @@
 /* ─── Table Container ─── */
 .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+/* 滚动阴影指示器（右侧渐变提示可横向滚动） */
+.table-container::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, transparent, var(--bg-card));
+  pointer-events: none;
+  border-radius: 0 var(--card-radius) var(--card-radius) 0;
 }
 .table-container .el-table {
   border-radius: var(--card-radius);
