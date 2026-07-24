@@ -54,14 +54,8 @@
             --border-light: #e2e8f0; --border-base: #bfdbfe; --border-heavy: #93c5fd;
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             --gradient-brand: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-            --badge-success-bg: #E8F5E9; --badge-success-text: #2E7D32;
-            --badge-warning-bg: #FFF3E0; --badge-warning-text: #E65100;
-            --badge-danger-bg: #FFEBEE; --badge-danger-text: #C62828;
             --badge-info-bg: #EFF6FF; --badge-info-text: #1d4ed8;
-            --badge-gold-bg: #FFF8E1; --color-gold: #D4AF37;
-            --gold-light: #E8D5B7; --gold-bg: #FFFDF5;
-            --el-success: #4CAF50; --el-warning: #FF9800;
-            --el-danger: #C62828; --el-info: #1d4ed8;
+            --el-info: #1d4ed8;
         }
         /* 🔴 玫瑰红 - 热烈醒目 */
         [data-theme="rose-red"] {
@@ -81,14 +75,6 @@
             --border-light: #ffe0e0; --border-base: #fecaca; --border-heavy: #fca5a5;
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             --gradient-brand: linear-gradient(135deg, #E63946 0%, #C1121F 100%);
-            --badge-success-bg: #E8F5E9; --badge-success-text: #2E7D32;
-            --badge-warning-bg: #FFF3E0; --badge-warning-text: #E65100;
-            --badge-danger-bg: #FFEBEE; --badge-danger-text: #C62828;
-            --badge-info-bg: #E3F2FD; --badge-info-text: #1976D2;
-            --badge-gold-bg: #FFF8E1; --color-gold: #D4AF37;
-            --gold-light: #E8D5B7; --gold-bg: #FFFDF5;
-            --el-success: #4CAF50; --el-warning: #FF9800;
-            --el-danger: #C62828; --el-info: #1976D2;
         }
         /* 🟡 土豪金 - 轻奢质感 */
         [data-theme="vibrant-orange"] {
@@ -108,14 +94,23 @@
             --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64;
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.08);
             --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
-            --badge-success-bg: #e8f5e9; --badge-success-text: #2e7d32;
-            --badge-warning-bg: #fff3e0; --badge-warning-text: #e65100;
-            --badge-danger-bg: #ffebee; --badge-danger-text: #c62828;
-            --badge-info-bg: #e3f2fd; --badge-info-text: #1976d2;
             --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
             --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
-            --el-success: #4caf50; --el-warning: #ff9800;
-            --el-danger: #c62828; --el-info: #1976d2;
+        }
+        /* ⚪ 经典主题 — 三变体共享变量 */
+        [data-theme^="classic"] {
+            --bg-page: #ffffff; --bg-card: #ffffff;
+            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --bg-dialog: rgba(255,255,255,0.98);
+            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
+            --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b;
+            --el-danger: #dc2626; --el-info: #2563eb;
         }
         /* ⚪ 经典白 - 纯净白底+蓝色点缀 */
         [data-theme="classic-white"] {
@@ -125,24 +120,12 @@
             --card-border: #dbeafe;
             --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
             --text-link: #2563eb;
-            --bg-page: #ffffff; --bg-card: #ffffff;
             --bg-card-header: #f8fafc;
             --bg-sidebar: #f8fafc;
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
-            --bg-dialog: rgba(255,255,255,0.98);
             --bg-input: #f8fafc; --bg-hover: #eff6ff;
             --bg-selected: rgba(37,99,235,0.06); --bg-stripe: #f8fafc;
             --border-light: #e2e8f0; --border-base: #cbd5e1; --border-heavy: #94a3b8;
-            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
             --gradient-brand: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
-            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
-            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
-            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
-            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
-            --gold-light: #fef9c3; --gold-bg: #fefce8;
-            --el-success: #16a34a; --el-warning: #f59e0b;
-            --el-danger: #dc2626; --el-info: #2563eb;
         }
         [data-theme="classic-white"] .el-button--primary {
             background-color: #2563eb !important; border-color: #2563eb !important; color: white !important;
@@ -169,24 +152,12 @@
             --card-border: #fecaca;
             --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
             --text-link: #dc2626;
-            --bg-page: #ffffff; --bg-card: #ffffff;
             --bg-card-header: #fef2f2;
             --bg-sidebar: #fef2f2;
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
-            --bg-dialog: rgba(255,255,255,0.98);
             --bg-input: #fef2f2; --bg-hover: #fee2e2;
             --bg-selected: rgba(220,38,38,0.06); --bg-stripe: #fef2f2;
             --border-light: #fecaca; --border-base: #fca5a5; --border-heavy: #f87171;
-            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
             --gradient-brand: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
-            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
-            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
-            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
-            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
-            --gold-light: #fef9c3; --gold-bg: #fefce8;
-            --el-success: #16a34a; --el-warning: #f59e0b;
-            --el-danger: #dc2626; --el-info: #2563eb;
         }
         [data-theme="classic-red"] .el-button--primary {
             background-color: #dc2626 !important; border-color: #dc2626 !important; color: white !important;
@@ -213,24 +184,12 @@
             --card-border: #e8d5a3;
             --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #a0947c;
             --text-link: #8b6914;
-            --bg-page: #ffffff; --bg-card: #ffffff;
             --bg-card-header: #fdf8ec;
             --bg-sidebar: #fdfaf3;
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
-            --bg-dialog: rgba(255,255,255,0.98);
             --bg-input: #fdf8ec; --bg-hover: #fef5e0;
             --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
             --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
-            --shadow-sidebar: 0 1px 3px rgba(0,0,0,0.06);
             --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
-            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
-            --badge-warning-bg: #fffbeb; --badge-warning-text: #92400e;
-            --badge-danger-bg: #fef2f2; --badge-danger-text: #991b1b;
-            --badge-info-bg: #eff6ff; --badge-info-text: #1e40af;
-            --badge-gold-bg: #fefce8; --color-gold: #ca8a04;
-            --gold-light: #fef9c3; --gold-bg: #fefce8;
-            --el-success: #16a34a; --el-warning: #f59e0b;
-            --el-danger: #dc2626; --el-info: #2563eb;
         }
         [data-theme="classic-gold"] .el-button--primary {
             background-color: #b8922a !important; border-color: #b8922a !important; color: white !important;
@@ -819,7 +778,7 @@
             transition: all 0.2s;
         }
         .mobile-nav-label {
-            font-size: 10px;
+            font-size: var(--font-xs);
             line-height: 1;
         }
         .mobile-nav-item.active {
@@ -879,7 +838,7 @@
         }
         .el-dialog__title {
             font-weight: var(--font-semibold) !important;
-            font-size: 17px !important;
+            font-size: var(--font-md) !important;
         }
         .el-dialog__body {
             padding: 0 !important;
@@ -2107,7 +2066,7 @@
     }
     .merrill-timing-date { color: var(--text-secondary); }
     .merrill-timing-maturity {
-        font-weight: var(--font-semibold); font-size: 12px;
+        font-weight: var(--font-semibold); font-size: var(--font-sm);
         padding: 1px 8px; border-radius: 8px; background: var(--bg-card);
     }
     .merrill-timing-info {
@@ -2140,7 +2099,7 @@
     }
     .merrill-dimension-row {
         display: flex; align-items: center; gap: 8px;
-        margin-bottom: 6px; font-size: 12px;
+        margin-bottom: 6px; font-size: var(--font-sm);
     }
     .merrill-dim-label { width: 40px; flex-shrink: 0; color: var(--text-secondary); }
     .merrill-dim-bar-track {
@@ -2165,8 +2124,8 @@
         display: flex; justify-content: space-between; align-items: center;
     }
     .merrill-confidence-left { display: flex; align-items: center; gap: 6px; }
-    .merrill-confidence-right { display: flex; align-items: center; gap: 4px; font-size: 12px; }
-    .merrill-confidence-label { font-size: 12px; color: var(--text-secondary); }
+    .merrill-confidence-right { display: flex; align-items: center; gap: 4px; font-size: var(--font-sm); }
+    .merrill-confidence-label { font-size: var(--font-sm); color: var(--text-secondary); }
     .merrill-confidence-value { font-weight: var(--font-semibold); font-size: var(--font-base); }
     .merrill-confidence-prediction { font-weight: var(--font-semibold); color: var(--el-warning); }
     .merrill-confidence-prob { color: var(--text-secondary); }
@@ -3555,7 +3514,7 @@ text {
 @media (max-width: 480px) {
     .el-form-item .el-form-item__label {
         width: 60px !important;
-        font-size: 12px;
+        font-size: var(--font-sm);
     }
 }
 
@@ -3564,7 +3523,7 @@ text {
     position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
     width: 28px; height: 28px; border-radius: 50%;
     background: var(--bg-card); border: 1px solid var(--border-light);
-    color: var(--text-secondary); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); font-size: var(--font-sm); cursor: pointer;
     display: flex; align-items: center; justify-content: center; z-index: 101;
     transition: all 0.2s;
 }
@@ -3579,7 +3538,7 @@ text {
 .sidebar.collapsed .nav-item > span:not(.nav-icon) { display: none !important; }
 .sidebar.collapsed .nav-item { justify-content: center; padding: 14px 0; gap: 0; }
 .sidebar.collapsed .sidebar-logo { text-align: center; padding: 16px 8px 8px 8px; }
-.sidebar.collapsed .sidebar-logo::after { content: '📊'; font-size: 22px; display: block; }
+.sidebar.collapsed .sidebar-logo::after { content: '📊'; font-size: var(--font-xl); display: block; }
 .sidebar.collapsed .sidebar-nav { padding: 0 4px; }
 .sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 .sidebar.collapsed .user-avatar { margin: 0 auto; }

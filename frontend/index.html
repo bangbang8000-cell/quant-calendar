@@ -485,9 +485,11 @@
                                 <el-input v-model="searchKeyword" placeholder="🔍 搜索股票代码或名称..." clearable style="width: 100%;" />
                             </div>
 
-                            <div v-if="loading" class="loading">
-                                <el-icon class="is-loading"><loading /></el-icon>
-                                <span style="margin-left: 8px;">正在加载{{ loadingView }}视图数据...</span>
+                            <div v-if="loading" class="skeleton-loader">
+                                <div class="skeleton-header"></div>
+                                <div class="skeleton-grid">
+                                    <div class="skeleton-item" v-for="i in 6" :key="i"></div>
+                                </div>
                             </div>
                             
                             <div v-else-if="stockPool.length === 0" class="empty-state">暂无数据</div>
