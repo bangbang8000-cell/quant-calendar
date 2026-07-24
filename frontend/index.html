@@ -2389,27 +2389,54 @@
                     </div>
                 </div>
 
-                <!-- 非活跃阶段：上一轮时间范围 -->
-                <div v-else-if="merrillDetailData._lastPeriod" class="detail-section" style="margin-top: 4px;">
-                    <div class="section-title">📅 上一轮时间范围</div>
-                    <div style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;">
+                <!-- 非活跃阶段：历史轮次 -->
+                <div v-else-if="merrillDetailData._history && merrillDetailData._history.length > 0" class="detail-section" style="margin-top: 4px;">
+                    <div class="section-title">📅 历史轮次（共 {{ merrillDetailData._history.length }} 轮）</div>
+                    <!-- 最近一次：摘要卡片 -->
+                    <div v-if="merrillDetailData._lastPeriod" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 14px;">
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._lastPeriod.start || '—' }}</div>
-                            <div class="stat-label">开始时间</div>
+                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.start || '—' }}</div>
+                            <div class="stat-label">开始</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._lastPeriod.end || '—' }}</div>
-                            <div class="stat-label">结束时间</div>
+                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.end || '—' }}</div>
+                            <div class="stat-label">结束</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._lastPeriod.duration || '—' }}</div>
-                            <div class="stat-label">持续时长</div>
+                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.duration || '—' }}</div>
+                            <div class="stat-label">持续</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value" :style="{color: merrillDetailData.color}">{{ merrillDetailData._lastPeriod.note || '—' }}</div>
-                            <div class="stat-label">阶段特征</div>
+                            <div class="stat-value" :style="{color: merrillDetailData.color, fontSize: 'var(--font-base)'}">{{ merrillDetailData._lastPeriod.cycle_label || '—' }}</div>
+                            <div class="stat-label">周期</div>
                         </div>
                     </div>
+                    <!-- 全部历史轮次列表 -->
+                    <div v-for="(h, hIdx) in merrillDetailData._history" :key="hIdx" 
+                         style="padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; background: var(--bg-card-header); border-left: 3px solid;"
+                         :style="{borderLeftColor: merrillDetailData.color}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-weight: var(--font-semibold); font-size: var(--font-base);">
+                                <span style="padding: 1px 6px; border-radius: 4px; font-size: var(--font-xs); margin-right: 6px; background: var(--el-fill-color-light);">{{ h.cycle_label || '—' }}</span>
+                                {{ h.start || '—' }} → {{ h.end || '—' }}
+                            </span>
+                            <span style="font-size: var(--font-sm); color: var(--text-secondary);">{{ h.duration || '—' }}</span>
+                        </div>
+                        <div style="font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5;">
+                            🔑 {{ h.trigger || '—' }}
+                        </div>
+                        <div v-if="h.key_indicators && Object.keys(h.key_indicators).length" style="margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; font-size: var(--font-xs); color: var(--text-tertiary);">
+                            <span v-if="h.key_indicators.gdp_growth">GDP {{ h.key_indicators.gdp_growth }}%</span>
+                            <span v-if="h.key_indicators.cpi">CPI {{ h.key_indicators.cpi }}%</span>
+                            <span v-if="h.key_indicators.pmi">PMI {{ h.key_indicators.pmi }}</span>
+                            <span v-if="h.key_indicators.ppi">PPI {{ h.key_indicators.ppi }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 无历史记录 -->
+                <div v-else-if="!merrillDetailData._isCurrent && !merrillDetailData._lastPeriod" class="detail-section" style="margin-top: 4px;">
+                    <div class="section-title">📅 历史轮次</div>
+                    <div style="text-align: center; color: var(--text-tertiary); padding: 20px 0;">暂无历史记录</div>
                 </div>
 
                 <!-- 经济特征 -->

@@ -186,6 +186,7 @@ SCORING_WEIGHTS = {
 }
 
 from paths import MERRILL_CACHE_FILE as CACHE_FILE, MERRILL_HISTORY_FILE as HISTORY_FILE, MERRILL_SNAPSHOT_FILE as SNAPSHOT_FILE
+from merrill_history import HISTORICAL_TRANSITIONS, CYCLE_META
 
 
 def _normalize_score(raw, center, scale, invert=False):
@@ -211,6 +212,12 @@ class MerrillClock:
             'current_stage': None,
             'transitions': []
         })
+        
+        # v3.1: 载入结构化历史周期数据（如果transitions为空）
+        if not self.history.get('transitions'):
+            self.history['transitions'] = list(HISTORICAL_TRANSITIONS)
+            self._save_history()
+            logger.info(f"美林时钟: 已载入{len(HISTORICAL_TRANSITIONS)}条历史周期转换记录")
         
         # 如果首次运行（current_stage_start 为空），设置合理的默认值
         # 2024-09-24: 央行宣布降准降息政策组合拳，标志本轮复苏周期起点
@@ -935,51 +942,34 @@ class MerrillClock:
                     'predicted_end': (start + timedelta(days=int(info.get('historical_stats', {}).get('avg_duration_months', 18) * 30.44))).strftime('%Y-%m-%d') if 'historical_stats' in info else None
                 }
         else:
-            # 非活跃阶段：从 transitions 构建真实的 _lastPeriod
-            # 查找「该阶段结束」的转换 (from_stage == stage_name)
-            end_transition = None
-            start_transition = None
+            # v3.1: 非活跃阶段 — 从历史记录构建该阶段的所有历史轮次
+            history_list = []
             for t in transitions:
-                if t.get('from_stage') == stage_name and not end_transition:
-                    end_transition = t
-                if t.get('to_stage') == stage_name and not start_transition:
-                    start_transition = t
+                if t.get('to_stage') == stage_name:
+                    # 找到「进入该阶段」的转换 = 该轮次开始
+                    end_t = None
+                    for t2 in transitions:
+                        if t2.get('from_stage') == stage_name and t2.get('transition_date') > t.get('transition_date'):
+                            if not end_t or t2.get('transition_date') < end_t.get('transition_date'):
+                                end_t = t2
+                    history_list.append({
+                        'start': t.get('transition_date', ''),
+                        'end': end_t.get('transition_date', '') if end_t else '',
+                        'duration_days': t.get('duration_days', 0),
+                        'duration_months': t.get('duration_months', 0),
+                        'duration': f"~{int(t.get('duration_months', 0))}个月" if t.get('duration_months') else '—',
+                        'cycle_label': t.get('cycle_label', ''),
+                        'trigger': t.get('trigger', ''),
+                        'key_indicators': t.get('key_indicators', {}),
+                        'note': t.get('from_name', '') + '→' + t.get('to_name', '')
+                    })
             
-            if end_transition or start_transition:
-                end_date = end_transition.get('transition_date', '') if end_transition else ''
-                start_date = start_transition.get('transition_date', '') if start_transition else ''
-                duration_months = end_transition.get('duration_months') if end_transition else None
-                
-                if not start_date and end_transition:
-                    # 推算开始日期
-                    try:
-                        days = end_transition.get('duration_days', 0)
-                        ed = datetime.strptime(end_date, '%Y-%m-%d')
-                        start_date = (ed - timedelta(days=days)).strftime('%Y-%m-%d')
-                    except Exception:
-                        logger.exception("美林时钟指标计算失败")
-                        pass
-                
-                if not end_date and start_transition:
-                    # 使用当前阶段开始作为结束日期
-                    if self.history.get('current_stage_start'):
-                        try:
-                            csd = datetime.fromisoformat(self.history['current_stage_start'])
-                            end_date = csd.strftime('%Y-%m-%d')
-                        except Exception:
-                            logger.exception("美林时钟指标计算失败")
-                            pass
-                
-                info['_lastPeriod'] = {
-                    'start': start_date or '—',
-                    'end': end_date or '—',
-                    'duration': f'~{int(duration_months)}个月' if duration_months else '—',
-                    'note': end_transition.get('from_name', '') + '→' + end_transition.get('to_name', '') if end_transition else ''
-                }
+            if history_list:
+                info['_history'] = history_list
+                # 最近一次 = _lastPeriod（兼容旧UI）
+                info['_lastPeriod'] = history_list[0]
             else:
-                # 没有转换记录，使用预设
-                info['_lastPeriod'] = info.get('_lastPeriod', {
-                    'start': '—', 'end': '—', 'duration': '—', 'note': '暂无历史记录'})
+                info['_lastPeriod'] = {'start': '—', 'end': '—', 'duration': '—', 'note': '暂无历史记录'}
         
         return info
 
