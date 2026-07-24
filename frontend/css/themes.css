@@ -1,57 +1,11 @@
-        /* ===== 字体系统 (Major Third 比例: 1.25) ===== */
+        /* ===== 主题色默认值 (Design Tokens 见 tokens.css) ===== */
         :root {
-            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
-            --font-xs: 11px;
-            --font-sm: 12px;
-            --font-base: 14px;
-            --font-md: 16px;
-            --font-lg: 18px;
-            --font-xl: 22px;
-            --font-2xl: 26px;
-            --font-3xl: 36px;
-            --font-normal: 400;
-            --font-medium: 500;
-            --font-semibold: 600;
-            --font-bold: 700;
-            --lh-tight: 1.2;
-            --lh-normal: 1.5;
-            --lh-relaxed: 1.8;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
-            /* ===== 语义色(全局统一,不随主题变化) ===== */
-            --color-success: #4CAF50;
-            --color-warning: #FF9800;
-            --color-danger: #C62828;
-            --color-info: #1976d2;
-            --color-up: #E63946;
-            --color-down: #457B9D;
-            --color-neutral: #43a047;
-            /* ===== 徽章/标签语义色 ===== */
-            --badge-success-bg: #E8F5E9;
-            --badge-success-text: #2E7D32;
-            --badge-warning-bg: #FFF3E0;
-            --badge-warning-text: #E65100;
-            --badge-danger-bg: #FFEBEE;
-            --badge-danger-text: #C62828;
-            --badge-info-bg: #E3F2FD;
-            --badge-info-text: #1976D2;
-            --badge-gold-bg: #FFF8E1;
-            --color-gold: #D4AF37;
-            --gold-light: #E8D5B7;
-            --gold-bg: #FFFDF5;
-            --el-success: #4CAF50;
-            --el-warning: #FF9800;
-            --el-danger: #C62828;
-            --el-info: #1976D2;
-            /* ===== 文本色默认值(浅色主题共用) ===== */
+            /* 文本色默认值(浅色主题共用) */
             --text-primary: #1a1a2e;
             --text-secondary: #666;
             --text-tertiary: #999;
             --text-link: #2563eb;
-            /* ===== 背景色默认值 ===== */
+            /* 背景色默认值 */
             --bg-page: #f8f9fa;
             --bg-card: #ffffff;
             --bg-card-header: #f8f9fa;
@@ -62,18 +16,15 @@
             --bg-hover: #e9ecef;
             --bg-selected: rgba(37,99,235,0.05);
             --bg-stripe: #f0f2f5;
-            /* ===== 边框色默认值 ===== */
+            /* 边框色默认值 */
             --border-light: #f0f0f0;
             --border-base: #e9ecef;
             --border-heavy: #ddd;
-            /* ===== 阴影默认值 ===== */
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-            --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+            /* 阴影 */
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
-            /* ===== 渐变品牌色(向后兼容) ===== */
+            /* 渐变品牌色 */
             --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            /* ===== 主题色(向后兼容) ===== */
+            /* 主题色 */
             --primary-color: #2563eb;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
@@ -868,13 +819,21 @@
         }
         .mobile-nav-item {
             flex: 1;
-            text-align: center;
-            padding: 12px 4px 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 8px 4px 6px 4px;
             font-size: var(--font-xs);
             color: var(--text-secondary);
             cursor: pointer;
             border-bottom: 3px solid transparent;
             transition: all 0.2s;
+        }
+        .mobile-nav-label {
+            font-size: 10px;
+            line-height: 1;
         }
         .mobile-nav-item.active {
             color: var(--primary-color);
@@ -983,7 +942,7 @@
             gap: 12px;
         }
         .detail-header h3 {
-            font-size: 22px;
+            font-size: var(--font-xl);
             margin: 0;
             font-weight: var(--font-semibold);
         }
@@ -1638,7 +1597,7 @@
                 font-size: var(--font-lg);
             }
             .stat-value {
-                font-size: 22px;
+                font-size: var(--font-xl);
             }
             .stat-label {
                 font-size: var(--font-sm);
@@ -1926,7 +1885,7 @@
             margin-bottom: 6px;
         }
         .stock-group-name strong {
-            font-size: 17px;
+            font-size: var(--font-md);
             color: var(--text-primary);
         }
         .stock-group-fullname {
@@ -2491,7 +2450,7 @@
     border-radius: 16px !important;
 }
 .merrill-detail-dialog .stat-value {
-    font-size: 26px !important;
+    font-size: var(--font-2xl) !important;
     margin-bottom: 8px !important;
 }
 .merrill-detail-dialog .stat-label {

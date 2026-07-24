@@ -25,25 +25,16 @@
     <script src="/static/lib/element-plus.min.js"></script>
     <script src="/static/lib/echarts.min.js"></script>
     <script src="/static/lib/zh-cn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/tokens.css?v=2.3.0">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.3.0">
-    <link rel="stylesheet" href="/static/css/layout.css?v=2.3.0">
-    <link rel="stylesheet" href="/static/css/animations.css">
-    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.0">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.0">
+    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.0">
+    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.0">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.0">
 
     <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.3.0"></script>
-    <script src="/static/js/icons.js?v=2.3.0"></script>
+    <script src="/static/js/themes.js?v=2.5.0"></script>
+    <script src="/static/js/icons.js?v=2.5.0"></script>
     <script src="/static/js/core.js"></script>
-    <!-- Composables -->
-    <script src="/static/js/composables/useAuth.js"></script>
-    <script src="/static/js/composables/useTheme.js"></script>
-    <script src="/static/js/composables/useNavigation.js"></script>
-    <script src="/static/js/composables/useCalendar.js"></script>
-    <script src="/static/js/composables/useDashboard.js"></script>
-    <script src="/static/js/composables/useAI.js"></script>
-    <script src="/static/js/composables/useWatchlist.js"></script>
-    <script src="/static/js/composables/useSystem.js"></script>
     <script src="/static/js/charts.js"></script>
     <script src="/static/js/calendar.js"></script>
     <script src="/static/js/strategies.js"></script>
@@ -1768,7 +1759,7 @@
             <div class="mobile-nav">
                 <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
                     <div class="mobile-nav-icon" v-html="menu.icon"></div>
-                    <div>{{ menu.name }}</div>
+                    <div class="mobile-nav-label">{{ menu.name }}</div>
                 </div>
             </div>
             </div>

@@ -1,82 +1,58 @@
-/* ===== Design Tokens v3.0 ===== */
-/* Layer 1: Raw Tokens | Layer 2: Semantic Tokens | Layer 3: Component Tokens */
-
-/* ─── Layer 1: Raw Tokens ─── */
+/* ===== Design Tokens v3.1 ===== */
+/* Single source of truth: Layer 1 Raw | Layer 2 Semantic | Layer 3 Component */
 
 :root {
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-8: 32px;
-  --sp-10: 40px;
-  --sp-12: 48px;
-}
+  /* ─── Spacing Scale ─── */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
 
-:root {
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 16px;
-  --r-full: 9999px;
-}
+  /* ─── Border Radius ─── */
+  --r-sm: 6px;   --r-md: 8px;   --r-lg: 12px;  --r-xl: 16px;  --r-full: 9999px;
 
-:root {
-  --sp-1: 4px;
-  --lh-normal: 1.5;
-  --lh-relaxed: 1.8;
-}
-
-:root {
+  /* ─── Typography: Font Family ─── */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
-}
 
-:root {
-  --shadow-xs: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+  /* ─── Typography: Font Size (Major Third 1.25) ─── */
+  --font-xs: 11px;   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
+  --font-lg: 18px;   --font-xl: 22px;   --font-2xl: 26px;   --font-3xl: 36px;
+
+  /* ─── Typography: Font Weight ─── */
+  --font-normal: 400;    --font-medium: 500;
+  --font-semibold: 600;  --font-bold: 700;
+
+  /* ─── Typography: Line Height ─── */
+  --lh-tight: 1.2;   --lh-normal: 1.5;   --lh-relaxed: 1.8;
+
+  /* ─── Shadows ─── */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
-}
 
-:root {
+  /* ─── Transitions ─── */
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 400ms ease;
-}
 
-/* ─── Layer 2: Semantic Tokens ─── */
-
-:root {
-  --color-success: #4CAF50;
-  --color-warning: #FF9800;
-  --color-danger:  #C62828;
-  --color-info:    #1976d2;
-  --color-up:      #E63946;
-  --color-down:    #457B9D;
+  /* ─── Semantic Colors (global, not theme-dependent) ─── */
+  --color-success: #4CAF50;  --color-warning: #FF9800;
+  --color-danger:  #C62828;  --color-info:    #1976d2;
+  --color-up:      #E63946;  --color-down:    #457B9D;
   --color-neutral: #43a047;
-}
 
-:root {
-  --badge-success-bg:   #E8F5E9;
-  --badge-success-text: #2E7D32;
-  --badge-warning-bg:   #FFF3E0;
-  --badge-warning-text: #E65100;
-  --badge-danger-bg:    #FFEBEE;
-  --badge-danger-text:  #C62828;
-  --badge-info-bg:      #E3F2FD;
-  --badge-info-text:    #1976D2;
+  /* ─── Badge / Label Colors ─── */
+  --badge-success-bg:   #E8F5E9;  --badge-success-text: #2E7D32;
+  --badge-warning-bg:   #FFF3E0;  --badge-warning-text: #E65100;
+  --badge-danger-bg:    #FFEBEE;  --badge-danger-text:  #C62828;
+  --badge-info-bg:      #E3F2FD;  --badge-info-text:    #1976D2;
   --badge-gold-bg:      #FFF8E1;
-  --color-gold:         #D4AF37;
-  --gold-light:         #E8D5B7;
-  --gold-bg:            #FFFDF5;
-}
+  --color-gold:         #D4AF37;  --gold-light: #E8D5B7;  --gold-bg: #FFFDF5;
 
-/* ─── Layer 3: Component Tokens ─── */
+  /* ─── Element Plus Override Colors ─── */
+  --el-success: #4CAF50;  --el-warning: #FF9800;
+  --el-danger:  #C62828;  --el-info:    #1976D2;
 
-:root {
+  /* ─── Component Tokens ─── */
   --sidebar-width:          220px;
   --sidebar-collapsed-width: 56px;
   --header-height:           48px;

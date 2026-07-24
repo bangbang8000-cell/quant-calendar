@@ -13,7 +13,7 @@
     width: var(--sidebar-collapsed-width);
   }
   .sidebar .sidebar-logo h2,
-  .sidebar .nav-item span,
+  .sidebar .nav-item > span:not(.nav-icon),
   .sidebar .user-info span,
   .sidebar .sidebar-footer .user-info {
     display: none;
@@ -21,6 +21,9 @@
   .sidebar .nav-item {
     justify-content: center;
     padding: 14px 0;
+  }
+  .sidebar .nav-icon {
+    display: inline-flex !important;
   }
   .sidebar .sidebar-logo {
     text-align: center;
