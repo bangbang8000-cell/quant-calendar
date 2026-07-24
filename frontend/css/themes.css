@@ -30,6 +30,12 @@
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
             --card-border: #bfdbfe;
         }
+        /* 主题切换过渡动画 */
+        body, .sidebar, .card, .nav-item, .sub-nav-tab,
+        .el-button, .el-table, .el-dialog, .el-input__inner,
+        .page-header, .stat-card, .table-container {
+            transition: var(--theme-transition);
+        }
         /* 🔵 专业蓝 - 稳重金融风格 */
         [data-theme="tech-blue"] {
             --primary-color: #1d4ed8;
@@ -138,77 +144,22 @@
             --el-success: #16a34a; --el-warning: #f59e0b;
             --el-danger: #dc2626; --el-info: #2563eb;
         }
-        /* ⚪ 经典白 - ElementPlus按钮 */
         [data-theme="classic-white"] .el-button--primary {
-            background-color: #2563eb !important;
-            border-color: #2563eb !important;
-            color: white !important;
+            background-color: #2563eb !important; border-color: #2563eb !important; color: white !important;
         }
         [data-theme="classic-white"] .el-button--primary:hover {
-            background-color: #1d4ed8 !important;
-            border-color: #1d4ed8 !important;
+            background-color: #1d4ed8 !important; border-color: #1d4ed8 !important;
         }
         [data-theme="classic-white"] .el-button--primary:active {
-            background-color: #1e40af !important;
-            border-color: #1e40af !important;
+            background-color: #1e40af !important; border-color: #1e40af !important;
         }
         [data-theme="classic-white"] .el-button--primary.is-plain {
-            background-color: rgba(37, 99, 235, 0.08) !important;
-            border-color: rgba(37, 99, 235, 0.25) !important;
-            color: #2563eb !important;
+            background-color: rgba(37,99,235,0.08) !important; border-color: rgba(37,99,235,0.25) !important; color: #2563eb !important;
         }
         [data-theme="classic-white"] .el-button--primary.is-plain:hover {
-            background-color: rgba(37, 99, 235, 0.15) !important;
-            border-color: #2563eb !important;
+            background-color: rgba(37,99,235,0.15) !important; border-color: #2563eb !important;
         }
-        [data-theme="classic-white"] .el-button--primary.is-text {
-            color: #2563eb !important;
-        }
-        /* ⚪ 经典白 — 用gradient-brand覆盖白底白字 */
-        [data-theme="classic-white"] .nav-item.active {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .status-tab.active {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .consensus-badge {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .stat-icon {
-            background: var(--gradient-brand) !important;
-        }
-        [data-theme="classic-white"] .user-avatar {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .login-icon {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .detail-header {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .hold-days {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .kline-tab.active {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
-        [data-theme="classic-white"] .sub-nav-tab.active {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.3) !important;
-        }
-        [data-theme="classic-white"] .user-menu-avatar {
-            background: var(--gradient-brand) !important;
-            color: white !important;
-        }
+        [data-theme="classic-white"] .el-button--primary.is-text { color: #2563eb !important; }
 
         /* ⚪ 经典白（红） — 白底+红色点缀 */
         [data-theme="classic-red"] {
@@ -253,22 +204,6 @@
             background-color: rgba(220,38,38,0.15) !important; border-color: #dc2626 !important;
         }
         [data-theme="classic-red"] .el-button--primary.is-text { color: #dc2626 !important; }
-        [data-theme="classic-red"] .nav-item.active,
-        [data-theme="classic-red"] .sub-nav-tab.active,
-        [data-theme="classic-red"] .status-tab.active,
-        [data-theme="classic-red"] .consensus-badge,
-        [data-theme="classic-red"] .stat-icon,
-        [data-theme="classic-red"] .user-avatar,
-        [data-theme="classic-red"] .user-menu-avatar,
-        [data-theme="classic-red"] .login-icon,
-        [data-theme="classic-red"] .detail-header,
-        [data-theme="classic-red"] .hold-days,
-        [data-theme="classic-red"] .kline-tab.active {
-            background: var(--gradient-brand) !important; color: white !important;
-        }
-        [data-theme="classic-red"] .sub-nav-tab.active {
-            box-shadow: 0 2px 8px rgba(220,38,38,0.3) !important;
-        }
 
         /* ⚪ 经典白（金） — 白底+金色点缀 */
         [data-theme="classic-gold"] {
@@ -313,21 +248,47 @@
             background-color: rgba(184,146,42,0.15) !important; border-color: #b8922a !important;
         }
         [data-theme="classic-gold"] .el-button--primary.is-text { color: #b8922a !important; }
+
+        /* ⚪ 经典主题：共享 active 状态 (使用各主题的 --gradient-brand) */
+        [data-theme="classic-white"] .nav-item.active,
+        [data-theme="classic-red"] .nav-item.active,
         [data-theme="classic-gold"] .nav-item.active,
-        [data-theme="classic-gold"] .sub-nav-tab.active,
+        [data-theme="classic-white"] .status-tab.active,
+        [data-theme="classic-red"] .status-tab.active,
         [data-theme="classic-gold"] .status-tab.active,
+        [data-theme="classic-white"] .consensus-badge,
+        [data-theme="classic-red"] .consensus-badge,
         [data-theme="classic-gold"] .consensus-badge,
+        [data-theme="classic-white"] .stat-icon,
+        [data-theme="classic-red"] .stat-icon,
         [data-theme="classic-gold"] .stat-icon,
+        [data-theme="classic-white"] .user-avatar,
+        [data-theme="classic-red"] .user-avatar,
         [data-theme="classic-gold"] .user-avatar,
+        [data-theme="classic-white"] .user-menu-avatar,
+        [data-theme="classic-red"] .user-menu-avatar,
         [data-theme="classic-gold"] .user-menu-avatar,
+        [data-theme="classic-white"] .login-icon,
+        [data-theme="classic-red"] .login-icon,
         [data-theme="classic-gold"] .login-icon,
+        [data-theme="classic-white"] .detail-header,
+        [data-theme="classic-red"] .detail-header,
         [data-theme="classic-gold"] .detail-header,
+        [data-theme="classic-white"] .hold-days,
+        [data-theme="classic-red"] .hold-days,
         [data-theme="classic-gold"] .hold-days,
+        [data-theme="classic-white"] .kline-tab.active,
+        [data-theme="classic-red"] .kline-tab.active,
         [data-theme="classic-gold"] .kline-tab.active {
-            background: var(--gradient-brand) !important; color: white !important;
+            background: var(--gradient-brand) !important;
+            color: white !important;
         }
+        [data-theme="classic-white"] .sub-nav-tab.active,
+        [data-theme="classic-red"] .sub-nav-tab.active,
         [data-theme="classic-gold"] .sub-nav-tab.active {
-            box-shadow: 0 2px 8px rgba(184,146,42,0.3) !important;
+            background: var(--gradient-brand) !important;
+            color: white !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
         }
 
         /* 🌙 暗色专业版 - Bloomberg Terminal 风格 */
@@ -745,7 +706,7 @@
             flex: 1;
             margin-left: 220px;
             padding: 20px;
-            max-width: calc(100% - 220px);
+            max-width: min(1400px, calc(100% - 220px));
         }
         .page-header {
             background: var(--bg-sidebar);
@@ -798,6 +759,32 @@
                 padding: 16px;
                 margin-bottom: 12px;
             }
+        }
+
+        /* ===== 面包屑导航 ===== */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+            margin-bottom: 8px;
+            font-size: var(--font-sm);
+        }
+        .breadcrumb-item {
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .breadcrumb-item:hover {
+            color: var(--primary-color);
+        }
+        .breadcrumb-item.active {
+            color: var(--text-primary);
+            font-weight: var(--font-medium);
+            cursor: default;
+        }
+        .breadcrumb-sep {
+            color: var(--text-tertiary);
         }
 
         /* ===== 移动端底部导航 ===== */
@@ -4407,7 +4394,7 @@ text {
 .sidebar.collapsed .sidebar-nav { padding: 0 4px; }
 .sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 .sidebar.collapsed .user-avatar { margin: 0 auto; }
-.main-content.expanded { margin-left: 56px; max-width: calc(100% - 56px); }
+.main-content.expanded { margin-left: 56px; max-width: min(1400px, calc(100% - 56px)); }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .flex-center { display: flex; justify-content: center; align-items: center; }
 .flex-wrap { display: flex; flex-wrap: wrap; gap: 8px; }

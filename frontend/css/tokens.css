@@ -33,6 +33,7 @@
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 400ms ease;
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;

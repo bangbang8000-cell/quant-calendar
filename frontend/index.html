@@ -25,15 +25,15 @@
     <script src="/static/lib/element-plus.min.js"></script>
     <script src="/static/lib/echarts.min.js"></script>
     <script src="/static/lib/zh-cn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.0">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.0">
-    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.0">
-    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.0">
-    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.0">
+    <link rel="stylesheet" href="/static/css/tokens.css?v=2.5.1">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.5.1">
+    <link rel="stylesheet" href="/static/css/layout.css?v=2.5.1">
+    <link rel="stylesheet" href="/static/css/animations.css?v=2.5.1">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.5.1">
 
     <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.5.0"></script>
-    <script src="/static/js/icons.js?v=2.5.0"></script>
+    <script src="/static/js/themes.js?v=2.5.1"></script>
+    <script src="/static/js/icons.js?v=2.5.1"></script>
     <script src="/static/js/core.js"></script>
     <script src="/static/js/charts.js"></script>
     <script src="/static/js/calendar.js"></script>
@@ -76,7 +76,7 @@
                     <h2>📊 量化选股日历</h2>
                 </div>
                 <div class="sidebar-nav">
-                    <div v-for="menu in menus" :key="menu.key" class="nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
+                    <div v-for="menu in menus" :key="menu.key" class="nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''" tabindex="0" @keydown.enter="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
                         <span class="nav-icon" v-html="menu.icon"></span>
                         <span>{{ menu.name }}</span>
                     </div>
@@ -97,7 +97,8 @@
                             <template v-if="currentPage === menu.key">
                                 <div v-for="sp in menu.subPages" :key="sp"
                                      class="sub-nav-tab" :class="{active: currentSubPage === sp}"
-                                     @click="currentSubPage = sp">
+                                     @click="currentSubPage = sp" tabindex="0"
+                                     @keydown.enter="currentSubPage = sp">
                                     {{ subPageNames[sp] || sp }}
                                 </div>
                             </template>
@@ -172,8 +173,20 @@
                     </div>
                 </div>
 
+                <!-- 面包屑导航 -->
+                <div class="breadcrumb">
+                    <span class="breadcrumb-item" @click="currentPage = 'strategies'; currentSubPage = 'overview'">首页</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span class="breadcrumb-item active">{{ currentPageName }}</span>
+                    <template v-if="currentSubPage && currentSubPage !== 'overview'">
+                        <span class="breadcrumb-sep">/</span>
+                        <span class="breadcrumb-item active">{{ subPageNames[currentSubPage] || currentSubPage }}</span>
+                    </template>
+                </div>
+
                 <!-- 页面0: 策略总览 -->
                 <Transition name="fade-slide" mode="out-in">
+                <KeepAlive>
                 <div v-if="currentPage === 'strategies'" key="strategies">
                                         <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
@@ -185,7 +198,11 @@
                     </div>
 
                     <!-- 核心数据卡片 (v1.11: +趋势徽标) -->
-                    <div class="dashboard-grid">
+                    <!-- 骨架屏加载 -->
+                    <div v-if="loading && loadingView === 'overview'" class="dashboard-grid">
+                        <div class="card skeleton skeleton-card" v-for="i in 4" :key="i"></div>
+                    </div>
+                    <div v-else class="dashboard-grid">
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
                             <div class="stat-content">
@@ -1752,6 +1769,7 @@
                     </div>
 
                 </div>
+                </KeepAlive>
                 </Transition>
             </div>
 
@@ -3724,6 +3742,10 @@ const allMenuDefs = [
                 }
                 const currentPage = ref('strategies');
                 const currentSubPage = ref('overview');
+                const currentPageName = computed(() => {
+                    const menu = allMenuDefs.find(m => m.key === currentPage.value);
+                    return menu ? menu.name : currentPage.value;
+                });
                 const showUserMenu = ref(false);
                 const dashboardData = ref({});
                 const dashboardDate = ref('');
@@ -4515,8 +4537,14 @@ const allMenuDefs = [
                 }
 
                 function handleLogout() {
-                    currentUser.value = null;
-                    localStorage.removeItem('quant_user');
+                    ElementPlus.ElMessageBox.confirm('确定要退出登录吗？', '确认退出', {
+                        confirmButtonText: '退出',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        currentUser.value = null;
+                        localStorage.removeItem('quant_user');
+                    }).catch(() => {});
                 }
 
                 // ===== v1.5.0: 修改密码 =====
@@ -6955,7 +6983,7 @@ const allMenuDefs = [
                     // v1.11: 策略总览增强
                     poolChangeBadge, timeBarPercent, timeSinceRefresh, navigateToStrategyFilter,
                     // v1.5.0
-                    currentSubPage, showUserMenu, subPageNames,
+                    currentSubPage, currentPageName, showUserMenu, subPageNames,
                     // v1.9.2: 图标系统
                     iconSystem, switchIconSystem,
                     // v3.0: 侧边栏折叠
