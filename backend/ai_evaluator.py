@@ -527,8 +527,8 @@ class AIEvaluator:
         
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
-        # 1) 获取真实数据
-        market_data = self._fetch_stock_data(stock_code)
+        # 1) 获取真实数据 (v3.2.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
+        market_data = stock_data if stock_data is not None else self._fetch_stock_data(stock_code)
 
         # 2) 遍历启用模型，按优先级尝试
         enabled_models = self.get_enabled_models()

@@ -41,7 +41,7 @@
     <script src="/static/js/ai.js"></script>
     <script src="/static/js/system.js"></script>
     <script src="/static/js/users.js"></script>
-    <script src="/static/js/merrill.js?v=3.1.0"></script>
+    <script src="/static/js/merrill.js?v=3.2.0"></script>
     <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
 <body>
     <div id="app">
@@ -3361,7 +3361,7 @@ const allMenuDefs = [
                                 content: feedbackText.value.trim(),
                                 page: currentPage.value + '/' + currentSubPage.value,
                                 user_agent: navigator.userAgent.slice(0, 200),
-                                app_version: 'v' + (window.__appVersion || '3.1.0'),
+                                app_version: 'v' + (window.__appVersion || '3.2.0'),
                             }),
                         });
                         if (res.ok) {

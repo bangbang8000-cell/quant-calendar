@@ -131,6 +131,14 @@ class BacktestEngine:
             if not backtest_dates:
                 result.message = "指定日期范围内没有数据"
                 return result
+
+            # v3.2.0 fix: 校验策略是否存在, 无效策略直接返回失败 (不静默 fallback)
+            from data_parser import STRATEGY_CONFIG
+            valid_ids = list(STRATEGY_CONFIG.keys())
+            if not any(strategy_id in sid or sid in strategy_id for sid in valid_ids):
+                result.success = False
+                result.message = f"未知策略: {strategy_id} (可用: {', '.join(valid_ids)})"
+                return result
             
             result.total_days = len(backtest_dates)
             
@@ -157,11 +165,9 @@ class BacktestEngine:
                         today_stocks = {s.get("code") if isinstance(s, dict) else s for s in raw}
                         break
                 else:
-                    # 如果没找到精确匹配，尝试第一个策略
-                    if holdings:
-                        first_key = list(holdings.keys())[0]
-                        raw = holdings[first_key].get("stocks", [])
-                        today_stocks = {s.get("code") if isinstance(s, dict) else s for s in raw}
+                    # v3.2.0 fix: 策略不匹配时不应静默 fallback 到第一个策略
+                    # 若无任何策略匹配, 标记无数据并跳过 (保持回测结果的正确性)
+                    today_stocks = set()
                 total_positions += len(today_stocks)
                 
                 # 模拟持仓变化和收益率计算
