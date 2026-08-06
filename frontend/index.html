@@ -623,6 +623,32 @@
                                     <div class="stat-label">自动评股</div>
                                 </div>
                             </div>
+                            <!-- v3.5.0-T6: AI 用量统计 -->
+                            <div class="stat-card" style="border-left: 3px solid var(--el-info);" title="AI 模型调用统计">
+                                <div class="stat-icon" style="background: rgba(144,147,153,0.12); color: var(--el-info);">⚡</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ aiUsage.total_calls || 0 }}</div>
+                                    <div class="stat-label">AI 调用量</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- v3.5.0-T5: 策略推荐 -->
+                        <div class="card" style="margin-bottom: 16px;" v-if="strategyRecommendations.length">
+                            <div class="card-title">💡 策略推荐 <span style="font-size: var(--font-sm); color: var(--text-tertiary); font-weight: normal;">基于你的 {{ strategyRecommendations.length > 0 ? watchlist.length : 0 }} 只自选股风格</span></div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                                <div v-for="r in strategyRecommendations" :key="r.strategy_id" style="background: var(--bg-card-header); border-radius: 10px; padding: 14px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <span style="font-weight: var(--font-semibold);">{{ r.name }}</span>
+                                        <span style="font-size: var(--font-sm); color: var(--primary-color); font-weight: var(--font-semibold);">{{ r.score }}%</span>
+                                    </div>
+                                    <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 8px;">{{ r.desc }}</div>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <span v-for="t in r.tags" :key="t" style="font-size: var(--font-xs); background: var(--bg-tertiary); padding: 2px 8px; border-radius: 10px; color: var(--text-secondary);">{{ t }}</span>
+                                    </div>
+                                    <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 8px;">{{ r.reason }}</div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 最近评估 -->
@@ -3367,6 +3393,27 @@ const allMenuDefs = [
                         const input = document.querySelector('input[placeholder*="输入问题"]');
                         if (input) input.focus();
                     });
+                }
+                // v3.5.0-T5/T6: 策略推荐 + AI 用量
+                const strategyRecommendations = ref([]);
+                const aiUsage = ref({});
+                async function loadStrategyRecommendations() {
+                    try {
+                        const res = await fetch('/api/ai/recommend-strategies', {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) strategyRecommendations.value = data.recommendations || [];
+                    } catch (e) {}
+                }
+                async function loadAiUsage() {
+                    try {
+                        const res = await fetch('/api/ai/usage-stats', {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) aiUsage.value = data;
+                    } catch (e) {}
                 }
                 // v3.4.0-T4/T7: 系统监控 + 页面热度
                 const sysMonitor = ref({});
@@ -6457,6 +6504,7 @@ const allMenuDefs = [
                     } else if (page === 'calendar') {
                         if (selectedDate.value) await loadConsensusData();
                     } else if (page === 'ai') {
+                        loadStrategyRecommendations(); loadAiUsage();
                         await loadAiHistory();
                     } else if (page === 'system') {
                         // 加载所有视图的共识数据用于策略筛选预览
@@ -6690,6 +6738,7 @@ const allMenuDefs = [
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
                     sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
+                    strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,

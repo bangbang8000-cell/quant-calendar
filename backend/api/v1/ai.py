@@ -140,6 +140,20 @@ async def get_ai_config(_: Dict = Depends(get_admin_user)):
     except Exception as e:
         return {"success": False, "message": str(e)}
 
+# v3.5.0-T5: 策略推荐
+@router.get("/recommend-strategies")
+async def recommend_strategies(user: Dict = Depends(get_current_active_user)):
+    """基于自选股风格推荐策略"""
+    username = user.get("username", "default")
+    result = ai_evaluator.recommend_strategies(username=username)
+    return result
+
+# v3.5.0-T6: AI 用量统计
+@router.get("/usage-stats")
+async def get_usage_stats(_: Dict = Depends(get_admin_user)):
+    """AI 调用用量统计 (admin)"""
+    return {"success": True, **ai_evaluator.get_usage_stats()}
+
 @router.post("/config")
 async def save_ai_config(config: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """保存 AI 配置"""
