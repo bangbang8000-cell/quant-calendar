@@ -11,6 +11,7 @@
 | 版本 | 日期 | 变更人 | 说明 |
 |------|------|--------|------|
 | v1.0 | 2026-08-07 | Hermes | 基于 PRD v1.0 创建 |
+| v1.1 | 2026-08-07 | Hermes | 八维评估修正: 任务 3.2-T21/22, 3.3-T11/12, 3.4-T7, REL-10, staging→dev 仓库 |
 
 ---
 
@@ -73,6 +74,8 @@
 | 3.2-T18 | 表格排序 + 冻结列 | FR-3.2.18 | index.html, layout.css | 3h | 3 态循环 + 375px | ⏳ |
 | 3.2-T19 | 美林时钟 SVG | FR-3.2.19 | index.html, merrill.js | 4h | 三档宽度 | ⏳ |
 | 3.2-T20 | CSV 导出 | FR-3.2.20 | index.html | 2h | Excel 打开 | ⏳ |
+| 3.2-T21 | 回测前端 UI (S2) | FR-3.2.21 | index.html + charts.js | 6h | 回测流程冒烟 (SM-15) | ⏳ |
+| 3.2-T22 | 首次引导教程 (S5) | FR-3.2.22 | index.html | 3h | 3 步可跳过 | ⏳ |
 
 ### 4.2 阶段门禁
 
@@ -110,6 +113,8 @@
 | 3.3-T8 | 一键恢复 (前端+后端) | FR-3.3.3 | api/v1/backup.py + index.html | 5h | 恢复演练 | ⏳ |
 | 3.3-T9 | 启动 schema 校验 | FR-3.3.4 | db.py | 2h | 损坏文件测试 | ⏳ |
 | 3.3-T10 | qresult 自动导入 | FR-3.3.5 | data_parser.py | 3h | CSV 变化测试 | ⏳ |
+| 3.3-T11 | 数据管线自动化 (S1) | FR-3.3.6 | data_pipeline.py 新建 | 8h | tushare 拉取→CSV 生成 | ⏳ |
+| 3.3-T12 | 数据导出/导入 (S4) | FR-3.3.7 | api/v1/export.py + index.html | 5h | 导出→导入一致 | ⏳ |
 
 ### 5.1 发布门禁 (v3.3.0)
 
@@ -133,6 +138,7 @@
 | 3.4-T4 | 系统监控面板 | FR-3.4.3 | api/v1/system.py + index.html | 6h | 指标显示 | ⏳ |
 | 3.4-T5 | 异常告警 → 飞书 | FR-3.4.4 | feishu_push.py + scheduler | 4h | 故意造错触发 | ⏳ |
 | 3.4-T6 | 日志轮转 | FR-3.4.5 | logging 配置 | 2h | 轮转验证 | ⏳ |
+| 3.4-T7 | 页面热度统计 (S3) | FR-3.4.6 | api/v1/analytics.py + index.html | 4h | 热度排行显示 | ⏳ |
 
 ### 6.1 发布门禁 (v3.4.0)
 
@@ -264,9 +270,10 @@
 | REL-4 | 文档更新 | README/DEPLOYMENT/PRD/DEV-PLAN/TEST-PLAN 同步 |
 | REL-5 | 安全扫描 | staging 目录跑 secrets 扫描, 零命中 |
 | REL-6 | rsync dev → staging | 含 qresult 数据同步 |
-| REL-7 | commit + tag + push | staging 仓库 |
+| REL-7 | commit + tag + push | dev 仓库 (GitHub + 群辉) |
 | REL-8 | gh release create | 附 tar.gz 资产 |
 | REL-9 | 本地归档 | ~/量化日历/quant-calendar-vX.Y.Z.tar.gz |
+| REL-10 | ruff lint 检查 | `ruff check backend/` 零错误 (v3.3.0 起执行) |
 
 ---
 
@@ -280,6 +287,7 @@
 | 组件拆分破坏功能 | 中 | 中 | 每页独立验证对比 + 零构建回滚简单 |
 | 版本间回归 | 中 | 高 | 52 存量测试 + 冒烟清单门禁 |
 | 第三方渠道 (企微/钉钉) 接口变动 | 低 | 低 | 适配器隔离, 单渠道失败不影响其他 |
+| 数据管线依赖 tushare 限流/不稳定 | 中 | 中 | 失败重试 + 降级到手动导入 + 保留旧 CSV |
 
 ---
 
