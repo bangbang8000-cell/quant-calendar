@@ -3551,6 +3551,10 @@ text {
 .shortcut-row:last-child { border-bottom: none; }
 .shortcut-keys kbd { background: var(--bg-tertiary); border: 1px solid var(--border-light); border-radius: 6px; padding: 2px 8px; font-size: var(--font-sm); font-family: monospace; }
 .shortcut-desc { color: var(--text-secondary); font-size: var(--font-sm); }
+/* v3.2.0-T22: 首次引导 */
+.tour-dialog .el-dialog__header { display: none; }
+.tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); display: inline-block; transition: background 0.2s, transform 0.2s; }
+.tour-dot.active { background: var(--primary-color); transform: scale(1.2); }
 /* v3.2.0-T13: 浮动 AI 按钮 */
 .ai-fab {
     position: fixed; right: 24px; bottom: 96px; z-index: 200;

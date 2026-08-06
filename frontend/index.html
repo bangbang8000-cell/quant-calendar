@@ -1177,7 +1177,44 @@
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">🔬 策略回测</div>
-                        <div class="empty-state">🔬 敬请期待</div>
+                        <!-- v3.2.0-T21: 回测参数 -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; align-items: center;">
+                            <el-select v-model="backtestStrategy" size="small" style="width: 180px;" placeholder="选择策略">
+                                <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name" :value="s.id" />
+                            </el-select>
+                            <el-date-picker v-model="backtestRange" type="daterange" size="small"
+                                range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"
+                                style="width: 260px;" value-format="YYYY-MM-DD" />
+                            <el-input-number v-model="backtestCapital" size="small" :min="10000" :step="50000"
+                                style="width: 140px;" />
+                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning">▶ 运行回测</el-button>
+                        </div>
+                        <!-- 回测结果 -->
+                        <template v-if="backtestResult">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.total_return_pct }}%</div>
+                                    <div class="stat-label">总收益率</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.annual_return_pct }}%</div>
+                                    <div class="stat-label">年化收益</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.max_drawdown_pct }}%</div>
+                                    <div class="stat-label">最大回撤</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.sharpe_ratio }}</div>
+                                    <div class="stat-label">夏普比率</div>
+                                </div>
+                            </div>
+                            <div id="backtestEquityChart" style="width: 100%; height: 320px;"></div>
+                            <div style="color: var(--text-tertiary); font-size: var(--font-sm); margin-top: 8px;">
+                                {{ backtestResult.message || '' }}
+                            </div>
+                        </template>
+                        <div v-else class="empty-state" style="padding: 30px 0;">选择策略和日期范围后点击"运行回测"</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title">📋 回测记录</div>
@@ -2672,6 +2709,25 @@
             </div>
         </el-dialog>
 
+        <!-- v3.2.0-T22: 首次使用引导 -->
+        <el-dialog v-model="tourVisible" title="" width="440px" :show-close="false" class="tour-dialog">
+            <div style="text-align: center; padding: 8px 0 4px 0;">
+                <div style="font-size: 48px; margin-bottom: 12px;">{{ tourSteps[tourStep].icon }}</div>
+                <div style="font-size: var(--font-lg); font-weight: var(--font-semibold); margin-bottom: 8px;">{{ tourSteps[tourStep].title }}</div>
+                <div style="color: var(--text-secondary); line-height: 1.7; font-size: var(--font-base);">{{ tourSteps[tourStep].desc }}</div>
+            </div>
+            <template #footer>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <el-button size="small" text @click="skipTour">跳过</el-button>
+                    <div style="display: flex; gap: 4px;">
+                        <span v-for="(s, i) in tourSteps" :key="i" class="tour-dot" :class="{active: i === tourStep}"></span>
+                    </div>
+                    <el-button v-if="tourStep < tourSteps.length - 1" size="small" type="primary" @click="tourStep++">下一步</el-button>
+                    <el-button v-else size="small" type="primary" @click="finishTour">开始使用</el-button>
+                </div>
+            </template>
+        </el-dialog>
+
         <!-- v3.2.0-T13: 浮动 AI 按钮 -->
         <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
             <span class="ai-fab-icon">🤖</span>
@@ -3275,7 +3331,20 @@ const allMenuDefs = [
                         if (input) input.focus();
                     });
                 }
-                // v3.2.0-T24: 问题反馈
+                // v3.2.0-T22: 首次使用引导
+                const tourVisible = ref(false);
+                const tourStep = ref(0);
+                const tourSteps = [
+                    { icon: '🗓️', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
+                    { icon: '🤖', title: 'AI 智能评股', desc: '在智能评股页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
+                    { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
+                ];
+                function maybeShowTour() {
+                    if (localStorage.getItem('quant_tour_done') === '1') return;
+                    setTimeout(() => { tourStep.value = 0; tourVisible.value = true; }, 800);
+                }
+                function skipTour() { tourVisible.value = false; localStorage.setItem('quant_tour_done', '1'); }
+                function finishTour() { tourVisible.value = false; localStorage.setItem('quant_tour_done', '1'); }
                 const feedbackText = ref('');
                 const feedbackSubmitting = ref(false);
                 async function submitFeedback() {
@@ -3306,6 +3375,81 @@ const allMenuDefs = [
                     } finally {
                         feedbackSubmitting.value = false;
                     }
+                }
+                // v3.2.0-T21: 策略回测
+                const backtestStrategies = [
+                    { id: 'multifactor', name: '多因子策略' },
+                    { id: 'industry_rotation', name: '行业轮动' },
+                    { id: 'index_enhance', name: '指数增强' },
+                    { id: 'money_flow', name: '资金流策略' },
+                ];
+                const backtestStrategy = ref('multifactor');
+                const backtestRange = ref(null);
+                const backtestCapital = ref(100000);
+                const backtestRunning = ref(false);
+                const backtestResult = ref(null);
+                let backtestChart = null;
+                async function runBacktest() {
+                    const token = localStorage.getItem('quant_token');
+                    if (!token) { ElementPlus.ElMessage.warning('请先登录'); return; }
+                    const params = {
+                        initial_capital: backtestCapital.value || 100000,
+                    };
+                    if (backtestRange.value && backtestRange.value.length === 2) {
+                        params.start_date = backtestRange.value[0];
+                        params.end_date = backtestRange.value[1];
+                    }
+                    backtestRunning.value = true;
+                    backtestResult.value = null;
+                    try {
+                        const res = await fetch('/api/backtest/' + backtestStrategy.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify(params),
+                        });
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.detail || '回测失败');
+                        }
+                        const data = await res.json();
+                        if (!data.success) throw new Error(data.message || '回测失败');
+                        // 归一化 summary 字段
+                        const s = data.summary || {};
+                        backtestResult.value = {
+                            total_return_pct: (s.total_return_pct ?? s.total_return ?? 0).toFixed(2),
+                            annual_return_pct: (s.annual_return_pct ?? s.annual_return ?? 0).toFixed(2),
+                            max_drawdown_pct: (s.max_drawdown_pct ?? s.max_drawdown ?? 0).toFixed(2),
+                            sharpe_ratio: (s.sharpe_ratio ?? 0).toFixed(2),
+                            message: data.message || '',
+                        };
+                        renderBacktestChart(data.equity_curve);
+                        ElementPlus.ElMessage.success('回测完成');
+                    } catch (e) {
+                        ElementPlus.ElMessage.error(e.message || '回测失败');
+                    } finally {
+                        backtestRunning.value = false;
+                    }
+                }
+                function renderBacktestChart(equityCurve) {
+                    const el = document.getElementById('backtestEquityChart');
+                    if (!el || !equityCurve || equityCurve.length === 0) return;
+                    if (backtestChart) { backtestChart.dispose(); backtestChart = null; }
+                    backtestChart = echarts.init(el);
+                    backtestChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                    const dates = equityCurve.map(p => p.date || p[0]);
+                    const values = equityCurve.map(p => p.value ?? p[1]);
+                    backtestChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: 56, right: 16, top: 24, bottom: 40 },
+                        xAxis: { type: 'category', data: dates, boundaryGap: false },
+                        yAxis: { type: 'value', scale: true },
+                        dataZoom: [{ type: 'inside' }],
+                        series: [{
+                            name: '净值', type: 'line', data: values, smooth: true, symbol: 'none',
+                            lineStyle: { width: 2, color: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#667eea' },
+                            areaStyle: { opacity: 0.1 },
+                        }],
+                    });
                 }
                 const currentSubPage = ref('overview');
                 const currentPageName = computed(() => {
@@ -4059,6 +4203,8 @@ const allMenuDefs = [
                             await loadDates();
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('登录成功');
+                            // v3.2.0-T22: 首次使用引导 (所有角色首次登录显示)
+                            maybeShowTour();
                             // v2.2: 检查是否需要初始化向导
                             if (data.user.role === 'admin') {
                                 setTimeout(checkSetupWizard, 500);
@@ -6420,8 +6566,11 @@ const allMenuDefs = [
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
                     recentPages, jumpToPage, recordRecentPage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
+                    tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
+                    backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
+                    backtestRunning, backtestResult, runBacktest,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,

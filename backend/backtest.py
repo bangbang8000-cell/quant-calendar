@@ -152,13 +152,16 @@ class BacktestEngine:
                 for sid, data in holdings.items():
                     # 匹配策略名，支持前缀数字格式
                     if strategy_id in sid or sid in strategy_id:
-                        today_stocks = set(data.get("stocks", []))
+                        # stocks 元素为 {code, name} dict, 提取 code
+                        raw = data.get("stocks", [])
+                        today_stocks = {s.get("code") if isinstance(s, dict) else s for s in raw}
                         break
                 else:
                     # 如果没找到精确匹配，尝试第一个策略
                     if holdings:
                         first_key = list(holdings.keys())[0]
-                        today_stocks = set(holdings[first_key].get("stocks", []))
+                        raw = holdings[first_key].get("stocks", [])
+                        today_stocks = {s.get("code") if isinstance(s, dict) else s for s in raw}
                 total_positions += len(today_stocks)
                 
                 # 模拟持仓变化和收益率计算
