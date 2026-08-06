@@ -12,6 +12,7 @@
 |------|------|--------|------|
 | v1.0 | 2026-08-07 | Hermes | 基于 PRD v1.0 创建 |
 | v1.1 | 2026-08-07 | Hermes | 八维评估修正: 任务 3.2-T21/22, 3.3-T11/12, 3.4-T7, REL-10, staging→dev 仓库 |
+| v1.2 | 2026-08-07 | Hermes | 4-5星对齐: 任务 3.2-T23/24, 3.3-T13, 3.4-T8/9, 3.5-T7/8, 3.6-T10/11/12, 3.8-T5, 3.9-T5/6 |
 
 ---
 
@@ -76,6 +77,8 @@
 | 3.2-T20 | CSV 导出 | FR-3.2.20 | index.html | 2h | Excel 打开 | ⏳ |
 | 3.2-T21 | 回测前端 UI (S2) | FR-3.2.21 | index.html + charts.js | 6h | 回测流程冒烟 (SM-15) | ⏳ |
 | 3.2-T22 | 首次引导教程 (S5) | FR-3.2.22 | index.html | 3h | 3 步可跳过 | ⏳ |
+| 3.2-T23 | 设计系统文档 | FR-3.2.23 | docs/DESIGN-SYSTEM.md | 4h | 与 tokens.css 核对一致 | ⏳ |
+| 3.2-T24 | 用户反馈渠道 | FR-3.2.24 | api/v1/feedback.py + index.html | 3h | 反馈写入 data/feedback.json | ⏳ |
 
 ### 4.2 阶段门禁
 
@@ -115,6 +118,7 @@
 | 3.3-T10 | qresult 自动导入 | FR-3.3.5 | data_parser.py | 3h | CSV 变化测试 | ⏳ |
 | 3.3-T11 | 数据管线自动化 (S1) | FR-3.3.6 | data_pipeline.py 新建 | 8h | tushare 拉取→CSV 生成 | ⏳ |
 | 3.3-T12 | 数据导出/导入 (S4) | FR-3.3.7 | api/v1/export.py + index.html | 5h | 导出→导入一致 | ⏳ |
+| 3.3-T13 | 统一错误码体系 | FR-3.3.8 | api/v1/errors.py + 各路由 | 6h | 全部错误响应统一结构 | ⏳ |
 
 ### 5.1 发布门禁 (v3.3.0)
 
@@ -139,6 +143,8 @@
 | 3.4-T5 | 异常告警 → 飞书 | FR-3.4.4 | feishu_push.py + scheduler | 4h | 故意造错触发 | ⏳ |
 | 3.4-T6 | 日志轮转 | FR-3.4.5 | logging 配置 | 2h | 轮转验证 | ⏳ |
 | 3.4-T7 | 页面热度统计 (S3) | FR-3.4.6 | api/v1/analytics.py + index.html | 4h | 热度排行显示 | ⏳ |
+| 3.4-T8 | 异常处理规范化 | FR-3.4.7 | 全 backend 空 except + print | 6h | grep 空 except = 0, print → logger | ⏳ |
+| 3.4-T9 | 健康检查自动化 | FR-3.4.8 | scheduler.py + feishu_push.py | 3h | 连续失败触发告警 | ⏳ |
 
 ### 6.1 发布门禁 (v3.4.0)
 
@@ -161,6 +167,8 @@
 | 3.5-T4 | 问股 RAG 上下文 | FR-3.5.3 | chat.py, prompts/ | 5h | 多轮记忆测试 | ⏳ |
 | 3.5-T5 | 策略推荐 | FR-3.5.4 | ai_evaluator.py + 前端 | 4h | 推荐合理性 | ⏳ |
 | 3.5-T6 | 成本控制 (缓存+统计+限流) | FR-3.5.5 | ai_evaluator.py | 4h | 用量统计页 | ⏳ |
+| 3.5-T7 | ai_evaluator 模块拆分 | FR-3.5.6 | 拆分 4 模块 | 8h | 接口不变, 测试全过 | ⏳ |
+| 3.5-T8 | AI 测试 mock 化 | FR-3.5.7 | tests/test_ai_mock.py | 4h | 无 Key 可跑通 | ⏳ |
 
 ### 7.1 发布门禁 (v3.5.0)
 
@@ -187,6 +195,9 @@
 | 3.6-T7 | AI 页组件化 | FR-3.6.6 | js/components/ | 6h | 功能对比 | ⏳ |
 | 3.6-T8 | 壳瘦身 | FR-3.6.7 | index.html | 3h | wc -l ≤ 1800 | ⏳ |
 | 3.6-T9 | 全量冒烟对比 | FR-3.6.8 | — | 4h | 逐项对比清单 | ⏳ |
+| 3.6-T10 | merrill_clock 模块拆分 | FR-3.6.9 | 拆分 3 模块 | 6h | 接口不变, 测试全过 | ⏳ |
+| 3.6-T11 | 前端组件测试 (Vitest) | FR-3.6.10 | tests/frontend/ | 6h | 覆盖率 ≥ 40% | ⏳ |
+| 3.6-T12 | ADR 决策记录 | FR-3.6.11 | docs/adr/ | 2h | ≥ 3 篇 ADR | ⏳ |
 
 ### 8.1 拆分策略 (每页)
 
@@ -237,6 +248,7 @@
 | 3.8-T2 | 核心页离线缓存 | FR-3.8.2 | sw.js | 4h | 离线测试 | ⏳ |
 | 3.8-T3 | Web Push 通知 | FR-3.8.3 | sw.js + 后端 push 接口 | 5h | 浏览器推送 | ⏳ |
 | 3.8-T4 | 移动端性能优化 | FR-3.8.4 | index.html, css | 3h | Lighthouse ≥ 85 | ⏳ |
+| 3.8-T5 | 无障碍支持 | FR-3.8.5 | index.html, 组件 | 4h | 键盘可达 + aria 检查 | ⏳ |
 
 ### 10.1 发布门禁 (v3.8.0)
 
@@ -257,6 +269,8 @@
 | 3.9-T2 | API Token 管理 | FR-3.9.2 | backend/api_token.py | 4h | Token 权限测试 | ⏳ |
 | 3.9-T3 | 插件机制完善 | FR-3.9.3 | data_sources.py 抽象 | 4h | 自定义源接入 | ⏳ |
 | 3.9-T4 | 数据导出/导入 | FR-3.9.4 | api/v1/export.py | 3h | 迁移演练 | ⏳ |
+| 3.9-T5 | API 版本策略 | FR-3.9.5 | 版本迁移文档 | 3h | deprecation 流程文档化 | ⏳ |
+| 3.9-T6 | 用户分层运营 | FR-3.9.6 | analytics.py + index.html | 4h | 三态识别 + 差异化提示 | ⏳ |
 
 ---
 
