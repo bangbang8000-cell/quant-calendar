@@ -344,7 +344,7 @@ class AIEvaluator:
     # ─── 模型管理 ───────────────────────────────────────────────
 
     def _load_models(self) -> List[ModelProvider]:
-        """加载模型配置列表（自动解密 API Key）"""
+        """加载模型配置列表（API Key 明文存储, v3.6.0 起取消加密; 兼容历史 Fernet 密文）"""
         from crypto_utils import decrypt_value
         try:
             with open(self._models_file, 'r', encoding='utf-8') as f:
@@ -352,8 +352,14 @@ class AIEvaluator:
                 models = []
                 for m in data.get("models", []):
                     provider = ModelProvider.from_dict(m)
-                    # 解密 API Key（明文兼容）
-                    provider.api_key = decrypt_value(provider.api_key)
+                    # 兼容历史密文: Fernet 密文以 gAAAA 开头, 尝试解密; 失败则置空(需重新填写)
+                    if provider.api_key and provider.api_key.startswith("gAAAA"):
+                        decrypted = decrypt_value(provider.api_key)
+                        if decrypted.startswith("gAAAA"):
+                            logger.warning(f"模型 {provider.id} 的 API Key 无法解密 (FERNET_KEY 不匹配), 已置空, 请重新填写")
+                            provider.api_key = ""
+                        else:
+                            provider.api_key = decrypted
                     models.append(provider)
                 if models:
                     return models
@@ -364,13 +370,9 @@ class AIEvaluator:
         return list(DEFAULT_MODELS)
 
     def _save_models(self, models: List[ModelProvider]):
-        """保存模型配置列表（自动加密 API Key）"""
-        from crypto_utils import encrypt_value
+        """保存模型配置列表（API Key 明文存储, v3.6.0 起取消加密）"""
         os.makedirs(os.path.dirname(self._models_file), exist_ok=True)
         model_dicts = [m.to_dict() for m in models]
-        # 加密 API Key
-        for d in model_dicts:
-            d["api_key"] = encrypt_value(d.get("api_key", ""))
         data = {"models": model_dicts, "updated_at": datetime.now().isoformat()}
         with open(self._models_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
