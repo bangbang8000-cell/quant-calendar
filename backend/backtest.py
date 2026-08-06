@@ -401,6 +401,7 @@ class BacktestEngine:
             if idx + 1 < len(all_dates):
                 return all_dates[idx + 1]
         except ValueError:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
             pass
         return None
     
@@ -411,6 +412,7 @@ class BacktestEngine:
             if idx > 0:
                 return all_dates[idx - 1]
         except ValueError:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
             pass
         return None
     

@@ -136,15 +136,15 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|------|
-| 3.4-T1 | 审计日志模块 | FR-3.4.1 | backend/audit_log.py | 4h | 单测 | ⏳ |
-| 3.4-T2 | 审计可视化 (系统页) | FR-3.4.1 | api/v1/audit.py + index.html | 4h | 冒烟 | ⏳ |
-| 3.4-T3 | 结构化请求日志 | FR-3.4.2 | main_new.py 中间件 | 3h | 日志格式检查 | ⏳ |
-| 3.4-T4 | 系统监控面板 | FR-3.4.3 | api/v1/system.py + index.html | 6h | 指标显示 | ⏳ |
-| 3.4-T5 | 异常告警 → 飞书 | FR-3.4.4 | feishu_push.py + scheduler | 4h | 故意造错触发 | ⏳ |
-| 3.4-T6 | 日志轮转 | FR-3.4.5 | logging 配置 | 2h | 轮转验证 | ⏳ |
-| 3.4-T7 | 页面热度统计 (S3) | FR-3.4.6 | api/v1/analytics.py + index.html | 4h | 热度排行显示 | ⏳ |
-| 3.4-T8 | 异常处理规范化 | FR-3.4.7 | 全 backend 空 except + print | 6h | grep 空 except = 0, print → logger | ⏳ |
-| 3.4-T9 | 健康检查自动化 | FR-3.4.8 | scheduler.py + feishu_push.py | 3h | 连续失败触发告警 | ⏳ |
+| 3.4-T1 | 审计日志模块 | FR-3.4.1 | backend/audit_log.py | 4h | 单测 | ✅ |
+| 3.4-T2 | 审计可视化 (系统页) | FR-3.4.1 | api/v1/audit.py + index.html | 4h | 冒烟 | ✅ |
+| 3.4-T3 | 结构化请求日志 | FR-3.4.2 | main_new.py 中间件 | 3h | 日志格式检查 | ✅ |
+| 3.4-T4 | 系统监控面板 | FR-3.4.3 | api/v1/system.py + index.html | 6h | 指标显示 | ✅ |
+| 3.4-T5 | 异常告警 → 飞书 | FR-3.4.4 | feishu_push.py + scheduler | 4h | 故意造错触发 | ✅ |
+| 3.4-T6 | 日志轮转 | FR-3.4.5 | logging 配置 | 2h | 轮转验证 | ✅ |
+| 3.4-T7 | 页面热度统计 (S3) | FR-3.4.6 | api/v1/analytics.py + index.html | 4h | 热度排行显示 | ✅ |
+| 3.4-T8 | 异常处理规范化 | FR-3.4.7 | 全 backend 空 except + print | 6h | grep 空 except = 0, print → logger | ✅ |
+| 3.4-T9 | 健康检查自动化 | FR-3.4.8 | scheduler.py + feishu_push.py | 3h | 连续失败触发告警 | ✅ |
 
 ### 6.1 发布门禁 (v3.4.0)
 

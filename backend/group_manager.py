@@ -86,6 +86,7 @@ class GroupManager:
                     self.groups = db_groups
                     return
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         if os.path.exists(GROUPS_FILE):
             with open(GROUPS_FILE, 'r', encoding='utf-8') as f:
@@ -106,6 +107,7 @@ class GroupManager:
                 for gid, data in self.groups.items():
                     db.kv_set('groups', gid, data)
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
 
     def list_groups(self) -> Dict:

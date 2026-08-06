@@ -145,6 +145,7 @@ class Scheduler:
                             fc = json.load(f)
                         webhook = fc.get('webhook_url', '')
                 except Exception:
+                    logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
                     pass
             
             if not webhook:
@@ -263,6 +264,7 @@ class Scheduler:
                         try:
                             mtimes[fpath] = os.path.getmtime(fpath)
                         except OSError:
+                            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
                             pass
             return mtimes
         
@@ -339,6 +341,80 @@ class Scheduler:
             else:
                 await asyncio.sleep(60)
 
+    async def health_check_task(self):
+        """v3.4.0-T9: 健康检查自动化 — 每5分钟检查, 连续3次失败 → 飞书告警"""
+        consecutive_failures = 0
+        while self.running:
+            await asyncio.sleep(300)  # 5 分钟
+            try:
+                import urllib.request
+                # 检查本地健康端点 (通过内部检查避免自调网络)
+                from data_parser import parser
+                dates = parser.get_available_dates()
+                healthy = len(dates) > 0
+                # 检查数据库
+                import db
+                db_ok = db.schema_ok()
+                if healthy and db_ok:
+                    consecutive_failures = 0
+                    logger.info("💚 健康检查通过")
+                else:
+                    consecutive_failures += 1
+                    logger.warning(f"⚠️ 健康检查失败 ({consecutive_failures}/3): dates={len(dates) if dates else 0} db={db_ok}")
+                    if consecutive_failures >= 3:
+                        # 触发飞书告警
+                        try:
+                            import json, os
+                            from paths import DATA_DIR
+                            cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
+                            webhook = ""
+                            if os.path.exists(cfg_path):
+                                with open(cfg_path, 'r', encoding='utf-8') as f:
+                                    webhook = json.load(f).get('webhook_url', '')
+                            if webhook:
+                                from feishu_push import FeishuPusher
+                                pusher = FeishuPusher(webhook)
+                                pusher.send_text(
+                                    f"🚨 量化选股日历健康检查连续 {consecutive_failures} 次失败!\n"
+                                    f"数据日期数: {len(dates) if dates else 0}\n"
+                                    f"数据库: {'正常' if db_ok else '异常'}"
+                                )
+                                logger.info("📮 健康检查告警已发送飞书")
+                        except Exception as e:
+                            logger.error(f"健康检查告警发送失败: {e}")
+            except Exception as e:
+                logger.error(f"健康检查任务异常: {e}")
+
+    async def error_alert_task(self):
+        """v3.4.0-T5: 异常告警 → 飞书 (监控错误率)"""
+        while self.running:
+            await asyncio.sleep(600)  # 每 10 分钟
+            try:
+                from api.v1.system import get_metrics
+                m = get_metrics()
+                if m["requests"] >= 20 and m["error_rate"] > 10:
+                    logger.warning(f"⚠️ 错误率超阈值: {m['error_rate']}% ({m['requests']} 请求)")
+                    try:
+                        import json, os
+                        from paths import DATA_DIR
+                        cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
+                        webhook = ""
+                        if os.path.exists(cfg_path):
+                            with open(cfg_path, 'r', encoding='utf-8') as f:
+                                webhook = json.load(f).get('webhook_url', '')
+                        if webhook:
+                            from feishu_push import FeishuPusher
+                            pusher = FeishuPusher(webhook)
+                            pusher.send_text(
+                                f"🚨 API 错误率告警!\n错误率: {m['error_rate']}%\n"
+                                f"请求数: {m['requests']} | 平均延迟: {m['avg_ms']}ms | p95: {m['p95_ms']}ms"
+                            )
+                            logger.info("📮 错误率告警已发送飞书")
+                    except Exception as e:
+                        logger.error(f"错误率告警发送失败: {e}")
+            except Exception as e:
+                logger.error(f"错误率监控异常: {e}")
+
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -351,6 +427,8 @@ class Scheduler:
         asyncio.create_task(self.data_refresh_task())
         asyncio.create_task(self.file_watch_task())
         asyncio.create_task(self.daily_backup_task())
+        asyncio.create_task(self.health_check_task())
+        asyncio.create_task(self.error_alert_task())
     
     async def stop(self):
         """停止调度器"""

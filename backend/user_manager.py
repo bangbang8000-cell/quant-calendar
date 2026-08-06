@@ -69,6 +69,7 @@ class UserManager:
                     self.users = db_users
                     return
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         # 回退 JSON
         if os.path.exists(DATA_FILE):
@@ -121,6 +122,7 @@ class UserManager:
                 for username, data in self.users.items():
                     db.kv_set('users', username, data)
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
 
     def _hash_password(self, password: str) -> str:
