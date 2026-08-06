@@ -1716,6 +1716,16 @@
                                 <span style="color: #4CAF50; font-size: var(--font-md);">● 服务运行中</span>
                             </div>
                         </div>
+                        <!-- v3.2.0-T24: 问题反馈 -->
+                        <div class="card">
+                            <div class="card-title">📮 问题反馈</div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <el-input v-model="feedbackText" type="textarea" :rows="3" placeholder="描述你遇到的问题或建议 (系统信息会自动附带)"></el-input>
+                                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                    <el-button size="small" @click="submitFeedback" :loading="feedbackSubmitting" type="primary">提交反馈</el-button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card">
                             <div class="card-title">🧩 系统组件</div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
@@ -3264,6 +3274,38 @@ const allMenuDefs = [
                         const input = document.querySelector('input[placeholder*="输入问题"]');
                         if (input) input.focus();
                     });
+                }
+                // v3.2.0-T24: 问题反馈
+                const feedbackText = ref('');
+                const feedbackSubmitting = ref(false);
+                async function submitFeedback() {
+                    if (!feedbackText.value || !feedbackText.value.trim()) {
+                        ElementPlus.ElMessage.warning('请输入反馈内容');
+                        return;
+                    }
+                    feedbackSubmitting.value = true;
+                    try {
+                        const res = await fetch('/api/feedback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                content: feedbackText.value.trim(),
+                                page: currentPage.value + '/' + currentSubPage.value,
+                                user_agent: navigator.userAgent.slice(0, 200),
+                                app_version: 'v' + (window.__appVersion || '3.1.0'),
+                            }),
+                        });
+                        if (res.ok) {
+                            feedbackText.value = '';
+                            ElementPlus.ElMessage.success('反馈已提交，感谢你的支持！');
+                        } else {
+                            ElementPlus.ElMessage.error('提交失败，请稍后重试');
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('提交失败，请稍后重试');
+                    } finally {
+                        feedbackSubmitting.value = false;
+                    }
                 }
                 const currentSubPage = ref('overview');
                 const currentPageName = computed(() => {
@@ -6379,6 +6421,7 @@ const allMenuDefs = [
                     recentPages, jumpToPage, recordRecentPage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     aiFabHidden, openAiFab,
+                    feedbackText, feedbackSubmitting, submitFeedback,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,
