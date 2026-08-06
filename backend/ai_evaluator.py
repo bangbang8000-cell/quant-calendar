@@ -137,51 +137,8 @@ MACD_FAST = 12
 MACD_SLOW = 26
 MACD_SIGNAL = 9
 
-
-def _calc_rsi(closes, period=RSI_PERIOD):
-    """计算 RSI 指标"""
-    if len(closes) < period + 1:
-        return 50.0
-    deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
-    gains = [d if d > 0 else 0 for d in deltas[-period:]]
-    losses = [-d if d < 0 else 0 for d in deltas[-period:]]
-    avg_gain = sum(gains) / period
-    avg_loss = sum(losses) / period
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    return round(100.0 - (100.0 / (1.0 + rs)), 1)
-
-
-def _calc_macd(closes):
-    """计算 MACD (DIF, DEA, HIST)"""
-    if len(closes) < MACD_SLOW + MACD_SIGNAL:
-        return 0, 0, 0
-    ema12 = _ema(closes, MACD_FAST)
-    ema26 = _ema(closes, MACD_SLOW)
-    dif = ema12 - ema26
-    # 用简易方式计算 DEA (signal)
-    dea = dif  # 简化，只用最后一根
-    hist = (dif - dea) * 2
-    return round(dif, 2), round(dea, 2), round(hist, 2)
-
-
-def _ema(data, period):
-    """计算 EMA"""
-    if len(data) < period:
-        return data[-1]
-    k = 2.0 / (period + 1)
-    ema = sum(data[:period]) / period
-    for price in data[period:]:
-        ema = price * k + ema * (1 - k)
-    return ema
-
-
-def _ma(data, period):
-    """简单移动平均"""
-    if len(data) < period:
-        return data[-1]
-    return sum(data[-period:]) / period
+# v3.5.0-T7: 技术指标已拆分到 ai_indicators 模块 (接口/行为不变)
+from ai_indicators import _ema, _ma, calc_rsi as _calc_rsi, calc_macd as _calc_macd
 
 
 class AIEvaluator:
@@ -198,6 +155,137 @@ class AIEvaluator:
         self._models_cache: Optional[List[ModelProvider]] = None
         self._index_eval_file = os.path.join(DATA_DIR, "index_eval_cache.json")
         self._index_eval_cache: Dict = self._load_index_eval_cache()
+        # v3.5.0-T6: 成本控制 — 同题缓存 + 用量统计
+        self._cache_file = os.path.join(DATA_DIR, "ai_cache.json")
+        self._usage_file = os.path.join(DATA_DIR, "ai_usage.json")
+        self._response_cache: Dict = self._load_response_cache()
+        self._usage: Dict = self._load_usage()
+
+    def _load_response_cache(self) -> Dict:
+        """加载同题缓存 (key: stock+strategy+date, 24h 有效)"""
+        try:
+            with open(self._cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _save_response_cache(self):
+        try:
+            with open(self._cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self._response_cache, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def _load_usage(self) -> Dict:
+        """加载用量统计"""
+        try:
+            with open(self._usage_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {"total_calls": 0, "by_model": {}, "by_day": {}}
+
+    def _save_usage(self):
+        try:
+            with open(self._usage_file, 'w', encoding='utf-8') as f:
+                json.dump(self._usage, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def _get_cache_key(self, stock_code: str, strategy: str) -> str:
+        """缓存 key: 股票+策略+日期 (同日同策略不重复调用)"""
+        today = datetime.now().strftime('%Y-%m-%d')
+        return f"{stock_code}|{strategy}|{today}"
+
+    def _get_cached(self, stock_code: str, strategy: str) -> Dict | None:
+        key = self._get_cache_key(stock_code, strategy)
+        entry = self._response_cache.get(key)
+        if entry and entry.get("result"):
+            return entry["result"]
+        return None
+
+    def _set_cached(self, stock_code: str, strategy: str, result: Dict):
+        key = self._get_cache_key(stock_code, strategy)
+        self._response_cache[key] = {"result": result, "ts": datetime.now().isoformat()}
+        # 只保留最近 500 条
+        if len(self._response_cache) > 500:
+            for k in list(self._response_cache.keys())[:100]:
+                self._response_cache.pop(k, None)
+        self._save_response_cache()
+
+    def _record_usage(self, model_id: str):
+        """记录模型调用用量"""
+        today = datetime.now().strftime('%Y-%m-%d')
+        self._usage["total_calls"] = self._usage.get("total_calls", 0) + 1
+        self._usage.setdefault("by_model", {})
+        self._usage["by_model"][model_id] = self._usage["by_model"].get(model_id, 0) + 1
+        self._usage.setdefault("by_day", {})
+        self._usage["by_day"][today] = self._usage["by_day"].get(today, 0) + 1
+        self._save_usage()
+
+    def get_usage_stats(self) -> Dict:
+        """用量统计 (前端展示)"""
+        return {
+            "total_calls": self._usage.get("total_calls", 0),
+            "by_model": self._usage.get("by_model", {}),
+            "by_day": dict(sorted(self._usage.get("by_day", {}).items())[-30:]),
+        }
+
+    # ─── 策略推荐 (v3.5.0-T5) ───────────────────────────────
+
+    def recommend_strategies(self, watchlist: list = None, username: str = 'default') -> Dict:
+        """
+        基于自选股风格推荐策略
+        分析自选股的市值/行业分布, 匹配策略特征
+        """
+        try:
+            import db
+            if watchlist is None:
+                wl = db.watchlist_get(username)
+                watchlist = [r['stock_code'] for r in wl]
+            if not watchlist:
+                return {"success": False, "message": "自选股为空, 无法推荐", "recommendations": []}
+
+            # 策略特征定义
+            strategy_profiles = {
+                "multifactor": {"name": "多因子策略", "desc": "综合基本面+技术面多因子打分", "tags": ["稳健", "均衡"]},
+                "industry_rotation": {"name": "行业轮动", "desc": "捕捉行业景气度轮动机会", "tags": ["景气", "轮动"]},
+                "index_enhance": {"name": "指数增强", "desc": "跟踪指数并增强收益", "tags": ["被动", "稳定"]},
+                "money_flow": {"name": "资金流向", "desc": "跟随主力资金动向", "tags": ["资金", "短线"]},
+            }
+
+            # 简单评分: 自选数量越多 → 多因子; 行业分散 → 轮动; 大盘股多 → 指数增强
+            big_cap = 0
+            for code in watchlist[:50]:
+                try:
+                    num = code.split('.')[0]
+                    if num.startswith('60') or num.startswith('00'):
+                        big_cap += 1
+                except Exception:
+                    pass
+            ratio = big_cap / len(watchlist) if watchlist else 0
+
+            scores = {
+                "multifactor": 60 + min(len(watchlist), 20),
+                "industry_rotation": 50 + int((1 - ratio) * 30),
+                "index_enhance": 40 + int(ratio * 40),
+                "money_flow": 50,
+            }
+            ranked = sorted(scores.items(), key=lambda x: -x[1])
+
+            recommendations = []
+            for sid, score in ranked[:3]:
+                p = strategy_profiles.get(sid, {})
+                recommendations.append({
+                    "strategy_id": sid,
+                    "name": p.get("name", sid),
+                    "desc": p.get("desc", ""),
+                    "tags": p.get("tags", []),
+                    "score": score,
+                    "reason": f"匹配度 {score}% — 自选 {len(watchlist)} 只, 大盘股占比 {int(ratio*100)}%",
+                })
+            return {"success": True, "recommendations": recommendations, "watchlist_count": len(watchlist)}
+        except Exception as e:
+            return {"success": False, "message": f"策略推荐失败: {e}", "recommendations": []}
 
     def _load_config(self) -> Dict:
         """加载AI配置"""
@@ -527,8 +615,14 @@ class AIEvaluator:
         
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
-        # 1) 获取真实数据 (v3.2.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
+        # 1) 获取真实数据 (v3.3.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
         market_data = stock_data if stock_data is not None else self._fetch_stock_data(stock_code)
+
+        # v3.5.0-T6: 同题缓存 — 同日同策略直接返回缓存结果 (省 LLM 调用)
+        cached = self._get_cached(stock_code, strategy)
+        if cached:
+            cached["from_cache"] = True
+            return cached
 
         # 2) 遍历启用模型，按优先级尝试
         enabled_models = self.get_enabled_models()
@@ -585,6 +679,13 @@ class AIEvaluator:
                 model_provider = "评估失败"
 
         # 3) 保存历史
+        # v3.5.0-T6: 记录用量 + 写入缓存 (仅真实 LLM 调用, 非缓存命中)
+        if model_used:
+            try:
+                self._record_usage(model_used)
+                self._set_cached(stock_code, strategy, result)
+            except Exception:
+                pass
         record = {
             "id": hashlib.md5(f"{stock_code}{time.time()}".encode()).hexdigest()[:12],
             "stock_code": stock_code,

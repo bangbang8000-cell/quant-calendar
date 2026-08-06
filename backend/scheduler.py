@@ -39,7 +39,7 @@ class Scheduler:
         return True
     
     async def daily_report_task(self):
-        """每日报告任务"""
+        """每日报告任务 (v3.5.0-T2: 用批量日报生成器 + 飞书推送)"""
         while self.running:
             now = datetime.now()
             # 计算到下一个 9:00 的秒数
@@ -54,7 +54,24 @@ class Scheduler:
             dates = parser.get_available_dates()
             if dates:
                 logger.info(f"📤 执行每日推送任务: {dates[-1]}")
-                self.pusher.send_daily_report(dates[-1])
+                try:
+                    # v3.5.0-T1: 生成批量日报
+                    from report_generator import generate_daily_report
+                    report = generate_daily_report(dates[-1])
+                    if report.get("success"):
+                        logger.info(f"✅ 批量日报生成: {report['stats']['strategies']} 策略 / {report['stats']['stocks']} 只")
+                        # 飞书推送 (Markdown 文本)
+                        self.pusher.send_text(report["content"][:3500])
+                        logger.info("📮 日报已推送飞书")
+                    else:
+                        # 回退旧版推送
+                        self.pusher.send_daily_report(dates[-1])
+                except Exception as e:
+                    logger.error(f"日报推送失败, 回退旧版: {e}")
+                    try:
+                        self.pusher.send_daily_report(dates[-1])
+                    except Exception:
+                        pass
             await asyncio.sleep(60)  # 避开重复触发
     
     async def auto_evaluate_task(self):
