@@ -1,0 +1,49 @@
+// quant-calendar: Sidebar 组件 (v3.6.0-T3 / FR-3.6.2)
+// 零构建 Vue3 全局组件 — 通过 provide/inject 共享主状态
+(function () {
+  const { ref, inject } = Vue;
+
+  window.__quantComponents = window.__quantComponents || {};
+
+  window.__quantComponents.Sidebar = {
+    name: 'qc-sidebar',
+    template: `
+      <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-logo">
+          <h2>📊 量化选股日历</h2>
+        </div>
+        <div class="sidebar-nav">
+          <div v-for="menu in menus" :key="menu.key" class="nav-item" :class="{active: currentPage === menu.key}"
+               @click="navigate(menu)" tabindex="0" @keydown.enter="navigate(menu)">
+            <span class="nav-icon" v-html="menu.icon"></span>
+            <span>{{ menu.name }}</span>
+          </div>
+        </div>
+        <div class="sidebar-collapse-btn" @click="toggle" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'">
+          {{ sidebarCollapsed ? '▶' : '◀' }}
+        </div>
+      </div>
+    `,
+    setup() {
+      // 从主应用 inject 共享状态
+      const state = inject('qcState');
+      if (!state) return {};
+
+      const navigate = (menu) => {
+        state.currentPage.value = menu.key;
+        state.currentSubPage.value = menu.subPages[0] || '';
+      };
+      const toggle = () => {
+        state.sidebarCollapsed.value = !state.sidebarCollapsed.value;
+      };
+
+      return {
+        menus: state.menus,
+        currentPage: state.currentPage,
+        sidebarCollapsed: state.sidebarCollapsed,
+        navigate,
+        toggle,
+      };
+    },
+  };
+})();

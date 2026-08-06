@@ -43,6 +43,8 @@
     <script src="/static/js/users.js"></script>
     <script src="/static/js/merrill.js?v=3.2.0"></script>
     <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
+    <script src="/static/js/components/sidebar.js?v=3.6.0"></script>
+    <script src="/static/js/components/global-header.js?v=3.6.0"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -72,119 +74,14 @@
 
         <!-- 主界面 --><template v-else>
             <div :class="'icon-system-' + iconSystem">
-            <!-- 桌面端左侧导航 -->
-            <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
-                <div class="sidebar-logo">
-                    <h2>📊 量化选股日历</h2>
-                </div>
-                <div class="sidebar-nav">
-                    <div v-for="menu in menus" :key="menu.key" class="nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''" tabindex="0" @keydown.enter="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
-                        <span class="nav-icon" v-html="menu.icon"></span>
-                        <span>{{ menu.name }}</span>
-                    </div>
-                </div>
-                <div class="sidebar-collapse-btn" @click="toggleSidebar" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'">
-                    {{ sidebarCollapsed ? '▶' : '◀' }}
-                </div>
-            </div>
+            <!-- 桌面端左侧导航 (v3.6.0-T3: 组件化) -->
+            <qc-sidebar></qc-sidebar>
 
             <!-- 主内容区 -->
             <div class="main-content" :class="{ expanded: sidebarCollapsed }" @touchstart="onTouchStart" @touchend="onTouchEnd">
 
-                <!-- v1.5.0: 全局 Header — 二级导航 + 用户菜单 -->
-                <div class="global-header">
-                    <!-- 二级导航标签 -->
-                    <div class="sub-nav-wrapper">
-                        <template v-for="menu in menus" :key="menu.key">
-                            <template v-if="currentPage === menu.key">
-                                <div v-for="sp in menu.subPages" :key="sp"
-                                     class="sub-nav-tab" :class="{active: currentSubPage === sp}"
-                                     @click="currentSubPage = sp" tabindex="0"
-                                     @keydown.enter="currentSubPage = sp">
-                                    {{ subPageNames[sp] || sp }}
-                                </div>
-                            </template>
-                        </template>
-                    </div>
-
-                    <!-- v1.10 全局搜索 -->
-                    <div class="global-search-wrapper">
-                        <el-autocomplete
-                            v-model="searchQuery"
-                            :fetch-suggestions="searchStocks"
-                            placeholder="搜索股票..."
-                            :trigger-on-focus="false"
-                            clearable
-                            size="small"
-                            style="width:200px"
-                            @select="onSearchSelect"
-                        >
-                            <template #default="{ item }">
-                                <span>{{ item.code }}</span>
-                                <span style="color:var(--text-secondary);margin-left:8px">{{ item.name }}</span>
-                            </template>
-                        </el-autocomplete>
-                    </div>
-
-                    <!-- 日期选择器 (仅日历页显示) -->
-                    <div class="header-date-area" v-if="currentPage === 'calendar'">
-                        <el-date-picker v-if="currentSubPage === 'daily'"
-                            v-model="selectedDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD"
-                            placeholder="选择日期" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-                        <el-date-picker v-else-if="currentSubPage === 'weekly'"
-                            v-model="selectedDate" type="week" format="YYYY 第w周" value-format="YYYY-MM-DD"
-                            placeholder="选择周" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-                        <el-date-picker v-else-if="currentSubPage === 'monthly'"
-                            v-model="selectedDate" type="month" format="YYYY-MM" value-format="YYYY-MM-DD"
-                            placeholder="选择月份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-                        <el-date-picker v-else-if="currentSubPage === 'yearly'"
-                            v-model="selectedDate" type="year" format="YYYY" value-format="YYYY-MM-DD"
-                            placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-                        <el-button size="small" @click="refreshCalendarData" :loading="loading" style="margin-left:8px" title="重新加载最新持仓数据">🔄 刷新</el-button>
-                        <el-button size="small" @click="exportCSV" style="margin-left:4px" title="导出为CSV">📥 导出</el-button>
-                        <span v-if="lastLoadTime" style="font-size: var(--font-sm);color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
-                    </div>
-
-                    <!-- 用户菜单 (右上角) -->
-                    <div class="user-menu-wrapper" @click="showUserMenu = !showUserMenu" v-click-outside="() => showUserMenu = false">
-                        <div class="user-menu-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
-                        <span class="user-menu-name">{{ currentUser?.username }}</span>
-                        <span v-if="currentUser?.role === 'guest'" style="font-size:var(--font-xs); color:var(--badge-info-text); background:var(--badge-info-bg); padding:1px 8px; border-radius:8px; margin-left:4px;">访客</span>
-                        <span style="font-size: var(--font-xs); color: var(--text-tertiary);">▼</span>
-                        <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop>
-                            <div class="user-menu-item" v-if="currentUser?.role === 'admin'" @click="showUserMenu = false; resetSetupWizard()">
-                                ⚙️ 重新运行初始化向导
-                            </div>
-                            <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" @click="showUserMenu = false; showChangePassword = true">
-                                🔑 修改密码
-                            </div>
-                            <div class="user-menu-divider"></div>
-                            <div class="user-menu-section-title">🎨 切换主题</div>
-                            <div v-for="(theme, key) in themes" :key="key" class="user-menu-item theme-item-row"
-                                :class="{'theme-active': currentTheme === key}"
-                                @click="changeTheme(key); showUserMenu = false">
-                                <span class="theme-dot" :style="{background: theme.gradient}"></span>
-                                <span>{{ theme.name }}</span>
-                                <span v-if="currentTheme === key" class="theme-check">✓</span>
-                            </div>
-                            <div class="user-menu-divider"></div>
-                            <div class="user-menu-item danger" @click="handleLogout">
-                                🚪 退出登录
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 面包屑导航 -->
-                <div class="breadcrumb">
-                    <span class="breadcrumb-item" @click="currentPage = 'strategies'; currentSubPage = 'overview'">首页</span>
-                    <span class="breadcrumb-sep">/</span>
-                    <span class="breadcrumb-item active">{{ currentPageName }}</span>
-                    <template v-if="currentSubPage && currentSubPage !== 'overview'">
-                        <span class="breadcrumb-sep">/</span>
-                        <span class="breadcrumb-item active">{{ subPageNames[currentSubPage] || currentSubPage }}</span>
-                    </template>
-                </div>
+                <!-- v3.6.0-T3: 全局 Header + 面包屑 (组件化) -->
+                <qc-global-header></qc-global-header>
 
                 <!-- 页面0: 策略总览 -->
                 <Transition name="fade-slide" mode="out-in">
@@ -2839,7 +2736,7 @@
     <script>
         // ===== Vue 应用初始化 =====
         console.log('[DEBUG] App init script starting');
-        const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+        const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;
         console.log('[DEBUG] Vue destructured, creating app');
         const app = createApp({
             setup() {
@@ -6731,6 +6628,16 @@ const allMenuDefs = [
                     }
                 });
 
+                // v3.6.0: provide 共享状态给子组件 (inject 模式, 需在所有 ref 定义后)
+                provide('qcState', {
+                    currentPage, currentSubPage, sidebarCollapsed, menus,
+                    currentUser, iconSystem, allMenuDefs,
+                    currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
+                    selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV,
+                    loading, lastLoadTime, resetSetupWizard, showChangePassword,
+                    themes, currentTheme, changeTheme, handleLogout,
+                });
+
                 return {
 
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
@@ -6879,6 +6786,14 @@ const allMenuDefs = [
             }
         });
         console.log('[DEBUG] About to mount app');
+        // v3.6.0: 注册全局组件 (零构建, 用组件 name 属性保证 kebab-case 正确)
+        if (window.__quantComponents) {
+            Object.values(window.__quantComponents).forEach((comp) => {
+                if (comp && comp.name) {
+                    app.component(comp.name, comp);
+                }
+            });
+        }
         app.mount('#app');
         console.log('[DEBUG] App mounted');
 
