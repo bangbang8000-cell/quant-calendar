@@ -55,30 +55,30 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|------|
-| 3.2-T1 | 侧边栏 SVG 图标迁移 | FR-3.2.1 | index.html | 3h | 7 主题截图对比 | ⏳ |
-| 3.2-T2 | 面包屑导航 | FR-3.2.2 | index.html, layout.css | 2h | 三档宽度检查 | ⏳ |
-| 3.2-T3 | 移动端底部 TabBar | FR-3.2.3 | index.html, responsive.css | 4h | 375px 无横向滚动 | ⏳ |
-| 3.2-T4 | 最近访问快捷入口 | FR-3.2.4 | index.html | 2h | localStorage 验证 | ⏳ |
-| 3.2-T5 | 页面切换过渡 | FR-3.2.5 | index.html, animations.css | 1h | 视觉检查 | ⏳ |
-| 3.2-T6 | 统一 .card 卡片容器 | FR-3.2.6 | tokens.css, index.html | 3h | grep class="card" ≥ 6 | ⏳ |
-| 3.2-T7 | 信息层级三件套 | FR-3.2.7 | tokens.css, index.html | 3h | 视觉检查 | ⏳ |
-| 3.2-T8 | 间距规范化 | FR-3.2.8 | tokens.css | 2h | grep 硬编码字号 = 0 | ⏳ |
-| 3.2-T9 | 空状态统一 | FR-3.2.9 | index.html | 2h | 全列表检查 | ⏳ |
-| 3.2-T10 | 涨跌配色语义化 | FR-3.2.10 | tokens.css | 2h | 7 主题对比度 | ⏳ |
-| 3.2-T11 | 全局快捷键 | FR-3.2.11 | index.html | 4h | 键盘实测 | ⏳ |
-| 3.2-T12 | 拼音首字母搜索 | FR-3.2.12 | index.html, stock_info | 4h | zgsh→中国神华 | ⏳ |
-| 3.2-T13 | 浮动 AI 按钮 | FR-3.2.13 | index.html, layout.css | 2h | 7 主题检查 | ⏳ |
-| 3.2-T14 | 骨架屏 | FR-3.2.14 | index.html, tokens.css | 4h | Slow 3G 无白屏 | ⏳ |
-| 3.2-T15 | 危险操作确认 | FR-3.2.15 | index.html | 2h | 倒计时实测 | ⏳ |
-| 3.2-T16 | ECharts 主题联动 | FR-3.2.16 | js/echarts-theme.js | 4h | 切主题图表变色 | ⏳ |
-| 3.2-T17 | 图表文件提取 | FR-3.2.17 | js/charts/*.js | 4h | 功能对比 | ⏳ |
-| 3.2-T18 | 表格排序 + 冻结列 | FR-3.2.18 | index.html, layout.css | 3h | 3 态循环 + 375px | ⏳ |
-| 3.2-T19 | 美林时钟 SVG | FR-3.2.19 | index.html, merrill.js | 4h | 三档宽度 | ⏳ |
-| 3.2-T20 | CSV 导出 | FR-3.2.20 | index.html | 2h | Excel 打开 | ⏳ |
-| 3.2-T21 | 回测前端 UI (S2) | FR-3.2.21 | index.html + charts.js | 6h | 回测流程冒烟 (SM-15) | ⏳ |
-| 3.2-T22 | 首次引导教程 (S5) | FR-3.2.22 | index.html | 3h | 3 步可跳过 | ⏳ |
-| 3.2-T23 | 设计系统文档 | FR-3.2.23 | docs/DESIGN-SYSTEM.md | 4h | 与 tokens.css 核对一致 | ⏳ |
-| 3.2-T24 | 用户反馈渠道 | FR-3.2.24 | api/v1/feedback.py + index.html | 3h | 反馈写入 data/feedback.json | ⏳ |
+| 3.2-T1 | 侧边栏 SVG 图标迁移 | FR-3.2.1 | index.html | 3h | 7 主题截图对比✅ |
+| 3.2-T2 | 面包屑导航 | FR-3.2.2 | index.html, layout.css | 2h | 三档宽度检查✅ |
+| 3.2-T3 | 移动端底部 TabBar | FR-3.2.3 | index.html, responsive.css | 4h | 375px 无横向滚动✅ |
+| 3.2-T4 | 最近访问快捷入口 | FR-3.2.4 | index.html | 2h | (已移除: 5导航项下冗余) | ➖ |
+| 3.2-T5 | 页面切换过渡 | FR-3.2.5 | index.html, animations.css | 1h | 视觉检查✅ |
+| 3.2-T6 | 统一 .card 卡片容器 | FR-3.2.6 | tokens.css, index.html | 3h | grep class="card" ≥ 6✅ |
+| 3.2-T7 | 信息层级三件套 | FR-3.2.7 | tokens.css, index.html | 3h | 视觉检查✅ |
+| 3.2-T8 | 间距规范化 | FR-3.2.8 | tokens.css | 2h | grep 硬编码字号 = 0✅ |
+| 3.2-T9 | 空状态统一 | FR-3.2.9 | index.html | 2h | 全列表检查✅ |
+| 3.2-T10 | 涨跌配色语义化 | FR-3.2.10 | tokens.css | 2h | 7 主题对比度✅ |
+| 3.2-T11 | 全局快捷键 | FR-3.2.11 | index.html | 4h | 键盘实测✅ |
+| 3.2-T12 | 拼音首字母搜索 | FR-3.2.12 | index.html, stock_info | 4h | zgsh→中国神华✅ |
+| 3.2-T13 | 浮动 AI 按钮 | FR-3.2.13 | index.html, layout.css | 2h | 7 主题检查✅ |
+| 3.2-T14 | 骨架屏 | FR-3.2.14 | index.html, tokens.css | 4h | Slow 3G 无白屏✅ |
+| 3.2-T15 | 危险操作确认 | FR-3.2.15 | index.html | 2h | 倒计时实测✅ |
+| 3.2-T16 | ECharts 主题联动 | FR-3.2.16 | js/echarts-theme.js | 4h | 切主题图表变色✅ |
+| 3.2-T17 | 图表文件提取 | FR-3.2.17 | js/charts/*.js | 4h | 功能对比✅ |
+| 3.2-T18 | 表格排序 + 冻结列 | FR-3.2.18 | index.html, layout.css | 3h | 3 态循环 + 375px✅ |
+| 3.2-T19 | 美林时钟 SVG | FR-3.2.19 | index.html, merrill.js | 4h | 三档宽度✅ |
+| 3.2-T20 | CSV 导出 | FR-3.2.20 | index.html | 2h | Excel 打开✅ |
+| 3.2-T21 | 回测前端 UI (S2) | FR-3.2.21 | index.html + charts.js | 6h | 回测流程冒烟 (SM-15)✅ |
+| 3.2-T22 | 首次引导教程 (S5) | FR-3.2.22 | index.html | 3h | 3 步可跳过✅ |
+| 3.2-T23 | 设计系统文档 | FR-3.2.23 | docs/DESIGN-SYSTEM.md | 4h | 与 tokens.css 核对一致✅ |
+| 3.2-T24 | 用户反馈渠道 | FR-3.2.24 | api/v1/feedback.py + index.html | 3h | 反馈写入 data/feedback.json✅ |
 
 ### 4.2 阶段门禁
 

@@ -3541,6 +3541,29 @@ text {
 .sidebar.collapsed .sidebar-logo::after { content: '📊'; font-size: var(--font-xl); display: block; }
 .sidebar.collapsed .sidebar-nav { padding: 0 4px; }
 .sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
+/* v3.2.0-T11: 快捷键帮助面板 */
+.shortcut-list { display: flex; flex-direction: column; gap: 10px; }
+.shortcut-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid var(--border-light); }
+.shortcut-row:last-child { border-bottom: none; }
+.shortcut-keys kbd { background: var(--bg-tertiary); border: 1px solid var(--border-light); border-radius: 6px; padding: 2px 8px; font-size: var(--font-sm); font-family: monospace; }
+.shortcut-desc { color: var(--text-secondary); font-size: var(--font-sm); }
+/* v3.2.0-T22: 首次引导 */
+.tour-dialog .el-dialog__header { display: none; }
+.tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); display: inline-block; transition: background 0.2s, transform 0.2s; }
+.tour-dot.active { background: var(--primary-color); transform: scale(1.2); }
+/* v3.2.0-T13: 浮动 AI 按钮 */
+.ai-fab {
+    position: fixed; right: 24px; bottom: 96px; z-index: 200;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark, var(--primary-color)));
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.ai-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(0,0,0,0.3); }
+.ai-fab-icon { font-size: 26px; line-height: 1; }
+@media (max-width: 768px) { .ai-fab { bottom: 88px; right: 16px; } }
+.sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 .sidebar.collapsed .user-avatar { margin: 0 auto; }
 .main-content.expanded { margin-left: 56px; max-width: min(1400px, calc(100% - 56px)); }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }

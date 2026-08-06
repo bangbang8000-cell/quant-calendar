@@ -35,13 +35,14 @@
     <script src="/static/js/themes.js?v=2.5.2"></script>
     <script src="/static/js/icons.js?v=2.5.2"></script>
     <script src="/static/js/core.js"></script>
-    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/charts.js?v=3.2.0"></script>
     <script src="/static/js/calendar.js"></script>
     <script src="/static/js/strategies.js"></script>
     <script src="/static/js/ai.js"></script>
     <script src="/static/js/system.js"></script>
     <script src="/static/js/users.js"></script>
-    <script src="/static/js/merrill.js?v=3.1.0"></script>
+    <script src="/static/js/merrill.js?v=3.2.0"></script>
+    <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -141,7 +142,7 @@
                             placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
                         <el-button size="small" @click="refreshCalendarData" :loading="loading" style="margin-left:8px" title="重新加载最新持仓数据">🔄 刷新</el-button>
                         <el-button size="small" @click="exportCSV" style="margin-left:4px" title="导出为CSV">📥 导出</el-button>
-                        <span v-if="lastLoadTime" style="font-size:12px;color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
+                        <span v-if="lastLoadTime" style="font-size: var(--font-sm);color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
                     </div>
 
                     <!-- 用户菜单 (右上角) -->
@@ -273,7 +274,7 @@
 
 <!-- 各策略选股数量 (v1.11: 可点击跳转) -->
                     <div class="card">
-                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size:12px;color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
+                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size: var(--font-sm);color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item" @click="navigateToStrategyFilter(item.strategy_name)" style="cursor:pointer;">
                             <div class="strategy-header">
                                 <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:4px;">→</span></span>
@@ -289,7 +290,7 @@
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
                             <span>🏆 策略共识度 TOP5</span>
-                            <span @click="currentSubPage = 'consensus'" style="font-size:12px;color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
+                            <span @click="currentSubPage = 'consensus'" style="font-size: var(--font-sm);color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <div v-if="filteredConsensusRank.length === 0" class="empty-state">暂无共识数据</div>
                         <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
@@ -297,8 +298,8 @@
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
                                 <div class="consensus-name">{{ item.name }}
-                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span>
+                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span>
                                 </div>
                             </div>
                             <div class="consensus-tags">
@@ -315,7 +316,7 @@
 <!-- 美林时钟 -->
                     <div class="card" style="overflow: hidden;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div style="font-size: 15px; font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                            <div style="font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 ⏱️ 美林时钟 · 经济周期
                             </div>
                             <span :style="{background: merrillData.color || '#4CAF50'}" 
@@ -344,7 +345,7 @@
                         <div v-if="merrillData.timing" style="margin-top: 12px; padding: 12px; background: var(--badge-gold-bg); border-radius: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-base); margin-bottom: 6px;">
                                 <span style="color: var(--text-secondary);">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
-                                <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: 12px; padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
+                                <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: var(--font-sm); padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 7px;">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
@@ -369,7 +370,7 @@
                         <!-- 多维度评分 -->
                         <div v-if="merrillData.dimension_scores" style="margin-top: 14px; padding: 12px; background: var(--bg-card-header); border-radius: 10px;">
                             <div style="font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px;">📊 多维度评分</div>
-                            <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px;">
+                            <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: var(--font-sm);">
                                 <span style="width: 40px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
                                 <div style="flex: 1; height: 10px; background: var(--border-light); border-radius: 5px; overflow: hidden;">
                                     <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 5px; transition: width 0.5s;"></div>
@@ -382,10 +383,10 @@
                         <!-- 置信度 + 下阶段预测 -->
                         <div v-if="merrillData.confidence" style="margin-top: 10px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: 12px; color: var(--text-secondary);">置信度</span>
+                                <span style="font-size: var(--font-sm); color: var(--text-secondary);">置信度</span>
                                 <span :style="{color: confidenceColor}" style="font-weight: var(--font-semibold); font-size: var(--font-base);">{{ merrillData.confidence.level || '—' }}</span>
                             </div>
-                            <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                            <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: var(--font-sm);">
                                 <span style="color: var(--text-secondary);">→预测</span>
                                 <span style="font-weight: var(--font-semibold); color: var(--el-warning);">{{ merrillData.next_stage_prediction.next_stage_name || '—' }}</span>
                                 <span v-if="merrillData.next_stage_prediction.transition_probability" style="color: var(--text-secondary);">
@@ -447,7 +448,7 @@
                             <div class="consensus-badge">{{ item.strategy_count }}</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
+                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                             </div>
                             <div class="consensus-tags">
                                 <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -503,7 +504,7 @@
                                             <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                             <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                         </div>
-                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
+                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                                     </div>
                                     <div class="consensus-tags">
                                         <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -519,19 +520,19 @@
                             <div class="card-title">💎 股票池管理</div>
                             <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px;">{{ statusCounts.all }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl);">{{ statusCounts.all }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">总股票数</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">新入池</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--primary-color);">{{ statusCounts.current }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--primary-color);">{{ statusCounts.current }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">当前持仓</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--color-danger);">{{ statusCounts.out }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--color-danger);">{{ statusCounts.out }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">已出池</div>
                                 </div>
                             </div>
@@ -549,7 +550,7 @@
                                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                         <template v-for="(stock, si) in item.names" :key="stock.code">
                                             <span v-if="si < 5 || expandedStrategies[item.strategy]" 
-                                                style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg-input); border-radius: 6px; font-size: 12px; line-height: 1.4; border: 1px solid var(--border-light); cursor: default;"
+                                                style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg-input); border-radius: 6px; font-size: var(--font-sm); line-height: 1.4; border: 1px solid var(--border-light); cursor: default;"
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
@@ -618,7 +619,7 @@
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value" style="font-size:15px;">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
+                                    <div class="stat-value" style="font-size:var(--font-md);">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
                                     <div class="stat-label">自动评股</div>
                                 </div>
                             </div>
@@ -677,7 +678,7 @@
                                     </div>
                                     <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评股</el-button>
                                     <div v-if="watchlist.length === 0" style="text-align:center;padding:20px 0;color:var(--text-tertiary);">
-                                        <div style="font-size:36px;margin-bottom:8px;">⭐</div>
+                                        <div style="font-size: var(--font-3xl);margin-bottom:8px;">⭐</div>
                                         <div style="font-size:var(--font-sm);">还没有自选股</div>
                                         <el-button size="small" @click="currentSubPage = 'watchlist'" style="margin-top:8px;">去添加自选 →</el-button>
                                     </div>
@@ -1168,7 +1169,44 @@
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">🔬 策略回测</div>
-                        <div class="empty-state">🔬 敬请期待</div>
+                        <!-- v3.2.0-T21: 回测参数 -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; align-items: center;">
+                            <el-select v-model="backtestStrategy" size="small" style="width: 180px;" placeholder="选择策略">
+                                <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name" :value="s.id" />
+                            </el-select>
+                            <el-date-picker v-model="backtestRange" type="daterange" size="small"
+                                range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"
+                                style="width: 260px;" value-format="YYYY-MM-DD" />
+                            <el-input-number v-model="backtestCapital" size="small" :min="10000" :step="50000"
+                                style="width: 140px;" />
+                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning">▶ 运行回测</el-button>
+                        </div>
+                        <!-- 回测结果 -->
+                        <template v-if="backtestResult">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.total_return_pct }}%</div>
+                                    <div class="stat-label">总收益率</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.annual_return_pct }}%</div>
+                                    <div class="stat-label">年化收益</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.max_drawdown_pct }}%</div>
+                                    <div class="stat-label">最大回撤</div>
+                                </div>
+                                <div class="stat-card" style="padding: 12px;">
+                                    <div class="stat-value" style="font-size: var(--font-lg);">{{ backtestResult.sharpe_ratio }}</div>
+                                    <div class="stat-label">夏普比率</div>
+                                </div>
+                            </div>
+                            <div id="backtestEquityChart" style="width: 100%; height: 320px;"></div>
+                            <div style="color: var(--text-tertiary); font-size: var(--font-sm); margin-top: 8px;">
+                                {{ backtestResult.message || '' }}
+                            </div>
+                        </template>
+                        <div v-else class="empty-state" style="padding: 30px 0;">选择策略和日期范围后点击"运行回测"</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title">📋 回测记录</div>
@@ -1362,10 +1400,10 @@
                         <div v-if="!aiModelsError && aiModels.length>0">
                         <div v-for="(m,idx) in aiModels" :key="m.id" class="card" style="margin-bottom: 10px;">
                             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>{{ m.id }} <el-tag size="small" style="margin-left: 8px;">{{ m.provider }}</el-tag><span v-if="m.locked" style="margin-left:6px;font-size:12px;color:var(--text-tertiary);">🔒</span></span>
+                                <span>{{ m.id }} <el-tag size="small" style="margin-left: 8px;">{{ m.provider }}</el-tag><span v-if="m.locked" style="margin-left:6px;font-size: var(--font-sm);color:var(--text-tertiary);">🔒</span></span>
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <el-button v-if="!m.locked" size="small" type="danger" @click="deleteModel(idx)" style="margin-right:4px;">🗑️</el-button>
-                                    <span v-if="m.testResult!==undefined" style="font-size: 12px;" :style="{color: m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗'}} {{ m.testResult.message }}</span>
+                                    <span v-if="m.testResult!==undefined" style="font-size: var(--font-sm);" :style="{color: m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗'}} {{ m.testResult.message }}</span>
                                     <el-switch v-model="m.enabled" size="small" @change="onModelToggle(m)"/>
                                 </div>
                             </div>
@@ -1398,9 +1436,9 @@
                             <span>🔗 sxsc-tushare（券商版）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.sxsc_tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
-                                <span v-else-if="datasourceStatus.sxsc_tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">已连接</span>
+                                <span v-else-if="datasourceStatus.sxsc_tushare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -1422,9 +1460,9 @@
                             <span>📡 tushare（标准版 Pro）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
-                                <span v-else-if="datasourceStatus.tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">已连接</span>
+                                <span v-else-if="datasourceStatus.tushare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -1449,9 +1487,9 @@
                             <span>🌐 akshare（开源免费）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.akshare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: 12px;">可用</span>
-                                <span v-else-if="datasourceStatus.akshare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">可用</span>
+                                <span v-else-if="datasourceStatus.akshare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <div style="font-size: var(--font-base); color: var(--text-secondary); padding: 8px 0 12px 0;">
@@ -1531,7 +1569,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <span style="color: var(--text-secondary); font-size: var(--font-base);">
                                 上次刷新: <strong>{{ dataRefreshConfig.last_refresh || '—' }}</strong>
-                                <span v-if="dataRefreshConfig.last_refresh_status" style="margin-left: 6px; font-size: 12px;" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
+                                <span v-if="dataRefreshConfig.last_refresh_status" style="margin-left: 6px; font-size: var(--font-sm);" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
                                     {{ dataRefreshConfig.last_refresh_status.startsWith('failed') ? '失败' : '' }}
                                 </span>
                             </span>
@@ -1555,7 +1593,7 @@
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
                                 <el-switch v-model="dataRefreshConfig.watch_enabled" @change="saveDataRefreshConfig" size="small" />
-                                <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
+                                <span style="font-size: var(--font-sm); color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
                             </div>
                         </div>
                     </div>
@@ -1575,7 +1613,7 @@
                     <!-- user: 用户与权限 -->
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card" style="text-align: center; padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
+                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🔐</div>
                             <div style="color: var(--text-secondary);">仅管理员可访问此页面</div>
                         </div>
                         <div v-else>
@@ -1671,10 +1709,10 @@
                         <div v-if="g.locked || expandedGroups[gid]" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light);">
                             <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                 <span v-for="u in userList.filter(u => (u.group || u.role) === gid)" :key="u.username"
-                                    style="padding: 3px 10px; background: var(--bg-page); border-radius: 12px; font-size: 12px;">
+                                    style="padding: 3px 10px; background: var(--bg-page); border-radius: 12px; font-size: var(--font-sm);">
                                     {{ u.username }}<span v-if="u.role==='admin'" style="color:var(--primary-color);"> · 管理</span>
                                 </span>
-                                <span v-if="getGroupMemberCount(gid) === 0" style="color: var(--text-tertiary); font-size: 12px;">暂无成员</span>
+                                <span v-if="getGroupMemberCount(gid) === 0" style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无成员</span>
                             </div>
                         </div>
                     </div>
@@ -1707,46 +1745,56 @@
                                 <span style="color: #4CAF50; font-size: var(--font-md);">● 服务运行中</span>
                             </div>
                         </div>
+                        <!-- v3.2.0-T24: 问题反馈 -->
+                        <div class="card">
+                            <div class="card-title">📮 问题反馈</div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <el-input v-model="feedbackText" type="textarea" :rows="3" placeholder="描述你遇到的问题或建议 (系统信息会自动附带)"></el-input>
+                                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                    <el-button size="small" @click="submitFeedback" :loading="feedbackSubmitting" type="primary">提交反馈</el-button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card">
                             <div class="card-title">🧩 系统组件</div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">⚡</span>
+                                    <span style="font-size: var(--font-xl);">⚡</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">FastAPI</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">后端框架</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px; color: var(--el-success);">▣</span>
+                                    <span style="font-size: var(--font-xl); color: var(--el-success);">▣</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Vue 3</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">前端框架</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">🎨</span>
+                                    <span style="font-size: var(--font-xl);">🎨</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Element Plus</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">UI 组件库</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">🐍</span>
+                                    <span style="font-size: var(--font-xl);">🐍</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Python 3</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">运行环境</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">📊</span>
+                                    <span style="font-size: var(--font-xl);">📊</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">ECharts</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">图表引擎</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">📡</span>
+                                    <span style="font-size: var(--font-xl);">📡</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Tushare Pro</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">金融数据 API</div>
@@ -1791,7 +1839,7 @@
             <div v-if="stockDetail">
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
+                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
                         <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
                     </div>
                     <div class="score-badge" :class="{ pulse: scorePulse }">
@@ -1859,7 +1907,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">最高/最低</div>
-                            <div style="font-size: 15px; font-weight: var(--font-semibold);">
+                            <div style="font-size: var(--font-md); font-weight: var(--font-semibold);">
                                 <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high.toFixed(2) }}</span>
                                 <span style="color: var(--text-tertiary); margin: 0 4px;">/</span>
                                 <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low.toFixed(2) }}</span>
@@ -1938,7 +1986,7 @@
                                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
                                     </svg>
                                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                                        <div style="font-size:28px;font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
+                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
                                         <div style="font-size:var(--font-xs);color:var(--text-tertiary);">分</div>
                                     </div>
                                 </div>
@@ -2030,7 +2078,7 @@
                             </div>
                         </div>
                         <div v-else style="text-align: center; color: var(--text-tertiary); padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">🤖</div>
+                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🤖</div>
                             <div v-if="aiResult">
                                 <div style="margin-bottom: 8px;">最近评估：{{ aiResult.result.level }}</div>
                                 <div style="font-size: var(--font-sm);">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
@@ -2207,7 +2255,7 @@
                 <!-- 头部信息 -->
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
+                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
                         <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
@@ -2340,7 +2388,7 @@
                 <!-- 阶段概览 -->
                 <div class="merrill-detail-header" :style="{backgroundColor: merrillDetailData.bg_color, borderLeftColor: merrillDetailData.color}">
                     <div>
-                        <h3 style="margin: 0 0 8px 0; font-size: 18px;">{{ merrillDetailData.name }}</h3>
+                        <h3 style="margin: 0 0 8px 0; font-size: var(--font-lg);">{{ merrillDetailData.name }}</h3>
                         <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-base);">{{ merrillDetailData.description }}</p>
                     </div>
                     <div class="stage-badge" :style="{backgroundColor: merrillDetailData.color}">
@@ -2459,9 +2507,9 @@
                             <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 7px; transition: width 0.5s;"></div>
                         </div>
                         <span :style="{color: dim.scoreColor}" style="width: 40px; text-align: right; font-weight: var(--font-medium);">+{{ dim.scoreStr }}</span>
-                        <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: 12px;">{{ dim.level }}</span>
+                        <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: var(--font-sm);">{{ dim.level }}</span>
                     </div>
-                    <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: 12px;">
+                    <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: var(--font-sm);">
                         <b style="color: #E53935;">⚠️ 早期预警：</b>
                         <span v-for="(w, i) in merrillData.early_warnings" :key="i" style="display: inline-block; margin-right: 12px;">{{ w.type || w }}</span>
                     </div>
@@ -2560,8 +2608,8 @@
                 <!-- 步骤 1: 修改密码 -->
                 <div v-if="setupStep === 1">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">🔐</div>
-                        <div style="font-weight: 600; font-size: 16px;">管理员密码</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🔐</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">管理员密码</div>
                         <div style="color: #999; margin-top: 4px;">建议修改默认密码以保证安全</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
@@ -2578,8 +2626,8 @@
                 <!-- 步骤 2: AI 模型 -->
                 <div v-if="setupStep === 2">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">🤖</div>
-                        <div style="font-weight: 600; font-size: 16px;">AI 大模型配置</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🤖</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">AI 大模型配置</div>
                         <div style="color: #999; margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
@@ -2607,8 +2655,8 @@
                 <!-- 步骤 3: Tushare -->
                 <div v-if="setupStep === 3">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">📊</div>
-                        <div style="font-weight: 600; font-size: 16px;">Tushare 数据源</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">📊</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">Tushare 数据源</div>
                         <div style="color: #999; margin-top: 4px;">用于获取行情数据和股票信息</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
@@ -2642,6 +2690,40 @@
                 <el-button type="primary" @click="doChangePassword" :loading="changingPassword">确认修改</el-button>
             </template>
         </el-dialog>
+
+        <!-- v3.2.0-T11: 快捷键帮助面板 -->
+        <el-dialog v-model="shortcutHelpVisible" title="⌨️ 键盘快捷键" width="420px">
+            <div class="shortcut-list">
+                <div class="shortcut-row" v-for="s in shortcutHelpItems" :key="s.keys">
+                    <span class="shortcut-keys"><kbd>{{ s.keys }}</kbd></span>
+                    <span class="shortcut-desc">{{ s.desc }}</span>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- v3.2.0-T22: 首次使用引导 -->
+        <el-dialog v-model="tourVisible" title="" width="440px" :show-close="false" class="tour-dialog">
+            <div style="text-align: center; padding: 8px 0 4px 0;">
+                <div style="font-size: 48px; margin-bottom: 12px;">{{ tourSteps[tourStep].icon }}</div>
+                <div style="font-size: var(--font-lg); font-weight: var(--font-semibold); margin-bottom: 8px;">{{ tourSteps[tourStep].title }}</div>
+                <div style="color: var(--text-secondary); line-height: 1.7; font-size: var(--font-base);">{{ tourSteps[tourStep].desc }}</div>
+            </div>
+            <template #footer>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <el-button size="small" text @click="skipTour">跳过</el-button>
+                    <div style="display: flex; gap: 4px;">
+                        <span v-for="(s, i) in tourSteps" :key="i" class="tour-dot" :class="{active: i === tourStep}"></span>
+                    </div>
+                    <el-button v-if="tourStep < tourSteps.length - 1" size="small" type="primary" @click="tourStep++">下一步</el-button>
+                    <el-button v-else size="small" type="primary" @click="finishTour">开始使用</el-button>
+                </div>
+            </template>
+        </el-dialog>
+
+        <!-- v3.2.0-T13: 浮动 AI 按钮 -->
+        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
+            <span class="ai-fab-icon">🤖</span>
+        </div>
 
     
 </div>
@@ -2874,232 +2956,8 @@
                 
                 // ===== K线图渲染函数 =====
                 function renderKlineChart(chart, data, period, isIndex = false) {
-                    if (!data || data.length === 0) return;
-                    
-                    const dates = data.map(d => d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
-                    const isMobileDevice = isMobile.value;
-                    
-                    // K线数据: [open, close, low, high]
-                    const klineData = data.map(d => [d[1], d[2], d[3], d[4]]);
-                    const volData = data.map(d => d[5]);
-                    const ma5Data = data.map(d => d[6]);
-                    const ma10Data = data.map(d => d[7]);
-                    const ma20Data = data.map(d => d[8]);
-                    const ma60Data = data.map(d => d[9]);
-                    const volMa5Data = data.map(d => d[10]);
-                    
-                    // 从CSS变量读取主题色（跟随主题切换）
-                    const rootStyle = getComputedStyle(document.documentElement);
-                    const primaryColor = rootStyle.getPropertyValue('--primary-color').trim() || '#2563eb';
-                    const isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().match(/^#[0-9a-fA-F]{6}$/) ? 
-                        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().slice(1,3), 16) < 80 : false;
-                    const tooltipBg = isDark ? 'rgba(30,41,59,0.96)' : 'rgba(255,255,255,0.96)';
-                    const tooltipBorder = isDark ? '#4b5563' : '#ddd';
-                    
-                    const colors = {
-                        up: '#E63946',
-                        down: '#457B9D',
-                        ma5: '#FF7F50',
-                        ma10: primaryColor,
-                        ma20: '#9370DB',
-                        ma60: '#22C55E'
-                    };
-                    
-                    const fontSize = isMobileDevice ? 10 : 12;
-                    const smallFont = isMobileDevice ? 9 : 11;
-                    const gridGap = isMobileDevice ? '8%' : '5%';
-                    
-                    const option = {
-                        animation: true,
-                        animationDuration: 300,
-                        backgroundColor: 'transparent',
-                        grid: [
-                            {left: gridGap, right: '3%', top: '12%', height: '56%'},
-                            {left: gridGap, right: '3%', bottom: '18%', height: '12%'}
-                        ],
-                        legend: {
-                            data: ['MA5', 'MA10', 'MA20', 'MA60'],
-                            top: '2%',
-                            right: '2%',
-                            textStyle: {
-                                fontSize: smallFont,
-                                color: isDark ? '#aaa' : '#666'
-                            }
-                        },
-                        dataZoom: [
-                            {
-                                type: 'inside',
-                                xAxisIndex: [0, 1],
-                                start: 0,
-                                end: 100
-                            },
-                            isMobileDevice ? {} : {
-                                type: 'slider',
-                                xAxisIndex: [0, 1],
-                                start: 0,
-                                end: 100,
-                                height: 16,
-                                bottom: '2%',
-                                borderColor: isDark ? '#555' : '#ddd',
-                                fillerColor: 'rgba(37, 99, 235, 0.15)',
-                                handleStyle: {color: primaryColor},
-                                textStyle: {fontSize: 10, color: isDark ? '#aaa' : undefined}
-                            }
-                        ].filter(Boolean),
-                        xAxis: [
-                            {
-                                type: 'category',
-                                data: dates,
-                                scale: true,
-                                boundaryGap: false,
-                                axisLine: {onZero: false, lineStyle: {color: isDark ? '#555' : '#e0e0e0'}},
-                                splitLine: {show: false},
-                                axisLabel: {show: false},
-                                axisTick: {show: false}
-                            },
-                            {
-                                type: 'category',
-                                gridIndex: 1,
-                                data: dates,
-                                scale: true,
-                                boundaryGap: false,
-                                axisLine: {onZero: false, lineStyle: {color: isDark ? '#555' : '#e0e0e0'}},
-                                splitLine: {show: false},
-                                axisLabel: {
-                                    show: true,
-                                    rotate: 0,
-                                    fontSize: smallFont,
-                                    color: isDark ? '#aaa' : '#999',
-                                    interval: Math.max(Math.floor(data.length / 6) - 1, 0)
-                                }
-                            }
-                        ],
-                        yAxis: [
-                            {
-                                scale: true,
-                                splitArea: {show: false},
-                                splitLine: {lineStyle: {color: isDark ? '#333' : '#f0f0f0', type: 'dashed'}},
-                                axisLabel: {
-                                    fontSize: smallFont,
-                                    color: isDark ? '#aaa' : '#999',
-                                    formatter: v => v.toFixed(1)
-                                }
-                            },
-                            {
-                                gridIndex: 1,
-                                splitNumber: 2,
-                                axisLabel: {show: false},
-                                axisLine: {show: false},
-                                axisTick: {show: false},
-                                splitLine: {show: false}
-                            }
-                        ],
-                        tooltip: {
-                            trigger: 'axis',
-                            axisPointer: {type: 'cross'},
-                            backgroundColor: tooltipBg,
-                            borderColor: tooltipBorder,
-                            borderWidth: 1,
-                            textStyle: {fontSize: 12},
-                            formatter: function(params) {
-                                let res = '<div style="font-weight:600;margin-bottom:4px;">' + params[0].name + '</div>';
-                                let kline = null, vol = null;
-                                const maValues = {};
-                                params.forEach(p => {
-                                    if (p.seriesName === 'K线') kline = p;
-                                    else if (p.seriesName === '成交量') vol = p;
-                                    else if (p.seriesName.startsWith('MA')) maValues[p.seriesName] = p.value;
-                                });
-                                if (kline) {
-                                    const d = kline.data;
-                                    res += `<span style="display:inline-block;width:60px;">开盘</span> ${d[0].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">收盘</span> ${d[1].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">最低</span> ${d[2].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">最高</span> ${d[3].toFixed(2)}`;
-                                }
-                                if (ma5Data.some(v => v)) {
-                                    res += '<br/><span style="display:inline-block;width:60px;">MA5</span> ' + (maValues['MA5'] ? maValues['MA5'].toFixed(2) : '-');
-                                    res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA10</span> ' + (maValues['MA10'] ? maValues['MA10'].toFixed(2) : '-');
-                                    res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA20</span> ' + (maValues['MA20'] ? maValues['MA20'].toFixed(2) : '-');
-                                    if (!isMobileDevice && ma60Data.some(v => v)) {
-                                        res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA60</span> ' + (maValues['MA60'] ? maValues['MA60'].toFixed(2) : '-');
-                                    }
-                                }
-                                if (vol) res += '<br/><span style="display:inline-block;width:60px;">成交量</span> ' + (vol.value / 1000000).toFixed(2) + ' 亿';
-                                return res;
-                            }
-                        },
-                        series: [
-                            {
-                                name: 'K线',
-                                type: 'candlestick',
-                                data: klineData,
-                                itemStyle: {
-                                    color: colors.up,
-                                    color0: colors.down,
-                                    borderColor: colors.up,
-                                    borderColor0: colors.down
-                                },
-                                barWidth: isMobileDevice ? '50%' : '40%'
-                            },
-                            {
-                                name: 'MA5',
-                                type: 'line',
-                                data: ma5Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma5}
-                            },
-                            {
-                                name: 'MA10',
-                                type: 'line',
-                                data: ma10Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma10}
-                            },
-                            {
-                                name: 'MA20',
-                                type: 'line',
-                                data: ma20Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma20}
-                            },
-                            {
-                                name: 'MA60',
-                                type: 'line',
-                                data: !isMobileDevice ? ma60Data : [],
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 2, color: colors.ma60}
-                            },
-                            {
-                                name: '成交量',
-                                type: 'bar',
-                                xAxisIndex: 1,
-                                yAxisIndex: 1,
-                                data: !isMobileDevice ? volData : [],
-                                itemStyle: {
-                                    color: function(params) {
-                                        const kline = klineData[params.dataIndex];
-                                        return kline[1] >= kline[0] ? colors.up : colors.down;
-                                    }
-                                }
-                            },
-                            {
-                                name: '均量',
-                                type: 'line',
-                                xAxisIndex: 1,
-                                yAxisIndex: 1,
-                                data: !isMobileDevice ? volMa5Data : [],
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: '#F59E0B', type: 'dashed'}
-                            }
-                        ]
-                    };
-                    chart.setOption(option, true);
+                    // v3.2.0-T17: 已提取到 js/charts.js 模块
+                    window.__quantModules.charts.renderKlineChart(chart, data, period, isIndex, isMobile.value);
                 }
 
                 // 时间范围快捷缩放
@@ -3130,7 +2988,8 @@
                         if (!el) throw new Error('无法找到图表容器');
                         if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
                         if (chartVar.value) { chartVar.value.dispose(); chartVar.value = null; }
-                        chartVar.value = echarts.init(el);
+                        chartVar.value = echarts.init(el, null, { renderer: 'canvas' });
+                        chartVar.value.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
                         renderKlineChart(chartVar.value, data.data, currentKlinePeriod.value, chartKey === 'indexKlineChart');
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -3153,6 +3012,7 @@
                         if (!el) return;
                         if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
                         stockKlineChart = echarts.init(el);
+                        stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
                         renderKlineChart(stockKlineChart, data.data, period);
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -3403,6 +3263,170 @@ const allMenuDefs = [
                     } catch(e) { console.warn('loadGroupConfig:', e); }
                 }
                 const currentPage = ref('strategies');
+                const shortcutHelpVisible = ref(false);
+                const shortcutHelpItems = [
+                    { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索)' },
+                    { keys: 'Ctrl+/', desc: '显示/隐藏快捷键帮助' },
+                    { keys: '1-5', desc: '切换导航页面 (非输入态)' },
+                    { keys: 'R', desc: '刷新当前页面数据 (非输入态)' },
+                ];
+                const commandPaletteVisible = ref(false);
+                function isTypingTarget(el) {
+                    if (!el) return false;
+                    const tag = el.tagName;
+                    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+                }
+                function handleGlobalKeydown(e) {
+                    if (isTypingTarget(e.target)) return;
+                    const k = e.key.toLowerCase();
+                    if (e.ctrlKey && k === 'k') { e.preventDefault(); commandPaletteVisible.value = true; return; }
+                    if (e.ctrlKey && k === '/') { e.preventDefault(); shortcutHelpVisible.value = !shortcutHelpVisible.value; return; }
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
+                    if (k >= '1' && k <= '5') {
+                        const idx = parseInt(k) - 1;
+                        const page = menus.value[idx];
+                        if (page) { currentPage.value = page.key; currentSubPage.value = page.subPages[0] || ''; }
+                        return;
+                    }
+                    if (k === 'r') { refreshCurrentPage(); }
+                }
+                function refreshCurrentPage() {
+                    const page = currentPage.value;
+                    if (page === 'strategies') loadDashboardData().catch(() => {});
+                    else if (page === 'calendar') refreshCalendarData().catch(() => {});
+                    else if (page === 'ai') loadAiHistory().catch(() => {});
+                }
+                // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评股页并聚焦问股
+                const aiFabHidden = ref(false);
+                function openAiFab() {
+                    currentPage.value = 'ai';
+                    currentSubPage.value = 'chat_history';
+                    aiFabHidden.value = true;
+                    nextTick(() => {
+                        const input = document.querySelector('input[placeholder*="输入问题"]');
+                        if (input) input.focus();
+                    });
+                }
+                // v3.2.0-T22: 首次使用引导
+                const tourVisible = ref(false);
+                const tourStep = ref(0);
+                const tourSteps = [
+                    { icon: '🗓️', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
+                    { icon: '🤖', title: 'AI 智能评股', desc: '在智能评股页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
+                    { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
+                ];
+                function maybeShowTour() {
+                    if (localStorage.getItem('quant_tour_done') === '1') return;
+                    setTimeout(() => { tourStep.value = 0; tourVisible.value = true; }, 800);
+                }
+                function skipTour() { tourVisible.value = false; localStorage.setItem('quant_tour_done', '1'); }
+                function finishTour() { tourVisible.value = false; localStorage.setItem('quant_tour_done', '1'); }
+                const feedbackText = ref('');
+                const feedbackSubmitting = ref(false);
+                async function submitFeedback() {
+                    if (!feedbackText.value || !feedbackText.value.trim()) {
+                        ElementPlus.ElMessage.warning('请输入反馈内容');
+                        return;
+                    }
+                    feedbackSubmitting.value = true;
+                    try {
+                        const res = await fetch('/api/feedback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                content: feedbackText.value.trim(),
+                                page: currentPage.value + '/' + currentSubPage.value,
+                                user_agent: navigator.userAgent.slice(0, 200),
+                                app_version: 'v' + (window.__appVersion || '3.2.0'),
+                            }),
+                        });
+                        if (res.ok) {
+                            feedbackText.value = '';
+                            ElementPlus.ElMessage.success('反馈已提交，感谢你的支持！');
+                        } else {
+                            ElementPlus.ElMessage.error('提交失败，请稍后重试');
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('提交失败，请稍后重试');
+                    } finally {
+                        feedbackSubmitting.value = false;
+                    }
+                }
+                // v3.2.0-T21: 策略回测
+                const backtestStrategies = [
+                    { id: 'multifactor', name: '多因子策略' },
+                    { id: 'industry_rotation', name: '行业轮动' },
+                    { id: 'index_enhance', name: '指数增强' },
+                    { id: 'money_flow', name: '资金流策略' },
+                ];
+                const backtestStrategy = ref('multifactor');
+                const backtestRange = ref(null);
+                const backtestCapital = ref(100000);
+                const backtestRunning = ref(false);
+                const backtestResult = ref(null);
+                let backtestChart = null;
+                async function runBacktest() {
+                    const token = localStorage.getItem('quant_token');
+                    if (!token) { ElementPlus.ElMessage.warning('请先登录'); return; }
+                    const params = {
+                        initial_capital: backtestCapital.value || 100000,
+                    };
+                    if (backtestRange.value && backtestRange.value.length === 2) {
+                        params.start_date = backtestRange.value[0];
+                        params.end_date = backtestRange.value[1];
+                    }
+                    backtestRunning.value = true;
+                    backtestResult.value = null;
+                    try {
+                        const res = await fetch('/api/backtest/' + backtestStrategy.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify(params),
+                        });
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.detail || '回测失败');
+                        }
+                        const data = await res.json();
+                        if (!data.success) throw new Error(data.message || '回测失败');
+                        // 归一化 summary 字段
+                        const s = data.summary || {};
+                        backtestResult.value = {
+                            total_return_pct: (s.total_return_pct ?? s.total_return ?? 0).toFixed(2),
+                            annual_return_pct: (s.annual_return_pct ?? s.annual_return ?? 0).toFixed(2),
+                            max_drawdown_pct: (s.max_drawdown_pct ?? s.max_drawdown ?? 0).toFixed(2),
+                            sharpe_ratio: (s.sharpe_ratio ?? 0).toFixed(2),
+                            message: data.message || '',
+                        };
+                        renderBacktestChart(data.equity_curve);
+                        ElementPlus.ElMessage.success('回测完成');
+                    } catch (e) {
+                        ElementPlus.ElMessage.error(e.message || '回测失败');
+                    } finally {
+                        backtestRunning.value = false;
+                    }
+                }
+                function renderBacktestChart(equityCurve) {
+                    const el = document.getElementById('backtestEquityChart');
+                    if (!el || !equityCurve || equityCurve.length === 0) return;
+                    if (backtestChart) { backtestChart.dispose(); backtestChart = null; }
+                    backtestChart = echarts.init(el);
+                    backtestChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                    const dates = equityCurve.map(p => p.date || p[0]);
+                    const values = equityCurve.map(p => p.value ?? p[1]);
+                    backtestChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: 56, right: 16, top: 24, bottom: 40 },
+                        xAxis: { type: 'category', data: dates, boundaryGap: false },
+                        yAxis: { type: 'value', scale: true },
+                        dataZoom: [{ type: 'inside' }],
+                        series: [{
+                            name: '净值', type: 'line', data: values, smooth: true, symbol: 'none',
+                            lineStyle: { width: 2, color: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#667eea' },
+                            areaStyle: { opacity: 0.1 },
+                        }],
+                    });
+                }
                 const currentSubPage = ref('overview');
                 const currentPageName = computed(() => {
                     const menu = allMenuDefs.find(m => m.key === currentPage.value);
@@ -4153,8 +4177,11 @@ const allMenuDefs = [
                             applyTheme(data.user.theme || 'tech-blue');
                             await loadUserConfig();
                             await loadDates();
+                            await loadDashboardData();
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('登录成功');
+                            // v3.2.0-T22: 首次使用引导 (所有角色首次登录显示)
+                            maybeShowTour();
                             // v2.2: 检查是否需要初始化向导
                             if (data.user.role === 'admin') {
                                 setTimeout(checkSetupWizard, 500);
@@ -4186,6 +4213,7 @@ const allMenuDefs = [
                             applyTheme(data.user.theme || 'tech-blue');
                             await loadUserConfig();
                             await loadDates();
+                            await loadDashboardData();
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('访客登录成功');
                         } else {
@@ -6312,6 +6340,8 @@ const allMenuDefs = [
 
                 // ===== 初始化 =====
                 onMounted(async () => {
+                    // v3.2.0-T11: 注册全局快捷键
+                    window.addEventListener('keydown', handleGlobalKeydown);
                     // v1.8: 并行加载优化
 
                     // 超时保护的 Promise 包装器（防阻塞渲染）
@@ -6415,6 +6445,7 @@ const allMenuDefs = [
                 
                 onUnmounted(() => {
                     if (strategyPollTimer) clearInterval(strategyPollTimer);
+                    window.removeEventListener('keydown', handleGlobalKeydown);
                 });
 
                 // 监听设置页
@@ -6509,6 +6540,12 @@ const allMenuDefs = [
                 return {
 
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
+                    tourVisible, tourStep, tourSteps, skipTour, finishTour,
+                    aiFabHidden, openAiFab,
+                    feedbackText, feedbackSubmitting, submitFeedback,
+                    backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
+                    backtestRunning, backtestResult, runBacktest,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,
@@ -6585,7 +6622,7 @@ const allMenuDefs = [
                     // v1.5.0
                     currentSubPage, currentPageName, showUserMenu, subPageNames,
                     // v1.9.2: 图标系统
-                    iconSystem, switchIconSystem,
+                    iconSystem, switchIconSystem, ICON_MAPS,
                     // v3.0: 侧边栏折叠
                     sidebarCollapsed, toggleSidebar,
                     // v1.9.2: 策略研究菜单
