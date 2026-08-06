@@ -58,7 +58,7 @@
 | 3.2-T1 | 侧边栏 SVG 图标迁移 | FR-3.2.1 | index.html | 3h | 7 主题截图对比✅ |
 | 3.2-T2 | 面包屑导航 | FR-3.2.2 | index.html, layout.css | 2h | 三档宽度检查✅ |
 | 3.2-T3 | 移动端底部 TabBar | FR-3.2.3 | index.html, responsive.css | 4h | 375px 无横向滚动✅ |
-| 3.2-T4 | 最近访问快捷入口 | FR-3.2.4 | index.html | 2h | localStorage 验证✅ |
+| 3.2-T4 | 最近访问快捷入口 | FR-3.2.4 | index.html | 2h | (已移除: 5导航项下冗余) | ➖ |
 | 3.2-T5 | 页面切换过渡 | FR-3.2.5 | index.html, animations.css | 1h | 视觉检查✅ |
 | 3.2-T6 | 统一 .card 卡片容器 | FR-3.2.6 | tokens.css, index.html | 3h | grep class="card" ≥ 6✅ |
 | 3.2-T7 | 信息层级三件套 | FR-3.2.7 | tokens.css, index.html | 3h | 视觉检查✅ |

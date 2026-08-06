@@ -119,7 +119,7 @@
 | FR-3.2.1 | 侧边栏图标 emoji → SVG icon 系统 | 7 主题下自适应 --svg-fill; `grep data-theme` 仍为 7 |
 | FR-3.2.2 | 面包屑导航 (首页 > 当前页) | <768px 隐藏; 1440px 可见 |
 | FR-3.2.3 | 移动端底部 TabBar (375-768px) | 4 主 tab + 更多; 当前 tab 高亮 |
-| FR-3.2.4 | 最近访问 (localStorage, 3 条) | key 前缀 quant_; 页面切换写入 |
+| FR-3.2.4 | 最近访问 (localStorage, 3 条) | ~~key 前缀 quant_; 页面切换写入~~ → **已移除** (5 导航项下冗余, 2026-08-07) |
 | FR-3.2.5 | 页面切换过渡 (opacity 150ms) | 无白屏闪现 |
 
 #### 4.1.2 阶段 2 — 视觉语言

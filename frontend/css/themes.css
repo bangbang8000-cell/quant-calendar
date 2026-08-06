@@ -3540,11 +3540,7 @@ text {
 .sidebar.collapsed .sidebar-logo { text-align: center; padding: 16px 8px 8px 8px; }
 .sidebar.collapsed .sidebar-logo::after { content: '📊'; font-size: var(--font-xl); display: block; }
 .sidebar.collapsed .sidebar-nav { padding: 0 4px; }
-/* v3.2.0-T4: 最近访问 */
-.sidebar-recent { padding: 8px 12px; border-top: 1px solid var(--border-light); margin-top: 4px; }
-.sidebar-recent-title { font-size: var(--font-xs); color: var(--text-tertiary); padding: 4px 8px; letter-spacing: 0.05em; }
-.sidebar-recent .nav-item.recent-item { padding: 8px 10px; margin: 2px 0; border-radius: 8px; font-size: var(--font-sm); }
-.sidebar.collapsed .sidebar-recent { display: none; }
+.sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 /* v3.2.0-T11: 快捷键帮助面板 */
 .shortcut-list { display: flex; flex-direction: column; gap: 10px; }
 .shortcut-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid var(--border-light); }
