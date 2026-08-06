@@ -35,13 +35,14 @@
     <script src="/static/js/themes.js?v=2.5.2"></script>
     <script src="/static/js/icons.js?v=2.5.2"></script>
     <script src="/static/js/core.js"></script>
-    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/charts.js?v=3.2.0"></script>
     <script src="/static/js/calendar.js"></script>
     <script src="/static/js/strategies.js"></script>
     <script src="/static/js/ai.js"></script>
     <script src="/static/js/system.js"></script>
     <script src="/static/js/users.js"></script>
     <script src="/static/js/merrill.js?v=3.1.0"></script>
+    <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -2897,232 +2898,8 @@
                 
                 // ===== K线图渲染函数 =====
                 function renderKlineChart(chart, data, period, isIndex = false) {
-                    if (!data || data.length === 0) return;
-                    
-                    const dates = data.map(d => d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
-                    const isMobileDevice = isMobile.value;
-                    
-                    // K线数据: [open, close, low, high]
-                    const klineData = data.map(d => [d[1], d[2], d[3], d[4]]);
-                    const volData = data.map(d => d[5]);
-                    const ma5Data = data.map(d => d[6]);
-                    const ma10Data = data.map(d => d[7]);
-                    const ma20Data = data.map(d => d[8]);
-                    const ma60Data = data.map(d => d[9]);
-                    const volMa5Data = data.map(d => d[10]);
-                    
-                    // 从CSS变量读取主题色（跟随主题切换）
-                    const rootStyle = getComputedStyle(document.documentElement);
-                    const primaryColor = rootStyle.getPropertyValue('--primary-color').trim() || '#2563eb';
-                    const isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().match(/^#[0-9a-fA-F]{6}$/) ? 
-                        parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim().slice(1,3), 16) < 80 : false;
-                    const tooltipBg = isDark ? 'rgba(30,41,59,0.96)' : 'rgba(255,255,255,0.96)';
-                    const tooltipBorder = isDark ? '#4b5563' : '#ddd';
-                    
-                    const colors = {
-                        up: '#E63946',
-                        down: '#457B9D',
-                        ma5: '#FF7F50',
-                        ma10: primaryColor,
-                        ma20: '#9370DB',
-                        ma60: '#22C55E'
-                    };
-                    
-                    const fontSize = isMobileDevice ? 10 : 12;
-                    const smallFont = isMobileDevice ? 9 : 11;
-                    const gridGap = isMobileDevice ? '8%' : '5%';
-                    
-                    const option = {
-                        animation: true,
-                        animationDuration: 300,
-                        backgroundColor: 'transparent',
-                        grid: [
-                            {left: gridGap, right: '3%', top: '12%', height: '56%'},
-                            {left: gridGap, right: '3%', bottom: '18%', height: '12%'}
-                        ],
-                        legend: {
-                            data: ['MA5', 'MA10', 'MA20', 'MA60'],
-                            top: '2%',
-                            right: '2%',
-                            textStyle: {
-                                fontSize: smallFont,
-                                color: isDark ? '#aaa' : '#666'
-                            }
-                        },
-                        dataZoom: [
-                            {
-                                type: 'inside',
-                                xAxisIndex: [0, 1],
-                                start: 0,
-                                end: 100
-                            },
-                            isMobileDevice ? {} : {
-                                type: 'slider',
-                                xAxisIndex: [0, 1],
-                                start: 0,
-                                end: 100,
-                                height: 16,
-                                bottom: '2%',
-                                borderColor: isDark ? '#555' : '#ddd',
-                                fillerColor: 'rgba(37, 99, 235, 0.15)',
-                                handleStyle: {color: primaryColor},
-                                textStyle: {fontSize: 10, color: isDark ? '#aaa' : undefined}
-                            }
-                        ].filter(Boolean),
-                        xAxis: [
-                            {
-                                type: 'category',
-                                data: dates,
-                                scale: true,
-                                boundaryGap: false,
-                                axisLine: {onZero: false, lineStyle: {color: isDark ? '#555' : '#e0e0e0'}},
-                                splitLine: {show: false},
-                                axisLabel: {show: false},
-                                axisTick: {show: false}
-                            },
-                            {
-                                type: 'category',
-                                gridIndex: 1,
-                                data: dates,
-                                scale: true,
-                                boundaryGap: false,
-                                axisLine: {onZero: false, lineStyle: {color: isDark ? '#555' : '#e0e0e0'}},
-                                splitLine: {show: false},
-                                axisLabel: {
-                                    show: true,
-                                    rotate: 0,
-                                    fontSize: smallFont,
-                                    color: isDark ? '#aaa' : '#999',
-                                    interval: Math.max(Math.floor(data.length / 6) - 1, 0)
-                                }
-                            }
-                        ],
-                        yAxis: [
-                            {
-                                scale: true,
-                                splitArea: {show: false},
-                                splitLine: {lineStyle: {color: isDark ? '#333' : '#f0f0f0', type: 'dashed'}},
-                                axisLabel: {
-                                    fontSize: smallFont,
-                                    color: isDark ? '#aaa' : '#999',
-                                    formatter: v => v.toFixed(1)
-                                }
-                            },
-                            {
-                                gridIndex: 1,
-                                splitNumber: 2,
-                                axisLabel: {show: false},
-                                axisLine: {show: false},
-                                axisTick: {show: false},
-                                splitLine: {show: false}
-                            }
-                        ],
-                        tooltip: {
-                            trigger: 'axis',
-                            axisPointer: {type: 'cross'},
-                            backgroundColor: tooltipBg,
-                            borderColor: tooltipBorder,
-                            borderWidth: 1,
-                            textStyle: {fontSize: 12},
-                            formatter: function(params) {
-                                let res = '<div style="font-weight:600;margin-bottom:4px;">' + params[0].name + '</div>';
-                                let kline = null, vol = null;
-                                const maValues = {};
-                                params.forEach(p => {
-                                    if (p.seriesName === 'K线') kline = p;
-                                    else if (p.seriesName === '成交量') vol = p;
-                                    else if (p.seriesName.startsWith('MA')) maValues[p.seriesName] = p.value;
-                                });
-                                if (kline) {
-                                    const d = kline.data;
-                                    res += `<span style="display:inline-block;width:60px;">开盘</span> ${d[0].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">收盘</span> ${d[1].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">最低</span> ${d[2].toFixed(2)}<br/>`;
-                                    res += `<span style="display:inline-block;width:60px;">最高</span> ${d[3].toFixed(2)}`;
-                                }
-                                if (ma5Data.some(v => v)) {
-                                    res += '<br/><span style="display:inline-block;width:60px;">MA5</span> ' + (maValues['MA5'] ? maValues['MA5'].toFixed(2) : '-');
-                                    res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA10</span> ' + (maValues['MA10'] ? maValues['MA10'].toFixed(2) : '-');
-                                    res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA20</span> ' + (maValues['MA20'] ? maValues['MA20'].toFixed(2) : '-');
-                                    if (!isMobileDevice && ma60Data.some(v => v)) {
-                                        res += ' <span style="display:inline-block;width:60px;margin-left:8px;">MA60</span> ' + (maValues['MA60'] ? maValues['MA60'].toFixed(2) : '-');
-                                    }
-                                }
-                                if (vol) res += '<br/><span style="display:inline-block;width:60px;">成交量</span> ' + (vol.value / 1000000).toFixed(2) + ' 亿';
-                                return res;
-                            }
-                        },
-                        series: [
-                            {
-                                name: 'K线',
-                                type: 'candlestick',
-                                data: klineData,
-                                itemStyle: {
-                                    color: colors.up,
-                                    color0: colors.down,
-                                    borderColor: colors.up,
-                                    borderColor0: colors.down
-                                },
-                                barWidth: isMobileDevice ? '50%' : '40%'
-                            },
-                            {
-                                name: 'MA5',
-                                type: 'line',
-                                data: ma5Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma5}
-                            },
-                            {
-                                name: 'MA10',
-                                type: 'line',
-                                data: ma10Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma10}
-                            },
-                            {
-                                name: 'MA20',
-                                type: 'line',
-                                data: ma20Data,
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: colors.ma20}
-                            },
-                            {
-                                name: 'MA60',
-                                type: 'line',
-                                data: !isMobileDevice ? ma60Data : [],
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 2, color: colors.ma60}
-                            },
-                            {
-                                name: '成交量',
-                                type: 'bar',
-                                xAxisIndex: 1,
-                                yAxisIndex: 1,
-                                data: !isMobileDevice ? volData : [],
-                                itemStyle: {
-                                    color: function(params) {
-                                        const kline = klineData[params.dataIndex];
-                                        return kline[1] >= kline[0] ? colors.up : colors.down;
-                                    }
-                                }
-                            },
-                            {
-                                name: '均量',
-                                type: 'line',
-                                xAxisIndex: 1,
-                                yAxisIndex: 1,
-                                data: !isMobileDevice ? volMa5Data : [],
-                                smooth: true,
-                                symbol: 'none',
-                                lineStyle: {width: 1.5, color: '#F59E0B', type: 'dashed'}
-                            }
-                        ]
-                    };
-                    chart.setOption(option, true);
+                    // v3.2.0-T17: 已提取到 js/charts.js 模块
+                    window.__quantModules.charts.renderKlineChart(chart, data, period, isIndex, isMobile.value);
                 }
 
                 // 时间范围快捷缩放
@@ -3153,7 +2930,8 @@
                         if (!el) throw new Error('无法找到图表容器');
                         if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
                         if (chartVar.value) { chartVar.value.dispose(); chartVar.value = null; }
-                        chartVar.value = echarts.init(el);
+                        chartVar.value = echarts.init(el, null, { renderer: 'canvas' });
+                        chartVar.value.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
                         renderKlineChart(chartVar.value, data.data, currentKlinePeriod.value, chartKey === 'indexKlineChart');
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -3176,6 +2954,7 @@
                         if (!el) return;
                         if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
                         stockKlineChart = echarts.init(el);
+                        stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
                         renderKlineChart(stockKlineChart, data.data, period);
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
