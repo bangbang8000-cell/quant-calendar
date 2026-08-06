@@ -82,6 +82,14 @@
                         <span>{{ menu.name }}</span>
                     </div>
                 </div>
+                <div class="sidebar-recent" v-if="!sidebarCollapsed && recentPages.length">
+                    <div class="sidebar-recent-title">最近访问</div>
+                    <div v-for="rp in recentPages" :key="rp" class="nav-item recent-item" :class="{active: currentPage === rp}"
+                         @click="jumpToPage(rp)" tabindex="0" @keydown.enter="jumpToPage(rp)">
+                        <span class="nav-icon" v-html="(ICON_MAPS[iconSystem.value] || ICON_MAPS.emoji)[rp] || '📄'"></span>
+                        <span>{{ (allMenuDefs.find(m => m.key === rp) || {}).name || rp }}</span>
+                    </div>
+                </div>
                 <div class="sidebar-collapse-btn" @click="toggleSidebar" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'">
                     {{ sidebarCollapsed ? '▶' : '◀' }}
                 </div>
@@ -3403,6 +3411,21 @@ const allMenuDefs = [
                     } catch(e) { console.warn('loadGroupConfig:', e); }
                 }
                 const currentPage = ref('strategies');
+                // v3.2.0-T4: 最近访问 (localStorage, 最多 3 条)
+                const recentPages = ref(JSON.parse(localStorage.getItem('quant_recent_pages') || '[]'));
+                function recordRecentPage(page) {
+                    if (!page) return;
+                    let list = recentPages.value.filter(p => p !== page);
+                    list.unshift(page);
+                    list = list.slice(0, 3);
+                    recentPages.value = list;
+                    localStorage.setItem('quant_recent_pages', JSON.stringify(list));
+                }
+                function jumpToPage(page) {
+                    currentPage.value = page;
+                    const menu = menus.value.find(m => m.key === page);
+                    currentSubPage.value = menu?.subPages?.[0] || '';
+                }
                 const currentSubPage = ref('overview');
                 const currentPageName = computed(() => {
                     const menu = allMenuDefs.find(m => m.key === currentPage.value);
@@ -6272,6 +6295,8 @@ const allMenuDefs = [
                 watch(currentPage, async (page) => {
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
+                    // v3.2.0-T4: 记录最近访问
+                    recordRecentPage(page);
                     // v1.11: 清除旧轮询定时器
                     if (strategyPollTimer) { clearInterval(strategyPollTimer); strategyPollTimer = null; }
                     if (page === 'strategies') {
@@ -6509,6 +6534,7 @@ const allMenuDefs = [
                 return {
 
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    recentPages, jumpToPage, recordRecentPage,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,
@@ -6585,7 +6611,7 @@ const allMenuDefs = [
                     // v1.5.0
                     currentSubPage, currentPageName, showUserMenu, subPageNames,
                     // v1.9.2: 图标系统
-                    iconSystem, switchIconSystem,
+                    iconSystem, switchIconSystem, ICON_MAPS,
                     // v3.0: 侧边栏折叠
                     sidebarCollapsed, toggleSidebar,
                     // v1.9.2: 策略研究菜单
