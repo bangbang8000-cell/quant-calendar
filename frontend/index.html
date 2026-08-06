@@ -1529,7 +1529,24 @@
                                 <span>🗓️ 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
                                 <span>📆 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
-</div>
+                        </div>
+                    </div>
+
+                    <!-- v3.3.0-T8: 数据备份与恢复 -->
+                    <div class="card" style="margin-top: 14px;">
+                        <div class="card-title">💾 数据备份与恢复</div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                            <el-button size="small" type="primary" :loading="backupCreating" @click="createBackup">立即备份</el-button>
+                            <el-button size="small" @click="loadBackups">刷新列表</el-button>
+                        </div>
+                        <div v-if="backups.length" style="max-height: 220px; overflow-y: auto;">
+                            <div v-for="b in backups" :key="b.name" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border-light); font-size: var(--font-base);">
+                                <span>🕐 {{ b.time }} <span style="color: var(--text-tertiary); font-size: var(--font-xs);">({{ (b.size / 1024).toFixed(0) }} KB)</span></span>
+                                <el-button size="small" type="danger" plain :disabled="currentUser?.role !== 'admin'" @click="restoreBackup(b.name)">恢复</el-button>
+                            </div>
+                        </div>
+                        <div v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无备份</div>
+                    </div>
                     </div>
 
                     <!-- v2.0: 美林时钟配置 -->
@@ -3306,6 +3323,61 @@ const allMenuDefs = [
                         const input = document.querySelector('input[placeholder*="输入问题"]');
                         if (input) input.focus();
                     });
+                }
+                // v3.3.0-T8: 数据备份与恢复
+                const backups = ref([]);
+                const backupCreating = ref(false);
+                async function loadBackups() {
+                    try {
+                        const res = await fetch('/api/backup/list', {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) backups.value = data.backups || [];
+                    } catch (e) { console.error('加载备份列表失败', e); }
+                }
+                async function createBackup() {
+                    backupCreating.value = true;
+                    try {
+                        const res = await fetch('/api/backup/create', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            ElementPlus.ElMessage.success(data.message || '备份成功');
+                            loadBackups();
+                        } else {
+                            ElementPlus.ElMessage.error(data.message || '备份失败');
+                        }
+                    } catch (e) { ElementPlus.ElMessage.error('备份失败'); }
+                    finally { backupCreating.value = false; }
+                }
+                async function restoreBackup(name) {
+                    try {
+                        await ElementPlus.ElMessageBox.confirm(
+                            `确定要从备份 ${name} 恢复吗？当前数据将被覆盖。`,
+                            '⚠️ 恢复确认',
+                            { type: 'warning', confirmButtonText: '恢复', cancelButtonText: '取消' }
+                        );
+                    } catch (e) { return; }
+                    try {
+                        const res = await fetch('/api/backup/restore', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('quant_token')}`
+                            },
+                            body: JSON.stringify({ name })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            ElementPlus.ElMessage.success(data.message || '恢复成功');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            ElementPlus.ElMessage.error(data.message || '恢复失败');
+                        }
+                    } catch (e) { ElementPlus.ElMessage.error('恢复失败'); }
                 }
                 // v3.2.0-T22: 首次使用引导
                 const tourVisible = ref(false);
@@ -6516,7 +6588,7 @@ const allMenuDefs = [
                         if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
                         if (sub === 'autoeval') loadAutoEvaluateConfig();
                         if (sub === 'datasource') loadDatasourceConfig();
-                        if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); }
+                        if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); loadBackups(); }
                         if (sub === 'user') { loadAllGroups(); loadUsers(); }
                     }
                 });
@@ -6542,6 +6614,7 @@ const allMenuDefs = [
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
+                    backups, backupCreating, loadBackups, createBackup, restoreBackup,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,

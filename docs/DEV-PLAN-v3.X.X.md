@@ -106,19 +106,19 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|------|
-| 3.3-T1 | SQLite 接入层 (db.py) | FR-3.3.1 | backend/db.py 新建 | 6h | 单测 | ⏳ |
-| 3.3-T2 | users 迁移 | FR-3.3.1 | user_manager.py | 4h | 全量单测 | ⏳ |
-| 3.3-T3 | chat_history 迁移 | FR-3.3.1 | chat.py | 3h | 全量单测 | ⏳ |
-| 3.3-T4 | watchlist 迁移 | FR-3.3.1 | watchlist.py | 3h | 全量单测 | ⏳ |
-| 3.3-T5 | groups 迁移 | FR-3.3.1 | group_manager.py | 3h | 全量单测 | ⏳ |
-| 3.3-T6 | 迁移脚本 (JSON→SQLite, dry-run) | FR-3.3.1 | scripts/migrate.py | 4h | dry-run 演练 | ⏳ |
-| 3.3-T7 | 每日自动备份 | FR-3.3.2 | scheduler.py | 3h | 备份文件生成 | ⏳ |
-| 3.3-T8 | 一键恢复 (前端+后端) | FR-3.3.3 | api/v1/backup.py + index.html | 5h | 恢复演练 | ⏳ |
-| 3.3-T9 | 启动 schema 校验 | FR-3.3.4 | db.py | 2h | 损坏文件测试 | ⏳ |
-| 3.3-T10 | qresult 自动导入 | FR-3.3.5 | data_parser.py | 3h | CSV 变化测试 | ⏳ |
-| 3.3-T11 | 数据管线自动化 (S1) | FR-3.3.6 | data_pipeline.py 新建 | 8h | tushare 拉取→CSV 生成 | ⏳ |
-| 3.3-T12 | 数据导出/导入 (S4) | FR-3.3.7 | api/v1/export.py + index.html | 5h | 导出→导入一致 | ⏳ |
-| 3.3-T13 | 统一错误码体系 | FR-3.3.8 | api/v1/errors.py + 各路由 | 6h | 全部错误响应统一结构 | ⏳ |
+| 3.3-T1 | SQLite 接入层 (db.py) | FR-3.3.1 | backend/db.py 新建 | 6h | 单测 | ✅ |
+| 3.3-T2 | users 迁移 | FR-3.3.1 | user_manager.py | 4h | 全量单测 | ✅ |
+| 3.3-T3 | chat_history 迁移 | FR-3.3.1 | chat.py | 3h | 全量单测 | ✅ |
+| 3.3-T4 | watchlist 迁移 | FR-3.3.1 | watchlist.py | 3h | 全量单测 | ✅ |
+| 3.3-T5 | groups 迁移 | FR-3.3.1 | group_manager.py | 3h | 全量单测 | ✅ |
+| 3.3-T6 | 迁移脚本 (JSON→SQLite, dry-run) | FR-3.3.1 | scripts/migrate.py | 4h | dry-run 演练 | ✅ |
+| 3.3-T7 | 每日自动备份 | FR-3.3.2 | scheduler.py | 3h | 备份文件生成 | ✅ |
+| 3.3-T8 | 一键恢复 (前端+后端) | FR-3.3.3 | api/v1/backup.py + index.html | 5h | 恢复演练 | ✅ |
+| 3.3-T9 | 启动 schema 校验 | FR-3.3.4 | db.py | 2h | 损坏文件测试 | ✅ |
+| 3.3-T10 | qresult 自动导入 | FR-3.3.5 | data_parser.py | 3h | CSV 变化测试 | ✅ |
+| 3.3-T11 | 数据管线自动化 (S1) | FR-3.3.6 | data_pipeline.py 新建 | 8h | tushare 拉取→CSV 生成 | ✅ |
+| 3.3-T12 | 数据导出/导入 (S4) | FR-3.3.7 | api/v1/export.py + index.html | 5h | 导出→导入一致 | ✅ |
+| 3.3-T13 | 统一错误码体系 | FR-3.3.8 | api/v1/errors.py + 各路由 | 6h | 全部错误响应统一结构 | ✅ |
 
 ### 5.1 发布门禁 (v3.3.0)
 
