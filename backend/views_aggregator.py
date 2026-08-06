@@ -5,10 +5,12 @@
 支持：日视图、周视图、月视图、年视图
 """
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Set, Optional
 from collections import defaultdict
 
+logger = logging.getLogger(__name__)
 from data_parser import STRATEGY_CONFIG
 
 
@@ -181,6 +183,7 @@ class ViewsAggregator:
                             'last_appear': prev_date
                         })
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         result = {
             'view': 'day',
@@ -234,6 +237,7 @@ class ViewsAggregator:
                     })
             result['total'] = len(result['stocks'])
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         self._cache[cache_key] = result
         return result
@@ -284,6 +288,7 @@ class ViewsAggregator:
                         })
                 result['total'] = len(result['stocks'])
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         self._cache[cache_key] = result
         return result
@@ -327,6 +332,7 @@ class ViewsAggregator:
                     })
             result['total'] = len(result['stocks'])
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
         self._cache[cache_key] = result
         return result

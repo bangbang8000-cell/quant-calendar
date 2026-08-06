@@ -50,6 +50,7 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
                 if len(results) >= 20:
                     break
     except Exception:
+        print("[warn] 操作异常 (v3.4.0-T8)")
         pass
 
     # 2. 如果结果不足20条，从 consensus 数据补充
@@ -74,6 +75,7 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
                 if len(results) >= 20:
                     break
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
 
     return {

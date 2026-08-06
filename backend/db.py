@@ -136,6 +136,7 @@ def kv_all(table: str) -> dict:
         try:
             result[r[col]] = json.loads(r['data'])
         except Exception:
+            print("[warn] 操作异常 (v3.4.0-T8)")
             pass
     return result
 
@@ -274,6 +275,7 @@ def backup_db() -> str | None:
                         if t < cutoff:
                             os.remove(os.path.join(DATA_DIR, "backups", f))
                     except ValueError:
+                        print("[warn] 操作异常 (v3.4.0-T8)")
                         pass
         return os.path.basename(backup_path)
     except Exception as e:
