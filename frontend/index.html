@@ -149,7 +149,7 @@
                             placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
                         <el-button size="small" @click="refreshCalendarData" :loading="loading" style="margin-left:8px" title="重新加载最新持仓数据">🔄 刷新</el-button>
                         <el-button size="small" @click="exportCSV" style="margin-left:4px" title="导出为CSV">📥 导出</el-button>
-                        <span v-if="lastLoadTime" style="font-size:12px;color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
+                        <span v-if="lastLoadTime" style="font-size: var(--font-sm);color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
                     </div>
 
                     <!-- 用户菜单 (右上角) -->
@@ -281,7 +281,7 @@
 
 <!-- 各策略选股数量 (v1.11: 可点击跳转) -->
                     <div class="card">
-                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size:12px;color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
+                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size: var(--font-sm);color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item" @click="navigateToStrategyFilter(item.strategy_name)" style="cursor:pointer;">
                             <div class="strategy-header">
                                 <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:4px;">→</span></span>
@@ -297,7 +297,7 @@
                     <div class="card">
                         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
                             <span>🏆 策略共识度 TOP5</span>
-                            <span @click="currentSubPage = 'consensus'" style="font-size:12px;color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
+                            <span @click="currentSubPage = 'consensus'" style="font-size: var(--font-sm);color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <div v-if="filteredConsensusRank.length === 0" class="empty-state">暂无共识数据</div>
                         <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
@@ -305,8 +305,8 @@
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
                                 <div class="consensus-name">{{ item.name }}
-                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span>
+                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span>
                                 </div>
                             </div>
                             <div class="consensus-tags">
@@ -323,7 +323,7 @@
 <!-- 美林时钟 -->
                     <div class="card" style="overflow: hidden;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div style="font-size: 15px; font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                            <div style="font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 ⏱️ 美林时钟 · 经济周期
                             </div>
                             <span :style="{background: merrillData.color || '#4CAF50'}" 
@@ -352,7 +352,7 @@
                         <div v-if="merrillData.timing" style="margin-top: 12px; padding: 12px; background: var(--badge-gold-bg); border-radius: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-base); margin-bottom: 6px;">
                                 <span style="color: var(--text-secondary);">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
-                                <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: 12px; padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
+                                <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: var(--font-sm); padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 7px;">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
@@ -377,7 +377,7 @@
                         <!-- 多维度评分 -->
                         <div v-if="merrillData.dimension_scores" style="margin-top: 14px; padding: 12px; background: var(--bg-card-header); border-radius: 10px;">
                             <div style="font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px;">📊 多维度评分</div>
-                            <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px;">
+                            <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: var(--font-sm);">
                                 <span style="width: 40px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
                                 <div style="flex: 1; height: 10px; background: var(--border-light); border-radius: 5px; overflow: hidden;">
                                     <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 5px; transition: width 0.5s;"></div>
@@ -390,10 +390,10 @@
                         <!-- 置信度 + 下阶段预测 -->
                         <div v-if="merrillData.confidence" style="margin-top: 10px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: 12px; color: var(--text-secondary);">置信度</span>
+                                <span style="font-size: var(--font-sm); color: var(--text-secondary);">置信度</span>
                                 <span :style="{color: confidenceColor}" style="font-weight: var(--font-semibold); font-size: var(--font-base);">{{ merrillData.confidence.level || '—' }}</span>
                             </div>
-                            <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                            <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: var(--font-sm);">
                                 <span style="color: var(--text-secondary);">→预测</span>
                                 <span style="font-weight: var(--font-semibold); color: var(--el-warning);">{{ merrillData.next_stage_prediction.next_stage_name || '—' }}</span>
                                 <span v-if="merrillData.next_stage_prediction.transition_probability" style="color: var(--text-secondary);">
@@ -455,7 +455,7 @@
                             <div class="consensus-badge">{{ item.strategy_count }}</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
+                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                             </div>
                             <div class="consensus-tags">
                                 <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -511,7 +511,7 @@
                                             <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                             <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                         </div>
-                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:14px;" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size:12px;margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size:12px;margin-left:2px;">📈</span></div>
+                                        <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                                     </div>
                                     <div class="consensus-tags">
                                         <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -527,19 +527,19 @@
                             <div class="card-title">💎 股票池管理</div>
                             <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px;">{{ statusCounts.all }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl);">{{ statusCounts.all }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">总股票数</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">新入池</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--primary-color);">{{ statusCounts.current }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--primary-color);">{{ statusCounts.current }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">当前持仓</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: 22px; color: var(--color-danger);">{{ statusCounts.out }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--color-danger);">{{ statusCounts.out }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">已出池</div>
                                 </div>
                             </div>
@@ -557,7 +557,7 @@
                                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                         <template v-for="(stock, si) in item.names" :key="stock.code">
                                             <span v-if="si < 5 || expandedStrategies[item.strategy]" 
-                                                style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg-input); border-radius: 6px; font-size: 12px; line-height: 1.4; border: 1px solid var(--border-light); cursor: default;"
+                                                style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg-input); border-radius: 6px; font-size: var(--font-sm); line-height: 1.4; border: 1px solid var(--border-light); cursor: default;"
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
@@ -626,7 +626,7 @@
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value" style="font-size:15px;">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
+                                    <div class="stat-value" style="font-size:var(--font-md);">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
                                     <div class="stat-label">自动评股</div>
                                 </div>
                             </div>
@@ -685,7 +685,7 @@
                                     </div>
                                     <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评股</el-button>
                                     <div v-if="watchlist.length === 0" style="text-align:center;padding:20px 0;color:var(--text-tertiary);">
-                                        <div style="font-size:36px;margin-bottom:8px;">⭐</div>
+                                        <div style="font-size: var(--font-3xl);margin-bottom:8px;">⭐</div>
                                         <div style="font-size:var(--font-sm);">还没有自选股</div>
                                         <el-button size="small" @click="currentSubPage = 'watchlist'" style="margin-top:8px;">去添加自选 →</el-button>
                                     </div>
@@ -1370,10 +1370,10 @@
                         <div v-if="!aiModelsError && aiModels.length>0">
                         <div v-for="(m,idx) in aiModels" :key="m.id" class="card" style="margin-bottom: 10px;">
                             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>{{ m.id }} <el-tag size="small" style="margin-left: 8px;">{{ m.provider }}</el-tag><span v-if="m.locked" style="margin-left:6px;font-size:12px;color:var(--text-tertiary);">🔒</span></span>
+                                <span>{{ m.id }} <el-tag size="small" style="margin-left: 8px;">{{ m.provider }}</el-tag><span v-if="m.locked" style="margin-left:6px;font-size: var(--font-sm);color:var(--text-tertiary);">🔒</span></span>
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <el-button v-if="!m.locked" size="small" type="danger" @click="deleteModel(idx)" style="margin-right:4px;">🗑️</el-button>
-                                    <span v-if="m.testResult!==undefined" style="font-size: 12px;" :style="{color: m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗'}} {{ m.testResult.message }}</span>
+                                    <span v-if="m.testResult!==undefined" style="font-size: var(--font-sm);" :style="{color: m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗'}} {{ m.testResult.message }}</span>
                                     <el-switch v-model="m.enabled" size="small" @change="onModelToggle(m)"/>
                                 </div>
                             </div>
@@ -1406,9 +1406,9 @@
                             <span>🔗 sxsc-tushare（券商版）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.sxsc_tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
-                                <span v-else-if="datasourceStatus.sxsc_tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.sxsc_tushare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">已连接</span>
+                                <span v-else-if="datasourceStatus.sxsc_tushare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -1430,9 +1430,9 @@
                             <span>📡 tushare（标准版 Pro）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: 12px;">已连接</span>
-                                <span v-else-if="datasourceStatus.tushare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.tushare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">已连接</span>
+                                <span v-else-if="datasourceStatus.tushare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -1457,9 +1457,9 @@
                             <span>🌐 akshare（开源免费）</span>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <el-switch v-model="datasourceConfig.akshare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: 12px;">可用</span>
-                                <span v-else-if="datasourceStatus.akshare === 'testing'" style="color: var(--el-warning); font-size: 12px;">测试中...</span>
-                                <span v-else style="color: var(--text-tertiary); font-size: 12px;">⏳ 未检测</span>
+                                <span v-if="datasourceStatus.akshare === 'connected'" style="color: var(--el-success); font-size: var(--font-sm);">可用</span>
+                                <span v-else-if="datasourceStatus.akshare === 'testing'" style="color: var(--el-warning); font-size: var(--font-sm);">测试中...</span>
+                                <span v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">⏳ 未检测</span>
                             </div>
                         </div>
                         <div style="font-size: var(--font-base); color: var(--text-secondary); padding: 8px 0 12px 0;">
@@ -1539,7 +1539,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <span style="color: var(--text-secondary); font-size: var(--font-base);">
                                 上次刷新: <strong>{{ dataRefreshConfig.last_refresh || '—' }}</strong>
-                                <span v-if="dataRefreshConfig.last_refresh_status" style="margin-left: 6px; font-size: 12px;" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
+                                <span v-if="dataRefreshConfig.last_refresh_status" style="margin-left: 6px; font-size: var(--font-sm);" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
                                     {{ dataRefreshConfig.last_refresh_status.startsWith('failed') ? '失败' : '' }}
                                 </span>
                             </span>
@@ -1563,7 +1563,7 @@
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
                                 <el-switch v-model="dataRefreshConfig.watch_enabled" @change="saveDataRefreshConfig" size="small" />
-                                <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
+                                <span style="font-size: var(--font-sm); color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
                             </div>
                         </div>
                     </div>
@@ -1583,7 +1583,7 @@
                     <!-- user: 用户与权限 -->
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card" style="text-align: center; padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
+                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🔐</div>
                             <div style="color: var(--text-secondary);">仅管理员可访问此页面</div>
                         </div>
                         <div v-else>
@@ -1679,10 +1679,10 @@
                         <div v-if="g.locked || expandedGroups[gid]" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light);">
                             <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                 <span v-for="u in userList.filter(u => (u.group || u.role) === gid)" :key="u.username"
-                                    style="padding: 3px 10px; background: var(--bg-page); border-radius: 12px; font-size: 12px;">
+                                    style="padding: 3px 10px; background: var(--bg-page); border-radius: 12px; font-size: var(--font-sm);">
                                     {{ u.username }}<span v-if="u.role==='admin'" style="color:var(--primary-color);"> · 管理</span>
                                 </span>
-                                <span v-if="getGroupMemberCount(gid) === 0" style="color: var(--text-tertiary); font-size: 12px;">暂无成员</span>
+                                <span v-if="getGroupMemberCount(gid) === 0" style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无成员</span>
                             </div>
                         </div>
                     </div>
@@ -1719,42 +1719,42 @@
                             <div class="card-title">🧩 系统组件</div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">⚡</span>
+                                    <span style="font-size: var(--font-xl);">⚡</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">FastAPI</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">后端框架</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px; color: var(--el-success);">▣</span>
+                                    <span style="font-size: var(--font-xl); color: var(--el-success);">▣</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Vue 3</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">前端框架</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">🎨</span>
+                                    <span style="font-size: var(--font-xl);">🎨</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Element Plus</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">UI 组件库</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">🐍</span>
+                                    <span style="font-size: var(--font-xl);">🐍</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Python 3</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">运行环境</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">📊</span>
+                                    <span style="font-size: var(--font-xl);">📊</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">ECharts</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">图表引擎</div>
                                     </div>
                                 </div>
                                 <div style="background: var(--bg-page); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 22px;">📡</span>
+                                    <span style="font-size: var(--font-xl);">📡</span>
                                     <div>
                                         <div style="font-weight: var(--font-semibold); font-size: var(--font-md);">Tushare Pro</div>
                                         <div style="font-size: var(--font-sm); color: var(--text-tertiary);">金融数据 API</div>
@@ -1799,7 +1799,7 @@
             <div v-if="stockDetail">
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
+                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
                         <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
                     </div>
                     <div class="score-badge" :class="{ pulse: scorePulse }">
@@ -1867,7 +1867,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">最高/最低</div>
-                            <div style="font-size: 15px; font-weight: var(--font-semibold);">
+                            <div style="font-size: var(--font-md); font-weight: var(--font-semibold);">
                                 <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high.toFixed(2) }}</span>
                                 <span style="color: var(--text-tertiary); margin: 0 4px;">/</span>
                                 <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low.toFixed(2) }}</span>
@@ -1946,7 +1946,7 @@
                                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
                                     </svg>
                                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                                        <div style="font-size:28px;font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
+                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
                                         <div style="font-size:var(--font-xs);color:var(--text-tertiary);">分</div>
                                     </div>
                                 </div>
@@ -2038,7 +2038,7 @@
                             </div>
                         </div>
                         <div v-else style="text-align: center; color: var(--text-tertiary); padding: 40px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">🤖</div>
+                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🤖</div>
                             <div v-if="aiResult">
                                 <div style="margin-bottom: 8px;">最近评估：{{ aiResult.result.level }}</div>
                                 <div style="font-size: var(--font-sm);">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
@@ -2215,7 +2215,7 @@
                 <!-- 头部信息 -->
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: 22px; margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
+                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
                         <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
@@ -2348,7 +2348,7 @@
                 <!-- 阶段概览 -->
                 <div class="merrill-detail-header" :style="{backgroundColor: merrillDetailData.bg_color, borderLeftColor: merrillDetailData.color}">
                     <div>
-                        <h3 style="margin: 0 0 8px 0; font-size: 18px;">{{ merrillDetailData.name }}</h3>
+                        <h3 style="margin: 0 0 8px 0; font-size: var(--font-lg);">{{ merrillDetailData.name }}</h3>
                         <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-base);">{{ merrillDetailData.description }}</p>
                     </div>
                     <div class="stage-badge" :style="{backgroundColor: merrillDetailData.color}">
@@ -2467,9 +2467,9 @@
                             <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 7px; transition: width 0.5s;"></div>
                         </div>
                         <span :style="{color: dim.scoreColor}" style="width: 40px; text-align: right; font-weight: var(--font-medium);">+{{ dim.scoreStr }}</span>
-                        <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: 12px;">{{ dim.level }}</span>
+                        <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: var(--font-sm);">{{ dim.level }}</span>
                     </div>
-                    <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: 12px;">
+                    <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: var(--font-sm);">
                         <b style="color: #E53935;">⚠️ 早期预警：</b>
                         <span v-for="(w, i) in merrillData.early_warnings" :key="i" style="display: inline-block; margin-right: 12px;">{{ w.type || w }}</span>
                     </div>
@@ -2568,8 +2568,8 @@
                 <!-- 步骤 1: 修改密码 -->
                 <div v-if="setupStep === 1">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">🔐</div>
-                        <div style="font-weight: 600; font-size: 16px;">管理员密码</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🔐</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">管理员密码</div>
                         <div style="color: #999; margin-top: 4px;">建议修改默认密码以保证安全</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
@@ -2586,8 +2586,8 @@
                 <!-- 步骤 2: AI 模型 -->
                 <div v-if="setupStep === 2">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">🤖</div>
-                        <div style="font-weight: 600; font-size: 16px;">AI 大模型配置</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🤖</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">AI 大模型配置</div>
                         <div style="color: #999; margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
@@ -2615,8 +2615,8 @@
                 <!-- 步骤 3: Tushare -->
                 <div v-if="setupStep === 3">
                     <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 48px; margin-bottom: 8px;">📊</div>
-                        <div style="font-weight: 600; font-size: 16px;">Tushare 数据源</div>
+                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">📊</div>
+                        <div style="font-weight: 600; font-size: var(--font-md);">Tushare 数据源</div>
                         <div style="color: #999; margin-top: 4px;">用于获取行情数据和股票信息</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
