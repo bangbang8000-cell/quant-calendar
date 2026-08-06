@@ -2651,6 +2651,21 @@
             </template>
         </el-dialog>
 
+        <!-- v3.2.0-T11: 快捷键帮助面板 -->
+        <el-dialog v-model="shortcutHelpVisible" title="⌨️ 键盘快捷键" width="420px">
+            <div class="shortcut-list">
+                <div class="shortcut-row" v-for="s in shortcutHelpItems" :key="s.keys">
+                    <span class="shortcut-keys"><kbd>{{ s.keys }}</kbd></span>
+                    <span class="shortcut-desc">{{ s.desc }}</span>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- v3.2.0-T13: 浮动 AI 按钮 -->
+        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
+            <span class="ai-fab-icon">🤖</span>
+        </div>
+
     
 </div>
 
@@ -3425,6 +3440,51 @@ const allMenuDefs = [
                     currentPage.value = page;
                     const menu = menus.value.find(m => m.key === page);
                     currentSubPage.value = menu?.subPages?.[0] || '';
+                }
+                // v3.2.0-T11: 全局快捷键
+                const shortcutHelpVisible = ref(false);
+                const shortcutHelpItems = [
+                    { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索)' },
+                    { keys: 'Ctrl+/', desc: '显示/隐藏快捷键帮助' },
+                    { keys: '1-5', desc: '切换导航页面 (非输入态)' },
+                    { keys: 'R', desc: '刷新当前页面数据 (非输入态)' },
+                ];
+                const commandPaletteVisible = ref(false);
+                function isTypingTarget(el) {
+                    if (!el) return false;
+                    const tag = el.tagName;
+                    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+                }
+                function handleGlobalKeydown(e) {
+                    if (isTypingTarget(e.target)) return;
+                    const k = e.key.toLowerCase();
+                    if (e.ctrlKey && k === 'k') { e.preventDefault(); commandPaletteVisible.value = true; return; }
+                    if (e.ctrlKey && k === '/') { e.preventDefault(); shortcutHelpVisible.value = !shortcutHelpVisible.value; return; }
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
+                    if (k >= '1' && k <= '5') {
+                        const idx = parseInt(k) - 1;
+                        const page = menus.value[idx];
+                        if (page) { currentPage.value = page.key; currentSubPage.value = page.subPages[0] || ''; }
+                        return;
+                    }
+                    if (k === 'r') { refreshCurrentPage(); }
+                }
+                function refreshCurrentPage() {
+                    const page = currentPage.value;
+                    if (page === 'strategies') loadDashboardData().catch(() => {});
+                    else if (page === 'calendar') refreshCalendarData().catch(() => {});
+                    else if (page === 'ai') loadAiHistory().catch(() => {});
+                }
+                // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评股页并聚焦问股
+                const aiFabHidden = ref(false);
+                function openAiFab() {
+                    currentPage.value = 'ai';
+                    currentSubPage.value = 'chat_history';
+                    aiFabHidden.value = true;
+                    nextTick(() => {
+                        const input = document.querySelector('input[placeholder*="输入问题"]');
+                        if (input) input.focus();
+                    });
                 }
                 const currentSubPage = ref('overview');
                 const currentPageName = computed(() => {
@@ -6337,6 +6397,8 @@ const allMenuDefs = [
 
                 // ===== 初始化 =====
                 onMounted(async () => {
+                    // v3.2.0-T11: 注册全局快捷键
+                    window.addEventListener('keydown', handleGlobalKeydown);
                     // v1.8: 并行加载优化
 
                     // 超时保护的 Promise 包装器（防阻塞渲染）
@@ -6440,6 +6502,7 @@ const allMenuDefs = [
                 
                 onUnmounted(() => {
                     if (strategyPollTimer) clearInterval(strategyPollTimer);
+                    window.removeEventListener('keydown', handleGlobalKeydown);
                 });
 
                 // 监听设置页
@@ -6535,6 +6598,8 @@ const allMenuDefs = [
 
                     marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
                     recentPages, jumpToPage, recordRecentPage,
+                    shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
+                    aiFabHidden, openAiFab,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,
