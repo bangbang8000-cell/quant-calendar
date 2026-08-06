@@ -47,6 +47,33 @@ class QuickChatRequest(BaseModel):
 # ── History Helpers ──
 
 def _load_history() -> list:
+    """加载聊天历史 (v3.3.0: 优先 SQLite, 回退 JSON)"""
+    try:
+        import db
+        if db.schema_ok():
+            rows = db.chat_all()
+            if rows:
+                # 按 stock_code 聚合 (保持时间顺序)
+                sessions = []
+                by_code = {}
+                for r in rows:
+                    code = r['stock_code'] or ''
+                    if code not in by_code:
+                        by_code[code] = {
+                            "id": r['id'],
+                            "stock_code": code,
+                            "created_at": r['created_at'],
+                            "messages": []
+                        }
+                        sessions.append(by_code[code])
+                    by_code[code]['messages'].append({
+                        "role": r['role'],
+                        "content": r['content'],
+                        "time": r['created_at']
+                    })
+                return sessions
+    except Exception:
+        pass
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
@@ -58,9 +85,20 @@ def _load_history() -> list:
 
 
 def _save_history(sessions: list):
+    """保存聊天历史 (v3.3.0: JSON + SQLite 双写)"""
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump({"sessions": sessions}, f, ensure_ascii=False, indent=2)
+    # SQLite 同步 (尽力而为)
+    try:
+        import db
+        if db.schema_ok():
+            db.chat_clear('default')
+            for s in sessions:
+                for m in s.get('messages', []):
+                    db.chat_append('default', s.get('stock_code', ''), m.get('role', 'user'), m.get('content', ''))
+    except Exception:
+        pass
 
 
 # ── LLM Call (async, non-blocking) ──

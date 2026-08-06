@@ -21,6 +21,20 @@ def _get_watchlist_path(username: str) -> str:
 
 
 def _load_watchlist(username: str) -> list:
+    """加载自选股 (v3.3.0: 优先 SQLite, 回退 JSON)
+    返回 [{code, name, added_at}] dict 列表 (保持与原 JSON 结构兼容)"""
+    try:
+        import db
+        if db.schema_ok():
+            rows = db.watchlist_get(username)
+            if rows:
+                return [{
+                    "code": r['stock_code'],
+                    "name": r['stock_code'],
+                    "added_at": r['added_at'],
+                } for r in rows]
+    except Exception:
+        pass
     path = _get_watchlist_path(username)
     if os.path.exists(path):
         try:
@@ -32,10 +46,23 @@ def _load_watchlist(username: str) -> list:
 
 
 def _save_watchlist(username: str, stocks: list):
+    """保存自选股 (v3.3.0: JSON + SQLite 双写)"""
     user_dir = os.path.join(BASE_USERS_DIR, username)
     os.makedirs(user_dir, exist_ok=True)
     with open(_get_watchlist_path(username), 'w', encoding='utf-8') as f:
         json.dump({"stocks": stocks, "updated_at": datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
+    # SQLite 同步 (尽力而为)
+    try:
+        import db
+        if db.schema_ok():
+            for code in db.watchlist_get(username):
+                db.watchlist_remove(username, code['stock_code'])
+            for item in stocks:
+                # stocks 元素可能是 dict {code,name,added_at} 或纯字符串
+                code = item.get('code') if isinstance(item, dict) else item
+                db.watchlist_set(username, code)
+    except Exception:
+        pass
 
 
 @router.get("")

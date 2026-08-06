@@ -77,6 +77,16 @@ class GroupManager:
         self._load_groups()
 
     def _load_groups(self):
+        """加载分组 (v3.3.0: 优先 SQLite, 回退 JSON)"""
+        try:
+            import db
+            if db.schema_ok():
+                db_groups = db.kv_all('groups')
+                if db_groups:
+                    self.groups = db_groups
+                    return
+        except Exception:
+            pass
         if os.path.exists(GROUPS_FILE):
             with open(GROUPS_FILE, 'r', encoding='utf-8') as f:
                 self.groups = json.load(f)
@@ -85,9 +95,18 @@ class GroupManager:
             self._save_groups()
 
     def _save_groups(self):
+        """保存分组 (v3.3.0: JSON + SQLite 双写)"""
         os.makedirs(os.path.dirname(GROUPS_FILE), exist_ok=True)
         with open(GROUPS_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.groups, f, ensure_ascii=False, indent=2)
+        # SQLite 同步 (尽力而为)
+        try:
+            import db
+            if db.schema_ok():
+                for gid, data in self.groups.items():
+                    db.kv_set('groups', gid, data)
+        except Exception:
+            pass
 
     def list_groups(self) -> Dict:
         """获取所有分组"""
