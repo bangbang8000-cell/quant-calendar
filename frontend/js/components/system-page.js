@@ -124,7 +124,7 @@
                         <div class="card-title">🚦 访问限速配置</div>
                         <el-form label-width="100px">
                             <el-form-item label="API 限流 (次/分钟/IP)">
-                                <el-input-number v-model="rateLimitConfig.api_limit" :min="10" :max="10000" :step="50" @change="rateLimitDirty = true" />
+                                <el-input-number v-model="rateLimitConfig.api_limit" :min="10" :max="10000" :step="50" @change="saveRateLimit" />
                                 <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">当前设置: 每分钟 {{ rateLimitConfig.api_limit }} 次请求</div>
                             </el-form-item>
                         </el-form>
@@ -324,7 +324,7 @@
                         <div class="card">
                         <div class="card-title">🎛️ 策略筛选</div>
                         <div style="margin-bottom: 12px;">
-                            <el-checkbox-group v-model="strategyFilter.selected">
+                            <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
                                 <el-checkbox v-for="s in strategyFilterOptions" :key="s" :label="s" border style="margin-bottom: 6px;">
                                     {{ s }}
                                 </el-checkbox>
@@ -332,7 +332,7 @@
                         </div>
                         <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                             <span style="font-size: var(--font-base); color: var(--text-secondary);">过滤方式：</span>
-                            <el-radio-group v-model="strategyFilter.mode">
+                            <el-radio-group v-model="strategyFilter.mode" @change="saveStrategyFilter">
                                 <el-radio label="union">并集（任一匹配）</el-radio>
                                 <el-radio label="intersection">交集（全部匹配）</el-radio>
                             </el-radio-group>
