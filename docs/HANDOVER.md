@@ -106,6 +106,13 @@
   - **修复**: 重新拼接模板 — 根级配置区移入 feature 子页内(美林时钟/数据刷新/策略研究 归入功能配置), user/about 移入根 div 内形成完整 6 子页 v-if 链; ⚠️ 注意 feature 的 `</div>` 闭合必须移到配置区之后 (首次拼接保留了 feature 闭合在配置区前 → VUE_ERR_CODE 30)
   - **验证**: 6 子页各自显示自己的内容 (功能配置含 3 配置卡, 用户与权限显示用户列表 2 人+分组 3 个, 关于显示简介/版本/反馈/组件), 4 页面导航无回归, 组件版本号 bump 至 ?v=3.6.0-t9b
 
+- **⚠️ AI 模型管理 API Key 加密失效问题已修复 (2026-08-07, 用户报告)**:
+  - **现象**: AI 模型管理配置 API Key 后无法使用 (请求 401)
+  - **根因**: ai_models.json 的 api_key 用 Fernet 加密存储; 当 FERNET_KEY 与加密时不一致 (如 .env 重建/迁移) 时, `decrypt_value` 解密失败**原样返回密文** → AI 请求用 gAAAA... 密文当 key → 401; 且前端保存时会把密文再次回传, 后端再次加密 → 双重加密
+  - **修复 (按用户建议取消加密)**: `_save_models` 不再加密直接存明文; `_load_models` 对历史密文 (gAAAA 开头) 尝试解密, 失败则置空提示重填; 现有 ops 密文 key 已置空 (密钥丢失无法恢复, 需在界面重新填写)
+  - **验证**: 14 个测试全过 (新增 test_save_load_plaintext_roundtrip), 前端填写→保存→明文落盘→加载 roundtrip 正常, 模型管理界面 7 模型密钥框正常显示
+  - ⚠️ 注意: 取消加密是安全降级 (PRD S1 原为 Fernet 加密), 已记录; crypto_utils.py 保留用于兼容迁移
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
