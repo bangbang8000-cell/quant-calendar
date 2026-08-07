@@ -68,6 +68,12 @@
   - 真实结构: 单根 div 含全部 4 子页 v-if 链 (非三兄弟游离结构), 与 System 页不同!
   - 验证: 4 子页全部渲染 (概览统计/美林时钟四阶段/市场行情指数/共识榜), 4 页面导航循环无回归, console 零错误, SPA 完整性 template=0 div=-3 dual=0
 
+- **T6 Calendar 页** ✅ 组件化完成并验证 (2026-08-07):
+  - `frontend/js/components/calendar-page.js` (根 div + 2 template 分支: 日/周/月/年视图 + 股票池管理)
+  - index.html → `<qc-calendar-page></qc-calendar-page>`, 行数 5876 → 5765
+  - 该页结构干净: div 平衡 0、template 3/3 配对、无跨行 div 问题 (与 System/Strategies 不同, 无结构缺陷)
+  - 验证: 日视图 (状态筛选 193/70/57/66 + 股票列表 193 只)、股票池管理 (4 统计卡 + 策略分布), 子页切换正常, 4 页面导航循环无回归, console 零错误
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
@@ -161,7 +167,7 @@ curl -s http://localhost:8000/api/health
 - [x] 修复 GlobalHeader 组件集成 bug (§5) — 2026-08-07 完成, 根因=in-DOM模板自闭合标签
 - [x] T4 System 页组件化 — 2026-08-07 完成 (见 §4), 附带发现 user/about 子页原始 bug (待决策)
 - [x] T5 Strategies 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
-- [ ] T6 Calendar 页组件化 (8h) — day/week/month/year/pool 5 子页
+- [x] T6 Calendar 页组件化 — 2026-08-07 完成 (见 §4), 视图+股票池管理验证通过
 - [ ] T7 AI 页组件化 (6h) — overview/history/chat_history 3 子页
 - [ ] T8 壳瘦身 ≤1800 行
 - [ ] T9 冒烟 + T10 merrill 拆分 + T11 组件测试 + T12 ADR
