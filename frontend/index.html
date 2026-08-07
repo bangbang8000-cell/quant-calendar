@@ -3,16 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <script>
-    // 自动清除 Service Worker（本地应用不需要 PWA）
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            for (const reg of regs) reg.unregister();
-        });
-        // 阻止后续 SW 注册
-        navigator.serviceWorker.register = function() { return Promise.reject(); };
-    }
-    </script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="量化日历">
@@ -124,7 +114,7 @@
 
             <!-- 移动端底部导航 -->
             <div class="mobile-nav">
-                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
+                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="navigateTo(menu.key, menu.subPages[0] || '')">
                     <div class="mobile-nav-icon" v-html="menu.icon"></div>
                     <div class="mobile-nav-label">{{ menu.name }}</div>
                 </div>

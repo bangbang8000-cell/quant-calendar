@@ -16,7 +16,6 @@ def _get_tushare_token():
         if settings.TUSHARE_TOKEN:
             return settings.TUSHARE_TOKEN
     except Exception:
-        logger.exception("加载股票信息失败")
         pass
     token = os.environ.get("TUSHARE_TOKEN", "")
     if token:

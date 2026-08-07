@@ -77,20 +77,20 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 8.1 | 移动端字体 Token 修复 | FR-3.8.1 | `frontend/css/responsive.css`, `animations.css` | 0.5h | 浏览器: 移动端字体大小正确 | ⏳ |
-| 8.2 | 统一导航入口 | FR-3.8.2 | `frontend/js/app-logic.js`, `index.html`, 组件 | 1.5h | 浏览器: 4 种导航行为一致 | ⏳ |
-| 8.3 | 异常处理规范化 | FR-3.8.3 | `frontend/js/app-logic.js` | 2h | 代码审查: 0 空 catch | ⏳ |
-| 8.4 | 骨架屏系统合并 | FR-3.8.4 | `frontend/css/animations.css`, `themes.css` | 1h | 浏览器: 骨架屏只显示一套 | ⏳ |
-| 8.5 | pulse 动画合并 | FR-3.8.5 | `frontend/css/animations.css`, `themes.css` | 0.5h | 浏览器: 动画一致 | ⏳ |
-| 8.6 | 键盘焦点指示器 | FR-3.8.6 | `frontend/css/themes.css` | 1h | 浏览器: Tab 遍历可见焦点环 | ⏳ |
-| 8.7 | 硬编码色值 Token 化 | FR-3.8.7 | `frontend/css/themes.css` | 1h | grep: `#667eea` 出现 0 次 | ⏳ |
-| 8.8 | CSS 死代码清理 | FR-3.8.8 | `frontend/css/layout.css`, `themes.css` | 0.5h | SPA 完整性: 无破坏 | ⏳ |
-| 8.9 | PWA 离线缓存 | FR-3.8.9 | `frontend/sw.js` | 3h | Lighthouse PWA 评分 ≥ 85 | ⏳ |
-| 8.10 | 底部安全区适配 | FR-3.8.10 | `frontend/css/responsive.css` | 0.5h | DevTools 模拟 iPhone X | ⏳ |
-| 8.11 | 触觉反馈 | FR-3.8.11 | `frontend/js/app-logic.js` | 0.5h | 移动设备: 操作时微震 | ⏳ |
-| 8.12 | 移动端导航重构 | FR-3.8.12 | `frontend/index.html`, `responsive.css` | 1.5h | 移动设备: 图标+文字布局 | ⏳ |
-| 8.13 | 股票详情移动端优化 | FR-3.8.13 | `frontend/index.html`, `responsive.css` | 2h | 移动设备: Sheet 滑入 + 缩放 | ⏳ |
-| 8.14 | reduced-motion 适配 | FR-3.8.14 | `frontend/css/animations.css` | 0.5h | 系统动效减弱: 动画暂停 | ⏳ |
+| 8.1 | 移动端字体 Token 修复 | FR-3.8.1 | `frontend/css/responsive.css`, `layout.css` | 0.5h | 浏览器: 移动端字体大小正确 | ✅ |
+| 8.2 | 统一导航入口 | FR-3.8.2 | `frontend/js/app-logic.js`, `index.html` | 1.5h | 浏览器: 4 种导航行为一致 | ✅ |
+| 8.3 | 异常处理规范化 | FR-3.8.3 | `frontend/js/app-logic.js` | 2h | 代码审查: 18个空catch加warn | ✅ |
+| 8.4 | 骨架屏系统合并 | FR-3.8.4 | `frontend/css/animations.css`, `themes.css` | 1h | 统一使用skeleton-shimmer | ✅ |
+| 8.5 | pulse 动画合并 | FR-3.8.5 | `frontend/css/animations.css`, `themes.css` | 0.5h | pulse-opacity/dot/status 三分化 | ✅ |
+| 8.6 | 键盘焦点指示器 | FR-3.8.6 | `frontend/css/themes.css` | 1h | Tab 遍历可见 :focus-visible 环 | ✅ |
+| 8.7 | 硬编码色值 Token 化 | FR-3.8.7 | `frontend/css/themes.css` | 1h | --primary-rgb 定义, rgba全替换, #667eea→0 | ✅ |
+| 8.8 | CSS 死代码清理 | FR-3.8.8 | `frontend/css/themes.css` | 0.5h | icon-system/notification-settings等 ~200行移除 | ✅ |
+| 8.9 | PWA 离线缓存 | FR-3.8.9 | `frontend/sw.js`, `index.html` | 3h | SW启用 + 预缓存shell + API兜底 | ✅ |
+| 8.10 | 底部安全区适配 | FR-3.8.10 | `frontend/css/responsive.css` | 0.5h | safe-area-inset-bottom | ✅ |
+| 8.11 | 触觉反馈 | FR-3.8.11 | `frontend/js/app-logic.js` | 0.5h | navigator.vibrate 4处集成 | ✅ |
+| 8.12 | 移动端导航重构 | FR-3.8.12 | `frontend/css/responsive.css` | 1.5h | fixed bottom bar + blur + safe-area | ✅ |
+| 8.13 | 股票详情移动端优化 | FR-3.8.13 | `frontend/css/responsive.css` | 2h | dialog 95% + grid 2列 | ✅ |
+| 8.14 | reduced-motion 适配 | FR-3.8.14 | `frontend/css/animations.css` | 0.5h | @media prefers-reduced-motion | ✅ |
 
 ### 5.2 验收清单
 

@@ -1,39 +1,65 @@
-// Service Worker - 基础PWA支持 (v3 - no CDN cache, graceful fallback)
-const CACHE_NAME = 'quant-calendar-v3';
+// Service Worker - PWA支持 v3.8
+const CACHE_NAME = 'quant-calendar-v3.8';
 const CACHED_URLS = [
-    '/manifest.json'
+    '/',
+    '/manifest.json',
+    '/static/css/tokens.css',
+    '/static/css/themes.css',  
+    '/static/css/layout.css',
+    '/static/css/animations.css',
+    '/static/css/responsive.css',
+    '/static/js/app-logic.js',
+    '/static/js/echarts-theme.js',
+    '/static/js/components/calendar-page.js',
+    '/static/js/components/ai-page.js',
+    '/static/js/components/strategies-page.js',
+    '/static/js/components/system-page.js',
+    '/static/js/components/research-page.js',
+    '/static/js/merrill.js',
+    '/static/lib/echarts.min.js',
 ];
 
 self.addEventListener('install', event => {
     self.skipWaiting();
-    // 只缓存本地资源，CDN资源走网络（jsdelivr国内可能受限）
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => cache.addAll(CACHED_URLS))
-            .catch(() => self.skipWaiting()) // 即使缓存失败也要激活
+            .catch(() => self.skipWaiting())
     );
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(clients.claim());
-    // 清除所有旧缓存
     event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(keys.map(k => caches.delete(k)))
-        )
+        (async () => {
+            await clients.claim();
+            const keys = await caches.keys();
+            await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+        })()
     );
 });
 
-// 网络优先策略：所有资源先走网络，失败回退缓存
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
+    
+    // API请求: 缓存兜底
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
     
     // index.html / SW 自身 始终从网络获取
     if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/sw.js') {
         event.respondWith(
             fetch(event.request)
                 .then(response => {
-                    // 成功拿到后更新缓存
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                     return response;
@@ -53,6 +79,14 @@ self.addEventListener('fetch', event => {
                     return response;
                 })
                 .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+    
+    // 页面导航请求：离线回退
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match('/'))
         );
         return;
     }

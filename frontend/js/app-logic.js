@@ -61,6 +61,15 @@
                     if (indexKlineChart) indexKlineChart.resize();
                 });
 
+                // v3.8.11: 触觉反馈
+                function hapticFeedback(style = 'light') {
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        if (style === 'light') navigator.vibrate(10);
+                        else if (style === 'medium') navigator.vibrate(20);
+                        else if (style === 'heavy') navigator.vibrate([10, 30, 10]);
+                    }
+                }
+
                 // 触摸手势：左右滑动切换页面（仅移动端）
                 const touchStartX = ref(0);
                 const touchStartY = ref(0);
@@ -532,7 +541,7 @@ const allMenuDefs = [
                     if (k >= '1' && k <= '5') {
                         const idx = parseInt(k) - 1;
                         const page = menus.value[idx];
-                        if (page) { currentPage.value = page.key; currentSubPage.value = page.subPages[0] || ''; }
+                        if (page) navigateTo(page.key, page.subPages[0] || '');
                         return;
                     }
                     if (k === 'r') { refreshCurrentPage(); }
@@ -543,11 +552,16 @@ const allMenuDefs = [
                     else if (page === 'calendar') refreshCalendarData().catch(() => {});
                     else if (page === 'ai') loadAiHistory().catch(() => {});
                 }
+                // v3.8.2: 统一导航入口
+                function navigateTo(page, subPage = '') {
+                    hapticFeedback('light');
+                    currentPage.value = page;
+                    currentSubPage.value = subPage;
+                }
                 // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评股页并聚焦问股
                 const aiFabHidden = ref(false);
                 function openAiFab() {
-                    currentPage.value = 'ai';
-                    currentSubPage.value = 'chat_history';
+                    navigateTo('ai', 'chat_history');
                     aiFabHidden.value = true;
                     nextTick(() => {
                         const input = document.querySelector('input[placeholder*="输入问题"]');
@@ -573,7 +587,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) aiUsage.value = data;
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadAiUsage failed:', e); }
                 }
                 // v3.4.0-T4/T7: 系统监控 + 页面热度
                 const sysMonitor = ref({});
@@ -586,7 +600,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) sysMonitor.value = data;
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadSysMonitor failed:', e); }
                 }
                 async function loadAnalytics() {
                     try {
@@ -595,7 +609,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) analyticsRank.value = data.rank || [];
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadAnalytics failed:', e); }
                 }
                 // v3.3.0-T8: 数据备份与恢复
                 const backups = ref([]);
@@ -989,7 +1003,7 @@ const allMenuDefs = [
                                         } else if (data.error) {
                                             stockChatError.value = data.error;
                                         }
-                                    } catch(e) {}
+                                    } catch(e) { console.warn('SSE parse error:', e); }
                                 }
                             }
                         }
@@ -1650,6 +1664,7 @@ const allMenuDefs = [
                 });
 
                 function switchView(view) {
+                    hapticFeedback('light');
                     currentView.value = view;
                     // 确保日期为同期首个交易日（而非 -01/-01-01 硬编码）
                     let currentDate = selectedDate.value || dates.value[dates.value.length - 1];
@@ -1666,6 +1681,7 @@ const allMenuDefs = [
                 }
 
                 function navigateDate(direction) {
+                    hapticFeedback('light');
                     const current = selectedDate.value;
                     const allDates = dates.value;
                     const idx = allDates.indexOf(current);
@@ -2265,7 +2281,7 @@ const allMenuDefs = [
                         }
                         selectedWatchlistCodes.value = [];
                         ElementPlus.ElMessage.success('已移除');
-                    } catch (e) {}
+                    } catch (e) { if (e && e.message !== 'cancel') console.warn('batchRemoveWatchlist:', e); }
                 }
                 function toggleSelectWatchlist(code) {
                     const idx = selectedWatchlistCodes.value.indexOf(code);
@@ -2328,7 +2344,7 @@ const allMenuDefs = [
                             autoEvaluateConfig.value = data.data;
                             if (data.data.evaluate_scope) autoEvaluateScope.value = data.data.evaluate_scope;
                         }
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadAutoEvaluateConfig failed:', e); }
                 }
 
                 // 保存自动评股配置
@@ -2363,7 +2379,7 @@ const allMenuDefs = [
                         const res = await fetch('/api/watchlist', { headers: { 'Authorization': `Bearer ${token}` } });
                         const data = await res.json();
                         if (data.success) watchlist.value = data.stocks || [];
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadWatchlist failed:', e); }
                 }
                 async function addToWatchlist(code, name) {
                     try {
@@ -2378,7 +2394,7 @@ const allMenuDefs = [
                             if (!data.existed) watchlist.value.push({ code, name, added_at: new Date().toISOString() });
                             return true;
                         }
-                    } catch (e) {}
+                    } catch (e) { console.warn('addToWatchlist failed:', e); }
                     return false;
                 }
                 async function removeFromWatchlist(code) {
@@ -2388,7 +2404,7 @@ const allMenuDefs = [
                             method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
                         });
                         watchlist.value = watchlist.value.filter(s => s.code !== code);
-                    } catch (e) {}
+                    } catch (e) { console.warn('removeFromWatchlist failed:', e); }
                 }
                 async function clearWatchlist() {
                     try {
@@ -2399,7 +2415,7 @@ const allMenuDefs = [
                         });
                         watchlist.value = [];
                         ElementPlus.ElMessage.success('自选已清空');
-                    } catch (e) {}
+                    } catch (e) { console.warn('clearWatchlist failed:', e); }
                 }
                 async function toggleWatchlist(code, name) {
                     if (watchlistCodes.value.has(code)) {
@@ -2507,7 +2523,7 @@ const allMenuDefs = [
                         const res = await fetch(`/api/watchlist/stock/search?q=${encodeURIComponent(watchlistSearch.value)}`, { headers: { 'Authorization': `Bearer ${token}` } });
                         const data = await res.json();
                         watchlistResults.value = (data.results || []).filter(r => !watchlistCodes.value.has(r.code));
-                    } catch (e) {} finally { watchlistSearching.value = false; }
+                    } catch (e) { console.warn('searchStockForWatchlist failed:', e); } finally { watchlistSearching.value = false; }
                 }
 
                 // v1.8.0: 加载数据刷新配置
@@ -3105,7 +3121,7 @@ const allMenuDefs = [
                         const res = await fetch('/api/system/rate-limit');
                         const data = await res.json();
                         if (data.success) rateLimitConfig.value = data.data;
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadRateLimit failed:', e); }
                 }
                 async function saveRateLimit() {
                     rateLimitSaving.value = true;
@@ -3547,7 +3563,7 @@ const allMenuDefs = [
                         if (data.success && data.config) {
                             tushareConfig.value = { ...tushareConfig.value, ...data.config };
                         }
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadTushareConfig failed:', e); }
                 }
                 // v1.8.0: 多数据源配置
                 async function loadDatasourceConfig() {
@@ -3574,7 +3590,7 @@ const allMenuDefs = [
                                 }
                             }
                         } catch (e2) {}
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadDatasourceConfig failed:', e); }
                 }
                 async function saveDatasourceConfig() {
                     try {
@@ -3588,7 +3604,7 @@ const allMenuDefs = [
                             body: JSON.stringify({ sources: datasourceConfig.value })
                         });
                         globalConfigDirty.value = true;
-                    } catch (e) {}
+                    } catch (e) { console.warn('saveDatasourceConfig failed:', e); }
                 }
                 async function testDatasource(source) {
                     datasourceStatus.value[source] = 'testing';
@@ -3618,7 +3634,7 @@ const allMenuDefs = [
                             feishuConfig.value = { ...feishuConfig.value, ...data };
                             feishuConfigOriginal.value = JSON.parse(JSON.stringify(feishuConfig.value));
                         }
-                    } catch (e) {}
+                    } catch (e) { console.warn('loadFeishuConfig failed:', e); }
                 }
                 async function loadAiConfig() {
                     try {
@@ -3712,6 +3728,7 @@ const allMenuDefs = [
 
                 // 监听页面切换
                 watch(currentPage, async (page) => {
+                    hapticFeedback('light');
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
                     // v3.4.0-T7: 匿名页面热度上报
@@ -3721,7 +3738,7 @@ const allMenuDefs = [
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ page })
                         }).catch(() => {});
-                    } catch (e) {}
+                    } catch (e) { console.warn('pageView track failed:', e); }
                     // v1.11: 清除旧轮询定时器
                     if (strategyPollTimer) { clearInterval(strategyPollTimer); strategyPollTimer = null; }
                     if (page === 'strategies') {
@@ -3751,7 +3768,7 @@ const allMenuDefs = [
                                     const res = await fetch(`/api/view/${v}/${selectedDate.value}?status=all`);
                                     const d = await res.json();
                                     strategyFilterCounts.value[v] = d.stocks || [];
-                                } catch(e) {}
+                                } catch(e) { console.warn('loadConsensusData view load failed:', e); }
                             }
                             // 也填充 consensus 用于各计算属性
                             if (!consensus.value || consensus.value.length === 0) {
@@ -4019,7 +4036,7 @@ const allMenuDefs = [
                     selectAllHistory, selectAllWatchlist,
                     batchRemoveWatchlist, batchEvaluateSelected, batchReevaluateHistory, batchAddToWatchlist,
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
-                    handleLogin, handleGuestLogin, handleLogout, changeTheme, switchView, onDateChange, navigateDate, disabledDate,
+                    handleLogin, handleGuestLogin, handleLogout, changeTheme, switchView, onDateChange, navigateDate, disabledDate, navigateTo,
                     loadDashboardData, loadConsensusData, refreshCalendarData, exportCSV, showStockDetail,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
@@ -4084,6 +4101,8 @@ const allMenuDefs = [
                     stockChatInput, stockChatMessages, stockChatLoading, stockChatError, askStockSend, askStockQuick,
                     // v2.5.2: 触摸手势
                     onTouchStart, onTouchEnd,
+                    // v3.8.11: 触觉反馈
+                    hapticFeedback,
                 };
     return qcState;
   };
