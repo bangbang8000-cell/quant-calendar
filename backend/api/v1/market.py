@@ -230,3 +230,131 @@ async def sync_tushare_data(_: Dict = Depends(get_admin_user)):
             "success": False,
             "message": f"同步异常"
         }
+
+
+# ─── v3.9.11: 行业热力图 ───────────────────────────────────────
+
+# 行业分类映射 (申万一级行业)
+INDUSTRY_KEYWORDS = {
+    "银行": ["银行", "金融", "保险"],
+    "食品饮料": ["食品", "饮料", "白酒", "乳业", "调味品"],
+    "医药生物": ["医药", "制药", "生物", "医疗", "药"],
+    "电子": ["电子", "半导体", "芯片", "集成电路"],
+    "计算机": ["计算机", "软件", "IT", "信息"],
+    "电力设备": ["电力", "电气", "新能源", "光伏", "风电", "锂电", "储能"],
+    "汽车": ["汽车", "整车", "新能源车", "零部件"],
+    "机械设备": ["机械", "设备", "制造", "机器人"],
+    "通信": ["通信", "5G", "光缆"],
+    "有色金属": ["有色", "黄金", "铜", "铝", "稀土", "矿产"],
+    "基础化工": ["化工", "化学", "石化", "材料"],
+    "房地产": ["地产", "房产", "物业"],
+    "建筑装饰": ["建筑", "装饰", "基建", "工程"],
+    "交通运输": ["交通", "运输", "物流", "港口", "航空", "机场"],
+    "国防军工": ["军工", "航天", "航空", "兵器"],
+    "传媒": ["传媒", "广告", "影视", "游戏", "出版"],
+    "农林牧渔": ["农业", "林业", "牧业", "渔业", "种业"],
+    "钢铁": ["钢铁", "钢材"],
+    "煤炭": ["煤炭", "煤"],
+    "石油石化": ["石油", "油气", "石化"],
+    "纺织服装": ["纺织", "服装", "服饰"],
+    "商贸零售": ["商业", "零售", "百货", "超市"],
+    "社会服务": ["旅游", "酒店", "餐饮", "教育"],
+    "公用事业": ["公用", "水务", "燃气", "环保"],
+    "家用电器": ["家电", "电器"],
+}
+
+def _classify_industry(stock_name: str) -> str:
+    """根据股票名称关键词归类到申万一级行业"""
+    for industry, keywords in INDUSTRY_KEYWORDS.items():
+        for kw in keywords:
+            if kw in stock_name:
+                return industry
+    return "其他"
+
+
+@router.get("/industry-heatmap")
+async def get_industry_heatmap():
+    """
+    行业热力图数据 — 各行业在当前策略池中的表现
+    """
+    try:
+        from data_parser import parser as dp
+        from stock_info import StockInfoManager
+
+        dates = dp.get_available_dates()
+        if not dates:
+            return {"success": False, "message": "无可用数据"}
+
+        latest = dates[-1]
+        holdings = dp.get_holdings_by_date(latest) or {}
+
+        # 按行业汇总
+        industry_stats: Dict[str, Dict] = {}
+
+        for sid, data in holdings.items():
+            stocks = data.get("stocks", [])
+            strategy_name = data.get("strategy_name", sid)
+
+            for s in stocks:
+                if isinstance(s, dict):
+                    code = s.get("code", "")
+                    name = s.get("name", code)
+                else:
+                    code = str(s)
+                    name = code
+
+                industry = _classify_industry(name)
+                if industry not in industry_stats:
+                    industry_stats[industry] = {
+                        "name": industry,
+                        "stock_count": 0,
+                        "strategy_count": 0,
+                        "stocks": [],
+                        "strategies": set(),
+                    }
+
+                stats = industry_stats[industry]
+                stats["stock_count"] += 1
+                stats["strategies"].add(strategy_name)
+                if len(stats["stocks"]) < 10:  # 最多保留10个示例
+                    stats["stocks"].append({"code": code, "name": name})
+
+        # 计算热力值 (基于股票数量)
+        result = []
+        for ind, stats in industry_stats.items():
+            result.append({
+                "name": stats["name"],
+                "value": stats["stock_count"],
+                "strategy_count": len(stats["strategies"]),
+                "stocks": stats["stocks"],
+            })
+
+        # 按股票数量降序排列
+        result.sort(key=lambda x: x["value"], reverse=True)
+
+        # 计算热力等级 (前25%为hot, 中50%为warm, 后25%为cool)
+        if result:
+            max_val = result[0]["value"]
+            min_val = result[-1]["value"]
+            val_range = max(max_val - min_val, 1)
+            for item in result:
+                normalized = (item["value"] - min_val) / val_range
+                if normalized >= 0.75:
+                    item["heat"] = "hot"
+                elif normalized >= 0.25:
+                    item["heat"] = "warm"
+                else:
+                    item["heat"] = "cool"
+
+        return {
+            "success": True,
+            "data": {
+                "date": latest,
+                "industries": result,
+                "total_stocks": sum(r["value"] for r in result),
+                "total_industries": len(result),
+            }
+        }
+    except Exception as e:
+        logger.error(f"行业热力图生成失败: {e}")
+        return {"success": False, "message": str(e)}

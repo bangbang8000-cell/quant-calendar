@@ -71,8 +71,8 @@ async def get_pool_signal(data: Dict[str, Any]):
     market_snapshot = data.get("market_snapshot", None)
     if not stock_code:
         raise HTTPException(status_code=400, detail="stock_code 必填")
-    from ai_evaluator import ai_config
-    signal = ai_config.generate_pool_signal(stock_code, stock_name, event_type, market_snapshot)
+    from ai_evaluator import ai_evaluator
+    signal = ai_evaluator.generate_pool_signal(stock_code, stock_name, event_type, market_snapshot)
     return {"success": True, "stock_code": stock_code, "signal": signal}
 
 

@@ -10,37 +10,37 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="/static/lib/vue.global.prod.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="/static/lib/element-plus.css">
-    <script src="/static/lib/element-plus.min.js"></script>
-    <script src="/static/lib/echarts.min.js"></script>
-    <script src="/static/lib/zh-cn.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/element-plus.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/echarts.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/zh-cn.min.js"></script>
     <link rel="stylesheet" href="/static/css/tokens.css?v=3.0.0">
-    <link rel="stylesheet" href="/static/css/themes.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/themes.css?v=3.8.2">
     <link rel="stylesheet" href="/static/css/layout.css?v=3.0.0">
     <link rel="stylesheet" href="/static/css/animations.css?v=3.0.0">
     <link rel="stylesheet" href="/static/css/responsive.css?v=3.0.0">
 
     <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.5.2"></script>
-    <script src="/static/js/icons.js?v=2.5.2"></script>
-    <script src="/static/js/core.js"></script>
-    <script src="/static/js/charts.js?v=3.2.0"></script>
-    <script src="/static/js/calendar.js"></script>
-    <script src="/static/js/strategies.js"></script>
-    <script src="/static/js/ai.js"></script>
-    <script src="/static/js/system.js"></script>
-    <script src="/static/js/users.js"></script>
-    <script src="/static/js/merrill.js?v=3.2.0"></script>
-    <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
-    <script src="/static/js/components/sidebar.js?v=3.6.0"></script>
-    <script src="/static/js/components/global-header.js?v=3.6.0"></script>
-    <script src="/static/js/components/system-page.js?v=3.6.0-t9b"></script>
-    <script src="/static/js/components/strategies-page.js?v=3.6.0-t5"></script>
-    <script src="/static/js/components/calendar-page.js?v=3.6.0-t6"></script>
-    <script src="/static/js/components/ai-page.js?v=3.6.0-t7"></script>
-    <script src="/static/js/components/research-page.js?v=3.6.0-t8"></script>
-    <script src="/static/js/app-logic.js?v=3.6.0-t8"></script>
+    <script nonce="{{NONCE}}" src="/static/js/themes.js?v=2.5.2"></script>
+    <script nonce="{{NONCE}}" src="/static/js/icons.js?v=2.5.2"></script>
+    <script nonce="{{NONCE}}" src="/static/js/core.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/charts.js?v=3.8.1"></script>
+    <script nonce="{{NONCE}}" src="/static/js/calendar.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/strategies.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/ai.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/system.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/users.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/merrill.js?v=3.2.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/echarts-theme.js?v=3.2.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/sidebar.js?v=3.8.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/global-header.js?v=3.8.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/system-page.js?v=3.8.0-t9b"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/strategies-page.js?v=3.8.0-t5"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/calendar-page.js?v=3.8.0-t6"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/ai-page.js?v=3.8.0-t7"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/research-page.js?v=3.8.0-t8"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic.js?v=3.8.2"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -274,7 +274,7 @@
                                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
                                     </svg>
                                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
+                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ fmtNum(aiResult.result.total_score, 1) }}</div>
                                         <div style="font-size:var(--font-xs);color:var(--text-tertiary);">分</div>
                                     </div>
                                 </div>
@@ -283,9 +283,9 @@
                                     <div style="font-size:var(--font-md);color:var(--text-secondary);line-height:1.7;">{{ aiResult.result.detailed_report || '' }}</div>
                                     <!-- 评估历史对比 -->
                                     <div v-if="evalHistoryComparison" style="margin-top:8px;padding:6px 10px;background:var(--border-light);border-radius:6px;font-size:var(--font-xs);color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px;">
-                                        📈 上次{{ evalHistoryComparison.prevScore }}分 → 本次{{ evalHistoryComparison.currScore }}分
+                                        📈 上次{{ fmtNum(evalHistoryComparison.prevScore, 1) }}分 → 本次{{ fmtNum(evalHistoryComparison.currScore, 1) }}分
                                         <span :style="{color:evalHistoryComparison.diff>0?'var(--el-success)':evalHistoryComparison.diff<0?'var(--el-danger)':'var(--text-tertiary)'}">
-                                            {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ Math.abs(evalHistoryComparison.diff) }}
+                                            {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ fmtNum(Math.abs(evalHistoryComparison.diff), 1) }}
                                         </span>
                                     </div>
                                     <!-- 操作检查清单 -->
@@ -301,7 +301,7 @@
                                     <div style="flex:1;height:12px;background:var(--border-light);border-radius:6px;overflow:hidden;">
                                         <div :style="{width:score+'%',height:'100%',background:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)',borderRadius:'6px',transition:'width 0.5s'}"></div>
                                     </div>
-                                    <span style="font-size:var(--font-sm);font-weight:var(--font-bold);width:28px;text-align:center;" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ score }}</span>
+                                    <span style="font-size:var(--font-sm);font-weight:var(--font-bold);width:28px;text-align:center;" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ fmtNum(score, 0) }}</span>
                                 </div>
                             </div>
                             <div class="ai-eval-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
@@ -325,10 +325,10 @@
                             <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
                                 <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ aiResult.result.signal_attribution.technical }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ aiResult.result.signal_attribution.fundamentals }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ aiResult.result.signal_attribution.capital_flow }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
-                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
+                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
+                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
                                 </div>
                                 <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
                                     <span style="color: #4CAF50;">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
@@ -339,15 +339,15 @@
                             <div v-if="aiResult.result.analysis?.sniper_points" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
                                 <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🎯 理想买入</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ aiResult.result.analysis.sniper_points.ideal_buy }}</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ fmtNum(aiResult.result.analysis.sniper_points.ideal_buy) }}</div>
                                 </div>
                                 <div style="background:rgba(245,108,108,0.08);border:1px solid rgba(245,108,108,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🛑 止损</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ aiResult.result.analysis.sniper_points.stop_loss }}</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ fmtNum(aiResult.result.analysis.sniper_points.stop_loss) }}</div>
                                 </div>
                                 <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🏁 目标</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ aiResult.result.analysis.sniper_points.take_profit }}</div>
+                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ fmtNum(aiResult.result.analysis.sniper_points.take_profit) }}</div>
                                 </div>
                             </div>
                             <!-- 仓位建议 -->
@@ -602,7 +602,7 @@
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
                             📌 {{ indexAiResult.suggestion || '暂无' }}
                         </el-tag>
-                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: var(--font-base);">信心指数: {{ indexAiResult.confidence || 75 }}%</span>
+                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: var(--font-base);">信心指数: {{ fmtNum(indexAiResult.confidence || 75, 0) }}%</span>
                     </div>
                 </div>
 
@@ -1039,7 +1039,7 @@
     
 </div>
 
-    <script>
+    <script nonce="{{NONCE}}">
     // Token 自动附加拦截器 - 修复 401 问题
     (function() {
         const originalFetch = window.fetch;
@@ -1060,7 +1060,7 @@
         };
     })();
 </script>
-    <script>
+    <script nonce="{{NONCE}}">
         // ===== Vue 应用初始化 =====
         console.log('[DEBUG] App init script starting');
         const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;

@@ -2,6 +2,7 @@
 覆盖: 成功/失败/超时 三条路径
 """
 import json
+import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,7 +38,7 @@ class TestMockLLM:
             'ma_alignment': '多头排列',
         }
         with patch('ai_evaluator.requests.post', return_value=mock_resp):
-            result = e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data)
+            result = asyncio.run(e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data))
         assert result['result']['total_score'] == 80
         assert result['result']['level'] == '推荐'
 
@@ -49,7 +50,7 @@ class TestMockLLM:
         e = ai_evaluator.AIEvaluator()
         sample_data = {'has_kline': False, 'latest': {}, 'rsi': None, 'macd': {}}
         with patch('ai_evaluator.requests.post', side_effect=Exception("connection refused")):
-            result = e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data)
+            result = asyncio.run(e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data))
         # 应返回结构化结果 (不抛异常)
         assert 'result' in result
         assert isinstance(result['result'], dict)
@@ -63,7 +64,7 @@ class TestMockLLM:
         e = ai_evaluator.AIEvaluator()
         sample_data = {'has_kline': False, 'latest': {}, 'rsi': None, 'macd': {}}
         with patch('ai_evaluator.requests.post', side_effect=requests.Timeout("timeout")):
-            result = e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data)
+            result = asyncio.run(e.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data))
         assert 'result' in result
 
 

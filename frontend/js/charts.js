@@ -41,6 +41,24 @@
         backgroundColor: tooltipBg,
         borderColor: gridColor,
         textStyle: { color: colors.textSecondary, fontSize: 12 },
+        formatter: function (params) {
+          if (!params || !params.length) return '';
+          const idx = params[0].dataIndex;
+          const d = data[idx];
+          if (!d) return '';
+          const fmt = (v) => (v == null || isNaN(v)) ? '--' : Number(v).toFixed(2);
+          const fmtVol = (v) => (v == null || isNaN(v)) ? '--' : (Number(v) / 10000).toFixed(2) + '万手';
+          const lines = ['<div style="font-weight:600;color:' + colors.textSecondary + ';">' + dates[idx] + '</div>'];
+          lines.push('开: ' + fmt(d[1]) + '　收: ' + fmt(d[2]));
+          lines.push('低: ' + fmt(d[3]) + '　高: ' + fmt(d[4]));
+          lines.push('成交量: ' + fmtVol(d[5]));
+          if (d[6] != null) lines.push('MA5: ' + fmt(d[6]));
+          if (d[7] != null) lines.push('MA10: ' + fmt(d[7]));
+          if (d[8] != null) lines.push('MA20: ' + fmt(d[8]));
+          if (d[9] != null) lines.push('MA60: ' + fmt(d[9]));
+          if (d[10] != null) lines.push('VOL_MA5: ' + fmtVol(d[10]));
+          return lines.join('<br/>');
+        },
       },
       legend: {
         data: ['K线', 'MA5', 'MA10', 'MA20', 'MA60'],
@@ -56,7 +74,7 @@
         { type: 'category', gridIndex: 1, data: dates, axisLabel: { show: false }, axisLine: { lineStyle: { color: gridColor } } },
       ],
       yAxis: [
-        { scale: true, axisLine: { lineStyle: { color: gridColor } }, axisLabel: { color: colors.textSecondary, fontSize: 11 }, splitLine: { lineStyle: { color: gridColor, type: 'dashed' } } },
+        { scale: true, axisLine: { lineStyle: { color: gridColor } }, axisLabel: { color: colors.textSecondary, fontSize: 11, formatter: function (v) { const r = Math.round(v * 100) / 100; return (r % 1 === 0) ? String(Math.round(r)) : r.toFixed(2); } }, splitLine: { lineStyle: { color: gridColor, type: 'dashed' } } },
         { gridIndex: 1, axisLabel: { show: false }, splitLine: { show: false }, axisLine: { lineStyle: { color: gridColor } } },
       ],
       dataZoom: [

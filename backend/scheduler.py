@@ -15,6 +15,7 @@ from ai_evaluator import ai_evaluator
 from views_aggregator import views_aggregator
 from paths import EXTERNAL_DATA_DIR
 from db import backup_db
+from report_generator import generate_weekly_report
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,7 @@ class Scheduler:
                     logger.info(f"📊 自动评股: 评估 {len(all_stocks)} 只股票")
                     
                     # 批量评估
-                    results = ai_evaluator.batch_evaluate(all_stocks, username='auto_scheduler')
+                    results = await ai_evaluator.batch_evaluate(all_stocks, username='auto_scheduler')
                     
                     # 推送到飞书
                     if config.get('push_to_feishu', True):
@@ -218,6 +219,23 @@ class Scheduler:
             if not self.running:
                 break
             logger.info("📤 执行每周报告任务")
+            try:
+                result = generate_weekly_report()
+                if result.get('success'):
+                    logger.info(f"✅ 周报生成成功: {result.get('path', '')}")
+                    # 飞书推送周报摘要
+                    try:
+                        stats = result.get('stats', {})
+                        content = result.get('content', '')
+                        preview = content[:1500] + ('...' if len(content) > 1500 else '')
+                        self.pusher.send_text(f"📈 量化选股周报\n\n{preview}")
+                        logger.info("✅ 周报已推送到飞书")
+                    except Exception as e:
+                        logger.warning(f"周报飞书推送失败: {e}")
+                else:
+                    logger.warning(f"周报生成失败: {result.get('message', '')}")
+            except Exception as e:
+                logger.error(f"每周报告任务异常: {e}")
             await asyncio.sleep(60)  # 避开重复触发
     
     async def data_refresh_task(self):

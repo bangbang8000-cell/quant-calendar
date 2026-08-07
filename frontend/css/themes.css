@@ -606,6 +606,7 @@
             box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
         }
         .nav-icon { font-size: var(--font-md); }
+        .nav-icon svg { width: 20px; height: 20px; vertical-align: middle; flex-shrink: 0; }
         .sidebar-footer {
             padding: 16px 20px;
             border-top: 1px solid var(--border-light);
@@ -759,6 +760,7 @@
             font-size: var(--font-lg);
             margin-bottom: 4px;
         }
+        .mobile-nav-icon svg { width: 20px; height: 20px; vertical-align: middle; }
 
         /* ===== 通用样式 */
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }

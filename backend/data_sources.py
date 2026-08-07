@@ -6,10 +6,15 @@
 """
 import json
 import os
+import time
 import logging
 import pandas as pd
 from datetime import datetime
 from paths import DATA_DIR
+
+# v3.8.1: K线内存缓存 TTL (秒) — 同股票同周期短时间重复请求直接命中, 避免每次切换实时调外部API
+KLINE_CACHE_TTL = 300
+KLINE_CACHE_MAX = 1000
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +106,7 @@ class DataSourceManager:
         self.config = self._load_config()
         self._clients = {}
         self._errors = {}
+        self._kline_cache = {}  # (ts_code, period, limit) -> (fetch_time, result)
         self._init_clients()
 
     def _load_config(self):
@@ -238,31 +244,46 @@ class DataSourceManager:
 
     def get_kline_data(self, ts_code, period='daily', limit=60):
         """获取K线数据（带 fallback + MA计算）
-        
+
         支持 period: daily, weekly, monthly, quarterly, yearly
         quarterly/yearly 使用月线数据聚合
         """
-        # quarterly/yearly: 用月线数据聚合
-        if period in ('quarterly', 'yearly'):
-            return self._get_resampled_kline(ts_code, period, limit)
+        # v3.8.1: 内存 TTL 缓存 — 同股票同周期短时间重复请求直接命中
+        key = (ts_code, period, limit)
+        now = time.time()
+        cached = self._kline_cache.get(key)
+        if cached and now - cached[0] < KLINE_CACHE_TTL:
+            return cached[1]
 
-        for src_name in SOURCE_ORDER:
-            src_cfg = self._get_source_config(src_name)
-            if not src_cfg.get('enabled', True):
-                continue
-            try:
-                df = self._fetch_kline(src_name, ts_code, period, limit)
-                if df is not None and len(df) > 0:
-                    return self._build_kline_response(df, src_name)
-            except Exception as e:
-                logger.warning(f"{src_name} get_kline_data({ts_code}) 失败: {e}")
-                self._errors[src_name] = str(e)
-        return None
+        # quarterly/yearly: 用月线数据聚合
+        result = None
+        if period in ('quarterly', 'yearly'):
+            result = self._get_resampled_kline(ts_code, period, limit)
+        else:
+            for src_name in SOURCE_ORDER:
+                src_cfg = self._get_source_config(src_name)
+                if not src_cfg.get('enabled', True):
+                    continue
+                try:
+                    df = self._fetch_kline(src_name, ts_code, period, limit)
+                    if df is not None and len(df) > 0:
+                        result = self._build_kline_response(df, src_name)
+                        break
+                except Exception as e:
+                    logger.warning(f"{src_name} get_kline_data({ts_code}) 失败: {e}")
+                    self._errors[src_name] = str(e)
+
+        if result:
+            # 简单淘汰: 缓存条目超限时整体清空 (K线场景条目有限, 无需 LRU)
+            if len(self._kline_cache) >= KLINE_CACHE_MAX:
+                self._kline_cache.clear()
+            self._kline_cache[key] = (now, result)
+        return result
 
     def _get_resampled_kline(self, ts_code, period, limit):
         """获取季线/年线数据：拉取月线 + 聚合"""
         import pandas as pd
-        
+
         # 拉取足够的月线数据
         monthly_limit = limit * 12  # 季度需要3x月线，年度需要12x
         monthly_data = None
@@ -277,7 +298,7 @@ class DataSourceManager:
                     break
             except Exception as e:
                 logger.warning(f"{src_name} resampled kline failed: {e}")
-        
+
         if monthly_data is None or len(monthly_data) == 0:
             return None
 
@@ -300,10 +321,10 @@ class DataSourceManager:
                 close=('close', 'last'),
                 vol=('vol', 'sum'),
             ).reset_index(drop=True)
-            
+
             # 格式化日期回 %Y%m%d
             grouped['trade_date'] = grouped['trade_date'].dt.strftime('%Y%m%d')
-            
+
             return self._build_kline_response(grouped, 'monthly_resampled')
         except Exception as e:
             logger.warning(f"resample kline error: {e}")

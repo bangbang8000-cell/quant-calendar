@@ -18,7 +18,7 @@
                             const results = data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; });
                             cb(results);
                         } else { cb([]); }
-                    } catch(e) { cb([]); }
+                    } catch(e) { console.warn('[searchStocks] fetch failed:', e); cb([]); }
                 }
                 function onSearchSelect(item) {
                     searchQuery.value = '';
@@ -174,7 +174,7 @@
                         if (data.success && data.data) {
                             indexAiResult.value = data.data;
                         }
-                    } catch(e) { /* 静默失败，用户可手动点击按钮 */ }
+                    } catch(e) { console.warn('[getIndexAiScore] cache check failed:', e); }
                 }
 
                 // ===== 指数AI智能评股 =====
@@ -266,9 +266,11 @@
                         await nextTick();
                         const el = document.getElementById('stockKlineChart');
                         if (!el) return;
-                        if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
-                        stockKlineChart = echarts.init(el);
-                        stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                        // v3.8.1: 切周期复用实例, 仅首次创建时 init + 主题
+                        if (!stockKlineChart) {
+                            stockKlineChart = echarts.init(el);
+                            stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                        }
                         renderKlineChart(stockKlineChart, data.data, period);
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -379,8 +381,11 @@
                         await nextTick();
                         const el = document.getElementById('indexKlineChart');
                         if (!el) throw new Error('无法找到指数K线容器');
-                        if (indexKlineChart) { indexKlineChart.dispose(); indexKlineChart = null; }
-                        indexKlineChart = echarts.init(el);
+                        // v3.8.1: 切周期复用实例, 仅首次创建时 init + 主题
+                        if (!indexKlineChart) {
+                            indexKlineChart = echarts.init(el);
+                            indexKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                        }
                         renderKlineChart(indexKlineChart, data.data, period, true);
                     } catch (e) {
                         ElementPlus.ElMessage.error('指数K线加载失败');
@@ -557,6 +562,7 @@ const allMenuDefs = [
                     hapticFeedback('light');
                     currentPage.value = page;
                     currentSubPage.value = subPage;
+                    localStorage.setItem('quant_last_subpage', subPage);
                 }
                 // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评股页并聚焦问股
                 const aiFabHidden = ref(false);
@@ -578,7 +584,7 @@ const allMenuDefs = [
                         });
                         const data = await res.json();
                         if (data.success) strategyRecommendations.value = data.recommendations || [];
-                    } catch (e) {}
+                    } catch (e) { console.warn('[loadStrategyRecommendations] failed:', e); }
                 }
                 async function loadAiUsage() {
                     try {
@@ -647,7 +653,7 @@ const allMenuDefs = [
                             '⚠️ 恢复确认',
                             { type: 'warning', confirmButtonText: '恢复', cancelButtonText: '取消' }
                         );
-                    } catch (e) { return; }
+                    } catch (e) { console.warn('[restoreBackup] confirm cancelled:', e); return; }
                     try {
                         const res = await fetch('/api/backup/restore', {
                             method: 'POST',
@@ -1472,7 +1478,7 @@ const allMenuDefs = [
                             setupStep.value = 1;
                             showSetupWizard.value = true;
                         }
-                    } catch (e) { /* 静默忽略 */ }
+                    } catch (e) { console.warn('[checkSetupWizard] failed:', e); }
                 }
 
                 async function completeSetupWizard() {
@@ -1887,7 +1893,7 @@ const allMenuDefs = [
                                 };
                             }
                         }
-                    } catch(e) { /* 静默 */ }
+                    } catch(e) { console.warn('[refreshStrategyData] autoPoll failed:', e); }
                 }
 
                 // 操作检查清单：根据评估维度生成 ✅⚠️❌
@@ -1907,7 +1913,7 @@ const allMenuDefs = [
                         if (score !== undefined) {
                             items.push({
                                 icon: score >= rule.good ? '●' : score >= rule.warn ? '▲' : '✕',
-                                label: `${rule.label} ${score}分`
+                                label: `${rule.label} ${Math.round(score)}分`
                             });
                         }
                     }
@@ -3907,6 +3913,8 @@ const allMenuDefs = [
 
                 // ===== v1.5.0: 子页面切换同步 =====
                 watch([currentPage, currentSubPage], ([page, sub]) => {
+                    // 保存当前子页
+                    if (sub) localStorage.setItem('quant_last_subpage', sub);
                     // 自动设置子页默认值（首次进入时 sub 可能为空）
                     if (!sub && menus.value.find(m => m.key === page)) {
                         const menu = menus.value.find(m => m.key === page);
@@ -3977,9 +3985,16 @@ const allMenuDefs = [
                     }
                 });
 
+                // v3.8.1: 通用数值格式化 (弹窗展示用, 最多保留 digits 位小数, null/NaN 回退 '--')
+                function fmtNum(v, digits = 2) {
+                    if (v == null || v === '' || isNaN(Number(v))) return '--';
+                    return Number(v).toFixed(digits);
+                }
+
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
                     currentPage, currentSubPage, sidebarCollapsed, menus,
+                    fmtNum,
                     currentUser, iconSystem, allMenuDefs,
                     currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV,

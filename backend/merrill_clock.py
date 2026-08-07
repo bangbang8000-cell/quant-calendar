@@ -293,6 +293,17 @@ class MerrillClock:
     
     def _fetch_real_macro_data(self):
         """v3.0: 从 AKShare 获取真实宏观数据，失败返回 None"""
+        import concurrent.futures
+
+        def _call_with_timeout(fn, timeout=15):
+            """在独立线程中调用，超时则返回 None"""
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(fn)
+                try:
+                    return future.result(timeout=timeout)
+                except (concurrent.futures.TimeoutError, Exception):
+                    return None
+
         try:
             import akshare as ak
             
@@ -300,7 +311,7 @@ class MerrillClock:
             
             # === PMI（制造业采购经理指数） ===
             try:
-                pmi_df = ak.macro_china_pmi()
+                pmi_df = _call_with_timeout(ak.macro_china_pmi, timeout=15)
                 if pmi_df is not None and len(pmi_df) > 0:
                     latest = pmi_df.iloc[-1]
                     pmi_val = float(latest.get('制造业', 0))
@@ -314,7 +325,7 @@ class MerrillClock:
             
             # === CPI ===
             try:
-                cpi_df = ak.macro_china_cpi_yearly()
+                cpi_df = _call_with_timeout(ak.macro_china_cpi_yearly, timeout=15)
                 if cpi_df is not None and len(cpi_df) > 0:
                     latest = cpi_df.iloc[-1]
                     result['cpi'] = float(latest.get('全国', 0))
@@ -323,7 +334,7 @@ class MerrillClock:
             
             # === PPI ===
             try:
-                ppi_df = ak.macro_china_ppi_yearly()
+                ppi_df = _call_with_timeout(ak.macro_china_ppi_yearly, timeout=15)
                 if ppi_df is not None and len(ppi_df) > 0:
                     latest = ppi_df.iloc[-1]
                     result['ppi'] = float(latest.get('全国', 0))
@@ -332,7 +343,7 @@ class MerrillClock:
             
             # === M2 货币供应量 ===
             try:
-                m2_df = ak.macro_china_money_supply()
+                m2_df = _call_with_timeout(ak.macro_china_money_supply, timeout=15)
                 if m2_df is not None and len(m2_df) > 0:
                     latest = m2_df.iloc[-1]
                     m2_yoy = float(latest.get('M2同比', latest.get('M2', 0)))
@@ -343,7 +354,7 @@ class MerrillClock:
             
             # === GDP ===
             try:
-                gdp_df = ak.macro_china_gdp()
+                gdp_df = _call_with_timeout(ak.macro_china_gdp, timeout=15)
                 if gdp_df is not None and len(gdp_df) > 0:
                     latest = gdp_df.iloc[-1]
                     result['gdp_growth'] = float(latest.get('国内生产总值同比增长', 0))
@@ -352,7 +363,7 @@ class MerrillClock:
             
             # === 工业增加值 ===
             try:
-                ind_df = ak.macro_china_industrial_production()
+                ind_df = _call_with_timeout(ak.macro_china_industrial_production, timeout=15)
                 if ind_df is not None and len(ind_df) > 0:
                     latest = ind_df.iloc[-1]
                     result['industrial_added'] = float(latest.get('工业增加值同比增长', 0))
@@ -361,7 +372,7 @@ class MerrillClock:
             
             # === 贸易差额（出口/进口） ===
             try:
-                trade_df = ak.macro_china_trade_balance()
+                trade_df = _call_with_timeout(ak.macro_china_trade_balance, timeout=15)
                 if trade_df is not None and len(trade_df) > 0:
                     latest = trade_df.iloc[-1]
                     exports = float(latest.get('出口', latest.get('出口金额', 0)))
@@ -381,7 +392,7 @@ class MerrillClock:
             
             # === 社会融资规模 ===
             try:
-                sf_df = ak.macro_china_shrzgm()
+                sf_df = _call_with_timeout(ak.macro_china_shrzgm, timeout=15)
                 if sf_df is not None and len(sf_df) > 0:
                     latest = sf_df.iloc[-1]
                     result['social_financing'] = float(latest.get('社会融资规模存量同比增长', 0))
@@ -390,7 +401,7 @@ class MerrillClock:
             
             # === 城镇调查失业率 ===
             try:
-                unemp_df = ak.macro_china_urban_unemployment()
+                unemp_df = _call_with_timeout(ak.macro_china_urban_unemployment, timeout=15)
                 if unemp_df is not None and len(unemp_df) > 0:
                     latest = unemp_df.iloc[-1]
                     result['surveyed_unemployment'] = float(latest.get('城镇调查失业率', 0))

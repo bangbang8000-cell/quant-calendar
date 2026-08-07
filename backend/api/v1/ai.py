@@ -3,10 +3,10 @@
 """
 AI 评估 API
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 import logging
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from ai_evaluator import ai_evaluator
 from auth import get_admin_user, get_current_active_user
@@ -23,9 +23,7 @@ async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_curren
         stock_code = req.get("stock_code", "")
         stock_name = req.get("stock_name", stock_code)
         strategy = req.get("strategy", "default")
-        result = await asyncio.to_thread(
-            ai_evaluator.evaluate_stock, stock_code, stock_name, None, user["username"], strategy
-        )
+        result = await ai_evaluator.evaluate_stock(stock_code, stock_name, None, user["username"], strategy)
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "message": str(e)}
@@ -36,7 +34,7 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_
     """批量 AI 评估股票"""
     try:
         stock_codes = req.get("stock_codes", [])
-        results = await asyncio.to_thread(ai_evaluator.batch_evaluate, stock_codes, None, 5, user["username"])
+        results = await ai_evaluator.batch_evaluate(stock_codes, None, 5, user["username"])
         return {"success": True, "data": results}
     except Exception as e:
         return {"success": False, "message": str(e)}
@@ -45,7 +43,7 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_
 @router.post("/evaluate-index")
 async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_active_user)):
     """AI 评估指数
-    
+
     Args:
         index_code: 指数代码 (如 000001.SH)
         index_name: 指数名称 (如 上证综指)
@@ -57,7 +55,8 @@ async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_a
         index_name = req.get("index_name", index_code)
         current_price = req.get("current_price")
         pct_chg = req.get("pct_chg")
-        result = ai_evaluator.evaluate_index(index_code, index_name, current_price, pct_chg)
+        # v3.8.1: evaluate_index 为同步函数(内部含外部行情API调用), 必须 to_thread 避免阻塞事件循环
+        result = await asyncio.to_thread(ai_evaluator.evaluate_index, index_code, index_name, current_price, pct_chg)
         return {"success": True, "data": result}
     except Exception as e:
         logger.error(f"指数评估失败: {e}")

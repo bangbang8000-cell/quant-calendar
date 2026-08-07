@@ -1,4 +1,5 @@
 """Tests for ai_evaluator.py — AI evaluation engine (mock LLM)"""
+import asyncio
 import pytest
 import json
 from unittest.mock import patch, MagicMock
@@ -128,7 +129,7 @@ class TestAIEvaluation:
         models = evaluator.get_models()
         models_data = [{**m, 'enabled': False} for m in models]
         evaluator.update_models(models_data)
-        result = evaluator.evaluate_stock('000001.SZ', 'test')
+        result = asyncio.run(evaluator.evaluate_stock('000001.SZ', 'test'))
         assert result['result']['level'] == '无可用模型'
 
     @patch('ai_evaluator.requests.post')
@@ -172,6 +173,6 @@ class TestAIEvaluation:
             'volume_analysis': {'trend': '温和放量', 'detail': '近5日量能递增'},
             'fundamentals': {'pe': 6.5, 'pb': 0.85, 'total_mv': 250000000000, 'data_source': 'mock'},
         }
-        result = evaluator.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data)
+        result = asyncio.run(evaluator.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data))
         assert 'result' in result
         assert 'total_score' in result['result']
