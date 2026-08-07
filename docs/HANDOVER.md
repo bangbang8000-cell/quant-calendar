@@ -74,6 +74,13 @@
   - 该页结构干净: div 平衡 0、template 3/3 配对、无跨行 div 问题 (与 System/Strategies 不同, 无结构缺陷)
   - 验证: 日视图 (状态筛选 193/70/57/66 + 股票列表 193 只)、股票池管理 (4 统计卡 + 策略分布), 子页切换正常, 4 页面导航循环无回归, console 零错误
 
+- **T7 AI 页** ✅ 组件化完成并验证 (2026-08-07):
+  - `frontend/js/components/ai-page.js` (单根 div + 4 子页 v-if 链: overview/history/chat_history/watchlist, 602 行模板)
+  - index.html → `<qc-ai-page></qc-ai-page>`, 行数 5765 → 5166
+  - 该页结构干净: div 平衡 0、template 4/4 配对、无跨行 div、无结构缺陷
+  - 验证: 概览 (5 统计卡 + 策略推荐 3 个 + 快捷操作)、我的自选 (11 只列表)、评估历史/问股历史 (空状态), 子页切换正常, 4 页面导航循环无回归, console 零错误
+  - ⚠️ 注意: 页面恢复上次导航位置 (登录后直接显示 AI 页), 测试时先确认当前页再点击
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
@@ -168,7 +175,7 @@ curl -s http://localhost:8000/api/health
 - [x] T4 System 页组件化 — 2026-08-07 完成 (见 §4), 附带发现 user/about 子页原始 bug (待决策)
 - [x] T5 Strategies 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
 - [x] T6 Calendar 页组件化 — 2026-08-07 完成 (见 §4), 视图+股票池管理验证通过
-- [ ] T7 AI 页组件化 (6h) — overview/history/chat_history 3 子页
+- [x] T7 AI 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
 - [ ] T8 壳瘦身 ≤1800 行
 - [ ] T9 冒烟 + T10 merrill 拆分 + T11 组件测试 + T12 ADR
 - [ ] 三文档 v3.6.0 状态标记 + 里程碑推送 (GitHub + 群辉)
