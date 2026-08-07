@@ -61,6 +61,13 @@
   - 验证: 4 页面导航循环无回归, 6 子页标签齐全, status/autoeval/datasource/feature 内容渲染正常 (AI模型/数据源/策略筛选), console 零错误, SPA 完整性 template=0 div=-3 dual=0
   - ⚠️ 发现原始 bug (非组件化引入, 原始 v3.5.0 实测同样): **user/about 子页永远显示根级配置区, 用户管理/关于内容不可见** — 根因: 原始代码 user/about 的 v-else-if 是 system 根 div 的兄弟节点 (挂在 v-if="currentPage === 'system'" 链上), currentPage 恒为 'system' 时 v-else-if 永不评估。待用户决定是否修复
 
+- **T5 Strategies 页** ✅ 组件化完成并验证 (2026-08-07):
+  - `frontend/js/components/strategies-page.js` (4 子页: overview/merrill/market/consensus)
+  - index.html → `<qc-strategies-page></qc-strategies-page>`, 行数 6140 → 5876
+  - ⚠️ **跨行 div 标签陷阱**: 原始模板 merrill 区域有跨行 div 标签 (属性跨行), 用逐行正则 `re.finditer(r'<div\b[^>]*>')` 会漏计标签导致 div 配对误判, 曾误删 3 个必要闭合标签致 v-else-if 链断裂 (VUE_ERR_CODE 30)。正确做法: 跨行感知追踪 (`full.find('>')` 逐字符扫描) 或 DOMParser 验证
+  - 真实结构: 单根 div 含全部 4 子页 v-if 链 (非三兄弟游离结构), 与 System 页不同!
+  - 验证: 4 子页全部渲染 (概览统计/美林时钟四阶段/市场行情指数/共识榜), 4 页面导航循环无回归, console 零错误, SPA 完整性 template=0 div=-3 dual=0
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
@@ -153,7 +160,7 @@ curl -s http://localhost:8000/api/health
 
 - [x] 修复 GlobalHeader 组件集成 bug (§5) — 2026-08-07 完成, 根因=in-DOM模板自闭合标签
 - [x] T4 System 页组件化 — 2026-08-07 完成 (见 §4), 附带发现 user/about 子页原始 bug (待决策)
-- [ ] T5 Strategies 页组件化 (6h) — overview/watchlist/backtest 3 子页
+- [x] T5 Strategies 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
 - [ ] T6 Calendar 页组件化 (8h) — day/week/month/year/pool 5 子页
 - [ ] T7 AI 页组件化 (6h) — overview/history/chat_history 3 子页
 - [ ] T8 壳瘦身 ≤1800 行
