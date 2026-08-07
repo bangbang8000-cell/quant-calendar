@@ -207,6 +207,8 @@ class MarketData:
     
     def _get_mock_data(self, ts_code):
         """生成模拟数据（API不可用时）"""
+        # 固定随机种子，同一天返回相同结果
+        np.random.seed(int(datetime.now().strftime('%Y%m%d')) + hash(ts_code) % 100000)
         # 基础点位映射
         base_points = {
             '000001.SH': 4135,

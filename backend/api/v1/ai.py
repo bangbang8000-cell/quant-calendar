@@ -23,9 +23,7 @@ async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_curren
         stock_code = req.get("stock_code", "")
         stock_name = req.get("stock_name", stock_code)
         strategy = req.get("strategy", "default")
-        result = await asyncio.to_thread(
-            ai_evaluator.evaluate_stock, stock_code, stock_name, None, user["username"], strategy
-        )
+        result = await ai_evaluator.evaluate_stock(stock_code, stock_name, None, user["username"], strategy)
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "message": str(e)}
@@ -36,7 +34,7 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_
     """批量 AI 评估股票"""
     try:
         stock_codes = req.get("stock_codes", [])
-        results = await asyncio.to_thread(ai_evaluator.batch_evaluate, stock_codes, None, 5, user["username"])
+        results = await ai_evaluator.batch_evaluate(stock_codes, None, 5, user["username"])
         return {"success": True, "data": results}
     except Exception as e:
         return {"success": False, "message": str(e)}

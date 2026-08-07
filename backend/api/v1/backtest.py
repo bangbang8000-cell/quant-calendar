@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-策略回测 API 路由
+策略回测 API 路由 (v3.9.10: 归因看板端点)
 """
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List, Optional
@@ -77,6 +77,129 @@ async def run_multi_strategy_backtest(
         return {"success": True, "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"多策略回测失败: {e}")
+
+
+# ─── v3.9.10: 策略归因看板 ─────────────────────────────────────
+
+@router.get("/attribution/{strategy_id}")
+async def get_strategy_attribution(
+    strategy_id: str,
+    _: Dict = Depends(get_current_active_user)
+):
+    """
+    策略归因分析 — 收益拆解 + 月度热力图数据
+    
+    Returns:
+        - monthly_returns: 各月收益 (用于热力图)
+        - equity_curve: 净值曲线
+        - risk_metrics: 风险指标汇总
+        - trade_analysis: 交易统计分析
+    """
+    try:
+        import numpy as np
+        from datetime import datetime
+
+        # 运行回测获取数据
+        result = backtest_engine.run_backtest(strategy_id=strategy_id)
+        if not result.success:
+            return {"success": False, "message": result.message}
+
+        # 归因分析
+        monthly = result.monthly_returns
+        equity = result.equity_curve
+
+        # 月度热力图数据: [{year, month, return}]
+        heatmap_data = []
+        for k, v in sorted(monthly.items()):
+            parts = k.split('-')
+            heatmap_data.append({
+                "year": int(parts[0]),
+                "month": int(parts[1]) if len(parts) > 1 else 0,
+                "return": round(v * 100, 2)
+            })
+
+        # 净值曲线摘要 (按季度采样)
+        equity_sampled = equity[::max(1, len(equity) // 60)]
+
+        # 交易分析
+        trades = result.trade_history or []
+        win_trades = [t for t in trades if t.get("return", 0) > 0]
+        lose_trades = [t for t in trades if t.get("return", 0) <= 0]
+
+        trade_analysis = {
+            "total": len(trades),
+            "wins": len(win_trades),
+            "losses": len(lose_trades),
+            "win_rate": round(result.win_rate * 100, 1),
+            "profit_loss_ratio": round(result.profit_loss_ratio, 2) if result.profit_loss_ratio else 0,
+            "avg_win_return": round(np.mean([t.get("return", 0) for t in win_trades]) * 100, 2) if win_trades else 0,
+            "avg_loss_return": round(np.mean([t.get("return", 0) for t in lose_trades]) * 100, 2) if lose_trades else 0,
+            "turnover_rate": round(result.turnover_rate * 100, 1) if result.turnover_rate else 0,
+        }
+
+        return {
+            "success": True,
+            "data": {
+                "strategy_id": strategy_id,
+                "period": f"{result.start_date} ~ {result.end_date}",
+                "summary": backtest_engine.get_backtest_summary(result),
+                "heatmap_data": heatmap_data,
+                "equity_sampled": equity_sampled,
+                "trade_analysis": trade_analysis,
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
+
+
+@router.get("/compare")
+async def compare_strategies(
+    _: Dict = Depends(get_current_active_user)
+):
+    """
+    多策略对比 — 各策略绩效指标横向对比
+    """
+    try:
+        from data_parser import parser as dp
+        dates = dp.get_available_dates()
+        if not dates:
+            return {"success": False, "message": "无可用数据"}
+
+        strategies = dp.get_all_strategies()
+        if not strategies:
+            return {"success": False, "message": "无可用策略"}
+
+        comparison = []
+        for sid, sdata in strategies.items():
+            try:
+                result = backtest_engine.run_backtest(strategy_id=sid)
+                if result.success:
+                    comparison.append({
+                        "id": sid,
+                        "name": sdata.get("strategy_name", sid),
+                        "total_return": round(result.total_return * 100, 2),
+                        "annual_return": round(result.annual_return * 100, 2),
+                        "sharpe_ratio": round(result.sharpe_ratio, 2),
+                        "max_drawdown": round(result.max_drawdown * 100, 2),
+                        "win_rate": round(result.win_rate * 100, 1),
+                        "volatility": round(result.volatility * 100, 2),
+                    })
+                else:
+                    comparison.append({
+                        "id": sid,
+                        "name": sdata.get("strategy_name", sid),
+                        "error": result.message
+                    })
+            except Exception as e:
+                comparison.append({
+                    "id": sid,
+                    "name": sdata.get("strategy_name", sid),
+                    "error": str(e)
+                })
+
+        return {"success": True, "data": comparison}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"策略对比失败: {e}")
 
 
 @router.get("/metrics/{strategy_id}")

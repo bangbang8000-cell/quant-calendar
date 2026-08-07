@@ -111,19 +111,19 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 9.1 | 周报任务实现 | FR-3.9.1 | `backend/scheduler.py` | 1.5h | pytest: 报告生成 + 推送 | ⏳ |
-| 9.2 | AI 评估异步化 | FR-3.9.2 | `backend/ai_evaluator.py` | 2h | pytest: 不阻塞事件循环 | ⏳ |
-| 9.3 | AKShare 请求超时 | FR-3.9.3 | `backend/merrill_clock.py` | 0.5h | pytest: timeout 触发后 fallback | ⏳ |
-| 9.4 | Mock 数据确定性 | FR-3.9.4 | `backend/market_data.py` | 0.5h | pytest: 同日期结果相同 | ⏳ |
-| 9.5 | CSP nonce 改造 | FR-3.9.5 | `backend/main_new.py`, `frontend/index.html` | 3h | 浏览器: CSP 不报 unsafe-inline | ⏳ |
-| 9.6 | 页面状态持久化 | FR-3.9.6 | `frontend/js/app-logic.js` | 1h | 浏览器: 刷新后恢复到上次页面 | ⏳ |
-| 9.7 | 空白 catch 消除 | FR-3.9.7 | `frontend/js/app-logic.js` | 1h | 代码审查: 0 空 catch | ⏳ |
+| 9.1 | 周报任务实现 | FR-3.9.1 | `backend/scheduler.py` | 1.5h | pytest: 报告生成 + 推送 | ✅ |
+| 9.2 | AI 评估异步化 | FR-3.9.2 | `backend/ai_evaluator.py` | 2h | pytest: 不阻塞事件循环 | ✅ |
+| 9.3 | AKShare 请求超时 | FR-3.9.3 | `backend/merrill_clock.py` | 0.5h | pytest: timeout 触发后 fallback | ✅ |
+| 9.4 | Mock 数据确定性 | FR-3.9.4 | `backend/market_data.py` | 0.5h | pytest: 同日期结果相同 | ✅ |
+| 9.5 | CSP nonce 改造 | FR-3.9.5 | `backend/main_new.py`, `frontend/index.html` | 3h | 浏览器: CSP 不报 unsafe-inline | ✅ |
+| 9.6 | 页面状态持久化 | FR-3.9.6 | `frontend/js/app-logic.js` | 1h | 浏览器: 刷新后恢复到上次页面 | ✅ |
+| 9.7 | 空白 catch 消除 | FR-3.9.7 | `frontend/js/app-logic.js` | 1h | 代码审查: 0 空 catch | ✅ |
 | 9.8 | 股票对比 | FR-3.9.8 | `frontend/index.html`, `js/components/` | 4h | 浏览器: 对比视图渲染 | ⏳ |
 | 9.9 | 自定义筛选器 | FR-3.9.9 | `frontend/js/components/`, `backend/api/v1/` | 3h | 浏览器: 创建+应用筛选 | ⏳ |
-| 9.10 | 策略归因看板 | FR-3.9.10 | `frontend/js/components/`, `backend/backtest.py` | 3h | 浏览器: 收益曲线+热力图 | ⏳ |
-| 9.11 | 行业热力图 | FR-3.9.11 | `frontend/js/components/`, `backend/api/v1/` | 2h | 浏览器: 热力图渲染 | ⏳ |
+| 9.10 | 策略归因看板 | FR-3.9.10 | `frontend/js/components/`, `backend/backtest.py` | 3h | 浏览器: 收益曲线+热力图 | ✅ |
+| 9.11 | 行业热力图 | FR-3.9.11 | `frontend/js/components/`, `backend/api/v1/` | 2h | 浏览器: 热力图渲染 | ✅ |
 | 9.12 | 数据看板 (Dashboard) | FR-3.9.12 | `frontend/index.html`, `js/components/` | 3h | 浏览器: 首页数据展示 | ⏳ |
-| 9.13 | 导出增强 (PDF/Excel) | FR-3.9.13 | `backend/api/v1/export.py`, `backend/report_generator.py` | 2h | pytest: PDF/Excel 内容验证 | ⏳ |
+| 9.13 | 导出增强 (PDF/Excel) | FR-3.9.13 | `backend/api/v1/export.py`, `backend/report_generator.py` | 2h | pytest: PDF/Excel 内容验证 | ✅ |
 
 ### 6.2 验收清单
 

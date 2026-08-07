@@ -10,11 +10,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="/static/lib/vue.global.prod.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="/static/lib/element-plus.css">
-    <script src="/static/lib/element-plus.min.js"></script>
-    <script src="/static/lib/echarts.min.js"></script>
-    <script src="/static/lib/zh-cn.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/element-plus.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/echarts.min.js"></script>
+    <script nonce="{{NONCE}}" src="/static/lib/zh-cn.min.js"></script>
     <link rel="stylesheet" href="/static/css/tokens.css?v=3.0.0">
     <link rel="stylesheet" href="/static/css/themes.css?v=3.0.0">
     <link rel="stylesheet" href="/static/css/layout.css?v=3.0.0">
@@ -22,25 +22,25 @@
     <link rel="stylesheet" href="/static/css/responsive.css?v=3.0.0">
 
     <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.5.2"></script>
-    <script src="/static/js/icons.js?v=2.5.2"></script>
-    <script src="/static/js/core.js"></script>
-    <script src="/static/js/charts.js?v=3.2.0"></script>
-    <script src="/static/js/calendar.js"></script>
-    <script src="/static/js/strategies.js"></script>
-    <script src="/static/js/ai.js"></script>
-    <script src="/static/js/system.js"></script>
-    <script src="/static/js/users.js"></script>
-    <script src="/static/js/merrill.js?v=3.2.0"></script>
-    <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
-    <script src="/static/js/components/sidebar.js?v=3.6.0"></script>
-    <script src="/static/js/components/global-header.js?v=3.6.0"></script>
-    <script src="/static/js/components/system-page.js?v=3.6.0-t9b"></script>
-    <script src="/static/js/components/strategies-page.js?v=3.6.0-t5"></script>
-    <script src="/static/js/components/calendar-page.js?v=3.6.0-t6"></script>
-    <script src="/static/js/components/ai-page.js?v=3.6.0-t7"></script>
-    <script src="/static/js/components/research-page.js?v=3.6.0-t8"></script>
-    <script src="/static/js/app-logic.js?v=3.6.0-t8"></script>
+    <script nonce="{{NONCE}}" src="/static/js/themes.js?v=2.5.2"></script>
+    <script nonce="{{NONCE}}" src="/static/js/icons.js?v=2.5.2"></script>
+    <script nonce="{{NONCE}}" src="/static/js/core.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/charts.js?v=3.2.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/calendar.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/strategies.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/ai.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/system.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/users.js"></script>
+    <script nonce="{{NONCE}}" src="/static/js/merrill.js?v=3.2.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/echarts-theme.js?v=3.2.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/sidebar.js?v=3.6.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/global-header.js?v=3.6.0"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/system-page.js?v=3.6.0-t9b"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/strategies-page.js?v=3.6.0-t5"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/calendar-page.js?v=3.6.0-t6"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/ai-page.js?v=3.6.0-t7"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/research-page.js?v=3.6.0-t8"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic.js?v=3.6.0-t8"></script>
 <body>
     <div id="app">
         <!-- 登录页 -->
@@ -1039,7 +1039,7 @@
     
 </div>
 
-    <script>
+    <script nonce="{{NONCE}}">
     // Token 自动附加拦截器 - 修复 401 问题
     (function() {
         const originalFetch = window.fetch;
@@ -1060,7 +1060,7 @@
         };
     })();
 </script>
-    <script>
+    <script nonce="{{NONCE}}">
         // ===== Vue 应用初始化 =====
         console.log('[DEBUG] App init script starting');
         const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;

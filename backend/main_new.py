@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import logging
+import secrets
 
 from config import settings
 from rate_limit import setup_rate_limiter
@@ -101,6 +102,8 @@ async def security_headers(request: Request, call_next):
     import uuid
     trace_id = request.headers.get("X-Trace-ID") or uuid.uuid4().hex[:12]
     start = time.time()
+    # v3.9.5: 在路由处理前生成 CSP nonce (注入到 HTML)
+    request.state.csp_nonce = secrets.token_hex(16)
     response = await call_next(request)
     elapsed_ms = (time.time() - start) * 1000
     # v3.4.0-T4: 记录请求指标
@@ -132,9 +135,11 @@ async def security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # v3.9.5: CSP nonce 改造 — 用 per-request nonce 替代 'unsafe-inline'
+    nonce = request.state.csp_nonce
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "img-src 'self' data: https:; "
         "connect-src 'self' https:; "
@@ -173,8 +178,8 @@ _index_html_mtime: float = 0.0
 
 
 @app.get("/")
-async def root():
-    """首页"""
+async def root(request: Request):
+    """首页 — v3.9.5: 注入 CSP nonce"""
     global _index_html_cache, _index_html_mtime
     try:
         mtime = os.path.getmtime(INDEX_HTML_FILE)
@@ -184,7 +189,13 @@ async def root():
             _index_html_mtime = mtime
     except OSError:
         pass
-    return HTMLResponse(content=_index_html_cache)
+    # 注入 per-request CSP nonce
+    nonce = getattr(request.state, 'csp_nonce', None)
+    if nonce and _index_html_cache:
+        html = _index_html_cache.replace('{{NONCE}}', nonce)
+    else:
+        html = _index_html_cache
+    return HTMLResponse(content=html)
 
 
 @app.get("/api/health")

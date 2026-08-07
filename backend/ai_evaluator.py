@@ -12,12 +12,12 @@ import hashlib
 import re
 import os
 import time
+import asyncio
 import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -651,14 +651,20 @@ class AIEvaluator:
 
     # ─── 评估入口 ───────────────────────────────────────────────
 
-    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
+    async def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
         """
         评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
+        异步版本：不阻塞事件循环，run_in_executor 处理同步 I/O
         
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
+        loop = asyncio.get_event_loop()
+
         # 1) 获取真实数据 (v3.3.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
-        market_data = stock_data if stock_data is not None else self._fetch_stock_data(stock_code)
+        if stock_data is not None:
+            market_data = stock_data
+        else:
+            market_data = await loop.run_in_executor(None, self._fetch_stock_data, stock_code)
 
         # v3.5.0-T6: 同题缓存 — 同日同策略直接返回缓存结果 (省 LLM 调用)
         cached = self._get_cached(stock_code, strategy)
@@ -693,7 +699,9 @@ class AIEvaluator:
             for model in enabled_models:
                 try:
                     t0 = time.time()
-                    result, raw_response = self._call_llm(model, stock_code, stock_name, market_data, strategy)
+                    result, raw_response = await loop.run_in_executor(
+                        None, self._call_llm, model, stock_code, stock_name, market_data, strategy
+                    )
                     result = self._calibrate_decision(result, market_data, stock_code, username)
                     llm_latency_ms = round((time.time() - t0) * 1000)
                     model_used = model.id
@@ -1528,23 +1536,21 @@ class AIEvaluator:
 
     # ─── 批量评估 ───────────────────────────────────────────────
 
-    def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
-        """批量并行评估"""
-        results = []
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {}
-            for code in stock_codes:
-                name = (stock_info_map or {}).get(code, code)
-                futures[executor.submit(self.evaluate_stock, code, name, None, username)] = code
-            
-            for future in as_completed(futures):
-                code = futures[future]
+    async def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
+        """批量并行评估 — 异步版，使用 asyncio.gather 替代 ThreadPoolExecutor"""
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def _evaluate_one(code: str) -> Dict:
+            async with semaphore:
                 try:
-                    result = future.result()
+                    name = (stock_info_map or {}).get(code, code)
+                    return await self.evaluate_stock(code, name, None, username)
                 except Exception as e:
-                    result = {"stock_code": code, "success": False, "error": str(e)}
-                results.append(result)
-        return results
+                    logger.warning(f"批量评估 {code} 失败: {e}")
+                    return {"stock_code": code, "success": False, "error": str(e)}
+
+        tasks = [_evaluate_one(code) for code in stock_codes]
+        return await asyncio.gather(*tasks)
 
     # ─── 历史管理 ───────────────────────────────────────────────
 
