@@ -106,23 +106,58 @@ cd quant-calendar-ops
 
 ## 数据源配置
 
-### Tushare Token
+### 三源架构
 
-登录后在 **系统配置 → 数据源管理** 页面填入 Tushare Token。
-
-1. 注册 [Tushare Pro](https://tushare.pro) 获取 Token
-2. 填入配置页 → 点击**测试连接**
-3. 常见错误：`您的token不对` — Token 无效或已过期
-
-### 三源优先级
-
-`sxsc-tushare → tushare → akshare`，按顺序自动 fallback。
+查询优先级：`sxsc-tushare → tushare → akshare`，自动 fallback。
 
 | 数据源 | 是否需要 Token | 安装方式 | 备注 |
 |--------|:---:|------|------|
-| tushare | 是 | `pip install tushare` | 主力数据源 |
-| akshare | 否 | `pip install akshare` | 免费开源，备用 |
-| sxsc-tushare | 是 | ❌ PyPI 不可用 | 券商定制包，需内部获取 |
+| sxsc-tushare | 是 | 离线安装（见下方） | 券商版，优先级最高 |
+| tushare | 是 | `pip install tushare` | 标准版 Pro |
+| akshare | 否 | `pip install akshare` | 免费开源，兜底 |
+
+### sxsc-tushare 离线安装
+
+该模块不在 PyPI 上，需从券商获取安装包后手动安装：
+
+```bash
+# 1. 解压安装包（假设放在 soft/ 目录下）
+unzip soft/sxsc-tushare.20231213.zip -d soft/sxsc/
+
+# 2. 安装（setup.py 在解压后的子目录中，注意嵌套层级）
+.venv\Scripts\pip.exe install soft/sxsc/sxsc-tushare.20231213/
+```
+
+> 注意：安装时可能需要降级 `websocket-client` 到 `0.57.0`（与当前 `1.9.0` 冲突），pip 会自动处理。
+
+### Tushare Token 配置
+
+1. 注册 [Tushare Pro](https://tushare.pro) 获取 Token
+2. 打开 http://127.0.0.1:8000 → 系统配置 → 数据源管理
+3. 分别填入 sxsc-tushare 和 tushare 的 Token
+4. 点击各自卡片中的 **测试连接**
+
+### 验证数据源状态
+
+通过 API 直接查看（无鉴权）：
+
+```bash
+curl http://127.0.0.1:8000/api/market/datasource/status
+```
+
+返回示例：
+```json
+{
+  "success": true,
+  "status": {
+    "sxsc_tushare": { "enabled": true, "connected": true, "error": null },
+    "tushare":       { "enabled": true, "connected": true, "error": null },
+    "akshare":       { "enabled": true, "connected": true, "error": null }
+  }
+}
+```
+
+若 `connected: false`，查看 `error` 字段定位原因。
 
 ---
 
@@ -134,14 +169,18 @@ cd quant-calendar-ops
 
 # 可选数据源
 .venv\Scripts\pip.exe install akshare
+
+# sxsc-tushare（券商版，离线安装）
+.venv\Scripts\pip.exe install <解压目录>/sxsc-tushare.20231213/
 ```
 
-### 已知问题
+### 已知依赖冲突
 
-- **sxsc-tushare** 不在 PyPI 上，无法通过 pip 安装。不影响 tushare + akshare 双源使用。
+- **akshare** 安装时会引入大量子依赖（curl_cffi、mini-racer、openpyxl 等约 11 个包）
+- **sxsc-tushare** 依赖 `websocket-client~=0.57.0`，若系统已安装更新版本（如 1.9.0），pip 会自动降级
 - **PowerShell 执行策略** 可能阻止脚本运行。解决方案：
   - 使用完整路径指定可执行文件：`.venv\Scripts\pip.exe` 而非 `pip`
-  - 或使用 `git` 命令作为代理（见下文 Q&A）
+  - 或临时绕过：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
 
 ---
 
@@ -170,7 +209,7 @@ cd quant-calendar-ops
 netstat -ano | findstr 8000
 taskkill /PID <进程ID> /F
 
-# 清除缓存
+# 清除编译缓存
 cd quant-calendar-ops
 Get-ChildItem -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
 ```
@@ -180,6 +219,31 @@ Get-ChildItem -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Fo
 1. 确认 Token 有效：到 [tushare.pro](https://tushare.pro) 检查
 2. 确认网络可达：`ping api.tushare.pro`
 3. 查看服务端日志中的具体错误信息
+4. 常见错误：`您的token不对` — Token 无效或已过期
+
+### 数据源状态异常
+
+```bash
+# 直接查看数据源连接状态
+curl http://127.0.0.1:8000/api/market/datasource/status
+```
+
+| connected | error | 含义 |
+|:--:|------|------|
+| `false` | `No module named 'xxx'` | 模块未安装，需 pip install |
+| `false` | `数据源 xxx 未初始化` | 模块已安装但 Token 为空，需填入 Token |
+| `true` | `null` | 正常 |
+
+### K 线数据加载异常
+
+启动日志出现 `JSONDecodeError` 时，说明 `data/market_cache.json` 损坏：
+
+```bash
+del quant-calendar-ops\data\market_cache.json
+# 重启服务后自动重建
+```
+
+> 此缓存是 K 线行情数据的本地快照，删除后下次请求会从数据源重新拉取，无数据丢失风险。
 
 ### 页面修改后不生效
 
@@ -202,6 +266,18 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .venv\Scripts\pip.exe install pypinyin          # 安装包
 .venv\Scripts\python.exe backend\main_new.py    # 启动服务
 ```
+
+### sxsc-tushare 模块找不到
+
+确认安装成功：
+
+```bash
+.venv\Scripts\pip.exe show sxsc-tushare
+```
+
+若显示 `WARNING: Package(s) not found`，检查：
+1. 是否使用的是 ops 的 `.venv`（不是系统 Python）
+2. 安装时路径是否正确（注意 ZIP 解压后的嵌套目录）
 
 ---
 
