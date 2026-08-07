@@ -48,12 +48,12 @@
   margin: 0 auto var(--sp-3) auto;
 }
 .stat-card .stat-value {
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
+  font-size: var(--font-2xl);
+  font-weight: var(--font-bold);
   color: var(--text-primary);
 }
 .stat-card .stat-label {
-  font-size: var(--fs-xs);
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
   margin-top: var(--sp-1);
 }

@@ -139,12 +139,12 @@
 }
 
 /* ─── Pulse (for live indicators) ─── */
-@keyframes pulse {
+@keyframes pulse-opacity {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 .pulse {
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse-opacity 2s ease-in-out infinite;
 }
 
 /* ─── Spin ─── */
@@ -163,4 +163,13 @@
 }
 .slide-up {
   animation: slide-up var(--transition-base) ease forwards;
+}
+
+/* v3.8.14: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
