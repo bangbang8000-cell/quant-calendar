@@ -61,6 +61,21 @@ async def get_consensus(date: str, top_n: int = 50):
     }
 
 
+# v3.7.11: 入池信号解读
+@router.post("/pool-signal")
+async def get_pool_signal(data: Dict[str, Any]):
+    """生成入池/出池 AI 简短语解读"""
+    stock_code = data.get("stock_code", "")
+    stock_name = data.get("stock_name", "")
+    event_type = data.get("event_type", "enter")  # enter / exit
+    market_snapshot = data.get("market_snapshot", None)
+    if not stock_code:
+        raise HTTPException(status_code=400, detail="stock_code 必填")
+    from ai_evaluator import ai_config
+    signal = ai_config.generate_pool_signal(stock_code, stock_name, event_type, market_snapshot)
+    return {"success": True, "stock_code": stock_code, "signal": signal}
+
+
 @router.get("/stock/{stock_code}")
 async def get_stock_history(stock_code: str, date: Optional[str] = None):
     """获取单只股票的持仓历史 + 行情数据 + 评分"""

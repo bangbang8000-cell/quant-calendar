@@ -1782,6 +1782,30 @@ const allMenuDefs = [
                     } finally {
                         loading.value = false;
                     }
+                    // v3.7.11: 异步加载入池出池信号
+                    fetchPoolSignals();
+                }
+
+                // v3.7.11: 获取入池/出池 AI 解读
+                async function fetchPoolSignals() {
+                    const items = consensus.value || [];
+                    const targets = items.filter(i => i.status === 'new' || i.status === 'out');
+                    for (const item of targets) {
+                        if (poolSignals.value[item.code]) continue; // 已有缓存
+                        try {
+                            const res = await fetch('/api/calendar/pool-signal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ stock_code: item.code, stock_name: item.name, event_type: item.status === 'new' ? 'enter' : 'exit' })
+                            });
+                            const data = await res.json();
+                            if (data.success && data.signal) {
+                                poolSignals.value = { ...poolSignals.value, [item.code]: data.signal };
+                            }
+                        } catch (e) {
+                            // 静默失败
+                        }
+                    }
                 }
 
                 async function showStockDetail(stockCode) {
@@ -1884,6 +1908,7 @@ const allMenuDefs = [
                 const expandedDates = ref([]);  // 已展开的日期 (YYYY-MM-DD)
                 const expandedMonths = ref([]);  // 已展开的月份 (YYYY-MM)
                 const expandedStocks = ref([]);  // 已展开的股票代码
+                const poolSignals = ref({});  // v3.7.11: 入池信号解读缓存
 
                 // 切换月份展开
                 function toggleMonthExpand(month) {
@@ -2691,6 +2716,50 @@ const allMenuDefs = [
                             if (!selectedHistoryIds.value.includes(id)) selectedHistoryIds.value.push(id);
                         });
                     }
+                }
+
+                // v3.7.14: 评估历史趋势图
+                const _trendChartCache = {};
+                function registerTrendChart(el, code, records) {
+                    if (!el) return; // dispose
+                    if (_trendChartCache[code] === el) return; // same element
+                    // dispose old instance if exists
+                    Object.keys(_trendChartCache).forEach(key => {
+                        if (_trendChartCache[key] && _trendChartCache[key] !== el) {
+                            try { _trendChartCache[key].dispose(); } catch (e) { /* ignore */ }
+                            delete _trendChartCache[key];
+                        }
+                    });
+                    const sorted = [...records].sort((a, b) => a.evaluate_time.localeCompare(b.evaluate_time));
+                    const dates = sorted.map(r => (r.evaluate_time || '').split('T')[0]);
+                    const scores = sorted.map(r => r.result?.total_score ?? null);
+                    const levels = sorted.map(r => r.result?.level ?? '');
+                    // find significant changes (>20 pts between consecutive evals)
+                    const markPoints = [];
+                    for (let i = 1; i < scores.length; i++) {
+                        if (scores[i] != null && scores[i - 1] != null && Math.abs(scores[i] - scores[i - 1]) >= 15) {
+                            markPoints.push({ name: '大幅变化', coord: [dates[i], scores[i]], value: (scores[i] - scores[i - 1] > 0 ? '↑' : '↓') + Math.abs(scores[i] - scores[i - 1]), symbol: 'pin', symbolSize: 32, itemStyle: { color: scores[i] - scores[i - 1] > 0 ? '#67c23a' : '#f56c6c' } });
+                        }
+                    }
+                    const chart = echarts.init(el);
+                    chart.setOption({
+                        tooltip: { trigger: 'axis', formatter: function (params) {
+                            const idx = params[0]?.dataIndex;
+                            const level = idx != null ? levels[idx] : '';
+                            return dates[idx] + '<br/>得分: ' + scores[idx] + (level ? ' (' + level + ')' : '');
+                        }},
+                        grid: { left: 40, right: 16, top: 16, bottom: 24 },
+                        xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, rotate: 30 }, boundaryGap: false },
+                        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { fontSize: 10 } },
+                        series: [{
+                            data: scores, type: 'line', smooth: true,
+                            lineStyle: { color: '#409EFF', width: 2 },
+                            itemStyle: { color: '#409EFF' },
+                            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(64,158,255,0.3)' }, { offset: 1, color: 'rgba(64,158,255,0.02)' }]) },
+                            markPoint: markPoints.length > 0 ? { data: markPoints } : undefined,
+                        }],
+                    });
+                    _trendChartCache[code] = chart;
                 }
 
                 async function viewAiResult(item) {
@@ -3941,11 +4010,11 @@ const allMenuDefs = [
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,
                     toggleGroupExpand, removeMemberFromGroupInline, addMemberToGroupInline, changeUserGroup,
-                    statusCounts, stockPool, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
+                    statusCounts, stockPool, poolSignals, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
                     scoreDistribution, quickEvalStock, evalStrategy, checklistItems, evalHistoryComparison, quickEvaluate,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
-                    toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand,
+                    toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand, registerTrendChart,
                     selectedWatchlistCodes, clearWatchlistSelection, toggleSelectWatchlist,
                     selectAllHistory, selectAllWatchlist,
                     batchRemoveWatchlist, batchEvaluateSelected, batchReevaluateHistory, batchAddToWatchlist,

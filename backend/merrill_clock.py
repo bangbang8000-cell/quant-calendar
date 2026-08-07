@@ -21,6 +21,11 @@ STAGES = {
         'color': '#81C784',
         'bg_color': '#E8F5E9',
         'icon': '🌱',
+        'strategy_mapping': {
+            'primary': ['动量策略', '质量策略', '成长股策略'],
+            'secondary': ['趋势跟踪', '行业轮动'],
+            'rationale': '经济复苏期企业盈利改善，动量因子和质量因子表现优异，成长股受益于估值扩张'
+        },
         'characteristics': {
             'gdp': 'GDP增速回升，环比改善',
             'corporate': '企业盈利触底回升，利润率改善',
@@ -61,6 +66,11 @@ STAGES = {
         'color': '#FFB74D',
         'bg_color': '#FFF3E0',
         'icon': '🔥',
+        'strategy_mapping': {
+            'primary': ['价值策略', '防御策略', '周期股策略'],
+            'secondary': ['红利策略', '商品CTA'],
+            'rationale': '过热期通胀上行侵蚀成长股估值，价值股和周期股更具防御性，大宗商品表现最佳'
+        },
         'characteristics': {
             'gdp': 'GDP增速仍处高位但边际放缓',
             'corporate': '企业盈利峰值，增速开始回落',
@@ -101,6 +111,11 @@ STAGES = {
         'color': '#F48FB1',
         'bg_color': '#FCE4EC',
         'icon': '⚠️',
+        'strategy_mapping': {
+            'primary': ['现金为王', '低波动策略', '必选消费'],
+            'secondary': ['贵金属', '短久期债券', '对冲策略'],
+            'rationale': '滞胀期现金为王，低波动策略抗跌性强，必选消费和贵金属具有防御价值'
+        },
         'characteristics': {
             'gdp': 'GDP增速明显回落，下行压力加大',
             'corporate': '企业盈利增速大幅下滑，甚至负增长',
@@ -141,6 +156,11 @@ STAGES = {
         'color': '#64B5F6',
         'bg_color': '#E3F2FD',
         'icon': '❄️',
+        'strategy_mapping': {
+            'primary': ['债券策略', '红利策略', '逆周期布局'],
+            'secondary': ['高股息', '利率债', '政策受益板块'],
+            'rationale': '衰退期债券为王，红利策略提供稳定现金流，左侧布局优质资产等待复苏'
+        },
         'characteristics': {
             'gdp': 'GDP增速创阶段新低，甚至负增长',
             'corporate': '企业亏损面扩大，盈利底部徘徊',

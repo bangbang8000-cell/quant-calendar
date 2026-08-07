@@ -45,20 +45,20 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 7.1 | SQLite 建复合索引 | FR-3.7.1 | `backend/db.py` | 1h | pytest: 索引存在性 + 查询 EXPLAIN | ⏳ |
-| 7.2 | Cache TTL 传参修复 | FR-3.7.2 | `backend/market_data.py` | 0.5h | pytest: 缓存过期时间计算正确 | ⏳ |
-| 7.3 | DB 初始化失败熔断 | FR-3.7.3 | `backend/main_new.py` | 0.5h | 手动: 损坏 DB 文件后启动应拒绝 | ⏳ |
-| 7.4 | 日历页 viewUnit 修复 | FR-3.7.4 | `frontend/js/components/calendar-page.js` | 0.5h | 浏览器: 按钮显示正确文字 | ⏳ |
-| 7.5 | 股票详情空值守卫 | FR-3.7.5 | `frontend/index.html` | 1h | 浏览器: 空数据时不报错 | ⏳ |
-| 7.6 | DB 读并发优化 | FR-3.7.6 | `backend/db.py` | 1.5h | pytest: 并发读测试 | ⏳ |
-| 7.7 | AI 模型配置内存缓存 | FR-3.7.7 | `backend/ai_evaluator.py` | 1h | pytest: spy 确认无 disk read | ⏳ |
-| 7.8 | 静态资源缓存头 | FR-3.7.8 | `backend/main_new.py` | 0.5h | 浏览器 DevTools: Cache-Control 头存在 | ⏳ |
-| 7.9 | index.html 内存缓存 | FR-3.7.9 | `backend/main_new.py` | 1h | 单元测试: 首次读磁盘，后续读内存 | ⏳ |
-| 7.10 | AI 评估策略归因 | FR-3.7.10 | `backend/ai_evaluator.py`, `backend/prompts/` | 3h | pytest: 归因字段存在 + 浏览器验证 | ⏳ |
-| 7.11 | AI 信号解读 | FR-3.7.11 | `backend/ai_evaluator.py`, `frontend/js/components/` | 2h | 浏览器: 入池股票旁显示解读 | ⏳ |
-| 7.12 | Prompt 模板化 | FR-3.7.12 | `backend/ai_evaluator.py`, `backend/prompts/evaluate_stock.txt` | 2h | pytest: 模板加载 + 替换结果正确 | ⏳ |
-| 7.13 | 美林时钟策略映射 | FR-3.7.13 | `backend/merrill_clock.py`, `frontend/js/merrill.js` | 2h | 浏览器: 详情面板显示策略建议 | ⏳ |
-| 7.14 | 评估历史趋势图 | FR-3.7.14 | `frontend/js/components/ai-page.js` | 2h | 浏览器: 趋势图渲染 + 事件标注 | ⏳ |
+| 7.1 | SQLite 建复合索引 | FR-3.7.1 | `backend/db.py` | 1h | pytest: 索引存在性 + 查询 EXPLAIN | ✅ |
+| 7.2 | Cache TTL 传参修复 | FR-3.7.2 | `backend/market_data.py` | 0.5h | pytest: 缓存过期时间计算正确 | ✅ |
+| 7.3 | DB 初始化失败熔断 | FR-3.7.3 | `backend/main_new.py` | 0.5h | 手动: 损坏 DB 文件后启动应拒绝 | ✅ |
+| 7.4 | 日历页 viewUnit 修复 | FR-3.7.4 | `frontend/js/components/calendar-page.js` | 0.5h | 浏览器: 按钮显示正确文字 | ✅ (非bug) |
+| 7.5 | 股票详情空值守卫 | FR-3.7.5 | `frontend/index.html` | 1h | 浏览器: 空数据时不报错 | ✅ |
+| 7.6 | DB 读并发优化 | FR-3.7.6 | `backend/db.py` | 1.5h | pytest: 并发读测试 | ✅ |
+| 7.7 | AI 模型配置内存缓存 | FR-3.7.7 | `backend/ai_evaluator.py` | 1h | pytest: spy 确认无 disk read | ✅ |
+| 7.8 | 静态资源缓存头 | FR-3.7.8 | `backend/main_new.py` | 0.5h | 浏览器 DevTools: Cache-Control 头存在 | ✅ |
+| 7.9 | index.html 内存缓存 | FR-3.7.9 | `backend/main_new.py` | 1h | 单元测试: 首次读磁盘，后续读内存 | ✅ |
+| 7.10 | AI 评估策略归因 | FR-3.7.10 | `backend/ai_evaluator.py`, `backend/prompts/` | 3h | pytest: 归因字段存在 + 浏览器验证 | ✅ |
+| 7.11 | AI 信号解读 | FR-3.7.11 | `backend/ai_evaluator.py`, `frontend/js/components/` | 2h | 浏览器: 入池股票旁显示解读 | ✅ |
+| 7.12 | Prompt 模板化 | FR-3.7.12 | `backend/ai_evaluator.py`, `backend/prompts/evaluate_stock.txt` | 2h | pytest: 模板加载 + 替换结果正确 | ✅ |
+| 7.13 | 美林时钟策略映射 | FR-3.7.13 | `backend/merrill_clock.py`, `frontend/index.html` | 2h | 浏览器: 详情面板显示策略建议 | ✅ |
+| 7.14 | 评估历史趋势图 | FR-3.7.14 | `frontend/js/components/ai-page.js`, `app-logic.js` | 2h | 浏览器: 趋势图渲染 + 事件标注 | ✅ |
 
 ### 4.2 验收清单
 

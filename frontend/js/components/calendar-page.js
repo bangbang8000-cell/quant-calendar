@@ -56,6 +56,8 @@
                                     <div class="consensus-tags">
                                         <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
                                     </div>
+                                    <!-- v3.7.11: AI入池信号解读 -->
+                                    <div v-if="poolSignals[item.code]" style="font-size:var(--font-xs);color:var(--text-tertiary);margin-top:2px;font-style:italic;">🤖 {{ poolSignals[item.code] }}</div>
                                 </div>
                             </div>
                         </div>

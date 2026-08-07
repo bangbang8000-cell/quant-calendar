@@ -48,11 +48,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """应用启动/关闭生命周期"""
     # v3.3.0-T9: 启动 schema 校验 (损坏自动告警而非静默)
+    # v3.7.3: DB 初始化失败时拒绝启动，避免在损坏数据上运行
     import db
     if not db.schema_ok():
         ok = db.init_db()
         if not ok:
             logger.critical("❌ 数据库初始化/校验失败, 数据可能损坏! 请检查 data/app.db")
+            import sys
+            sys.exit(1)
         else:
             logger.info("✅ 数据库 schema 已重建")
     else:
@@ -116,6 +119,15 @@ async def security_headers(request: Request, call_next):
         )
     response.headers["X-Trace-ID"] = trace_id
     response.headers["X-Content-Type-Options"] = "nosniff"
+    # v3.7.8: 静态资源缓存头 (CSS/JS 长期, 其他短期)
+    if path.startswith("/static/"):
+        ext = path.rsplit('.', 1)[-1] if '.' in path else ''
+        if ext in ('css', 'js'):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif ext in ('woff2', 'woff', 'ttf', 'svg', 'png', 'ico'):
+            response.headers["Cache-Control"] = "public, max-age=604800"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -155,11 +167,24 @@ async def get_service_worker():
     return FileResponse(SW_JS_FILE, media_type="application/javascript")
 
 
+# v3.7.9: index.html 内存缓存 (避免每次请求读磁盘)
+_index_html_cache: str = ""
+_index_html_mtime: float = 0.0
+
+
 @app.get("/")
 async def root():
     """首页"""
-    with open(INDEX_HTML_FILE, "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+    global _index_html_cache, _index_html_mtime
+    try:
+        mtime = os.path.getmtime(INDEX_HTML_FILE)
+        if mtime != _index_html_mtime:
+            with open(INDEX_HTML_FILE, "r", encoding="utf-8") as f:
+                _index_html_cache = f.read()
+            _index_html_mtime = mtime
+    except OSError:
+        pass
+    return HTMLResponse(content=_index_html_cache)
 
 
 @app.get("/api/health")

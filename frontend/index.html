@@ -195,25 +195,25 @@
                     <div class="grid-auto">
                         <div class="stat-box">
                             <div class="stat-label">收盘价</div>
-                            <div class="stat-value">{{ stockDetail.daily_data?.close.toFixed(2) }}</div>
+                            <div class="stat-value">{{ (stockDetail.daily_data?.close != null ? stockDetail.daily_data.close.toFixed(2) : '—') }}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">涨跌幅</div>
                             <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? 'var(--el-danger)' : 'var(--el-success)'}">
-                                {{ stockDetail.daily_data?.pct_chg.toFixed(2) }}%
+                                {{ (stockDetail.daily_data?.pct_chg != null ? stockDetail.daily_data.pct_chg.toFixed(2) : '—') }}%
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">最高/最低</div>
                             <div style="font-size: var(--font-md); font-weight: var(--font-semibold);">
-                                <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high.toFixed(2) }}</span>
+                                <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high != null ? stockDetail.daily_data.high.toFixed(2) : '—' }}</span>
                                 <span style="color: var(--text-tertiary); margin: 0 4px;">/</span>
-                                <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low.toFixed(2) }}</span>
+                                <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low != null ? stockDetail.daily_data.low.toFixed(2) : '—' }}</span>
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">成交量</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ Math.round(stockDetail.daily_data?.vol / 10000).toLocaleString() }}万</div>
+                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() : '—' }}万</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">换手率</div>
@@ -335,9 +335,10 @@
                             <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
                                 <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ aiResult.result.signal_attribution.technical }}%</span>
-                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ aiResult.result.signal_attribution.fundamentals }}%</span>
-                                    <span v-if="aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">市场情绪 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
+                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ aiResult.result.signal_attribution.technical }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ aiResult.result.signal_attribution.fundamentals }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ aiResult.result.signal_attribution.capital_flow }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
+                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
                                 </div>
                                 <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
                                     <span style="color: #4CAF50;">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
@@ -835,6 +836,28 @@
                         <div v-for="(advice, index) in merrillDetailData.sector_advice" :key="index" class="sector-item">
                             {{ advice }}
                         </div>
+                    </div>
+                </div>
+
+                <!-- v3.7.13: 策略建议 -->
+                <div v-if="merrillDetailData.strategy_mapping" class="detail-section">
+                    <div class="section-title">📐 策略建议</div>
+                    <div class="allocation-grid" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="allocation-item">
+                            <div class="allocation-header">🏆 主推策略</div>
+                            <div class="allocation-advice" style="color: var(--color-primary);">
+                                {{ (merrillDetailData.strategy_mapping.primary || []).join(' · ') }}
+                            </div>
+                        </div>
+                        <div class="allocation-item">
+                            <div class="allocation-header">📌 次选策略</div>
+                            <div class="allocation-advice" style="color: var(--el-warning);">
+                                {{ (merrillDetailData.strategy_mapping.secondary || []).join(' · ') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; padding: 8px 12px; background: var(--bg-card-header); border-radius: 8px; font-size: var(--font-sm); color: var(--text-secondary);">
+                        💡 {{ merrillDetailData.strategy_mapping.rationale }}
                     </div>
                 </div>
 

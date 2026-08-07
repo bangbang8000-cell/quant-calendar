@@ -179,8 +179,8 @@ class MarketData:
         cache_time = datetime.fromisoformat(cache_data['fetch_time'])
         now = datetime.now()
         
-        # 根据时间段计算有效期
-        cache_duration = get_cache_duration(cache_time)
+        # v3.7: 传入 now 而非 cache_time 用于 TTL 计算
+        cache_duration = get_cache_duration(now)
         return (now - cache_time).total_seconds() < cache_duration
     
     def get_index_daily(self, ts_code, trade_date=None):

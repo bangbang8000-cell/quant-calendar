@@ -320,6 +320,8 @@
                                     <span style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
                                 </div>
                                 <div v-if="expandedStocks.includes(code)" style="padding: 4px 0 4px 12px;">
+                                    <!-- v3.7.14: 评估历史趋势图 -->
+                                    <div v-if="records.length > 1" :ref="el => registerTrendChart(el, code, records)" style="width:100%;height:200px;margin-bottom:8px;border:1px solid var(--border-light);border-radius:8px;"></div>
                                     <div v-for="record in records" :key="record.id" class="ai-history-item" :class="{'selected': selectedHistoryIds.includes(record.id)}" style="border-bottom: 1px solid var(--border-light);">
                                         <div @click.stop="toggleSelectHistory(record.id)" class="history-checkbox">
                                             <div class="checkbox-inner" :class="{'checked': selectedHistoryIds.includes(record.id)}">
