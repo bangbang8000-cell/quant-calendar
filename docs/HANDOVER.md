@@ -100,6 +100,12 @@
   - **股票详情弹窗**: 000088.SZ 盐田港 84分强势, 持仓105天 ✅
   - console 零 JS 错误 (仅 DEBUG 日志), SPA 完整性 template=0 div=-3 dual=0
 
+- **⚠️ 用户报告的 System 页配置 bug 已修复** (2026-08-07, T4 记录的原始 bug 修复):
+  - **现象**: ① 配置页每个子项目都显示 美林时钟/策略数据刷新/策略研究菜单 三个根级配置卡; ② 用户与权限/关于 子页不显示自己的内容 (永远显示根级配置区)
+  - **根因**: system-page.js 模板结构缺陷 — ① 三个根级配置卡(原行 376-452)位于 feature 子页的 v-else-if 之外、根 div 之内 → 所有子页都显示; ② user(原 456)/about(原 568)的 v-else-if 游离在根 div 外 → 挂在 `v-if="currentPage === 'system'"` 的 else 链上, currentPage 恒为 system 时永不评估
+  - **修复**: 重新拼接模板 — 根级配置区移入 feature 子页内(美林时钟/数据刷新/策略研究 归入功能配置), user/about 移入根 div 内形成完整 6 子页 v-if 链; ⚠️ 注意 feature 的 `</div>` 闭合必须移到配置区之后 (首次拼接保留了 feature 闭合在配置区前 → VUE_ERR_CODE 30)
+  - **验证**: 6 子页各自显示自己的内容 (功能配置含 3 配置卡, 用户与权限显示用户列表 2 人+分组 3 个, 关于显示简介/版本/反馈/组件), 4 页面导航无回归, 组件版本号 bump 至 ?v=3.6.0-t9b
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)

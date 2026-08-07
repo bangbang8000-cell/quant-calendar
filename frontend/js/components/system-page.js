@@ -10,26 +10,6 @@
     name: 'qc-system-page',
     template: `
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
-                    <!-- 配置工具栏（所有子页共用） -->
-                    <div class="config-top-toolbar">
-                        <div class="toolbar-left">
-                            <span class="config-status-icon" :class="{ dirty: globalConfigDirty, clean: !globalConfigDirty }">
-                                {{ globalConfigDirty ? '✏️' : '' }}
-                            </span>
-                            <span class="config-status-text">
-                                {{ globalConfigDirty ? '有未保存的配置变更' : '配置已保存' }}
-                            </span>
-                            <span v-if="lastSavedTime" class="save-time">
-                                上次保存: {{ lastSavedTime }}
-                            </span>
-                        </div>
-                        <div class="toolbar-right" v-if="currentUser?.role !== 'guest'">
-                            <el-button @click="resetAllConfig" :disabled="!globalConfigDirty" size="large" type="warning">♻️ 重置变更</el-button>
-                            <el-button type="primary" @click="saveAllConfig" :loading="configSaving" size="large">💾 全部保存</el-button>
-                        </div>
-                    </div>
-
-                    <!-- v1.5.0: 系统状态仪表盘 -->
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                             <span>🖥️ 系统状态</span>
@@ -383,8 +363,6 @@
                         </div>
                         <div v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无备份</div>
                     </div>
-                    </div>
-
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">⏱️ 美林时钟</div>
@@ -461,9 +439,7 @@
                             <el-switch v-model="researchMenuEnabled" @change="toggleResearchMenu" size="small" />
                         </div>
                     </div>
-                    </div>
-
-                    <!-- user: 用户与权限 -->
+                </div>
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card" style="text-align: center; padding: 40px;">
                             <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🔐</div>
@@ -574,8 +550,6 @@
 
                     </div>
                     </div>
-
-                    <!-- about: 关于 -->
                     <div v-else-if="currentSubPage === 'about'">
                         <div class="card">
                             <div class="card-title">📖 软件简介</div>
@@ -671,7 +645,7 @@
                             </div>
                         </div>
                     </div>
-
+                    </div>
     `,
     setup() {
       const state = inject('qcState');
