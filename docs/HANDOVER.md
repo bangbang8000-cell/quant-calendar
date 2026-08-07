@@ -81,6 +81,13 @@
   - 验证: 概览 (5 统计卡 + 策略推荐 3 个 + 快捷操作)、我的自选 (11 只列表)、评估历史/问股历史 (空状态), 子页切换正常, 4 页面导航循环无回归, console 零错误
   - ⚠️ 注意: 页面恢复上次导航位置 (登录后直接显示 AI 页), 测试时先确认当前页再点击
 
+- **T8 壳瘦身** ✅ 完成并验证 (2026-08-07), 行数 5166 → **1106** (目标 ≤1800 达成):
+  - 策略研究页组件化: `frontend/js/components/research-page.js` (单根 div + 4 子页 v-if 链), 行数 -52
+  - **主 script setup() body 提取至 `frontend/js/app-logic.js`** (215KB, 4013 行逻辑): setup() 缩为 4 行 (`const qcState = window.createAppLogic(); provide('qcState', qcState); return qcState;`), 行数 -4010
+  - ⚠️ **陷阱: 提取函数体必须显式 `return qcState;`** — 首次遗漏导致 createAppLogic 返回 undefined, 页面白屏 (Vue 报 "Cannot read properties of undefined")。body 原以 `};` (qcState 定义) 结尾, 函数无 return 时返回 undefined
+  - ⚠️ 主 script 剩余部分 (app.use ElementPlus/click-outside 指令/组件注册/app.mount) 保留在 index.html
+  - 验证: 登录页+4 页面导航循环无回归 (策略/日历/AI/系统), 股票详情弹窗正常 (000088.SZ 盐田港 84分强势), console 零 JS 错误, SPA 完整性 template=0 div=-3 dual=0
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
@@ -176,6 +183,6 @@ curl -s http://localhost:8000/api/health
 - [x] T5 Strategies 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
 - [x] T6 Calendar 页组件化 — 2026-08-07 完成 (见 §4), 视图+股票池管理验证通过
 - [x] T7 AI 页组件化 — 2026-08-07 完成 (见 §4), 4 子页全渲染验证通过
-- [ ] T8 壳瘦身 ≤1800 行
+- [x] T8 壳瘦身 — 2026-08-07 完成 (见 §4), 行数 5166 → 1106 (目标 ≤1800 达成, research页组件化 + setup body 提取至 app-logic.js)
 - [ ] T9 冒烟 + T10 merrill 拆分 + T11 组件测试 + T12 ADR
 - [ ] 三文档 v3.6.0 状态标记 + 里程碑推送 (GitHub + 群辉)
