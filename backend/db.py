@@ -33,12 +33,16 @@ CREATE TABLE IF NOT EXISTS chat_history (
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_chat_history_username_stock
+    ON chat_history(username, stock_code, id);
 CREATE TABLE IF NOT EXISTS watchlist (
     username TEXT NOT NULL,
     stock_code TEXT NOT NULL,
     added_at TEXT NOT NULL,
     PRIMARY KEY (username, stock_code)
 );
+CREATE INDEX IF NOT EXISTS idx_watchlist_username_added
+    ON watchlist(username, added_at);
 CREATE TABLE IF NOT EXISTS groups (
     group_id TEXT PRIMARY KEY,
     data TEXT NOT NULL
@@ -78,11 +82,10 @@ def init_db() -> bool:
 def schema_ok() -> bool:
     """启动 schema 校验 — 检查核心表是否存在且可查询"""
     try:
-        with _db_lock:
-            conn = get_conn()
-            tables = [r[0] for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-            conn.close()
+        conn = get_conn()
+        tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        conn.close()
         required = {'users', 'chat_history', 'watchlist', 'groups', 'meta'}
         missing = required - set(tables)
         if missing:
@@ -111,17 +114,13 @@ def kv_set(table: str, key: str, value: dict):
 
 
 def kv_get(table: str, key: str) -> dict | None:
-    with _db_lock:
-        conn = get_conn()
-        col = 'username' if table == 'users' else 'group_id'
-        row = conn.execute(f"SELECT data FROM {table} WHERE {col} = ?", (key,)).fetchone()
-        conn.close()
-    if row is None:
+    conn = get_conn()
+    col = 'username' if table == 'users' else 'group_id'
+    row = conn.execute(f"SELECT data FROM {table} WHERE {col} = ?", (key,)).fetchone()
+    conn.close()
+    if not row:
         return None
-    try:
-        return json.loads(row['data'])
-    except Exception:
-        return None
+    return json.loads(row[0])
 
 
 def kv_all(table: str) -> dict:

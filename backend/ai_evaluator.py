@@ -345,6 +345,9 @@ class AIEvaluator:
 
     def _load_models(self) -> List[ModelProvider]:
         """加载模型配置列表（API Key 明文存储, v3.6.0 起取消加密; 兼容历史 Fernet 密文）"""
+        # v3.7.7: 内存缓存, 避免每次磁盘读取
+        if self._models_cache is not None:
+            return self._models_cache
         from crypto_utils import decrypt_value
         try:
             with open(self._models_file, 'r', encoding='utf-8') as f:
@@ -362,6 +365,7 @@ class AIEvaluator:
                             provider.api_key = decrypted
                     models.append(provider)
                 if models:
+                    self._models_cache = models
                     return models
         except (FileNotFoundError, json.JSONDecodeError):
             pass
@@ -405,6 +409,42 @@ class AIEvaluator:
         enabled = [m for m in models if m.enabled]
         enabled.sort(key=lambda m: m.priority)
         return enabled
+
+    # ─── v3.7.11: 入池信号解读 ──────────────────────────────────
+
+    def generate_pool_signal(self, stock_code: str, stock_name: str, event_type: str, market_snapshot: Dict = None) -> str:
+        """生成入池/出池简短语解读（≤20字）"""
+        models = self.get_enabled_models()
+        if not models:
+            return ''  # 无可用模型时跳过
+        model = models[0]  # 使用最高优先级模型
+        
+        event_label = '入池' if event_type == 'enter' else '出池'
+        snapshot_text = ''
+        if market_snapshot:
+            snapshot_text = f'\n行情快照: 收盘{market_snapshot.get("close","?")}, 涨跌{market_snapshot.get("pct_chg","?")}%'
+        
+        prompt = f'用一句话（≤20字）解释{stock_name}({stock_code}){event_label}的原因：{snapshot_text}'
+        try:
+            endpoint = model.base_url.rstrip("/") + "/chat/completions"
+            resp = requests.post(endpoint, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {model.api_key}"
+            }, json={
+                "model": model.model,
+                "messages": [
+                    {"role": "system", "content": "你是量化分析师，只用一句话（≤20字）简要解释股票入池或出池的原因。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 80,
+            }, timeout=15)
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+            return content.strip()[:30]
+        except Exception as e:
+            logger.warning(f"生成入池信号失败 ({stock_code}): {e}")
+            return ''
 
     def test_model_connection(self, model_id: str) -> Dict:
         """探测单个模型连接"""
@@ -715,6 +755,17 @@ class AIEvaluator:
 
         return record
 
+    # ─── Prompt 模板 (v3.7.12) ──────────────────────────────────
+
+    def _load_prompt_template(self) -> str:
+        """加载评估 prompt 模板 (带缓存)"""
+        if not hasattr(self, '_prompt_template') or self._prompt_template is None:
+            import os as _os
+            template_path = _os.path.join(_os.path.dirname(__file__), 'prompts', 'evaluate_stock.txt')
+            with open(template_path, 'r', encoding='utf-8') as f:
+                self._prompt_template = f.read()
+        return self._prompt_template
+
     # ─── LLM 调用 ───────────────────────────────────────────────
 
     def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
@@ -747,24 +798,15 @@ class AIEvaluator:
         else:
             phase_note = '\n## 市场阶段：盘后\n- 复盘今日走势\n- 给出明日交易计划\n- 关注收盘形态和量能'
         
-        prompt = f"""量化评估 {stock_name}({stock_code})，严格基于下方数据：{strategy_hint}{phase_note}
-
-{data_section}
-
-## 输出要求（JSON）
-1. 9维度评分(0-100)，加权计算 total_score
-2. level: 强烈推荐/推荐/谨慎推荐/中性/观望
-3. level_color: #67c23a/#85ce61/#e6a23c/#909399/#f56c6c
-4. analysis: strengths/weaknesses/suggestions 各1-3条，每条≤12字
-5. detailed_report: ≤100字凝练综述
-6. sniper_points: 根据支撑/压力位给出 {{ideal_buy, stop_loss, take_profit}} 三个具体价格
-7. position_advice: 分持仓建议 {{no_position, has_position}} 各≤25字
-8. signal_attribution: 各因素贡献度 {{technical(0-100), fundamentals(0-100), market_sentiment(0-100), strongest_bullish, strongest_bearish}}
-9. data_quality_note: 感知数据时效性的一句话（如有缓存数据请注明）
-
-权重：趋势15% 均线10% 成交量15% 动能风险10% 量价关系12% 中期趋势10% 指标共振12% 稳定性8% 位置8%
-
-严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85}}}},"analysis":{{{{"strengths":["量价配合好"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"],"sniper_points":{{{{"ideal_buy":"32.50","stop_loss":"30.80","take_profit":"36.00"}}}},"position_advice":{{{{"no_position":"32.50附近建仓3成","has_position":"持有止损上移32元"}}}}}}}},"signal_attribution":{{{{"technical":60,"fundamentals":25,"market_sentiment":15,"strongest_bullish":"均线多头排列","strongest_bearish":"成交量萎缩"}}}},"data_quality_note":"K线为实时数据","detailed_report":"80字综述"}}}}"""
+        # v3.7.12: 从模板文件加载 prompt
+        template = self._load_prompt_template()
+        prompt = template.format(
+            stock_name=stock_name,
+            stock_code=stock_code,
+            strategy_hint=strategy_hint,
+            phase_note=phase_note,
+            data_section=data_section,
+        )
 
         endpoint = model.base_url.rstrip("/") + "/chat/completions"
         headers = {
