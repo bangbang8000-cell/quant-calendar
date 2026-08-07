@@ -54,6 +54,13 @@
   - 修复: 改为 `<qc-sidebar></qc-sidebar>` 成对写法 (index.html 78/84 行)
   - 验证: sidebar/global-header/main-content/stat-cards/二级导航/搜索(600519→茅台)/日期选择/用户菜单/主题切换 全部正常, console 零错误, SPA 完整性 template=0 div=-10 dual=0
 
+- **T4 System 页** ✅ 组件化完成并验证 (2026-08-07):
+  - `frontend/js/components/system-page.js` (6 子页: status/autoeval/datasource/feature/user/about)
+  - index.html 1143-1806 (664 行) → `<qc-system-page></qc-system-page>`, 行数 6802 → 6140
+  - **qcState 提升**: setup 整个 return 状态对象 (200+ 字段) 提升为 `qcState` 一次性 provide, T5-T7 无需再扩展
+  - 验证: 4 页面导航循环无回归, 6 子页标签齐全, status/autoeval/datasource/feature 内容渲染正常 (AI模型/数据源/策略筛选), console 零错误, SPA 完整性 template=0 div=-3 dual=0
+  - ⚠️ 发现原始 bug (非组件化引入, 原始 v3.5.0 实测同样): **user/about 子页永远显示根级配置区, 用户管理/关于内容不可见** — 根因: 原始代码 user/about 的 v-else-if 是 system 根 div 的兄弟节点 (挂在 v-if="currentPage === 'system'" 链上), currentPage 恒为 'system' 时 v-else-if 永不评估。待用户决定是否修复
+
 ### 已创建文件
 - `frontend/js/components/sidebar.js` — Sidebar 组件 ✅
 - `frontend/js/components/global-header.js` — GlobalHeader 组件 (含二级导航/搜索/日期选择/用户菜单/面包屑)
@@ -145,7 +152,7 @@ curl -s http://localhost:8000/api/health
 ## 8. 下一步行动清单
 
 - [x] 修复 GlobalHeader 组件集成 bug (§5) — 2026-08-07 完成, 根因=in-DOM模板自闭合标签
-- [ ] T4 System 页组件化 (5h) — status/autoeval/datasource/feature/user/about 6 子页
+- [x] T4 System 页组件化 — 2026-08-07 完成 (见 §4), 附带发现 user/about 子页原始 bug (待决策)
 - [ ] T5 Strategies 页组件化 (6h) — overview/watchlist/backtest 3 子页
 - [ ] T6 Calendar 页组件化 (8h) — day/week/month/year/pool 5 子页
 - [ ] T7 AI 页组件化 (6h) — overview/history/chat_history 3 子页
