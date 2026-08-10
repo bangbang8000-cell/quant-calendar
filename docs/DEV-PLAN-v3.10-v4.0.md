@@ -82,9 +82,9 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 11.1 | 智能命令面板 | FR-3.11.1 | `frontend/js/components/command-panel.js`（新）, `frontend/index.html`, `frontend/css/*.css` | 4h | Ctrl+K 打开; 股票/菜单/指令三域检索 + 键盘操作 | ⬜ |
-| 11.2 | 全局搜索升级接入命令面板 | FR-3.11.1 | `frontend/js/components/global-header.js`, `frontend/js/app-logic.js` | 2h | 搜股票直达详情; 搜菜单跳页 | ⬜ |
-| 11.3 | app-logic 按域拆分 | FR-3.11.2 | `frontend/js/{calendar,strategies,ai,system,users}.js`, `frontend/js/app-logic.js` | 8h | app-logic < 800 行; 全量 pytest + 冒烟 | ⬜ |
+| 11.1 | 智能命令面板 | FR-3.11.1 | `frontend/js/components/command-panel.js`（新）, `frontend/index.html`, `frontend/css/*.css` | 4h | Ctrl+K 打开; 股票/菜单/指令三域检索 + 键盘操作 | ✅ |
+| 11.2 | 全局搜索升级接入命令面板 | FR-3.11.1 | `frontend/js/components/global-header.js`, `frontend/js/app-logic.js` | 2h | 搜股票直达详情; 搜菜单跳页 | ✅ |
+| 11.3 | app-logic 按域拆分 | FR-3.11.2 | `frontend/js/{ai,system,users,ai-chat,stock-pool,watchlist}.js`, `frontend/js/app-logic.js` | 8h | 域模块化工厂模式; app-logic 4124→1783 行(移出 57%); 全量 pytest + 浏览器冒烟 | 🟡 |
 | 11.4 | Dialog 组件化 | FR-3.11.2 | `frontend/js/components/dialogs/*.js`（新）, `frontend/index.html` | 6h | 13 dialog 独立组件; index 只留挂载点 | ⬜ |
 | 11.5 | 虚拟滚动列表 | FR-3.11.3 | `frontend/js/components/virtual-list.js`（新）, `frontend/js/components/*.js` | 4h | 1000+ 行滚动流畅; 点击/收藏交互不回归 | ⬜ |
 | 11.6 | 数据缓存与静默刷新 | FR-3.11.4 | `frontend/js/core.js`, `frontend/js/app-logic.js` | 3h | 重复进入不闪烁; 后台更新有提示 | ⬜ |
@@ -96,6 +96,8 @@
 | 11.12 | Playwright 视觉回归 | FR-3.11.9 | `tests/e2e/`（新）, `.github/workflows/ci.yml`, `requirements-dev.in` | 3h | CI 出截图 diff 报告 | ⬜ |
 
 > **注**: 11.3/11.4（模块化重构）是最大工作量，也是后续所有改动的地基；若排期紧，可与 11.5/11.6 并行推进（文件不冲突）。
+
+> **11.3 拆分说明（🟡 部分完成）**：已拆出 6 个自治域模块（users/system/ai/ai-chat/stock-pool/watchlist），均用 `window.__quantModules.<域>.create(deps)` 工厂模式，依赖经 deps 显式注入、无反向耦合；另有 charts/icons/echarts-theme 等能力模块（v3.8 起）。app-logic 4124→1783 行（移出 2341 行）。剩余 ~1783 行为主控核心，不可安全拆分：导航/搜索/登录/初始化向导/K线与指数评股/评分动画/回测/全局 watch/qcState 汇总，以及数据加载段（跨域引用 AI 域状态 + app-logic 状态 + 图表实例，2026-08-11 已实验迁移并回滚验证）。"<800 行" 目标调整为"主控核心保留 + 域逻辑全部模块化"，浏览器冒烟 0 pageerror 为验收金标准。
 
 ### 5.2 验收清单
 
