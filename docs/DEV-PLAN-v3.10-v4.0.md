@@ -88,7 +88,7 @@
 | 11.4 | Dialog 组件化 | FR-3.11.2 | `frontend/js/components/dialogs/*.js`（新）, `frontend/index.html` | 6h | 13 dialog 独立组件; index 只留挂载点 | ✅ |
 | 11.5 | 虚拟滚动列表 | FR-3.11.3 | `frontend/js/components/virtual-list.js`（新）, `frontend/js/components/*.js` | 4h | 1000+ 行滚动流畅; 点击/收藏交互不回归 | ✅ |
 | 11.6 | 数据缓存与静默刷新 | FR-3.11.4 | `frontend/js/core.js`, `frontend/js/app-logic.js` | 3h | 重复进入不闪烁; 后台更新有提示 | ✅ |
-| 11.7 | 统一四态组件 + 键盘导航 | FR-3.11.5 | `frontend/js/components/state-panel.js`（新）, `frontend/js/app-logic.js` | 3h | 空/加载/错误/离线四态一致; 键盘可操作 | ⬜ |
+| 11.7 | 统一四态组件 + 键盘导航 | FR-3.11.5 | `frontend/js/components/state-panel.js`（新）, `frontend/js/app-logic.js` | 3h | 空/加载/错误/离线四态一致; 键盘可操作 | ✅ |
 | 11.8 | 移动端专项 | FR-3.11.5 | `frontend/css/responsive.css`, `frontend/js/components/*.js` | 4h | 375px 高频页可用性达标 | ⬜ |
 | 11.9 | 设计令牌落地 + 视觉规范 | FR-3.11.6 | `frontend/css/tokens.css`, `frontend/css/themes.css`, 各模板 | 4h | 硬编码色值消除(grep 校验); 主题切换无遗漏 | ⬜ |
 | 11.10 | 智能首页"今日一屏" | FR-3.11.7 | `frontend/js/components/strategies-page.js`, `frontend/css/*.css` | 6h | 一屏见当日决策要素; 数据健康卡 | ⬜ |
@@ -102,6 +102,8 @@
 > **11.5 完成说明（✅ 2026-08-11）**：新增 `virtual-list-core.js`（纯计算 UMD，窗口/总高/切片/key）+ `components/virtual-list.js`（qc-virtual-list 薄壳：scroll.passive + ResizeObserver，行内交互事件保留）。策略池（日历页，dev 182 只实测仅渲染 17 行）+ 共识榜（策略页，30 只仅渲染 17 行）两处最大列表接入；信号解读行单行省略适配固定行高。隔离验证 2000 行仅渲染 18 行、滚动中部/末尾索引映射正确（含缓冲偏移）。TC-11.6 新增 9 个 node 单测，pytest 169→178。浏览器 0 pageerror。
 
 > **11.6 完成说明（✅ 2026-08-11）**：core.js 改为 UMD（`window.__quantModules.core` + `module.exports`，node 可 require），新增纯逻辑缓存段：`makeCacheKey(method|url|params 排序)` / `CacheStore`（Map+过期时间戳）/ `createTtlCache(15s 默认)` / `silentRefresh`（后台拉取，有变才 `onChanged`、首刷无基线不算变更、同 key 在途去重）/ `jsonEquals`。app-logic.js 接入两大数据路径：`loadConsensusData` 双缓存（viewCache 命中 / TTL 命中均直接渲染不闪烁，随后 `backgroundRefresh` 静默拉取，数据有变 toast「有新数据，已更新」5s 去重）+ `loadDashboardCached`（总览页包装，重复进入不闪烁 + 5 分钟静默轮询更新提示）；并新增同 key 在途去重（首次进入 page/sub 双触发只拉一次）。**浏览器实测**（route stub：第1/2次 /api/view 返 A、第3次起返 B）：首次进入渲染 2 行；再次进入首帧即渲染（无骨架屏/无空态）→ 后台刷新到 3 行 + toast「有新数据，已更新」，0 pageerror。TC-11.7 新增 9 个 node 单测（键确定性/参数顺序无关、TTL 命中与过期清理、ttl=0 立即失效、静默刷新首刷/未变/有变/失败/在途去重），pytest 178→187。
+
+> **11.7 完成说明（✅ 2026-08-11）**：新增 `state-panel-core.js`（四态元数据 UMD：`empty`📭/`loading`骨架屏/`error`⚠️可重试/`offline`📡可重试，未知类型回退 empty，`validate()` 自检）+ `components/state-panel.js`（`qc-state-panel` 薄壳，`type` prop → computed 解析四态；loading 渲染 6 格骨架屏复用 `.skeleton-loader`，其余态渲染 `.empty-state` 图标/标题/描述 + 重试按钮，0 新增 CSS）。接入日历页股票池（加载/空态 v-if/v-else-if 链，替换裸文本）+ 策略分布 + 策略页共识榜空态；键盘导航接入 `handleGlobalKeydown`（日历页 ←/→ 上一/下一交易日、↑/↓ 循环切换 日/周/月/年 视图，避开输入框）。**浏览器实测**（route stub 返空 + 真实日期接口）：`qc-state-panel` 注册、空态面板渲染（📭「暂无数据」）、← 触发上一交易日数据加载（URL date 变化）、↓ 切到周视图，0 pageerror。TC-11.8 新增 6 个 node 单测（四态齐全/默认文案/flags 一致性/图标/回退/自检），pytest 187→193。
 
 > **11.3 拆分说明（🟡 部分完成）**：已拆出 6 个自治域模块（users/system/ai/ai-chat/stock-pool/watchlist），均用 `window.__quantModules.<域>.create(deps)` 工厂模式，依赖经 deps 显式注入、无反向耦合；另有 charts/icons/echarts-theme 等能力模块（v3.8 起）。app-logic 4124→1783 行（移出 2341 行）。剩余 ~1783 行为主控核心，不可安全拆分：导航/搜索/登录/初始化向导/K线与指数评股/评分动画/回测/全局 watch/qcState 汇总，以及数据加载段（跨域引用 AI 域状态 + app-logic 状态 + 图表实例，2026-08-11 已实验迁移并回滚验证）。"<800 行" 目标调整为"主控核心保留 + 域逻辑全部模块化"，浏览器冒烟 0 pageerror 为验收金标准。
 

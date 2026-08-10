@@ -112,7 +112,7 @@
                             <span>🏆 策略共识度 TOP5</span>
                             <span @click="currentSubPage = 'consensus'" style="font-size: var(--font-sm);color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
                         </div>
-                        <div v-if="filteredConsensusRank.length === 0" class="empty-state">暂无共识数据</div>
+                        <qc-state-panel v-if="filteredConsensusRank.length === 0" type="empty" title="暂无共识数据"></qc-state-panel>
                         <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
                             <div class="consensus-badge">{{ item.strategy_count }}</div>
                             <div class="consensus-info">

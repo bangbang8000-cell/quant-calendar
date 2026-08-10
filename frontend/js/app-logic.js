@@ -580,6 +580,20 @@ const allMenuDefs = [
                         return;
                     }
                     if (k === 'r') { refreshCurrentPage(); }
+                    // v3.11 (FR-3.11.5): 日历页方向键导航
+                    // ←/→ 上一/下一交易日；↑/↓ 循环切换 日/周/月/年 视图
+                    if (k === 'arrowleft' || k === 'arrowright' || k === 'arrowup' || k === 'arrowdown') {
+                        if (currentPage.value === 'calendar') {
+                            e.preventDefault();
+                            if (k === 'arrowleft' || k === 'arrowright') {
+                                navigateDate(k === 'arrowleft' ? -1 : 1);
+                            } else {
+                                const vIdx = ['day', 'week', 'month', 'year'].indexOf(currentView.value);
+                                const next = ['day', 'week', 'month', 'year'][(vIdx + (k === 'arrowup' ? -1 : 1) + 4) % 4];
+                                switchView(next);
+                            }
+                        }
+                    }
                 }
                 function refreshCurrentPage() {
                     const page = currentPage.value;

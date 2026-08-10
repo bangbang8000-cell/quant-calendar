@@ -33,14 +33,10 @@
                                 <el-input v-model="searchKeyword" placeholder="🔍 搜索股票代码或名称..." clearable style="width: 100%;" />
                             </div>
 
-                            <div v-if="loading" class="skeleton-loader">
-                                <div class="skeleton-header"></div>
-                                <div class="skeleton-grid">
-                                    <div class="skeleton-item" v-for="i in 6" :key="i"></div>
-                                </div>
-                            </div>
-                            
-                            <div v-else-if="stockPool.length === 0" class="empty-state">暂无数据</div>
+                            <!-- v3.11 (FR-3.11.5): 统一四态组件（加载/空态） -->
+                            <qc-state-panel v-if="loading" type="loading"></qc-state-panel>
+
+                            <qc-state-panel v-else-if="stockPool.length === 0" type="empty" title="暂无数据"></qc-state-panel>
                             
                             <div v-else class="stock-list">
                                 <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
@@ -94,7 +90,7 @@
 
                         <div class="card" style="margin-top: 16px;">
                             <div class="card-title">📋 各策略股票分布</div>
-                            <div v-if="strategyDistribution.length === 0" class="empty-state">暂无数据</div>
+                            <qc-state-panel v-if="strategyDistribution.length === 0" type="empty" title="暂无数据"></qc-state-panel>
                             <div v-else>
                                 <div v-for="item in strategyDistribution" :key="item.strategy" style="margin-bottom: 12px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; border: 1px solid var(--border-light);">
                                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
