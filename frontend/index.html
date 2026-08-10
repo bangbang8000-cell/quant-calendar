@@ -40,6 +40,9 @@
     <script nonce="{{NONCE}}" src="/static/js/components/calendar-page.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/components/ai-page.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/components/research-page.js?v={{APP_VERSION}}"></script>
+    <!-- v3.11 (FR-3.11.1): 命令面板核心逻辑(纯函数) + 组件 -->
+    <script nonce="{{NONCE}}" src="/static/js/command-panel-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/components/command-panel.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/app-logic.js?v={{APP_VERSION}}"></script>
 <body>
     <div id="app">
@@ -120,6 +123,9 @@
                 </div>
             </div>
             </div>
+
+            <!-- v3.11 (FR-3.11.1): 智能命令面板 (Ctrl+K) -->
+            <qc-command-panel></qc-command-panel>
 </template>
 
         <!-- 股票详情弹窗 -->

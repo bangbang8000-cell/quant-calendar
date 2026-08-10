@@ -7,24 +7,48 @@
                 // ===== 导航菜单 =====
                                 // ===== 市场行情数据 =====
                 const marketData = ref({ indices: [], market_sentiment: null });
-                // ===== v1.10: 全局搜索 =====
+                // ===== v1.10 / v3.11(11.2): 全局搜索 =====
+                // v3.11: 升级为三域检索——菜单跳页 / 指令动作 / 股票直达详情（复用 command-panel-core 纯逻辑）
                 const searchQuery = ref('');
                 async function searchStocks(queryString, cb) {
                     if (!queryString || queryString.trim().length < 1) { cb([]); return; }
+                    const QCP = window.QuantCommandPanel;
+                    let localHits = [];
+                    if (QCP && menus.value) {
+                        localHits = QCP.buildSearchSuggestions(queryString, menus.value, subPageNames, QCP.DEFAULT_COMMANDS);
+                    }
                     try {
                         const res = await fetch('/api/search?q=' + encodeURIComponent(queryString));
                         const data = await res.json();
                         if (data.success && data.results) {
-                            const results = data.results.map(function(r) { return { value: r.code + ' ' + r.name, code: r.code, name: r.name }; });
-                            cb(results);
-                        } else { cb([]); }
-                    } catch(e) { console.warn('[searchStocks] fetch failed:', e); cb([]); }
+                            const stocks = data.results.map(function(r) {
+                                return { value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
+                            });
+                            cb(localHits.concat(stocks));
+                        } else { cb(localHits); }
+                    } catch(e) { console.warn('[searchStocks] fetch failed:', e); cb(localHits); }
                 }
                 function onSearchSelect(item) {
                     searchQuery.value = '';
-                    if (typeof showStockDetail === 'function') {
-                        showStockDetail(item.code, item.name);
+                    const QCP = window.QuantCommandPanel;
+                    const d = QCP ? QCP.dispatchSearchSelection(item) : null;
+                    if (!d) return;
+                    if (d.action === 'menu') { navigateTo(d.menuKey, d.subPage); return; }
+                    if (d.action === 'command') { runGlobalCommand(d.key); return; }
+                    if (d.action === 'stock' && typeof showStockDetail === 'function') {
+                        showStockDetail(d.code, d.name);
                     }
+                }
+                function runGlobalCommand(key) {
+                    if (key === 'refresh') {
+                        const p = currentPage.value;
+                        if (p === 'strategies') loadDashboardData().catch(function(){});
+                        else if (p === 'calendar') refreshCalendarData().catch(function(){});
+                        else if (p === 'ai') loadAiHistory().catch(function(){});
+                    } else if (key === 'export') { exportCSV(); }
+                    else if (key === 'batch') { showBatchEvaluate.value = true; }
+                    else if (key === 'ai') { openAiFab(); }
+                    else if (key === 'sidebar') { toggleSidebar(); }
                 }
                 // ===== 指数详情 =====
                 const indexDetailVisible = ref(false);

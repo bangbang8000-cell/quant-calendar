@@ -35,8 +35,8 @@
                 @select="onSearchSelect"
             >
               <template #default="slotProps">
-                <span>{{ slotProps?.item?.code }}</span>
-                <span style="color:var(--text-secondary);margin-left:8px">{{ slotProps?.item?.name }}</span>
+                <span>{{ slotProps?.item?.icon }} {{ slotProps?.item?.label || slotProps?.item?.name }}</span>
+                <span v-if="slotProps?.item?.subLabel" style="color:var(--text-secondary);margin-left:8px;font-size:var(--font-sm)">{{ slotProps?.item?.subLabel }}</span>
               </template>
             </el-autocomplete>
           </div>
