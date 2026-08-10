@@ -3,12 +3,11 @@
 """
 策略日历 API 路由
 """
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, Optional
 
 from data_parser import parser, STRATEGY_CONFIG
 from stock_info import stock_manager
-from views_aggregator import views_aggregator
 
 router = APIRouter(prefix="/calendar", tags=["策略日历"])
 
@@ -80,17 +79,17 @@ async def get_pool_signal(data: Dict[str, Any]):
 async def get_stock_history(stock_code: str, date: Optional[str] = None):
     """获取单只股票的持仓历史 + 行情数据 + 评分"""
     history = parser.get_stock_history(stock_code)
-    
+
     # 如果指定了日期，获取当日行情和评分
     if date:
         daily_data = stock_manager.get_daily_data(stock_code, date)
         ma_data = stock_manager.get_ma_data(stock_code, date, days=30)
         score_data = stock_manager.calculate_score(daily_data, ma_data)
-        
+
         history["daily_data"] = daily_data
         history["ma_data"] = ma_data
         history["score_data"] = score_data
-    
+
     return history
 
 
@@ -110,22 +109,22 @@ async def get_stock_score(stock_code: str, date: Optional[str] = None):
 async def compare_strategies(date: str):
     """多策略对比分析"""
     holdings = parser.get_holdings_by_date(date)
-    
+
     # 计算各种交集并集
     stock_sets = {s: set(data["stocks"]) for s, data in holdings.items()}
     strategies = list(stock_sets.keys())
-    
+
     result = {
         "date": date,
         "holdings": holdings,
         "comparison": {}
     }
-    
+
     if len(strategies) >= 2:
         # 全量交集
         all_intersection = set.intersection(*stock_sets.values())
         result["comparison"]["all_intersection"] = sorted(list(all_intersection))
-        
+
         # 两两对比
         for i, s1 in enumerate(strategies):
             for s2 in strategies[i+1:]:
@@ -142,5 +141,5 @@ async def compare_strategies(date: str):
                     "union": sorted(list(set1 | set2)),
                     "union_count": len(set1 | set2)
                 }
-    
+
     return result

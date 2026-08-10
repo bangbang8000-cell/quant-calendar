@@ -21,6 +21,7 @@ import secrets
 from config import settings
 from rate_limit import setup_rate_limiter
 from api.v1.router import api_router
+from api.v1.errors import register_error_handlers
 
 # 配置日志 (v3.4.0-T6: 按日轮转 + 保留 30 天)
 import os
@@ -69,10 +70,13 @@ async def lifespan(app: FastAPI):
     await scheduler.stop()
     logger.info("⏰ 定时任务调度器已停止")
 
+# 应用版本单一来源（与发布版本保持一致，用于健康检查与 OpenAPI 元数据）
+APP_VERSION = "3.8.2"
+
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API v3.8.0",
-    version="3.8.0",
+    title=f"量化选股日历 API v{APP_VERSION}",
+    version=APP_VERSION,
     description="基于美林时钟的量化选股系统",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -80,7 +84,6 @@ app = FastAPI(
 )
 
 # v3.3.0-T13: 统一错误码体系
-from api.v1.errors import register_error_handlers
 register_error_handlers(app)
 
 # CORS 安全配置
@@ -203,7 +206,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "3.8.0",
+        "version": APP_VERSION,
         "message": "量化选股日历服务运行中"
     }
 

@@ -4,14 +4,12 @@
 多视图股票池聚合器
 支持：日视图、周视图、月视图、年视图
 """
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Set, Optional
-from collections import defaultdict
+from typing import Dict, List
+from data_parser import STRATEGY_CONFIG
 
 logger = logging.getLogger(__name__)
-from data_parser import STRATEGY_CONFIG
 
 
 class ViewsAggregator:
@@ -213,7 +211,8 @@ class ViewsAggregator:
             for d in prev_week_dates:
                 for s in self.daily_data.get(d, []):
                     code = s.get('stock', '') or s.get('code', '')
-                    if code: prev_stocks.add(code)
+                    if code:
+                        prev_stocks.add(code)
             curr_codes = set(s['code'] for s in result['stocks'])
             out_codes = prev_stocks - curr_codes
             for code in out_codes:
@@ -224,7 +223,8 @@ class ViewsAggregator:
                         if (s.get('stock', '') or s.get('code', '')) == code:
                             info = s
                             break
-                    if info: break
+                    if info:
+                        break
                 if info:
                     result['stocks'].append({
                         'code': code,
@@ -267,7 +267,8 @@ class ViewsAggregator:
                     if d.startswith(prev_month):
                         for s in self.daily_data.get(d, []):
                             code = s.get('stock', '') or s.get('code', '')
-                            if code: prev_stocks.add(code)
+                            if code:
+                                prev_stocks.add(code)
                 curr_codes = set(s['code'] for s in result['stocks'])
                 out_codes = prev_stocks - curr_codes
                 for code in out_codes:
@@ -276,8 +277,10 @@ class ViewsAggregator:
                         if d.startswith(prev_month):
                             for s in self.daily_data.get(d, []):
                                 if (s.get('stock', '') or s.get('code', '')) == code:
-                                    info = s; break
-                            if info: break
+                                    info = s
+                                    break
+                            if info:
+                                break
                     if info:
                         result['stocks'].append({
                             'code': code, 'name': info.get('name', ''),
@@ -311,7 +314,8 @@ class ViewsAggregator:
                 if d.startswith(prev_year):
                     for s in self.daily_data.get(d, []):
                         code = s.get('stock', '') or s.get('code', '')
-                        if code: prev_stocks.add(code)
+                        if code:
+                            prev_stocks.add(code)
             curr_codes = set(s['code'] for s in result['stocks'])
             out_codes = prev_stocks - curr_codes
             for code in out_codes:
@@ -320,8 +324,10 @@ class ViewsAggregator:
                     if d.startswith(prev_year):
                         for s in self.daily_data.get(d, []):
                             if (s.get('stock', '') or s.get('code', '')) == code:
-                                info = s; break
-                        if info: break
+                                info = s
+                                break
+                        if info:
+                            break
                 if info:
                     result['stocks'].append({
                         'code': code, 'name': info.get('name', ''),
@@ -371,7 +377,7 @@ class ViewsAggregator:
             curr_idx = self.all_dates.index(current_date)
             prev_week_start = max(0, curr_idx - len(week_dates) - 5)
             prev_week_dates = self.all_dates[prev_week_start:curr_idx - len(week_dates) + 1] if curr_idx >= len(week_dates) else []
-            
+
             prev_stocks = set()
             curr_stocks = set()
             for d in prev_week_dates:

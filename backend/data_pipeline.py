@@ -9,7 +9,6 @@
       ② 检测新 CSV 变化并触发解析器 reload
 """
 import logging
-import os
 import time
 from datetime import datetime
 
@@ -47,7 +46,6 @@ def fetch_tushare_daily(ts_code: str = None, trade_date: str = None) -> dict:
             rows = len(df)
             # 更新本地缓存 (供 K 线等使用)
             if trade_date:
-                cache_key = f"daily_{trade_date}"
                 from market_data import market_data as md
                 md._save_cache() if hasattr(md, '_save_cache') else None
             return {"success": True, "message": f"拉取成功 {rows} 行", "rows": rows}

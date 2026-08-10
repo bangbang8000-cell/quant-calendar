@@ -6,11 +6,9 @@
 - POST /api/setup/complete → 完成初始化配置
 """
 
-import json
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 import logging
 
 from paths import DATA_DIR

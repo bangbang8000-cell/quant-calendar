@@ -42,7 +42,7 @@ SW_JS_FILE = os.path.join(FRONTEND_DIR, "sw.js")
 # 外部数据目录（策略 CSV 文件位置）
 # 优先级：环境变量 > .env 配置 > 默认值 ../qresult
 DEFAULT_QUANT_DIR = os.environ.get(
-    "QUANT_DATA_DIR", 
+    "QUANT_DATA_DIR",
     os.path.join(os.path.dirname(BASE_DIR), "qresult")
 )
 # 如果是相对路径，相对于项目根目录解析

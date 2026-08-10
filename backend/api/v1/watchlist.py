@@ -5,6 +5,7 @@
 数据文件: data/users/{username}/watchlist.json
 """
 import json
+import logging
 import os
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
@@ -82,13 +83,13 @@ async def add_to_watchlist(req: dict, user: dict = Depends(get_current_active_us
     name = req.get("name", "").strip()
     if not code:
         raise HTTPException(status_code=400, detail="股票代码不能为空")
-    
+
     stocks = _load_watchlist(user["username"])
     # 去重
     existing = [s for s in stocks if s["code"] == code]
     if existing:
         return {"success": True, "message": "已在自选中", "existed": True}
-    
+
     stocks.append({"code": code, "name": name, "added_at": datetime.now().isoformat()})
     _save_watchlist(user["username"], stocks)
     return {"success": True, "message": "已加入自选", "count": len(stocks)}
@@ -126,7 +127,7 @@ async def search_stocks(q: str = "", user: dict = Depends(get_current_active_use
     """搜索股票（代码或名称模糊匹配）"""
     if len(q) < 1:
         return {"success": True, "results": []}
-    
+
     results = []
     try:
         from views_aggregator import views_aggregator
@@ -147,7 +148,7 @@ async def search_stocks(q: str = "", user: dict = Depends(get_current_active_use
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
-    
+
     return {"success": True, "results": results}
 
 
@@ -161,26 +162,26 @@ async def preload_watchlist_kline(
     limit: int = 60
 ):
     """预加载自选股K线数据到缓存
-    
+
     遍历用户自选股列表，逐只调用 get_kline_data 填充 MarketData 缓存。
     预加载后点击「📈 K线」按钮即可即时展示，无需等待 API 调用。
-    
+
     Args:
         period: K线周期 (daily/weekly/monthly)
         limit: 数据条数
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     stocks = _load_watchlist(user["username"])
     if not stocks:
         return {"success": True, "message": "自选股为空，无需预加载", "loaded": 0, "failed": 0, "total": 0}
-    
+
     from market_data import get_kline_data
-    
+
     loaded = []
     failed = []
-    
+
     for stock in stocks:
         code = stock["code"]
         try:
@@ -192,7 +193,7 @@ async def preload_watchlist_kline(
         except Exception as e:
             logger.warning(f"预加载K线失败 {code}: {e}")
             failed.append({"code": code, "name": stock.get("name", ""), "reason": str(e)[:100]})
-    
+
     return {
         "success": True,
         "message": f"预加载完成: {len(loaded)}/{len(stocks)} 成功",

@@ -6,7 +6,7 @@
 """
 import json
 import os
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from paths import GROUPS_FILE
 
 # 默认分组配置

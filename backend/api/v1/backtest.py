@@ -4,7 +4,7 @@
 策略回测 API 路由 (v3.9.10: 归因看板端点)
 """
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from backtest import backtest_engine
 from auth import get_current_active_user
@@ -20,7 +20,7 @@ async def run_strategy_backtest(
 ):
     """
     运行单策略回测
-    
+
     Args:
         strategy_id: 策略ID
         params: 回测参数
@@ -39,7 +39,7 @@ async def run_strategy_backtest(
             commission_rate=params.get("commission_rate", 0.0003),
             slippage=params.get("slippage", 0.001)
         )
-        
+
         summary = backtest_engine.get_backtest_summary(result)
         return {
             "success": result.success,
@@ -59,7 +59,7 @@ async def run_multi_strategy_backtest(
 ):
     """
     运行多策略组合回测
-    
+
     Args:
         params: 回测参数
             - strategy_ids: 策略ID列表
@@ -88,7 +88,7 @@ async def get_strategy_attribution(
 ):
     """
     策略归因分析 — 收益拆解 + 月度热力图数据
-    
+
     Returns:
         - monthly_returns: 各月收益 (用于热力图)
         - equity_curve: 净值曲线
@@ -97,7 +97,6 @@ async def get_strategy_attribution(
     """
     try:
         import numpy as np
-        from datetime import datetime
 
         # 运行回测获取数据
         result = backtest_engine.run_backtest(strategy_id=strategy_id)
@@ -150,103 +149,3 @@ async def get_strategy_attribution(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
-
-
-@router.get("/compare")
-async def compare_strategies(
-    _: Dict = Depends(get_current_active_user)
-):
-    """
-    多策略对比 — 各策略绩效指标横向对比
-    """
-    try:
-        from data_parser import parser as dp
-        dates = dp.get_available_dates()
-        if not dates:
-            return {"success": False, "message": "无可用数据"}
-
-        strategies = dp.get_all_strategies()
-        if not strategies:
-            return {"success": False, "message": "无可用策略"}
-
-        comparison = []
-        for sid, sdata in strategies.items():
-            try:
-                result = backtest_engine.run_backtest(strategy_id=sid)
-                if result.success:
-                    comparison.append({
-                        "id": sid,
-                        "name": sdata.get("strategy_name", sid),
-                        "total_return": round(result.total_return * 100, 2),
-                        "annual_return": round(result.annual_return * 100, 2),
-                        "sharpe_ratio": round(result.sharpe_ratio, 2),
-                        "max_drawdown": round(result.max_drawdown * 100, 2),
-                        "win_rate": round(result.win_rate * 100, 1),
-                        "volatility": round(result.volatility * 100, 2),
-                    })
-                else:
-                    comparison.append({
-                        "id": sid,
-                        "name": sdata.get("strategy_name", sid),
-                        "error": result.message
-                    })
-            except Exception as e:
-                comparison.append({
-                    "id": sid,
-                    "name": sdata.get("strategy_name", sid),
-                    "error": str(e)
-                })
-
-        return {"success": True, "data": comparison}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"策略对比失败: {e}")
-
-
-@router.get("/metrics/{strategy_id}")
-async def get_backtest_metrics(
-    strategy_id: str,
-    _: Dict = Depends(get_current_active_user)
-):
-    """获取策略回测核心指标（简化版）"""
-    try:
-        result = backtest_engine.run_backtest(strategy_id)
-        if not result.success:
-            return {"success": False, "message": result.message}
-        
-        return {
-            "success": True,
-            "data": backtest_engine.get_backtest_summary(result)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取回测指标失败: {e}")
-
-
-@router.get("/compare")
-async def compare_strategies(
-    strategy_ids: str,
-    _: Dict = Depends(get_current_active_user)
-):
-    """
-    多策略对比分析
-    
-    Args:
-        strategy_ids: 策略ID, 逗号分隔 (如 "strategy1,strategy2")
-    """
-    try:
-        ids = [s.strip() for s in strategy_ids.split(",")]
-        results = {}
-        
-        for sid in ids:
-            result = backtest_engine.run_backtest(sid)
-            if result.success:
-                results[sid] = backtest_engine.get_backtest_summary(result)
-        
-        return {
-            "success": True,
-            "data": {
-                "strategies": results,
-                "compared_count": len(results)
-            }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"策略对比失败: {e}")

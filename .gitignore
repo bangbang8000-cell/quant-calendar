@@ -37,6 +37,7 @@ data/
 
 # Logs
 *.log
+logs/
 
 # Archives & releases
 *.tar.gz

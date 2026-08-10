@@ -17,7 +17,6 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse

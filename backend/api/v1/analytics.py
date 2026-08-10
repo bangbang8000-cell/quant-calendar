@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from auth import get_current_active_user

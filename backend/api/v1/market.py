@@ -6,12 +6,11 @@
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
 import logging
-
-logger = logging.getLogger(__name__)
-
 from auth import get_admin_user
 from market_data import market_data, get_kline_data
 from merrill_clock import merrill_clock
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/market", tags=["市场行情"])
 
@@ -73,7 +72,7 @@ async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
 @router.get("/kline/{ts_code}")
 async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     """获取K线数据（支持股票和指数）
-    
+
     Args:
         ts_code: 股票/指数代码
         period: 周期: daily=日线, weekly=周线, monthly=月线
@@ -159,7 +158,7 @@ async def get_tushare_config(_: Dict = Depends(get_admin_user)):
 async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """保存 Tushare 配置"""
     from config import settings
-    
+
     if 'token' in req:
         # 如果提交的 token 以 *** 结尾，说明是掩码版本，保留原值
         submitted = req['token']
@@ -171,15 +170,15 @@ async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_u
         settings.TUSHARE_ENDPOINT = req['endpoint']
     if 'timeout' in req:
         settings.TUSHARE_TIMEOUT = req['timeout']
-    
+
     # 同步更新 market_data 的 token
     try:
         from market_data import market_data
         market_data.update_tushare_token(settings.TUSHARE_TOKEN)
-    except Exception as e:
+    except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
-    
+
     return {
         "success": True,
         "message": "配置已保存"
@@ -225,10 +224,10 @@ async def sync_tushare_data(_: Dict = Depends(get_admin_user)):
                 "success": False,
                 "message": "同步失败"
             }
-    except Exception as e:
+    except Exception:
         return {
             "success": False,
-            "message": f"同步异常"
+            "message": "同步异常"
         }
 
 
@@ -279,7 +278,6 @@ async def get_industry_heatmap():
     """
     try:
         from data_parser import parser as dp
-        from stock_info import StockInfoManager
 
         dates = dp.get_available_dates()
         if not dates:

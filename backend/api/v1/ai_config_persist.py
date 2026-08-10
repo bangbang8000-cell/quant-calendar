@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
+import logging
 import os
 from paths import AI_CONFIG_FILE
+
+logger = logging.getLogger(__name__)
 
 def load_ai_config(ai_config):
     if os.path.exists(AI_CONFIG_FILE):

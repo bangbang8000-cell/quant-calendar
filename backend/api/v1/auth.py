@@ -23,7 +23,7 @@ async def login(request: Request, req: Dict[str, str]):
             status_code=429,
             detail="登录尝试过于频繁，请1分钟后再试"
         )
-    
+
     token = login_user(req.get("username", ""), req.get("password", ""))
     if token:
         try:
@@ -94,10 +94,10 @@ async def add_user(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     role = req.get("role", "user")
     theme = req.get("theme", "tech-blue")
     group = req.get("group")
-    
+
     if not password:
         return {"success": False, "message": "密码不能为空"}
-    
+
     success = user_manager.add_user(username, password, role, theme, group)
     if success:
         try:
@@ -111,24 +111,24 @@ async def add_user(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
 
 @router.put("/users/{username}")
 async def update_user(
-    username: str, 
-    req: Dict[str, Any], 
+    username: str,
+    req: Dict[str, Any],
     current_user: Dict = Depends(get_current_active_user)
 ):
     """更新用户（用户只能修改自己信息，管理员可修改所有）"""
     # 非管理员只能修改自己的信息
     if current_user.get("role") != "admin" and current_user.get("username") != username:
         raise HTTPException(status_code=403, detail="无权修改其他用户信息")
-    
+
     # 非管理员不能修改角色
     role = req.get("role")
     if current_user.get("role") != "admin" and role:
         role = current_user.get("role", "user")
-    
+
     success = user_manager.update_user(
-        username, 
-        req.get("password"), 
-        role, 
+        username,
+        req.get("password"),
+        role,
         req.get("theme"),
         req.get("group")
     )
@@ -158,17 +158,17 @@ async def reset_user_password(
     """管理员重置用户密码"""
     if username not in user_manager.users:
         return {"success": False, "message": "用户不存在"}
-    
+
     if username == "admin" and current_user.get("username") != "admin":
         return {"success": False, "message": "普通管理员不能重置 admin 密码"}
-    
+
     new_password = req.get('new_password', '')
     if len(new_password) < 6:
         return {"success": False, "message": "密码长度至少6位"}
-    
+
     user_manager.users[username]["password"] = user_manager._hash_password(new_password)
     user_manager._save_users()
-    
+
     return {"success": True, "message": "密码重置成功"}
 
 
@@ -181,16 +181,16 @@ async def change_password(
     """当前登录用户修改密码"""
     old_password = req.get("old_password", "")
     new_password = req.get("new_password", "")
-    
+
     if not user_manager.verify_password(current_user["username"], old_password):
         raise HTTPException(status_code=400, detail="当前密码不正确")
-    
+
     if len(new_password) < 3:
         raise HTTPException(status_code=400, detail="新密码至少3位")
-    
+
     user_manager.users[current_user["username"]]["password"] = user_manager._hash_password(new_password)
     user_manager._save_users()
-    
+
     return {"success": True, "message": "密码修改成功"}
 
 @router.post("/users/{username}/toggle-enabled")
@@ -202,16 +202,16 @@ async def toggle_user_enabled(
     """切换用户启用/禁用状态"""
     if username not in user_manager.users:
         return {"success": False, "message": "用户不存在"}
-    
+
     if username == "admin":
         return {"success": False, "message": "不能禁用 admin 账号"}
-    
+
     enabled = req.get('enabled', True)
     user_manager.users[username]["enabled"] = enabled
     user_manager._save_users()
-    
+
     return {
-        "success": True, 
+        "success": True,
         "message": f"账号已{'启用' if enabled else '禁用'}",
         "enabled": enabled
     }

@@ -6,7 +6,7 @@
 
 import json
 import requests
-from typing import Dict, List, Optional
+from typing import Dict
 from datetime import datetime
 from data_parser import parser, STRATEGY_CONFIG
 
@@ -14,17 +14,17 @@ from data_parser import parser, STRATEGY_CONFIG
 class FeishuPusher:
     def __init__(self, webhook_url: str = None):
         self.webhook_url = webhook_url
-    
+
     def set_webhook(self, url: str):
         """设置Webhook地址"""
         self.webhook_url = url
-    
+
     def _send_message(self, content: Dict) -> bool:
         """发送消息到飞书"""
         if not self.webhook_url:
             print("⚠️ 未配置飞书Webhook")
             return False
-        
+
         try:
             response = requests.post(
                 self.webhook_url,
@@ -42,27 +42,27 @@ class FeishuPusher:
         except Exception as e:
             print(f"❌ 发送异常: {e}")
             return False
-    
+
     def build_daily_report(self, date: str) -> Dict:
         """构建每日选股报告卡片"""
         summary = parser.get_date_summary(date)
         consensus = parser.get_strategy_consensus(date, top_n=20)
-        
+
         # 高共识股票（>=3个策略）
         high_consensus = [c for c in consensus if c['strategy_count'] >= 3]
-        
+
         # 各策略持仓数量
         strategy_text = []
         for sid, count in summary.get('strategy_counts', {}).items():
             name = STRATEGY_CONFIG[sid]['name']
             strategy_text.append(f"• {name}: {count}只")
-        
+
         # 高共识股票列表
         stock_text = []
         for item in high_consensus[:10]:
             strategies = '+'.join([STRATEGY_CONFIG[s]['name'].replace('策略', '') for s in item['strategies']])
             stock_text.append(f"• {item['stock']} [{strategies}]")
-        
+
         card = {
             "msg_type": "interactive",
             "card": {
@@ -142,22 +142,22 @@ class FeishuPusher:
                 ]
             }
         }
-        
+
         return card
-    
+
     def send_daily_report(self, date: str = None) -> bool:
         """发送每日选股报告"""
         if date is None:
             dates = parser.get_available_dates()
             date = dates[-1] if dates else None
-        
+
         if not date:
             print("❌ 没有可用的日期数据")
             return False
-        
+
         card = self.build_daily_report(date)
         return self._send_message(card)
-    
+
     def send_text(self, text: str) -> bool:
         """发送纯文本消息"""
         content = {

@@ -6,7 +6,6 @@
 - POST /api/backup/create   手动创建备份
 - POST /api/backup/restore  从备份恢复 (需要 admin)
 """
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

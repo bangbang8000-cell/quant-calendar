@@ -7,9 +7,9 @@
 """
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from data_parser import parser, STRATEGY_CONFIG
+from data_parser import parser
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ def generate_weekly_report(end_date: str = None) -> dict:
     for s in strategy_stats.values():
         all_codes.update(s["codes"])
     lines.extend([
-        f"\n## 二、归因分析\n",
+        "\n## 二、归因分析\n",
         f"- 本周共 **{len(all_codes)}** 只股票入选策略池",
         f"- 覆盖策略: **{len(strategy_stats)}** 个",
     ])
@@ -147,7 +147,7 @@ def generate_weekly_report(end_date: str = None) -> dict:
                 lines.append(f"\n## 三、AI 下周展望\n\n{outlook}")
     except Exception as e:
         logger.warning(f"AI 周报展望失败 (使用静态内容): {e}")
-        lines.append(f"\n## 三、下周展望\n\n- 关注本周入选股票池的持续性\n- 留意策略共识度变化")
+        lines.append("\n## 三、下周展望\n\n- 关注本周入选股票池的持续性\n- 留意策略共识度变化")
 
     content = "\n".join(lines)
     fname = f"weekly_report_{end_date}.md"

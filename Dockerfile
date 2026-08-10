@@ -1,5 +1,5 @@
 # 量化选股日历 Docker 镜像
-# 构建: cd ~/.openclaw/workspace && docker build -f quant-calendar-ops/Dockerfile -t quant-calendar:2.1.2 .
+# 构建: cd <仓库目录> && docker build -t quant-calendar:2.1.2 .
 # 不包含任何 Token/密钥，所有配置通过 Web UI 在容器启动后设置
 
 FROM python:3.11-slim
@@ -19,15 +19,15 @@ RUN useradd --create-home --shell /bin/bash appuser
 WORKDIR /app
 
 # 安装 Python 依赖（先复制 requirements 以利用 Docker 缓存层）
-COPY quant-calendar-ops/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt --break-system-packages
 
 # 复制应用代码
-COPY quant-calendar-ops/backend/ ./backend/
-COPY quant-calendar-ops/frontend/ ./frontend/
-COPY quant-calendar-ops/tests/ ./tests/
-COPY quant-calendar-ops/docs/ ./docs/
-COPY quant-calendar-ops/libs/ ./libs/
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
+COPY tests/ ./tests/
+COPY docs/ ./docs/
+COPY libs/ ./libs/
 
 # 复制策略数据（内置一份，可被 volume 覆盖）
 COPY qresult/ /data/qresult/
@@ -40,7 +40,7 @@ RUN mkdir -p /app/data && \
     chown -R appuser:appuser /app /data
 
 # 复制入口脚本
-COPY quant-calendar-ops/docker-entrypoint.sh /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 
 # 环境变量

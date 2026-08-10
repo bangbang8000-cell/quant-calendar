@@ -11,11 +11,11 @@ import json
 import os
 import io
 import csv
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from auth import get_current_active_user
@@ -138,7 +138,7 @@ async def export_csv(
     writer = csv.writer(output)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    writer.writerow([f"# 量化选股日历 数据导出", f"导出时间: {now}"])
+    writer.writerow(["# 量化选股日历 数据导出", f"导出时间: {now}"])
 
     if type == "strategies":
         writer.writerow([])

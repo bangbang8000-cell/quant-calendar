@@ -9,7 +9,6 @@ from datetime import datetime
 import requests
 
 from feishu_push import FeishuPusher
-from data_parser import parser
 from auth import get_admin_user
 from paths import DATA_DIR
 
@@ -75,9 +74,9 @@ async def test_feishu_push(_: Dict = Depends(get_admin_user)):
     """测试飞书推送 - 发送简单测试消息"""
     if not feishu_config["webhook_url"]:
         raise HTTPException(status_code=400, detail="请先配置Webhook地址")
-    
+
     pusher.set_webhook(feishu_config["webhook_url"])
-    
+
     # 发送简单测试消息，不依赖数据
     test_msg = {
         "msg_type": "text",
@@ -87,7 +86,7 @@ async def test_feishu_push(_: Dict = Depends(get_admin_user)):
                     f"⏰ 发送时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         }
     }
-    
+
     try:
         response = requests.post(
             feishu_config["webhook_url"],
@@ -109,7 +108,7 @@ async def push_report(date: str, _: Dict = Depends(get_admin_user)):
     """推送指定日期的报告"""
     if not feishu_config["webhook_url"]:
         raise HTTPException(status_code=400, detail="请先配置Webhook地址")
-    
+
     pusher.set_webhook(feishu_config["webhook_url"])
     success = pusher.send_daily_report(date)
     if success:

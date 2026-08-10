@@ -3,7 +3,7 @@
 """
 用户组管理 API 路由 (v1.9.0)
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 
 from auth import get_admin_user, get_current_active_user

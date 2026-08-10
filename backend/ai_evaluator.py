@@ -17,7 +17,8 @@ import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
+from ai_indicators import calc_rsi as _calc_rsi, calc_macd as _calc_macd
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,10 @@ class ModelProvider:
     timeout: int = 60                # 超时秒数
     max_tokens: int = 4096           # 最大 token
     locked: bool = False             # 预置模型锁定，不可删除
-    
+
     def to_dict(self) -> Dict:
         return asdict(self)
-    
+
     @classmethod
     def from_dict(cls, d: Dict) -> "ModelProvider":
         return cls(
@@ -136,10 +137,6 @@ RSI_PERIOD = 14
 MACD_FAST = 12
 MACD_SLOW = 26
 MACD_SIGNAL = 9
-
-# v3.5.0-T7: 技术指标已拆分到 ai_indicators 模块 (接口/行为不变)
-from ai_indicators import _ema, _ma, calc_rsi as _calc_rsi, calc_macd as _calc_macd
-
 
 class AIEvaluator:
     def __init__(self, config_file: str = None):
@@ -308,7 +305,6 @@ class AIEvaluator:
                 cache = json.load(f)
             # 清理30天前的记录
             today = datetime.now().strftime('%Y-%m-%d')
-            cutoff = None
             for key in list(cache.keys()):
                 parts = key.rsplit('_', 1)
                 if len(parts) == 2 and parts[1] < today:
@@ -418,12 +414,12 @@ class AIEvaluator:
         if not models:
             return ''  # 无可用模型时跳过
         model = models[0]  # 使用最高优先级模型
-        
+
         event_label = '入池' if event_type == 'enter' else '出池'
         snapshot_text = ''
         if market_snapshot:
             snapshot_text = f'\n行情快照: 收盘{market_snapshot.get("close","?")}, 涨跌{market_snapshot.get("pct_chg","?")}%'
-        
+
         prompt = f'用一句话（≤20字）解释{stock_name}({stock_code}){event_label}的原因：{snapshot_text}'
         try:
             endpoint = model.base_url.rstrip("/") + "/chat/completions"
@@ -454,7 +450,7 @@ class AIEvaluator:
             return {"success": False, "message": f"模型 {model_id} 不存在"}
         if not model.api_key:
             return {"success": False, "message": "未配置 API Key"}
-        
+
         start = time.time()
         try:
             endpoint = model.base_url.rstrip("/") + "/chat/completions"
@@ -528,7 +524,6 @@ class AIEvaluator:
                 volumes = [r[5] for r in kline if r[5] is not None]
                 highs = [r[4] for r in kline if r[4] is not None]
                 lows = [r[3] for r in kline if r[3] is not None]
-                dates = [r[0] for r in kline]
 
                 # 最近一日
                 latest = kline[-1]
@@ -655,7 +650,7 @@ class AIEvaluator:
         """
         评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
         异步版本：不阻塞事件循环，run_in_executor 处理同步 I/O
-        
+
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         loop = asyncio.get_event_loop()
@@ -779,11 +774,11 @@ class AIEvaluator:
     def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
         """
         调用指定模型进行评估，返回 (parsed_result, raw_response_text)
-        
+
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         data_section = self._build_data_prompt(market_data)
-        
+
         # 策略特定的权重调整提示
         strategy_hints = {
             'default': '',
@@ -792,7 +787,7 @@ class AIEvaluator:
             'short_term': '\n## 策略偏好：短线狙击\n- RSI和量比权重加倍\n- 重点关注量价关系和短期动能\n- 忽略长期趋势，关注1-3日内的买卖点',
         }
         strategy_hint = strategy_hints.get(strategy, '')
-        
+
         # 市场阶段感知
         now = datetime.now()
         hour = now.hour
@@ -805,7 +800,7 @@ class AIEvaluator:
             phase_note = '\n## 市场阶段：盘中交易\n- 基于实时数据评估\n- 可给出立即行动/等待确认建议\n- 关注盘中量价变化'
         else:
             phase_note = '\n## 市场阶段：盘后\n- 复盘今日走势\n- 给出明日交易计划\n- 关注收盘形态和量能'
-        
+
         # v3.7.12: 从模板文件加载 prompt
         template = self._load_prompt_template()
         prompt = template.format(
@@ -932,17 +927,17 @@ class AIEvaluator:
         lines = ["## 真实行情数据"]
 
         if data.get("latest"):
-            l = data["latest"]
+            latest_data = data["latest"]
             lines.append("### 最近交易日")
-            lines.append(f"- 日期：{l.get('date', 'N/A')}")
-            lines.append(f"- 开盘：{l.get('open')}  收盘：{l.get('close')}  最高：{l.get('high')}  最低：{l.get('low')}")
-            lines.append(f"- 成交量：{l.get('volume', 0):,} 手")
-            if l.get("pct_chg") is not None:
-                lines.append(f"- 涨跌幅：{l['pct_chg']}%")
-            lines.append(f"- MA5：{l.get('ma5', 'N/A')}  MA10：{l.get('ma10', 'N/A')}  MA20：{l.get('ma20', 'N/A')}")
+            lines.append(f"- 日期：{latest_data.get('date', 'N/A')}")
+            lines.append(f"- 开盘：{latest_data.get('open')}  收盘：{latest_data.get('close')}  最高：{latest_data.get('high')}  最低：{latest_data.get('low')}")
+            lines.append(f"- 成交量：{latest_data.get('volume', 0):,} 手")
+            if latest_data.get("pct_chg") is not None:
+                lines.append(f"- 涨跌幅：{latest_data['pct_chg']}%")
+            lines.append(f"- MA5：{latest_data.get('ma5', 'N/A')}  MA10：{latest_data.get('ma10', 'N/A')}  MA20：{latest_data.get('ma20', 'N/A')}")
 
         if data.get("pct_5d") is not None:
-            lines.append(f"\n### 阶段涨跌幅")
+            lines.append("\n### 阶段涨跌幅")
             lines.append(f"- 近5日：{data['pct_5d']}%")
             if data.get("pct_20d") is not None:
                 lines.append(f"- 近20日：{data['pct_20d']}%")
@@ -957,19 +952,19 @@ class AIEvaluator:
                 lines.append(f"- 60日价格位置：{position}%（区间 {min60}-{max60}）")
 
         if data.get("ma_alignment"):
-            lines.append(f"\n### 均线排列")
+            lines.append("\n### 均线排列")
             lines.append(f"- 形态：{data['ma_alignment']}")
 
         if data.get("volume_analysis"):
             v = data["volume_analysis"]
-            lines.append(f"\n### 成交量分析")
+            lines.append("\n### 成交量分析")
             lines.append(f"- 最新量：{v.get('latest_vol', 0):,} 手")
             lines.append(f"- 5日均量：{v.get('avg_5d', 0):,} 手")
             lines.append(f"- 20日均量：{v.get('avg_20d', 0):,} 手")
             lines.append(f"- 量比（vs20日均）：{v.get('vol_ratio', 1.0)}")
 
         if data.get("rsi") is not None:
-            lines.append(f"\n### 技术指标")
+            lines.append("\n### 技术指标")
             lines.append(f"- RSI(14)：{data['rsi']}")
             if data.get("macd"):
                 m = data["macd"]
@@ -977,7 +972,7 @@ class AIEvaluator:
 
         if data.get("fundamentals"):
             f = data["fundamentals"]
-            lines.append(f"\n### 基本面")
+            lines.append("\n### 基本面")
             if f.get("pe"):
                 lines.append(f"- PE（市盈率）：{f['pe']:.2f}")
             if f.get("pb"):
@@ -992,7 +987,7 @@ class AIEvaluator:
                     lines.append(f"- 总市值：{mv/1e8:.2f} 亿")
 
         if data.get("kline_summary"):
-            lines.append(f"\n### 近5日K线摘要")
+            lines.append("\n### 近5日K线摘要")
             lines.append("日期       开盘     收盘     最高     最低     成交量     涨幅")
             for k in data["kline_summary"]:
                 lines.append(
@@ -1022,7 +1017,7 @@ class AIEvaluator:
         if data.get("rsi") is not None:
             quality_notes.append("技术指标：已计算")
         if quality_notes:
-            lines.append(f"\n### 📊 数据质量\n" + "\n".join(f"- {n}" for n in quality_notes))
+            lines.append("\n### 📊 数据质量\n" + "\n".join(f"- {n}" for n in quality_notes))
             if not data.get("has_kline") or not data.get("has_fundamentals"):
                 lines.append("- ⚠️ 部分数据缺失，请适度降低置信度")
 
@@ -1052,7 +1047,7 @@ class AIEvaluator:
         # ── 趋势强度 ──
         trend_score = 50  # 基准中性
         if has_data:
-            l = market_data.get("latest", {})
+            latest_data = market_data.get("latest", {})
             pct_5d = market_data.get("pct_5d", 0)
             pct_20d = market_data.get("pct_20d", 0)
             ma = market_data.get("ma_alignment", "")
@@ -1090,11 +1085,10 @@ class AIEvaluator:
         ma_score = 50
         if has_data:
             ma = market_data.get("ma_alignment", "")
-            l = market_data.get("latest", {})
-            close = l.get("close", 0)
-            ma5 = l.get("ma5")
-            ma10 = l.get("ma10")
-            ma20 = l.get("ma20")
+            latest_data = market_data.get("latest", {})
+            close = latest_data.get("close", 0)
+            ma5 = latest_data.get("ma5")
+            ma20 = latest_data.get("ma20")
 
             if ma == "多头排列":
                 ma_score = 85
@@ -1167,10 +1161,10 @@ class AIEvaluator:
                 vola_score = 45
 
             # 近期振幅
-            l = market_data.get("latest", {})
-            high = l.get("high", 0)
-            low = l.get("low", 0)
-            close = l.get("close", 1)
+            latest_data = market_data.get("latest", {})
+            high = latest_data.get("high", 0)
+            low = latest_data.get("low", 0)
+            close = latest_data.get("close", 1)
             if high and low and close and close > 0:
                 amplitude = (high - low) / close * 100
                 if amplitude > 7:
@@ -1427,19 +1421,19 @@ class AIEvaluator:
 
         # ── 构建 HTML 分析 ──
         parts = []
-        l = market_data.get("latest", {})
+        latest_data = market_data.get("latest", {})
 
         # 行情速览
         parts.append("<div style='margin-bottom:16px;'>")
         parts.append("<h4 style='margin:0 0 8px 0;'>📊 行情速览</h4>")
         parts.append("<table style='width:100%;font-size:13px;border-collapse:collapse;'>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>最新价</td><td style='padding:4px 8px;font-weight:600;'>{l.get('close', '-')}</td>")
-        pct = pct_chg if pct_chg is not None else l.get('pct_chg')
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>最新价</td><td style='padding:4px 8px;font-weight:600;'>{latest_data.get('close', '-')}</td>")
+        pct = pct_chg if pct_chg is not None else latest_data.get('pct_chg')
         color = '#E63946' if (pct or 0) >= 0 else '#457B9D'
         sign = '+' if (pct or 0) >= 0 else ''
         parts.append(f"<td style='padding:4px 8px;font-weight:600;color:{color};'>{sign}{pct or '-'}%</td></tr>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MA5 / MA10 / MA20</td><td colspan='2' style='padding:4px 8px;'>{l.get('ma5','-')} / {l.get('ma10','-')} / {l.get('ma20','-')}</td></tr>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>成交量</td><td colspan='2' style='padding:4px 8px;'>{l.get('volume',0):,} 手</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MA5 / MA10 / MA20</td><td colspan='2' style='padding:4px 8px;'>{latest_data.get('ma5','-')} / {latest_data.get('ma10','-')} / {latest_data.get('ma20','-')}</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>成交量</td><td colspan='2' style='padding:4px 8px;'>{latest_data.get('volume',0):,} 手</td></tr>")
         parts.append("</table></div>")
 
         # 技术指标
@@ -1489,7 +1483,6 @@ class AIEvaluator:
         analysis = builtin.get("analysis", {})
         strengths = analysis.get("strengths", [])
         weaknesses = analysis.get("weaknesses", [])
-        suggestions = analysis.get("suggestions", [])
 
         if strengths:
             parts.append("<div style='margin-bottom:12px;'>")

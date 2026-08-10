@@ -5,7 +5,6 @@
 支持按股票代码/名称模糊搜索
 """
 from fastapi import APIRouter, Query
-from typing import Optional
 from functools import lru_cache
 
 router = APIRouter(prefix="/search", tags=["搜索"])
@@ -24,7 +23,7 @@ def _pinyin_initials(name: str) -> str:
 @router.get("")
 async def search(q: str = Query(default="", min_length=1, description="搜索关键词")):
     """全局搜索：股票代码/名称模糊匹配
-    
+
     Returns:
         results: [{code, name, source}] 最多20条
     """

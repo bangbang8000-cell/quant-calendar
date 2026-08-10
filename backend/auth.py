@@ -35,11 +35,11 @@ class TokenData(BaseModel):
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """创建访问令牌
-    
+
     Args:
         data: 要编码的数据
         expires_delta: 过期时间增量
-        
+
     Returns:
         JWT 令牌字符串
     """
@@ -48,7 +48,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -56,17 +56,12 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
 
 async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[Dict[str, Any]]:
     """获取当前登录用户（可选，未登录返回 None）
-    
+
     用于允许匿名访问但需要识别登录用户的接口
     """
     if token is None:
         return None
-    
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无法验证凭据",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
@@ -75,17 +70,17 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Opt
         token_data = TokenData(username=username, role=payload.get("role"))
     except JWTError:
         return None
-    
+
     user = user_manager.get_user(token_data.username)
     if user is None:
         return None
-    
+
     return user
 
 
 async def get_current_active_user(current_user: Optional[Dict[str, Any]] = Depends(get_current_user)) -> Dict[str, Any]:
     """获取当前登录用户（必须登录）
-    
+
     用于需要认证的接口
     """
     if current_user is None:
@@ -104,7 +99,7 @@ async def get_current_active_user(current_user: Optional[Dict[str, Any]] = Depen
 
 async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
     """获取管理员用户
-    
+
     用于需要管理员权限的接口
     """
     if current_user.get("role") != "admin":
@@ -117,7 +112,7 @@ async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_acti
 
 async def get_non_guest_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
     """禁止访客访问
-    
+
     用于需要非访客权限的接口 (user/admin)
     """
     if current_user.get("role") == "guest":
@@ -130,29 +125,29 @@ async def get_non_guest_user(current_user: Dict[str, Any] = Depends(get_current_
 
 def login_user(username: str, password: str) -> Optional[Token]:
     """用户登录，生成 Token
-    
+
     Args:
         username: 用户名
         password: 密码
-        
+
     Returns:
         Token 对象或 None（验证失败）
     """
     if not user_manager.verify_password(username, password):
         return None
-    
+
     user = user_manager.get_user(username)
     if not user:
         return None
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": username, "role": user.get("role", "user")},
         expires_delta=access_token_expires
     )
-    
+
     expires_at = (datetime.utcnow() + access_token_expires).timestamp()
-    
+
     return Token(
         access_token=access_token,
         token_type="bearer",
