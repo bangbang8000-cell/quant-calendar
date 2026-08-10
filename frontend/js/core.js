@@ -1,7 +1,10 @@
-// quant-calendar: core module (v1.10)
+// quant-calendar: core module (v1.11)
 // API fetch wrapper + utility functions extracted from index.html
+// v3.11 (FR-3.11.4): 请求级 TTL 缓存 + 后台静默刷新（纯逻辑，node 可测 TC-11.7）
+// 浏览器: window.__quantModules.core   /   Node: module.exports
 (function() {
-  const { ref, computed, watch, onMounted, nextTick } = Vue;
+  const VueRef = (typeof Vue !== 'undefined') ? Vue : {};
+  const { ref, computed, watch, onMounted, nextTick } = VueRef;
 
   // ─── API Fetch 封装 ─────────────────────────────────
   async function apiFetch(url, options = {}) {
@@ -11,10 +14,10 @@
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers
     };
-    
+
     try {
       const res = await fetch(url, { ...options, headers });
-      
+
       // v1.10: 401 自动清除登录状态
       if (res.status === 401) {
         localStorage.removeItem('quant_token');
@@ -22,7 +25,7 @@
         window.location.reload();
         throw new Error('登录已过期');
       }
-      
+
       return await res.json();
     } catch (e) {
       if (e.message === '登录已过期') throw e;
@@ -91,9 +94,113 @@
     }
   }
 
+  // ─── v3.11 (FR-3.11.4): 请求级 TTL 缓存 + 静默刷新 ──
+  // 纯逻辑，不依赖 DOM/真实 fetch，node 可 require 单测（tests/test_cache.py TC-11.7）
+
+  // 深比较（JSON 序列化），用于判断后台数据是否发生变化
+  function jsonEquals(a, b) {
+    if (a === b) return true;
+    try { return JSON.stringify(a) === JSON.stringify(b); }
+    catch (e) { return false; }
+  }
+
+  // 缓存键：method|url|params（params 按键排序，与传参顺序无关）
+  function makeCacheKey(method, url, params) {
+    const m = (method || 'GET').toUpperCase();
+    let q = '';
+    if (params) {
+      try {
+        const sorted = {};
+        Object.keys(params).sort().forEach(k => { sorted[k] = params[k]; });
+        q = JSON.stringify(sorted);
+      } catch (e) { q = ''; }
+    }
+    return m + '|' + url + '|' + q;
+  }
+
+  // 带过期时间的缓存桶（Map + 过期时间戳）
+  class CacheStore {
+    constructor() {
+      this._map = new Map();
+      this._exp = new Map();
+    }
+    get(key) {
+      const exp = this._exp.get(key);
+      if (exp == null) return undefined;
+      if (Date.now() > exp) { this.delete(key); return undefined; }
+      return this._map.get(key);
+    }
+    set(key, value, ttlMs) {
+      this._map.set(key, value);
+      // ttlMs <= 0 → 立即过期（now - 1 保证下一次 get 即 miss）
+      this._exp.set(key, Date.now() + (ttlMs > 0 ? ttlMs : -1));
+      return value;
+    }
+    delete(key) { this._map.delete(key); this._exp.delete(key); }
+    clear() { this._map.clear(); this._exp.clear(); }
+    has(key) { return this.get(key) !== undefined; }
+    get size() { return this._map.size; }
+  }
+
+  // 默认 TTL 的缓存工厂
+  function createTtlCache(defaultTtlMs) {
+    const store = new CacheStore();
+    const ttl = (defaultTtlMs != null && defaultTtlMs > 0) ? defaultTtlMs : 15000;
+    return {
+      store,
+      defaultTtl: ttl,
+      get: (key) => store.get(key),
+      set: (key, value, ms) => store.set(key, value, ms != null ? ms : ttl),
+      delete: (key) => store.delete(key),
+      clear: () => store.clear(),
+      size: () => store.size,
+    };
+  }
+
+  // 同一 key 的在途刷新去重（避免重复进入页面时并发拉取）
+  const _inFlight = new Set();
+
+  // 后台静默刷新：以缓存值为基线悄悄拉取最新
+  //  - 数据有变：apply(fresh) 更新界面 + onChanged 提示"有新数据"
+  //  - 数据未变：仅续期缓存 TTL，不打扰用户
+  //  - 拉取失败：静默忽略（保留缓存，不打断体验）
+  async function silentRefresh(opts) {
+    const cache = opts && opts.cache;
+    const key = opts && opts.key;
+    const fetchFn = opts && (opts.fetchFn || opts.fetcher);
+    const ttl = opts && opts.ttl;
+    if (!cache || !key || typeof fetchFn !== 'function') {
+      return { ok: false, changed: false, skipped: true, fresh: null };
+    }
+    if (_inFlight.has(key)) {
+      return { ok: false, changed: false, skipped: true, fresh: null };
+    }
+    _inFlight.add(key);
+    try {
+      const oldVal = cache.get(key);
+      let fresh;
+      try {
+        fresh = await fetchFn();
+      } catch (e) {
+        if (opts.onError) opts.onError(e);
+        return { ok: false, changed: false, fresh: null };
+      }
+      // 首刷无基线 → 不当作"变更"也不提示"未变"，避免进入页面即弹提示
+      const changed = (oldVal !== undefined) && !jsonEquals(oldVal, fresh);
+      cache.set(key, fresh, ttl);
+      if (opts.apply) opts.apply(fresh, oldVal);
+      if (oldVal !== undefined) {
+        if (changed) { if (opts.onChanged) opts.onChanged(fresh, oldVal); }
+        else if (opts.onUnchanged) opts.onUnchanged(fresh, oldVal);
+      }
+      return { ok: true, changed, fresh };
+    } finally {
+      _inFlight.delete(key);
+    }
+  }
+
   // ─── 注册 ───────────────────────────────────────────
-  if (!window.__quantModules) window.__quantModules = {};
-  window.__quantModules.core = {
+  const core = {
     apiFetch,
     getToday,
     formatDate,
@@ -101,5 +208,17 @@
     showToast,
     debounce,
     throttle,
+    jsonEquals,
+    makeCacheKey,
+    CacheStore,
+    createTtlCache,
+    silentRefresh,
   };
+  if (typeof window !== 'undefined') {
+    if (!window.__quantModules) window.__quantModules = {};
+    window.__quantModules.core = core;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = core;
+  }
 })();

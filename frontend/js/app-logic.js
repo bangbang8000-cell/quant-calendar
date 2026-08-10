@@ -1239,6 +1239,38 @@ const allMenuDefs = [
                     loadConsensusData();
                 }
 
+                // ===== v3.11 (FR-3.11.4): 数据缓存与静默刷新 =====
+                // 请求级 TTL 缓存（同参数短 TTL）+ 后台静默刷新 + 变更提示
+                const __core11 = window.__quantModules.core || {};
+                const qcCache = (typeof __core11.createTtlCache === 'function') ? __core11.createTtlCache(15000) : null;
+                let _lastDataToast = 0;
+                function notifyDataChanged() {
+                    const now = Date.now();
+                    if (now - _lastDataToast < 5000) return;   // 5s 内去重，避免重复进入/多页刷屏
+                    _lastDataToast = now;
+                    ElementPlus.ElMessage.success('有新数据，已更新');
+                }
+                // 后台静默刷新：命中缓存后仍悄悄拉取最新，数据有变才提示
+                function backgroundRefresh(url, cacheKey, extract, apply) {
+                    if (!qcCache || !cacheKey || typeof __core11.silentRefresh !== 'function') return;
+                    __core11.silentRefresh({
+                        cache: qcCache,
+                        key: cacheKey,
+                        fetchFn: async () => {
+                            const res = await fetch(url);
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            const data = await res.json();
+                            return extract ? extract(data) : data;
+                        },
+                        ttl: qcCache.defaultTtl,
+                        apply,
+                        onChanged: notifyDataChanged,
+                        onError: () => {},
+                    });
+                }
+                // 同一请求在途去重：首次进入日历 page/sub 双触发时只拉取一次
+                const _consensusInflight = new Set();
+
                 // ===== 数据加载 =====
                 async function loadDates() {
                     try {
@@ -1276,19 +1308,42 @@ const allMenuDefs = [
                 async function loadConsensusData() {
                     if (!selectedDate.value) return;
                     const cacheKey = `${currentView.value}_${selectedDate.value}`;
-                    // 客户端缓存命中 → 直接渲染，不显示 loading
+                    // v3.11 (11.6): 同一 key 请求在途时跳过重复拉取（首次进入 page/sub 双触发去重）
+                    if (_consensusInflight.has(cacheKey)) return;
+                    _consensusInflight.add(cacheKey);
+                    const viewUrl = `/api/view/${currentView.value}/${selectedDate.value}?status=all`;
+                    // v3.11 (11.6): 请求级缓存键（method|url|params，与传参顺序无关）
+                    const reqKey = (qcCache && typeof __core11.makeCacheKey === 'function')
+                        ? __core11.makeCacheKey('GET', `/api/view/${currentView.value}/${selectedDate.value}`, { status: 'all' })
+                        : null;
+                    const applyStocks = (stocks) => {
+                        consensus.value = stocks;
+                        viewCache.set(cacheKey, stocks);
+                    };
+                    // 客户端缓存命中 → 直接渲染不闪烁，再后台静默刷新（有变才提示）
                     if (viewCache.has(cacheKey)) {
-                        consensus.value = viewCache.get(cacheKey);
+                        applyStocks(viewCache.get(cacheKey));
+                        backgroundRefresh(viewUrl, reqKey, (d) => d.stocks || [], applyStocks);
+                        _consensusInflight.delete(cacheKey);
+                        return;
+                    }
+                    // v3.11 (11.6): 命中请求级 TTL 缓存 → 不闪烁 + 后台刷新
+                    const cached = (reqKey && qcCache) ? qcCache.get(reqKey) : undefined;
+                    if (cached !== undefined) {
+                        applyStocks(cached);
+                        backgroundRefresh(viewUrl, reqKey, (d) => d.stocks || [], applyStocks);
+                        _consensusInflight.delete(cacheKey);
                         return;
                     }
                     loading.value = true;
                     loadingView.value = {day:'日', week:'周', month:'月', year:'年'}[currentView.value] || currentView.value;
                     try {
                         // 调用多视图 API（始终获取全量数据，前端做状态过滤+计数）
-                        const res = await fetch(`/api/view/${currentView.value}/${selectedDate.value}?status=all`);
+                        const res = await fetch(viewUrl);
                         const data = await res.json();
-                        consensus.value = data.stocks || [];
-                        viewCache.set(cacheKey, data.stocks || []);  // 写入客户端缓存
+                        const stocks = data.stocks || [];
+                        applyStocks(stocks);
+                        if (qcCache && reqKey) qcCache.set(reqKey, stocks);  // 写入请求级 TTL 缓存
                     } catch (e) {
                         // 降级到旧API
                         try {
@@ -1307,6 +1362,28 @@ const allMenuDefs = [
                     }
                     // v3.7.11: 异步加载入池出池信号
                     fetchPoolSignals();
+                    _consensusInflight.delete(cacheKey);
+                }
+
+                // v3.11 (11.6): 总览页缓存 + 静默刷新（包装 system 域 loadDashboardData）
+                // 重复进入"策略总览"命中缓存不闪烁；后台拉到新数据自动更新并提示
+                async function loadDashboardCached() {
+                    const reqKey = (qcCache && typeof __core11.makeCacheKey === 'function')
+                        ? __core11.makeCacheKey('GET', '/api/dashboard', null)
+                        : '/api/dashboard';
+                    if (qcCache) {
+                        const hit = qcCache.get(reqKey);
+                        if (hit !== undefined) {
+                            dashboardData.value = hit;
+                            backgroundRefresh('/api/dashboard', reqKey, (d) => d.data || d, (data) => {
+                                dashboardData.value = data;
+                                lastRefreshTime.value = Date.now();
+                            });
+                            return;
+                        }
+                    }
+                    await loadDashboardData();
+                    if (qcCache) qcCache.set(reqKey, dashboardData.value);
                 }
 
                 async function showStockDetail(stockCode) {
@@ -1407,10 +1484,10 @@ const allMenuDefs = [
                     // v1.11: 清除旧轮询定时器
                     if (strategyPollTimer) { clearInterval(strategyPollTimer); strategyPollTimer = null; }
                     if (page === 'strategies') {
-                        await loadDashboardData();
-                        // 启动5分钟静默轮询
+                        await loadDashboardCached();
+                        // 启动5分钟静默轮询（缓存命中+后台刷新，不闪烁）
                         strategyPollTimer = setInterval(() => {
-                            loadDashboardData().catch(() => {});
+                            loadDashboardCached().catch(() => {});
                         }, 5 * 60 * 1000);
                     } else if (page === 'calendar') {
                         if (selectedDate.value) await loadConsensusData();
@@ -1527,7 +1604,7 @@ const allMenuDefs = [
                                 loadGroupConfig().catch(() => {});
                                 await withTimeout(loadDates(), 2000, 'dates');
                                 if (currentPage.value === 'strategies') {
-                                    await withTimeout(loadDashboardData(), 2000, 'dashboard');
+                                    await withTimeout(loadDashboardCached(), 2000, 'dashboard');
                                 } else {
                                     await withTimeout(loadConsensusData(), 2000, 'consensus');
                                 }
