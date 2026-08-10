@@ -8,12 +8,12 @@
   window.__quantComponents.CalendarPage = {
     name: 'qc-calendar-page',
     template: `
-                <div v-if="currentPage === 'calendar'" key="calendar">
+                <div v-if="currentPage === 'calendar'" key="calendar" @touchstart="onCalTouchStart" @touchend="onCalTouchEnd">
 
                     <!-- 日/周/月/年视图 -->
                     <template v-if="currentSubPage !== 'pool'">
                         <!-- 快捷导航按钮 -->
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <div class="cal-nav" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
                             <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« 上一{{ viewUnit }}</el-button>
                             <el-button size="small" @click="navigateDate(1)" :disabled="!canNavNext">下一{{ viewUnit }} »</el-button>
                         </div>
@@ -127,7 +127,30 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      // v3.11 (FR-3.11.5): 日历页手势翻日期（水平滑动切上一/下一交易日）
+      // 仅移动端；纵向滚动/点击忽略；消费手势后 stopPropagation 避免触发上层 main-content 的翻页
+      const { ref } = Vue;
+      const calTouchX = ref(0);
+      const calTouchY = ref(0);
+      function onCalTouchStart(e) {
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        calTouchX.value = t.clientX;
+        calTouchY.value = t.clientY;
+      }
+      function onCalTouchEnd(e) {
+        if (!(window.innerWidth <= 768)) return;
+        if (state.currentSubPage.value === 'pool') return;
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - calTouchX.value;
+        const dy = t.clientY - calTouchY.value;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+          state.navigateDate(dx < 0 ? 1 : -1);
+          e.stopPropagation();
+        }
+      }
+      return { ...state, onCalTouchStart, onCalTouchEnd };
     },
   };
 })();

@@ -234,3 +234,66 @@
     font-size: var(--font-sm);
   }
 }
+
+/* ═══ v3.11 (FR-3.11.5) 移动端专项: 列表卡片化 + 触控目标 ≥44px + 防溢出 ═══ */
+
+@media (max-width: 768px) {
+  /* 触控目标 ≥44px：按钮/输入框统一加高（无 is-circle 用法，安全） */
+  .el-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .el-input__inner {
+    min-height: 44px;
+  }
+  /* 日历页状态筛选 Tab（原 ~33px → 44px） */
+  .status-tab {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 日历页上一/下一交易日导航按钮 */
+  .cal-nav .el-button {
+    min-height: 44px;
+  }
+  /* 自选列表行：加高触控目标（原 ~40px → ≥52px） */
+  .watchlist-item {
+    min-height: 52px;
+    padding: 12px 10px;
+  }
+  .watchlist-search-item {
+    min-height: 48px;
+    padding: 10px 12px;
+  }
+  /* 列表卡片化：日历股票池 / 策略共识榜行 */
+  .consensus-item {
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+}
+
+@media (max-width: 480px) {
+  /* 高频页 375px 防溢出：状态 Tab 横向滚动 */
+  .status-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .status-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .status-tab {
+    flex: none;
+    min-width: 88px;
+  }
+  /* 日历导航按钮行：换行防溢出 */
+  .cal-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
