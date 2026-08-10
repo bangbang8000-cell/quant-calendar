@@ -1,8 +1,9 @@
 # 量化选股日历 v3.10 ~ v4.0 开发计划 (DEV-PLAN)
 
-> **文档版本**: v1.0 | **日期**: 2026-08-11 | **基线**: v3.8.2
+> **文档版本**: v2.0 | **日期**: 2026-08-11 | **基线**: v3.8.2
 > **配套文档**: 需求 → `PRD-v3.10-v4.0.md` | 测试 → `TEST-PLAN-v3.10-v4.0.md`
 > **更新规则**: 每个任务完成后更新状态列；需求变更必须三文档同步。
+> **v2.0 变更**: v3.11 主题改为 UI/UX 提质（依据评估报告），原 v3.11 数据自动化顺延 v3.12，v3.12 可观测顺延 v3.13，v3.13 AI 顺延 v3.14。
 
 ---
 
@@ -11,6 +12,7 @@
 | 版本 | 日期 | 变更人 | 说明 |
 |------|------|--------|------|
 | v1.0 | 2026-08-11 | - | 基于 PRD v1.0 + v3.8.2 代码审查创建 |
+| v2.0 | 2026-08-11 | - | v3.11 改为 UI/UX 提质四层任务，后续版本顺延 |
 
 ---
 
@@ -24,7 +26,8 @@
 | Git 策略 | 每任务独立 commit；每版本完成后创建 tag |
 | 每任务验证 | 改动文件 ≤ 3 个/次，修改后立即验证 |
 | 页面验证 | 前端改后硬刷新 (Ctrl+Shift+R) 确认生效 |
-| 部署方式 | v3.12 起使用 `scripts/deploy.sh`（health-gated + 自动回滚） |
+| 前端回归 | v3.11 起引入 Playwright 截图 diff（报告产出，不阻塞发布） |
+| 部署方式 | v3.13 起使用 `scripts/deploy.sh`（health-gated + 自动回滚） |
 
 ---
 
@@ -32,13 +35,14 @@
 
 | 版本 | 主题 | 任务数 | Bug 修复 | 新功能 | 预估耗时 |
 |------|------|:--:|:--:|:--:|:--:|
-| v3.10 | 可靠性加固 | 7 | 3 | 4 | 1-1.5 周 |
-| v3.11 | 数据自动化 | 6 | 1 | 5 | 1-2 周 |
-| v3.12 | 可观测与部署 | 6 | 1 | 5 | 1-2 周 |
-| v3.13 | AI 深化与通知矩阵 | 6 | 0 | 6 | 1.5-2 周 |
+| v3.10 | 可靠性加固 | 7 | 3 | 4 | ✅ 已完成 |
+| v3.11 | UI/UX 提质 | 12 | 2 | 10 | 3 周 |
+| v3.12 | 数据自动化 | 6 | 1 | 5 | 1-2 周 |
+| v3.13 | 可观测与部署 | 6 | 1 | 5 | 1-2 周 |
+| v3.14 | AI 深化与通知矩阵 | 6 | 0 | 6 | 1.5-2 周 |
 | v4.0 | 开放平台 | 5 | 0 | 5 | 2 周+ |
 
-**总计**: 30 个任务，预估 6.5-9.5 周。
+**总计**: 35 个任务，预估 10-13 周。
 
 ---
 
@@ -53,7 +57,7 @@
 | 10.3 | 美林时钟快照持久化测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 1h | pytest: snapshot 读写一致, 不污染 data/ | ✅ |
 
 > **10.2 附加修复**: 测试发现时间驱动切换后 `stage_info` 仍引用切换前阶段（API/UI/AI 问股读到旧阶段），已将切换块前移至阶段判定之后、stage_info 组装之前，保证下游字段一致。此为测试驱动发现的 P0 修复，纳入任务 10.2 一并提交。
-| 10.4 | 依赖锁定 (pip-tools) | FR-3.10.2 | `requirements.in`, `requirements.lock`, `Dockerfile` | 1h | 两次构建依赖哈希一致 | ✅ |
+| 10.4 | 依赖锁定 (uv) | FR-3.10.2 | `requirements.in`, `requirements.lock`, `Dockerfile` | 1h | 两次构建依赖哈希一致 | ✅ |
 | 10.5 | 数据源健康监控层 | FR-3.10.3 | `backend/data_sources.py`, `backend/system.py` | 3h | metrics 含成功率/延迟; 失败标记 degraded | ✅ |
 | 10.6 | CI 覆盖率门禁 | FR-3.10.4 | `.github/workflows/ci.yml`, `pyproject.toml` | 0.5h | 覆盖率<阈值 CI 红 | ✅ |
 | 10.7 | 版本号前后端统一 | FR-3.10.5 | `backend/main_new.py`, `frontend/index.html` | 1h | 前端资源版本号随 APP_VERSION | ✅ |
@@ -66,48 +70,89 @@
 - [x] 依赖锁文件双端一致（uv 编译 diff 校验，TC-10.9）
 - [x] `/api/system/metrics` 含数据源健康指标（TC-10.10/10.11）
 - [x] 前端资源版本号随 `APP_VERSION` 联动（TC-10.12，24 处资源注入 `?v=3.8.2`）
-- [ ] Git commit + tag `v3.10.0`
+- [x] Git commit + tag `v3.10.0`（已推送 origin + synology，ops 已部署 :8000）
 
 ---
 
-## 5. v3.11 — 数据自动化
+## 5. v3.11 — UI/UX 提质
 
 ### 5.1 任务分解
 
+> 依据 `UIUX-优化评估-v3.8.2.md`，按 **架构 → 交互 → 视觉 → 智能** 四层推进；每批自洽可独立验收。
+
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 11.1 | Tushare 日线自动拉取任务 | FR-3.11.1 | `backend/data_sources.py`, `backend/scheduler.py` | 4h | 手动触发生成 qresult 新数据 | ⬜ |
-| 11.2 | 财务数据拉取 | FR-3.11.1 | `backend/data_sources.py` | 3h | 财务字段入库 | ⬜ |
-| 11.3 | qresult 自动导入触发 | FR-3.11.1 | `backend/data_pipeline.py` | 1h | CSV 更新后自动 reload | ⬜ |
-| 11.4 | 数据源配置界面 | FR-3.11.1 | `frontend/js/components/system-page.js` | 2h | 配置股票池/频率/开关 | ⬜ |
-| 11.5 | 数据新鲜度看板 | FR-3.11.2 | `backend/api/v1/dashboard.py`, `backend/system.py`, `frontend/js/components/dashboard-page.js` | 3h | 首页显示各源新鲜度+超期标黄 | ⬜ |
-| 11.6 | 拉取失败补偿 | FR-3.11.3 | `backend/data_sources.py`, `backend/scheduler.py` | 2h | 3次退避后停止; 告警入队 | ⬜ |
+| 11.1 | 智能命令面板 | FR-3.11.1 | `frontend/js/components/command-panel.js`（新）, `frontend/index.html`, `frontend/css/*.css` | 4h | Ctrl+K 打开; 股票/菜单/指令三域检索 + 键盘操作 | ⬜ |
+| 11.2 | 全局搜索升级接入命令面板 | FR-3.11.1 | `frontend/js/components/global-header.js`, `frontend/js/app-logic.js` | 2h | 搜股票直达详情; 搜菜单跳页 | ⬜ |
+| 11.3 | app-logic 按域拆分 | FR-3.11.2 | `frontend/js/{calendar,strategies,ai,system,users}.js`, `frontend/js/app-logic.js` | 8h | app-logic < 800 行; 全量 pytest + 冒烟 | ⬜ |
+| 11.4 | Dialog 组件化 | FR-3.11.2 | `frontend/js/components/dialogs/*.js`（新）, `frontend/index.html` | 6h | 13 dialog 独立组件; index 只留挂载点 | ⬜ |
+| 11.5 | 虚拟滚动列表 | FR-3.11.3 | `frontend/js/components/virtual-list.js`（新）, `frontend/js/components/*.js` | 4h | 1000+ 行滚动流畅; 点击/收藏交互不回归 | ⬜ |
+| 11.6 | 数据缓存与静默刷新 | FR-3.11.4 | `frontend/js/core.js`, `frontend/js/app-logic.js` | 3h | 重复进入不闪烁; 后台更新有提示 | ⬜ |
+| 11.7 | 统一四态组件 + 键盘导航 | FR-3.11.5 | `frontend/js/components/state-panel.js`（新）, `frontend/js/app-logic.js` | 3h | 空/加载/错误/离线四态一致; 键盘可操作 | ⬜ |
+| 11.8 | 移动端专项 | FR-3.11.5 | `frontend/css/responsive.css`, `frontend/js/components/*.js` | 4h | 375px 高频页可用性达标 | ⬜ |
+| 11.9 | 设计令牌落地 + 视觉规范 | FR-3.11.6 | `frontend/css/tokens.css`, `frontend/css/themes.css`, 各模板 | 4h | 硬编码色值消除(grep 校验); 主题切换无遗漏 | ⬜ |
+| 11.10 | 智能首页"今日一屏" | FR-3.11.7 | `frontend/js/components/strategies-page.js`, `frontend/css/*.css` | 6h | 一屏见当日决策要素; 数据健康卡 | ⬜ |
+| 11.11 | 图表交互增强 | FR-3.11.8 | `frontend/js/charts.js`, `frontend/js/components/*.js` | 4h | 十字线读价; MA 图例开关 | ⬜ |
+| 11.12 | Playwright 视觉回归 | FR-3.11.9 | `tests/e2e/`（新）, `.github/workflows/ci.yml`, `requirements-dev.in` | 3h | CI 出截图 diff 报告 | ⬜ |
+
+> **注**: 11.3/11.4（模块化重构）是最大工作量，也是后续所有改动的地基；若排期紧，可与 11.5/11.6 并行推进（文件不冲突）。
 
 ### 5.2 验收清单
 
-- [ ] 手动触发后 qresult 目录出现新数据且自动入库
-- [ ] 定时任务按配置执行（日志可见每次批次）
-- [ ] 首页数据源状态卡显示新鲜度，超期标黄
-- [ ] 模拟连续失败 3 次后停止重试，告警队列有记录
-- [ ] pytest 全量通过（≥ 115 用例）
+- [ ] Ctrl+K 命令面板可用，股票/菜单/指令三域检索 + 全键盘操作
+- [ ] app-logic.js 缩减至编排层（< 800 行），stub 文件承载真实逻辑
+- [ ] 13 个 dialog 独立组件化，index.html 只留挂载点
+- [ ] 1000+ 行列表虚拟滚动流畅，既有交互零回归
+- [ ] 重复进入页面命中缓存，后台静默刷新有提示
+- [ ] 空/加载/错误/离线四态组件一致，键盘导航完善
+- [ ] 375px 移动端高频页可用性达标（日历/自选/详情）
+- [ ] 模板硬编码色值消除（grep 校验通过）
+- [ ] 策略总览升级"今日一屏"，数据健康卡展示各源成功率/degraded
+- [ ] K线十字线 + MA 图例开关可用
+- [ ] CI 产出 Playwright 截图 diff 报告
+- [ ] pytest 全量通过（≥ 115 用例，前端逻辑已拆可单测）
 - [ ] Git commit + tag `v3.11.0`
 
 ---
 
-## 6. v3.12 — 可观测与部署
+## 6. v3.12 — 数据自动化
 
 ### 6.1 任务分解
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 12.1 | 备份列表 + 一键恢复 API | FR-3.12.1 | `backend/api/v1/system.py`, `backend/backup.py` | 2h | API 列出备份, 恢复成功 | ⬜ |
-| 12.2 | 恢复 dry-run 演练 | FR-3.12.1 | `backend/backup.py` | 1h | 演练校验通过 | ⬜ |
-| 12.3 | 异常告警通知 | FR-3.12.2 | `backend/scheduler.py`, `backend/feishu_push.py` | 2h | 制造错误→飞书告警+收敛 | ⬜ |
-| 12.4 | deploy.sh 一键部署 | FR-3.12.3 | `scripts/deploy.sh` | 2h | 部署成功+health-gated | ⬜ |
-| 12.5 | rollback.sh 自动回滚 | FR-3.12.3 | `scripts/rollback.sh` | 1.5h | 模拟失败自动回滚 | ⬜ |
-| 12.6 | 监控面板 UI 完善 | FR-3.12.4 | `frontend/js/components/system-page.js`, `backend/api/v1/system.py` | 3h | 面板显示全指标+自动刷新 | ⬜ |
+| 12.1 | Tushare 日线自动拉取任务 | FR-3.12.1 | `backend/data_sources.py`, `backend/scheduler.py` | 4h | 手动触发生成 qresult 新数据 | ⬜ |
+| 12.2 | 财务数据拉取 | FR-3.12.1 | `backend/data_sources.py` | 3h | 财务字段入库 | ⬜ |
+| 12.3 | qresult 自动导入触发 | FR-3.12.1 | `backend/data_pipeline.py` | 1h | CSV 更新后自动 reload | ⬜ |
+| 12.4 | 数据源配置界面 | FR-3.12.1 | `frontend/js/components/system-page.js` | 2h | 配置股票池/频率/开关 | ⬜ |
+| 12.5 | 数据新鲜度看板 | FR-3.12.2 | `backend/api/v1/dashboard.py`, `backend/system.py`, `frontend/js/components/dashboard-page.js` | 3h | 首页显示各源新鲜度+超期标黄 | ⬜ |
+| 12.6 | 拉取失败补偿 | FR-3.12.3 | `backend/data_sources.py`, `backend/scheduler.py` | 2h | 3次退避后停止; 告警入队 | ⬜ |
 
 ### 6.2 验收清单
+
+- [ ] 手动触发后 qresult 目录出现新数据且自动入库
+- [ ] 定时任务按配置执行（日志可见每次批次）
+- [ ] 首页数据源状态卡显示新鲜度，超期标黄
+- [ ] 模拟连续失败 3 次后停止重试，告警队列有记录
+- [ ] pytest 全量通过（≥ 120 用例）
+- [ ] Git commit + tag `v3.12.0`
+
+---
+
+## 7. v3.13 — 可观测与部署
+
+### 7.1 任务分解
+
+| # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
+|---|------|---------|------|------|----------|:--:|
+| 13.1 | 备份列表 + 一键恢复 API | FR-3.13.1 | `backend/api/v1/system.py`, `backend/backup.py` | 2h | API 列出备份, 恢复成功 | ⬜ |
+| 13.2 | 恢复 dry-run 演练 | FR-3.13.1 | `backend/backup.py` | 1h | 演练校验通过 | ⬜ |
+| 13.3 | 异常告警通知 | FR-3.13.2 | `backend/scheduler.py`, `backend/feishu_push.py` | 2h | 制造错误→飞书告警+收敛 | ⬜ |
+| 13.4 | deploy.sh 一键部署 | FR-3.13.3 | `scripts/deploy.sh` | 2h | 部署成功+health-gated | ⬜ |
+| 13.5 | rollback.sh 自动回滚 | FR-3.13.3 | `scripts/rollback.sh` | 1.5h | 模拟失败自动回滚 | ⬜ |
+| 13.6 | 监控面板 UI 完善 | FR-3.13.4 | `frontend/js/components/system-page.js`, `backend/api/v1/system.py` | 3h | 面板显示全指标+自动刷新 | ⬜ |
+
+### 7.2 验收清单
 
 - [ ] 备份列表可见，一键恢复后数据一致
 - [ ] dry-run 演练通过，损坏备份被拒绝
@@ -115,38 +160,38 @@
 - [ ] deploy.sh 部署成功且 health-gated
 - [ ] 模拟失败部署自动回滚，服务不中断
 - [ ] 监控面板显示 CPU/内存/延迟/错误率并自动刷新
-- [ ] pytest 全量通过（≥ 120 用例）
-- [ ] Git commit + tag `v3.12.0`
-
----
-
-## 7. v3.13 — AI 深化与通知矩阵
-
-### 7.1 任务分解
-
-| # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
-|---|------|---------|------|------|----------|:--:|
-| 13.1 | 多模型并行评估 | FR-3.13.1 | `backend/ai_evaluator.py` | 3h | 单股耗时 ÷3 | ⬜ |
-| 13.2 | 并行失败降级 | FR-3.13.1 | `backend/ai_evaluator.py` | 1.5h | 部分失败不影响整体 | ⬜ |
-| 13.3 | 通知适配器抽象 | FR-3.13.2 | `backend/notify/`（新目录） | 3h | 企微/钉钉/邮件适配 | ⬜ |
-| 13.4 | 通知模板化 | FR-3.13.2 | `backend/notify/` | 1.5h | 模板替换正确 | ⬜ |
-| 13.5 | 日报/周报多通道 | FR-3.13.2 | `backend/scheduler.py` | 1.5h | 日报达多通道 | ⬜ |
-| 13.6 | RAG 问股（第一阶段） | FR-3.13.3 | `backend/chat.py`, `backend/search.py` | 4h | 问股引用历史报告 | ⬜ |
-
-### 7.2 验收清单
-
-- [ ] 单股 AI 评估耗时 ÷3（并行 + 超时保护）
-- [ ] 部分模型失败不影响整体结果
-- [ ] 企微/钉钉/邮件配置后日报与告警可达
-- [ ] 问股回答引用历史报告片段
 - [ ] pytest 全量通过（≥ 125 用例）
 - [ ] Git commit + tag `v3.13.0`
 
 ---
 
-## 8. v4.0 — 开放平台
+## 8. v3.14 — AI 深化与通知矩阵
 
 ### 8.1 任务分解
+
+| # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
+|---|------|---------|------|------|----------|:--:|
+| 14.1 | 多模型并行评估 | FR-3.14.1 | `backend/ai_evaluator.py` | 3h | 单股耗时 ÷3 | ⬜ |
+| 14.2 | 并行失败降级 | FR-3.14.1 | `backend/ai_evaluator.py` | 1.5h | 部分失败不影响整体 | ⬜ |
+| 14.3 | 通知适配器抽象 | FR-3.14.2 | `backend/notify/`（新目录） | 3h | 企微/钉钉/邮件适配 | ⬜ |
+| 14.4 | 通知模板化 | FR-3.14.2 | `backend/notify/` | 1.5h | 模板替换正确 | ⬜ |
+| 14.5 | 日报/周报多通道 | FR-3.14.2 | `backend/scheduler.py` | 1.5h | 日报达多通道 | ⬜ |
+| 14.6 | RAG 问股（第一阶段） | FR-3.14.3 | `backend/chat.py`, `backend/search.py` | 4h | 问股引用历史报告 | ⬜ |
+
+### 8.2 验收清单
+
+- [ ] 单股 AI 评估耗时 ÷3（并行 + 超时保护）
+- [ ] 部分模型失败不影响整体结果
+- [ ] 企微/钉钉/邮件配置后日报与告警可达
+- [ ] 问股回答引用历史报告片段
+- [ ] pytest 全量通过（≥ 130 用例）
+- [ ] Git commit + tag `v3.14.0`
+
+---
+
+## 9. v4.0 — 开放平台
+
+### 9.1 任务分解
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
@@ -156,67 +201,72 @@
 | 4.4 | Webhook 签名校验 | FR-4.0.2 | `backend/notify/` | 1.5h | 非法签名拒绝 | ⬜ |
 | 4.5 | 插件机制（样例） | FR-4.0.3 | `backend/plugins/`（新目录） | 3h | 样例插件加载 | ⬜ |
 
-### 8.2 验收清单
+### 9.2 验收清单
 
 - [ ] `/api/v2` 新契约可用，v1 接口全部向后兼容
 - [ ] 文档站点可浏览，含示例代码
 - [ ] Webhook 订阅回调带签名，非法签名被拒
 - [ ] 样例插件可加载并出现在策略/AI 模型列表
-- [ ] pytest 全量通过（≥ 130 用例）
+- [ ] pytest 全量通过（≥ 135 用例）
 - [ ] Git commit + tag `v4.0.0`
 
 ---
 
-## 9. 关键文件依赖图
+## 10. 关键文件依赖图
 
 ```
-v3.10:
-  tests/test_merrill_clock.py ← 10.1, 10.2, 10.3 (独立, 不碰业务代码)
-  requirements.in/lock        ← 10.4 (独立)
-  backend/data_sources.py     ← 10.5 (被 merrill_clock 引用)
-  backend/system.py           ← 10.5
-  .github/workflows/ci.yml    ← 10.6 (独立)
-  backend/main_new.py         ← 10.7 (依赖 frontend/index.html)
+v3.10: (已完成)
+  tests/test_merrill_clock.py     ← 10.1, 10.2, 10.3
+  requirements.in/lock            ← 10.4
+  backend/data_sources.py         ← 10.5
+  .github/workflows/ci.yml        ← 10.6
+  backend/main_new.py, index.html ← 10.7
 
-v3.11:
-  backend/data_sources.py     ← 11.1, 11.2, 11.6 (核心)
-  backend/scheduler.py        ← 11.1, 11.6
-  backend/data_pipeline.py    ← 11.3
-  backend/api/v1/dashboard.py ← 11.5 (独立)
-  backend/system.py           ← 11.5
-  frontend/dashboard-page.js  ← 11.5
-  frontend/system-page.js     ← 11.4
+v3.11 (UI/UX 提质, 架构先行):
+  js/components/command-panel.js  ← 11.1, 11.2 (独立, 最高用户价值)
+  js/app-logic.js + stub 模块     ← 11.3, 11.4 (最大工作量, 地基)
+  js/components/virtual-list.js   ← 11.5 (独立)
+  js/core.js                      ← 11.6 (独立)
+  js/components/state-panel.js    ← 11.7 (独立)
+  css/responsive.css              ← 11.8 (独立)
+  css/tokens.css + 各模板         ← 11.9 (可并行)
+  js/components/strategies-page.js← 11.10 (依赖 11.9 视觉基础)
+  js/charts.js                    ← 11.11 (独立)
+  tests/e2e/, ci.yml              ← 11.12 (独立)
 
-v3.12:
-  backend/backup.py           ← 12.1, 12.2
-  backend/api/v1/system.py    ← 12.1, 12.6
-  backend/scheduler.py        ← 12.3 (消费 11.6 告警队列)
-  backend/feishu_push.py      ← 12.3
-  scripts/deploy.sh           ← 12.4 (独立)
-  scripts/rollback.sh         ← 12.5 (独立)
-  frontend/system-page.js     ← 12.6
+v3.12 (数据自动化):
+  backend/data_sources.py         ← 12.1, 12.2, 12.6 (核心)
+  backend/data_pipeline.py        ← 12.3
+  backend/api/v1/dashboard.py     ← 12.5
+  frontend/system-page.js         ← 12.4
+  frontend/dashboard-page.js      ← 12.5
 
-v3.13:
-  backend/ai_evaluator.py     ← 13.1, 13.2
-  backend/notify/ (新)        ← 13.3, 13.4
-  backend/scheduler.py        ← 13.5
-  backend/chat.py, search.py  ← 13.6
+v3.13 (可观测与部署):
+  backend/backup.py, system.py    ← 13.1, 13.2
+  backend/scheduler.py            ← 13.3 (消费 12.6 告警队列)
+  scripts/deploy.sh, rollback.sh  ← 13.4, 13.5
+  frontend/system-page.js         ← 13.6
 
-v4.0:
-  backend/router.py           ← 4.1
-  backend/main_new.py         ← 4.1, 4.2
-  backend/notify/             ← 4.3, 4.4
-  backend/plugins/ (新)       ← 4.5
+v3.14 (AI 深化):
+  backend/ai_evaluator.py         ← 14.1, 14.2
+  backend/notify/ (新)            ← 14.3, 14.4
+  backend/scheduler.py            ← 14.5
+  backend/chat.py, search.py      ← 14.6
+
+v4.0 (开放平台):
+  backend/router.py               ← 4.1
+  backend/notify/                 ← 4.3, 4.4
+  backend/plugins/ (新)           ← 4.5
 ```
 
-### 9.1 并行执行建议
+### 10.1 并行执行建议
 
-**v3.10 可并行**：10.1+10.2+10.3（测试，独立）、10.4+10.6（构建/CI，独立）、10.5（后端独立）、10.7（前后端联动，依赖 10.5 完成后的 APP_VERSION 基线）
+**v3.11 并行**：11.1+11.2（命令面板，独立）、11.3+11.4（模块化，顺序推进）、11.5+11.6+11.7+11.8（各自独立）、11.9（视觉，独立）、11.10（依赖 11.9）、11.11（独立）、11.12（独立，可最后收尾）
 
-**v3.11 可并行**：11.1+11.2+11.6（data_sources 核心，顺序推进）、11.3（依赖 11.1 产出的 CSV）、11.4+11.5（前端，可并行）、11.5 后端部分与 11.4 无依赖
+**v3.12 并行**：12.1+12.2+12.6（data_sources 核心，顺序推进）、12.3（依赖 12.1 产出的 CSV）、12.4+12.5（前端，可并行）
 
-**v3.12 可并行**：12.1+12.2（备份恢复，独立）、12.3（依赖 11.6 告警队列）、12.4+12.5（部署脚本，独立）、12.6（前端，独立）
+**v3.13 并行**：13.1+13.2（备份恢复，独立）、13.3（依赖 12.6 告警队列）、13.4+13.5（部署脚本，独立）、13.6（前端，独立）
 
-**v3.13 可并行**：13.1+13.2（AI 评估）、13.3+13.4（通知抽象）、13.5（依赖 13.3）、13.6（RAG，独立）
+**v3.14 并行**：14.1+14.2（AI 评估）、14.3+14.4（通知抽象）、14.5（依赖 14.3）、14.6（RAG，独立）
 
-**v4.0 可并行**：4.1+4.2（API 契约）、4.3+4.4（Webhook）、4.5（插件，独立）
+**v4.0 并行**：4.1+4.2（API 契约）、4.3+4.4（Webhook）、4.5（插件，独立）
