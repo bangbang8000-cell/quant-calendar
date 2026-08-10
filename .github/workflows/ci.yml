@@ -14,8 +14,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: pip install -r requirements.txt pytest pytest-cov ruff
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+      - name: 校验依赖锁文件未漂移 (FR-3.10.2)
+        run: |
+          uv pip compile --universal --python-version 3.11 requirements.in -o /tmp/check-runtime.lock
+          diff -u requirements.lock /tmp/check-runtime.lock
+          uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/check-dev.lock
+          diff -u requirements-dev.lock /tmp/check-dev.lock
+      - name: 按锁文件安装依赖
+        run: uv pip install --system -r requirements.lock -r requirements-dev.lock
       - name: Lint
         run: ruff check backend/ --select=E,F,W --ignore=E501
-      - name: Test
-        run: python -m pytest tests/ -v --tb=short
+      - name: 测试 + 总覆盖率护栏 (≥20%, FR-3.10.4)
+        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=20
+      - name: 核心模块覆盖率门禁 (美林时钟 ≥70%)
+        run: python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
+             --cov=merrill_clock --cov-report=term --cov-fail-under=70

@@ -70,3 +70,7 @@ PLAN.md
 .pytest_cache/
 
 # qresult CSV source (tracked via Git LFS or direct, decide per release)
+
+# Coverage output
+.coverage
+htmlcov/

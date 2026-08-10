@@ -48,22 +48,24 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 10.1 | 美林时钟核心逻辑测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 4h | pytest: 四象限/信心度/预测/预警断言 | ⬜ |
-| 10.2 | 美林时钟切换分支测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 1.5h | pytest: 时间驱动/边界切换 + trigger 断言 | ⬜ |
-| 10.3 | 美林时钟快照持久化测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 1h | pytest: snapshot 读写一致, 不污染 data/ | ⬜ |
-| 10.4 | 依赖锁定 (pip-tools) | FR-3.10.2 | `requirements.in`, `requirements.lock`, `Dockerfile` | 1h | 两次构建依赖哈希一致 | ⬜ |
-| 10.5 | 数据源健康监控层 | FR-3.10.3 | `backend/data_sources.py`, `backend/system.py` | 3h | metrics 含成功率/延迟; 失败标记 degraded | ⬜ |
-| 10.6 | CI 覆盖率门禁 | FR-3.10.4 | `.github/workflows/ci.yml` | 0.5h | 覆盖率<阈值 CI 红 | ⬜ |
-| 10.7 | 版本号前后端统一 | FR-3.10.5 | `backend/main_new.py`, `frontend/index.html` | 1h | 前端资源版本号随 APP_VERSION | ⬜ |
+| 10.1 | 美林时钟核心逻辑测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 4h | pytest: 四象限/信心度/预测/预警断言 | ✅ |
+| 10.2 | 美林时钟切换分支测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 1.5h | pytest: 时间驱动/边界切换 + trigger 断言 | ✅ |
+| 10.3 | 美林时钟快照持久化测试 | FR-3.10.1 | `tests/test_merrill_clock.py` | 1h | pytest: snapshot 读写一致, 不污染 data/ | ✅ |
+
+> **10.2 附加修复**: 测试发现时间驱动切换后 `stage_info` 仍引用切换前阶段（API/UI/AI 问股读到旧阶段），已将切换块前移至阶段判定之后、stage_info 组装之前，保证下游字段一致。此为测试驱动发现的 P0 修复，纳入任务 10.2 一并提交。
+| 10.4 | 依赖锁定 (pip-tools) | FR-3.10.2 | `requirements.in`, `requirements.lock`, `Dockerfile` | 1h | 两次构建依赖哈希一致 | ✅ |
+| 10.5 | 数据源健康监控层 | FR-3.10.3 | `backend/data_sources.py`, `backend/system.py` | 3h | metrics 含成功率/延迟; 失败标记 degraded | ✅ |
+| 10.6 | CI 覆盖率门禁 | FR-3.10.4 | `.github/workflows/ci.yml`, `pyproject.toml` | 0.5h | 覆盖率<阈值 CI 红 | ✅ |
+| 10.7 | 版本号前后端统一 | FR-3.10.5 | `backend/main_new.py`, `frontend/index.html` | 1h | 前端资源版本号随 APP_VERSION | ✅ |
 
 ### 4.2 验收清单
 
-- [ ] pytest 全量通过（≥ 110 用例，含 merrill_clock 新增）
-- [ ] 美林时钟覆盖率 ≥ 70%（pytest-cov 报告）
-- [ ] CI 覆盖率门禁生效（删用例即红）
-- [ ] 依赖锁文件双端一致
-- [ ] `/api/system/metrics` 含数据源健康指标
-- [ ] 前端资源版本号随 `APP_VERSION` 联动
+- [x] pytest 全量通过（156 用例，含 merrill_clock 64 + data_sources 9 + version_injection 4）
+- [x] 美林时钟覆盖率 ≥ 70%（当前 73.47%，pytest-cov 报告）
+- [x] CI 覆盖率门禁生效（实测 19.6% 时 FAIL，TC-10.14）
+- [x] 依赖锁文件双端一致（uv 编译 diff 校验，TC-10.9）
+- [x] `/api/system/metrics` 含数据源健康指标（TC-10.10/10.11）
+- [x] 前端资源版本号随 `APP_VERSION` 联动（TC-10.12，24 处资源注入 `?v=3.8.2`）
 - [ ] Git commit + tag `v3.10.0`
 
 ---

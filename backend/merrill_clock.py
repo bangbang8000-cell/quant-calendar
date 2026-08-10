@@ -6,6 +6,7 @@
 """
 import json
 import os
+import time
 from datetime import datetime, timedelta
 import numpy as np
 import logging
@@ -468,7 +469,11 @@ class MerrillClock:
         }
 
         # === v3.0: 优先从 AKShare 获取真实数据 ===
+        _t0 = time.monotonic()
         real_data = self._fetch_real_macro_data()
+        # v3.10 (FR-3.10.3): 记录 akshare 健康指标（成功=返回非空数据，失败=空/异常降级）
+        from data_sources import record_call
+        record_call('akshare', bool(real_data), (time.monotonic() - _t0) * 1000)
         if real_data:
             # 合并真实数据（保留默认值中 AKShare 未覆盖的字段）
             indicators.update(real_data)
@@ -756,6 +761,32 @@ class MerrillClock:
         # === 2. 阶段判定 ===
         stage, distance, boundary_proximity = self._determine_stage_from_scores(dims)
 
+        # === v2.1: 时间驱动阶段切换 ===
+        # 当阶段已严重超期（progress ≥ 95%）且距离下一象限边界很近（< 0.3σ），
+        # 自动过渡到预测的下一阶段，避免时钟永久卡在当前阶段。
+        # 必须放在 stage_info 组装之前：否则 name/confidence/next_stage_prediction/
+        # early_warnings 仍引用切换前阶段，与 transition/timing 的切换后阶段矛盾。
+        switch_trigger = 'boundary'  # 本次切换的触发方式：默认边界/数据驱动
+        if self.history.get('current_stage_start'):
+            start_time = datetime.fromisoformat(self.history['current_stage_start'])
+            duration_days = (today - start_time).days
+            stats = STAGES[stage]['historical_stats']
+            avg_days = stats['avg_duration_months'] * 30
+            progress_pct = min(100, round(duration_days / avg_days * 100, 1))
+
+            if progress_pct >= 95 and boundary_proximity < 0.3:
+                forced_stage = stats['next_stage']
+                if forced_stage in STAGES:
+                    switch_trigger = 'time_driven'
+                    logger.info(
+                        f"⏰ 时间驱动切换: {stage} -> {forced_stage} "
+                        f"(进度={progress_pct}%, 边界距离={boundary_proximity:.2f}, "
+                        f"已历{duration_days}天/均值{avg_days}天)"
+                    )
+                    stage = forced_stage
+                    # 进入新阶段后边界距离重置（刚进入，在象限内部）
+                    boundary_proximity = 0.5
+
         # === 3. 信心度 ===
         confidence_level = '高' if distance > 1.2 else ('中' if distance > 0.5 else '低')
 
@@ -783,30 +814,6 @@ class MerrillClock:
 
         # === 6. 早期预警 ===
         stage_info['early_warnings'] = self._compute_early_warnings(dims, stage, boundary_proximity)
-
-        # === v2.1: 时间驱动阶段切换 ===
-        # 当阶段已严重超期（progress ≥ 95%）且距离下一象限边界很近（< 0.3σ），
-        # 自动过渡到预测的下一阶段，避免时钟永久卡在当前阶段
-        switch_trigger = 'boundary'  # 本次切换的触发方式：默认边界/数据驱动
-        if self.history.get('current_stage_start'):
-            start_time = datetime.fromisoformat(self.history['current_stage_start'])
-            duration_days = (today - start_time).days
-            stats = STAGES[stage]['historical_stats']
-            avg_days = stats['avg_duration_months'] * 30
-            progress_pct = min(100, round(duration_days / avg_days * 100, 1))
-
-            if progress_pct >= 95 and boundary_proximity < 0.3:
-                forced_stage = stats['next_stage']
-                if forced_stage in STAGES:
-                    switch_trigger = 'time_driven'
-                    logger.info(
-                        f"⏰ 时间驱动切换: {stage} -> {forced_stage} "
-                        f"(进度={progress_pct}%, 边界距离={boundary_proximity:.2f}, "
-                        f"已历{duration_days}天/均值{avg_days}天)"
-                    )
-                    stage = forced_stage
-                    # 进入新阶段后边界距离重置（刚进入，在象限内部）
-                    boundary_proximity = 0.5
 
         # === 7. 周期时间跟踪 ===
         previous_stage = self.history.get('current_stage')

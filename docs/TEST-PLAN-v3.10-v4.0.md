@@ -11,6 +11,8 @@
 | 版本 | 日期 | 变更人 | 说明 |
 |------|------|--------|------|
 | v1.0 | 2026-08-11 | - | 基于 PRD v1.0 + DEV-PLAN v1.0 创建 |
+| v1.1 | 2026-08-11 | - | 任务 10.1/10.2/10.3 完成：64 用例全过，merrill 覆盖率 73% |
+| v1.2 | 2026-08-11 | - | 任务 10.4/10.5/10.6/10.7 完成：TC-10.9~10.12 全过，v3.10 共 156 用例 |
 
 ---
 
@@ -73,27 +75,35 @@
 
 ### 4.1 新增单元/接口测试
 
-| # | 用例 | 对应任务 | 类型 | 预期结果 |
-|:--:|------|:--:|------|------|
-| TC-10.1 | `test_merrill_four_quadrants` | 10.1 | 单元 | 四象限（复苏/过热/滞涨/衰退）各判定一次，阶段名正确 |
-| TC-10.2 | `test_merrill_confidence_levels` | 10.1 | 单元 | 高/中/低信心度边界值正确 |
-| TC-10.3 | `test_merrill_next_stage_prediction` | 10.1 | 单元 | 预测阶段在 `STAGES` 内，字段完整 |
-| TC-10.4 | `test_merrill_early_warnings` | 10.1 | 单元 | 临边界（proximity 高）时返回预警 |
-| TC-10.5 | `test_merrill_boundary_trigger` | 10.2 | 单元 | 正常切换 `trigger='boundary'`，`reason` 非空 |
-| TC-10.6 | `test_merrill_time_driven_trigger` | 10.2 | 单元 | 超期+临边界时 `trigger='time_driven'` |
-| TC-10.7 | `test_merrill_snapshot_persistence` | 10.3 | 单元 | snapshot 写入后读取内容一致 |
-| TC-10.8 | `test_merrill_no_data_pollution` | 10.3 | 单元 | 测试期间 `data/` 运行文件 mtime/内容不变 |
-| TC-10.9 | `test_lockfile_consistent` | 10.4 | 单元 | `requirements.lock` 与 `requirements.in` 无漂移 |
-| TC-10.10 | `test_data_source_health_metrics` | 10.5 | 接口 | `/api/system/metrics` 含各数据源成功率/延迟 |
-| TC-10.11 | `test_data_source_degraded_flag` | 10.5 | 单元 | 模拟连续失败后标记 `degraded=True` |
-| TC-10.12 | `test_frontend_version_injected` | 10.7 | 接口 | index.html 资源 URL 带 `APP_VERSION` 版本号 |
+| # | 用例 | 对应任务 | 类型 | 预期结果 | 结果 |
+|:--:|------|:--:|------|------|:--:|
+| TC-10.1 | `test_merrill_four_quadrants` | 10.1 | 单元 | 四象限（复苏/过热/滞涨/衰退）各判定一次，阶段名正确 | ✅ |
+| TC-10.2 | `test_merrill_confidence_levels` | 10.1 | 单元 | 高/中/低信心度边界值正确 | ✅ |
+| TC-10.3 | `test_merrill_next_stage_prediction` | 10.1 | 单元 | 预测阶段在 `STAGES` 内，字段完整 | ✅ |
+| TC-10.4 | `test_merrill_early_warnings` | 10.1 | 单元 | 临边界（proximity 高）时返回预警 | ✅ |
+| TC-10.5 | `test_merrill_boundary_trigger` | 10.2 | 单元 | 正常切换 `trigger='boundary'`，`reason` 非空 | ✅ |
+| TC-10.6 | `test_merrill_time_driven_trigger` | 10.2 | 单元 | 超期+临边界时 `trigger='time_driven'` | ✅ |
+| TC-10.7 | `test_merrill_snapshot_persistence` | 10.3 | 单元 | snapshot 写入后读取内容一致 | ✅ |
+| TC-10.8 | `test_merrill_no_data_pollution` | 10.3 | 单元 | 测试期间 `data/` 运行文件 mtime/内容不变 | ✅ |
+
+> **TC-10.6 附加**: 测试驱动发现时间驱动切换后 `stage_info['stage']` 未回写（切换前阶段），
+> 已修复并断言 `stage/name/next_stage_prediction/boundary_proximity` 与切换后阶段一致。
+| TC-10.9 | `test_lockfile_consistent` | 10.4 | 单元 | `requirements.lock` 与 `requirements.in` 无漂移 | ✅ |
+| TC-10.10 | `test_data_source_health_metrics` | 10.5 | 接口 | `/api/system/metrics` 含各数据源成功率/延迟 | ✅ |
+| TC-10.11 | `test_data_source_degraded_flag` | 10.5 | 单元 | 模拟连续失败后标记 `degraded=True` | ✅ |
+| TC-10.12 | `test_frontend_version_injected` | 10.7 | 接口 | index.html 资源 URL 带 `APP_VERSION` 版本号 | ✅ |
+
+> **TC-10.12 实现说明**: 因 main_new import 会启动 FastAPI 应用（副作用较重），采用
+> `ast` 提取 APP_VERSION + 渲染模拟：断言 24 处应用资源均带 `?v={{APP_VERSION}}` 占位符、
+> 无残留硬编码 `?v=\d`、渲染后版本 === 后端 APP_VERSION、且 root() 的 `.replace` 接线存在。
+> dev 冒烟实测 `/` 渲染后 0 处残留占位符、24 处全部注入 `?v=3.8.2`。
 
 ### 4.2 覆盖率门禁
 
 | # | 指标 | 目标 |
 |:--:|------|:--:|
-| TC-10.13 | 美林时钟语句覆盖率 | ≥ 70%（`--cov=backend.merrill_clock --cov-fail-under=70`） |
-| TC-10.14 | CI 覆盖率门禁 | 删用例后 CI 变红 |
+| TC-10.13 | 美林时钟语句覆盖率 | ≥ 70%（`--cov=merrill_clock --cov-fail-under=70`，实测 73.5%） | ✅ |
+| TC-10.14 | CI 覆盖率门禁 | 删用例后 CI 变红（实测 19.6% 时 FAIL） | ✅ |
 
 ### 4.3 回归确认
 
@@ -224,7 +234,10 @@
 
 | 版本 | 存量 | 新增单元 | 新增接口 | 浏览器专项 | 总用例 |
 |------|:--:|:--:|:--:|:--:|:--:|
-| v3.10 | 76 | 10 | 2 | - | 88 |
+| v3.10 | 76 | 12 | 2 | - | 156* |
+
+> *v3.10 实测 156 用例（含 merrill_clock 64、data_sources 9、version_injection 4、lockfile 3 及存量），
+> 高于计划表 88 的预估。
 | v3.11 | 88 | 6 | 2 | 2 | 96 |
 | v3.12 | 96 | 5 | 2 | 3 | 103 |
 | v3.13 | 103 | 6 | - | 2 | 109 |

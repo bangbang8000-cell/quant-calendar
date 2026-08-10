@@ -28,19 +28,27 @@ def record_request(status_code: int, elapsed_ms: float):
 
 
 def get_metrics() -> dict:
-    """最近请求的延迟/错误率统计"""
+    """最近请求的延迟/错误率统计 + 数据源健康指标"""
     if not _request_times:
-        return {"requests": 0, "avg_ms": 0, "p95_ms": 0, "error_rate": 0}
-    times = sorted(_request_times)
-    n = len(times)
-    p95 = times[int(n * 0.95) - 1] if n > 1 else times[0]
-    errors = sum(1 for s in _request_statuses if s >= 500)
-    return {
-        "requests": n,
-        "avg_ms": round(sum(times) / n, 1),
-        "p95_ms": round(p95, 1),
-        "error_rate": round(errors / n * 100, 2),
-    }
+        result = {"requests": 0, "avg_ms": 0, "p95_ms": 0, "error_rate": 0}
+    else:
+        times = sorted(_request_times)
+        n = len(times)
+        p95 = times[int(n * 0.95) - 1] if n > 1 else times[0]
+        errors = sum(1 for s in _request_statuses if s >= 500)
+        result = {
+            "requests": n,
+            "avg_ms": round(sum(times) / n, 1),
+            "p95_ms": round(p95, 1),
+            "error_rate": round(errors / n * 100, 2),
+        }
+    # v3.10 (FR-3.10.3): 数据源健康指标（成功率/延迟/degraded 标记）
+    try:
+        from data_sources import get_health_metrics
+        result["data_sources"] = get_health_metrics()
+    except Exception:
+        result["data_sources"] = []
+    return result
 
 
 def _get_cpu_mem() -> dict:

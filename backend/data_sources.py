@@ -8,6 +8,7 @@ import json
 import os
 import time
 import logging
+import threading
 import pandas as pd
 from datetime import datetime
 from paths import DATA_DIR
@@ -53,6 +54,78 @@ AKSHARE_STOCK_COLUMN_MAP = {
     '最高': 'high', '最低': 'low', '成交量': 'vol', '成交额': 'amount',
     '涨跌幅': 'pct_chg', '换手率': 'turnover_rate',
 }
+
+
+# ==================== 数据源健康监控 (v3.10 / FR-3.10.3) ====================
+# 记录每个数据源的调用成功/失败/延迟；连续失败达阈值标记 degraded，
+# 输出到 /api/system/metrics 供运维可见。v3.11 数据自动化将消费该指标。
+
+DEGRADE_THRESHOLD = 3  # 连续失败次数达到该值 → degraded
+
+_health_lock = threading.Lock()
+_health = {}
+
+
+def _health_slot(source):
+    if source not in _health:
+        _health[source] = {
+            'name': source,
+            'calls': 0,
+            'successes': 0,
+            'failures': 0,
+            'total_latency_ms': 0.0,
+            'success_rate': None,
+            'avg_latency_ms': None,
+            'last_success': None,
+            'last_failure': None,
+            'consecutive_failures': 0,
+            'degraded': False,
+        }
+    return _health[source]
+
+
+def record_call(source, success, elapsed_ms):
+    """记录一次数据源调用结果（线程安全）"""
+    with _health_lock:
+        s = _health_slot(source)
+        s['calls'] += 1
+        s['total_latency_ms'] += elapsed_ms
+        if success:
+            s['successes'] += 1
+            s['last_success'] = datetime.now().isoformat()
+            s['consecutive_failures'] = 0
+        else:
+            s['failures'] += 1
+            s['last_failure'] = datetime.now().isoformat()
+            s['consecutive_failures'] += 1
+        s['success_rate'] = round(s['successes'] / s['calls'] * 100, 1)
+        s['avg_latency_ms'] = round(s['total_latency_ms'] / s['calls'], 1)
+        s['degraded'] = s['consecutive_failures'] >= DEGRADE_THRESHOLD
+    return s
+
+
+def get_health_metrics():
+    """返回各数据源健康指标快照（供 /api/system/metrics 输出）"""
+    with _health_lock:
+        return [dict(v) for v in _health.values()]
+
+
+def reset_health():
+    """清空健康记录（测试用）"""
+    with _health_lock:
+        _health.clear()
+
+
+def timed_record(source, fn, *args, **kwargs):
+    """带健康记录的调用封装：记录耗时与成功/失败，异常原样抛出"""
+    t0 = time.monotonic()
+    try:
+        result = fn(*args, **kwargs)
+        record_call(source, True, (time.monotonic() - t0) * 1000)
+        return result
+    except Exception:
+        record_call(source, False, (time.monotonic() - t0) * 1000)
+        raise
 
 
 def _ts_code_to_akshare_index(ts_code):
@@ -203,25 +276,31 @@ class DataSourceManager:
         if source_name not in self._clients:
             return {"success": False, "message": f"数据源 {source_name} 未初始化"}
 
+        _t0 = time.monotonic()
         try:
             if source_name == 'sxsc_tushare':
                 api = self._clients['sxsc_tushare']
                 df = api.query('index_daily', ts_code='000001.SH', limit=1)
+                record_call(source_name, True, (time.monotonic() - _t0) * 1000)
                 return {"success": True, "message": f"✅ 连接成功，返回 {len(df)} 条数据"}
 
             elif source_name == 'tushare':
                 pro = self._clients['tushare']
                 df = pro.trade_cal(start_date='20240101', end_date='20240105')
+                record_call(source_name, True, (time.monotonic() - _t0) * 1000)
                 return {"success": True, "message": f"✅ 连接成功，返回 {len(df)} 条数据"}
 
             elif source_name == 'akshare':
                 import akshare as ak
                 df = ak.stock_zh_index_daily(symbol="sh000001")
                 if df is not None and len(df) > 0:
+                    record_call(source_name, True, (time.monotonic() - _t0) * 1000)
                     return {"success": True, "message": "✅ 连接成功"}
+                record_call(source_name, False, (time.monotonic() - _t0) * 1000)
                 return {"success": False, "message": "❌ 返回数据为空"}
 
         except Exception as e:
+            record_call(source_name, False, (time.monotonic() - _t0) * 1000)
             return {"success": False, "message": f"❌ 连接失败: {str(e)}"}
 
     # ==================== 数据获取方法 ====================
@@ -232,14 +311,19 @@ class DataSourceManager:
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
+            _t0 = time.monotonic()
             try:
                 result = self._fetch_index_daily(src_name, ts_code, trade_date)
+                _elapsed = (time.monotonic() - _t0) * 1000
                 if result:
                     result['data_source'] = src_name
+                    record_call(src_name, True, _elapsed)
                     return result
+                record_call(src_name, False, _elapsed)  # 空数据记为一次失败
             except Exception as e:
                 logger.warning(f"{src_name} get_index_daily({ts_code}) 失败: {e}")
                 self._errors[src_name] = str(e)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
         return None
 
     def get_kline_data(self, ts_code, period='daily', limit=60):
@@ -264,14 +348,19 @@ class DataSourceManager:
                 src_cfg = self._get_source_config(src_name)
                 if not src_cfg.get('enabled', True):
                     continue
+                _t0 = time.monotonic()
                 try:
                     df = self._fetch_kline(src_name, ts_code, period, limit)
+                    _elapsed = (time.monotonic() - _t0) * 1000
                     if df is not None and len(df) > 0:
                         result = self._build_kline_response(df, src_name)
+                        record_call(src_name, True, _elapsed)
                         break
+                    record_call(src_name, False, _elapsed)  # 空数据记为一次失败
                 except Exception as e:
                     logger.warning(f"{src_name} get_kline_data({ts_code}) 失败: {e}")
                     self._errors[src_name] = str(e)
+                    record_call(src_name, False, (time.monotonic() - _t0) * 1000)
 
         if result:
             # 简单淘汰: 缓存条目超限时整体清空 (K线场景条目有限, 无需 LRU)
@@ -336,14 +425,19 @@ class DataSourceManager:
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
+            _t0 = time.monotonic()
             try:
                 result = self._fetch_daily_basic(src_name, ts_code, limit)
+                _elapsed = (time.monotonic() - _t0) * 1000
                 if result:
                     result['data_source'] = src_name
+                    record_call(src_name, True, _elapsed)
                     return result
+                record_call(src_name, False, _elapsed)  # 空数据记为一次失败
             except Exception as e:
                 logger.warning(f"{src_name} get_daily_basic({ts_code}) 失败: {e}")
                 self._errors[src_name] = str(e)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
         return None
 
     # ==================== 各数据源适配器 ====================

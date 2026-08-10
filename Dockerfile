@@ -18,9 +18,9 @@ RUN useradd --create-home --shell /bin/bash appuser
 # 工作目录
 WORKDIR /app
 
-# 安装 Python 依赖（先复制 requirements 以利用 Docker 缓存层）
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt --break-system-packages
+# 安装 Python 依赖（先复制锁文件以利用 Docker 缓存层；v3.10 起使用锁定版本保证可复现）
+COPY requirements.lock .
+RUN pip install --no-cache-dir -r requirements.lock --break-system-packages
 
 # 复制应用代码
 COPY backend/ ./backend/

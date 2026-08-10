@@ -192,12 +192,13 @@ async def root(request: Request):
             _index_html_mtime = mtime
     except OSError:
         pass
-    # 注入 per-request CSP nonce
+    # v3.10 (FR-3.10.5): 注入 APP_VERSION（前端资源缓存号联动）+ per-request CSP nonce
     nonce = getattr(request.state, 'csp_nonce', None)
-    if nonce and _index_html_cache:
-        html = _index_html_cache.replace('{{NONCE}}', nonce)
-    else:
-        html = _index_html_cache
+    html = _index_html_cache
+    if html:
+        html = html.replace('{{APP_VERSION}}', APP_VERSION)
+        if nonce:
+            html = html.replace('{{NONCE}}', nonce)
     return HTMLResponse(content=html)
 
 

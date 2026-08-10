@@ -31,7 +31,7 @@ git --git-dir="quant-calendar-dev/.git" --work-tree="quant-calendar-ops" checkou
 # 3. 创建 Python 虚拟环境
 cd quant-calendar-ops
 python -m venv .venv
-.venv\Scripts\pip.exe install -r quant-calendar-dev\requirements.txt
+.venv\Scripts\pip.exe install -r quant-calendar-dev\requirements.lock
 
 # 4. 配置 .env（复制模板后修改）
 cp quant-calendar-dev\.env.example .env
@@ -75,11 +75,11 @@ git --git-dir="quant-calendar-dev/.git" --work-tree="quant-calendar-ops" checkou
 
 ### 步骤 3：安装新依赖
 
-检查 `requirements.txt` 变更：
+检查依赖锁文件变更（v3.10 起依赖版本锁定，直接依赖修改走 `requirements.in`，重新编译锁文件）：
 
 ```bash
 cd quant-calendar-dev
-git diff HEAD~1 -- requirements.txt
+git diff HEAD~1 -- requirements.in requirements.lock
 ```
 
 根据差异安装：
@@ -165,7 +165,7 @@ curl http://127.0.0.1:8000/api/market/datasource/status
 
 ```bash
 # 基础依赖
-.venv\Scripts\pip.exe install -r requirements.txt
+.venv\Scripts\pip.exe install -r requirements.lock
 
 # 可选数据源
 .venv\Scripts\pip.exe install akshare
@@ -304,7 +304,7 @@ quant-calendar-ops/
 │   ├── ai_models.json
 │   ├── users.json
 │   └── users/<name>/       # 每用户目录
-├── requirements.txt
+├── requirements.in / requirements.lock
 └── DEPLOYMENT.md
 ```
 

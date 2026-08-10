@@ -153,7 +153,7 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 git clone https://github.com/bangbang8000-cell/quant-calendar.git
 cd quant-calendar/quant-calendar-ops/backend
 
-pip install -r requirements.txt
+pip install -r requirements.lock
 
 cp .env.example .env
 # 编辑 .env，填入 TUSHARE_TOKEN=***
