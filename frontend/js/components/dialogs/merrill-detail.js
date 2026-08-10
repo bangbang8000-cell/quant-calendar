@@ -62,11 +62,11 @@
                     </div>
                     <!-- 过渡警告横幅 -->
                     <div v-if="merrillDetailData._currentTiming.progress_percent > 80 && merrillDetailData._nextPrediction?.transition_probability > 0.15"
-                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, #FFF3E0, #FFEBEE); border-radius: 8px; border-left: 4px solid #FF9800; font-size: var(--font-base);">
-                        <b style="color: #E65100;">⚠️ 周期切换预警</b>
+                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, var(--badge-warning-bg), var(--badge-danger-bg)); border-radius: 8px; border-left: 4px solid var(--color-warning); font-size: var(--font-base);">
+                        <b style="color: var(--badge-warning-text);">⚠️ 周期切换预警</b>
                         <span style="color: var(--text-secondary); margin-left: 8px;">
                             当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
-                            预测下一阶段为<b style="color: #FF9800;">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
+                            预测下一阶段为<b style="color: var(--color-warning);">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
                             （概率 {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(0) || 0 }}%）
                         </span>
                     </div>
@@ -145,7 +145,7 @@
                         <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: var(--font-sm);">{{ dim.level }}</span>
                     </div>
                     <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: var(--font-sm);">
-                        <b style="color: #E53935;">⚠️ 早期预警：</b>
+                        <b style="color: var(--el-danger);">⚠️ 早期预警：</b>
                         <span v-for="(w, i) in merrillData.early_warnings" :key="i" style="display: inline-block; margin-right: 12px;">{{ w.type || w }}</span>
                     </div>
                 </div>

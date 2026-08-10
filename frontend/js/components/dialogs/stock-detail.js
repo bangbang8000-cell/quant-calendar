@@ -192,17 +192,17 @@
                                 </div>
                             </div>
                             <div class="ai-eval-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-                                <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:16px 14px;border-radius:10px;">
+                                <div style="background:var(--badge-success-bg);border:1px solid var(--badge-success-bg);padding:16px 14px;border-radius:10px;">
                                     <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-success);margin-bottom:10px;">▸ 优势</div>
                                     <div v-for="s in aiResult.result.analysis.strengths" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
                                     <div v-if="!aiResult.result.analysis.strengths.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
                                 </div>
-                                <div style="background:rgba(230,162,60,0.08);border:1px solid rgba(230,162,60,0.2);padding:16px 14px;border-radius:10px;">
+                                <div style="background:var(--badge-gold-bg);border:1px solid var(--badge-gold-bg);padding:16px 14px;border-radius:10px;">
                                     <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-warning);margin-bottom:10px;">⚠️ 风险</div>
                                     <div v-for="w in aiResult.result.analysis.weaknesses" :key="w" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ w }}</div>
                                     <div v-if="!aiResult.result.analysis.weaknesses.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
                                 </div>
-                                <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:16px 14px;border-radius:10px;">
+                                <div style="background:var(--badge-info-bg);border:1px solid var(--badge-info-bg);padding:16px 14px;border-radius:10px;">
                                     <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--color-primary);margin-bottom:10px;">💡 建议</div>
                                     <div v-for="s in aiResult.result.analysis.suggestions" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
                                     <div v-if="!aiResult.result.analysis.suggestions.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
@@ -212,27 +212,27 @@
                             <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
                                 <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
-                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
+                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:var(--badge-info-bg);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:var(--badge-success-bg);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
+                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:var(--badge-gold-bg);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
+                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:var(--badge-gold-bg);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
                                 </div>
                                 <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
-                                    <span style="color: #4CAF50;">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
+                                    <span style="color: var(--color-success);">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
                                     <span v-if="aiResult.result.signal_attribution.strongest_bearish" style="margin-left:12px;">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
                                 </div>
                             </div>
                             <!-- 狙击点卡片 -->
                             <div v-if="aiResult.result.analysis?.sniper_points" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
-                                <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                <div style="background:var(--badge-info-bg);border:1px solid var(--badge-info-bg);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🎯 理想买入</div>
                                     <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ fmtNum(aiResult.result.analysis.sniper_points.ideal_buy) }}</div>
                                 </div>
-                                <div style="background:rgba(245,108,108,0.08);border:1px solid rgba(245,108,108,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                <div style="background:var(--badge-danger-bg);border:1px solid var(--badge-danger-bg);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🛑 止损</div>
                                     <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ fmtNum(aiResult.result.analysis.sniper_points.stop_loss) }}</div>
                                 </div>
-                                <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
+                                <div style="background:var(--badge-success-bg);border:1px solid var(--badge-success-bg);padding:12px 10px;border-radius:10px;text-align:center;">
                                     <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🏁 目标</div>
                                     <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ fmtNum(aiResult.result.analysis.sniper_points.take_profit) }}</div>
                                 </div>
@@ -277,7 +277,7 @@
                             <div v-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
                                 <div v-for="(msg, mi) in stockChatMessages" :key="mi" style="margin-bottom:10px;">
                                     <div v-if="msg.role==='user'" style="text-align:right;">
-                                        <span style="display:inline-block;background:var(--primary-color);color:#fff;padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>
+                                        <span style="display:inline-block;background:var(--primary-color);color:var(--white);padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>
                                     </div>
                                     <div v-else style="display:flex;gap:6px;">
                                         <span>🤖</span>

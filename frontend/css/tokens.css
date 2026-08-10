@@ -28,6 +28,7 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
   --transition-fast: 150ms ease;
@@ -40,6 +41,9 @@
   --color-danger:  #C62828;  --color-info:    #1976d2;
   --color-up:      #E63946;  --color-down:    #457B9D;
   --color-neutral: #43a047;
+  /* v3.11 (FR-3.11.6): 补齐缺失语义色令牌 */
+  --color-ai:      #6366f1;  /* AI 品牌紫/靛蓝系（评估/模型徽标） */
+  --white:         #ffffff;  /* 强调色/渐变上的文字、白底 */
 
   /* ─── Badge / Label Colors ─── */
   --badge-success-bg:   #E8F5E9;  --badge-success-text: #2E7D32;
@@ -48,6 +52,9 @@
   --badge-info-bg:      #E3F2FD;  --badge-info-text:    #1976D2;
   --badge-gold-bg:      #FFF8E1;
   --color-gold:         #D4AF37;  --gold-light: #E8D5B7;  --gold-bg: #FFFDF5;
+
+  /* ─── 固定装饰色（不随主题的组件变体） ─── */
+  --avatar-dark-bg:     #1E293B;  --avatar-dark-text: #E2E8F0;
 
   /* ─── Element Plus Override Colors ─── */
   --el-success: #4CAF50;  --el-warning: #FF9800;

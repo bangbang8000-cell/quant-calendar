@@ -24,28 +24,28 @@
                         <!-- 统计卡片 -->
                         <div class="dashboard-grid" style="margin-bottom: 20px;">
                             <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--color-primary);">
-                                <div class="stat-icon" style="background: rgba(99,102,241,0.12); color: var(--color-primary);">📋</div>
+                                <div class="stat-icon" style="background: var(--badge-info-bg); color: var(--color-primary);">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistory.length }}</div>
                                     <div class="stat-label">总评估数</div>
                                 </div>
                             </div>
                             <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--el-success);">
-                                <div class="stat-icon" style="background: rgba(103,194,58,0.12); color: var(--el-success);">📈</div>
+                                <div class="stat-icon" style="background: var(--badge-success-bg); color: var(--el-success);">📈</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistoryStockCount }}</div>
                                     <div class="stat-label">覆盖股票</div>
                                 </div>
                             </div>
-                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid var(--color-gold, #D4A843);">
-                                <div class="stat-icon" style="background: rgba(212,168,67,0.12); color: var(--color-gold, #D4A843);">⭐</div>
+                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid var(--color-gold);">
+                                <div class="stat-icon" style="background: var(--badge-gold-bg); color: var(--color-gold);">⭐</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
                                     <div class="stat-label">自选股</div>
                                 </div>
                             </div>
                             <div class="stat-card" @click="showAutoEvaluateSettings = true" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
-                                <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'rgba(230,162,60,0.15)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
+                                <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--badge-gold-bg)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
                                 <div class="stat-content">
@@ -55,7 +55,7 @@
                             </div>
                             <!-- v3.5.0-T6: AI 用量统计 -->
                             <div class="stat-card" style="border-left: 3px solid var(--el-info);" title="AI 模型调用统计">
-                                <div class="stat-icon" style="background: rgba(144,147,153,0.12); color: var(--el-info);">⚡</div>
+                                <div class="stat-icon" style="background: var(--bg-hover); color: var(--el-info);">⚡</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiUsage.total_calls || 0 }}</div>
                                     <div class="stat-label">AI 调用量</div>
@@ -207,7 +207,7 @@
                                         <div style="flex:1;" @click="toggleDateExpand(date)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📅 {{ date }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
                                         <div @click="toggleDateExpand(date)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedDates.includes(date) ? 'rotate(90deg)' : ''}">▶</div>
@@ -224,7 +224,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -261,7 +261,7 @@
                                         <div style="flex:1;" @click="toggleMonthExpand(month)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📆 {{ month }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
                                         <div @click="toggleMonthExpand(month)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedMonths.includes(month) ? 'rotate(90deg)' : ''}">▶</div>
@@ -278,7 +278,7 @@
                                                     <div class="stock-info">
                                                         <span class="stock-code">{{ record.stock_code }}</span>
                                                         <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
+                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                     </div>
                                                     <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                         <span class="score-num">{{ record.result.total_score }}</span>
@@ -313,7 +313,7 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <strong>{{ code }}</strong>
                                             <span style="color: var(--text-tertiary);">{{ records[0].stock_name }}</span>
-                                            <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}次</span>
+                                            <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}次</span>
                                             <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ records[0].result.total_score }}分</span>
                                         </div>
                                     </div>
@@ -333,7 +333,7 @@
                                                 <div class="stock-info">
                                                     <span class="stock-code">{{ record.stock_code }}</span>
                                                     <span class="stock-name">{{ record.stock_name }}</span>
-                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
+                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                                 </div>
                                                 <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
                                                     <span class="score-num">{{ record.result.total_score }}</span>
@@ -402,7 +402,7 @@
                                         <div style="flex:1;" @click="toggleChatDateExpand(date)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📅 {{ date }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
                                         <div @click="toggleChatDateExpand(date)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatDates.includes(date) ? 'rotate(90deg)' : ''}">▶</div>
@@ -420,7 +420,7 @@
                                                         <span class="stock-code">{{ session.stock_code }}</span>
                                                         <span class="stock-name">{{ session.stock_name }}</span>
                                                     </div>
-                                                    <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                    <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
                                                         <span class="score-num">{{ session.msg_count }}</span>
                                                         <span class="score-level">条消息</span>
                                                     </span>
@@ -452,7 +452,7 @@
                                         <div style="flex:1;" @click="toggleChatMonthExpand(month)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📆 {{ month }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
                                         <div @click="toggleChatMonthExpand(month)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatMonths.includes(month) ? 'rotate(90deg)' : ''}">▶</div>
@@ -470,7 +470,7 @@
                                                         <span class="stock-code">{{ session.stock_code }}</span>
                                                         <span class="stock-name">{{ session.stock_name }}</span>
                                                     </div>
-                                                    <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                    <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
                                                         <span class="score-num">{{ session.msg_count }}</span>
                                                         <span class="score-level">条消息</span>
                                                     </span>
@@ -502,7 +502,7 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <strong>{{ code }}</strong>
                                             <span style="color: var(--text-tertiary);">{{ sessions[0].stock_name }}</span>
-                                            <span class="count-badge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}次</span>
+                                            <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}次</span>
                                         </div>
                                     </div>
                                     <span style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
@@ -520,7 +520,7 @@
                                                     <span class="stock-code">{{ session.stock_code }}</span>
                                                     <span class="stock-name">{{ session.stock_name }}</span>
                                                 </div>
-                                                <span class="score-badge-small" style="background: var(--primary-color); color: #fff;">
+                                                <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
                                                     <span class="score-num">{{ session.msg_count }}</span>
                                                     <span class="score-level">条消息</span>
                                                 </span>

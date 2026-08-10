@@ -272,7 +272,7 @@
   .consensus-item {
     border-radius: 14px;
     padding: 14px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
   }
 }
 

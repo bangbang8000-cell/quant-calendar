@@ -101,7 +101,7 @@
                                 </div>
                                 <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
                                     <div class="status-label">错误率</div>
-                                    <div class="status-value" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? '#f56c6c' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                    <div class="status-value" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                 </div>
                             </div>
                         </div>
@@ -151,15 +151,15 @@
                                 <div style="font-size: var(--font-base); font-weight: var(--font-medium);">原生<span v-if="iconSystem === 'emoji'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'ink'}" @click="switchIconSystem('ink')">
-                                <div class="theme-color" style="background: linear-gradient(135deg, var(--bg-hover, #f5f0eb), var(--bg-card, #e8e0d5));"></div>
+                                <div class="theme-color" style="background: linear-gradient(135deg, var(--bg-hover, var(--gold-light)), var(--bg-card, var(--gold-bg)));"></div>
                                 <div style="font-size: var(--font-base); font-weight: var(--font-medium);">墨韵<span v-if="iconSystem === 'ink'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'edge'}" @click="switchIconSystem('edge')">
-                                <div class="theme-color" style="background: linear-gradient(135deg, #6366f1, #4f46e5);"></div>
+                                <div class="theme-color" style="background: linear-gradient(135deg, var(--color-ai), var(--color-ai));"></div>
                                 <div style="font-size: var(--font-base); font-weight: var(--font-medium);">锋线<span v-if="iconSystem === 'edge'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                             <div class="theme-item" :class="{active: iconSystem === 'crystal'}" @click="switchIconSystem('crystal')">
-                                <div class="theme-color" style="background: linear-gradient(135deg, #a78bfa, #7c3aed);"></div>
+                                <div class="theme-color" style="background: linear-gradient(135deg, var(--color-ai), var(--color-ai));"></div>
                                 <div style="font-size: var(--font-base); font-weight: var(--font-medium);">叠彩<span v-if="iconSystem === 'crystal'" style="font-size: var(--font-xs); color: var(--primary-color); margin-left: 4px;">当前</span></div>
                             </div>
                         </div>
@@ -521,7 +521,7 @@
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                                     <strong style="font-size: var(--font-lg);">{{ g.name }}</strong>
                                     <span style="font-size:10px;color:var(--text-tertiary);">{{ gid }}</span>
-                                    <span v-if="g.locked" style="font-size:10px;color:#9CA3AF;">🔒</span>
+                                    <span v-if="g.locked" style="font-size:10px;color:var(--text-tertiary);">🔒</span>
                                 </div>
                                 <div style="font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: 6px;">{{ g.description }}</div>
                                 <div style="font-size: var(--font-sm); color: var(--text-tertiary);">
@@ -569,7 +569,7 @@
                             <div class="card-title">📌 软件版本</div>
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                 <span style="font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px;">v{{ appVersion }}</span>
-                                <span style="color: #4CAF50; font-size: var(--font-md);">● 服务运行中</span>
+                                <span style="color: var(--color-success); font-size: var(--font-md);">● 服务运行中</span>
                             </div>
                         </div>
                         <!-- v3.2.0-T24: 问题反馈 -->

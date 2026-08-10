@@ -118,7 +118,7 @@
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
                                 <div class="consensus-name">{{ item.name }}
-                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
                                     <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span>
                                 </div>
                             </div>
@@ -139,7 +139,7 @@
                             <div style="font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 ⏱️ 美林时钟 · 经济周期
                             </div>
-                            <span :style="{background: merrillData.color || '#4CAF50'}" 
+                            <span :style="{background: merrillData.color || 'var(--color-success)'}" 
                                   style="padding: 3px 12px; border-radius: 12px; color: white; font-size: var(--font-sm); font-weight: var(--font-semibold);">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
@@ -177,8 +177,8 @@
                             <div style="width: 100%; height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden;">
                                 <div :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', 
                                               background: (merrillData.timing.progress_percent || 0) > 100 ? 
-                                                'linear-gradient(90deg, ' + (merrillData.color || '#4CAF50') + ', #FF9800)' : 
-                                                (merrillData.color || '#4CAF50')}" 
+                                                'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : 
+                                                (merrillData.color || 'var(--color-success)')}" 
                                      style="height: 100%; border-radius: 4px; transition: width 0.5s;"></div>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">
@@ -230,9 +230,9 @@
                         <div class="card-title">💹 今日市场行情</div>
                         <div class="market-status">
                             <span>
-                                <span v-if="marketData.is_trading_day" style="color:var(--color-primary,#E63946);font-weight:600;">● 交易日</span>
+                                <span v-if="marketData.is_trading_day" style="color:var(--primary-color);font-weight:600;">● 交易日</span>
                                 <span v-else style="color:var(--text-tertiary);">○ 非交易日</span>
-                                <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:var(--color-neutral,#0ca678);font-weight:600;">🕐 交易中</span>
+                                <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:var(--color-neutral);font-weight:600;">🕐 交易中</span>
                                 <span v-if="!marketData.in_trading_hours && marketData.is_trading_day" style="margin-left:8px;color:var(--text-tertiary);">已收盘</span>
                             </span>
                             <span style="font-size:var(--font-xs);color:var(--text-tertiary);">{{ marketData.date }}</span>
@@ -271,7 +271,7 @@
                                 <div class="consensus-badge">{{ item.strategy_count || index + 1 }}</div>
                                 <div class="consensus-info">
                                     <div class="consensus-code">{{ item.code }}</div>
-                                    <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                                    <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                                 </div>
                                 <div class="consensus-tags">
                                     <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>

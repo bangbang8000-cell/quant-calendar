@@ -831,7 +831,7 @@ const allMenuDefs = [
                         dataZoom: [{ type: 'inside' }],
                         series: [{
                             name: '净值', type: 'line', data: values, smooth: true, symbol: 'none',
-                            lineStyle: { width: 2, color: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#667eea' },
+                            lineStyle: { width: 2, color: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || getComputedStyle(document.documentElement).getPropertyValue('--color-ai').trim() || '#6366f1' /* qc-allow-hardcode: ECharts canvas 无法解析 CSS 变量，两级运行时兜底恒覆盖该字面量 */ },
                             areaStyle: { opacity: 0.1 },
                         }],
                     });

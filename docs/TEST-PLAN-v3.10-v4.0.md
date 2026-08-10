@@ -131,7 +131,7 @@
 | TC-11.6 | `test_virtual_list_render` | 11.5 | 单元 | 虚拟列表仅渲染可视区行数；滚动位置与索引映射正确 | ✅ |
 | TC-11.7 | `test_cache_silent_refresh` | 11.6 | 单元 | 同参数请求命中缓存；后台刷新后数据更新且触发提示 | ✅ |
 | TC-11.8 | `test_state_panel_variants` | 11.7 | 单元 | 空/加载/错误/离线四态渲染正确 | ✅ |
-| TC-11.9 | `test_tokens_no_hardcode` | 11.9 | 静态 | 模板/CSS 无硬编码色值（`#`/`rgba(` 出现次数为 0，白名单除外） | ⬜ |
+| TC-11.9 | `test_tokens_no_hardcode` | 11.9 | 静态 | 模板/CSS 无硬编码色值（`#`/`rgba(` 出现次数为 0，白名单除外） | ✅ |
 | TC-11.10 | `test_today_one_screen` | 11.10 | 接口 | 首页聚合数据（美林/情绪/池变动/健康）字段完整 | ⬜ |
 | TC-11.11 | `test_chart_toolbox` | 11.11 | 单元 | 十字线/MA 图例开关配置正确注入 ECharts option | ⬜ |
 | TC-11.12 | `test_module_split_boundary` | 11.3 | 静态 | app-logic.js 行数 < 800；各域模块导出的 API 面与调用方契约一致 | ⬜ |

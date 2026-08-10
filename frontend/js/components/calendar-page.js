@@ -50,7 +50,7 @@
                                                 <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                                 <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                             </div>
-                                            <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                                            <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                                         </div>
                                         <div class="consensus-tags">
                                             <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -74,7 +74,7 @@
                                     <div class="stat-label" style="font-size: var(--font-sm);">总股票数</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
-                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--el-success, #43e97b);">{{ statusCounts.newCount }}</div>
+                                    <div class="stat-value" style="font-size: var(--font-xl); color: var(--el-success);">{{ statusCounts.newCount }}</div>
                                     <div class="stat-label" style="font-size: var(--font-sm);">新入池</div>
                                 </div>
                                 <div class="stat-card" style="flex: 1; min-width: 120px; padding: 14px;">
@@ -104,7 +104,7 @@
                                                 :title="stock.code + ' ' + stock.name">
                                                 <span style="font-weight: var(--font-semibold); color: var(--text-primary);">{{ stock.code }}</span>
                                                 <span style="color: var(--text-tertiary);">{{ stock.name }}</span>
-                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size:var(--font-base);" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
+                                                <span @click.stop="toggleWatchlist(stock.code, stock.name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);" :title="watchlistCodes.has(stock.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(stock.code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(stock.code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
                                             </span>
                                         </template>
                                         <span v-if="item.names.length > 5 && !expandedStrategies[item.strategy]" 

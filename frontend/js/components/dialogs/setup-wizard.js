@@ -16,7 +16,7 @@
                     <div style="text-align: center; margin-bottom: 24px;">
                         <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🔐</div>
                         <div style="font-weight: 600; font-size: var(--font-md);">管理员密码</div>
-                        <div style="color: #999; margin-top: 4px;">建议修改默认密码以保证安全</div>
+                        <div style="color: var(--text-tertiary); margin-top: 4px;">建议修改默认密码以保证安全</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
                         <el-form-item label="新密码（留空则保持不变）">
@@ -34,7 +34,7 @@
                     <div style="text-align: center; margin-bottom: 24px;">
                         <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🤖</div>
                         <div style="font-weight: 600; font-size: var(--font-md);">AI 大模型配置</div>
-                        <div style="color: #999; margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
+                        <div style="color: var(--text-tertiary); margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
                         <el-form-item label="提供商">
@@ -63,7 +63,7 @@
                     <div style="text-align: center; margin-bottom: 24px;">
                         <div style="font-size: var(--font-3xl); margin-bottom: 8px;">📊</div>
                         <div style="font-weight: 600; font-size: var(--font-md);">Tushare 数据源</div>
-                        <div style="color: #999; margin-top: 4px;">用于获取行情数据和股票信息</div>
+                        <div style="color: var(--text-tertiary); margin-top: 4px;">用于获取行情数据和股票信息</div>
                     </div>
                     <el-form :model="setupForm" label-position="top">
                         <el-form-item label="Tushare Token">

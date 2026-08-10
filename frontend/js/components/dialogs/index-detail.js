@@ -19,7 +19,7 @@
                         <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
-                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
+                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
                         <div class="label">{{ indexDetail.pct_chg >= 0 ? '上涨' : '下跌' }}</div>
                     </div>
                 </div>
@@ -32,7 +32,7 @@
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">涨跌额</div>
-                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">
+                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">
                             {{ indexDetail.change >= 0 ? '+' : '' }}{{ Number(indexDetail.change).toFixed(2) }}
                         </div>
                     </div>
