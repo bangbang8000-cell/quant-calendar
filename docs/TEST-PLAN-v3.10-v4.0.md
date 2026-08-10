@@ -128,7 +128,7 @@
 | TC-11.3 | `test_command_panel_keyboard` | 11.1 | 单元 | ↑↓ 选择、Enter 执行、Esc 关闭逻辑正确 | ⬜ |
 | TC-11.4 | `test_global_search_forward` | 11.2 | 单元 | 搜股票直达详情、搜菜单跳页、搜指令触发动作 | ⬜ |
 | TC-11.5 | `test_dialog_module_isolated` | 11.4 | 单元 | 拆分后 dialog 组件模板完整、可独立渲染、prop 正确 | ⬜ |
-| TC-11.6 | `test_virtual_list_render` | 11.5 | 单元 | 虚拟列表仅渲染可视区行数；滚动位置与索引映射正确 | ⬜ |
+| TC-11.6 | `test_virtual_list_render` | 11.5 | 单元 | 虚拟列表仅渲染可视区行数；滚动位置与索引映射正确 | ✅ |
 | TC-11.7 | `test_cache_silent_refresh` | 11.6 | 单元 | 同参数请求命中缓存；后台刷新后数据更新且触发提示 | ⬜ |
 | TC-11.8 | `test_state_panel_variants` | 11.7 | 单元 | 空/加载/错误/离线四态渲染正确 | ⬜ |
 | TC-11.9 | `test_tokens_no_hardcode` | 11.9 | 静态 | 模板/CSS 无硬编码色值（`#`/`rgba(` 出现次数为 0，白名单除外） | ⬜ |

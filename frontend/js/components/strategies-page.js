@@ -264,16 +264,21 @@
                     <!-- 策略共识度排行 -->
                     <div class="card">
                         <div class="card-title">🏆 策略共识度排行 (多策略同时选中)</div>
-                        <div v-for="item in filteredConsensusRank" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
-                            <div class="consensus-badge">{{ item.strategy_count }}</div>
-                            <div class="consensus-info">
-                                <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                        <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
+                        <qc-virtual-list :items="filteredConsensusRank" :row-height="78" style="height: calc(100vh - 240px);">
+                            <template #default="{ item, index }">
+                            <div class="consensus-item" style="margin-bottom: 0;" @click="showStockDetail(item.code)">
+                                <div class="consensus-badge">{{ item.strategy_count || index + 1 }}</div>
+                                <div class="consensus-info">
+                                    <div class="consensus-code">{{ item.code }}</div>
+                                    <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold,#D4A843);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                                </div>
+                                <div class="consensus-tags">
+                                    <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
+                                </div>
                             </div>
-                            <div class="consensus-tags">
-                                <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
-                            </div>
-                        </div>
+                            </template>
+                        </qc-virtual-list>
                     </div>
                     </div>
                 </div>
