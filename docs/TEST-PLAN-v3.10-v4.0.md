@@ -132,11 +132,22 @@
 | TC-11.7 | `test_cache_silent_refresh` | 11.6 | 单元 | 同参数请求命中缓存；后台刷新后数据更新且触发提示 | ✅ |
 | TC-11.8 | `test_state_panel_variants` | 11.7 | 单元 | 空/加载/错误/离线四态渲染正确 | ✅ |
 | TC-11.9 | `test_tokens_no_hardcode` | 11.9 | 静态 | 模板/CSS 无硬编码色值（`#`/`rgba(` 出现次数为 0，白名单除外） | ✅ |
-| TC-11.10 | `test_today_one_screen` | 11.10 | 接口 | 首页聚合数据（美林/情绪/池变动/健康）字段完整 | ⬜ |
+| TC-11.10 | `test_today_one_screen` | 11.10 | 接口 | 首页聚合数据（美林/情绪/池变动/健康）字段完整 | ✅ |
 | TC-11.11 | `test_chart_toolbox` | 11.11 | 单元 | 十字线/MA 图例开关配置正确注入 ECharts option | ⬜ |
+
 | TC-11.12 | `test_module_split_boundary` | 11.3 | 静态 | app-logic.js 行数 < 800；各域模块导出的 API 面与调用方契约一致 | ⬜ |
 | TC-11.13 | `test_app_logic_regression` | 11.3 | 回归 | 拆分后原逻辑全量回归（现有 pytest 全过 + SPA 完整性） | ⬜ |
 | TC-11.14 | `test_e2e_screenshot_diff` | 11.12 | e2e | Playwright 截图对比，产出 diff 报告（不阻塞发布） | ⬜ |
+
+> **TC-11.10 实现说明（✅ 2026-08-11）**: 采用接口 + 静态混合验证（`test_today_snapshot.py` 4 例，pytest 195→199）。
+> ① `test_metrics_data_sources_fields_complete` 直接驱动 `record_call` 种子 → 断言 `/api/system/metrics` 的
+> `data_sources` 每源字段完整（name/calls/successes/failures/success_rate/avg_latency_ms/degraded）、连续 3 失败
+> → degraded=True、成功率与均值延迟正确；② `test_metrics_no_calls_returns_empty_sources` 空态；③
+> `test_today_snapshot_wiring_frontend` 静态校验 strategies-page 今日一屏聚合（美林时钟/市场情绪/池变动/今日重点/
+> 数据健康度 + merrillNext/todayFocus/healthRows + degraded/success_rate 渲染）+ app-logic 消费 `/api/system/metrics`
+> 暴露 `healthMetrics`/`loadHealthMetrics`；④ `test_today_snapshot_css_uses_tokens` 校验 FR-3.11.7 区块 CSS 无硬编码
+> 色值（TC-11.9 白名单约束延续）。**浏览器实测**：健康卡 3 源真实值（东财 0%/Tushare 0%/AkShare 41.2%，均 degraded）、
+> 今日重点 3 项、美林 cell 跳转 + 新入池跳转均通过、0 pageerror。
 
 ### 5.2 Playwright 视觉回归 (v3.11 专项)
 

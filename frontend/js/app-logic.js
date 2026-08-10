@@ -843,6 +843,8 @@ const allMenuDefs = [
                 });
                 const showUserMenu = ref(false);
                 const dashboardData = ref({});
+                // v3.11 (FR-3.11.7): 数据源健康指标（/api/system/metrics data_sources）
+                const healthMetrics = ref([]);
                 const dashboardDate = ref('');
 
                 // ===== 视图切换 =====
@@ -1058,6 +1060,8 @@ const allMenuDefs = [
                             await loadUserConfig();
                             await loadDates();
                             await loadDashboardData();
+                            // v3.11 (FR-3.11.7): 登录后刷新数据源健康卡（登录早于页面切换 watch，需显式加载）
+                            loadHealthMetrics().catch(() => {});
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('登录成功');
                             // v3.2.0-T22: 首次使用引导 (所有角色首次登录显示)
@@ -1094,6 +1098,8 @@ const allMenuDefs = [
                             await loadUserConfig();
                             await loadDates();
                             await loadDashboardData();
+                            // v3.11 (FR-3.11.7): 访客登录后同样刷新数据源健康卡
+                            loadHealthMetrics().catch(() => {});
                             await loadConsensusData();
                             ElementPlus.ElMessage.success('访客登录成功');
                         } else {
@@ -1389,6 +1395,7 @@ const allMenuDefs = [
                         const hit = qcCache.get(reqKey);
                         if (hit !== undefined) {
                             dashboardData.value = hit;
+                            loadHealthMetrics().catch(() => {});
                             backgroundRefresh('/api/dashboard', reqKey, (d) => d.data || d, (data) => {
                                 dashboardData.value = data;
                                 lastRefreshTime.value = Date.now();
@@ -1397,7 +1404,19 @@ const allMenuDefs = [
                         }
                     }
                     await loadDashboardData();
+                    loadHealthMetrics().catch(() => {});
                     if (qcCache) qcCache.set(reqKey, dashboardData.value);
+                }
+
+                // v3.11 (FR-3.11.7): 数据源健康指标（成功率/degraded/延迟，v3.10 metrics 前端消费）
+                async function loadHealthMetrics() {
+                    const token = localStorage.getItem('quant_token');
+                    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                    const res = await fetch('/api/system/metrics', { headers });
+                    if (!res.ok) throw new Error('metrics ' + res.status);
+                    const data = await res.json();
+                    const arr = Array.isArray(data) ? data : (data && data.data_sources) || [];
+                    healthMetrics.value = arr;
                 }
 
                 async function showStockDetail(stockCode) {
@@ -1751,7 +1770,7 @@ const allMenuDefs = [
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, handleLogout,
 
-                    marketData, merrillData, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    marketData, merrillData, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,

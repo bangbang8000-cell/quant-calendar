@@ -19,6 +19,63 @@
                         </div>
                     </div>
 
+                    <!-- v3.11 (FR-3.11.7): 今日一屏 — 聚合当日决策要素（美林/情绪/池变动/健康/重点） -->
+                    <div v-if="!(loading && loadingView === 'overview')" class="today-hero card">
+                        <div class="today-hero-head">
+                            <div class="today-hero-title">☀️ 今日一屏</div>
+                            <div class="today-hero-date">
+                                <span>{{ todayText }}</span>
+                                <span class="today-hero-status">{{ tradingStatus }}</span>
+                            </div>
+                        </div>
+                        <div class="today-grid">
+                            <!-- 美林时钟 -->
+                            <div class="today-cell" @click="currentSubPage = 'merrill'" style="cursor:pointer;">
+                                <div class="today-cell-label">⏱️ 美林时钟</div>
+                                <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || '计算中...' }}</div>
+                                <div class="today-cell-sub" v-if="merrillNext">{{ merrillNext }}</div>
+                                <div class="today-cell-sub" v-else-if="merrillData?.timing?.duration_days != null">已 {{ merrillData.timing.duration_days }} 天 · 剩余 {{ merrillData.timing.days_remaining ?? '—' }} 天</div>
+                            </div>
+                            <!-- 市场情绪 -->
+                            <div class="today-cell" @click="currentSubPage = 'market'" style="cursor:pointer;">
+                                <div class="today-cell-label">💹 市场情绪</div>
+                                <div class="today-sentiment" :class="{muted: !marketData?.market_sentiment}">{{ marketData?.market_sentiment?.text || '暂无情绪数据' }}</div>
+                                <div class="today-cell-sub">{{ tradingStatus }}</div>
+                            </div>
+                            <!-- 池变动 -->
+                            <div class="today-cell" @click="currentSubPage = 'consensus'" style="cursor:pointer;">
+                                <div class="today-cell-label">📌 池变动</div>
+                                <div class="today-pool-row"><span class="today-pool-val up">+{{ dashboardData?.pool_changes?.new_count || 0 }}</span><span class="today-pool-name">新入池</span></div>
+                                <div class="today-pool-row"><span class="today-pool-val down">-{{ dashboardData?.pool_changes?.out_count || 0 }}</span><span class="today-pool-name">已出池</span></div>
+                            </div>
+                            <!-- 今日重点 -->
+                            <div class="today-cell">
+                                <div class="today-cell-label">🎯 今日重点</div>
+                                <div class="today-focus-list">
+                                    <div v-if="todayFocus.length === 0" class="today-focus-empty">✅ 无预警 · 一切正常</div>
+                                    <div v-for="(f, i) in todayFocus.slice(0, 3)" :key="i" class="today-focus-item" :class="f.level" @click="f.action">
+                                        <span class="today-focus-icon">{{ f.icon }}</span><span class="today-focus-text">{{ f.text }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 数据健康度 -->
+                        <div class="today-health">
+                            <div class="today-health-title">🩺 数据健康度 <span class="today-health-hint">成功率 / 平均延迟 / 调用次数</span></div>
+                            <div class="today-health-strip">
+                                <div v-if="healthRows.length === 0" class="today-health-empty">今日暂无数据源调用记录</div>
+                                <div v-for="s in healthRows" :key="s.source" class="today-health-item">
+                                    <span class="today-health-dot" :class="healthClass(s)"></span>
+                                    <span class="today-health-name">{{ s.name }}</span>
+                                    <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
+                                    <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
+                                    <span class="today-health-calls">{{ s.calls }}次</span>
+                                    <span v-if="s.degraded" class="today-health-badge">degraded</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 核心数据卡片 (v1.11: +趋势徽标) -->
                     <!-- 骨架屏加载 -->
                     <div v-if="loading && loadingView === 'overview'" class="dashboard-grid">
@@ -286,7 +343,104 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      const { computed } = Vue;
+
+      // ===== v3.11 (FR-3.11.7) 今日一屏: 聚合当日决策要素的派生视图 =====
+      const merrill = computed(() => state.merrillData?.value || {});
+      const market = computed(() => state.marketData?.value || {});
+      const dashboard = computed(() => state.dashboardData?.value || {});
+      const health = computed(() => state.healthMetrics?.value || []);
+      const consensusRank = computed(() => state.filteredConsensusRank?.value || []);
+
+      // code → name 查找表（来自共识榜/当前池），用于今日新入池显示股票名
+      const codeNameMap = computed(() => {
+        const m = {};
+        for (const it of consensusRank.value) if (it.code && it.name) m[it.code] = it.name;
+        return m;
+      });
+
+      const HEALTH_NAMES = { 'sxsc_tushare': '东财', 'tushare': 'Tushare', 'akshare': 'AkShare' };
+      function healthName(name) { return HEALTH_NAMES[name] || name; }
+
+      // 今日日期 + 交易状态
+      const todayText = computed(() => market.value.date || dashboard.value.latest_date || '-');
+      const tradingStatus = computed(() => {
+        const mk = market.value;
+        if (!mk || Object.keys(mk).length === 0) return '数据加载中...';
+        if (mk.is_trading_day && mk.in_trading_hours) return '● 交易中';
+        if (mk.is_trading_day) return '已收盘';
+        return '○ 非交易日';
+      });
+
+      // 美林下一阶段预测
+      const merrillNext = computed(() => {
+        const nsp = merrill.value.next_stage_prediction;
+        if (nsp && nsp.next_stage_name && nsp.transition_probability > 0.2) {
+          return `→${nsp.next_stage_name} ${Math.round(nsp.transition_probability * 100)}%`;
+        }
+        return '';
+      });
+
+      // 今日重点（新入池/预警），点击跳转对应页
+      const todayFocus = computed(() => {
+        const items = [];
+        const pc = dashboard.value.pool_changes || {};
+        const n = pc.new_count || 0;
+        if (n > 0) {
+          const names = (pc.new_stocks || []).map(c => codeNameMap.value[c] || c).slice(0, 4).join('、');
+          items.push({
+            icon: '🆕', level: 'new',
+            text: `今日新入池 ${n} 只${names ? ' · ' + names : ''}`,
+            action: () => { state.currentPage.value = 'calendar'; state.currentSubPage.value = 'pool'; state.statusFilter.value = 'new'; },
+          });
+        }
+        for (const s of health.value.filter(x => x.degraded)) {
+          items.push({
+            icon: '⚠️', level: 'warn',
+            text: `数据源 ${healthName(s.name)} degraded（连续失败）`,
+            action: () => { state.currentPage.value = 'system'; },
+          });
+        }
+        const t = merrill.value.timing;
+        if (t && t.progress_percent && t.progress_percent > 100) {
+          items.push({
+            icon: '⏰', level: 'warn',
+            text: `美林「${merrill.value.name}」已超期 ${t.progress_percent}%`,
+            action: () => { state.currentSubPage.value = 'merrill'; },
+          });
+        } else if (t && t.maturity && merrill.value.name) {
+          items.push({
+            icon: '⏳', level: 'info',
+            text: `美林「${merrill.value.name}」阶段成熟度 ${t.maturity}`,
+            action: () => { state.currentSubPage.value = 'merrill'; },
+          });
+        }
+        const mk = market.value;
+        if (mk && mk.is_trading_day === false && mk.date) {
+          items.push({
+            icon: '📅', level: 'info',
+            text: `${mk.date} 非交易日`,
+            action: () => { state.currentSubPage.value = 'market'; },
+          });
+        }
+        return items;
+      });
+
+      // 数据健康卡行（各源成功率/degraded/延迟）
+      const healthRows = computed(() => health.value.map(s => ({
+        name: healthName(s.name), source: s.name,
+        success_rate: s.success_rate, avg_latency_ms: s.avg_latency_ms,
+        calls: s.calls || 0, degraded: !!s.degraded,
+      })));
+      function healthClass(s) {
+        if (s.degraded) return 'degraded';
+        if (s.success_rate == null) return 'unknown';
+        if (s.success_rate >= 90) return 'ok';
+        if (s.success_rate >= 60) return 'warn';
+        return 'bad';
+      }
+
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, healthRows, healthClass };
     },
   };
 })();

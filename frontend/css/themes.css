@@ -3487,3 +3487,96 @@ text {
   outline-offset: 2px !important;
   border-radius: 2px;
 }
+
+/* ========== v3.11 (FR-3.11.7) 今日一屏 — 聚合当日决策要素 ========== */
+.today-hero {
+    padding: 18px 20px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--primary-color) 6%, transparent), var(--bg-card) 40%);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-lg);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+.today-hero-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.today-hero-title { font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); }
+.today-hero-date { display: flex; align-items: center; gap: 10px; font-size: var(--font-sm); color: var(--text-secondary); }
+.today-hero-status {
+    padding: 2px 10px; border-radius: 12px; font-size: var(--font-xs); font-weight: var(--font-medium);
+    background: var(--badge-info-bg); color: var(--el-info);
+}
+.today-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.today-cell {
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+    min-height: 96px;
+}
+.today-cell-label {
+    font-size: var(--font-xs); font-weight: var(--font-semibold);
+    color: var(--text-tertiary); margin-bottom: 8px; letter-spacing: .5px;
+}
+.today-merrill-badge {
+    display: inline-block; padding: 3px 12px; border-radius: 12px;
+    color: var(--white); font-size: var(--font-sm); font-weight: var(--font-semibold);
+}
+.today-cell-sub { font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 8px; }
+.today-sentiment {
+    font-size: var(--font-base); font-weight: var(--font-medium); color: var(--text-primary);
+    line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.today-sentiment.muted { color: var(--text-tertiary); font-weight: var(--font-normal); }
+.today-pool-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; font-size: var(--font-sm); }
+.today-pool-val { font-size: var(--font-md); font-weight: var(--font-bold); }
+.today-pool-val.up { color: var(--color-up); }
+.today-pool-val.down { color: var(--color-down); }
+.today-pool-name { color: var(--text-secondary); }
+.today-focus-list { display: flex; flex-direction: column; gap: 4px; }
+.today-focus-empty { font-size: var(--font-xs); color: var(--text-tertiary); }
+.today-focus-item {
+    display: flex; align-items: center; gap: 6px; font-size: var(--font-xs); cursor: pointer;
+    padding: 3px 8px; border-radius: 6px; line-height: 1.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.today-focus-item:hover { background: var(--bg-hover); }
+.today-focus-item.new { color: var(--color-up); }
+.today-focus-item.warn { color: var(--color-warning); }
+.today-focus-item.info { color: var(--el-info); }
+.today-focus-icon { flex-shrink: 0; }
+.today-focus-text { overflow: hidden; text-overflow: ellipsis; }
+.today-health {
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-light);
+}
+.today-health-title { font-size: var(--font-xs); font-weight: var(--font-semibold); color: var(--text-tertiary); margin-bottom: 8px; }
+.today-health-hint { font-weight: var(--font-normal); color: var(--text-tertiary); margin-left: 4px; }
+.today-health-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.today-health-item {
+    display: flex; align-items: center; gap: 6px; font-size: var(--font-xs);
+    padding: 4px 10px; background: var(--bg-card);
+    border: 1px solid var(--border-light); border-radius: 8px;
+}
+.today-health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.today-health-dot.ok { background: var(--color-success); }
+.today-health-dot.warn { background: var(--color-warning); }
+.today-health-dot.bad { background: var(--color-danger); }
+.today-health-dot.degraded { background: var(--color-danger); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-danger) 25%, transparent); }
+.today-health-dot.unknown { background: var(--text-tertiary); }
+.today-health-name { font-weight: var(--font-medium); color: var(--text-primary); }
+.today-health-rate { color: var(--text-secondary); font-weight: var(--font-medium); }
+.today-health-lat, .today-health-calls { color: var(--text-tertiary); }
+.today-health-badge {
+    padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: var(--font-semibold);
+    background: var(--badge-danger-bg); color: var(--badge-danger-text);
+}
+.today-health-empty { font-size: var(--font-xs); color: var(--text-tertiary); }

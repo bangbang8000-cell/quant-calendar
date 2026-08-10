@@ -297,3 +297,23 @@
     gap: 8px;
   }
 }
+/* v3.11 (FR-3.11.7) 今日一屏 — 平板/移动端降级 */
+@media (max-width: 1024px) {
+  .today-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .today-hero-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .today-focus-item {
+    white-space: normal;
+    word-break: break-word;
+  }
+  .today-health-item {
+    flex-wrap: wrap;
+  }
+}
