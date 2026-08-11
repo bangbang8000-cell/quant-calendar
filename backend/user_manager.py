@@ -10,10 +10,10 @@ import bcrypt
 
 from paths import USERS_FILE as DATA_FILE
 
-# 四套主题配置
+# 七套主题配置 (v3.13: 名称与前端 themes.js 对齐；dark-pro 补齐, 供顶部主题切换菜单)
 THEMES = {
     "tech-blue": {
-        "name": "专业蓝",
+        "name": "科技蓝",
         "primary": "#1d4ed8",
         "secondary": "#60a5fa",
         "gradient": "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%)"
@@ -25,29 +25,35 @@ THEMES = {
         "gradient": "linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%)"
     },
     "vibrant-orange": {
-        "name": "土豪金",
+        "name": "活力金",
         "primary": "#D4A843",
         "secondary": "#F0C75E",
         "gradient": "linear-gradient(135deg, #B8860B 0%, #D4A843 50%, #F0C75E 100%)"
     },
 
     "classic-white": {
-        "name": "经典白（蓝）",
+        "name": "经典白",
         "primary": "#2563eb",
         "secondary": "#60a5fa",
         "gradient": "linear-gradient(135deg, #ffffff 45%, #2563eb 55%)"
     },
     "classic-red": {
-        "name": "经典白（红）",
+        "name": "经典红",
         "primary": "#dc2626",
         "secondary": "#f87171",
         "gradient": "linear-gradient(135deg, #ffffff 45%, #dc2626 55%)"
     },
     "classic-gold": {
-        "name": "经典白（金）",
+        "name": "经典金",
         "primary": "#b8922a",
         "secondary": "#e6c450",
         "gradient": "linear-gradient(135deg, #ffffff 45%, #b8922a 55%)"
+    },
+    "dark-pro": {
+        "name": "暗色专业",
+        "primary": "#64ffda",
+        "secondary": "#45e0bc",
+        "gradient": "linear-gradient(135deg, #0f0f23 0%, #1e2a4a 50%, #64ffda 100%)"
     },
 
 }

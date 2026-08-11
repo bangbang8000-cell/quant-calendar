@@ -1600,17 +1600,17 @@ class AIEvaluator:
                 return {"success": False, "message": f"API连接测试失败: {str(e)}"}
         return {"success": False, "message": "请先配置API Key"}
 
-    # ─── 自动评股配置 ───────────────────────────────────────────
+    # ─── 自动评估配置 ───────────────────────────────────────────
 
     def get_auto_config(self) -> Dict:
-        """获取自动评股配置"""
+        """获取自动评估配置"""
         from paths import AUTO_EVALUATE_CONFIG_FILE
         auto_config_file = AUTO_EVALUATE_CONFIG_FILE
         try:
             with open(auto_config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
-            logger.exception("加载自动评股配置失败")
+            logger.exception("加载自动评估配置失败")
             return {
                 "enabled": False,
                 "schedule_type": "daily",
@@ -1621,7 +1621,7 @@ class AIEvaluator:
             }
 
     def save_auto_config(self, config: Dict) -> bool:
-        """保存自动评股配置"""
+        """保存自动评估配置"""
         from paths import AUTO_EVALUATE_CONFIG_FILE
         auto_config_file = AUTO_EVALUATE_CONFIG_FILE
         try:
@@ -1629,7 +1629,7 @@ class AIEvaluator:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             return True
         except Exception:
-            logger.exception("保存自动评股配置失败")
+            logger.exception("保存自动评估配置失败")
             return False
 
 

@@ -35,7 +35,7 @@ DEFAULT_GROUPS = {
     },
     "user": {
         "name": "用户组",
-        "description": "普通用户组，可访问策略/日历/评股",
+        "description": "普通用户组，可访问策略/日历/评估",
         "locked": True,
         "visible_menus": {
             "strategies": True, "calendar": True, "ai": True,

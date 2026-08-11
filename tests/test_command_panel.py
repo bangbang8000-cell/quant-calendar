@@ -80,14 +80,14 @@ def test_palette_toggle_flip_and_force_close():
 MENU_DEFS = [
     {'key': 'strategies', 'name': '策略总览', 'icon': '📈', 'subPages': ['overview', 'merrill', 'market', 'consensus']},
     {'key': 'calendar', 'name': '量化日历', 'icon': '🗓️', 'subPages': ['daily', 'weekly', 'monthly', 'yearly', 'pool']},
-    {'key': 'ai', 'name': '智能评股', 'icon': '🤖', 'subPages': ['overview', 'watchlist', 'history', 'chat_history']},
+    {'key': 'ai', 'name': '智能评估', 'icon': '🤖', 'subPages': ['overview', 'watchlist', 'history', 'chat_history']},
     {'key': 'system', 'name': '系统配置', 'icon': '⚙️', 'subPages': ['status', 'autoeval', 'datasource', 'feature', 'user', 'about']},
 ]
 SUB_PAGE_NAMES = {
     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
-    'status': '系统状态', 'autoeval': '自动评股', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于',
+    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于',
 }
 
 

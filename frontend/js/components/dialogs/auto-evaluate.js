@@ -1,5 +1,5 @@
 // quant-calendar: AutoEvaluateDialog 组件 (v3.11 / FR-3.11.2)
-// 自动评股设置对话框 — 从 index.html 拆出独立组件。
+// 自动评估设置对话框 — 从 index.html 拆出独立组件。
 // 状态经 inject('qcState') 共享（提供方：app-logic.js setup）。
 (function () {
   const { inject } = Vue;
@@ -9,10 +9,10 @@
   window.__quantComponents.AutoEvaluateDialog = {
     name: 'qc-auto-evaluate-dialog',
     template: `
-        <el-dialog v-model="showAutoEvaluateSettings" title="⚙️ 自动评股设置" width="520px">
+        <el-dialog v-model="showAutoEvaluateSettings" title="⚙️ 自动评估设置" width="520px">
             <div style="padding: 15px 0 25px 0;">
                 <el-form label-width="120px">
-                    <el-form-item label="启用自动评股">
+                    <el-form-item label="启用自动评估">
                         <el-switch v-model="autoEvaluateConfig.enabled" active-text="已开启" inactive-text="已关闭" />
                     </el-form-item>
                     <template v-if="autoEvaluateConfig.enabled">

@@ -11,6 +11,7 @@
             --bg-card-header: #f8f9fa;
             --bg-sidebar: rgba(255,255,255,0.95);
             --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --card-gradient-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
             --bg-dialog: rgba(255,255,255,0.95);
             --bg-input: #ffffff;
             --bg-hover: #e9ecef;
@@ -30,6 +31,13 @@
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
             --card-border: #bfdbfe;
+            /* 主按钮令牌 (v3.13: 令牌化, 各主题覆写) */
+            --btn-primary-bg: #1d4ed8; --btn-primary-border: #1d4ed8; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #1e40af; --btn-primary-hover-border: #1e40af;
+            --btn-primary-active-bg: #1e3a8a; --btn-primary-active-border: #1e3a8a;
+            --btn-primary-plain-bg: rgba(29,78,216,0.1); --btn-primary-plain-border: rgba(29,78,216,0.3); --btn-primary-plain-color: #1d4ed8;
+            --btn-primary-plain-hover-bg: rgba(29,78,216,0.2); --btn-primary-plain-hover-border: #1d4ed8;
+            --btn-primary-text-color: #1d4ed8;
         }
         /* 主题切换过渡动画 */
         body, .sidebar, .card, .nav-item, .sub-nav-tab,
@@ -37,7 +45,7 @@
         .page-header, .stat-card, .table-container {
             transition: var(--theme-transition);
         }
-        /* 🔵 专业蓝 - 稳重金融风格 */
+        /* 🔵 科技蓝 - 稳重金融风格 */
         [data-theme="tech-blue"] {
             --primary-color: #1d4ed8;
             --primary-rgb: 29, 78, 216;
@@ -57,7 +65,19 @@
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             --gradient-brand: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
             --badge-info-bg: #EFF6FF; --badge-info-text: #1d4ed8;
+            --badge-success-bg: #ecfdf5; --badge-success-text: #047857;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #b45309;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #b91c1c;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04; --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b; --el-danger: #dc2626;
             --el-info: #1d4ed8;
+            /* 🔵 科技蓝 - 主按钮令牌 */
+            --btn-primary-bg: #1d4ed8; --btn-primary-border: #1d4ed8; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #1e40af; --btn-primary-hover-border: #1e40af;
+            --btn-primary-active-bg: #1e3a8a; --btn-primary-active-border: #1e3a8a;
+            --btn-primary-plain-bg: rgba(29,78,216,0.1); --btn-primary-plain-border: rgba(29,78,216,0.3); --btn-primary-plain-color: #1d4ed8;
+            --btn-primary-plain-hover-bg: rgba(29,78,216,0.2); --btn-primary-plain-hover-border: #1d4ed8;
+            --btn-primary-text-color: #1d4ed8;
         }
         /* 🔴 玫瑰红 - 热烈醒目 */
         [data-theme="rose-red"] {
@@ -78,8 +98,21 @@
             --border-light: #ffe0e0; --border-base: #fecaca; --border-heavy: #fca5a5;
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             --gradient-brand: linear-gradient(135deg, #E63946 0%, #C1121F 100%);
+            /* 🔴 玫瑰红 - 语义徽标 + 主按钮令牌 */
+            --badge-success-bg: #ecfdf5; --badge-success-text: #047857;
+            --badge-warning-bg: #fff7ed; --badge-warning-text: #c2410c;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #b91c1c;
+            --badge-info-bg: #eff6ff; --badge-info-text: #2563eb;
+            --badge-gold-bg: #fefce8; --color-gold: #ca8a04; --gold-light: #fef9c3; --gold-bg: #fefce8;
+            --el-success: #16a34a; --el-warning: #f59e0b; --el-danger: #dc2626; --el-info: #2563eb;
+            --btn-primary-bg: #E63946; --btn-primary-border: #E63946; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #C1121F; --btn-primary-hover-border: #C1121F;
+            --btn-primary-active-bg: #780000; --btn-primary-active-border: #780000;
+            --btn-primary-plain-bg: rgba(230,57,70,0.1); --btn-primary-plain-border: rgba(230,57,70,0.3); --btn-primary-plain-color: #E63946;
+            --btn-primary-plain-hover-bg: rgba(230,57,70,0.2); --btn-primary-plain-hover-border: #E63946;
+            --btn-primary-text-color: #E63946;
         }
-        /* 🟡 土豪金 - 轻奢质感 */
+        /* 🟡 活力金 - 轻奢质感 */
         [data-theme="vibrant-orange"] {
             --primary-color: #b8922a;
             --primary-rgb: 184, 146, 42;
@@ -100,6 +133,18 @@
             --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
             --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
             --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
+            /* 🟡 活力金 - 语义徽标 + 主按钮令牌 */
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #b45309;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #b91c1c;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1d4ed8;
+            --el-success: #16a34a; --el-warning: #f59e0b; --el-danger: #dc2626; --el-info: #1d4ed8;
+            --btn-primary-bg: #b8922a; --btn-primary-border: #b8922a; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #C49A35; --btn-primary-hover-border: #C49A35;
+            --btn-primary-active-bg: #B8860B; --btn-primary-active-border: #B8860B;
+            --btn-primary-plain-bg: rgba(212,168,67,0.1); --btn-primary-plain-border: rgba(212,168,67,0.3); --btn-primary-plain-color: #b8922a;
+            --btn-primary-plain-hover-bg: rgba(212,168,67,0.2); --btn-primary-plain-hover-border: #b8922a;
+            --btn-primary-text-color: #b8922a;
         }
         /* ⚪ 经典主题 — 三变体共享变量 */
         [data-theme^="classic"] {
@@ -131,25 +176,15 @@
             --bg-selected: rgba(37,99,235,0.06); --bg-stripe: #f8fafc;
             --border-light: #e2e8f0; --border-base: #cbd5e1; --border-heavy: #94a3b8;
             --gradient-brand: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            /* ⚪ 经典白 - 主按钮令牌 */
+            --btn-primary-bg: #2563eb; --btn-primary-border: #2563eb; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #1d4ed8; --btn-primary-hover-border: #1d4ed8;
+            --btn-primary-active-bg: #1e40af; --btn-primary-active-border: #1e40af;
+            --btn-primary-plain-bg: rgba(37,99,235,0.08); --btn-primary-plain-border: rgba(37,99,235,0.25); --btn-primary-plain-color: #2563eb;
+            --btn-primary-plain-hover-bg: rgba(37,99,235,0.15); --btn-primary-plain-hover-border: #2563eb;
+            --btn-primary-text-color: #2563eb;
         }
-        [data-theme="classic-white"] .el-button--primary {
-            background-color: #2563eb !important; border-color: #2563eb !important; color: white !important;
-        }
-        [data-theme="classic-white"] .el-button--primary:hover {
-            background-color: #1d4ed8 !important; border-color: #1d4ed8 !important;
-        }
-        [data-theme="classic-white"] .el-button--primary:active {
-            background-color: #1e40af !important; border-color: #1e40af !important;
-        }
-        [data-theme="classic-white"] .el-button--primary.is-plain {
-            background-color: rgba(37,99,235,0.08) !important; border-color: rgba(37,99,235,0.25) !important; color: #2563eb !important;
-        }
-        [data-theme="classic-white"] .el-button--primary.is-plain:hover {
-            background-color: rgba(37,99,235,0.15) !important; border-color: #2563eb !important;
-        }
-        [data-theme="classic-white"] .el-button--primary.is-text { color: #2563eb !important; }
-
-        /* ⚪ 经典白（红） — 白底+红色点缀 */
+        /* ⚪ 经典红 — 白底+红色点缀 */
         [data-theme="classic-red"] {
             --primary-color: #dc2626;
             --primary-rgb: 220, 38, 38;
@@ -164,25 +199,15 @@
             --bg-selected: rgba(220,38,38,0.06); --bg-stripe: #fef2f2;
             --border-light: #fecaca; --border-base: #fca5a5; --border-heavy: #f87171;
             --gradient-brand: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            /* ⚪ 经典红 - 主按钮令牌 */
+            --btn-primary-bg: #dc2626; --btn-primary-border: #dc2626; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #b91c1c; --btn-primary-hover-border: #b91c1c;
+            --btn-primary-active-bg: #991b1b; --btn-primary-active-border: #991b1b;
+            --btn-primary-plain-bg: rgba(220,38,38,0.08); --btn-primary-plain-border: rgba(220,38,38,0.25); --btn-primary-plain-color: #dc2626;
+            --btn-primary-plain-hover-bg: rgba(220,38,38,0.15); --btn-primary-plain-hover-border: #dc2626;
+            --btn-primary-text-color: #dc2626;
         }
-        [data-theme="classic-red"] .el-button--primary {
-            background-color: #dc2626 !important; border-color: #dc2626 !important; color: white !important;
-        }
-        [data-theme="classic-red"] .el-button--primary:hover {
-            background-color: #b91c1c !important; border-color: #b91c1c !important;
-        }
-        [data-theme="classic-red"] .el-button--primary:active {
-            background-color: #991b1b !important; border-color: #991b1b !important;
-        }
-        [data-theme="classic-red"] .el-button--primary.is-plain {
-            background-color: rgba(220,38,38,0.08) !important; border-color: rgba(220,38,38,0.25) !important; color: #dc2626 !important;
-        }
-        [data-theme="classic-red"] .el-button--primary.is-plain:hover {
-            background-color: rgba(220,38,38,0.15) !important; border-color: #dc2626 !important;
-        }
-        [data-theme="classic-red"] .el-button--primary.is-text { color: #dc2626 !important; }
-
-        /* ⚪ 经典白（金） — 白底+金色点缀 */
+        /* ⚪ 经典金 — 白底+金色点缀 */
         [data-theme="classic-gold"] {
             --primary-color: #b8922a;
             --primary-rgb: 184, 146, 42;
@@ -197,24 +222,14 @@
             --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
             --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
             --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
+            /* ⚪ 经典金 - 主按钮令牌 */
+            --btn-primary-bg: #b8922a; --btn-primary-border: #b8922a; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #9a7a1e; --btn-primary-hover-border: #9a7a1e;
+            --btn-primary-active-bg: #8b6914; --btn-primary-active-border: #8b6914;
+            --btn-primary-plain-bg: rgba(184,146,42,0.08); --btn-primary-plain-border: rgba(184,146,42,0.25); --btn-primary-plain-color: #b8922a;
+            --btn-primary-plain-hover-bg: rgba(184,146,42,0.15); --btn-primary-plain-hover-border: #b8922a;
+            --btn-primary-text-color: #b8922a;
         }
-        [data-theme="classic-gold"] .el-button--primary {
-            background-color: #b8922a !important; border-color: #b8922a !important; color: white !important;
-        }
-        [data-theme="classic-gold"] .el-button--primary:hover {
-            background-color: #9a7a1e !important; border-color: #9a7a1e !important;
-        }
-        [data-theme="classic-gold"] .el-button--primary:active {
-            background-color: #8b6914 !important; border-color: #8b6914 !important;
-        }
-        [data-theme="classic-gold"] .el-button--primary.is-plain {
-            background-color: rgba(184,146,42,0.08) !important; border-color: rgba(184,146,42,0.25) !important; color: #b8922a !important;
-        }
-        [data-theme="classic-gold"] .el-button--primary.is-plain:hover {
-            background-color: rgba(184,146,42,0.15) !important; border-color: #b8922a !important;
-        }
-        [data-theme="classic-gold"] .el-button--primary.is-text { color: #b8922a !important; }
-
         /* ⚪ 经典主题：共享 active 状态 (使用各主题的 --gradient-brand) */
         [data-theme="classic-white"] .nav-item.active,
         [data-theme="classic-red"] .nav-item.active,
@@ -284,24 +299,14 @@
             --gold-light: #3e3a1a; --gold-bg: #1a1a0a;
             --el-success: #64ffda; --el-warning: #ffb74d;
             --el-danger: #ff5252; --el-info: #64b5f6;
+            /* 🌙 暗色专业 - 主按钮令牌 (深色文字) */
+            --btn-primary-bg: #64ffda; --btn-primary-border: #64ffda; --btn-primary-color: #0f0f23;
+            --btn-primary-hover-bg: #45e0bc; --btn-primary-hover-border: #45e0bc;
+            --btn-primary-active-bg: #20c997; --btn-primary-active-border: #20c997;
+            --btn-primary-plain-bg: rgba(100,255,218,0.08); --btn-primary-plain-border: rgba(100,255,218,0.25); --btn-primary-plain-color: #64ffda;
+            --btn-primary-plain-hover-bg: rgba(100,255,218,0.15); --btn-primary-plain-hover-border: #64ffda;
+            --btn-primary-text-color: #64ffda;
         }
-        /* 🌙 暗色专业版 - Element Plus 按钮 */
-        [data-theme="dark-pro"] .el-button--primary {
-            background-color: #64ffda !important; border-color: #64ffda !important; color: #0f0f23 !important;
-        }
-        [data-theme="dark-pro"] .el-button--primary:hover {
-            background-color: #45e0bc !important; border-color: #45e0bc !important; color: #0f0f23 !important;
-        }
-        [data-theme="dark-pro"] .el-button--primary:active {
-            background-color: #20c997 !important; border-color: #20c997 !important; color: #0f0f23 !important;
-        }
-        [data-theme="dark-pro"] .el-button--primary.is-plain {
-            background-color: rgba(100,255,218,0.08) !important; border-color: rgba(100,255,218,0.25) !important; color: #64ffda !important;
-        }
-        [data-theme="dark-pro"] .el-button--primary.is-plain:hover {
-            background-color: rgba(100,255,218,0.15) !important; border-color: #64ffda !important;
-        }
-        [data-theme="dark-pro"] .el-button--primary.is-text { color: #64ffda !important; }
         /* 🌙 暗色专业版 - 默认按钮 */
         [data-theme="dark-pro"] .el-button--default {
             background-color: #233554 !important; border-color: #3a4a6a !important; color: #8892b0 !important;
@@ -383,93 +388,32 @@
         [data-theme="dark-pro"] .el-tag { border-color: #3a4a6a !important; }
         [data-theme="dark-pro"] .el-loading-mask { background-color: rgba(15,15,35,0.8) !important; }
 
-        /* ===== Element Plus 按钮主题覆盖 ===== */
-        /* 🔴 玫瑰红 - 主按钮 */
-        [data-theme="rose-red"] .el-button--primary {
-            background-color: #E63946 !important;
-            border-color: #E63946 !important;
-            color: white !important;
+        /* ===== Element Plus 主按钮令牌化 (v3.13) ===== */
+        .el-button--primary {
+            background-color: var(--btn-primary-bg) !important;
+            border-color: var(--btn-primary-border) !important;
+            color: var(--btn-primary-color) !important;
         }
-        [data-theme="rose-red"] .el-button--primary:hover {
-            background-color: #C1121F !important;
-            border-color: #C1121F !important;
+        .el-button--primary:hover {
+            background-color: var(--btn-primary-hover-bg) !important;
+            border-color: var(--btn-primary-hover-border) !important;
+            color: var(--btn-primary-color) !important;
         }
-        [data-theme="rose-red"] .el-button--primary:active {
-            background-color: #780000 !important;
-            border-color: #780000 !important;
+        .el-button--primary:active {
+            background-color: var(--btn-primary-active-bg) !important;
+            border-color: var(--btn-primary-active-border) !important;
+            color: var(--btn-primary-color) !important;
         }
-        /* 🔴 玫瑰红 - 朴素按钮 */
-        [data-theme="rose-red"] .el-button--primary.is-plain {
-            background-color: rgba(230, 57, 70, 0.1) !important;
-            border-color: rgba(230, 57, 70, 0.3) !important;
-            color: #E63946 !important;
+        .el-button--primary.is-plain {
+            background-color: var(--btn-primary-plain-bg) !important;
+            border-color: var(--btn-primary-plain-border) !important;
+            color: var(--btn-primary-plain-color) !important;
         }
-        [data-theme="rose-red"] .el-button--primary.is-plain:hover {
-            background-color: rgba(230, 57, 70, 0.2) !important;
-            border-color: #E63946 !important;
+        .el-button--primary.is-plain:hover {
+            background-color: var(--btn-primary-plain-hover-bg) !important;
+            border-color: var(--btn-primary-plain-hover-border) !important;
         }
-        /* 🔴 玫瑰红 - 文字按钮 */
-        [data-theme="rose-red"] .el-button--primary.is-text {
-            color: #E63946 !important;
-        }
-
-        /* 🔵 专业蓝 - 主按钮 */
-        [data-theme="tech-blue"] .el-button--primary {
-            background-color: #1d4ed8 !important;
-            border-color: #1d4ed8 !important;
-            color: white !important;
-        }
-        [data-theme="tech-blue"] .el-button--primary:hover {
-            background-color: #1e40af !important;
-            border-color: #1e40af !important;
-        }
-        [data-theme="tech-blue"] .el-button--primary:active {
-            background-color: #1e3a8a !important;
-            border-color: #1e3a8a !important;
-        }
-        /* 🔵 专业蓝 - 朴素按钮 */
-        [data-theme="tech-blue"] .el-button--primary.is-plain {
-            background-color: rgba(29, 78, 216, 0.1) !important;
-            border-color: rgba(29, 78, 216, 0.3) !important;
-            color: #1d4ed8 !important;
-        }
-        [data-theme="tech-blue"] .el-button--primary.is-plain:hover {
-            background-color: rgba(29, 78, 216, 0.2) !important;
-            border-color: #1d4ed8 !important;
-        }
-        /* 🔵 专业蓝 - 文字按钮 */
-        [data-theme="tech-blue"] .el-button--primary.is-text {
-            color: #1d4ed8 !important;
-        }
-
-        /* 🟡 土豪金 - 主按钮 */
-        [data-theme="vibrant-orange"] .el-button--primary {
-            background-color: var(--color-gold) !important;
-            border-color: var(--color-gold) !important;
-            color: white !important;
-        }
-        [data-theme="vibrant-orange"] .el-button--primary:hover {
-            background-color: #C49A35 !important;
-            border-color: #C49A35 !important;
-        }
-        [data-theme="vibrant-orange"] .el-button--primary:active {
-            background-color: #B8860B !important;
-            border-color: #B8860B !important;
-        }
-        /* 🟡 土豪金 - 朴素按钮 */
-        [data-theme="vibrant-orange"] .el-button--primary.is-plain {
-            background-color: rgba(212, 168, 67, 0.1) !important;
-            border-color: rgba(212, 168, 67, 0.3) !important;
-            color: var(--color-gold) !important;
-        }
-        [data-theme="vibrant-orange"] .el-button--primary.is-plain:hover {
-            background-color: rgba(212, 168, 67, 0.2) !important;
-            border-color: var(--color-gold) !important;
-        }
-        /* 🟡 土豪金 - 文字按钮 */
-        [data-theme="vibrant-orange"] .el-button--primary.is-text {
-            color: var(--color-gold) !important;
-        }
+        .el-button--primary.is-text { color: var(--btn-primary-text-color) !important; }
 
 
 
@@ -491,7 +435,7 @@
         /* K-line chart — 白底 → 暗色背景 */
         /* Sidebar — 浅灰渐变 → 暗色 */
         /* Stock group card — 浅灰边框+渐变头 → 暗色 */
-        /* 智能评股：统计卡片 + 详情评分 */ 
+        /* 智能评估：统计卡片 + 详情评分 */
 
         /* v1.10: hover 微升效果 */
         .hover-lift:hover {
@@ -688,32 +632,6 @@
                 padding: 16px;
                 margin-bottom: 12px;
             }
-        }
-
-        /* ===== 面包屑导航 ===== */
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 0;
-            margin-bottom: 8px;
-            font-size: var(--font-sm);
-        }
-        .breadcrumb-item {
-            color: var(--text-tertiary);
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .breadcrumb-item:hover {
-            color: var(--primary-color);
-        }
-        .breadcrumb-item.active {
-            color: var(--text-primary);
-            font-weight: var(--font-medium);
-            cursor: default;
-        }
-        .breadcrumb-sep {
-            color: var(--text-tertiary);
         }
 
         /* ===== 移动端底部导航 ===== */
@@ -1617,7 +1535,7 @@
             }
         }
 
-        /* ===== 智能评股界面新样式 ===== */
+        /* ===== 智能评估界面新样式 ===== */
         /* v1.10: 自选列表 */
         .watchlist-search-results {
             background: var(--bg-card-header);
@@ -2074,7 +1992,7 @@
     /* 时间面板 */
     .merrill-timing-panel {
         margin-top: 12px; padding: 12px;
-        background: var(--badge-gold-bg); border-radius: 10px;
+        background: var(--bg-card-header); border-radius: 10px;
     }
     .merrill-timing-header {
         display: flex; justify-content: space-between; align-items: center;
@@ -2217,7 +2135,7 @@
     .allocation-return span { color: var(--el-success); font-weight: var(--font-semibold); }
     
     /* 行业配置 */
-    .sector-list { background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--gold-light) 100%); border-radius: 14px; padding: 16px 20px; border: 1px solid var(--border-light); }
+    .sector-list { background: var(--card-gradient-header); border-radius: 14px; padding: 16px 20px; border: 1px solid var(--border-light); }
     .sector-item { padding: 8px 0; font-size: var(--font-base); color: var(--text-primary); border-bottom: 1px dashed var(--border-light); line-height: 1.5; }
     .sector-item:last-child { border-bottom: none; }
     
@@ -2250,7 +2168,7 @@
     .skeleton-item { height: 60px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); border-radius: 8px; animation: skeleton-shimmer 1.5s infinite; background-size: 200% 100%; }
     .skeleton-large { height: 120px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); border-radius: 12px; animation: skeleton-shimmer 1.5s infinite; background-size: 200% 100%; }
     
-    /* 底部专业蓝金装饰 */
+    /* 底部科技蓝金装饰 */
     .merrill-footer-decoration {
         margin-top: 30px;
         text-align: center;
@@ -2488,8 +2406,8 @@ text {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--white) 100%);
-    border-top: 2px solid var(--gold-light);
+    background: var(--card-gradient-header);
+    border-top: 1px solid var(--border-base);
     box-shadow: var(--shadow-top);
     z-index: 2000;
     animation: slide-up 0.3s ease;
@@ -2559,8 +2477,8 @@ text {
 
 /* ========== v1.3.0: 系统状态和 Tushare 配置样式 ========== */
 .system-status-card {
-    background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--bg-card) 100%);
-    border: 1px solid var(--gold-light);
+    background: var(--card-gradient-header);
+    border: 1px solid var(--border-base);
 }
 
 .status-grid {
@@ -2997,8 +2915,8 @@ text {
 
 .user-card-enhanced:hover {
     transform: translateX(4px);
-    border-color: var(--color-gold);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-gold) 15%, transparent);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
 .user-info-enhanced {
@@ -3118,9 +3036,9 @@ text {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--white) 100%);
+    background: var(--card-gradient-header);
     border-radius: 12px;
-    border: 1px solid var(--gold-light);
+    border: 1px solid var(--border-base);
     margin-top: 8px;
 }
 
@@ -3179,8 +3097,8 @@ text {
 
 /* ========== v1.3.0: 顶部配置工具栏样式 ========== */
 .config-top-toolbar {
-    background: linear-gradient(135deg, var(--badge-gold-bg) 0%, var(--white) 100%);
-    border: 1px solid var(--gold-light);
+    background: var(--card-gradient-header);
+    border: 1px solid var(--border-base);
     border-radius: 12px;
     padding: 16px 20px;
     margin-bottom: 16px;
@@ -3189,7 +3107,7 @@ text {
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-gold) 15%, transparent);
+    box-shadow: var(--shadow-sm);
 }
 
 .toolbar-left {

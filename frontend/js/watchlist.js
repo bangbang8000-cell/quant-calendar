@@ -1,5 +1,5 @@
 // quant-calendar: 自选/评估历史域模块 (v3.11 / FR-3.11.2)
-// 从 app-logic.js 拆出：自选股管理、快捷评股、批量评估、评估历史分组/选择、数据刷新配置。
+// 从 app-logic.js 拆出：自选股管理、快捷评估、批量评估、评估历史分组/选择、数据刷新配置。
 // 工厂模式：window.__quantModules.watchlist.create(deps) → 该域全部状态与函数。
 // deps（共享依赖）:
 //   currentUser selectedDate stockDetail stockDetailTab stockDetailVisible
@@ -21,7 +21,7 @@
                batchResults, expandedDates, expandedStocks, savingConfig, selectedHistoryIds,
                selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate } = deps;
 
-const quickEvalStock = ref('');  // v1.10: 快捷评股下拉
+const quickEvalStock = ref('');  // v1.10: 快捷评估下拉
 const evalStrategy = ref('default');  // v1.10: 评估策略
 const watchlistSort = ref('default');  // v1.10: 自选排序
 const watchlist = ref([]);
@@ -289,7 +289,7 @@ async function deleteSelectedHistory() {
     }
 }
 
-// 加载自动评股配置
+// 加载自动评估配置
 async function loadAutoEvaluateConfig() {
     try {
         const res = await fetch('/api/ai/auto-config');
@@ -301,7 +301,7 @@ async function loadAutoEvaluateConfig() {
     } catch (e) { console.warn('loadAutoEvaluateConfig failed:', e); }
 }
 
-// 保存自动评股配置
+// 保存自动评估配置
 async function saveAutoEvaluateConfig() {
     savingConfig.value = true;
     try {
@@ -314,7 +314,7 @@ async function saveAutoEvaluateConfig() {
         });
         const data = await res.json();
         if (data.success) {
-            ElementPlus.ElMessage.success('自动评股配置已保存');
+            ElementPlus.ElMessage.success('自动评估配置已保存');
             showAutoEvaluateSettings.value = false;
         } else {
             ElementPlus.ElMessage.error(data.message || '保存失败');
@@ -632,7 +632,7 @@ const scoreDistribution = computed(() => {
     });
 });
 
-// v1.10: 快捷评股
+// v1.10: 快捷评估
 async function quickEvaluate() {
     if (!quickEvalStock.value) return;
     const stock = watchlist.value.find(s => s.code === quickEvalStock.value);

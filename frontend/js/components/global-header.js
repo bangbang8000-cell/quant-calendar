@@ -82,22 +82,12 @@
           </div>
         </div>
 
-        <div class="breadcrumb">
-          <span class="breadcrumb-item" @click="goHome">首页</span>
-          <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-item active">{{ currentPageName }}</span>
-        </div>
       </div>
     `,
     setup() {
       const state = inject('qcState');
       if (!state) return {};
       const showUserMenu = ref(false);
-
-      const goHome = () => {
-        state.currentPage.value = 'strategies';
-        state.currentSubPage.value = 'overview';
-      };
 
       return {
         menus: state.menus,
@@ -123,7 +113,6 @@
         changeTheme: state.changeTheme,
         handleLogout: state.handleLogout,
         subPageNames: state.subPageNames,
-        goHome,
       };
     },
   };

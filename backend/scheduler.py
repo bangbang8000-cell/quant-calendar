@@ -92,7 +92,7 @@ class Scheduler:
             await asyncio.sleep(60)  # 避开重复触发
 
     async def auto_evaluate_task(self):
-        """自动评股任务"""
+        """自动评估任务"""
         while self.running:
             now = datetime.now()
             config = ai_evaluator.get_auto_config()
@@ -116,7 +116,7 @@ class Scheduler:
                 break
 
             if self._should_execute_today():
-                logger.info(f"🤖 开始自动评股任务: {datetime.now()}")
+                logger.info(f"🤖 开始自动评估任务: {datetime.now()}")
 
                 try:
                     # 获取要评估的股票列表
@@ -137,11 +137,11 @@ class Scheduler:
                     all_stocks = list(set(selected_stocks) | strategy_stocks)
 
                     if not all_stocks:
-                        logger.warning(" 自动评股: 没有要评估的股票")
+                        logger.warning(" 自动评估: 没有要评估的股票")
                         await asyncio.sleep(60)
                         continue
 
-                    logger.info(f"📊 自动评股: 评估 {len(all_stocks)} 只股票")
+                    logger.info(f"📊 自动评估: 评估 {len(all_stocks)} 只股票")
 
                     # 批量评估
                     results = await ai_evaluator.batch_evaluate(all_stocks, username='auto_scheduler')
@@ -150,10 +150,10 @@ class Scheduler:
                     if config.get('push_to_feishu', True):
                         await self._push_ai_evaluation_report(results)
 
-                    logger.info(f"✅ 自动评股完成: {len(results)} 条记录")
+                    logger.info(f"✅ 自动评估完成: {len(results)} 条记录")
 
                 except Exception as e:
-                    logger.error(f" 自动评股失败: {e}")
+                    logger.error(f" 自动评估失败: {e}")
 
                 # 等待1分钟避免重复执行
                 await asyncio.sleep(60)
@@ -164,7 +164,7 @@ class Scheduler:
             if not results:
                 return
 
-            # 从自动评股配置中获取 webhook URL
+            # 从自动评估配置中获取 webhook URL
             config = ai_evaluator.get_auto_config()
             webhook = config.get('feishu_webhook', '')
             if not webhook:
@@ -183,7 +183,7 @@ class Scheduler:
                     pass
 
             if not webhook:
-                logger.warning(" 自动评股推送: 未配置飞书 Webhook")
+                logger.warning(" 自动评估推送: 未配置飞书 Webhook")
                 return
 
             self.pusher.set_webhook(webhook)
@@ -201,7 +201,7 @@ class Scheduler:
             # 找出高分股票
             high_score = sorted(results, key=lambda x: x['result']['total_score'], reverse=True)[:5]
 
-            report = "🤖 自动AI评股报告\n\n"
+            report = "🤖 自动AI评估报告\n\n"
             report += f"📊 评估总数: {total_count} 只\n"
             report += f"📈 平均评分: {avg_score:.1f} 分\n\n"
 

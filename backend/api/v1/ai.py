@@ -114,7 +114,7 @@ async def batch_delete_ai_history(req: Dict[str, List[str]], user: Dict = Depend
 
 @router.get("/auto-config")
 async def get_auto_evaluate_config():
-    """获取自动评股配置（无需登录）"""
+    """获取自动评估配置（无需登录）"""
     try:
         config = ai_evaluator.get_auto_config()
         return {"success": True, "data": config}
@@ -124,7 +124,7 @@ async def get_auto_evaluate_config():
 
 @router.post("/auto-config")
 async def save_auto_evaluate_config(config: Dict[str, Any]):
-    """保存自动评股配置"""
+    """保存自动评估配置"""
     try:
         ai_evaluator.save_auto_config(config)
         return {"success": True, "message": "配置已保存"}

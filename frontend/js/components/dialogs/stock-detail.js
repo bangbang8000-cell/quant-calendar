@@ -41,7 +41,7 @@
                         </el-button>
                         <div style="flex: 1;"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
-                            💡 智能评股
+                            💡 智能评估
                         </el-button>
                         <el-button size="small" @click="toggleWatchlist(stockDetail.stock, stockDetail.name)" :type="watchlistCodes.has(stockDetail.stock) ? 'success' : 'primary'">
                             {{ watchlistCodes.has(stockDetail.stock) ? '★ 已自选' : '⭐ 加入自选' }}

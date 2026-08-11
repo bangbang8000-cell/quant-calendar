@@ -17,7 +17,7 @@
                                 批量评估
                             </el-button>
                             <el-button size="small" @click="showAutoEvaluateSettings = true">
-                                <span style="margin-right: 4px;">⚙️</span>自动评股
+                                <span style="margin-right: 4px;">⚙️</span>自动评估
                             </el-button>
                         </div>
 
@@ -50,7 +50,7 @@
                                 </div>
                                 <div class="stat-content">
                                     <div class="stat-value" style="font-size:var(--font-md);">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
-                                    <div class="stat-label">自动评股</div>
+                                    <div class="stat-label">自动评估</div>
                                 </div>
                             </div>
                             <!-- v3.5.0-T6: AI 用量统计 -->
@@ -132,7 +132,7 @@
                                             <el-radio-button value="short_term">短线</el-radio-button>
                                         </el-radio-group>
                                     </div>
-                                    <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评股</el-button>
+                                    <el-button v-if="watchlist.length > 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading" style="align-self:flex-start;">🤖 快速评估</el-button>
                                     <div v-if="watchlist.length === 0" style="text-align:center;padding:20px 0;color:var(--text-tertiary);">
                                         <div style="font-size: var(--font-3xl);margin-bottom:8px;">⭐</div>
                                         <div style="font-size:var(--font-sm);">还没有自选股</div>
@@ -148,7 +148,7 @@
                         <!-- 空状态：无任何评估记录 -->
                         <div v-if="aiHistory.length === 0" class="card" style="text-align:center;padding:40px 20px;">
                             <div style="font-size:64px;margin-bottom:16px;">🤖</div>
-                            <div style="font-size:var(--font-lg);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">智能评股</div>
+                            <div style="font-size:var(--font-lg);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">智能评估</div>
                             <div style="font-size:var(--font-md);color:var(--text-secondary);margin-bottom:20px;">多模型串行评估，技术指标自动注入</div>
                             <div style="display:flex;gap:12px;justify-content:center;">
                                 <el-button type="primary" @click="currentSubPage = 'watchlist'">⭐ 管理自选股</el-button>
@@ -182,7 +182,7 @@
                             <div style="font-size: 64px; margin-bottom: 20px;">🤖</div>
                             <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">暂无评估记录</div>
                             <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">
-                                点击股票详情页的「智能评股」按钮开始分析股票
+                                点击股票详情页的「智能评估」按钮开始分析股票
                             </div>
                         </div>
 
@@ -554,7 +554,7 @@
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="primary" @click="batchEvaluateSelected" :disabled="aiLoading">📊 评估选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist">🗑️ 移除选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" @click="clearWatchlistSelection">取消选择</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="primary" @click="batchEvaluateWatchlist" :disabled="aiLoading">📊 批量评股</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="primary" @click="batchEvaluateWatchlist" :disabled="aiLoading">📊 批量评估</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="danger" @click="clearWatchlist">🗑️ 清空自选</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length === 0" size="small" @click="preloadWatchlistKline" :loading="preloadingKline">🔄 预加载K线</el-button>
                                 </div>
@@ -603,7 +603,7 @@
                                         </span>
                                     </div>
                                     <div class="watchlist-actions">
-                                        <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评股</el-button>
+                                        <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
                                         <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
                                         <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
                                     </div>

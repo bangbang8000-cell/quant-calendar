@@ -1,9 +1,10 @@
 # 量化选股日历 v3.10 ~ v4.0 开发计划 (DEV-PLAN)
 
-> **文档版本**: v2.0 | **日期**: 2026-08-11 | **基线**: v3.8.2
+> **文档版本**: v3.0 | **日期**: 2026-08-12 | **基线**: v3.8.2
 > **配套文档**: 需求 → `PRD-v3.10-v4.0.md` | 测试 → `TEST-PLAN-v3.10-v4.0.md`
 > **更新规则**: 每个任务完成后更新状态列；需求变更必须三文档同步。
 > **v2.0 变更**: v3.11 主题改为 UI/UX 提质（依据评估报告），原 v3.11 数据自动化顺延 v3.12，v3.12 可观测顺延 v3.13，v3.13 AI 顺延 v3.14。
+> **v3.0 变更**: v3.13 定稿为「术语统一 + 主题配色 + 删除面包屑」三项 UI/UX 交付，原可观测与部署 FR-3.13.x 顺延至 v3.14 之后排期。
 
 ---
 
@@ -13,6 +14,7 @@
 |------|------|--------|------|
 | v1.0 | 2026-08-11 | - | 基于 PRD v1.0 + v3.8.2 代码审查创建 |
 | v2.0 | 2026-08-11 | - | v3.11 改为 UI/UX 提质四层任务，后续版本顺延 |
+| v3.0 | 2026-08-12 | - | v3.13 定稿为「术语统一 + 主题配色 + 删除面包屑」三项 UI/UX 交付（原可观测与部署 FR-3.13.x 顺延） |
 
 ---
 
@@ -27,7 +29,7 @@
 | 每任务验证 | 改动文件 ≤ 3 个/次，修改后立即验证 |
 | 页面验证 | 前端改后硬刷新 (Ctrl+Shift+R) 确认生效 |
 | 前端回归 | v3.11 起引入 Playwright 截图 diff（报告产出，不阻塞发布） |
-| 部署方式 | v3.13 起使用 `scripts/deploy.sh`（health-gated + 自动回滚） |
+| 部署方式 | dev:8001 / ops:8000 手动部署（`python3 main_new.py`，无 `--reload`，改后端需重启）；deploy.sh 自动化顺延 |
 
 ---
 
@@ -38,7 +40,7 @@
 | v3.10 | 可靠性加固 | 7 | 3 | 4 | ✅ 已完成 |
 | v3.11 | UI/UX 提质 | 12 | 2 | 10 | 3 周 |
 | v3.12 | 数据自动化 | 6 | 1 | 5 | 1-2 周 |
-| v3.13 | 可观测与部署 | 6 | 1 | 5 | 1-2 周 |
+| v3.13 | 术语统一与主题体验 | 3 | 0 | 3 | ✅ 已完成 |
 | v3.14 | AI 深化与通知矩阵 | 6 | 0 | 6 | 1.5-2 周 |
 | v4.0 | 开放平台 | 5 | 0 | 5 | 2 周+ |
 
@@ -159,29 +161,27 @@
 
 ---
 
-## 7. v3.13 — 可观测与部署
+## 7. v3.13 — 术语统一与主题体验（实际交付）
+
+> 原「可观测与部署 FR-3.13.x」（备份恢复 / 告警通知 / deploy.sh 自动化 / 监控面板）**顺延**至 v3.14 之后排期，本节按用户批准的三项 UI/UX 诉求重新定稿。
 
 ### 7.1 任务分解
 
-| # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
+| # | 任务 | 对应需求 | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 13.1 | 备份列表 + 一键恢复 API | FR-3.13.1 | `backend/api/v1/system.py`, `backend/backup.py` | 2h | API 列出备份, 恢复成功 | ⬜ |
-| 13.2 | 恢复 dry-run 演练 | FR-3.13.1 | `backend/backup.py` | 1h | 演练校验通过 | ⬜ |
-| 13.3 | 异常告警通知 | FR-3.13.2 | `backend/scheduler.py`, `backend/feishu_push.py` | 2h | 制造错误→飞书告警+收敛 | ⬜ |
-| 13.4 | deploy.sh 一键部署 | FR-3.13.3 | `scripts/deploy.sh` | 2h | 部署成功+health-gated | ⬜ |
-| 13.5 | rollback.sh 自动回滚 | FR-3.13.3 | `scripts/rollback.sh` | 1.5h | 模拟失败自动回滚 | ⬜ |
-| 13.6 | 监控面板 UI 完善 | FR-3.13.4 | `frontend/js/components/system-page.js`, `backend/api/v1/system.py` | 3h | 面板显示全指标+自动刷新 | ⬜ |
+| 13.1 | 术语统一「评股→评估」 | 用户诉求 1 | frontend js/html、backend *.py、README、DEPLOYMENT、`data/groups.json` | 2h | 新增回归测试 `test_terminology_unified.py` 断言 0×「评股」 | ✅ |
+| 13.2 | 主题配色优化 + 米黄修复 + 按钮令牌化 + 主题名规范 | 用户诉求 2/4 | `frontend/css/themes.css`, `themes.js`, `merrill.js` | 3h | TC-11.9 硬编码测试通过；浏览器 7 主题六态视觉 | ✅ |
+| 13.3 | 删除面包屑导航 | 用户诉求 3 | `frontend/js/components/global-header.js`, `themes.css` | 0.5h | 浏览器顶栏下无「首页/…」面包屑 | ✅ |
 
 ### 7.2 验收清单
 
-- [ ] 备份列表可见，一键恢复后数据一致
-- [ ] dry-run 演练通过，损坏备份被拒绝
-- [ ] 制造错误后飞书收到告警，同主题合并
-- [ ] deploy.sh 部署成功且 health-gated
-- [ ] 模拟失败部署自动回滚，服务不中断
-- [ ] 监控面板显示 CPU/内存/延迟/错误率并自动刷新
-- [ ] pytest 全量通过（≥ 125 用例）
-- [ ] Git commit + tag `v3.13.0`
+- [x] 全站 0 ×「评股」（API 路由 / DB 字段 / config key 等英文标识符不动）
+- [x] tech-blue / rose-red 下系统状态、配置工具栏、批量栏、美林面板、板块列表无米黄色
+- [x] 主按钮六态（默认/hover/active/plain/plain-hover/text）令牌化后视觉不变，dark-pro 深色文字保留
+- [x] 主题名规范为 活力金 / 经典红 / 经典金（持久化 key 不变）
+- [x] 顶栏下无面包屑，其余页面靠侧栏高亮 + 卡片标题定位
+- [x] pytest 全量通过（含新增 `test_terminology_unified.py`、`test_tokens_no_hardcode.py`）
+- [x] Git commit + tag `v3.13.0`；dev:8001 / ops:8000 两端 `/api/health` 返回 3.13.0
 
 ---
 
@@ -261,11 +261,10 @@ v3.12 (数据自动化):
   frontend/system-page.js         ← 12.4
   frontend/dashboard-page.js      ← 12.5
 
-v3.13 (可观测与部署):
-  backend/backup.py, system.py    ← 13.1, 13.2
-  backend/scheduler.py            ← 13.3 (消费 12.6 告警队列)
-  scripts/deploy.sh, rollback.sh  ← 13.4, 13.5
-  frontend/system-page.js         ← 13.6
+v3.13 (术语统一与主题体验):
+  frontend/js/app-logic.js, components/ai-page.js 等 ← 13.1 (全站「评股」→「评估」)
+  frontend/css/themes.css, themes.js, merrill.js    ← 13.2 (主题配色+米黄修复)
+  frontend/js/components/global-header.js           ← 13.3 (删除面包屑)
 
 v3.14 (AI 深化):
   backend/ai_evaluator.py         ← 14.1, 14.2
@@ -285,7 +284,7 @@ v4.0 (开放平台):
 
 **v3.12 并行**：12.1+12.2+12.6（data_sources 核心，顺序推进）、12.3（依赖 12.1 产出的 CSV）、12.4+12.5（前端，可并行）
 
-**v3.13 并行**：13.1+13.2（备份恢复，独立）、13.3（依赖 12.6 告警队列）、13.4+13.5（部署脚本，独立）、13.6（前端，独立）
+**v3.13 并行**：13.1（术语，独立）+ 13.2（主题配色，独立）+ 13.3（删除面包屑，独立）三者相互独立，可并行推进（实际按序提交）
 
 **v3.14 并行**：14.1+14.2（AI 评估）、14.3+14.4（通知抽象）、14.5（依赖 14.3）、14.6（RAG，独立）
 

@@ -1,7 +1,7 @@
 // quant-calendar: AI 评估域模块 (v3.11 / FR-3.11.2)
 // 从 app-logic.js 拆出：AI 评估、AI 模型管理、自动评估配置、评估历史选择状态。
 // 工厂模式：window.__quantModules.ai.create(deps) → 该域状态与函数。
-// 依赖仅浏览器全局（fetch/localStorage/ElementPlus），后续可扩展 AI 问股/快捷评股。
+// 依赖仅浏览器全局（fetch/localStorage/ElementPlus），后续可扩展 AI 问股/快捷评估。
 (function () {
   if (!window.__quantModules) window.__quantModules = {};
 

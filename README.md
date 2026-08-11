@@ -46,7 +46,7 @@
 </details>
 
 <details>
-<summary><b>AI 评估</b> — 多模型串行评股，历史追溯</summary>
+<summary><b>AI 评估</b> — 多模型串行评估，历史追溯</summary>
 <p align="center">
   <img src="assets/screenshots/评估历史.jpg" alt="AI评估" width="90%">
 </p>
@@ -68,7 +68,7 @@
 | 美林时钟 | 五维度定量评分 + 四象限可视化，14条历史周期数据覆盖2008年至今4轮完整经济周期 |
 | 美林时钟历史 | 非活跃阶段展示全部历史轮次，含触发原因（去杠杆/贸易战/四万亿等）+ GDP/CPI/PMI/PPI关键指标 |
 | 策略选股 | 多因子、行业轮动、资金流、指数增强四套策略独立运行，共识榜交叉验证 |
-| AI 评股 | 多模型串行评估，RSI/MACD/MA/KDJ 自动注入 prompt，支持 8+ 模型 |
+| AI 评估 | 多模型串行评估，RSI/MACD/MA/KDJ 自动注入 prompt，支持 8+ 模型 |
 | AI 智能问股 | 对话式股票分析，流式输出，融合技术面+基本面+策略面多维度分析 |
 | 量化日历 | 日/周/月/年视图切换，内置 ECharts K 线图 + MA 均线 + 成交量 |
 | 全局搜索 | 股票代码/名称模糊搜索，实时建议 |
@@ -92,7 +92,7 @@ quant-calendar/
 │   │   ├── main_new.py          ← 主入口
 │   │   ├── merrill_clock.py     ← 美林时钟引擎（五维度评分+周期判断）
 │   │   ├── merrill_history.py   ← 历史周期结构化数据（14条转换记录）
-│   │   ├── ai_evaluator.py      ← AI 多模型评股
+│   │   ├── ai_evaluator.py      ← AI 多模型评估
 │   │   ├── data_sources.py      ← 多数据源管理 (sxsc/tushare/akshare)
 │   │   ├── scheduler.py         ← 定时任务调度
 │   │   └── api/v1/              ← REST API

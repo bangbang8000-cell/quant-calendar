@@ -210,7 +210,7 @@
                     } catch(e) { console.warn('[getIndexAiScore] cache check failed:', e); }
                 }
 
-                // ===== 指数AI智能评股 =====
+                // ===== 指数AI智能评估 =====
                 async function doIndexAiEvaluate() {  // 技术指标评估（内置引擎）
                     if (!indexDetail.value) return;
                     indexAiLoading.value = true;
@@ -539,7 +539,7 @@
 const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评股', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
+                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'strategy-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'about'], guestSubPages: ['status', 'about'] }
                 ];
@@ -640,7 +640,7 @@ const allMenuDefs = [
                     currentSubPage.value = subPage;
                     localStorage.setItem('quant_last_subpage', subPage);
                 }
-                // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评股页并聚焦问股
+                // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评估页并聚焦问股
                 const aiFabHidden = ref(false);
                 function openAiFab() {
                     navigateTo('ai', 'chat_history');
@@ -753,7 +753,7 @@ const allMenuDefs = [
                 const tourStep = ref(0);
                 const tourSteps = [
                     { icon: '🗓️', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
-                    { icon: '🤖', title: 'AI 智能评股', desc: '在智能评股页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
+                    { icon: '🤖', title: 'AI 智能评估', desc: '在智能评估页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
                     { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
                 ];
                 function maybeShowTour() {
@@ -927,7 +927,7 @@ const allMenuDefs = [
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
                     'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录',
-                    'status': '系统状态', 'autoeval': '自动评股', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
+                    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
 
                 // ===== 主题 =====

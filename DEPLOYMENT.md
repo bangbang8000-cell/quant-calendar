@@ -192,7 +192,7 @@ curl http://127.0.0.1:8000/api/market/datasource/status
 |--------|------|------|
 | Tushare Token | 系统配置 → 数据源 | 数据源连接必需 |
 | AI 模型 API Key | 系统配置 → AI 模型管理 | DeepSeek / 字节 CodingPlan 等 |
-| 飞书 Webhook | 系统配置 → 自动评股 | 定时推送（可选） |
+| 飞书 Webhook | 系统配置 → 自动评估 | 定时推送（可选） |
 
 所有配置**修改即保存**（`@change` 自动调用保存接口），AI 模型配置需点击 **💾 保存** 按钮。
 
@@ -292,7 +292,7 @@ quant-calendar-ops/
 │   ├── data_sources.py     # 多数据源管理
 │   ├── merrill_clock.py    # 美林时钟引擎
 │   ├── merrill_history.py  # 历史周期数据
-│   ├── ai_evaluator.py     # AI 多模型评股
+│   ├── ai_evaluator.py     # AI 多模型评估
 │   ├── scheduler.py        # 定时任务
 │   └── api/v1/             # REST API 路由
 ├── frontend/               # Vue 3 SPA

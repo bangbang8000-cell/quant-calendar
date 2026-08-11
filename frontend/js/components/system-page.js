@@ -32,7 +32,7 @@
                                     <div class="status-value" style="color: var(--primary-color);">{{ dashboardData.stats?.strategy_count || '---' }} 个</div>
                                 </div>
                             </div>
-                            <div class="status-item" @click="currentSubPage = 'autoeval'" style="cursor:pointer;" title="点击配置 AI 自动评股">
+                            <div class="status-item" @click="currentSubPage = 'autoeval'" style="cursor:pointer;" title="点击配置 AI 自动评估">
                                 <div class="status-icon">🤖</div>
                                 <div class="status-info">
                                     <div class="status-label">AI服务</div>
@@ -166,10 +166,10 @@
                     </div>
                 </div>
 
-                    <!-- autoeval: 自动评股配置 (v1.8.0) -->
+                    <!-- autoeval: 自动评估配置 (v1.8.0) -->
                     <div v-else-if="currentSubPage === 'autoeval'">
                         <div class="card">
-                            <div class="card-title">🤖 自动评股配置</div>
+                            <div class="card-title">🤖 自动评估配置</div>
                             <el-form label-width="100px">
                                 <el-form-item label="启用">
                                     <el-switch v-model="autoEvaluateConfig.enabled" active-text="已开启" inactive-text="已关闭" @change="saveAutoEvaluateConfig" />
@@ -603,7 +603,7 @@
                                 <ul style="margin: 6px 0 0 0; padding-left: 20px;">
                                     美林时钟 — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换
                                     多策略选股 — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证
-                                    AI 评股 — 多模型串行评估，技术指标自动注入
+                                    AI 评估 — 多模型串行评估，技术指标自动注入
                                     飞书推送 — 定时推送每日选股报告
                                     数据源 — Tushare Pro / sxsc / akshare 三源热备
                                 </ul>

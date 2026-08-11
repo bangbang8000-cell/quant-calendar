@@ -3,6 +3,9 @@
 (function() {
   const { ref, computed, watch, onUnmounted } = Vue;
 
+  // v3.13: 运行时取 CSS 令牌 (ECharts 画布无法解析 var(), 令牌优先, 字面量兜底)
+  const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+
   // ─── 常量 ─────────────────────────────────
   const FULL_CYCLE_MONTHS = 72;
 
@@ -71,7 +74,7 @@
         const s = cfg[key] || {};
         return {
           key, name: s.name || key, icon: s.icon || '📊',
-          color: s.color || '#888', bg: s.bg_color || '#f5f5f5',
+          color: s.color || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
           textColor: s.color || '#333',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
         };
