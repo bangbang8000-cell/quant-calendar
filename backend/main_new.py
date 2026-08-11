@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     logger.info("⏰ 定时任务调度器已停止")
 
 # 应用版本单一来源（与发布版本保持一致，用于健康检查与 OpenAPI 元数据）
-APP_VERSION = "3.11.0"
+APP_VERSION = "3.12.0"
 
 # 创建 FastAPI 应用
 app = FastAPI(

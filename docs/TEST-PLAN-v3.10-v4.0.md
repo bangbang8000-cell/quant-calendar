@@ -199,27 +199,27 @@
 
 | # | 用例 | 对应任务 | 类型 | 预期结果 |
 |:--:|------|:--:|------|------|
-| TC-12.1 | `test_tushare_daily_pull` | 12.1 | 单元 | 手动触发后 qresult 目录出现新数据 |
-| TC-12.2 | `test_scheduler_pull_job` | 12.1 | 单元 | 拉取任务注册且按配置时间执行 |
-| TC-12.3 | `test_financial_data_pull` | 12.2 | 单元 | 财务字段入库且映射正确 |
-| TC-12.4 | `test_csv_auto_reload` | 12.3 | 单元 | CSV 变更触发 `data_pipeline` reload |
-| TC-12.5 | `test_freshness_api` | 12.5 | 接口 | 各源 `last_success`/`data_age` 计算正确 |
-| TC-12.6 | `test_freshness_stale_flag` | 12.5 | 单元 | 超期数据返回 stale 标志 |
-| TC-12.7 | `test_pull_retry_backoff` | 12.6 | 单元 | 连续失败 3 次后停止重试（指数退避） |
-| TC-12.8 | `test_alert_queue_recorded` | 12.6 | 单元 | 连续失败写入告警队列 |
+| TC-12.1 | `test_tushare_daily_pull` | 12.1 | 单元 | ✅ 手动触发后 qresult 目录出现新数据 |
+| TC-12.2 | `test_scheduler_pull_job` | 12.1 | 单元 | ✅ 拉取任务注册且按配置时间执行 |
+| TC-12.3 | `test_financial_data_pull` | 12.2 | 单元 | ✅ 财务字段入库且映射正确 |
+| TC-12.4 | `test_csv_auto_reload` | 12.3 | 单元 | ✅ CSV 变更触发 `data_pipeline` reload |
+| TC-12.5 | `test_freshness_api` | 12.5 | 接口 | ✅ 各源 `last_success`/`data_age` 计算正确 |
+| TC-12.6 | `test_freshness_stale_flag` | 12.5 | 单元 | ✅ 超期数据返回 stale 标志 |
+| TC-12.7 | `test_pull_retry_backoff` | 12.6 | 单元 | ✅ 连续失败 3 次后停止重试（指数退避） |
+| TC-12.8 | `test_alert_queue_recorded` | 12.6 | 单元 | ✅ 连续失败写入告警队列 |
 
 ### 6.2 浏览器冒烟 (v3.12 专项)
 
-| # | 检查项 | 预期 |
-|:--:|------|------|
-| SM-12.1 | 数据源配置页 | 股票池/频率/开关保存并生效 |
-| SM-12.2 | Dashboard 数据源状态卡 | 各源新鲜度显示，超期标黄 |
+| # | 检查项 | 预期 | 结果 |
+|:--:|------|------|:--:|
+| SM-12.1 | 数据源配置页 | 股票池/频率/开关保存并生效 | ✅ 定时拉取日线卡渲染（开关/时间/频率/周几/股票池），手动拉取按钮可用 |
+| SM-12.2 | Dashboard 数据源状态卡 | 各源新鲜度显示，超期标黄 | ✅ 东财/Tushare ⏳ 超期标黄，AkShare 显示 刚刚；无 pageerror |
 
 ### 6.3 回归确认
 
 | # | 用例 | 说明 |
 |:--:|------|------|
-| TC-12.9 | 存量 + v3.10/v3.11 用例全量 | 无 regression |
+| TC-12.9 | 存量 + v3.10/v3.11 用例全量 | ✅ 232 单元 + 1 e2e 全绿，无 regression |
 
 ---
 

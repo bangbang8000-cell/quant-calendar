@@ -45,3 +45,52 @@ async def trigger_reload():
     except Exception as e:
         update_refresh_status(False, str(e))
         return {"success": False, "error": str(e)}
+
+
+@router.post("/pull")
+async def trigger_pull(data: Dict[str, Any] = None):
+    """手动触发 Tushare 日线拉取 (FR-3.12.1)
+
+    可选 body: {"stock_pool": ["000001.SZ", ...], "date": "YYYY-MM-DD", "financial": true}
+    """
+    data = data or {}
+    try:
+        from data_pipeline import run_daily_pull, run_financial_pull
+        import asyncio
+        result = await asyncio.to_thread(
+            run_daily_pull,
+            pool=data.get("stock_pool"),
+            date=data.get("date"),
+        )
+        # 财务拉取 (FR-3.12.1 / task 12.2) — 默认与日线一并拉取
+        if data.get("financial", True):
+            fin_result = await asyncio.to_thread(
+                run_financial_pull, pool=data.get("stock_pool"))
+        else:
+            fin_result = {"total": 0, "pulled": 0, "failed": 0, "skipped": True}
+        # 拉取成功后刷新解析器/视图 (自动入库)
+        from data_refresh_config import update_refresh_status
+        if result.get("failed", 1) == 0:
+            parser.reload()
+            views_aggregator.reload()
+            update_refresh_status(True, f"手动拉取 日线{result.get('pulled', 0)}/{result.get('total', 0)}, 财务{fin_result.get('pulled', 0)}/{fin_result.get('total', 0)}")
+        else:
+            update_refresh_status(False, f"手动拉取部分失败: {result.get('errors', [])[:3]}")
+        return {"success": True, "result": result, "financial": fin_result}
+    except Exception as e:
+        update_refresh_status(False, str(e))
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/financial")
+async def get_financial_snapshot(code: str = None):
+    """读取财务快照 (FR-3.12.1 / task 12.2)
+
+    不带 code: 返回全部; 带 code: 返回单只财务指标
+    """
+    from data_pipeline import load_financial_snapshot
+    snap = load_financial_snapshot()
+    stocks = snap.get("stocks", {})
+    if code:
+        return {"success": True, "data": stocks.get(code), "meta": snap.get("generated_at")}
+    return {"success": True, "data": stocks, "meta": snap.get("generated_at")}

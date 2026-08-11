@@ -136,3 +136,13 @@ async def system_monitor(user: dict = Depends(get_current_active_user)):
 async def system_metrics(user: dict = Depends(get_current_active_user)):
     """请求指标统计"""
     return {"success": True, **get_metrics()}
+
+
+@router.get("/alerts")
+async def system_alerts(user: dict = Depends(get_current_active_user)):
+    """v3.12 (FR-3.12.3): 拉取失败告警队列 (供 v3.13 通知通道消费)"""
+    try:
+        from data_sources import get_alerts
+        return {"success": True, "alerts": get_alerts()}
+    except Exception as e:
+        return {"success": False, "error": str(e), "alerts": []}

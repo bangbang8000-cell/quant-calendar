@@ -120,3 +120,134 @@ def test_metrics_api_includes_data_sources():
     assert 'data_sources' in metrics
     names = {m['name'] for m in metrics['data_sources']}
     assert 'akshare' in names
+
+
+def test_freshness_api(now=None):
+    """TC-12.5: 各源 last_success/data_age_hours/last_fetch 计算正确"""
+    ds.record_call('akshare', True, 10.0)
+    m = {x['name']: x for x in ds.get_health_metrics()}['akshare']
+    assert m['last_success']  # ISO 时间戳
+    assert m['last_fetch'] == m['last_success']  # PRD: last_fetch = 最近成功拉取
+    assert isinstance(m['data_age_hours'], float)
+    assert m['data_age_hours'] >= 0
+
+
+def test_freshness_stale_flag():
+    """TC-12.6: 超期数据返回 stale 标志 (含从未成功)"""
+    from datetime import datetime as dt
+    now = dt(2026, 8, 12, 12, 0, 0)
+    # 从未成功 → stale=True, data_age_hours=None
+    ds.record_call('tushare', False, 5.0)
+    m = {x['name']: x for x in ds.get_health_metrics(now=now)}['tushare']
+    assert m['stale'] is True
+    assert m['data_age_hours'] is None
+    # 回拨 last_success 到 3 天前 → 超期 stale
+    ds.record_call('akshare', True, 10.0)
+    with ds._health_lock:
+        ds._health['akshare']['last_success'] = '2026-08-09T10:00:00'
+    m = {x['name']: x for x in ds.get_health_metrics(now=now)}['akshare']
+    assert m['stale'] is True
+    assert m['data_age_hours'] == pytest.approx(74.0, abs=0.5)
+    # 1 小时前成功 → 新鲜, stale=False
+    ds.record_call('sxsc_tushare', True, 5.0)
+    with ds._health_lock:
+        ds._health['sxsc_tushare']['last_success'] = '2026-08-12T11:00:00'
+    m = {x['name']: x for x in ds.get_health_metrics(now=now)}['sxsc_tushare']
+    assert m['stale'] is False
+    assert m['data_age_hours'] == pytest.approx(1.0, abs=0.1)
+
+
+# ==================== 拉取失败补偿 + 告警队列 (v3.12 / FR-3.12.3) ====================
+
+
+def test_pull_retry_backoff_exponential():
+    """TC-12.7: 连续失败按指数退避重试, 最多 3 次后停止"""
+    calls = {'n': 0}
+    delays = []
+
+    def flaky():
+        calls['n'] += 1
+        raise RuntimeError(f'fail-{calls["n"]}')
+
+    result, err = ds.retry_with_backoff(
+        flaky, attempts=3, base_delay=2.0, sleep_fn=delays.append,
+    )
+    assert result is None
+    assert isinstance(err, RuntimeError)
+    assert calls['n'] == 3, '最多尝试 3 次后停止重试'
+    assert delays == [2.0, 4.0], '指数退避: 第1次失败等 2s, 第2次等 4s'
+
+
+def test_pull_retry_succeeds_midway():
+    """重试中途成功 → 返回结果, 不再继续"""
+    calls = {'n': 0}
+    delays = []
+
+    def flaky_then_ok():
+        calls['n'] += 1
+        if calls['n'] < 3:
+            raise RuntimeError('transient')
+        return {'ok': True}
+
+    result, err = ds.retry_with_backoff(
+        flaky_then_ok, attempts=3, base_delay=1.0, sleep_fn=delays.append,
+    )
+    assert err is None and result == {'ok': True}
+    assert calls['n'] == 3
+    assert len(delays) == 2
+
+
+def test_pull_retry_ok_check_soft_failure():
+    """ok_check 判定软失败 (返回 None/空) 也触发重试"""
+    calls = {'n': 0}
+
+    def empty_then_data():
+        calls['n'] += 1
+        return None if calls['n'] < 2 else {'data': [{'close': 1.0}]}
+
+    result, err = ds.retry_with_backoff(
+        empty_then_data, attempts=3, base_delay=1.0, sleep_fn=lambda _: None,
+        ok_check=lambda k: bool(k and k.get('data')),
+    )
+    assert err is None
+    assert result['data'][0]['close'] == 1.0
+    assert calls['n'] == 2
+
+
+def test_alert_queue_recorded():
+    """TC-12.8: 连续失败达阈值写入告警队列"""
+    ds.clear_alerts()
+    assert ds.get_alerts() == []
+    # 未达阈值 → 不入队
+    assert ds.record_batch_failure('data_pipeline', 2, 'x') is False
+    assert ds.get_alerts() == []
+    # 达阈值 → 入队
+    assert ds.record_batch_failure('data_pipeline', 3, '连续失败') is True
+    alerts = ds.get_alerts()
+    assert len(alerts) == 1
+    assert alerts[0]['level'] == 'error'
+    assert alerts[0]['source'] == 'data_pipeline'
+    assert '连续失败' in alerts[0]['message']
+    assert 'created_at' in alerts[0]
+
+
+def test_alert_queue_max_len():
+    """告警队列有界 (超出丢弃最旧)"""
+    ds.clear_alerts()
+    for i in range(5):
+        ds.enqueue_alert('error', 's', f'msg-{i}')
+    assert len(ds.get_alerts()) == 5
+    # 新→旧顺序
+    assert ds.get_alerts()[0]['message'] == 'msg-4'
+
+
+def test_alert_api_endpoint():
+    """GET /api/system/alerts 输出告警队列"""
+    import asyncio
+    from api.v1 import system
+    ds.clear_alerts()
+    ds.enqueue_alert('error', 'data_pipeline', 'test-alert')
+    # 直调处理函数 (不走 HTTP)
+    result = asyncio.run(system.system_alerts(user={'username': 'admin'}))
+    assert result['success'] is True
+    assert any(a['message'] == 'test-alert' for a in result['alerts'])

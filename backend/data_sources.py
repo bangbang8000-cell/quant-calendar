@@ -61,6 +61,7 @@ AKSHARE_STOCK_COLUMN_MAP = {
 # 输出到 /api/system/metrics 供运维可见。v3.11 数据自动化将消费该指标。
 
 DEGRADE_THRESHOLD = 3  # 连续失败次数达到该值 → degraded
+FRESHNESS_STALE_HOURS = 24  # v3.12 (FR-3.12.2): 距上次成功拉取超过该小时数 → stale 超期标黄
 
 _health_lock = threading.Lock()
 _health = {}
@@ -104,16 +105,109 @@ def record_call(source, success, elapsed_ms):
     return s
 
 
-def get_health_metrics():
-    """返回各数据源健康指标快照（供 /api/system/metrics 输出）"""
+def _age_hours(iso_ts, now=None):
+    """ISO 时间戳 → 距今小时数; 为空/无法解析 → None (v3.12/FR-3.12.2 新鲜度)"""
+    if not iso_ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(iso_ts)
+    except (TypeError, ValueError):
+        return None
+    now = now or datetime.now()
+    return round((now - dt).total_seconds() / 3600.0, 1)
+
+
+def get_health_metrics(now=None):
+    """返回各数据源健康指标快照（供 /api/system/metrics 输出）。
+
+    v3.12 (FR-3.12.2): 附加新鲜度字段
+    - data_age_hours: 距 last_success 小时数 (从未成功 → None)
+    - stale: 从未成功 或 data_age_hours > FRESHNESS_STALE_HOURS → True
+    - last_fetch: 最近成功拉取时间 (与 last_success 一致)
+    """
+    now = now or datetime.now()
     with _health_lock:
-        return [dict(v) for v in _health.values()]
+        out = []
+        for v in _health.values():
+            slot = dict(v)
+            age = _age_hours(slot.get('last_success'), now)
+            slot['data_age_hours'] = age
+            slot['stale'] = age is None or age > FRESHNESS_STALE_HOURS
+            slot['last_fetch'] = slot.get('last_success')
+            out.append(slot)
+        return out
 
 
 def reset_health():
     """清空健康记录（测试用）"""
     with _health_lock:
         _health.clear()
+
+
+# ==================== 拉取失败补偿 + 告警队列 (v3.12 / FR-3.12.3) ====================
+# 指数退避重试最多 MAX_RETRIES 次; 批次连续失败达阈值写入告警队列, 供 v3.13 通知通道消费。
+
+MAX_RETRIES = 3  # 最多尝试次数 (含首次)
+BACKOFF_BASE_SECONDS = 2.0  # 指数退避基数: 第 n 次失败后等待 base*2^(n-1) 秒
+PULL_FAILURE_ALERT_THRESHOLD = 3  # 连续失败达到该值 → 告警入队
+
+_alert_lock = threading.Lock()
+ALERT_QUEUE = []  # 简单列表模拟队列 (front 旧), 上限 ALERT_QUEUE_MAX
+ALERT_QUEUE_MAX = 200
+
+
+def enqueue_alert(level, source, message):
+    """写入告警队列 (供 v3.13 通知通道消费)"""
+    with _alert_lock:
+        ALERT_QUEUE.append({
+            'level': level, 'source': source, 'message': message,
+            'created_at': datetime.now().isoformat(),
+        })
+        if len(ALERT_QUEUE) > ALERT_QUEUE_MAX:
+            del ALERT_QUEUE[:len(ALERT_QUEUE) - ALERT_QUEUE_MAX]
+    return ALERT_QUEUE[-1]
+
+
+def get_alerts(limit=100):
+    """读取最近告警 (新→旧)"""
+    with _alert_lock:
+        return list(ALERT_QUEUE)[-limit:][::-1]
+
+
+def clear_alerts():
+    """清空告警队列（测试用）"""
+    with _alert_lock:
+        ALERT_QUEUE.clear()
+
+
+def retry_with_backoff(fn, *, attempts=MAX_RETRIES, base_delay=BACKOFF_BASE_SECONDS,
+                       sleep_fn=time.sleep, ok_check=None):
+    """指数退避重试: 最多 attempts 次 (含首次), 第 n 次失败后等待 base*2^(n-1) 秒。
+
+    - ok_check(result) 可判定“软失败” (如返回 None/空): 不满足则视为失败重试
+    - 返回 (result, None) 或 (None, last_error)
+    - sleep_fn 可注入 (测试用), 默认 time.sleep
+    """
+    last = None
+    for i in range(attempts):
+        try:
+            result = fn()
+            if ok_check is None or ok_check(result):
+                return result, None
+            last = result
+        except Exception as e:
+            last = e
+        if i < attempts - 1:
+            sleep_fn(base_delay * (2 ** i))
+    return None, last
+
+
+def record_batch_failure(source, consecutive_failures, message='', threshold=PULL_FAILURE_ALERT_THRESHOLD):
+    """批次连续失败达阈值 → 告警入队; 返回是否触发告警 (v3.12/FR-3.12.3)"""
+    if consecutive_failures >= threshold:
+        enqueue_alert('error', source, message or f"{source} 连续 {consecutive_failures} 次拉取失败")
+        return True
+    return False
 
 
 def timed_record(source, fn, *args, **kwargs):
@@ -126,6 +220,16 @@ def timed_record(source, fn, *args, **kwargs):
     except Exception:
         record_call(source, False, (time.monotonic() - t0) * 1000)
         raise
+
+
+def _safe_float(value, default=None):
+    """安全转 float, 无法转换返回 default"""
+    try:
+        if value is None or (isinstance(value, float) and value != value):  # NaN
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _ts_code_to_akshare_index(ts_code):
@@ -526,6 +630,64 @@ class DataSourceManager:
                 df = _map_akshare_columns(df, AKSHARE_STOCK_COLUMN_MAP)
                 return df.tail(limit)
 
+        return None
+
+    def _fetch_financial(self, src_name, ts_code):
+        """各数据源获取财务指标 (FR-3.12.1: 财务数据拉取)
+
+        字段: roe / netprofit_yoy / grossprofit_margin / debt_to_assets
+        (tushare fina_indicator 最近一期)
+        """
+        try:
+            if src_name in ('sxsc_tushare', 'tushare'):
+                api = self._clients.get(src_name)
+                if not api:
+                    return None
+                if src_name == 'sxsc_tushare':
+                    df = api.query('fina_indicator', ts_code=ts_code, limit=1)
+                else:
+                    df = api.fina_indicator(ts_code=ts_code, limit=1)
+                if df is None or len(df) == 0:
+                    return None
+                row = df.iloc[0].to_dict()
+                return {
+                    'ts_code': ts_code,
+                    'ann_date': row.get('ann_date'),
+                    'end_date': row.get('end_date'),
+                    'roe': _safe_float(row.get('roe')),
+                    'netprofit_yoy': _safe_float(row.get('netprofit_yoy')),
+                    'grossprofit_margin': _safe_float(row.get('grossprofit_margin')),
+                    'debt_to_assets': _safe_float(row.get('debt_to_assets')),
+                    'eps': _safe_float(row.get('eps')),
+                    'bps': _safe_float(row.get('bps')),
+                }
+            elif src_name == 'akshare':
+                # akshare 无统一财务接口, 退化为 daily_basic 中的 pe/pb
+                return None
+        except Exception as e:
+            logger.warning(f"{src_name} _fetch_financial({ts_code}) 失败: {e}")
+            return None
+        return None
+
+    def get_financial_data(self, ts_code):
+        """获取财务指标（带 fallback）— FR-3.12.1 财务数据拉取"""
+        for src_name in SOURCE_ORDER:
+            src_cfg = self._get_source_config(src_name)
+            if not src_cfg.get('enabled', True):
+                continue
+            _t0 = time.monotonic()
+            try:
+                result = self._fetch_financial(src_name, ts_code)
+                _elapsed = (time.monotonic() - _t0) * 1000
+                if result:
+                    result['data_source'] = src_name
+                    record_call(src_name, True, _elapsed)
+                    return result
+                record_call(src_name, False, _elapsed)
+            except Exception as e:
+                logger.warning(f"{src_name} get_financial_data({ts_code}) 失败: {e}")
+                self._errors[src_name] = str(e)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
         return None
 
     def _fetch_daily_basic(self, src_name, ts_code, limit):

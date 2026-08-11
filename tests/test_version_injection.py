@@ -50,8 +50,8 @@ def test_rendered_version_matches_app_version():
     html = open(INDEX_HTML, encoding='utf-8').read().replace('{{APP_VERSION}}', app_version)
     # 所有资源 URL 现在都带实际版本号
     assert f'?v={app_version}' in html
-    # 健康/版本单一来源：main_new 中 APP_VERSION 就是该值
-    assert app_version.startswith('3.8')
+    # 健康/版本单一来源：main_new 中 APP_VERSION 就是该值 (3.x 主版本, 避免硬编码小版本)
+    assert app_version.startswith('3.')
 
 
 def test_backend_injects_placeholder():

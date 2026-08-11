@@ -74,7 +74,13 @@ const dataRefreshConfig = ref({
     scheduled_time: '22:00',
     watch_enabled: false,
     last_refresh: null,
-    last_refresh_status: null
+    last_refresh_status: null,
+    // v3.12 (FR-3.12.1): 定时拉取配置
+    pull_enabled: false,
+    pull_time: '22:30',
+    pull_frequency: 'daily',
+    pull_weekday: '0',
+    stock_pool: []
 });
 const dataRefreshReloading = ref(false);
 const dataRefreshSaving = ref(false);
@@ -531,6 +537,39 @@ async function triggerDataReload() {
     }
 }
 
+// v3.12 (FR-3.12.1): 手动触发日线/财务拉取
+const dataPullRunning = ref(false);
+async function triggerDataPull() {
+    dataPullRunning.value = true;
+    try {
+        const token = localStorage.getItem('quant_token');
+        const headers = token
+            ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+            : { 'Content-Type': 'application/json' };
+        const res = await fetch('/api/data-refresh/pull', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ stock_pool: dataRefreshConfig.value.stock_pool || [] })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const r = data.result || {};
+            const f = data.financial || {};
+            ElementPlus.ElMessage.success(
+                `拉取完成: 日线 ${r.pulled || 0}/${r.total || 0}, 财务 ${f.pulled || 0}/${f.total || 0}`
+            );
+            viewCache.clear();
+            await loadDataRefreshConfig();
+        } else {
+            ElementPlus.ElMessage.error(data.error || '拉取失败');
+        }
+    } catch (e) {
+        ElementPlus.ElMessage.error('拉取请求失败');
+    } finally {
+        dataPullRunning.value = false;
+    }
+}
+
 // 按日期聚合的计算属性
 const groupedByDate = computed(() => {
     const groups = {};
@@ -846,6 +885,7 @@ async function doBatchEvaluate() {
         removeFromWatchlist, clearWatchlist, toggleWatchlist, showStockKline, preloadingKline,
         preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected,
         searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
+        triggerDataPull, dataPullRunning,
         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,

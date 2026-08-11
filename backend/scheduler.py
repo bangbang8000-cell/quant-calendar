@@ -6,6 +6,7 @@
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta
 from data_parser import parser
 from feishu_push import FeishuPusher
@@ -16,6 +17,23 @@ from db import backup_db
 from report_generator import generate_weekly_report
 
 logger = logging.getLogger(__name__)
+
+
+def detect_csv_changes(prev_mtimes: dict, current_mtimes: dict):
+    """检测 CSV 文件变动 (FR-3.12.1 / task 12.3, 纯函数可测)
+
+    返回 (changed, description); changed=True 表示有 变动/新增/删除。
+    """
+    for fpath, mtime in current_mtimes.items():
+        if fpath in prev_mtimes and prev_mtimes[fpath] != mtime:
+            return True, f"文件变动: {os.path.basename(fpath)}"
+    for fpath in current_mtimes:
+        if fpath not in prev_mtimes:
+            return True, f"新文件: {os.path.basename(fpath)}"
+    for fpath in prev_mtimes:
+        if fpath not in current_mtimes:
+            return True, f"文件删除: {os.path.basename(fpath)}"
+    return False, "无变动"
 
 
 class Scheduler:
@@ -278,6 +296,73 @@ class Scheduler:
                 logger.info(f"定时刷新任务异常: {e}")
                 await asyncio.sleep(60)
 
+    async def tushare_pull_task(self):
+        """定时 Tushare 日线拉取任务 (FR-3.12.1)
+
+        依据 data_refresh_config 的 pull_enabled/pull_time/pull_frequency
+        定时拉取日线快照 → 触发解析器刷新 (自动入库)。
+        """
+        last_pull_date = None
+        consecutive_failures = 0  # v3.12 (FR-3.12.3): 连续失败计数, 达阈值告警入队
+        while self.running:
+            try:
+                from data_refresh_config import load_config, pull_should_run
+                config = load_config()
+                if not config.get('pull_enabled', False):
+                    await asyncio.sleep(3600)
+                    continue
+
+                now = datetime.now()
+                pull_time = config.get('pull_time', '22:30')
+                target_hour, target_minute = map(int, pull_time.split(':'))
+                target = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+                if target <= now:
+                    target += timedelta(days=1)
+                await asyncio.sleep(max((target - now).total_seconds(), 10))
+                if not self.running:
+                    break
+
+                today = datetime.now().strftime('%Y-%m-%d')
+                if last_pull_date != today and pull_should_run(config, datetime.now()):
+                    last_pull_date = today
+                    logger.info(f"📥 定时拉取启动: {today}")
+                    try:
+                        from data_pipeline import run_daily_pull
+                        # 阻塞式拉取放线程, 不阻塞事件循环
+                        result = await asyncio.to_thread(run_daily_pull)
+                        from data_refresh_config import update_refresh_status
+                        ok = result.get("failed", 1) == 0
+                        update_refresh_status(ok, (
+                            f"日线拉取 {result.get('pulled', 0)}/{result.get('total', 0)} 成功, "
+                            f"最新日期 {result.get('latest_date')}"
+                        ))
+                        # v3.12 (FR-3.12.3): 连续失败计数 → 达阈值告警入队
+                        if ok:
+                            consecutive_failures = 0
+                            # 拉取成功后刷新解析器/视图 (自动入库)
+                            parser.reload()
+                            views_aggregator.reload()
+                        else:
+                            consecutive_failures += 1
+                            from data_sources import record_batch_failure
+                            record_batch_failure(
+                                'data_pipeline', consecutive_failures,
+                                f"日线拉取 {result.get('pulled', 0)}/{result.get('total', 0)} 成功, "
+                                f"失败 {result.get('failed', 0)}"
+                            )
+                        logger.info(f"✅ 定时拉取完成: {result}")
+                    except Exception as e:
+                        consecutive_failures += 1
+                        from data_sources import record_batch_failure
+                        record_batch_failure('data_pipeline', consecutive_failures, f"定时拉取异常: {e}")
+                        logger.error(f"定时拉取失败: {e}")
+                        from data_refresh_config import update_refresh_status
+                        update_refresh_status(False, f"定时拉取失败: {e}")
+                await asyncio.sleep(60)
+            except Exception as e:
+                logger.info(f"定时拉取任务异常: {e}")
+                await asyncio.sleep(60)
+
     async def file_watch_task(self):
         """文件变动监听任务（轮询 CSV 文件 mtime）"""
         import os
@@ -314,31 +399,10 @@ class Scheduler:
 
                 current_mtimes = scan_files()
 
-                # 检测变动
-                changed = False
-                for fpath, mtime in current_mtimes.items():
-                    if fpath not in file_mtimes or file_mtimes[fpath] != mtime:
-                        changed = True
-                        logger.info(f"📁 检测到文件变动: {os.path.basename(fpath)}")
-                        break
-
-                # 检测新增文件
-                if not changed:
-                    for fpath in current_mtimes:
-                        if fpath not in file_mtimes:
-                            changed = True
-                            logger.info(f"📁 检测到新文件: {os.path.basename(fpath)}")
-                            break
-
-                # 检测删除文件
-                if not changed:
-                    for fpath in file_mtimes:
-                        if fpath not in current_mtimes:
-                            changed = True
-                            logger.info(f"📁 检测到文件删除: {os.path.basename(fpath)}")
-                            break
-
+                # 检测变动 (纯函数)
+                changed, change_desc = detect_csv_changes(file_mtimes, current_mtimes)
                 if changed:
+                    logger.info(f"📁 检测到{change_desc}")
                     logger.info("🔄 触发文件变动刷新...")
                     try:
                         parser.reload()
@@ -458,6 +522,7 @@ class Scheduler:
         asyncio.create_task(self.weekly_report_task())
         asyncio.create_task(self.auto_evaluate_task())
         asyncio.create_task(self.data_refresh_task())
+        asyncio.create_task(self.tushare_pull_task())
         asyncio.create_task(self.file_watch_task())
         asyncio.create_task(self.daily_backup_task())
         asyncio.create_task(self.health_check_task())

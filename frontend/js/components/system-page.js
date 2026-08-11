@@ -407,6 +407,9 @@
                             <el-button size="small" type="primary" @click="triggerDataReload" :loading="dataRefreshReloading">
                                 🔄 手动加载
                             </el-button>
+                            <el-button size="small" type="success" @click="triggerDataPull" :loading="dataPullRunning">
+                                📥 手动拉取
+                            </el-button>
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <!-- 定时刷新 -->
@@ -425,6 +428,47 @@
                                 <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">文件变动监听</label>
                                 <el-switch v-model="dataRefreshConfig.watch_enabled" @change="saveDataRefreshConfig" size="small" />
                                 <span style="font-size: var(--font-sm); color: var(--text-tertiary); margin-left: 4px;">文件变动时自动刷新</span>
+                            </div>
+                            <!-- v3.12 (FR-3.12.1): 定时拉取配置 -->
+                            <div class="card" style="border: 1px solid var(--bg-hover); background: var(--bg-card-header); border-radius: 8px; padding: 12px 14px;">
+                                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">定时拉取日线</label>
+                                        <el-switch v-model="dataRefreshConfig.pull_enabled" @change="saveDataRefreshConfig" size="small" />
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">时间</label>
+                                        <el-time-picker v-model="dataRefreshConfig.pull_time" @change="saveDataRefreshConfig" size="small" format="HH:mm" value-format="HH:mm" style="width: 110px;" :disabled="!dataRefreshConfig.pull_enabled" placeholder="22:30" />
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">频率</label>
+                                        <el-select v-model="dataRefreshConfig.pull_frequency" @change="saveDataRefreshConfig" size="small" style="width: 110px;" :disabled="!dataRefreshConfig.pull_enabled">
+                                            <el-option label="每日" value="daily" />
+                                            <el-option label="每周" value="weekly" />
+                                        </el-select>
+                                    </div>
+                                    <div v-if="dataRefreshConfig.pull_frequency === 'weekly'" style="display: flex; align-items: center; gap: 6px;">
+                                        <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">周几</label>
+                                        <el-select v-model="dataRefreshConfig.pull_weekday" @change="saveDataRefreshConfig" size="small" style="width: 90px;" :disabled="!dataRefreshConfig.pull_enabled">
+                                            <el-option label="周一" value="0" />
+                                            <el-option label="周二" value="1" />
+                                            <el-option label="周三" value="2" />
+                                            <el-option label="周四" value="3" />
+                                            <el-option label="周五" value="4" />
+                                        </el-select>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                                    <label style="font-size: var(--font-base); color: var(--text-primary); white-space: nowrap;">股票池</label>
+                                    <el-select v-model="dataRefreshConfig.stock_pool" multiple filterable allow-create default-first-option collapse-tags
+                                        @change="saveDataRefreshConfig" size="small" style="flex: 1; min-width: 200px;" :disabled="!dataRefreshConfig.pull_enabled"
+                                        placeholder="输入股票代码后回车, 留空=全部覆盖股票">
+                                        <el-option v-for="c in dataRefreshConfig.stock_pool" :key="c" :label="c" :value="c" />
+                                    </el-select>
+                                </div>
+                                <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 6px;">
+                                    拉取成功后自动刷新解析器/视图 (数据自动入库)
+                                </div>
                             </div>
                         </div>
                     </div>

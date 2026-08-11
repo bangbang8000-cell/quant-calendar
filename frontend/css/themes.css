@@ -847,6 +847,11 @@
             font-size: var(--font-3xl);
             color: var(--white);
         }
+        .login-input-icon {
+            width: var(--sp-4);
+            height: var(--sp-4);
+            color: var(--text-tertiary);
+        }
         /* 详情弹窗 */
         .detail-header {
             background: var(--gradient);
@@ -3615,8 +3620,19 @@ text {
 .today-health-name { font-weight: var(--font-medium); color: var(--text-primary); }
 .today-health-rate { color: var(--text-secondary); font-weight: var(--font-medium); }
 .today-health-lat, .today-health-calls { color: var(--text-tertiary); }
+.today-health-age { color: var(--text-secondary); font-size: var(--font-xs); }
+.today-health-age.is-stale { color: var(--color-warning); font-weight: var(--font-medium); }
 .today-health-badge {
     padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: var(--font-semibold);
     background: var(--badge-danger-bg); color: var(--badge-danger-text);
+}
+.today-health-badge.is-stale {
+    background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+    color: var(--color-warning);
+}
+/* v3.12 (FR-3.12.2): 超期数据源卡片标黄 */
+.today-health-item.is-stale {
+    border-color: color-mix(in srgb, var(--color-warning) 55%, transparent);
+    background: color-mix(in srgb, var(--color-warning) 7%, var(--bg-card));
 }
 .today-health-empty { font-size: var(--font-xs); color: var(--text-tertiary); }

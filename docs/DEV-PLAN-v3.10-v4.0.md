@@ -141,21 +141,21 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|:--:|
-| 12.1 | Tushare 日线自动拉取任务 | FR-3.12.1 | `backend/data_sources.py`, `backend/scheduler.py` | 4h | 手动触发生成 qresult 新数据 | ⬜ |
-| 12.2 | 财务数据拉取 | FR-3.12.1 | `backend/data_sources.py` | 3h | 财务字段入库 | ⬜ |
-| 12.3 | qresult 自动导入触发 | FR-3.12.1 | `backend/data_pipeline.py` | 1h | CSV 更新后自动 reload | ⬜ |
-| 12.4 | 数据源配置界面 | FR-3.12.1 | `frontend/js/components/system-page.js` | 2h | 配置股票池/频率/开关 | ⬜ |
-| 12.5 | 数据新鲜度看板 | FR-3.12.2 | `backend/api/v1/dashboard.py`, `backend/system.py`, `frontend/js/components/dashboard-page.js` | 3h | 首页显示各源新鲜度+超期标黄 | ⬜ |
-| 12.6 | 拉取失败补偿 | FR-3.12.3 | `backend/data_sources.py`, `backend/scheduler.py` | 2h | 3次退避后停止; 告警入队 | ⬜ |
+| 12.1 | Tushare 日线自动拉取任务 | FR-3.12.1 | `backend/data_sources.py`, `backend/scheduler.py` | 4h | 手动触发生成 qresult 新数据 | ✅ |
+| 12.2 | 财务数据拉取 | FR-3.12.1 | `backend/data_sources.py` | 3h | 财务字段入库 | ✅ |
+| 12.3 | qresult 自动导入触发 | FR-3.12.1 | `backend/data_pipeline.py` | 1h | CSV 更新后自动 reload | ✅ |
+| 12.4 | 数据源配置界面 | FR-3.12.1 | `frontend/js/components/system-page.js` | 2h | 配置股票池/频率/开关 | ✅ |
+| 12.5 | 数据新鲜度看板 | FR-3.12.2 | `backend/data_sources.py`, `backend/api/v1/system.py`, `frontend/js/components/strategies-page.js` | 3h | 首页显示各源新鲜度+超期标黄 | ✅ |
+| 12.6 | 拉取失败补偿 | FR-3.12.3 | `backend/data_sources.py`, `backend/scheduler.py` | 2h | 3次退避后停止; 告警入队 | ✅ |
 
 ### 6.2 验收清单
 
-- [ ] 手动触发后 qresult 目录出现新数据且自动入库
-- [ ] 定时任务按配置执行（日志可见每次批次）
-- [ ] 首页数据源状态卡显示新鲜度，超期标黄
-- [ ] 模拟连续失败 3 次后停止重试，告警队列有记录
-- [ ] pytest 全量通过（≥ 120 用例）
-- [ ] Git commit + tag `v3.12.0`
+- [x] 手动触发后 qresult 目录出现新数据且自动入库（POST /api/data-refresh/pull 手动拉取）
+- [x] 定时任务按配置执行（scheduler.tushare_pull_task，日志可见每次批次）
+- [x] 首页数据源状态卡显示新鲜度（data_age/last_fetch），超期标黄（⏳ 超期 + is-stale）
+- [x] 连续失败 3 次后停止重试（retry_with_backoff 最多 3 次指数退避），告警队列有记录（GET /api/system/alerts）
+- [x] pytest 全量通过（233 用例，含 e2e）
+- [x] Git commit + tag `v3.12.0`
 
 ---
 

@@ -1510,6 +1510,7 @@ const allMenuDefs = [
                         removeFromWatchlist, clearWatchlist, toggleWatchlist, showStockKline, preloadingKline,
                         preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected,
                         searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
+                        triggerDataPull, dataPullRunning,
                         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
                         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
                         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate } = __watchlistDomain;
@@ -1819,6 +1820,8 @@ const allMenuDefs = [
                     // v1.8.0: 数据刷新配置
                     dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
                     loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
+                    // v3.12 (FR-3.12.1): 手动拉取
+                    triggerDataPull, dataPullRunning,
                     indexDetailVisible, indexDetail, indexAiResult, indexAiLoading, loadCachedIndexEval,
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
