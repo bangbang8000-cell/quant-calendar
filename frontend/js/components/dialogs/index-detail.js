@@ -60,6 +60,17 @@
                         </button>
                     </div>
                     <div class="kline-chart" id="indexKlineChart"></div>
+                    <!-- v3.11 (FR-3.11.8): 均线开关（与图表图例双向联动） -->
+                    <div v-if="indexKlineLoaded" class="ma-toggle-row">
+                        <span class="ma-toggle-label">均线</span>
+                        <button
+                            v-for="m in MA_LINES"
+                            :key="m"
+                            :class="['ma-toggle-btn', { active: klineMaVisible[m] !== false }]"
+                            @click="toggleKlineMa(m)"
+                        >{{ m }}</button>
+                        <span class="ma-toggle-hint">十字线读价：悬停或点击图表</span>
+                    </div>
                     <div v-if="indexKlineLoading" class="kline-loading">
                         <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
                     </div>

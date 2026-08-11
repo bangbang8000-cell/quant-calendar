@@ -133,7 +133,7 @@
 | TC-11.8 | `test_state_panel_variants` | 11.7 | 单元 | 空/加载/错误/离线四态渲染正确 | ✅ |
 | TC-11.9 | `test_tokens_no_hardcode` | 11.9 | 静态 | 模板/CSS 无硬编码色值（`#`/`rgba(` 出现次数为 0，白名单除外） | ✅ |
 | TC-11.10 | `test_today_one_screen` | 11.10 | 接口 | 首页聚合数据（美林/情绪/池变动/健康）字段完整 | ✅ |
-| TC-11.11 | `test_chart_toolbox` | 11.11 | 单元 | 十字线/MA 图例开关配置正确注入 ECharts option | ⬜ |
+| TC-11.11 | `test_chart_toolbox` | 11.11 | 单元 | 十字线/MA 图例开关配置正确注入 ECharts option | ✅ |
 
 | TC-11.12 | `test_module_split_boundary` | 11.3 | 静态 | app-logic.js 行数 < 800；各域模块导出的 API 面与调用方契约一致 | ⬜ |
 | TC-11.13 | `test_app_logic_regression` | 11.3 | 回归 | 拆分后原逻辑全量回归（现有 pytest 全过 + SPA 完整性） | ⬜ |
@@ -148,6 +148,19 @@
 > 暴露 `healthMetrics`/`loadHealthMetrics`；④ `test_today_snapshot_css_uses_tokens` 校验 FR-3.11.7 区块 CSS 无硬编码
 > 色值（TC-11.9 白名单约束延续）。**浏览器实测**：健康卡 3 源真实值（东财 0%/Tushare 0%/AkShare 41.2%，均 degraded）、
 > 今日重点 3 项、美林 cell 跳转 + 新入池跳转均通过、0 pageerror。
+
+> **TC-11.11 实现说明（✅ 2026-08-11）**: 采用静态单元验证（`test_chart_toolbox.py` 5 例，pytest 199→204）。
+> ① `test_chart_crosshair_read_price` 校验 charts.js 十字线读价配置注入 ECharts option：`type:'cross'`、
+> 跨价格/成交量双盘联动（`link:[{xAxisIndex:'all'}]`）、`triggerOn:'mousemove|click'`（悬停跟读 + 点击锁定）、
+> `snap:true` 吸附 + 轴标签气泡；② `test_chart_legend_ma_toggle_injected` 校验 legend.data 含 K线+MA5..60、
+> `selectedMode:'multiple'`、`selected` 默认全开、tooltip formatter 经 `showMA`/`getOption` 过滤已关闭均线；
+> ③ `test_toggle_wiring_app_logic` 校验 app-logic `toggleKlineMa`/`klineMaVisible`/`MA_LINES`/`legendToggleSelect`/
+> `legendselectchanged` 及按当前对话框定位图表实例；④ `test_ma_toggle_ui_in_dialogs` 校验两弹窗均线开关按钮行接线；
+> ⑤ `test_ma_toggle_css_uses_tokens` 校验 FR-3.11.8 区块 CSS 无硬编码色值（TC-11.9 白名单约束延续）。
+> **附带测试基建修复**：conftest `patch_data_dir` 补 `db.DATA_DIR/db.DB_FILE` 临时库重定向 —— 修复 db.py 导入时捕获
+> 路径导致测试写入真实 `data/app.db` 的跨会话污染（`test_add_and_delete`/`test_empty` 全量回归由 2 红 → 204 全绿）。
+> **浏览器实测**：十字线 option 注入 + 均线按钮点击 → 图例取消选中/按钮失高亮/MA5 保持 + showTip 后 tooltip
+> 含 MA5 不含 MA20（formatter 过滤生效）、0 pageerror。
 
 ### 5.2 Playwright 视觉回归 (v3.11 专项)
 

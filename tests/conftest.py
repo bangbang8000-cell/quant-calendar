@@ -22,6 +22,7 @@ def patch_users_file():
 def patch_data_dir():
     """Use temp dir for all data files during tests"""
     import paths
+    import db
     old_data = paths.DATA_DIR
     paths.DATA_DIR = tempfile.mkdtemp()
     old_config = paths.AI_CONFIG_FILE
@@ -29,10 +30,19 @@ def patch_data_dir():
     old_history = paths.AI_EVALUATION_HISTORY_FILE
     paths.AI_EVALUATION_HISTORY_FILE = os.path.join(paths.DATA_DIR, 'ai_evaluation_history.json')
     old_models = os.path.join(paths.DATA_DIR, 'ai_models.json')
+    # 关键修复: db 模块在导入时即捕获 DATA_DIR/DB_FILE (db.py:18),
+    # 若不重定向, 测试会读写真实 data/app.db 造成跨测试/跨会话污染
+    # (TC-11.11 回归暴露: watchlist/user_manager 在 schema_ok 时读真实库)
+    old_db_data_dir = db.DATA_DIR
+    old_db_file = db.DB_FILE
+    db.DATA_DIR = paths.DATA_DIR
+    db.DB_FILE = os.path.join(paths.DATA_DIR, 'app.db')
     yield
     paths.DATA_DIR = old_data
     paths.AI_CONFIG_FILE = old_config
     paths.AI_EVALUATION_HISTORY_FILE = old_history
+    db.DATA_DIR = old_db_data_dir
+    db.DB_FILE = old_db_file
 
 
 @pytest.fixture

@@ -70,6 +70,9 @@
                 const klineLoading = ref(false);
                 const indexKlineLoading = ref(false);
                 const stockKlineLoaded = ref(false);
+                // v3.11 (FR-3.11.8): 均线开关状态（与图表图例选中态双向同步，供弹窗按钮高亮）
+                const klineMaVisible = ref({ 'K线': true, 'MA5': true, 'MA10': true, 'MA20': true, 'MA60': true });
+                const MA_LINES = ['MA5', 'MA10', 'MA20', 'MA60'];
                 // v1.9.2: 评分动画
                 const scoreAnimating = ref(false);
                 const scoreDelta = ref(null);  // { value: +3, dir: 'up' } or null
@@ -300,8 +303,17 @@
                         if (!stockKlineChart) {
                             stockKlineChart = echarts.init(el);
                             stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                            // v3.11 (FR-3.11.8): 图例点击 → 均线开关按钮状态同步
+                            stockKlineChart.on('legendselectchanged', (p) => {
+                                if (p && p.selected) {
+                                    Object.keys(klineMaVisible.value).forEach((k) => {
+                                        if (k in p.selected) klineMaVisible.value[k] = !!p.selected[k];
+                                    });
+                                }
+                            });
                         }
                         renderKlineChart(stockKlineChart, data.data, period);
+                        resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
                     } finally {
@@ -415,8 +427,17 @@
                         if (!indexKlineChart) {
                             indexKlineChart = echarts.init(el);
                             indexKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+                            // v3.11 (FR-3.11.8): 图例点击 → 均线开关按钮状态同步
+                            indexKlineChart.on('legendselectchanged', (p) => {
+                                if (p && p.selected) {
+                                    Object.keys(klineMaVisible.value).forEach((k) => {
+                                        if (k in p.selected) klineMaVisible.value[k] = !!p.selected[k];
+                                    });
+                                }
+                            });
                         }
                         renderKlineChart(indexKlineChart, data.data, period, true);
+                        resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('指数K线加载失败');
                     } finally {
@@ -430,6 +451,17 @@
                 async function switchIndexKlinePeriod(period) {
                     if (!indexKlineLoaded.value) { ElementPlus.ElMessage.info('请先加载K线'); return; }
                     await loadIndexKline(period);
+                }
+                // v3.11 (FR-3.11.8): MA 图例开关 — 弹窗均线按钮切换（联动图表图例）
+                function toggleKlineMa(maName) {
+                    // 按当前打开的对话框定位实例，避免两个实例并存时误切隐藏图
+                    const chart = (stockDetailVisible.value ? stockKlineChart : null) || (indexDetailVisible.value ? indexKlineChart : null);
+                    if (!chart) return;
+                    chart.dispatchAction({ type: 'legendToggleSelect', name: maName });
+                }
+                // v3.11 (FR-3.11.8): 切周期 setOption(notMerge) 重置图例选中 → 同步复位按钮态
+                function resetKlineMaVisible() {
+                    ['K线', 'MA5', 'MA10', 'MA20', 'MA60'].forEach((k) => { klineMaVisible.value[k] = true; });
                 }
                 
                 // ===== 指数K线周期切换 =====
@@ -1792,6 +1824,8 @@ const allMenuDefs = [
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
                     loadStockKline, switchKlinePeriod, loadIndexKline, switchIndexKlinePeriod,
                     zoomKlineRange,
+                    // v3.11 (FR-3.11.8): MA 图例开关
+                    MA_LINES, klineMaVisible, toggleKlineMa,
                     // v1.9.2: 评分动画
                     scoreAnimating, scoreDelta, scorePulse, refreshStockScore, animateScoreEntrance,
                     stockKlineChart, indexKlineChart,

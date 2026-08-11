@@ -37,7 +37,16 @@
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'cross' },
+        // v3.11 (FR-3.11.8): 十字线读价 — 双盘(价格/成交量)联动, 点击锁定读价, 悬停实时跟读
+        triggerOn: 'mousemove|click',
+        confine: true,
+        axisPointer: {
+          type: 'cross',
+          snap: true,
+          z: 100,
+          link: [{ xAxisIndex: 'all' }],
+          label: { backgroundColor: colors.primary, color: '#ffffff', fontWeight: 600, fontSize: 11 },
+        },
         backgroundColor: tooltipBg,
         borderColor: gridColor,
         textStyle: { color: colors.textSecondary, fontSize: 12 },
@@ -46,22 +55,33 @@
           const idx = params[0].dataIndex;
           const d = data[idx];
           if (!d) return '';
+          // v3.11 (FR-3.11.8): MA 图例开关联动 — 仅展示图例中开启的均线
+          const cur = chart.getOption();
+          const legendSelected = (cur.legend && cur.legend[0] && cur.legend[0].selected) || {};
+          const showMA = (name) => legendSelected[name] !== false;
           const fmt = (v) => (v == null || isNaN(v)) ? '--' : Number(v).toFixed(2);
           const fmtVol = (v) => (v == null || isNaN(v)) ? '--' : (Number(v) / 10000).toFixed(2) + '万手';
           const lines = ['<div style="font-weight:600;color:' + colors.textSecondary + ';">' + dates[idx] + '</div>'];
           lines.push('开: ' + fmt(d[1]) + '　收: ' + fmt(d[2]));
           lines.push('低: ' + fmt(d[3]) + '　高: ' + fmt(d[4]));
           lines.push('成交量: ' + fmtVol(d[5]));
-          if (d[6] != null) lines.push('MA5: ' + fmt(d[6]));
-          if (d[7] != null) lines.push('MA10: ' + fmt(d[7]));
-          if (d[8] != null) lines.push('MA20: ' + fmt(d[8]));
-          if (d[9] != null) lines.push('MA60: ' + fmt(d[9]));
+          if (d[6] != null && showMA('MA5')) lines.push('MA5: ' + fmt(d[6]));
+          if (d[7] != null && showMA('MA10')) lines.push('MA10: ' + fmt(d[7]));
+          if (d[8] != null && showMA('MA20')) lines.push('MA20: ' + fmt(d[8]));
+          if (d[9] != null && showMA('MA60')) lines.push('MA60: ' + fmt(d[9]));
           if (d[10] != null) lines.push('VOL_MA5: ' + fmtVol(d[10]));
           return lines.join('<br/>');
         },
       },
       legend: {
         data: ['K线', 'MA5', 'MA10', 'MA20', 'MA60'],
+        // v3.11 (FR-3.11.8): MA 图例开关 — 点击图例项即可开关对应均线/K线
+        type: 'scroll',
+        selectedMode: 'multiple',
+        icon: 'roundRect',
+        itemWidth: 14,
+        itemHeight: 8,
+        selected: { 'K线': true, 'MA5': true, 'MA10': true, 'MA20': true, 'MA60': true },
         top: isMobile ? 0 : 8,
         textStyle: { color: colors.textSecondary, fontSize: 11 },
       },

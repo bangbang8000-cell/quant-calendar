@@ -125,6 +125,17 @@
                             </el-button>
                         </div>
                         <div v-if="stockKlineLoaded" class="kline-chart" id="stockKlineChart"></div>
+                        <!-- v3.11 (FR-3.11.8): 均线开关（与图表图例双向联动） -->
+                        <div v-if="stockKlineLoaded" class="ma-toggle-row">
+                            <span class="ma-toggle-label">均线</span>
+                            <button
+                                v-for="m in MA_LINES"
+                                :key="m"
+                                :class="['ma-toggle-btn', { active: klineMaVisible[m] !== false }]"
+                                @click="toggleKlineMa(m)"
+                            >{{ m }}</button>
+                            <span class="ma-toggle-hint">十字线读价：悬停或点击图表</span>
+                        </div>
                         <!-- 时间范围快捷按钮 -->
                         <div v-if="stockKlineLoaded" style="display:flex;gap:4px;margin-top:8px;justify-content:center;">
                             <el-button size="small" @click="zoomKlineRange(22)">近1月</el-button>
