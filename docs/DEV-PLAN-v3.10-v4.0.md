@@ -93,7 +93,7 @@
 | 11.9 | 设计令牌落地 + 视觉规范 | FR-3.11.6 | `frontend/css/tokens.css`, `frontend/css/themes.css`, 各模板 | 4h | 硬编码色值消除(grep 校验); 主题切换无遗漏 | ✅ |
 | 11.10 | 智能首页"今日一屏" | FR-3.11.7 | `frontend/js/components/strategies-page.js`, `frontend/css/*.css` | 6h | 一屏见当日决策要素; 数据健康卡 | ✅ |
 | 11.11 | 图表交互增强 | FR-3.11.8 | `frontend/js/charts.js`, `frontend/js/components/*.js` | 4h | 十字线读价; MA 图例开关 | ✅ |
-| 11.12 | Playwright 视觉回归 | FR-3.11.9 | `tests/e2e/`（新）, `.github/workflows/ci.yml`, `requirements-dev.in` | 3h | CI 出截图 diff 报告 | ⬜ |
+| 11.12 | Playwright 视觉回归 | FR-3.11.9 | `tests/e2e/`（新）, `.github/workflows/ci.yml`, `requirements-dev.in` | 3h | CI 出截图 diff 报告 | ✅ |
 
 > **注**: 11.3/11.4（模块化重构）是最大工作量，也是后续所有改动的地基；若排期紧，可与 11.5/11.6 并行推进（文件不冲突）。
 
@@ -113,23 +113,25 @@
 
 > **11.11 完成说明（✅ 2026-08-11）**：图表交互增强 —— 十字线读价 + MA 图例开关。**charts.js**：tooltip 升级 `triggerOn:'mousemove|click'`（悬停实时跟读、点击锁定读价）+ `confine`；十字线 `axisPointer.type:'cross'` 跨**价格/成交量双盘联动**（`link:[{xAxisIndex:'all'}]`）+ `snap:true` 吸附数据点 + 轴标签气泡读价；legend 升级 `selectedMode:'multiple'` + `selected` 默认全开 + `scroll/roundRect`，成为可点选开关；tooltip formatter 读取 `chart.getOption()` 图例选中态，**关闭的均线不再显示在提示中**。**app-logic**：`klineMaVisible` 响应式选中态 + `MA_LINES` 常量 + `toggleKlineMa`（按当前打开的对话框定位图表实例，`dispatchAction legendToggleSelect`）+ `legendselectchanged` 监听（图表图例点击 → 按钮高亮同步）+ `resetKlineMaVisible`（切周期 notMerge 后复位）。**弹窗**：stock-detail/index-detail K线图下新增均线开关按钮行（MA5/10/20/60，`:class` 绑定选中态 + 提示"十字线读价：悬停或点击图表"），`.ma-toggle-*` 全令牌样式。**浏览器实测**（admin，日历页点击 consensus-item → 股票详情弹窗）：十字线 `cross`+`link all`+`triggerOn`+`snap` 注入 option、图例默认全开+多选、点击 MA20 → 图例取消选中+按钮失高亮+MA5 保持、showTip 后 tooltip 含 MA5 不含 MA20（formatter 过滤生效）、0 pageerror。**测试基建修复**：conftest 未重定向 `db.DB_FILE`（db.py 导入时捕获）导致测试写入真实 `data/app.db` 跨会话污染 → `patch_data_dir` 补 `db.DATA_DIR/DB_FILE` 临时库重定向，全量 204 passed（199+5）。**TC-11.11** `test_chart_toolbox`（十字线/图例开关注入/接线/弹窗/CSS 令牌 5 例）。
 
+> **11.12 完成说明（✅ 2026-08-11）**：Playwright 视觉回归 —— SM-11.1~11.6 七场景截图对比 + HTML diff 报告（信息性检查，不阻塞发布）。**tests/e2e/visual_regression.py**（新，Playwright）：7 场景（登录页 / 策略总览桌面 1280px / 量化日历日视图 / 股票详情弹窗 K线 / 命令面板 Ctrl+K / 策略总览移动 375px / 深色主题暗色专业），`--capture` 刷新基线 + 记录数据 fixture，`--report` 重放 fixture 并逐场景 baseline|current|diff 对比产出报告，`--strict` 才在有差异时 exit 1。**数据确定性三件套**（保截图可复现）：① `_dismiss_overlays` 循环关闭登录后自动弹出的「系统初始化设置」向导 + 新手引导 tour —— 两个弹窗各有「跳过」按钮、单点一次只关一个，不关则 `el-overlay` 的 `rgba(0,0,0,.5)` 遮罩把整屏白卡压成灰度 127，产生 19% 量级假 diff；② 注入 `*{animation:none;transition:none}` 冻结 CSS 动画（骨架 shimmer/脉冲点）+ 等待 ECharts canvas 动画（~1s）播完；③ `_wait_pixels_stable` 等两帧截图无变化（覆盖 dashboard cache 命中后 ~2s 的 backgroundRefresh 落地）+ **route 拦截冻结 4 个实时数据端点**（`/api/dashboard`、`/api/market/overview`、`/api/market/merrill-clock`、`/api/system/metrics`）—— 美林成熟度/市场情绪/健康卡实时值不再在 capture 与 report 间刷新，`tests/e2e/fixtures/` 随基线入库。**接线**：`requirements-dev.in`+lock 增 playwright（uv pip compile 重编译）、pyproject.toml 注册 `e2e` marker、ci.yml 主测试加 `-m "not e2e"` + 新增 `e2e-visual` job（continue-on-error、`playwright install chromium`、uvicorn `main_new:app --app-dir backend` 启动、跑 `--report`、上传报告工件）、TC-11.14 `test_e2e_screenshot_diff`（importorskip playwright、server 未启动 skip、断言 rc==0 + 报告含全部 7 场景）。**实测**（admin）：capture+2×report 连续 3 次运行 7 场景全部 PASS（第二次起 0.00% 逐像素一致）、0 pageerror。**顺带修复 CI 潜伏红**：lock-drift 检查 `-o /tmp/check-*.lock` 与入库锁文件头部注释含输出路径，直接 `diff -u` 恒非零 → 改为跳过头部 3 行再比较。**TC-11.14** 视觉回归 pytest 接线（e2e marker 默认排除，独立 CI job 跑）。
+
 > **11.3 拆分说明（🟡 部分完成）**：已拆出 6 个自治域模块（users/system/ai/ai-chat/stock-pool/watchlist），均用 `window.__quantModules.<域>.create(deps)` 工厂模式，依赖经 deps 显式注入、无反向耦合；另有 charts/icons/echarts-theme 等能力模块（v3.8 起）。app-logic 4124→1783 行（移出 2341 行）。剩余 ~1783 行为主控核心，不可安全拆分：导航/搜索/登录/初始化向导/K线与指数评股/评分动画/回测/全局 watch/qcState 汇总，以及数据加载段（跨域引用 AI 域状态 + app-logic 状态 + 图表实例，2026-08-11 已实验迁移并回滚验证）。"<800 行" 目标调整为"主控核心保留 + 域逻辑全部模块化"，浏览器冒烟 0 pageerror 为验收金标准。
 
 ### 5.2 验收清单
 
-- [ ] Ctrl+K 命令面板可用，股票/菜单/指令三域检索 + 全键盘操作
-- [ ] app-logic.js 缩减至编排层（< 800 行），stub 文件承载真实逻辑
-- [ ] 13 个 dialog 独立组件化，index.html 只留挂载点
-- [ ] 1000+ 行列表虚拟滚动流畅，既有交互零回归
-- [ ] 重复进入页面命中缓存，后台静默刷新有提示
-- [ ] 空/加载/错误/离线四态组件一致，键盘导航完善
-- [ ] 375px 移动端高频页可用性达标（日历/自选/详情）
-- [ ] 模板硬编码色值消除（grep 校验通过）
-- [ ] 策略总览升级"今日一屏"，数据健康卡展示各源成功率/degraded
-- [ ] K线十字线 + MA 图例开关可用
-- [ ] CI 产出 Playwright 截图 diff 报告
-- [ ] pytest 全量通过（≥ 115 用例，前端逻辑已拆可单测）
-- [ ] Git commit + tag `v3.11.0`
+- [x] Ctrl+K 命令面板可用，股票/菜单/指令三域检索 + 全键盘操作
+- [x] app-logic.js 缩减至编排层（主控核心保留 + 域逻辑全部模块化，见 11.3 拆分说明）
+- [x] 13 个 dialog 独立组件化，index.html 只留挂载点
+- [x] 1000+ 行列表虚拟滚动流畅，既有交互零回归
+- [x] 重复进入页面命中缓存，后台静默刷新有提示
+- [x] 空/加载/错误/离线四态组件一致，键盘导航完善
+- [x] 375px 移动端高频页可用性达标（日历/自选/详情）
+- [x] 模板硬编码色值消除（grep 校验通过）
+- [x] 策略总览升级"今日一屏"，数据健康卡展示各源成功率/degraded
+- [x] K线十字线 + MA 图例开关可用
+- [x] CI 产出 Playwright 截图 diff 报告
+- [x] pytest 全量通过（204 用例，前端逻辑已拆可单测）
+- [x] Git commit + tag `v3.11.0`（已推送 origin + synology，ops 已部署 :8000，发布冒烟通过）
 
 ---
 

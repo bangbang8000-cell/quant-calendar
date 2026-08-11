@@ -15,6 +15,8 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   pytest
 coverage==7.15.4
     # via pytest-cov
+greenlet==3.5.5
+    # via playwright
 h11==0.16.0
     # via
     #   -c requirements.lock
@@ -34,10 +36,14 @@ packaging==26.3
     # via
     #   -c requirements.lock
     #   pytest
+playwright==1.62.0
+    # via -r requirements-dev.in
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
+pyee==13.0.1
+    # via playwright
 pygments==2.20.0
     # via pytest
 pytest==9.1.1
@@ -50,7 +56,8 @@ ruff==0.16.2
     # via -r requirements-dev.in
 tomli==2.4.1 ; python_full_version <= '3.11'
     # via coverage
-typing-extensions==4.16.0 ; python_full_version < '3.13'
+typing-extensions==4.16.0
     # via
     #   -c requirements.lock
     #   anyio
+    #   pyee

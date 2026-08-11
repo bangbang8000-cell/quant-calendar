@@ -74,3 +74,8 @@ PLAN.md
 # Coverage output
 .coverage
 htmlcov/
+
+# Visual regression (FR-3.11.9 / TC-11.14): 本次运行截图与报告为生成产物, 不入库
+# 仅入库基线 baseline/ (参考截图)
+tests/e2e/screenshots/current/
+tests/e2e/reports/

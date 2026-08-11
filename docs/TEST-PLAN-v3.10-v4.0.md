@@ -137,7 +137,7 @@
 
 | TC-11.12 | `test_module_split_boundary` | 11.3 | 静态 | app-logic.js 行数 < 800；各域模块导出的 API 面与调用方契约一致 | ⬜ |
 | TC-11.13 | `test_app_logic_regression` | 11.3 | 回归 | 拆分后原逻辑全量回归（现有 pytest 全过 + SPA 完整性） | ⬜ |
-| TC-11.14 | `test_e2e_screenshot_diff` | 11.12 | e2e | Playwright 截图对比，产出 diff 报告（不阻塞发布） | ⬜ |
+| TC-11.14 | `test_e2e_screenshot_diff` | 11.12 | e2e | Playwright 截图对比，产出 diff 报告（不阻塞发布） | ✅ |
 
 > **TC-11.10 实现说明（✅ 2026-08-11）**: 采用接口 + 静态混合验证（`test_today_snapshot.py` 4 例，pytest 195→199）。
 > ① `test_metrics_data_sources_fields_complete` 直接驱动 `record_call` 种子 → 断言 `/api/system/metrics` 的
@@ -148,6 +148,15 @@
 > 暴露 `healthMetrics`/`loadHealthMetrics`；④ `test_today_snapshot_css_uses_tokens` 校验 FR-3.11.7 区块 CSS 无硬编码
 > 色值（TC-11.9 白名单约束延续）。**浏览器实测**：健康卡 3 源真实值（东财 0%/Tushare 0%/AkShare 41.2%，均 degraded）、
 > 今日重点 3 项、美林 cell 跳转 + 新入池跳转均通过、0 pageerror。
+
+> **TC-11.14 实现说明（✅ 2026-08-11）**: 采用 Playwright 端到端截图对比（`test_e2e_screenshot_diff.py` + `tests/e2e/visual_regression.py`）。
+> ① `@pytest.mark.e2e`（pyproject.toml 注册 marker）—— CI 主测试命令 `-m "not e2e"` 默认排除，独立 `e2e-visual` job（continue-on-error）跑真实浏览器；
+> ② 无 dev server 时 skip（信息性检查，不阻塞）；③ 断言 harness `--report` rc==0、报告已产出且含全部 7 个 SM 验收场景
+> （login/strategies_desktop/calendar/stock_detail/command_panel/strategies_mobile/dark_theme）；④ 截图确定性：
+> 循环关闭登录后初始化向导+新手引导 tour 遮罩、注入 `*{animation:none}` 冻结 CSS 动画、像素稳定等待 + route 拦截冻结
+> 4 个实时数据端点（fixture 随基线入库）。**浏览器实测**（admin）：capture + 2×report 连续 3 次运行 7 场景全部 PASS
+> （第二次起 diff 0.00% 逐像素一致）、0 pageerror。基线 PNG（`tests/e2e/screenshots/baseline/`）+ 数据 fixture
+> （`tests/e2e/fixtures/`）入库，本次运行截图与报告不入库。
 
 > **TC-11.11 实现说明（✅ 2026-08-11）**: 采用静态单元验证（`test_chart_toolbox.py` 5 例，pytest 199→204）。
 > ① `test_chart_crosshair_read_price` 校验 charts.js 十字线读价配置注入 ECharts option：`type:'cross'`、

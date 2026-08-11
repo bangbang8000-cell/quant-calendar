@@ -6,3 +6,9 @@ exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
 ]
+
+[tool.pytest.ini_options]
+# e2e: Playwright 端到端视觉回归 (FR-3.11.9 / TC-11.14) — 需要浏览器+dev server, CI 默认排除
+markers = [
+    "e2e: 端到端视觉回归 (需 Playwright chromium + 本地 dev server, 默认跳过)",
+]

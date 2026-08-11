@@ -18,16 +18,55 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: 校验依赖锁文件未漂移 (FR-3.10.2)
         run: |
+          # 跳过文件头 3 行: 头部注释含 -o 输出路径, 与编译目标路径不同, 直接 diff 会恒红
           uv pip compile --universal --python-version 3.11 requirements.in -o /tmp/check-runtime.lock
-          diff -u requirements.lock /tmp/check-runtime.lock
+          diff -u <(tail -n +4 requirements.lock) <(tail -n +4 /tmp/check-runtime.lock)
           uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/check-dev.lock
-          diff -u requirements-dev.lock /tmp/check-dev.lock
+          diff -u <(tail -n +4 requirements-dev.lock) <(tail -n +4 /tmp/check-dev.lock)
       - name: 按锁文件安装依赖
         run: uv pip install --system -r requirements.lock -r requirements-dev.lock
       - name: Lint
         run: ruff check backend/ --select=E,F,W --ignore=E501
-      - name: 测试 + 总覆盖率护栏 (≥20%, FR-3.10.4)
-        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=20
+      - name: 测试 + 总覆盖率护栏 (≥20%, FR-3.10.4; e2e 场景单独 job 跑)
+        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=20 -m "not e2e"
       - name: 核心模块覆盖率门禁 (美林时钟 ≥70%)
         run: python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
-             --cov=merrill_clock --cov-report=term --cov-fail-under=70
+             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
+
+  # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
+  # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
+  e2e-visual:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+      - name: 按锁文件安装依赖
+        run: uv pip install --system -r requirements.lock -r requirements-dev.lock
+      - name: 安装 Playwright chromium
+        run: uv run python -m playwright install --with-deps chromium
+      - name: 启动 dev server 并跑视觉回归
+        run: |
+          uv run python -m uvicorn main_new:app --app-dir backend --host 127.0.0.1 --port 8001 &
+          SERVER_PID=$!
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8001/ >/dev/null && break
+            sleep 1
+          done
+          uv run python tests/e2e/visual_regression.py --report --base-url http://127.0.0.1:8001/
+          EXIT_CODE=$?
+          kill $SERVER_PID 2>/dev/null || true
+          exit $EXIT_CODE
+      - name: 上传 diff 报告工件
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-report
+          path: |
+            tests/e2e/reports/
+            tests/e2e/screenshots/
+          if-no-files-found: ignore
