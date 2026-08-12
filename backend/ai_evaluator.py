@@ -971,6 +971,30 @@ class AIEvaluator:
 
     # ─── 评估入口 ───────────────────────────────────────────────
 
+    @staticmethod
+    def _resolve_stock_name(stock_code: str, stock_name: str = "") -> str:
+        """解析股票中文名 — 传入名缺失或 == 代码时, 用 stock_manager 解析 (v3.14.2)
+
+        修复"评估历史只有代码没名字": 批量/自选只传代码时也能落真实名称。
+        裸代码(无 .SZ/.SH 后缀)时尝试补后缀解析 (旧历史数据常见)。
+        """
+        if stock_name and stock_name.strip() and stock_name.strip() != stock_code:
+            return stock_name.strip()
+        try:
+            from stock_info import stock_manager
+            resolved = stock_manager.get_name(stock_code)
+            if resolved and resolved != stock_code:
+                return resolved
+            if "." not in stock_code:
+                for suffix in (".SZ", ".SH"):
+                    cand = stock_code + suffix
+                    resolved = stock_manager.get_name(cand)
+                    if resolved and resolved != cand:
+                        return resolved
+        except Exception:
+            logger.debug(f"stock_manager 解析 {stock_code} 名称失败", exc_info=True)
+        return stock_name or stock_code
+
     async def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
         """
         评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
@@ -979,6 +1003,8 @@ class AIEvaluator:
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         loop = asyncio.get_event_loop()
+        # v3.14.2: 名称兜底 — 传入空/代码时解析真实中文名 (自选/批量常见)
+        stock_name = self._resolve_stock_name(stock_code, stock_name)
 
         # 1) 获取真实数据 (v3.3.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
         if stock_data is not None:
@@ -987,10 +1013,24 @@ class AIEvaluator:
             market_data = await loop.run_in_executor(None, self._fetch_stock_data, stock_code)
 
         # v3.5.0-T6: 同题缓存 — 同日同策略直接返回缓存结果 (省 LLM 调用)
+        # v3.14fix: 缓存命中统一返回 record 形状 (与全新评估一致), 修复前端读 result.result 落空
         cached = self._get_cached(stock_code, strategy)
         if cached:
+            cached = dict(cached)
             cached["from_cache"] = True
-            return cached
+            return {
+                "id": hashlib.md5(f"{stock_code}{strategy}cached".encode()).hexdigest()[:12],
+                "stock_code": stock_code,
+                "stock_name": stock_name,
+                "evaluate_time": datetime.now().isoformat(),
+                "result": cached,
+                "model_used": None,
+                "model_provider": cached.get("provider", ""),
+                "llm_latency_ms": 0,
+                "llm_raw_response": None,
+                "market_data_snapshot": None,
+                "from_cache": True,
+            }
 
         # 2) 遍历启用模型，按优先级尝试
         enabled_models = self.get_enabled_models()
@@ -1154,8 +1194,25 @@ class AIEvaluator:
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=model.timeout)
         resp.raise_for_status()
         result = resp.json()
-        content = result["choices"][0]["message"]["content"]
+        message = result["choices"][0]["message"]
+        content = message.get("content") or ""
         raw_response = content
+
+        # v3.14.2: 推理型模型 (deepseek-v4-flash/pro 等) 的最终答案可能不在 content 而在 reasoning_content,
+        # 且 max_tokens 偏小时 content 常为空 → 从 reasoning_content 提取 JSON 兜底
+        if not content.strip():
+            reasoning = message.get("reasoning_content") or ""
+            raw_response = reasoning
+            json_match = re.search(r'\{.*\}', reasoning, re.DOTALL)
+            if json_match:
+                try:
+                    llm_result = json.loads(json_match.group())
+                    if "provider" not in llm_result:
+                        llm_result["provider"] = model.provider
+                    return llm_result, raw_response
+                except json.JSONDecodeError:
+                    pass
+            raise ValueError(f"LLM 返回无法解析为 JSON: {reasoning[:200]}")
 
         # 解析 JSON 响应
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
@@ -1855,14 +1912,29 @@ class AIEvaluator:
     # ─── 批量评估 ───────────────────────────────────────────────
 
     async def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
-        """批量并行评估 — 异步版，使用 asyncio.gather 替代 ThreadPoolExecutor"""
+        """批量并行评估 — 异步版，使用 asyncio.gather 替代 ThreadPoolExecutor
+        v3.14fix: 统一返回 {stock_code, success, result, ...} 形状 — 前端批量弹窗依赖
+        r.success / r.stock_code / r.result (缓存命中/全新评估/失败三态一致)"""
         semaphore = asyncio.Semaphore(max_workers)
 
         async def _evaluate_one(code: str) -> Dict:
             async with semaphore:
                 try:
-                    name = (stock_info_map or {}).get(code, code)
-                    return await self.evaluate_stock(code, name, None, username)
+                    # v3.14.2: 名称兜底 — stock_info_map 缺失/无名字时经 stock_manager 解析
+                    name = self._resolve_stock_name(code, (stock_info_map or {}).get(code, ""))
+                    rec = await self.evaluate_stock(code, name, None, username)
+                    rec = rec if isinstance(rec, dict) else {}
+                    result = rec.get("result", {})
+                    success = result.get("level") not in ("评估失败", "无可用模型")
+                    return {
+                        "stock_code": rec.get("stock_code", code),
+                        "success": success,
+                        "result": result,
+                        "model_used": rec.get("model_used"),
+                        "model_provider": rec.get("model_provider"),
+                        "llm_latency_ms": rec.get("llm_latency_ms"),
+                        "from_cache": bool(rec.get("from_cache")),
+                    }
                 except Exception as e:
                     logger.warning(f"批量评估 {code} 失败: {e}")
                     return {"stock_code": code, "success": False, "error": str(e)}

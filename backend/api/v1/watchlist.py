@@ -31,7 +31,8 @@ def _load_watchlist(username: str) -> list:
             if rows:
                 return [{
                     "code": r['stock_code'],
-                    "name": r['stock_code'],
+                    # v3.14.2: 使用 DB 存的股票名, 缺失时才回退代码 (旧数据 name='')
+                    "name": (r.get('name') or '').strip() or r['stock_code'],
                     "added_at": r['added_at'],
                 } for r in rows]
     except Exception:
@@ -63,7 +64,8 @@ def _save_watchlist(username: str, stocks: list):
             for item in stocks:
                 # stocks 元素可能是 dict {code,name,added_at} 或纯字符串
                 code = item.get('code') if isinstance(item, dict) else item
-                db.watchlist_set(username, code)
+                name = item.get('name', '') if isinstance(item, dict) else ''
+                db.watchlist_set(username, code, name or code)
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
@@ -89,6 +91,14 @@ async def add_to_watchlist(req: dict, user: dict = Depends(get_current_active_us
     existing = [s for s in stocks if s["code"] == code]
     if existing:
         return {"success": True, "message": "已在自选中", "existed": True}
+
+    # v3.14.2: 未传名字时经 stock_manager 解析中文名
+    if not name or name == code:
+        try:
+            from stock_info import stock_manager
+            name = stock_manager.get_name(code)
+        except Exception:
+            name = name or code
 
     stocks.append({"code": code, "name": name, "added_at": datetime.now().isoformat()})
     _save_watchlist(user["username"], stocks)

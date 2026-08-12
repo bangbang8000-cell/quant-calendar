@@ -15,8 +15,8 @@
     create(deps) {
       const { ref, computed, watch } = Vue;
       const { currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible,
-               stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore,
-               aiHistory, aiLoading, aiEvalStage, autoEvaluateConfig, autoEvaluateScope,
+               stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline,
+               aiHistory, aiLoading, aiEvalStage, aiResult, autoEvaluateConfig, autoEvaluateScope,
                batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses,
                batchResults, expandedDates, expandedStocks, savingConfig, selectedHistoryIds,
                selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate } = deps;
@@ -424,7 +424,7 @@ async function watchlistEvaluate(code, name) {
     aiLoading.value = true;
     aiResult.value = null;
     stockKlineLoaded.value = false;
-    if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
+    disposeStockKline();
     const today = new Date().toISOString().split('T')[0];
     const date = selectedDate.value || today;
     try {
@@ -769,10 +769,7 @@ async function viewAiResult(item) {
     // 查看历史评估记录
     aiResult.value = item;
     stockKlineLoaded.value = false;
-    if (stockKlineChart) {
-        stockKlineChart.dispose();
-        stockKlineChart = null;
-    }
+    disposeStockKline();
     try {
         const res = await fetch(`/api/calendar/stock/${item.stock_code}?date=${selectedDate.value}`);
         stockDetail.value = await res.json();

@@ -52,6 +52,11 @@ async def lifespan(app: FastAPI):
     # v3.3.0-T9: 启动 schema 校验 (损坏自动告警而非静默)
     # v3.7.3: DB 初始化失败时拒绝启动，避免在损坏数据上运行
     import db
+    # v3.14.2: 增量迁移 (watchlist 增加 name 列)
+    try:
+        db.migrate()
+    except Exception as e:
+        logger.warning(f"DB 增量迁移失败(可忽略): {e}")
     if not db.schema_ok():
         ok = db.init_db()
         if not ok:
@@ -71,7 +76,7 @@ async def lifespan(app: FastAPI):
     logger.info("⏰ 定时任务调度器已停止")
 
 # 应用版本单一来源（与发布版本保持一致，用于健康检查与 OpenAPI 元数据）
-APP_VERSION = "3.14.0"
+APP_VERSION = "3.14.3"
 
 # 创建 FastAPI 应用
 app = FastAPI(

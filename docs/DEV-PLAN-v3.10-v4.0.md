@@ -210,8 +210,26 @@
 - [x] 厂商目录 12 项：国内 7 + CodingPlan 3 + 国外 2；目录为后端唯一事实源（`GET /api/ai/catalog`），不含 api_key
 - [x] 模型名含 `/`（如 `Qwen/Qwen3.5-72B-Instruct`）经 body 传参探测/拉取，不 404
 - [x] 厂商/模型两级 locked 保留；`POST /models/test`（vendor_key+model）、`POST /models/list`（拉取模型名）
-- [x] pytest 全量通过（**267** 用例）；`test_tokens_no_hardcode.py` 绿（新模板零硬编码 hex，全 `var(--...)`）
-- [ ] Git commit + tag `v3.14.0`；dev:8001 / ops:8000 两端 `/api/health` 返回 3.14.0
+- [x] pytest 全量通过（**269** 用例，v3.14.1 评估修复补丁 +2 回归）；`test_tokens_no_hardcode.py` 绿（新模板零硬编码 hex，全 `var(--...)`）
+- [x] Git commit + tag `v3.14.0`；dev:8001 / ops:8000 两端 `/api/health` 返回 3.14.0
+
+### 8.3 v3.14.2 — 评估完成性修复补丁（智能评估 + 自选批量 + 历史股票名）
+
+> 用户反馈三项问题：① 智能评估仍无法完成；② 自选批量评估无法完成，且评估历史只有股票代码、无股票名；③ 系统分析、彻底解决。
+> 根因：a) deepseek-v4-flash/pro 为推理型模型，max_tokens=4096 时最终答案常落在 `reasoning_content` 而 `content` 为空 → LLM 解析失败 → 105s 超时降级；b) 批量弹窗进度只在整批返回后填充，全新评估期间「评估中 0/13」冻结数分钟，感知为卡死；c) SQLite watchlist 无 name 列，`_load_watchlist` 强制 name=code，批量/自选只传代码 → 历史只有代码没名字。
+
+| # | 修复 | 文件 | 状态 |
+|---|------|------|:--:|
+| 1 | deepseek max_tokens 4096→8192（双端 `data/ai_models.json`，gitignored 运行时配置） | `data/ai_models.json` | ✅ |
+| 2 | `_call_llm` 空 content 时从 `reasoning_content` 提取 JSON 兜底（含 provider 注入） | `backend/ai_evaluator.py` | ✅ |
+| 3 | `_resolve_stock_name`：名称缺失/==代码时经 stock_manager 解析真实中文名，裸代码补 .SZ/.SH 后缀推断 | `backend/ai_evaluator.py` | ✅ |
+| 4 | watchlist 增加 name 列 + 增量迁移 + 加载/保存/添加自选全链路落真实名 + 存量数据回填 | `backend/db.py`, `backend/main_new.py`, `backend/api/v1/watchlist.py`, `scripts/backfill_stock_names.py` | ✅ |
+| 5 | 批量弹窗「已用时 Ns」计时 + 进度提示文案（避免冻结误判） | `frontend/js/components/dialogs/batch-evaluate.js` | ✅ |
+| 6 | 回归测试 +4（reasoning_content 兜底 / 无 JSON 报错 / 名称解析 / 批量名称透传） | `tests/test_ai_evaluator.py` | ✅ |
+
+- [x] pytest 全量通过（**273** 用例 = 269 + v3.14.2 新增 4）
+- [x] 存量数据回填：ops SQLite 15 行自选、历史 43 条；dev 历史 5 条 → 全部落真实中文名
+- [ ] Git commit + tag `v3.14.2`；dev:8001 / ops:8000 两端 `/api/health` = 3.14.2；ops 自选/历史显示真实股票名
 
 ---
 

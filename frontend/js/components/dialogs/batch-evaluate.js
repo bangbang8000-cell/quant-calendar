@@ -24,9 +24,10 @@
                 <!-- 评估进度 -->
                 <div v-if="batchRunning" style="padding: 10px 0;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:var(--font-sm);color:var(--text-secondary);">
-                        <span>评估中 {{ batchCompleted }}/{{ batchTotal }}</span>
+                        <span>评估中 {{ batchCompleted }}/{{ batchTotal }} <span v-if="batchElapsed>0" style="color:var(--color-primary);">· 已用时 {{ batchElapsed }}s</span></span>
                         <span v-if="batchCurrent" style="color:var(--color-primary);font-weight:var(--font-semibold);">{{ batchCurrent }}</span>
                     </div>
+                    <div v-if="batchCompleted===0 && batchElapsed>=8" style="margin-bottom:8px;font-size:var(--font-xs);color:var(--text-tertiary);">全新评估需调用大模型，请耐心等待（约需数秒至1分钟）…</div>
                     <div style="height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
                         <div :style="{width:(batchTotal>0?batchCompleted/batchTotal*100:0)+'%',height:'100%',background:'var(--gradient-brand)',borderRadius:'3px',transition:'width 0.4s ease'}"></div>
                     </div>
@@ -51,7 +52,20 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      // v3.14.2: 已用计时 — 批量评估期间显示秒数, 避免"进度冻结"误判为卡死
+      const batchElapsed = Vue.ref(0);
+      let batchTimer = null;
+      if (state.batchRunning && state.batchRunning.__v_isRef) {
+        Vue.watch(state.batchRunning, (running) => {
+          if (running) {
+            batchElapsed.value = 0;
+            batchTimer = setInterval(() => { batchElapsed.value++; }, 1000);
+          } else {
+            if (batchTimer) { clearInterval(batchTimer); batchTimer = null; }
+          }
+        });
+      }
+      return { ...state, batchElapsed };
     },
   };
 })();

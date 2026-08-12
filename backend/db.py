@@ -38,6 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_history_username_stock
 CREATE TABLE IF NOT EXISTS watchlist (
     username TEXT NOT NULL,
     stock_code TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
     added_at TEXT NOT NULL,
     PRIMARY KEY (username, stock_code)
 );
@@ -95,6 +96,21 @@ def schema_ok() -> bool:
     except Exception as e:
         print(f"[db] schema 校验异常: {e}")
         return False
+
+
+def migrate() -> None:
+    """DB schema 增量迁移 (v3.14.2: watchlist 增加 name 列, 修复自选/历史缺股票名)"""
+    try:
+        with _db_lock:
+            conn = get_conn()
+            cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
+            if cols and 'name' not in cols:
+                conn.execute("ALTER TABLE watchlist ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+                conn.commit()
+                print("[db] migrate: watchlist 增加 name 列")
+            conn.close()
+    except Exception as e:
+        print(f"[db] migrate 失败: {e}")
 
 
 # ─── 通用 KV 存取 (users/groups 存 JSON 串) ───────────────────────
@@ -201,24 +217,25 @@ def chat_all(username: str = None) -> list:
 
 # ─── watchlist ────────────────────────────────────────────────
 
-def watchlist_set(username: str, stock_code: str, added_at: str = None):
+def watchlist_set(username: str, stock_code: str, name: str = '', added_at: str = None):
+    """写入自选 — v3.14.2: 存储股票中文名 (修复自选/历史缺名)"""
     added_at = added_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with _db_lock:
         conn = get_conn()
         conn.execute(
-            "INSERT OR REPLACE INTO watchlist (username, stock_code, added_at) VALUES (?,?,?)",
-            (username, stock_code, added_at)
+            "INSERT OR REPLACE INTO watchlist (username, stock_code, name, added_at) VALUES (?,?,?,?)",
+            (username, stock_code, name or '', added_at)
         )
         conn.commit()
         conn.close()
 
 
 def watchlist_get(username: str) -> list:
-    """返回 [{stock_code, added_at}]"""
+    """返回 [{stock_code, name, added_at}] (v3.14.2: 含股票名)"""
     with _db_lock:
         conn = get_conn()
         rows = conn.execute(
-            "SELECT stock_code, added_at FROM watchlist WHERE username=? ORDER BY added_at DESC",
+            "SELECT stock_code, name, added_at FROM watchlist WHERE username=? ORDER BY added_at DESC",
             (username,)
         ).fetchall()
         conn.close()

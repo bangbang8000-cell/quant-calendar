@@ -1499,7 +1499,7 @@ const allMenuDefs = [
                         fetchPoolSignals, loadLastEvaluation } = __aiDomain;
                 // ===== v3.11(11.3): 自选/评估历史域 — 逻辑移至 js/watchlist.js 模块 =====
                 const __watchlistDomain = (window.__quantModules && window.__quantModules.watchlist)
-                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, aiHistory, aiLoading, aiEvalStage, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
+                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline, aiHistory, aiLoading, aiEvalStage, aiResult, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
                     : {};
                 const { quickEvalStock, evalStrategy, watchlistSort, watchlist, watchlistCodes, sortedWatchlist,
                         getWatchlistScore, getLatestScore, addSearchResult, evaluatedCodes, klineLoadedCodes,
