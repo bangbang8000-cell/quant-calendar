@@ -253,31 +253,39 @@
 
 ---
 
-## 8. v3.14 测试用例
+## 8. v3.14 测试用例（AI 模型管理厂商化）
 
 ### 8.1 新增单元测试
 
 | # | 用例 | 对应任务 | 类型 | 预期结果 |
 |:--:|------|:--:|------|------|
-| TC-14.1 | `test_parallel_evaluate_faster` | 14.1 | 单元 | 并行耗时 < 串行（≥3×） |
-| TC-14.2 | `test_parallel_partial_failure` | 14.2 | 单元 | 部分模型失败不抛异常，返回剩余结果 |
-| TC-14.3 | `test_notify_adapter_registry` | 14.3 | 单元 | 适配器注册完整（飞书/企微/钉钉/邮件/Webhook） |
-| TC-14.4 | `test_notify_template` | 14.4 | 单元 | 模板加载与占位符替换正确 |
-| TC-14.5 | `test_daily_report_multi_channel` | 14.5 | 单元 | 日报按配置送达多通道 |
-| TC-14.6 | `test_rag_retrieval` | 14.6 | 单元 | 检索返回相关历史报告片段 |
+| TC-14.1 | `test_vendor_catalog.py::TestVendorCatalog`（5 项） | 14.4 | 单元 | 目录非空/vendor_key+name 唯一/字段合法/不含 api_key/国内优先排序/get_catalog 一致 |
+| TC-14.2 | `test_vendor_catalog.py::TestVendorDataclass`（4 项） | 14.4 | 单元 | VendorModel/VendorConfig roundtrip、纯字符串模型名兼容、默认值 |
+| TC-14.3 | `test_vendor_catalog.py::TestSeedDefaultVendors`（2 项） | 14.4 | 单元 | 默认启用链 = deepseek-v4-pro + ark-code-latest；seed 与目录对齐 |
+| TC-14.4 | `test_api_ai_models.py::TestModelsRoutes`（5 项） | 14.4 | 接口 | GET/POST /models 往返、厂商+模型两级 locked 保留、明文 key roundtrip、新厂商可保存 |
+| TC-14.5 | `test_api_ai_models.py::TestTestRoute`（3 项） | 14.4 | 接口 | /models/test body 传含 / 模型名不 404；未知厂商/模型快速失败 |
+| TC-14.6 | `test_api_ai_models.py::TestListRoute`（5 项） | 14.4 | 接口 | /models/list 解析 data[].id、非 2xx 报错、空 key/无 key 短路不发请求 |
+| TC-14.7 | `test_api_ai_models.py::TestCatalogRoute`（1 项） | 14.4 | 接口 | GET /catalog 与 VENDOR_CATALOG 一致 |
 
 ### 8.2 浏览器冒烟 (v3.14 专项)
 
 | # | 检查项 | 预期 |
 |:--:|------|------|
-| SM-14.1 | AI 评股 | 并行评估结果一致，耗时明显下降 |
-| SM-14.2 | 通知配置页 | 多通道配置 + 测试发送 |
+| SM-14.1 | 厂商卡片渲染 | 国内/CodingPlan/国外 tag 正确，locked 卡片禁删，tier 套餐标签 + 官网链接 |
+| SM-14.2 | 新增厂商 + 获取模型列表 | 目录下拉出预置厂商；新增 DeepSeek → 填 key → 获取模型列表追加 enabled:false 行 |
+| SM-14.3 | 探测 + 保存重载 | 单模型测试 / 探测全部；保存后刷新重载一致；无 pageerror |
 
-### 8.3 回归确认
+### 8.3 v1→v2 迁移冒烟（数据侧）
+
+| # | 检查项 | 预期 |
+|:--:|------|------|
+| TC-14.8 | 迁移 | 停 dev → 备份 ai_models.json → 启动 → 自动变 `{"version":2,"vendors":[...]}`；DeepSeek 多条按 provider 并一厂商；模型/启用/优先级/api_key 保留；二次加载幂等 |
+
+### 8.4 回归确认
 
 | # | 用例 | 说明 |
 |:--:|------|------|
-| TC-14.7 | 存量 + 全新增用例 | 无 regression |
+| TC-14.9 | 存量 + 全新增用例 | ✅ 267 用例全绿（v3.13 235 + v3.14 新增 32），无 regression |
 
 ---
 
@@ -328,11 +336,12 @@
 |------|:--:|:--:|:--:|:--:|:--:|
 | v3.12 | 176 | 6 | 2 | 2 | 184 |
 | v3.13 | 233 | 2 | 0 | 5 | 235* |
-| v3.14 | 235 | 6 | - | 2 | 241 |
-| v4.0 | 241 | 3 | 3 | - | 247 |
+| v3.14 | 235 | 32 | 0 | 3 | 267* |
+| v4.0 | 267 | 3 | 3 | - | 273 |
 
 > *v3.13 实测 235 用例（234 单元 + 1 e2e 截图 diff），新增 `test_terminology_unified.py` 评股残留 + 前后端主题名一致性 2 项静态守卫，全绿无回归；
 > 原计划的备份/告警/部署用例随「可观测与部署」顺延未实现，浏览器专项 5 项另计。
+> *v3.14 实测 267 用例 = 存量 235 + 新增 32（`test_vendor_catalog.py` 15 + `test_api_ai_models.py` 17，其中含 FastAPI 请求层校验 2 例：body 数字 timeout 不 422 回归），浏览器专项 3 项另计；原计划的并行评估/通知/ RAG 用例随该方向顺延。
 
 ---
 
@@ -342,7 +351,7 @@
 |------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | 美林时钟覆盖率 | 0 | ≥ 70% | ≥ 70% | ≥ 70% | ≥ 75% | ≥ 75% | ≥ 75% |
 | 后端总覆盖率 | ~50% | ≥ 60% | ≥ 65% | ≥ 65% | ≥ 70% | ≥ 70% | ≥ 70% |
-| 用例总数 | 76 | 156 | ≥ 176 | ≥ 184 | ≥ 235 | ≥ 241 | ≥ 247 |
+| 用例总数 | 76 | 156 | ≥ 176 | ≥ 184 | ≥ 235 | ≥ 267 | ≥ 273 |
 | 致命 Bug | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | CI 通过（含覆盖率门禁） | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 前端视觉回归 (Playwright) | - | - | 报告产出 | 报告产出 | 报告产出 | 报告产出 | 报告产出 |

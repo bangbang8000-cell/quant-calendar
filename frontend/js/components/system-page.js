@@ -201,35 +201,66 @@
                             </el-form>
                         </div>
 
-                    <!-- AI 模型管理 -->
+                    <!-- AI 模型管理 (v3.14 厂商化: 以厂商为主配置卡, 卡内配 API 后管理多个模型名) -->
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">🤖 AI 模型管理</div>
-                        <p style="color: var(--text-secondary); font-size: var(--font-sm); margin: 0 0 16px 0;">按优先级串行调用，首个可用模型返回结果。</p>
+                        <p style="color: var(--text-secondary); font-size: var(--font-sm); margin: 0 0 16px 0;">以厂商为主配置卡，卡内配置 API（地址+密钥+超时）后选择多个模型名；按数组顺序（厂商 → 模型）串行调用，首个可用模型返回结果。</p>
                         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
-                            <el-button size="small" type="primary" @click="loadAiModels">🔄 刷新</el-button>
-                            <el-button size="small" type="primary" @click="testAllModels" :loading="testingAllModels">🧪 探测全部</el-button>
-                            <el-button size="small" type="primary" @click="saveAiModels" :loading="savingAiModels">💾 保存</el-button>
-                            <el-button size="small" type="primary" @click="addModel" style="margin-left:auto;">➕ 新增模型</el-button>
+                            <el-button size="small" type="primary" @click="loadAiVendors">🔄 刷新</el-button>
+                            <el-button size="small" type="primary" @click="testAllVendorModels" :loading="testingAllModels">🧪 探测全部</el-button>
+                            <el-button size="small" type="primary" @click="saveAiVendors" :loading="savingAiModels">💾 保存</el-button>
+                            <el-dropdown trigger="click" style="margin-left:auto;" @command="(cmd) => cmd === '__custom__' ? addCustomVendor() : addVendorFromCatalog(cmd)">
+                                <el-button size="small" type="primary">➕ 新增厂商</el-button>
+                                <template #dropdown>
+                                    <el-dropdown-menu>
+                                        <el-dropdown-item v-if="!aiCatalog.vendors || aiCatalog.vendors.length===0" disabled>加载目录中…</el-dropdown-item>
+                                        <el-dropdown-item v-for="(c,i) in aiCatalog.vendors" :key="c.vendor_key" :command="c.vendor_key" :divided="i>0 && c.kind !== aiCatalog.vendors[i-1].kind">{{ c.name }} <el-tag size="small" style="margin-left:6px;">{{ c.kind }}</el-tag></el-dropdown-item>
+                                        <el-dropdown-item command="__custom__" divided>自定义厂商</el-dropdown-item>
+                                    </el-dropdown-menu>
+                                </template>
+                            </el-dropdown>
                         </div>
-                        <div v-if="aiModelsError" style="color:var(--el-danger);padding:16px;text-align:center;">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiModels">重试</el-button></div>
-                        <div v-if="!aiModelsError && aiModels.length===0" style="color:var(--text-tertiary);padding:20px;text-align:center;">加载中...</div>
-                        <div v-if="!aiModelsError && aiModels.length>0">
-                        <div v-for="(m,idx) in aiModels" :key="m.id" class="card" style="margin-bottom: 10px;">
-                            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>{{ m.id }} <el-tag size="small" style="margin-left: 8px;">{{ m.provider }}</el-tag><span v-if="m.locked" style="margin-left:6px;font-size: var(--font-sm);color:var(--text-tertiary);">🔒</span></span>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <el-button v-if="!m.locked" size="small" type="danger" @click="deleteModel(idx)" style="margin-right:4px;">🗑️</el-button>
-                                    <span v-if="m.testResult!==undefined" style="font-size: var(--font-sm);" :style="{color: m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗'}} {{ m.testResult.message }}</span>
-                                    <el-switch v-model="m.enabled" size="small" @change="onModelToggle(m)"/>
-                                </div>
+                        <div v-if="aiModelsError" style="color:var(--el-danger);padding:16px;text-align:center;">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
+                        <div v-if="!aiModelsError && aiVendors.length===0" style="color:var(--text-tertiary);padding:20px;text-align:center;">加载中...</div>
+                        <div v-if="!aiModelsError && aiVendors.length>0">
+                        <div v-for="(v,vi) in aiVendors" :key="v.vendor_key" class="card" style="margin-bottom: 12px;">
+                            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                    {{ v.name }}
+                                    <el-tag size="small" :type="v.kind==='CodingPlan' ? 'warning' : v.kind==='国外' ? 'info' : v.kind==='国内' ? 'success' : 'primary'">{{ v.kind }}</el-tag>
+                                    <el-tag v-if="v.tier" size="small" type="warning">套餐: {{ v.tier }}</el-tag>
+                                    <span v-if="v.locked" style="font-size: var(--font-sm);color:var(--text-tertiary);">🔒</span>
+                                    <a v-if="v.website" :href="v.website" target="_blank" rel="noopener" style="color:var(--text-link);font-size:var(--font-sm);">官网 ↗</a>
+                                </span>
+                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
-                            <el-form label-width="80px" size="small">
-                                <el-form-item label="模型名"><el-input v-model="m.model" placeholder="模型标识"/></el-form-item>
-                                <el-form-item label="Base URL"><el-input v-model="m.base_url" placeholder="API端点"/></el-form-item>
-                                <el-form-item label="API Key"><el-input v-model="m.api_key" type="password" show-password placeholder="密钥"/></el-form-item>
-                                <el-form-item label="超时(秒)"><el-input-number v-model="m.timeout" :min="10" :max="300" size="small"/></el-form-item>
-                                <el-form-item>
-                                    <el-button @click="testModel(m)" :loading="m._testing" type="primary" size="small">🧪 测试连接</el-button>
+                            <el-form label-width="90px" size="small" style="margin-top: 8px;">
+                                <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
+                                <el-form-item label="类型">
+                                    <el-select v-model="v.kind" :disabled="v.locked" size="small" style="width:160px;">
+                                        <el-option label="国内" value="国内"/><el-option label="国外" value="国外"/>
+                                        <el-option label="CodingPlan" value="CodingPlan"/><el-option label="自定义" value="自定义"/>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="套餐档位"><el-input v-model="v.tier" :disabled="v.locked" placeholder="CodingPlan: Lite/Pro" style="width:220px;"/></el-form-item>
+                                <el-form-item label="Base URL"><el-input v-model="v.base_url" placeholder="https://.../v1"/></el-form-item>
+                                <el-form-item label="API Key"><el-input v-model="v.api_key" type="password" show-password placeholder="厂商级密钥，卡内模型共用"/></el-form-item>
+                                <el-form-item label="超时(秒)"><el-input-number v-model="v.timeout" :min="10" :max="300" size="small"/></el-form-item>
+                                <el-form-item label="模型列表">
+                                    <div style="width:100%;">
+                                        <div v-for="(m,mi) in v.models" :key="vi + '-' + mi" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-light);">
+                                            <span style="min-width:22px;height:22px;border-radius:4px;background:var(--bg-card-header);color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;font-size:var(--font-xs);">{{ mi+1 }}</span>
+                                            <el-switch v-model="m.enabled" size="small"/>
+                                            <el-input v-model="m.name" :disabled="m.locked" size="small" style="width:220px;" placeholder="模型名"/>
+                                            <span v-if="m.testResult!==undefined" style="font-size:var(--font-sm);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
+                                            <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
+                                        </div>
+                                        <div style="display:flex;gap:8px;margin-top:8px;">
+                                            <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
+                                            <el-button size="small" :loading="v._fetching" @click="fetchVendorModels(v)">📡 获取模型列表</el-button>
+                                        </div>
+                                    </div>
                                 </el-form-item>
                             </el-form>
                         </div>

@@ -168,11 +168,22 @@ async def test_ai_api(_: Dict = Depends(get_current_active_user)):
     result = ai_evaluator.test_connection()
     return result
 
-# ─── 模型管理 API ──────────────────────────────────────────────
+# ─── 模型管理 API (v3.14 厂商化) ──────────────────────────────
+
+def _coerce_timeout(req: Dict[str, Any]):
+    """body 里的 timeout 可能是 JSON 数字或字符串, 统一转 int (FastAPI 不强制, 直接经字典读取)"""
+    raw = req.get("timeout")
+    if raw in (None, ""):
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
 
 @router.get("/models")
 async def get_models():
-    """获取所有 AI 模型配置（无需登录）"""
+    """获取厂商模型配置 (v3.14: {"vendors":[...]}, 无需登录)"""
     try:
         models = ai_evaluator.get_models()
         return {"success": True, "data": models}
@@ -182,20 +193,48 @@ async def get_models():
 
 @router.post("/models")
 async def save_models(req: Dict[str, Any]):
-    """保存模型配置列表"""
+    """保存厂商模型配置 ({"vendors":[...]}, 数组顺序 = 全局优先级)"""
     try:
-        models_data = req.get("models", [])
-        models = ai_evaluator.update_models(models_data)
+        models = ai_evaluator.update_models(req)
         return {"success": True, "data": models, "message": "模型配置已保存"}
     except Exception as e:
         return {"success": False, "message": str(e)}
 
 
-@router.post("/models/test/{model_id}")
-async def test_model(model_id: str):
-    """探测单个模型连接（无需登录）"""
+@router.post("/models/test")
+async def test_vendor_model(req: Dict[str, Any]):
+    """探测厂商下指定模型连接 (body 传参, 模型名可含 /; 未保存厂商支持内联 base_url/api_key)"""
     try:
-        result = ai_evaluator.test_model_connection(model_id)
+        vendor_key = req.get("vendor_key", "")
+        model_name = req.get("model", "")
+        result = ai_evaluator.test_vendor_model(
+            vendor_key, model_name,
+            base_url=req.get("base_url"), api_key=req.get("api_key"), timeout=_coerce_timeout(req),
+        )
         return result
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/models/list")
+async def list_vendor_models(req: Dict[str, Any]):
+    """调 {base_url}/models 拉取厂商可用模型名列表 (未保存厂商支持内联 base_url/api_key)"""
+    try:
+        vendor_key = req.get("vendor_key", "")
+        result = ai_evaluator.list_vendor_models(
+            vendor_key,
+            base_url=req.get("base_url"), api_key=req.get("api_key"), timeout=_coerce_timeout(req),
+        )
+        return result
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/catalog")
+async def get_vendor_catalog():
+    """预置厂商目录 (唯一事实源, 新增厂商下拉 + 模型名建议)"""
+    try:
+        catalog = ai_evaluator.get_catalog()
+        return {"success": True, "data": catalog}
     except Exception as e:
         return {"success": False, "message": str(e)}

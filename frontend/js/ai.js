@@ -34,13 +34,26 @@ const showAutoEvaluateSettings = ref(false);
 const savingConfig = ref(false);
 const autoEvaluateScope = ref('watchlist');  // v1.8.0: 默认自选
 
-// ─── AI 模型管理 ──────────────────────────────────
-const aiModels = ref([]);
+// ─── AI 模型管理 (v3.14 厂商化) ──────────────────────────
+// 以厂商/厂家为主配置卡，卡内配 API (base_url+key+timeout) 后管理多个模型名；
+// 数组顺序 = 全局评估优先级（厂商顺序 → 厂商内模型顺序），保存时不做客户端重排。
+const aiVendors = ref([]);               // 厂商配置（_fetching/_testing 为客户端标志）
+const aiCatalog = ref({ vendors: [] });  // 预置厂商目录（新增厂商下拉 + 模型名建议）
 const aiModelsError = ref('');
 const testingAllModels = ref(false);
 const savingAiModels = ref(false);
 
-async function loadAiModels() {
+function _stripVendorClientFlags(v) {
+    // 剔除前端临时标志，只提交后端 schema 字段
+    const { _fetching, _testing, ...clean } = v;
+    clean.models = (v.models || []).map(m => {
+        const { _testing: _t, testResult, ...mc } = m;
+        return mc;
+    });
+    return clean;
+}
+
+async function loadAiVendors() {
     try {
         aiModelsError.value = '';
         const token = localStorage.getItem('quant_token');
@@ -56,106 +69,183 @@ async function loadAiModels() {
         }
         const data = await res.json();
         if (data.success) {
-            aiModels.value = (data.data || []).map(m => ({ ...m, _expanded: false, _testing: false, testResult: undefined }));
+            aiVendors.value = (data.data?.vendors || []).map(v => ({
+                ...v,
+                _fetching: false,
+                _testing: false,
+                models: (v.models || []).map(m => ({ ...m, _testing: false, testResult: undefined })),
+            }));
             aiModelsError.value = '';
         } else {
             aiModelsError.value = data.message || '加载失败';
         }
-    } catch(e) {
+    } catch (e) {
         aiModelsError.value = '网络错误: ' + e.message;
     }
 }
 
-function onModelToggle(model) {
-    // 仅更新优先级，不重新排序（避免 v-for 渲染混乱）
-    const enabled = aiModels.value.filter(m => m.enabled);
-    enabled.forEach((m, i) => m.priority = i);
-    const disabled = aiModels.value.filter(m => !m.enabled);
-    disabled.forEach((m, i) => m.priority = enabled.length + i);
-    // 排序延迟到保存时执行
+async function loadAiCatalog() {
+    // fire-and-forget：目录加载失败仅降级「新增厂商」下拉
+    try {
+        const res = await fetch('/api/ai/catalog');
+        const data = await res.json();
+        if (data.success && data.data) aiCatalog.value = data.data;
+    } catch (e) {
+        console.warn('AI 厂商目录加载失败', e);
+    }
 }
 
-async function testModel(model) {
-    model._testing = true;
+async function saveAiVendors() {
+    savingAiModels.value = true;
     try {
         const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`/api/ai/models/test/${encodeURIComponent(model.id)}`, {
-            method: 'POST', headers
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        // 数组顺序即优先级，不做客户端重排
+        const res = await fetch('/api/ai/models', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ vendors: aiVendors.value.map(_stripVendorClientFlags) }),
         });
         const data = await res.json();
-        model.testResult = data;
-    } catch(e) {
-        model.testResult = { success: false, message: e.message };
+        if (data.success) {
+            ElementPlus.ElMessage.success('模型配置已保存');
+        } else {
+            ElementPlus.ElMessage.error(data.message || '保存失败');
+        }
+    } catch (e) {
+        ElementPlus.ElMessage.error('保存失败: ' + e.message);
     }
-    model._testing = false;
+    savingAiModels.value = false;
 }
 
-async function testAllModels() {
+async function testVendorModel(v, m) {
+    m._testing = true;
+    try {
+        const token = localStorage.getItem('quant_token');
+        // 必须显式 Content-Type: application/json (缺省 text/plain 会被 FastAPI 422 拒绝)
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        // body 传参（模型名可含 /）+ 内联 base_url/api_key: 未保存厂商也能直接探测
+        const res = await fetch('/api/ai/models/test', {
+            method: 'POST',
+            headers,
+            // body 传参（模型名可含 /）+ 内联 base_url/api_key: 未保存厂商也能直接探测
+            body: JSON.stringify({ vendor_key: v.vendor_key, model: m.name, base_url: v.base_url, api_key: v.api_key, timeout: v.timeout }),
+        });
+        m.testResult = await res.json();
+    } catch (e) {
+        m.testResult = { success: false, message: e.message };
+    }
+    m._testing = false;
+}
+
+async function testAllVendorModels() {
     testingAllModels.value = true;
-    for (const m of aiModels.value) {
-        if (m.api_key) {
-            await testModel(m);
-        } else {
-            m.testResult = { success: false, message: '未配置 API Key' };
+    for (const v of aiVendors.value) {
+        for (const m of v.models || []) {
+            if (v.api_key) {
+                await testVendorModel(v, m);
+            } else {
+                m.testResult = { success: false, message: '未配置 API Key' };
+            }
         }
     }
     testingAllModels.value = false;
     ElementPlus.ElMessage.success('全部探测完成');
 }
 
-async function saveAiModels() {
-    savingAiModels.value = true;
+async function fetchVendorModels(v) {
+    v._fetching = true;
     try {
         const token = localStorage.getItem('quant_token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
-        // Re-prioritize before save
-        aiModels.value.forEach((m, i) => m.priority = i);
-        const res = await fetch('/api/ai/models', {
+        const res = await fetch('/api/ai/models/list', {
             method: 'POST',
             headers,
-            body: JSON.stringify({ models: aiModels.value.map(m => {
-                const { _expanded, _testing, testResult, ...clean } = m;
-                return clean;
-            })})
+            // 内联 base_url/api_key: 未保存的新厂商也能直接拉取模型列表
+            body: JSON.stringify({ vendor_key: v.vendor_key, base_url: v.base_url, api_key: v.api_key, timeout: v.timeout }),
         });
         const data = await res.json();
-        if (data.success) {
-    // 模型配置已静默保存
+        if (data.success && Array.isArray(data.models)) {
+            const existing = new Set((v.models || []).map(m => m.name));
+            for (const name of data.models) {
+                if (!existing.has(name)) {
+                    v.models.push({ name, enabled: false, locked: false, max_tokens: 4096, _testing: false, testResult: undefined });
+                }
+            }
+            ElementPlus.ElMessage.success(`已获取 ${data.models.length} 个模型`);
         } else {
-            ElementPlus.ElMessage.error(data.message || '保存失败');
+            ElementPlus.ElMessage.error(data.message || '获取模型列表失败');
         }
-    } catch(e) {
-        ElementPlus.ElMessage.error('保存失败: ' + e.message);
+    } catch (e) {
+        ElementPlus.ElMessage.error('获取模型列表失败: ' + e.message);
     }
-    savingAiModels.value = false;
+    v._fetching = false;
 }
 
-function addModel() {
-    const newId = 'new-model-' + Date.now();
-    aiModels.value.push({
-        id: newId,
-        provider: '',
-        model: '',
+function addVendorFromCatalog(vendorKey) {
+    const catalogVendor = (aiCatalog.value.vendors || []).find(v => v.vendor_key === vendorKey);
+    if (!catalogVendor) return;
+    if (aiVendors.value.some(v => v.vendor_key === vendorKey)) {
+        ElementPlus.ElMessage.warning('该厂商已存在');
+        return;
+    }
+    aiVendors.value.push({
+        vendor_key: catalogVendor.vendor_key,
+        name: catalogVendor.name,
+        kind: catalogVendor.kind,
+        base_url: catalogVendor.base_url,
+        api_key: '',
+        timeout: 60,
+        tier: catalogVendor.tier || '',
+        website: catalogVendor.website || '',
+        locked: !!catalogVendor.locked,
+        models: (catalogVendor.models || []).map(name => ({ name, enabled: false, locked: false, max_tokens: 4096, _testing: false, testResult: undefined })),
+        _fetching: false,
+        _testing: false,
+    });
+    ElementPlus.ElMessage.success(`已添加厂商「${catalogVendor.name}」，配置 API Key 后保存生效`);
+}
+
+function addCustomVendor() {
+    aiVendors.value.push({
+        vendor_key: 'custom-' + Date.now(),
+        name: '自定义厂商',
+        kind: '自定义',
         base_url: '',
         api_key: '',
-        enabled: false,
-        priority: aiModels.value.length,
         timeout: 60,
-        max_tokens: 4096,
-        _expanded: false,
+        tier: '',
+        website: '',
+        locked: false,
+        models: [],
+        _fetching: false,
         _testing: false,
-        testResult: undefined
     });
-    ElementPlus.ElMessage.success('模型已添加');
+    ElementPlus.ElMessage.success('已添加自定义厂商');
 }
 
-function deleteModel(idx) {
-    const m = aiModels.value[idx];
-    if (!m) return;
-    if (confirm('确定删除模型 "' + m.id + '"？')) {
-        aiModels.value.splice(idx, 1);
+function addVendorModel(v) {
+    if (!v.models) v.models = [];
+    v.models.push({ name: '', enabled: false, locked: false, max_tokens: 4096, _testing: false, testResult: undefined });
+}
+
+function removeVendorModel(v, idx) {
+    const m = v.models[idx];
+    if (!m || m.locked) return;
+    if (confirm('确定删除模型 "' + m.name + '"？')) {
+        v.models.splice(idx, 1);
+        ElementPlus.ElMessage.success('已删除，请点击保存生效');
+    }
+}
+
+function removeVendor(v) {
+    if (v.locked) return;
+    if (confirm('确定删除厂商 "' + v.name + '"？')) {
+        const idx = aiVendors.value.indexOf(v);
+        if (idx >= 0) aiVendors.value.splice(idx, 1);
         ElementPlus.ElMessage.success('已删除，请点击保存生效');
     }
 }
@@ -327,9 +417,11 @@ function updateChecklist(result) {
         aiHistory, selectedHistoryIds, expandedDates, expandedMonths, expandedStocks,
         poolSignals, toggleMonthExpand, aiHistoryView, selectedWatchlistCodes,
         showAutoEvaluateSettings, savingConfig, autoEvaluateScope,
-        aiModels, aiModelsError, testingAllModels, savingAiModels,
-        loadAiModels, onModelToggle, testModel, testAllModels, saveAiModels,
-        addModel, deleteModel, autoEvaluateConfig,
+        aiVendors, aiCatalog, aiModelsError, testingAllModels, savingAiModels,
+        loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
+        testVendorModel, testAllVendorModels, fetchVendorModels,
+        addVendorFromCatalog, addCustomVendor, addVendorModel,
+        removeVendorModel, removeVendor, autoEvaluateConfig,
         aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning,
         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults,
         aiConfig, selectedPreset, providerInfo, aiPresets,

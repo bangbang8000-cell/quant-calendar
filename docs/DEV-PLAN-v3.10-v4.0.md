@@ -41,10 +41,10 @@
 | v3.11 | UI/UX 提质 | 12 | 2 | 10 | 3 周 |
 | v3.12 | 数据自动化 | 6 | 1 | 5 | 1-2 周 |
 | v3.13 | 术语统一与主题体验 | 3 | 0 | 3 | ✅ 已完成 |
-| v3.14 | AI 深化与通知矩阵 | 6 | 0 | 6 | 1.5-2 周 |
+| v3.14 | AI 模型管理厂商化（厂商卡片 + CodingPlan + 模型目录） | 7 | 0 | 7 | ✅ 已完成 |
 | v4.0 | 开放平台 | 5 | 0 | 5 | 2 周+ |
 
-**总计**: 35 个任务，预估 10-13 周。
+**总计**: 36 个任务，预估 10-13 周。
 
 ---
 
@@ -185,27 +185,33 @@
 
 ---
 
-## 8. v3.14 — AI 深化与通知矩阵
+## 8. v3.14 — AI 模型管理厂商化（厂商卡片 + CodingPlan + 模型目录）
+
+> 用户四诉求：① 以国内为主、国外为辅；② 融合主流 CodingPlan（字节/千帆/智谱订阅套餐）；③ 配置粒度翻转 — 从「以模型名为主配置卡、卡内配 API」改为「以厂商为主配置卡、卡内配 API（base_url+key+超时）后再选/管理多个模型名」；④ 系统评估 + 完整计划。
+> 已批准决策：国外保持 OpenAI 兼容（Claude/Gemini 经 OpenRouter）；CodingPlan 作独立厂商卡片（tier 套餐标签 + 官网）；模型名来源调 `{base_url}/models` 自动拉取 + 可手动编辑。
+> 原「AI 深化与通知矩阵」（并行评估/通知多通道/RAG 问股）**顺延**至 v3.14 之后排期。
 
 ### 8.1 任务分解
 
-| # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
-|---|------|---------|------|------|----------|:--:|
-| 14.1 | 多模型并行评估 | FR-3.14.1 | `backend/ai_evaluator.py` | 3h | 单股耗时 ÷3 | ⬜ |
-| 14.2 | 并行失败降级 | FR-3.14.1 | `backend/ai_evaluator.py` | 1.5h | 部分失败不影响整体 | ⬜ |
-| 14.3 | 通知适配器抽象 | FR-3.14.2 | `backend/notify/`（新目录） | 3h | 企微/钉钉/邮件适配 | ⬜ |
-| 14.4 | 通知模板化 | FR-3.14.2 | `backend/notify/` | 1.5h | 模板替换正确 | ⬜ |
-| 14.5 | 日报/周报多通道 | FR-3.14.2 | `backend/scheduler.py` | 1.5h | 日报达多通道 | ⬜ |
-| 14.6 | RAG 问股（第一阶段） | FR-3.14.3 | `backend/chat.py`, `backend/search.py` | 4h | 问股引用历史报告 | ⬜ |
+| # | 任务 | 文件 | 估时 | 验证方式 | 状态 |
+|---|------|------|------|----------|:--:|
+| 14.1 | 数据模型 + VENDOR_CATALOG(12 厂商) + v1→v2 迁移 + 扁平化 shim | `backend/ai_evaluator.py` | 3h | 迁移冒烟/幂等/shim 5 消费点零改动 | ✅ |
+| 14.2 | 模型管理 API 路由厂商化（models/test 改 body 传参，新增 list/catalog） | `backend/api/v1/ai.py` | 1.5h | API 往返 + 含 / 模型名不 404 | ✅ |
+| 14.3 | 存量 AI 测试适配厂商载荷 + 修复重复 test_model_connection | `tests/test_ai_evaluator.py`, `tests/test_ai_mock.py` | 1.5h | 22 用例绿 | ✅ |
+| 14.4 | 新增厂商目录与 API 测试 | `tests/test_vendor_catalog.py`, `tests/test_api_ai_models.py` | 2h | 24 用例绿 | ✅ |
+| 14.5 | 前端 ai.js 厂商域 + app-logic 接线 | `frontend/js/ai.js`, `frontend/js/app-logic.js` | 2h | 浏览器冒烟 0 pageerror | ✅ |
+| 14.6 | 系统页 AI 模型管理厂商卡片模板 | `frontend/js/components/system-page.js` | 2h | 卡片渲染 + 新增厂商 + TC-11.9 绿 | ✅ |
+| 14.7 | 版本号 3.14.0 + DEV/TEST-PLAN 文档 + tag + 双端发布 | `backend/main_new.py`, `docs/*` | 1h | 两端 /api/health = 3.14.0 | ⬜ |
 
 ### 8.2 验收清单
 
-- [ ] 单股 AI 评估耗时 ÷3（并行 + 超时保护）
-- [ ] 部分模型失败不影响整体结果
-- [ ] 企微/钉钉/邮件配置后日报与告警可达
-- [ ] 问股回答引用历史报告片段
-- [ ] pytest 全量通过（≥ 130 用例）
-- [ ] Git commit + tag `v3.14.0`
+- [x] v1 平铺 `{"models":[...]}` 数据一次性自动迁移到 v2 `{"version":2,"vendors":[...]}`（幂等：`version:2` 哨兵；DeepSeek 多条按 provider 并一厂商；api_key/启用/优先级/锁定原样保留）
+- [x] `get_enabled_models()` 返回扁平 `ModelProvider`（厂商→模型顺序），评估/入池/问股/报告 5 消费点零改动
+- [x] 厂商目录 12 项：国内 7 + CodingPlan 3 + 国外 2；目录为后端唯一事实源（`GET /api/ai/catalog`），不含 api_key
+- [x] 模型名含 `/`（如 `Qwen/Qwen3.5-72B-Instruct`）经 body 传参探测/拉取，不 404
+- [x] 厂商/模型两级 locked 保留；`POST /models/test`（vendor_key+model）、`POST /models/list`（拉取模型名）
+- [x] pytest 全量通过（**267** 用例）；`test_tokens_no_hardcode.py` 绿（新模板零硬编码 hex，全 `var(--...)`）
+- [ ] Git commit + tag `v3.14.0`；dev:8001 / ops:8000 两端 `/api/health` 返回 3.14.0
 
 ---
 
@@ -266,11 +272,14 @@ v3.13 (术语统一与主题体验):
   frontend/css/themes.css, themes.js, merrill.js    ← 13.2 (主题配色+米黄修复)
   frontend/js/components/global-header.js           ← 13.3 (删除面包屑)
 
-v3.14 (AI 深化):
-  backend/ai_evaluator.py         ← 14.1, 14.2
-  backend/notify/ (新)            ← 14.3, 14.4
-  backend/scheduler.py            ← 14.5
-  backend/chat.py, search.py      ← 14.6
+v3.14 (AI 模型管理厂商化):
+  backend/ai_evaluator.py         ← 14.1 (数据模型+VENDOR_CATALOG+迁移+shim)
+  backend/api/v1/ai.py            ← 14.2 (models/test/list/catalog 路由)
+  tests/test_ai_evaluator.py, test_ai_mock.py ← 14.3 (存量适配)
+  tests/test_vendor_catalog.py, test_api_ai_models.py ← 14.4 (新增测试)
+  frontend/js/ai.js, app-logic.js ← 14.5 (厂商域+接线, 依赖 14.1/14.2)
+  frontend/js/components/system-page.js ← 14.6 (厂商卡片, 依赖 14.5)
+  backend/main_new.py, docs/*     ← 14.7 (版本+文档+发布)
 
 v4.0 (开放平台):
   backend/router.py               ← 4.1
@@ -286,6 +295,6 @@ v4.0 (开放平台):
 
 **v3.13 并行**：13.1（术语，独立）+ 13.2（主题配色，独立）+ 13.3（删除面包屑，独立）三者相互独立，可并行推进（实际按序提交）
 
-**v3.14 并行**：14.1+14.2（AI 评估）、14.3+14.4（通知抽象）、14.5（依赖 14.3）、14.6（RAG，独立）
+**v3.14 并行**：14.1→14.2→14.3→14.4（后端与测试串行推进，顺序提交）、14.5→14.6（前端，依赖后端契约；14.5 后可并行系统页与测试）、14.7（发布，收尾）
 
 **v4.0 并行**：4.1+4.2（API 契约）、4.3+4.4（Webhook）、4.5（插件，独立）

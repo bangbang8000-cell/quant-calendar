@@ -19,11 +19,13 @@ class TestMockLLM:
         ai_evaluator.AIEvaluator._models_file = f"{tmp_path}/ai_models.json"
 
         e = ai_evaluator.AIEvaluator()
-        # 只保留一个启用模型
-        models = e.get_models()
-        for m in models:
-            m['enabled'] = (m['id'] == 'deepseek-v4-pro')
-        e.update_models(models)
+        # 只保留一个启用模型 (v3.14 厂商化: 全部禁用后仅启用 deepseek-v4-pro)
+        data = e.get_models()
+        vendors = data["vendors"]
+        for v in vendors:
+            for m in v["models"]:
+                m["enabled"] = (m["name"] == "deepseek-v4-pro")
+        e.update_models({"vendors": vendors})
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200

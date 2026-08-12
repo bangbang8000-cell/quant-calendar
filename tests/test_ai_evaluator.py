@@ -46,11 +46,14 @@ class TestAIEvaluatorInit:
     """AIEvaluator initialization"""
 
     def test_init_creates_default_models(self):
-        """First init writes default models"""
+        """First init writes default vendors (v3.14: {"vendors":[...]})"""
         evaluator = AIEvaluator()
-        models = evaluator.get_models()
-        assert len(models) > 0
-        assert any(m['id'] == 'deepseek-v4-pro' for m in models)
+        data = evaluator.get_models()
+        vendors = data["vendors"]
+        assert len(vendors) > 0
+        assert any("deepseek-v4-pro" in [m["name"] for m in v["models"]] for v in vendors)
+        # 国内优先: 首个厂商是 DeepSeek 且默认启用链为 deepseek-v4-pro + ark-code-latest
+        assert vendors[0]["vendor_key"] == "deepseek"
 
     def test_get_enabled_models(self):
         """get_enabled_models filters disabled"""
@@ -84,53 +87,64 @@ class TestKeyStorage:
         assert decrypt_value("plain-key") == "plain-key"
 
     def test_save_load_plaintext_roundtrip(self):
-        """_save_models/_load_models 明文 roundtrip (取消加密后)"""
+        """update_models/_load_models 明文 roundtrip (取消加密后, v3.14 厂商载荷)"""
         evaluator = AIEvaluator()
-        models = evaluator.get_models()
-        if not models:
+        data = evaluator.get_models()
+        vendors = data["vendors"]
+        if not vendors:
             return
         # 设置明文 key 保存
-        m = models[0]
-        m['api_key'] = 'test-plain-key-123'
-        evaluator.update_models(models)
+        vendors[0]["api_key"] = "test-plain-key-123"
+        evaluator.update_models({"vendors": vendors})
         loaded = evaluator.get_models()
-        assert loaded[0]['api_key'] == 'test-plain-key-123'
+        assert loaded["vendors"][0]["api_key"] == "test-plain-key-123"
 
 
 class TestAIModelManagement:
     """Model CRUD operations"""
 
     def test_update_models(self):
-        """update_models preserves locked state"""
+        """update_models preserves locked state (厂商级, v3.14)"""
         evaluator = AIEvaluator()
-        models = evaluator.get_models()
-        # Find a locked model
-        locked_model = next((m for m in models if m.get('locked')), None)
-        models_data = [dict(m) for m in models]
-        updated = evaluator.update_models(models_data)
-        if locked_model:
-            still_locked = next((m for m in updated if m['id'] == locked_model['id']), None)
-            assert still_locked is not None
+        data = evaluator.get_models()
+        vendors = data["vendors"]
+        # 命中目录的厂商 locked=True
+        locked_vendor = next((v for v in vendors if v.get("locked")), None)
+        updated = evaluator.update_models({"vendors": [dict(v) for v in vendors]})
+        assert updated["vendors"][0]["vendor_key"] == vendors[0]["vendor_key"]
+        if locked_vendor:
+            still_locked = next(
+                (v for v in updated["vendors"] if v["vendor_key"] == locked_vendor["vendor_key"]), None)
+            assert still_locked is not None and still_locked["locked"] is True
 
     def test_test_model_missing_key(self):
-        """Test connection without API key returns error"""
+        """Test connection without API key returns error (compat alias)"""
         evaluator = AIEvaluator()
-        result = evaluator.test_model_connection('deepseek-v4-pro')
-        assert result['success'] is False
+        result = evaluator.test_model_connection("deepseek-v4-pro")
+        assert result["success"] is False
 
 
 class TestAIEvaluation:
     """AI evaluation with mocked LLM"""
 
     def test_evaluate_no_models(self):
-        """Evaluation with no enabled models"""
+        """Evaluation with no enabled models (v3.14 厂商载荷)"""
         evaluator = AIEvaluator()
-        # Disable all models
-        models = evaluator.get_models()
-        models_data = [{**m, 'enabled': False} for m in models]
-        evaluator.update_models(models_data)
-        result = asyncio.run(evaluator.evaluate_stock('000001.SZ', 'test'))
-        assert result['result']['level'] == '无可用模型'
+        # 快照当前状态作为基线
+        data = evaluator.get_models()
+        baseline_vendors = data["vendors"]
+        disabled = []
+        for v in baseline_vendors:
+            vv = dict(v)
+            vv["models"] = [{**m, "enabled": False} for m in v["models"]]
+            disabled.append(vv)
+        evaluator.update_models({"vendors": disabled})
+        try:
+            result = asyncio.run(evaluator.evaluate_stock('000001.SZ', 'test'))
+            assert result['result']['level'] == '无可用模型'
+        finally:
+            # 恢复基线, 避免会话级 DATA_DIR 文件污染后续用例
+            evaluator.update_models({"vendors": baseline_vendors})
 
     @patch('ai_evaluator.requests.post')
     def test_evaluate_with_mock_llm(self, mock_post, sample_stock_data):

@@ -1485,9 +1485,11 @@ const allMenuDefs = [
                         aiHistory, selectedHistoryIds, expandedDates, expandedMonths, expandedStocks,
                         poolSignals, toggleMonthExpand, aiHistoryView, selectedWatchlistCodes,
                         showAutoEvaluateSettings, savingConfig, autoEvaluateScope,
-                        aiModels, aiModelsError, testingAllModels, savingAiModels,
-                        loadAiModels, onModelToggle, testModel, testAllModels, saveAiModels,
-                        addModel, deleteModel, autoEvaluateConfig,
+                        aiVendors, aiCatalog, aiModelsError, testingAllModels, savingAiModels,
+                        loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels,
+                        testVendorModel, testAllVendorModels, fetchVendorModels,
+                        addVendorFromCatalog, addCustomVendor, addVendorModel,
+                        removeVendorModel, removeVendor, autoEvaluateConfig,
                         // v3.11: AI 评估配置（原 app-logic 前段并入本域）
                         aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning,
                         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults,
@@ -1635,7 +1637,8 @@ const allMenuDefs = [
                         withTimeout(fetchMerrillClock(), 3000, 'merrillClock');
                     });
                     loadAiConfig();
-                    loadAiModels();
+                    loadAiVendors();
+                    loadAiCatalog();
 
                     // ===== 第2波: 恢复登录（需要第1波完成后的主题） =====
                     await p1;
@@ -1878,9 +1881,12 @@ const allMenuDefs = [
                     rateLimitConfig, rateLimitDirty, rateLimitSaving, loadRateLimit, saveRateLimit,
                     saveAllConfig, resetAllConfig, testTushareConnection, syncStockData,
                     loadTushareConfig, loadFeishuConfig, loadSystemStatus, loadAiConfig,
-                    // AI 模型管理
-                    aiModels, aiModelsError, testingAllModels, savingAiModels,
-                    loadAiModels, onModelToggle, testModel, testAllModels, saveAiModels, addModel, deleteModel,
+                    // AI 模型管理 (v3.14 厂商化)
+                    aiVendors, aiCatalog, aiModelsError, testingAllModels, savingAiModels,
+                    loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
+                    testVendorModel, testAllVendorModels, fetchVendorModels,
+                    addVendorFromCatalog, addCustomVendor, addVendorModel,
+                    removeVendorModel, removeVendor,
                     checkTushareConnection,
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
