@@ -3,7 +3,7 @@
 // 状态经 inject('qcState') 共享（提供方：app-logic.js setup）。
 // 注：#stockKlineChart 为 ECharts 挂载点，app-logic 的 K线 init 通过该 id 定位。
 (function () {
-  const { inject } = Vue;
+  const { inject, computed } = Vue;
 
   window.__quantComponents = window.__quantComponents || {};
 
@@ -51,19 +51,31 @@
                     <div v-if="aiLoading" class="ai-progress-bar">
                         <div class="ai-progress-fill"></div>
                     </div>
-                    <!-- 阶段指示器 -->
+                    <!-- v3.15 (15.3): 阶段指示器 — 与真实 await 联动 + 实时已用秒数 -->
                     <div v-if="aiLoading" class="ai-stage-indicator">
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'fetching' || aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">📡</span>
+                        <div class="ai-stage-dots-row">
+                            <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'fetching' || aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done' }">
+                                <span class="ai-stage-icon">📡</span>
+                            </div>
+                            <div class="ai-stage-line" :class="{ done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done' }"></div>
+                            <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'analyzing' || aiEvalStage === 'done' }">
+                                <span class="ai-stage-icon">📊</span>
+                            </div>
+                            <div class="ai-stage-line" :class="{ done: aiEvalStage === 'analyzing' || aiEvalStage === 'done' }"></div>
+                            <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'done' }">
+                                <span class="ai-stage-icon">🤖</span>
+                            </div>
                         </div>
-                        <div class="ai-stage-line" :class="{ done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }"></div>
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">📊</span>
+                        <div class="ai-stage-label">
+                            <span class="ai-stage-text">{{ aiStageText }}</span>
+                            <span v-if="aiEvalElapsed > 0" class="ai-stage-elapsed">· 已用时 {{ aiEvalElapsed }}s</span>
                         </div>
-                        <div class="ai-stage-line" :class="{ done: aiEvalStage === 'analyzing' }"></div>
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">🤖</span>
-                        </div>
+                    </div>
+                    <!-- v3.15 (15.3): 评估失败提示 + 重试 -->
+                    <div v-if="aiEvalError && !aiLoading" class="ai-eval-error">
+                        <span class="ai-eval-error-icon">⚠️</span>
+                        <span class="ai-eval-error-text" :title="aiEvalError">{{ aiEvalError }}</span>
+                        <el-button size="small" type="primary" @click="doAiEvaluate">🔄 重试</el-button>
                     </div>
 
                     <!-- Tab: K线图表 -->
@@ -161,15 +173,23 @@
                     <!-- Tab: AI智能评估 -->
                     <div v-if="stockDetailTab === 'ai'">
                         <div v-if="aiResult" class="card" style="margin-bottom: 16px;">
-                            <div class="card-title" style="margin:0 0 16px 0;">🤖 AI 智能评估
-                                <el-tag size="small" type="info" style="margin-left:8px;">{{ aiResult.result.provider }}</el-tag>
-                                <span v-if="aiResult.llm_latency_ms" style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:8px;">{{ aiResult.llm_latency_ms }}ms</span>
+                            <div class="card-title" style="margin:0 0 16px 0;">
+                                <span>🤖 AI 智能评估</span>
+                                <!-- v3.15 (15.3): 模型信息展示 -->
+                                <span v-if="aiResult.model_used" class="ai-result-meta" title="模型">🧠 {{ aiResult.model_used }}</span>
+                                <span v-if="aiResult.model_provider" class="ai-result-meta" title="厂商">{{ aiResult.model_provider }}</span>
+                                <span v-if="aiResult.result && aiResult.result.provider && aiResult.result.provider !== (aiResult.model_provider || '')" class="ai-result-meta" title="引擎">{{ aiResult.result.provider }}</span>
+                                <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟">⚡ {{ aiResult.llm_latency_ms }}ms</span>
+                                <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">💾 缓存结果</span>
+                                <span style="flex:1;"></span>
+                                <el-button size="small" @click="copyAiReport">📋 复制报告</el-button>
+                                <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">🔄 重新评估</el-button>
                             </div>
                             <div style="display:flex;align-items:center;gap:24px;margin-bottom:20px;flex-wrap:wrap;">
                                 <div style="width:100px;height:100px;position:relative;flex-shrink:0;">
                                     <svg viewBox="0 0 100 100" style="transform:rotate(-90deg);">
                                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-light)" stroke-width="8"/>
-                                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
+                                        <circle cx="50" cy="50" r="42" fill="none" :stroke="levelRingColor" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
                                     </svg>
                                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
                                         <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ fmtNum(aiResult.result.total_score, 1) }}</div>
@@ -311,7 +331,52 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      // v3.15 (15.3): 诚实进度 — 阶段文案由 aiEvalStage 映射, 非假定时器
+      const STAGE_TEXT = {
+        fetching: '正在获取行情数据',
+        calculating: '正在计算评分',
+        analyzing: '正在生成分析报告',
+        done: '评估完成',
+      };
+      const aiStageText = computed(() => STAGE_TEXT[state.aiEvalStage.value] || '');
+      // v3.15 (15.3): 评分环颜色按等级映射主题变量（暗色可用）
+      const levelRingColor = computed(() => {
+        const lv = state.aiResult && state.aiResult.value && state.aiResult.value.result && state.aiResult.value.result.level;
+        if (!lv) return 'var(--color-primary)';
+        if (lv === '强烈推荐' || lv === '推荐') return 'var(--el-success)';
+        if (lv === '谨慎推荐') return 'var(--el-warning)';
+        if (lv === '中性' || lv === '观望') return 'var(--text-secondary)';
+        if (lv === '评估失败' || lv === '无可用模型') return 'var(--el-danger)';
+        return 'var(--color-primary)';
+      });
+      // v3.15 (15.3): 复制报告 — detailed_report + 九维度评分
+      function _copyFallback(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      async function copyAiReport() {
+        const r = state.aiResult && state.aiResult.value;
+        if (!r || !r.result) return;
+        const dims = r.result.dimensions || {};
+        const dimText = Object.entries(dims).map(([k, v]) => `${k} ${Math.round(v)}分`).join('\n');
+        const text = `【AI 智能评估】${r.result.level || ''} ${r.result.total_score != null ? r.result.total_score : '—'}分\n` +
+          `模型：${r.model_used || r.result.provider || '—'}\n\n` +
+          `${r.result.detailed_report || ''}\n\n九维度评分：\n${dimText || '无'}`;
+        try {
+          await navigator.clipboard.writeText(text);
+          ElementPlus.ElMessage.success('报告已复制到剪贴板');
+        } catch (e) {
+          try { _copyFallback(text); ElementPlus.ElMessage.success('报告已复制到剪贴板'); }
+          catch (e2) { ElementPlus.ElMessage.error('复制失败，请手动复制'); }
+        }
+      }
+      return { ...state, aiStageText, levelRingColor, copyAiReport };
     },
   };
 })();

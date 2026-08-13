@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS chat_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
     stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
@@ -99,15 +100,22 @@ def schema_ok() -> bool:
 
 
 def migrate() -> None:
-    """DB schema 增量迁移 (v3.14.2: watchlist 增加 name 列, 修复自选/历史缺股票名)"""
+    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name)"""
     try:
         with _db_lock:
             conn = get_conn()
+            # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:
                 conn.execute("ALTER TABLE watchlist ADD COLUMN name TEXT NOT NULL DEFAULT ''")
                 conn.commit()
                 print("[db] migrate: watchlist 增加 name 列")
+            # v3.15: chat_history 增加 stock_name 列 (问股历史缺股票名)
+            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+            if chat_cols and 'stock_name' not in chat_cols:
+                conn.execute("ALTER TABLE chat_history ADD COLUMN stock_name TEXT NOT NULL DEFAULT ''")
+                conn.commit()
+                print("[db] migrate: chat_history 增加 stock_name 列")
             conn.close()
     except Exception as e:
         print(f"[db] migrate 失败: {e}")
@@ -167,13 +175,13 @@ def kv_delete(table: str, key: str):
 
 # ─── chat_history ─────────────────────────────────────────────
 
-def chat_append(username: str, stock_code: str, role: str, content: str) -> int:
-    """追加一条聊天记录, 返回 id"""
+def chat_append(username: str, stock_code: str, role: str, content: str, stock_name: str = '') -> int:
+    """追加一条聊天记录, 返回 id (v3.15: 存入股票中文名, 修复问股历史缺名)"""
     with _db_lock:
         conn = get_conn()
         cur = conn.execute(
-            "INSERT INTO chat_history (username, stock_code, role, content, created_at) VALUES (?,?,?,?,?)",
-            (username, stock_code, role, content, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            "INSERT INTO chat_history (username, stock_code, stock_name, role, content, created_at) VALUES (?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', role, content, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -213,6 +221,20 @@ def chat_all(username: str = None) -> list:
             rows = conn.execute("SELECT * FROM chat_history ORDER BY id").fetchall()
         conn.close()
     return [dict(r) for r in rows]
+
+
+def chat_update_name(chat_id: int, stock_name: str) -> bool:
+    """回填单条聊天记录股票名 (v3.15 回填脚本用)"""
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "UPDATE chat_history SET stock_name=? WHERE id=?",
+            (stock_name or '', chat_id)
+        )
+        conn.commit()
+        ok = cur.rowcount > 0
+        conn.close()
+    return ok
 
 
 # ─── watchlist ────────────────────────────────────────────────

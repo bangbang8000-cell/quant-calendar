@@ -261,7 +261,9 @@ const autoEvaluateConfig = ref({
 
 // ===== AI 评估配置（v3.11 从 app-logic 前段并入；configChanged 由 deps 共享）=====
 const aiLoading = ref(false);
-const aiEvalStage = ref('');  // '', 'fetching', 'calculating', 'analyzing'
+const aiEvalStage = ref('');  // '', 'fetching', 'calculating', 'analyzing', 'done'
+const aiEvalElapsed = ref(0);  // v3.15: 智能评估真实已用秒数
+const aiEvalError = ref('');  // v3.15: 智能评估失败原因（弹窗内展示 + 重试）
 const showBatchEvaluate = ref(false);
 const batchStocks = ref('');
 const batchRunning = ref(false);
@@ -270,6 +272,7 @@ const batchCompleted = ref(0);
 const batchCurrent = ref('');
 const batchStatuses = ref({});
 const batchResults = ref({});  // v1.10: 批量结果详情
+const batchEvalErrors = ref({});  // v3.15: 批量评估失败原因 (code → error)
 const aiConfig = ref({
     provider: 'codingplan',
     apiKey: '',
@@ -422,8 +425,8 @@ function updateChecklist(result) {
         testVendorModel, testAllVendorModels, fetchVendorModels,
         addVendorFromCatalog, addCustomVendor, addVendorModel,
         removeVendorModel, removeVendor, autoEvaluateConfig,
-        aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning,
-        batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults,
+        aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
+        batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
         aiConfig, selectedPreset, providerInfo, aiPresets,
         applyPreset, onProviderChange,
         // v3.11: 数据加载域（原 app-logic 数据加载段并入）

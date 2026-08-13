@@ -298,9 +298,41 @@
 
 ---
 
-## 9. v4.0 测试用例
+## 9. v3.15 测试用例（名称解析 + 批量评估 SSE + 智能评估 UI + 暗色主题走查）
 
 ### 9.1 新增单元/接口测试
+
+| # | 用例 | 对应任务 | 类型 | 预期结果 |
+|:--:|------|:--:|------|------|
+| TC-15.1 | `test_chat_stock_name.py`（8 项） | 15.1 | 单元 | chat_append 写 name / migrate 幂等 / chat_update_name / _load_history 透传 / get_history 空名兜底解析 |
+| TC-15.2 | `test_pool_changes_names.py`（3 项） | 15.1 | 单元 | `_get_pool_changes` 返回 `new_stock_names`（键=代码、值=名称），ValueError 早退含空 map |
+| TC-15.3 | `test_batch_evaluate_stream.py`（5 项） | 15.2 | 单元 | start→item×n→done 事件序列；失败项携带 error；并发上限（Semaphore）；空输入直接 done；item 带 stock_name |
+| TC-15.4 | `test_api_batch_evaluate_stream.py`（3 项） | 15.2 | 接口 | 未带 token → 401；SSE 事件可解析；handler 直接调用迭代 body_iterator |
+| TC-15.5 | `test_ai_eval_ui.py`（13 项） | 15.3 | 静态 | 无假阶段定时器；诚实进度与真实 await 联动；失败原因捕获（doAiEvaluate/快捷/自选）；重试按钮；模型信息展示；等级色评分环；复制/重新评估；refs 声明与透传 |
+| TC-15.6 | `test_theme_walkthrough.py`（18 项） | 15.4 | 静态 | kline-chart 底色令牌化；dark-pro 组件覆盖（日期/下拉/cascader/drawer/notification/滚动条等）；echarts-theme 注册表 + applyTheme 触发重绘；MA 色运行时兜底；趋势图主题感知；themes.js 色值对齐 |
+
+### 9.2 回归确认
+
+| # | 用例 | 说明 |
+|:--:|------|------|
+| TC-15.7 | 存量 + 全新增用例 | ✅ **323** 用例全绿（v3.14.2 273 + v3.15 新增 50），无 regression。含 `test_ai_evaluator` 环境兜底 fixture（外部行情源不可达时 `_fetch_stock_data` 桩为 `{}`，不再挂 30s×3 超时） |
+| TC-15.8 | `test_frontend_deps_audit.py` / `test_tokens_no_hardcode.py` / `test_terminology_unified.py` | ✅ 全绿（新 refs 已声明透传；新模板零硬编码 hex；themes.js 保留） |
+
+### 9.3 浏览器冒烟（v3.15 专项）
+
+| # | 检查项 | 预期 |
+|:--:|------|------|
+| SM-15.1 | 问股历史 + 今日重点名称 | 问股历史（日期/月份/股票视图）均有真实名称；今日重点新入池显示名称非代码 |
+| SM-15.2 | 批量评估 SSE | >5 只逐只实时推进进度条、失败项显示原因、结束有成功/失败/用时汇总；对比旧版 0→N 瞬跳 |
+| SM-15.3 | 智能评估 | 加载显示真实计时与阶段文案、无假阶段卡顿；触发失败（空 key）→ 显示原因 + 重试可用；结果含模型信息 + 复制报告 |
+| SM-15.4 | 暗色主题 7 主题走查 | 逐个切换：组件面板暗色无白块、K线/趋势图随主题重绘变色、无 pageerror |
+| SM-15.5 | 版本 | dev:8001 / ops:8000 两端 `/api/health` = 3.15.0；前端资源 `?v=3.15.0` 生效 |
+
+---
+
+## 10. v4.0 测试用例
+
+### 10.1 新增单元/接口测试
 
 | # | 用例 | 对应任务 | 类型 | 预期结果 |
 |:--:|------|:--:|------|------|
@@ -311,7 +343,7 @@
 | TC-4.5 | `test_webhook_signature` | 4.4 | 单元 | 非法签名被拒绝，合法签名通过 |
 | TC-4.6 | `test_plugin_loading` | 4.5 | 单元 | 样例插件加载并出现在列表 |
 
-### 9.2 回归确认
+### 10.2 回归确认
 
 | # | 用例 | 说明 |
 |:--:|------|------|
@@ -320,7 +352,7 @@
 
 ---
 
-## 10. 浏览器冒烟检查清单 (全版本统一)
+## 11. 浏览器冒烟检查清单 (全版本统一)
 
 沿用 v3.7-v3.9 的 **SM-1 ~ SM-15 基础检查**（登录、策略总览、美林时钟详情、日历日/周/月/年、K线、收藏、AI评股、系统配置、主题/图标切换、侧边栏、移动端 375px），每个版本发布前全量走查。各版本专项冒烟见对应章节（SM-11.x / SM-12.x / SM-13.x / SM-14.x）。
 
@@ -348,11 +380,13 @@
 | v3.14 | 235 | 32 | 0 | 3 | 267* |
 | v3.14.1 | 267 | 2 | 0 | 0 | 269 |
 | v3.14.2 | 269 | 4 | 0 | 3 | 273* |
+| v3.15 | 273 | 47 | 3 | 5 | 323* |
 | v4.0 | 269 | 3 | 3 | - | 275 |
 
 > *v3.13 实测 235 用例（234 单元 + 1 e2e 截图 diff），新增 `test_terminology_unified.py` 评股残留 + 前后端主题名一致性 2 项静态守卫，全绿无回归；
 > 原计划的备份/告警/部署用例随「可观测与部署」顺延未实现，浏览器专项 5 项另计。
 > *v3.14 实测 267 用例 = 存量 235 + 新增 32（`test_vendor_catalog.py` 15 + `test_api_ai_models.py` 17，其中含 FastAPI 请求层校验 2 例：body 数字 timeout 不 422 回归），浏览器专项 3 项另计；原计划的并行评估/通知/ RAG 用例随该方向顺延。
+> *v3.15 实测 **323** 用例 = 存量 273 + 新增 50（`test_chat_stock_name.py` 8 + `test_pool_changes_names.py` 3 + `test_batch_evaluate_stream.py` 5 + `test_api_batch_evaluate_stream.py` 3 接口 + `test_ai_eval_ui.py` 13 + `test_theme_walkthrough.py` 18），浏览器专项 5 项另计；`test_ai_evaluator.py` 加环境兜底 fixture（外部行情源不可达不触网）。
 > *v3.14.1 评估修复补丁 +2 回归（`test_ai_evaluator.py`：缓存命中统一 record 形状、批量评估统一 `{stock_code,success,result}`），浏览器专项 0 项另计。
 > *v3.14.2 评估完成性修复 +4 回归（`test_ai_evaluator.py`：reasoning_content 兜底 / 无 JSON 明确报错 / `_resolve_stock_name` 名称解析含裸代码后缀推断 / 批量评估名称透传），浏览器专项 3 项（SM-14.3~14.5）另计。
 

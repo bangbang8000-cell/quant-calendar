@@ -3,10 +3,13 @@
 """
 AI 评估 API
 """
-from fastapi import APIRouter, Depends
+import json
 import logging
 import asyncio
 from typing import Dict, Any, List
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from ai_evaluator import ai_evaluator
 from auth import get_admin_user, get_current_active_user
@@ -31,13 +34,25 @@ async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_curren
 
 @router.post("/batch-evaluate")
 async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
-    """批量 AI 评估股票"""
+    """批量 AI 评估股票 (一次性; 保留兼容 scheduler/旧客户端)"""
     try:
         stock_codes = req.get("stock_codes", [])
         results = await ai_evaluator.batch_evaluate(stock_codes, None, 5, user["username"])
         return {"success": True, "data": results}
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+@router.post("/batch-evaluate/stream")
+async def ai_batch_evaluate_stream(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
+    """批量 AI 评估 — SSE 流式 (v3.15: 逐只完成后实时推送, 修复前端进度 0→N 瞬跳)"""
+    stock_codes = req.get("stock_codes", [])
+
+    async def sse_gen():
+        async for evt in ai_evaluator.batch_evaluate_stream(stock_codes, None, 5, user["username"]):
+            yield f"data: {json.dumps(evt, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(sse_gen(), media_type="text/event-stream")
 
 
 @router.post("/evaluate-index")

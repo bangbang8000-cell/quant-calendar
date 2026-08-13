@@ -24,10 +24,12 @@ const allChatSessionsFlat = computed(() => {
     const flat = [];
     for (const s of chatSessions.value) {
         if (s.messages) {
+            // v3.15: stock_name 兜底 → 代码 (后端已修, 旧记录仍可能缺名)
+            const stock_name = s.stock_name || s.stock_code || '';
             flat.push({
                 id: s.id,
                 stock_code: s.stock_code,
-                stock_name: s.stock_name,
+                stock_name,
                 first_msg: s.messages[0]?.content?.substring(0, 50) || '',
                 msg_count: s.messages.length,
                 created_at: s.created_at,

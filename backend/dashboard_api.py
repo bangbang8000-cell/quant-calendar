@@ -6,6 +6,7 @@
 import time
 from collections import defaultdict
 from data_parser import parser, STRATEGY_CONFIG
+from stock_info import stock_manager
 
 
 class DashboardAnalyzer:
@@ -161,7 +162,7 @@ class DashboardAnalyzer:
         try:
             idx = self.all_dates.index(date)
         except ValueError:
-            return {"new_count": 0, "out_count": 0, "new_stocks": [], "out_stocks": [],
+            return {"new_count": 0, "out_count": 0, "new_stocks": [], "new_stock_names": {}, "out_stocks": [],
                     "weekly_new": 0, "weekly_out": 0,
                     "monthly_new": 0, "monthly_out": 0}
 
@@ -206,10 +207,14 @@ class DashboardAnalyzer:
             monthly_new = 0
             monthly_out = 0
 
+        # v3.15: 新入池股票名 (code→name), 修复今日重点仅显示代码
+        new_stock_names = {c: stock_manager.get_name(c) for c in new_stocks}
+
         return {
             "new_count": len(new_stocks),
             "out_count": len(out_stocks),
             "new_stocks": new_stocks[:10],
+            "new_stock_names": new_stock_names,
             "out_stocks": out_stocks[:10],
             "weekly_new": weekly_new,
             "weekly_out": weekly_out,

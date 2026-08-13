@@ -389,7 +389,9 @@
         const pc = dashboard.value.pool_changes || {};
         const n = pc.new_count || 0;
         if (n > 0) {
-          const names = (pc.new_stocks || []).map(c => codeNameMap.value[c] || c).slice(0, 4).join('、');
+          // v3.15: 优先用后端 new_stock_names, 再回退前端 codeNameMap → 代码
+          const newNames = pc.new_stock_names || {};
+          const names = (pc.new_stocks || []).map(c => newNames[c] || codeNameMap.value[c] || c).slice(0, 4).join('、');
           items.push({
             icon: '🆕', level: 'new',
             text: `今日新入池 ${n} 只${names ? ' · ' + names : ''}`,

@@ -31,6 +31,27 @@ router = APIRouter(prefix="/ai/chat", tags=["ai-chat"])
 HISTORY_FILE = os.path.join(DATA_DIR, "chat_history.json")
 
 
+def _resolve_stock_name(code: str) -> str:
+    """stock_manager 解析股票名, 裸代码(无后缀)时补 .SZ/.SH (v3.15: 问股历史缺名兜底)"""
+    code = (code or "").strip()
+    if not code:
+        return code
+    try:
+        from stock_info import stock_manager
+        n = stock_manager.get_name(code)
+        if n and n != code:
+            return n
+        if "." not in code:
+            for suffix in (".SZ", ".SH"):
+                cand = code + suffix
+                n = stock_manager.get_name(cand)
+                if n and n != cand:
+                    return n
+    except Exception:
+        logger.warning("操作异常 (v3.4.0-T8)")
+    return code
+
+
 # ── Models ──
 
 class ChatRequest(BaseModel):
@@ -58,9 +79,14 @@ def _load_history() -> list:
                 for r in rows:
                     code = r['stock_code'] or ''
                     if code not in by_code:
+                        # v3.15: 读 SQLite stock_name 列, 空则用 stock_manager 兜底
+                        sname = (r.get('stock_name') or '').strip()
+                        if not sname or sname == code:
+                            sname = _resolve_stock_name(code)
                         by_code[code] = {
                             "id": r['id'],
                             "stock_code": code,
+                            "stock_name": sname,
                             "created_at": r['created_at'],
                             "messages": []
                         }
@@ -90,14 +116,18 @@ def _save_history(sessions: list):
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump({"sessions": sessions}, f, ensure_ascii=False, indent=2)
-    # SQLite 同步 (尽力而为)
+    # SQLite 同步 (尽力而为); v3.15: 一并写入股票名, 修复问股历史缺名
     try:
         import db
         if db.schema_ok():
             db.chat_clear('default')
             for s in sessions:
+                code = s.get('stock_code', '') or ''
+                sname = (s.get('stock_name') or '').strip()
+                if not sname or sname == code:
+                    sname = _resolve_stock_name(code)
                 for m in s.get('messages', []):
-                    db.chat_append('default', s.get('stock_code', ''), m.get('role', 'user'), m.get('content', ''))
+                    db.chat_append('default', code, m.get('role', 'user'), m.get('content', ''), sname)
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
@@ -255,19 +285,23 @@ async def quick_chat(body: QuickChatRequest):
 async def get_history(view: str = "date"):
     """获取问股历史列表 — 支持 date/month/stock 分组视图"""
     sessions = _load_history()
-    items = [
-        {
+    items = []
+    for s in sessions:
+        code = s.get("stock_code", "") or ""
+        # v3.15: 兜底解析股票名 (旧 JSON 记录可能缺 stock_name)
+        sname = (s.get("stock_name") or "").strip()
+        if not sname or sname == code:
+            sname = _resolve_stock_name(code)
+        items.append({
             "id": s["id"],
-            "stock_code": s.get("stock_code", ""),
-            "stock_name": s.get("stock_name", ""),
+            "stock_code": code,
+            "stock_name": sname,
             "first_msg": s["messages"][0]["content"][:50] if s.get("messages") else "",
             "msg_count": len(s.get("messages", [])),
             "created_at": s.get("created_at", ""),
             "date": s.get("created_at", "")[:10],
             "month": s.get("created_at", "")[:7],
-        }
-        for s in sessions
-    ]
+        })
 
     if view == "month":
         grouped = {}

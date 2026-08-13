@@ -13,11 +13,22 @@
     };
   }
 
+  // v3.15 (15.4): 单令牌运行时读取 — ECharts canvas 无法解析 CSS var(), 令牌优先, 字面量兜底
+  const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+
   function renderKlineChart(chart, data, period, isIndex = false, isMobile = false) {
     if (!data || data.length === 0) return;
 
     const dates = data.map(d => d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
     const colors = getThemeColors();
+    // v3.15 (15.4): MA 均线色随主题重绘 — 渲染时读令牌, 硬编码兜底显式标注
+    /* qc-allow-hardcode: ECharts canvas 无法解析 CSS 变量, 此处为显式运行时兜底字面量 */
+    const maColors = {
+      ma5: getCSSVar('--color-accent') || '#F59E0B',
+      ma10: getCSSVar('--color-primary') || '#3B82F6',
+      ma20: getCSSVar('--color-warning') || '#8B5CF6',
+      ma60: getCSSVar('--color-success') || '#10B981',
+    };
 
     // K线数据: [open, close, low, high]
     const klineData = data.map(d => [d[1], d[2], d[3], d[4]]);
@@ -106,15 +117,15 @@
           name: 'K线', type: 'candlestick', data: klineData,
           itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
         },
-        { name: 'MA5', type: 'line', data: ma5Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: '#F59E0B' } },
-        { name: 'MA10', type: 'line', data: ma10Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: '#3B82F6' } },
-        { name: 'MA20', type: 'line', data: ma20Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: '#8B5CF6' } },
-        { name: 'MA60', type: 'line', data: ma60Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: '#10B981' } },
+        { name: 'MA5', type: 'line', data: ma5Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: maColors.ma5 } },
+        { name: 'MA10', type: 'line', data: ma10Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: maColors.ma10 } },
+        { name: 'MA20', type: 'line', data: ma20Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: maColors.ma20 } },
+        { name: 'MA60', type: 'line', data: ma60Data, smooth: true, symbol: 'none', lineStyle: { width: 1.2, color: maColors.ma60 } },
         {
           name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volData,
           itemStyle: { color: function(p) { const i = p.dataIndex; return data[i][1] >= data[i][2] ? colors.up : colors.down; } },
         },
-        { name: 'VOL_MA5', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: volMa5Data, smooth: true, symbol: 'none', lineStyle: { width: 1, color: '#F59E0B', type: 'dashed' } },
+        { name: 'VOL_MA5', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: volMa5Data, smooth: true, symbol: 'none', lineStyle: { width: 1, color: maColors.ma5, type: 'dashed' } },
       ],
     };
     chart.setOption(option, true);

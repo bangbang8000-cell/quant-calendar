@@ -81,6 +81,9 @@
                 const indexKlineLoaded = ref(false);
                 let stockKlineChart = null;
                 let indexKlineChart = null;
+                // v3.15 (15.4): 主题切换图表重绘缓存 — 保存最近一次渲染数据, 换主题时按新色重建
+                let _stockKlineCache = null;  // {data, period}
+                let _indexKlineCache = null;  // {data, period}
                 // v3.11(11.3): 供 ai-chat 域安全释放 K 线实例（避免跨域直接引用 setup 局部变量）
                 function disposeStockKline() {
                     if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
@@ -313,6 +316,7 @@
                             });
                         }
                         renderKlineChart(stockKlineChart, data.data, period);
+                        _stockKlineCache = { data: data.data, period };  // v3.15: 主题重绘缓存
                         resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -437,6 +441,7 @@
                             });
                         }
                         renderKlineChart(indexKlineChart, data.data, period, true);
+                        _indexKlineCache = { data: data.data, period };  // v3.15: 主题重绘缓存
                         resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('指数K线加载失败');
@@ -806,6 +811,7 @@ const allMenuDefs = [
                 const backtestRunning = ref(false);
                 const backtestResult = ref(null);
                 let backtestChart = null;
+                let _backtestCurve = null;  // v3.15 (15.4): 主题重绘缓存
                 async function runBacktest() {
                     const token = localStorage.getItem('quant_token');
                     if (!token) { ElementPlus.ElMessage.warning('请先登录'); return; }
@@ -850,6 +856,7 @@ const allMenuDefs = [
                 function renderBacktestChart(equityCurve) {
                     const el = document.getElementById('backtestEquityChart');
                     if (!el || !equityCurve || equityCurve.length === 0) return;
+                    _backtestCurve = equityCurve;  // v3.15: 主题重绘缓存
                     if (backtestChart) { backtestChart.dispose(); backtestChart = null; }
                     backtestChart = echarts.init(el);
                     backtestChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
@@ -866,6 +873,27 @@ const allMenuDefs = [
                             lineStyle: { width: 2, color: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || getComputedStyle(document.documentElement).getPropertyValue('--color-ai').trim() || '#6366f1' /* qc-allow-hardcode: ECharts canvas 无法解析 CSS 变量，两级运行时兜底恒覆盖该字面量 */ },
                             areaStyle: { opacity: 0.1 },
                         }],
+                    });
+                }
+                // v3.15 (15.4): 注册主题切换 → ECharts 按新主题重建（缓存数据, 保留 MA 图例选择）
+                if (window.__quantModules && window.__quantModules.echartsTheme && !window.__quantModules.echartsTheme.__appChartsRegistered) {
+                    window.__quantModules.echartsTheme.__appChartsRegistered = true;
+                    window.__quantModules.echartsTheme.registerChart(function () {
+                        if (_stockKlineCache && stockKlineChart && !stockKlineChart.isDisposed()) {
+                            const prevSel = stockKlineChart.getOption()?.legend?.[0]?.selected || null;
+                            renderKlineChart(stockKlineChart, _stockKlineCache.data, _stockKlineCache.period, false);
+                            if (prevSel) stockKlineChart.setOption({ legend: { selected: prevSel } });
+                        }
+                    });
+                    window.__quantModules.echartsTheme.registerChart(function () {
+                        if (_indexKlineCache && indexKlineChart && !indexKlineChart.isDisposed()) {
+                            const prevSel = indexKlineChart.getOption()?.legend?.[0]?.selected || null;
+                            renderKlineChart(indexKlineChart, _indexKlineCache.data, _indexKlineCache.period, true);
+                            if (prevSel) indexKlineChart.setOption({ legend: { selected: prevSel } });
+                        }
+                    });
+                    window.__quantModules.echartsTheme.registerChart(function () {
+                        if (_backtestCurve) renderBacktestChart(_backtestCurve);
                     });
                 }
                 const currentSubPage = ref('overview');
@@ -999,6 +1027,13 @@ const allMenuDefs = [
                     currentTheme.value = theme;
                     document.documentElement.setAttribute('data-theme', theme);
                     localStorage.setItem('quant_theme', theme);
+                    // v3.15 (15.4): 已挂载 ECharts 实例按新主题重绘（数据已缓存, 换色即生效）
+                    Vue.nextTick(() => {
+                        if (window.__quantModules && window.__quantModules.echartsTheme &&
+                            window.__quantModules.echartsTheme.refreshAllCharts) {
+                            window.__quantModules.echartsTheme.refreshAllCharts();
+                        }
+                    });
                 }
 
                 function changeTheme(theme) {
@@ -1491,15 +1526,15 @@ const allMenuDefs = [
                         addVendorFromCatalog, addCustomVendor, addVendorModel,
                         removeVendorModel, removeVendor, autoEvaluateConfig,
                         // v3.11: AI 评估配置（原 app-logic 前段并入本域）
-                        aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning,
-                        batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults,
+                        aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
+                        batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
                         aiConfig, selectedPreset, providerInfo, aiPresets,
                         applyPreset, onProviderChange,
                         // v3.11: 数据加载域（原 app-logic 数据加载段并入）
                         fetchPoolSignals, loadLastEvaluation } = __aiDomain;
                 // ===== v3.11(11.3): 自选/评估历史域 — 逻辑移至 js/watchlist.js 模块 =====
                 const __watchlistDomain = (window.__quantModules && window.__quantModules.watchlist)
-                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline, aiHistory, aiLoading, aiEvalStage, aiResult, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
+                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline, aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
                     : {};
                 const { quickEvalStock, evalStrategy, watchlistSort, watchlist, watchlistCodes, sortedWatchlist,
                         getWatchlistScore, getLatestScore, addSearchResult, evaluatedCodes, klineLoadedCodes,
@@ -1847,7 +1882,7 @@ const allMenuDefs = [
                     searchQuery, searchStocks, onSearchSelect,
                     loading, loadingView, dates, selectedDate, lastLoadTime, consensus, searchKeyword,
                     stockDetailVisible, stockDetailTab, stockDetail,
-                    aiLoading, aiEvalStage, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, aiConfig,
+                    aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,
                     toggleGroupExpand, removeMemberFromGroupInline, addMemberToGroupInline, changeUserGroup,

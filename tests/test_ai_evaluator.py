@@ -16,6 +16,19 @@ def isolated_data_dir(tmp_path):
     paths.DATA_DIR = old
 
 
+@pytest.fixture(autouse=True)
+def _stub_fetch_stock_data():
+    """v3.15 (15.5): 环境兜底 — 外部行情源不可达时单测不触网.
+
+    evaluate_stock 在缓存命中检查之前就调用 _fetch_stock_data (L1013),
+    数据源 sxsc-tushare/tushare/akshare 不可达时每个调用会挂 30s×3 超时。
+    无模型/缓存命中/批量等路径只用 stock_data={} 即可覆盖, 语义不变。
+    """
+    import ai_evaluator
+    with patch.object(ai_evaluator.AIEvaluator, '_fetch_stock_data', lambda self, code: {}):
+        yield
+
+
 class TestModelProvider:
     """ModelProvider dataclass tests"""
 

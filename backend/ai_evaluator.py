@@ -1942,6 +1942,64 @@ class AIEvaluator:
         tasks = [_evaluate_one(code) for code in stock_codes]
         return await asyncio.gather(*tasks)
 
+    async def batch_evaluate_stream(self, stock_codes: List[str], stock_info_map: Dict = None,
+                                    max_workers: int = 5, username: str = 'default'):
+        """批量并行评估 — SSE 流式 (v3.15: 逐只完成后 yield 事件, 修复前端进度 0→N 瞬跳)
+
+        事件形状:
+          {"type": "start", "total": n}
+          {"type": "item", "stock_code", "stock_name", "success", "result",
+           "model_used", "model_provider", "llm_latency_ms", "from_cache", "error"?}
+          {"type": "done", "success": n, "fail": m, "total": n}
+        """
+        codes = [c for c in (stock_codes or []) if c]
+        total = len(codes)
+        if total == 0:
+            yield {"type": "done", "total": 0, "success": 0, "fail": 0}
+            return
+        yield {"type": "start", "total": total}
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def _run_one(code: str):
+            async with semaphore:
+                try:
+                    # v3.14.2: 名称兜底 — stock_info_map 缺失/无名字时经 stock_manager 解析
+                    name = self._resolve_stock_name(code, (stock_info_map or {}).get(code, ""))
+                    rec = await self.evaluate_stock(code, name, None, username)
+                    rec = rec if isinstance(rec, dict) else {}
+                    result = rec.get("result", {})
+                    success = result.get("level") not in ("评估失败", "无可用模型")
+                    return (code, {
+                        "stock_code": rec.get("stock_code", code),
+                        "stock_name": name or code,
+                        "success": success,
+                        "result": result,
+                        "model_used": rec.get("model_used"),
+                        "model_provider": rec.get("model_provider"),
+                        "llm_latency_ms": rec.get("llm_latency_ms"),
+                        "from_cache": bool(rec.get("from_cache")),
+                    })
+                except Exception as e:
+                    logger.warning(f"批量评估 {code} 失败: {e}")
+                    return (code, {"stock_code": code, "stock_name": code, "success": False, "error": str(e)})
+
+        tasks = [asyncio.create_task(_run_one(code)) for code in codes]
+        success = fail = 0
+        try:
+            for task in asyncio.as_completed(tasks):
+                code, item = await task
+                if item.get("success"):
+                    success += 1
+                else:
+                    fail += 1
+                yield {"type": "item", **item}
+        finally:
+            # 客户端断开 (GeneratorExit) 时取消未完成任务, 避免后台泄漏
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+        yield {"type": "done", "total": total, "success": success, "fail": fail}
+
     # ─── 历史管理 ───────────────────────────────────────────────
 
     def get_history(self, username: str = 'default', limit: int = 50) -> List[Dict]:

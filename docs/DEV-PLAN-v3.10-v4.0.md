@@ -15,6 +15,7 @@
 | v1.0 | 2026-08-11 | - | 基于 PRD v1.0 + v3.8.2 代码审查创建 |
 | v2.0 | 2026-08-11 | - | v3.11 改为 UI/UX 提质四层任务，后续版本顺延 |
 | v3.0 | 2026-08-12 | - | v3.13 定稿为「术语统一 + 主题配色 + 删除面包屑」三项 UI/UX 交付（原可观测与部署 FR-3.13.x 顺延） |
+| v3.1 | 2026-08-14 | - | 新增 v3.15 章节（15.1 名称解析 / 15.2 批量 SSE / 15.3 智能评估 UI / 15.4 暗色主题 / 15.5 发布） |
 
 ---
 
@@ -42,9 +43,10 @@
 | v3.12 | 数据自动化 | 6 | 1 | 5 | 1-2 周 |
 | v3.13 | 术语统一与主题体验 | 3 | 0 | 3 | ✅ 已完成 |
 | v3.14 | AI 模型管理厂商化（厂商卡片 + CodingPlan + 模型目录） | 7 | 0 | 7 | ✅ 已完成 |
+| v3.15 | 名称解析修复 + 批量评估 SSE + 智能评估 UI + 暗色主题走查 | 6 | 5 | 1 | ✅ 已完成 |
 | v4.0 | 开放平台 | 5 | 0 | 5 | 2 周+ |
 
-**总计**: 36 个任务，预估 10-13 周。
+**总计**: 42 个任务，预估 12-15 周。
 
 ---
 
@@ -233,7 +235,32 @@
 
 ---
 
-## 9. v4.0 — 开放平台
+## 9. v3.15 — 名称解析修复 + 批量评估 SSE + 智能评估 UI + 暗色主题走查
+
+> 用户四项诉求：① 今日重点 / 问股历史 2 处仍只显示股票代码；② 批量评估无法合理展示进度与完成情况；③ 智能评估功能与子界面 UI 系统评估优化；④ 暗色主题评估与优化。已批准决策：批量评估用**后端 SSE 流式**逐只实时推送；暗色主题走**全套 7 主题统一走查**（含图表主题联动重绘）。范围红线：不引入新 UI 框架、不改数据库引擎；TC-11.9 令牌纪律（新模板零硬编码 hex，运行时代码 `getCSSVar()||'#hex'` 兜底并标注 `qc-allow-hardcode`）。
+
+### 9.1 任务分解
+
+| # | 任务 | 关键文件 | 状态 |
+|---|------|---------|:--:|
+| 15.1 | 名称解析修复 — SQLite chat_history 补 stock_name 列 + 增量迁移 + `_load/_save_history` 透传 + 回填脚本；`_get_pool_changes` 产出 `new_stock_names`；前端今日重点/问股历史名称优先 | `backend/db.py`, `backend/api/v1/chat.py`, `backend/dashboard_api.py`, `scripts/backfill_chat_stock_names.py`, `frontend/js/components/strategies-page.js`, `frontend/js/ai-chat.js` | ✅ |
+| 15.2 | 批量评估 SSE 流式 — `batch_evaluate_stream` 生成器（start/item/done 事件，Semaphore 并发上限，失败携带 error）；`POST /api/ai/batch-evaluate/stream`；前端 fetch+getReader 增量解析，逐只行含名称/原因/汇总 | `backend/ai_evaluator.py`, `backend/api/v1/ai.py`, `frontend/js/watchlist.js`, `frontend/js/components/dialogs/batch-evaluate.js` | ✅ |
+| 15.3 | 智能评估 UI — 移除 3×1800ms 假阶段定时器，诚实进度（真实 await 联动 + 已用秒数）；失败原因弹窗展示 + 重试；结果子界面模型信息 / 等级色评分环 / 复制报告 / 重新评估 | `frontend/js/watchlist.js`, `frontend/js/components/dialogs/stock-detail.js`, `frontend/js/ai.js` | ✅ |
+| 15.4 | 暗色主题全套走查 — dark-pro Element Plus 覆盖补齐（日期/下拉/cascader/drawer/notification/滚动条等）；`.kline-chart` 白底令牌化；图表主题联动重绘（echarts-theme 注册表 + applyTheme 触发）；图表硬编码色运行时兜底；themes.js 色值对齐 | `frontend/css/themes.css`, `frontend/js/app-logic.js`, `frontend/js/echarts-theme.js`, `frontend/js/charts.js`, `frontend/js/watchlist.js`, `frontend/js/themes.js` | ✅ |
+| 15.5 | 发布 — 全量 pytest（323 绿，含 test_ai_evaluator 环境兜底）；bump 3.15.0；tag 推送；双端 `/api/health` = 3.15.0 | `backend/main_new.py`, `docs/DEV-PLAN*`, `docs/TEST-PLAN*` | ✅ |
+
+### 9.2 验收清单
+
+- [x] 问股历史（日期/月份/股票视图）+ 今日重点新入池均显示真实股票名（TC-15.1，11 用例）
+- [x] 批量评估 SSE 逐只实时进度、失败原因展示、完成汇总；旧端点/scheduler 兼容（TC-15.2，8 用例）
+- [x] 智能评估诚实进度（无假定时器）、失败原因 + 重试、模型信息/复制报告（TC-15.3，13 用例）
+- [x] 7 主题切换组件暗色无白块、K线/趋势图随主题重绘、TC-11.9 令牌纪律绿（TC-15.4，18 用例）
+- [x] 全量 pytest **323** 用例绿（含 test_ai_evaluator 环境兜底 fixture）
+- [x] Git commit + tag `v3.15.0`；dev:8001 / ops:8000 两端 `/api/health` = 3.15.0
+
+---
+
+## 10. v4.0 — 开放平台
 
 ### 9.1 任务分解
 
@@ -256,7 +283,7 @@
 
 ---
 
-## 10. 关键文件依赖图
+## 11. 关键文件依赖图
 
 ```
 v3.10: (已完成)
@@ -303,6 +330,13 @@ v4.0 (开放平台):
   backend/router.py               ← 4.1
   backend/notify/                 ← 4.3, 4.4
   backend/plugins/ (新)           ← 4.5
+
+v3.15 (名称解析 + SSE + 智能评估 UI + 暗色主题):
+  backend/db.py, chat.py, dashboard_api.py ← 15.1 (名称解析修复)
+  backend/ai_evaluator.py, api/v1/ai.py    ← 15.2 (SSE 流式)
+  frontend/js/watchlist.js, stock-detail.js, ai.js ← 15.3 (智能评估 UI)
+  frontend/css/themes.css, echarts-theme.js, app-logic.js, charts.js ← 15.4 (暗色主题)
+  backend/main_new.py, docs/*             ← 15.5 (版本+文档+发布)
 ```
 
 ### 10.1 并行执行建议

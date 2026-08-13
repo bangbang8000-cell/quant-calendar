@@ -32,7 +32,7 @@
   const themes = {
     'tech-blue':       { name: '科技蓝', icon: '🔵', color: '#1d4ed8' },
     'rose-red':        { name: '玫瑰红', icon: '🔴', color: '#E63946' },
-    'vibrant-orange':  { name: '活力金', icon: '🟡', color: '#b8922a' },
+    'vibrant-orange':  { name: '活力金', icon: '🟡', color: '#D4A843' },
     'classic-white':   { name: '经典白', icon: '⚪', color: '#2563eb' },
     'classic-red':     { name: '经典红', icon: '💗', color: '#dc2626' },
     'classic-gold':    { name: '经典金', icon: '🟨', color: '#b8922a' },
