@@ -125,6 +125,20 @@ def _login(page):
         time.sleep(2.5)
     # 关闭所有弹窗遮罩: 初始化向导 + 新手引导 tour 各有「跳过」, 需循环点完
     _dismiss_overlays(page)
+    # v3.16 (16.10): 强制浅色主题 — 用户菜单切主题会 changeTheme→PUT 持久化到后端，
+    # 使浅色场景基线确定，且自愈 dark_theme 场景泄漏的暗色后端配置
+    _apply_theme(page, '科技蓝')
+    time.sleep(0.8)
+
+
+def _apply_theme(page, label):
+    """打开用户菜单并点击指定主题行（changeTheme 会持久化到后端，保证运行状态确定）"""
+    page.evaluate("() => { const w=document.querySelector('.user-menu-wrapper'); if(w) w.click(); return true; }")
+    time.sleep(0.5)
+    page.evaluate(
+        "(label) => { const row=[...document.querySelectorAll('.theme-item-row')].find(r=>r.textContent.includes(label)); if(row){row.click();return true;} return false; }",
+        label,
+    )
     time.sleep(0.8)
 
 
@@ -418,6 +432,9 @@ def main():
                 # 弹窗/面板场景后清理, 避免遮挡后续场景
                 if key in ('stock_detail', 'command_panel'):
                     _close_overlays(page)
+            # v3.16 (16.10): dark_theme 场景会把暗色持久化到后端，运行结束恢复浅色，
+            # 避免污染后续 capture/report 的浅色基线（根因: changeTheme→PUT 持久化）
+            _apply_theme(page, '科技蓝')
             browser.close()
             freezer.save()
             if errs:

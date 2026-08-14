@@ -58,13 +58,16 @@ def test_chart_legend_ma_toggle_injected():
 
 
 def test_toggle_wiring_app_logic():
-    """app-logic 接线：均线开关函数 + 状态 + 图例↔按钮双向同步"""
+    """app-logic 接线：均线开关函数 + 状态 + 图例↔按钮双向同步（16.4 监听下沉 charts.js）"""
     al = _read('frontend/js/app-logic.js')
     assert 'toggleKlineMa' in al, '应实现 toggleKlineMa'
     assert 'klineMaVisible' in al, '应维护 klineMaVisible 选中态'
     assert 'MA_LINES' in al and all(m in al for m in MA_NAMES), '应定义 MA_LINES'
     assert 'legendToggleSelect' in al, 'toggleKlineMa 应 dispatch legendToggleSelect'
-    assert 'legendselectchanged' in al, '应监听 legendselectchanged 同步图例→按钮'
+    # 16.4: legendselectchanged 图例→按钮同步监听已下沉 charts.js（renderKlineTo），app-logic 经 onLegend 回调接线
+    assert 'legendselectchanged' in _read('frontend/js/charts.js'), \
+        'charts.js renderKlineTo 应监听 legendselectchanged 同步图例→按钮'
+    assert 'onLegend' in al, 'app-logic 应通过 onLegend 回调接线图例→按钮同步'
     # 按当前对话框定位图表实例，避免误切隐藏图
     assert 'stockDetailVisible.value' in al and 'indexDetailVisible.value' in al, \
         'toggleKlineMa 应按当前打开的对话框定位图表实例'

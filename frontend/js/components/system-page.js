@@ -119,6 +119,22 @@
                             <div v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无访问数据</div>
                         </div>
 
+                    <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (保存全部/重置/导出/导入) -->
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>⚙️ 配置管理</span>
+                            <span v-if="lastSavedTime" style="font-size: var(--font-xs); color: var(--text-tertiary);">上次保存: {{ lastSavedTime }}</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <el-button type="primary" :loading="configSaving" @click="saveAllConfig">💾 保存全部配置</el-button>
+                            <el-button @click="resetAllConfig">🔄 重置配置</el-button>
+                            <el-button @click="exportConfig">📤 导出配置</el-button>
+                            <el-button @click="$refs.importFileInput && $refs.importFileInput.click()">📥 导入配置</el-button>
+                            <input ref="importFileInput" type="file" accept=".json,application/json" style="display:none;" @change="importConfig" />
+                        </div>
+                        <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 10px;">保存全部：将 AI / 数据源 / 飞书 / 限流 / 主题 / 图标等配置一并写入后端；重置：从后端重新加载已保存配置；导出 / 导入：配置文件整体备份与迁移。</div>
+                    </div>
+
                     <!-- 访问限速配置 -->
                     <div class="card" style="margin-top: 24px;">
                         <div class="card-title">🚦 访问限速配置</div>
@@ -201,6 +217,21 @@
                             </el-form>
                         </div>
 
+                    <!-- v3.16 (FR-3.16.1): 飞书推送配置 — 独立 Webhook 配置 + 测试发送 -->
+                    <div class="card" style="margin-top: 16px;">
+                        <div class="card-title">📢 飞书推送配置</div>
+                        <el-form label-width="100px">
+                            <el-form-item label="Webhook">
+                                <el-input v-model="feishuConfig.webhook_url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." style="max-width: 460px;" />
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" size="small" @click="saveFeishuConfig">💾 保存配置</el-button>
+                                <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'">🧪 测试发送</el-button>
+                                <span v-if="feishuTestMessage" style="margin-left: 10px; font-size: var(--font-sm);" :style="{color: feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'var(--el-success)' : 'var(--el-danger)'}">{{ feishuTestMessage }}</span>
+                            </el-form-item>
+                        </el-form>
+                    </div>
+
                     <!-- AI 模型管理 (v3.14 厂商化: 以厂商为主配置卡, 卡内配 API 后管理多个模型名) -->
                     <div class="card" style="margin-top: 16px;">
                         <div class="card-title">🤖 AI 模型管理</div>
@@ -208,6 +239,8 @@
                         <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
                             <el-button size="small" type="primary" @click="loadAiVendors">🔄 刷新</el-button>
                             <el-button size="small" type="primary" @click="testAllVendorModels" :loading="testingAllModels">🧪 探测全部</el-button>
+                            <!-- v3.16 (FR-3.16.1): AI 连接测试入口 (testAiApi) -->
+                            <el-button size="small" type="primary" @click="testAiApi" :loading="aiLoading">🔌 连接测试</el-button>
                             <el-button size="small" type="primary" @click="saveAiVendors" :loading="savingAiModels">💾 保存</el-button>
                             <el-dropdown trigger="click" style="margin-left:auto;" @command="(cmd) => cmd === '__custom__' ? addCustomVendor() : addVendorFromCatalog(cmd)">
                                 <el-button size="small" type="primary">➕ 新增厂商</el-button>
@@ -275,6 +308,15 @@
                         <span>🔢 数据源优先级:</span>
                         <span style="font-weight: var(--font-medium);">① sxsc-tushare → ② tushare → ③ akshare</span>
                         <span style="color: var(--text-tertiary); margin-left: auto;">按优先级依次尝试</span>
+                    </div>
+
+                    <!-- v3.16 (FR-3.16.1): 数据同步入口 (syncStockData) -->
+                    <div class="card" style="margin-bottom: 14px;">
+                        <div class="card-title">🔄 数据同步</div>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <el-button type="success" :loading="syncingData" @click="syncStockData">📥 同步股票数据</el-button>
+                            <span style="font-size: var(--font-sm); color: var(--text-secondary);">从 Tushare 拉取最新行情并更新本地缓存</span>
+                        </div>
                     </div>
 
                     <!-- sxsc-tushare 卡片 -->

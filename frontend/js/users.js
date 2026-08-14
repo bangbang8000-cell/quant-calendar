@@ -250,7 +250,13 @@
 
       async function deleteGroupConfig(gid) {
         try {
-          if (!confirm('确定删除分组「' + (allGroups.value[gid]?.name || gid) + '」吗？')) return;
+          // v3.16 (16.5): confirm() → ElMessageBox.confirm（取消不抛错）
+          const confirmed = await ElementPlus.ElMessageBox.confirm(
+            '确定删除分组「' + (allGroups.value[gid]?.name || gid) + '」吗？',
+            '删除分组',
+            { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+          ).then(() => true).catch(() => false);
+          if (!confirmed) return;
           const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + gid, {
             method: 'DELETE',

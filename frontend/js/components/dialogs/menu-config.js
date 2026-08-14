@@ -21,7 +21,10 @@
                 </el-form>
                 <div style="margin-bottom: 8px; font-weight: 600; font-size: var(--font-sm);">菜单访问授权</div>
                 <div v-for="menu in allMenuDefs" :key="menu.key" style="margin-bottom: 6px; border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden;">
-                    <div @click="toggleSubPageSection(menu.key)" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-hover); cursor: pointer; user-select: none; gap: 10px;">
+                    <div @click="toggleSubPageSection(menu.key)" tabindex="0" role="button"
+                         :aria-expanded="!!subPageSectionExpanded[menu.key]" aria-label="展开或收起子页配置"
+                         @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"
+                         style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-hover); cursor: pointer; user-select: none; gap: 10px;">
                         <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
                             <el-switch v-model="groupEditForm.visible_menus[menu.key]" @change="onParentToggle(menu.key)" size="small" @click.stop />
                             <span style="font-weight: 600; font-size: var(--font-sm); white-space: nowrap;">{{ menu.name }}</span>

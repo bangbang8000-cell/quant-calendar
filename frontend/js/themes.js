@@ -1,32 +1,7 @@
 // quant-calendar: themes module v3.0
+// v3.16 (16.3): 收敛为纯主题数据定义模块 —— 删除死代码 applyTheme/changeTheme/currentTheme，
+// 主题应用的唯一实现收敛至 app-logic.js 的 applyTheme/changeTheme（运行时全部经 qcState 注入使用）。
 (function() {
-  const { ref } = Vue;
-
-  const currentTheme = ref(localStorage.getItem('quant_theme') || 'tech-blue');
-
-  function applyTheme(theme) {
-    currentTheme.value = theme;
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('quant_theme', theme);
-  }
-
-  function changeTheme(theme) {
-    applyTheme(theme);
-    const token = localStorage.getItem('quant_token');
-    const savedUser = localStorage.getItem('quant_user');
-    if (token && savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        fetch(`/api/users/${user.username}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ theme })
-        });
-        user.theme = theme;
-        localStorage.setItem('quant_user', JSON.stringify(user));
-      } catch(e) {}
-    }
-  }
 
   // 7 theme definitions (for UI picker)
   const themes = {
@@ -39,15 +14,15 @@
     'dark-pro':        { name: '暗色专业', icon: '🌙', color: '#64ffda' },
   };
 
-  // Apply saved theme on load
+  // Apply saved theme on load (应用唯一实现在 app-logic，此处仅做启动兜底)
   const saved = localStorage.getItem('quant_theme');
   if (saved) document.documentElement.setAttribute('data-theme', saved);
 
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.themes = {
-    themes, currentTheme, applyTheme, changeTheme,
+    themes,
     init() {
-      return { themes, currentTheme, applyTheme, changeTheme };
+      return { themes };
     }
   };
 })();

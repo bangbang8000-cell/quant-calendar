@@ -79,22 +79,18 @@
                 const scorePulse = ref(false);  // triggers CSS pulse
                 let lastScoreValue = null;  // tracks previous score for comparison
                 const indexKlineLoaded = ref(false);
-                let stockKlineChart = null;
-                let indexKlineChart = null;
-                // v3.15 (15.4): 主题切换图表重绘缓存 — 保存最近一次渲染数据, 换主题时按新色重建
-                let _stockKlineCache = null;  // {data, period}
-                let _indexKlineCache = null;  // {data, period}
-                // v3.11(11.3): 供 ai-chat 域安全释放 K 线实例（避免跨域直接引用 setup 局部变量）
+                // v3.16 (16.4): K线实例生命周期已下沉 charts.js — 不再持有实例/缓存变量
+                // disposeStockKline 供 ai-chat/watchlist 域安全释放（委托 charts.js 注册表）
                 function disposeStockKline() {
-                    if (stockKlineChart) { stockKlineChart.dispose(); stockKlineChart = null; }
+                    window.__quantModules.charts.disposeKline('stockKlineChart');
                 }
                 const isMobile = ref(window.innerWidth <= 768);
                 
                 // 监听窗口大小变化
                 window.addEventListener('resize', () => {
                     isMobile.value = window.innerWidth <= 768;
-                    if (stockKlineChart) stockKlineChart.resize();
-                    if (indexKlineChart) indexKlineChart.resize();
+                    window.__quantModules.charts.resizeKline('stockKlineChart');
+                    window.__quantModules.charts.resizeKline('indexKlineChart');
                 });
 
                 // v3.8.11: 触觉反馈
@@ -104,6 +100,46 @@
                         else if (style === 'medium') navigator.vibrate(20);
                         else if (style === 'heavy') navigator.vibrate([10, 30, 10]);
                     }
+                }
+
+                // v3.16 (16.6): v-html 消毒委托（核心实现见 core.js；经 qcState 注入各组件模板使用）
+                function sanitizeHtml(html, opts) {
+                    if (window.__quantModules && window.__quantModules.core && window.__quantModules.core.sanitizeHtml) {
+                        return window.__quantModules.core.sanitizeHtml(html, opts);
+                    }
+                    return html == null ? '' : String(html);
+                }
+                // v3.16 (16.6): 键盘可达通用助手 — tabindex=0 的可点击元素 Enter/Space 触发 click
+                function keyClick(e) {
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                        e.preventDefault();
+                        if (e.currentTarget && typeof e.currentTarget.click === 'function') e.currentTarget.click();
+                    }
+                }
+                // v3.16 (16.6): 弹窗焦点管理 — 记录打开前焦点，关闭后归还；打开后焦点首落首个 input/textarea
+                let _dialogTrigger = null;
+                function rememberDialogTrigger() {
+                    if (document.activeElement && document.activeElement !== document.body) _dialogTrigger = document.activeElement;
+                }
+                function restoreDialogFocus() {
+                    if (_dialogTrigger && _dialogTrigger.isConnected) {
+                        try { _dialogTrigger.focus(); } catch (e) { /* ignore */ }
+                    }
+                    _dialogTrigger = null;
+                }
+                function focusFirstInDialog() {
+                    Vue.nextTick(() => {
+                        const dlg = document.querySelector('.el-dialog-overlay .el-dialog');
+                        if (!dlg) return;
+                        const first = dlg.querySelector('input:not([type=hidden]), textarea, [tabindex]:not([tabindex="-1"])');
+                        if (first && typeof first.focus === 'function') first.focus();
+                    });
+                }
+                // v3.16 (16.7): 离线检测 — 全局在线状态（供各页统一展示 offline 错误态）
+                const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+                if (typeof window !== 'undefined') {
+                    window.addEventListener('online', () => { isOnline.value = true; });
+                    window.addEventListener('offline', () => { isOnline.value = false; });
                 }
 
                 // 触摸手势：左右滑动切换页面（仅移动端）
@@ -183,16 +219,14 @@
                 
                 // ===== 显示指数详情 =====
                 function showIndexDetail(indexData) {
+                    rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
                     indexDetail.value = indexData;
                     indexAiResult.value = null;
                     currentKlinePeriod.value = 'daily';
                     // 自动加载今日缓存评估
                     loadCachedIndexEval(indexData.code);
-                    // 先销毁旧图表
-                    if (indexKlineChart) {
-                        indexKlineChart.dispose();
-                        indexKlineChart = null;
-                    }
+                    // 先销毁旧图表（实例生命周期下沉 charts.js）
+                    window.__quantModules.charts.disposeKline('indexKlineChart');
                     indexDetailVisible.value = true;
                     // 弹窗打开动画需要时间，等待500ms确保DOM完全渲染
                     setTimeout(async () => {
@@ -247,47 +281,10 @@
                 }
                 
                 // ===== K线图渲染函数 =====
-                function renderKlineChart(chart, data, period, isIndex = false) {
-                    // v3.2.0-T17: 已提取到 js/charts.js 模块
-                    window.__quantModules.charts.renderKlineChart(chart, data, period, isIndex, isMobile.value);
-                }
-
-                // 时间范围快捷缩放
+                // v3.16 (16.4): K线渲染/实例生命周期/缩放已全部下沉 charts.js — 此处仅保留状态与编排
+                // 时间范围快捷缩放（委托 charts.js 实例注册表，供 stock-detail 弹窗使用）
                 function zoomKlineRange(tradingDays) {
-                    if (!stockKlineChart) return;
-                    if (tradingDays <= 0) {
-                        // 全部
-                        stockKlineChart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
-                    } else {
-                        const total = 60; // 总数据点数
-                        const end = 100;
-                        const start = Math.max(0, ((total - tradingDays) / total) * 100);
-                        stockKlineChart.dispatchAction({ type: 'dataZoom', start: Math.round(start), end: end });
-                    }
-                }
-
-                // ===== 🔧 通用K线加载 =====
-                async function loadKlineData(tsCode, chartVar, chartKey, loadingVar, loadedVar) {
-                    if (!tsCode) return;
-                    loadingVar.value = true;
-                    try {
-                        const res = await fetch(`/api/market/kline/${tsCode}?period=${currentKlinePeriod.value}&limit=60`);
-                        const data = await res.json();
-                        if (!data.success || !data.data) throw new Error(data.message || '数据获取失败');
-                        loadedVar.value = true;
-                        await nextTick();
-                        const el = document.getElementById(chartKey);
-                        if (!el) throw new Error('无法找到图表容器');
-                        if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
-                        if (chartVar.value) { chartVar.value.dispose(); chartVar.value = null; }
-                        chartVar.value = echarts.init(el, null, { renderer: 'canvas' });
-                        chartVar.value.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
-                        renderKlineChart(chartVar.value, data.data, currentKlinePeriod.value, chartKey === 'indexKlineChart');
-                    } catch (e) {
-                        ElementPlus.ElMessage.error('K线加载失败');
-                    } finally {
-                        loadingVar.value = false;
-                    }
+                    window.__quantModules.charts.zoomKline('stockKlineChart', tradingDays);
                 }
                 async function loadStockKline(period) {
                     if (!stockDetail.value) return;
@@ -300,23 +297,13 @@
                         stockKlineLoaded.value = true;
                         markKlineLoaded(stockDetail.value.stock);
                         await nextTick();
-                        const el = document.getElementById('stockKlineChart');
-                        if (!el) return;
-                        // v3.8.1: 切周期复用实例, 仅首次创建时 init + 主题
-                        if (!stockKlineChart) {
-                            stockKlineChart = echarts.init(el);
-                            stockKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
-                            // v3.11 (FR-3.11.8): 图例点击 → 均线开关按钮状态同步
-                            stockKlineChart.on('legendselectchanged', (p) => {
-                                if (p && p.selected) {
-                                    Object.keys(klineMaVisible.value).forEach((k) => {
-                                        if (k in p.selected) klineMaVisible.value[k] = !!p.selected[k];
-                                    });
-                                }
-                            });
-                        }
-                        renderKlineChart(stockKlineChart, data.data, period);
-                        _stockKlineCache = { data: data.data, period };  // v3.15: 主题重绘缓存
+                        // v3.16 (16.4): 实例生命周期/图例联动/主题重绘缓存下沉 charts.js
+                        window.__quantModules.charts.renderKlineTo('stockKlineChart', data.data, period, false, {
+                            isMobile: isMobile.value,
+                            onLegend: (sel) => {
+                                Object.keys(klineMaVisible.value).forEach((k) => { if (k in sel) klineMaVisible.value[k] = !!sel[k]; });
+                            },
+                        });
                         resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('K线加载失败');
@@ -425,23 +412,13 @@
                         if (!data.success || !data.data) throw new Error(data.message || '数据获取失败');
                         indexKlineLoaded.value = true;
                         await nextTick();
-                        const el = document.getElementById('indexKlineChart');
-                        if (!el) throw new Error('无法找到指数K线容器');
-                        // v3.8.1: 切周期复用实例, 仅首次创建时 init + 主题
-                        if (!indexKlineChart) {
-                            indexKlineChart = echarts.init(el);
-                            indexKlineChart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
-                            // v3.11 (FR-3.11.8): 图例点击 → 均线开关按钮状态同步
-                            indexKlineChart.on('legendselectchanged', (p) => {
-                                if (p && p.selected) {
-                                    Object.keys(klineMaVisible.value).forEach((k) => {
-                                        if (k in p.selected) klineMaVisible.value[k] = !!p.selected[k];
-                                    });
-                                }
-                            });
-                        }
-                        renderKlineChart(indexKlineChart, data.data, period, true);
-                        _indexKlineCache = { data: data.data, period };  // v3.15: 主题重绘缓存
+                        // v3.16 (16.4): 实例生命周期/图例联动/主题重绘缓存下沉 charts.js
+                        window.__quantModules.charts.renderKlineTo('indexKlineChart', data.data, period, true, {
+                            isMobile: isMobile.value,
+                            onLegend: (sel) => {
+                                Object.keys(klineMaVisible.value).forEach((k) => { if (k in sel) klineMaVisible.value[k] = !!sel[k]; });
+                            },
+                        });
                         resetKlineMaVisible();
                     } catch (e) {
                         ElementPlus.ElMessage.error('指数K线加载失败');
@@ -459,8 +436,8 @@
                 }
                 // v3.11 (FR-3.11.8): MA 图例开关 — 弹窗均线按钮切换（联动图表图例）
                 function toggleKlineMa(maName) {
-                    // 按当前打开的对话框定位实例，避免两个实例并存时误切隐藏图
-                    const chart = (stockDetailVisible.value ? stockKlineChart : null) || (indexDetailVisible.value ? indexKlineChart : null);
+                    // 按当前打开的对话框定位实例，避免两个实例并存时误切隐藏图（实例注册表在 charts.js）
+                    const chart = (stockDetailVisible.value ? window.__quantModules.charts.getKlineChart('stockKlineChart') : null) || (indexDetailVisible.value ? window.__quantModules.charts.getKlineChart('indexKlineChart') : null);
                     if (!chart) return;
                     chart.dispatchAction({ type: 'legendToggleSelect', name: maName });
                 }
@@ -593,10 +570,13 @@ const allMenuDefs = [
                 const currentPage = ref('strategies');
                 const shortcutHelpVisible = ref(false);
                 const shortcutHelpItems = [
-                    { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索)' },
+                    { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索/菜单/指令)' },
                     { keys: 'Ctrl+/', desc: '显示/隐藏快捷键帮助' },
                     { keys: '1-5', desc: '切换导航页面 (非输入态)' },
-                    { keys: 'R', desc: '刷新当前页面数据 (非输入态)' },
+                    { keys: 'R', desc: '刷新当前页 (策略/日历/AI, 非输入态)' },
+                    // v3.16 (16.5): 帮助面板与 handleGlobalKeydown 实现同步（补齐方向键）
+                    { keys: '← / →', desc: '日历页：上一 / 下一交易日' },
+                    { keys: '↑ / ↓', desc: '日历页：切换 日/周/月/年 视图' },
                 ];
                 const commandPaletteVisible = ref(false);
                 function isTypingTarget(el) {
@@ -879,18 +859,11 @@ const allMenuDefs = [
                 if (window.__quantModules && window.__quantModules.echartsTheme && !window.__quantModules.echartsTheme.__appChartsRegistered) {
                     window.__quantModules.echartsTheme.__appChartsRegistered = true;
                     window.__quantModules.echartsTheme.registerChart(function () {
-                        if (_stockKlineCache && stockKlineChart && !stockKlineChart.isDisposed()) {
-                            const prevSel = stockKlineChart.getOption()?.legend?.[0]?.selected || null;
-                            renderKlineChart(stockKlineChart, _stockKlineCache.data, _stockKlineCache.period, false);
-                            if (prevSel) stockKlineChart.setOption({ legend: { selected: prevSel } });
-                        }
+                        // v3.16 (16.4): 主题重绘下沉 charts.js（缓存数据按新色重建 + 保留 MA 图例选择）
+                        window.__quantModules.charts.redrawKline('stockKlineChart');
                     });
                     window.__quantModules.echartsTheme.registerChart(function () {
-                        if (_indexKlineCache && indexKlineChart && !indexKlineChart.isDisposed()) {
-                            const prevSel = indexKlineChart.getOption()?.legend?.[0]?.selected || null;
-                            renderKlineChart(indexKlineChart, _indexKlineCache.data, _indexKlineCache.period, true);
-                            if (prevSel) indexKlineChart.setOption({ legend: { selected: prevSel } });
-                        }
+                        window.__quantModules.charts.redrawKline('indexKlineChart');
                     });
                     window.__quantModules.echartsTheme.registerChart(function () {
                         if (_backtestCurve) renderBacktestChart(_backtestCurve);
@@ -936,12 +909,15 @@ const allMenuDefs = [
                 // ===== v3.11(11.3): AI 问股域 — 逻辑移至 js/ai-chat.js 模块 =====
                 // stockDetail* 为共享状态（前置，供 ai-chat 域 deps 与后续 K线/评分/自选段引用）
                 const stockDetailVisible = ref(false);
-                const stockDetailTab = ref('kline');  // 'kline' | 'ai'
+                const stockDetailTab = ref('kline');  // 'kline' | 'ai' | 'chat'
                 const stockDetail = ref(null);
+                // v3.16 (16.10-fix): 详情数据加载态 — 弹窗立即打开，数据异步填充
+                const stockDetailLoading = ref(false);
                 const __aiChatDomain = (window.__quantModules && window.__quantModules['ai-chat'])
                     ? window.__quantModules['ai-chat'].create({ stockKlineLoaded, stockDetailVisible, stockDetailTab, stockDetail, disposeStockKline })
                     : {};
                 const { chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
+                        chatHistoryLoading, chatHistoryError,
                         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                         toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,
@@ -1487,30 +1463,39 @@ const allMenuDefs = [
                 }
 
                 async function showStockDetail(stockCode) {
+                    rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
+                    // v3.16 (16.10-fix): 立即弹窗（加载态），数据异步填充 —
+                    // 原实现先 await 行情接口（tushare 同步拉取可长达 10s）再弹窗，导致点击后迟迟无响应
+                    aiResult.value = null;
+                    currentKlinePeriod.value = 'daily';
+                    stockKlineLoaded.value = false;
+                    stockDetailTab.value = 'kline';
+                    stockDetail.value = null;
+                    stockDetailLoading.value = true;
+                    // 先销毁旧图表（实例生命周期下沉 charts.js）
+                    window.__quantModules.charts.disposeKline('stockKlineChart');
+                    stockDetailVisible.value = true;
+                    nextTick(() => animateScoreEntrance());
                     try {
                         const res = await fetch(`/api/calendar/stock/${stockCode}?date=${selectedDate.value}`);
                         stockDetail.value = await res.json();
-                        aiResult.value = null;
-                        currentKlinePeriod.value = 'daily';
-                        stockKlineLoaded.value = false;
-                        stockDetailTab.value = 'kline';
-                        // 先销毁旧图表
-                        if (stockKlineChart) {
-                            stockKlineChart.dispose();
-                            stockKlineChart = null;
-                        }
-                        stockDetailVisible.value = true;
-                        nextTick(() => animateScoreEntrance());
-                        // 弹窗打开后加载K线
-                        setTimeout(async () => {
-                            await loadStockKline('daily');
-                            refreshStockScore();
-                        }, 500);
-                        loadLastEvaluation(stockCode);
                     } catch (e) {
                         ElementPlus.ElMessage.error('加载失败');
+                        stockDetail.value = { stock: stockCode, name: '', total_days: 0 };
+                    } finally {
+                        stockDetailLoading.value = false;
                     }
+                    // 数据就绪后加载K线
+                    setTimeout(async () => {
+                        await loadStockKline('daily');
+                        refreshStockScore();
+                    }, 500);
+                    loadLastEvaluation(stockCode);
                 }
+                // v3.16 (16.6): 详情弹窗关闭后焦点归还触发器
+                watch([stockDetailVisible, indexDetailVisible], ([sv, iv]) => {
+                    if (!sv && !iv) restoreDialogFocus();
+                });
 
                 // ===== v3.11(11.3): AI 评估域 — 逻辑移至 js/ai.js 模块 =====
                 const __aiDomain = (window.__quantModules && window.__quantModules.ai)
@@ -1531,15 +1516,16 @@ const allMenuDefs = [
                         aiConfig, selectedPreset, providerInfo, aiPresets,
                         applyPreset, onProviderChange,
                         // v3.11: 数据加载域（原 app-logic 数据加载段并入）
-                        fetchPoolSignals, loadLastEvaluation } = __aiDomain;
+                        fetchPoolSignals, cancelPoolSignals, loadLastEvaluation } = __aiDomain;
                 // ===== v3.11(11.3): 自选/评估历史域 — 逻辑移至 js/watchlist.js 模块 =====
                 const __watchlistDomain = (window.__quantModules && window.__quantModules.watchlist)
-                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline, aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
+                    ? window.__quantModules.watchlist.create({ currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockDetailLoading, stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline, aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, autoEvaluateConfig, autoEvaluateScope, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, expandedDates, expandedStocks, savingConfig, selectedHistoryIds, selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate })
                     : {};
                 const { quickEvalStock, evalStrategy, watchlistSort, watchlist, watchlistCodes, sortedWatchlist,
                         getWatchlistScore, getLatestScore, addSearchResult, evaluatedCodes, klineLoadedCodes,
                         markKlineLoaded, watchlistSearch, watchlistResults, watchlistSearching,
                         dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
+                        aiHistoryLoading, aiHistoryError,
                         doAiEvaluate, loadAiHistory, deleteSingleHistory, toggleSelectHistory, clearSelection,
                         clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchRemoveWatchlist,
                         toggleSelectWatchlist, selectAllHistory, selectAllWatchlist, deleteSelectedHistory,
@@ -1576,6 +1562,8 @@ const allMenuDefs = [
                     hapticFeedback('light');
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
+                    // v3.16 (16.8): 离开日历页时取消在途池信号请求
+                    if (page !== 'calendar' && typeof cancelPoolSignals === 'function') cancelPoolSignals();
                     // v3.4.0-T7: 匿名页面热度上报
                     try {
                         fetch('/api/analytics/page', {
@@ -1618,6 +1606,19 @@ const allMenuDefs = [
                             // 也填充 consensus 用于各计算属性
                             if (!consensus.value || consensus.value.length === 0) {
                                 consensus.value = strategyFilterCounts.value.day || [];
+                            }
+                        }
+                        // v3.16 (16.3): 合并原「监听设置页」watch — admin 进入配置页加载全部配置 + Tushare 定时检测
+                        if (currentUser.value?.role === 'admin') {
+                            await loadUsers();
+                            await loadFeishuConfig();
+                            await loadTushareConfig();
+                            await loadSystemStatus();
+                            await loadAiConfig();
+                            await loadRateLimit();
+                            checkTushareConnection();
+                            if (!window._tushareCheckTimer) {
+                                window._tushareCheckTimer = setInterval(checkTushareConnection, 3600000);
                             }
                         }
                     }
@@ -1734,23 +1735,6 @@ const allMenuDefs = [
                     window.removeEventListener('keydown', handleGlobalKeydown);
                 });
 
-                // 监听设置页
-                watch(currentPage, async (val) => {
-                    if (val === 'system' && currentUser.value?.role === 'admin') {
-                        await loadUsers();
-                        await loadFeishuConfig();
-                        await loadTushareConfig();
-                        await loadSystemStatus();
-                        await loadAiConfig();
-                        await loadRateLimit();
-                        // 进入配置页时检测 Tushare 连接，并启动定时检测
-                        checkTushareConnection();
-                        if (!window._tushareCheckTimer) {
-                            window._tushareCheckTimer = setInterval(checkTushareConnection, 3600000);
-                        }
-                    }
-                });
-
                 // ===== v1.5.0: 子页面切换同步 =====
                 watch([currentPage, currentSubPage], ([page, sub]) => {
                     // 保存当前子页
@@ -1834,7 +1818,7 @@ const allMenuDefs = [
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
                     currentPage, currentSubPage, sidebarCollapsed, menus,
-                    fmtNum,
+                    fmtNum, sanitizeHtml, keyClick, isOnline,
                     currentUser, iconSystem, allMenuDefs,
                     currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV,
@@ -1869,25 +1853,22 @@ const allMenuDefs = [
                     MA_LINES, klineMaVisible, toggleKlineMa,
                     // v1.9.2: 评分动画
                     scoreAnimating, scoreDelta, scorePulse, refreshStockScore, animateScoreEntrance,
-                    stockKlineChart, indexKlineChart,
                     showMerrillDetail, merrillDetailData, showStageDetail, getCharLabel, getAssetName, getRankColor,
                     timelineStages, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted,
                     stages, indicatorList, dimensionScoreList, confidenceColor,
-                    menus, currentPage,
                     views, currentView, statusFilter,
-                    currentUser, loginForm, logining, guestLogining,
-                    themes, currentTheme,
+                    loginForm, logining, guestLogining,
                     dashboardData,
                     // v1.10
-                    searchQuery, searchStocks, onSearchSelect,
-                    loading, loadingView, dates, selectedDate, lastLoadTime, consensus, searchKeyword,
-                    stockDetailVisible, stockDetailTab, stockDetail,
+                    loadingView, dates, consensus, searchKeyword,
+                    stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
                     aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,
                     toggleGroupExpand, removeMemberFromGroupInline, addMemberToGroupInline, changeUserGroup,
                     statusCounts, stockPool, poolSignals, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
+                    aiHistoryLoading, aiHistoryError,
                     scoreDistribution, quickEvalStock, evalStrategy, checklistItems, evalHistoryComparison, quickEvaluate,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
                     toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand, registerTrendChart,
@@ -1895,8 +1876,8 @@ const allMenuDefs = [
                     selectAllHistory, selectAllWatchlist,
                     batchRemoveWatchlist, batchEvaluateSelected, batchReevaluateHistory, batchAddToWatchlist,
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
-                    handleLogin, handleGuestLogin, handleLogout, changeTheme, switchView, onDateChange, navigateDate, disabledDate, navigateTo,
-                    loadDashboardData, loadConsensusData, refreshCalendarData, exportCSV, showStockDetail,
+                    handleLogin, handleGuestLogin, switchView, navigateDate, navigateTo,
+                    loadDashboardData, loadConsensusData, showStockDetail,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
                     watchlist, watchlistCodes, watchlistSearch, watchlistResults, watchlistSearching,
@@ -1932,11 +1913,11 @@ const allMenuDefs = [
                     // v1.11: 策略总览增强
                     poolChangeBadge, timeBarPercent, timeSinceRefresh, navigateToStrategyFilter,
                     // v1.5.0
-                    currentSubPage, currentPageName, showUserMenu, subPageNames,
+                    showUserMenu,
                     // v1.9.2: 图标系统
-                    iconSystem, switchIconSystem, ICON_MAPS,
+                    switchIconSystem, ICON_MAPS,
                     // v3.0: 侧边栏折叠
-                    sidebarCollapsed, toggleSidebar,
+                    toggleSidebar,
                     // v1.9.2: 策略研究菜单
                     researchMenuEnabled, toggleResearchMenu,
                     // v1.9.2: 用户组配置
@@ -1947,14 +1928,14 @@ const allMenuDefs = [
                     subPageSectionExpanded, toggleSubPageSection,
                     getGroupMemberCount, getMenuEnabledCount, groupCount,
                     openMemberManager, loadGroupMembers, addMemberToGroup, removeMemberFromGroup, availableUsersForGroup,
-                    subPageCache, onParentToggle, allMenuDefs,
+                    subPageCache, onParentToggle,
                     openMenuConfig, saveMenuConfig, deleteGroupConfig, createGroup,
-                    showChangePassword, changePasswordForm, changingPassword, doChangePassword,
+                    changePasswordForm, changingPassword, doChangePassword,
                     // v2.2: 初始化向导
-                    showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard, resetSetupWizard,
+                    showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard,
                     // v2.4: AI 问股
-                    chatSessions, chatHistoryView, selectedChatIds,
-                    expandedChatDates, expandedChatMonths, expandedChatStocks,
+                    chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
+                    chatHistoryLoading, chatHistoryError,
                     allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                     toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                     toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,

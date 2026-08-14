@@ -131,9 +131,77 @@
     chart.setOption(option, true);
   }
 
+  // ─── v3.16 (16.4): K线实例生命周期 — 从 app-logic 下沉，统一按 containerId 管理 ───
+  // 实例 init/reuse/dispose、主题注入、图例联动、渲染缓存(主题重绘)、缩放、resize 全部收敛于此。
+  const _klineRegistry = new Map();  // containerId -> { chart, cache }
+
+  function _klineRec(containerId) {
+    if (!_klineRegistry.has(containerId)) _klineRegistry.set(containerId, { chart: null, cache: null });
+    return _klineRegistry.get(containerId);
+  }
+
+  // 渲染到指定容器（实例懒创建 + 主题注入 + 图例联动 + 缓存）
+  // opts: { onLegend:(selected)=>void, isMobile:bool }
+  function renderKlineTo(containerId, data, period, isIndex = false, opts = {}) {
+    const rec = _klineRec(containerId);
+    const el = document.getElementById(containerId);
+    if (!el) throw new Error('无法找到图表容器: ' + containerId);
+    if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
+    if (!rec.chart) {
+      rec.chart = echarts.init(el);
+      rec.chart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+      const onLegend = opts.onLegend;
+      if (typeof onLegend === 'function') {
+        rec.chart.on('legendselectchanged', (p) => { if (p && p.selected) onLegend(p.selected); });
+      }
+    }
+    renderKlineChart(rec.chart, data, period, isIndex, !!opts.isMobile);
+    rec.cache = { data, period, isIndex, isMobile: !!opts.isMobile };
+    return rec.chart;
+  }
+
+  function disposeKline(containerId) {
+    const rec = _klineRegistry.get(containerId);
+    if (rec && rec.chart) { rec.chart.dispose(); rec.chart = null; rec.cache = null; }
+  }
+
+  function resizeKline(containerId) {
+    const rec = _klineRegistry.get(containerId);
+    if (rec && rec.chart) rec.chart.resize();
+  }
+
+  function zoomKline(containerId, tradingDays) {
+    const rec = _klineRegistry.get(containerId);
+    const chart = rec && rec.chart;
+    if (!chart) return;
+    if (tradingDays <= 0) {
+      chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
+    } else {
+      const total = 60; // 总数据点数
+      const end = 100;
+      const start = Math.max(0, ((total - tradingDays) / total) * 100);
+      chart.dispatchAction({ type: 'dataZoom', start: Math.round(start), end });
+    }
+  }
+
+  // 主题切换 → 用缓存数据按新色重建，保留 MA 图例选择
+  function redrawKline(containerId) {
+    const rec = _klineRegistry.get(containerId);
+    if (!rec || !rec.chart || !rec.cache || rec.chart.isDisposed()) return;
+    const prevSel = rec.chart.getOption()?.legend?.[0]?.selected || null;
+    renderKlineChart(rec.chart, rec.cache.data, rec.cache.period, rec.cache.isIndex, rec.cache.isMobile);
+    if (prevSel) rec.chart.setOption({ legend: { selected: prevSel } });
+  }
+
+  function getKlineChart(containerId) {
+    const rec = _klineRegistry.get(containerId);
+    return rec && rec.chart;
+  }
+
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.charts = {
     renderKlineChart,
-    init() { return { renderKlineChart }; },
+    renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart }; },
   };
 })();

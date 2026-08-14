@@ -15,8 +15,9 @@
               <template v-if="currentPage === menu.key">
                 <div v-for="sp in menu.subPages" :key="sp"
                      class="sub-nav-tab" :class="{active: currentSubPage === sp}"
-                     @click="currentSubPage = sp" tabindex="0"
-                     @keydown.enter="currentSubPage = sp">
+                     @click="currentSubPage = sp" tabindex="0" role="tab"
+                     :aria-selected="currentSubPage === sp"
+                     @keydown.enter.prevent="currentSubPage = sp" @keydown.space.prevent="keyClick($event)">
                   {{ subPageNames[sp] || sp }}
                 </div>
               </template>
@@ -59,25 +60,31 @@
             <span v-if="lastLoadTime" style="font-size: var(--font-sm);color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
           </div>
 
-          <div class="user-menu-wrapper" @click="showUserMenu = !showUserMenu" v-click-outside="() => showUserMenu = false">
+          <div class="user-menu-wrapper" @click="showUserMenu = !showUserMenu" tabindex="0" role="button"
+               aria-haspopup="menu" :aria-expanded="showUserMenu" aria-label="用户菜单"
+               @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"
+               @keydown.esc.prevent="showUserMenu = false"
+               v-click-outside="() => showUserMenu = false">
             <div class="user-menu-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-menu-name">{{ currentUser?.username }}</span>
             <span v-if="currentUser?.role === 'guest'" style="font-size:var(--font-xs); color:var(--badge-info-text); background:var(--badge-info-bg); padding:1px 8px; border-radius:8px; margin-left:4px;">访客</span>
             <span style="font-size: var(--font-xs); color: var(--text-tertiary);">▼</span>
-            <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop>
-              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" @click="showUserMenu = false; resetSetupWizard()">⚙️ 重新运行初始化向导</div>
-              <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" @click="showUserMenu = false; showChangePassword = true">🔑 修改密码</div>
+            <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop role="menu">
+              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">⚙️ 重新运行初始化向导</div>
+              <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" tabindex="0" role="menuitem" @click="showUserMenu = false; showChangePassword = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🔑 修改密码</div>
               <div class="user-menu-divider"></div>
               <div class="user-menu-section-title">🎨 切换主题</div>
               <div v-for="(theme, key) in themes" :key="key" class="user-menu-item theme-item-row"
-                   :class="{'theme-active': currentTheme === key}"
-                   @click="changeTheme(key); showUserMenu = false">
+                   :class="{'theme-active': currentTheme === key}" tabindex="0"
+                   role="menuitemradio" :aria-checked="currentTheme === key"
+                   @click="changeTheme(key); showUserMenu = false"
+                   @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                 <span class="theme-dot" :style="{background: theme.gradient}"></span>
                 <span>{{ theme.name }}</span>
                 <span v-if="currentTheme === key" class="theme-check">✓</span>
               </div>
               <div class="user-menu-divider"></div>
-              <div class="user-menu-item danger" @click="handleLogout">🚪 退出登录</div>
+              <div class="user-menu-item danger" tabindex="0" role="menuitem" @click="handleLogout" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🚪 退出登录</div>
             </div>
           </div>
         </div>
@@ -113,6 +120,7 @@
         changeTheme: state.changeTheme,
         handleLogout: state.handleLogout,
         subPageNames: state.subPageNames,
+        keyClick: state.keyClick,
       };
     },
   };

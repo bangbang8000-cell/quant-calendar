@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<title>视觉回归 diff 报告</title><style>
+body{font-family:-apple-system,'PingFang SC',sans-serif;margin:24px;color:#1f2937}
+h1{font-size:20px} .meta{color:#6b7280;font-size:13px;margin-bottom:16px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #e5e7eb;padding:8px 12px;text-align:left}
+th{background:#f9fafb}
+.badge{padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.pass{background:#d1fae5;color:#047857}.diff{background:#fef3c7;color:#b45309}
+.new{background:#dbeafe;color:#1d4ed8}
+.tip{margin-top:16px;font-size:13px;color:#6b7280;line-height:1.7}
+</style></head><body>
+<h1>🖼️ quant-calendar 视觉回归 diff 报告</h1>
+<div class="meta">生成时间 2026-08-14 19:46:33 ｜ 场景 7 个 ｜ 差异阈值 20 (0~255) ｜ 判变 >0.5% ｜ 信息性检查 · 不阻塞发布</div>
+<table><tr><th>场景</th><th>说明</th><th>状态</th><th>差异占比</th><th>对比图</th></tr><tr>
+          <td>✅ login</td>
+          <td>登录页</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.00%</td>
+          <td><a href="..\screenshots\current\login.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>⚠️ strategies_desktop</td>
+          <td>策略总览(桌面 1280px)</td>
+          <td><span class="badge diff">DIFF</span></td>
+          <td>0.51%</td>
+          <td><a href="..\screenshots\current\strategies_desktop.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>✅ calendar</td>
+          <td>量化日历(日视图)</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.01%</td>
+          <td><a href="..\screenshots\current\calendar.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>✅ stock_detail</td>
+          <td>股票详情弹窗(K线)</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.01%</td>
+          <td><a href="..\screenshots\current\stock_detail.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>✅ command_panel</td>
+          <td>命令面板(Ctrl+K)</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.01%</td>
+          <td><a href="..\screenshots\current\command_panel.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>✅ strategies_mobile</td>
+          <td>策略总览(移动 375px)</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.00%</td>
+          <td><a href="..\screenshots\current\strategies_mobile.png" target="_blank">查看</a></td>
+        </tr><tr>
+          <td>✅ dark_theme</td>
+          <td>深色主题(暗色专业)</td>
+          <td><span class="badge pass">PASS</span></td>
+          <td>0.00%</td>
+          <td><a href="..\screenshots\current\dark_theme.png" target="_blank">查看</a></td>
+        </tr></table>
+<div class="tip">说明：<b>PASS</b> 与基线一致；<b>DIFF</b> 存在像素差异（点"查看"审阅 baseline|current|diff 并排图，确认是否为预期 UI 变更）；<b>NEW</b> 无基线（首次运行已生成基线，下次运行将对比）。</div>
+</body></html>

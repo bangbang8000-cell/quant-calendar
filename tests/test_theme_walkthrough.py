@@ -91,12 +91,14 @@ class TestChartThemeRerender:
         seg = seg[:seg.index('function changeTheme(theme)')]
         assert 'refreshAllCharts()' in seg
 
-    def test_kline_cache_registered(self):
-        """K线缓存变量 + 主题重绘注册"""
-        assert '_stockKlineCache' in APP_LOGIC
-        assert '_indexKlineCache' in APP_LOGIC
+    def test_kline_rerender_registered(self):
+        """K线主题重绘注册 — 16.4 后实例/缓存下沉 charts.js，app-logic 仅委托 redrawKline"""
         assert '_backtestCurve' in APP_LOGIC
         assert 'registerChart(function ()' in APP_LOGIC
+        # 16.4: 主题重绘委托 charts.js 实例注册表（缓存变量已下沉，不再出现于 app-logic）
+        assert 'charts.redrawKline' in APP_LOGIC
+        assert 'function redrawKline' in CHARTS
+        assert '_klineRegistry' in CHARTS
 
     def test_trend_chart_registered(self):
         """评估历史趋势图随主题重绘注册"""

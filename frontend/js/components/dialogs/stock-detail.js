@@ -11,7 +11,13 @@
     name: 'qc-stock-detail-dialog',
     template: `
         <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="800px" class="kline-dialog">
-            <div v-if="stockDetail">
+            <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
+            <div v-if="stockDetailLoading && !stockDetail" class="empty-state" style="padding: 48px 0;">
+                <div style="font-size: 44px; margin-bottom: 14px;">⏳</div>
+                <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">正在加载股票详情...</div>
+                <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">行情数据拉取中，请稍候</div>
+            </div>
+            <div v-else-if="stockDetail">
                 <div class="detail-header">
                     <div>
                         <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
@@ -88,7 +94,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">涨跌幅</div>
-                            <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? 'var(--el-danger)' : 'var(--el-success)'}">
+                            <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">
                                 {{ (stockDetail.daily_data?.pct_chg != null ? stockDetail.daily_data.pct_chg.toFixed(2) : '—') }}%
                             </div>
                         </div>
@@ -114,7 +120,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">MA20偏离</div>
-                            <div class="stat-value" :style="{fontSize:'var(--font-md)',color:(stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close > stockDetail.ma_data.ma20) ? 'var(--el-danger)' : 'var(--el-success)'}">{{ (stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close) ? ((stockDetail.daily_data.close - stockDetail.ma_data.ma20) / stockDetail.ma_data.ma20 * 100).toFixed(2) + '%' : '--' }}</div>
+                            <div class="stat-value" :style="{fontSize:'var(--font-md)',color:(stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close > stockDetail.ma_data.ma20) ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ (stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close) ? ((stockDetail.daily_data.close - stockDetail.ma_data.ma20) / stockDetail.ma_data.ma20 * 100).toFixed(2) + '%' : '--' }}</div>
                         </div>
                     </div>
 
@@ -305,7 +311,9 @@
                                 <el-button size="small" @click="askStockQuick('comprehensive')">🔬 综合分析</el-button>
                             </div>
                             <!-- Chat messages -->
-                            <div v-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
+                            <!-- v3.16 (16.8): 历史消息惰性加载提示 -->
+                            <div v-if="stockChatLoading && stockChatMessages.length === 0" style="text-align:center;color:var(--text-tertiary);padding:12px 0;font-size:var(--font-sm);">⏳ 加载历史消息中...</div>
+                            <div v-else-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
                                 <div v-for="(msg, mi) in stockChatMessages" :key="mi" style="margin-bottom:10px;">
                                     <div v-if="msg.role==='user'" style="text-align:right;">
                                         <span style="display:inline-block;background:var(--primary-color);color:var(--white);padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>

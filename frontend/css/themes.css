@@ -3,7 +3,7 @@
             /* 文本色默认值(浅色主题共用) */
             --text-primary: #1a1a2e;
             --text-secondary: #666;
-            --text-tertiary: #999;
+            --text-tertiary: #666666; /* v3.16 (16.5): 对比度 ≥4.5:1（原 #999 仅 2.9:1） */
             --text-link: #2563eb;
             /* 背景色默认值 */
             --bg-page: #f8f9fa;
@@ -52,7 +52,7 @@
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%);
             --card-border: #bfdbfe;
-            --text-primary: #0f172a; --text-secondary: #475569; --text-tertiary: #94a3b8;
+            --text-primary: #0f172a; --text-secondary: #475569; --text-tertiary: #64748b; /* v3.16 (16.5) 对比度 */
             --text-link: #1d4ed8;
             --bg-page: #f1f5f9; --bg-card: #fff;
             --bg-card-header: #eff6ff;
@@ -86,7 +86,7 @@
             --secondary-color: #FF6B6B;
             --gradient: linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%);
             --card-border: #fecaca;
-            --text-primary: #1a1a2e; --text-secondary: #666; --text-tertiary: #999;
+            --text-primary: #1a1a2e; --text-secondary: #666; --text-tertiary: #666666; /* v3.16 (16.5) 对比度 */
             --text-link: #E63946;
             --bg-page: #f8f9fa; --bg-card: #fff;
             --bg-card-header: #FFF5F5;
@@ -119,7 +119,7 @@
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%);
             --card-border: #e8d5a3;
-            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #a0947c;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847; /* v3.16 (16.5) 对比度 */
             --text-link: #8b6914;
             --bg-page: #fdfaf3; --bg-card: #fff;
             --bg-card-header: #fdf8ec;
@@ -168,7 +168,7 @@
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             --card-border: #dbeafe;
-            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
+            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #64748b; /* v3.16 (16.5) 对比度 */
             --text-link: #2563eb;
             --bg-card-header: #f8fafc;
             --bg-sidebar: #f8fafc;
@@ -191,7 +191,7 @@
             --secondary-color: #f87171;
             --gradient: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
             --card-border: #fecaca;
-            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #94a3b8;
+            --text-primary: #1e293b; --text-secondary: #475569; --text-tertiary: #64748b; /* v3.16 (16.5) 对比度 */
             --text-link: #dc2626;
             --bg-card-header: #fef2f2;
             --bg-sidebar: #fef2f2;
@@ -214,7 +214,7 @@
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #fdfaf3 0%, #fef9ed 100%);
             --card-border: #e8d5a3;
-            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #a0947c;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847; /* v3.16 (16.5) 对比度 */
             --text-link: #8b6914;
             --bg-card-header: #fdf8ec;
             --bg-sidebar: #fdfaf3;
@@ -856,30 +856,72 @@
                 border-radius: 12px !important;
             }
         }
-        /* 登录页 */
-        .login-box {
-            max-width: 400px;
-            margin: 10vh auto;
-            padding: 30px;
+        /* 登录页 (v3.16 / 16.9: 品牌化) */
+        .login-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
-        .login-title {
-            text-align: center;
-            font-size: var(--font-xl);
-            font-weight: var(--font-semibold);
-            margin-bottom: 30px;
-            color: var(--text-primary);
+        .login-box {
+            max-width: 420px;
+            margin: 8vh auto;
+            padding: 32px;
+            border-radius: 16px;
+        }
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
         }
         .login-icon {
-            width: 80px;
-            height: 80px;
+            width: 64px;
+            height: 64px;
+            flex-shrink: 0;
             border-radius: 50%;
             background: var(--gradient);
-            margin: 0 auto 20px auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: var(--font-3xl);
+            font-size: var(--font-2xl);
             color: var(--white);
+            border: 2px solid var(--border-light);
+        }
+        .login-brand-text {
+            min-width: 0;
+        }
+        .login-title {
+            font-size: var(--font-lg);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            text-align: left;
+        }
+        .login-subtitle {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+        }
+        .login-desc {
+            text-align: center;
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .login-btn {
+            width: 100%;
+        }
+        .login-guest-btn {
+            margin-top: 8px;
+        }
+        .login-footer {
+            text-align: center;
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            margin-top: 20px;
+            letter-spacing: 1px;
         }
         .login-input-icon {
             width: var(--sp-4);
@@ -1774,6 +1816,21 @@
             border-color: var(--primary-color);
             background: var(--badge-info-bg);
         }
+        /* v3.16 (16.9): 历史记录行去重后的辅助类 */
+        .history-star {
+            cursor: pointer;
+            color: var(--color-gold);
+            font-size: var(--font-base);
+            margin-left: 4px;
+        }
+        .history-flag {
+            font-size: var(--font-xs);
+            margin-left: 2px;
+        }
+        .chat-badge {
+            background: var(--primary-color);
+            color: var(--white);
+        }
         .history-checkbox {
             cursor: pointer;
             flex-shrink: 0;
@@ -1901,6 +1958,23 @@
             border-radius: 12px;
             font-size: var(--font-sm);
             font-weight: var(--font-medium);
+        }
+        /* v3.16 (16.9): inline style 治理 — 高频重复样式收敛为类 */
+        .date-group-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-card-header);
+            border-radius: 8px;
+            cursor: pointer;
+            gap: 10px;
+        }
+        .count-badge-sm {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: var(--font-xs);
         }
         .latest-score {
             font-size: var(--font-base);

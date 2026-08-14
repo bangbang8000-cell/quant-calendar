@@ -9,13 +9,17 @@
     name: 'qc-research-page',
     template: `
                 <div v-if="currentPage === 'research'" key="research">
+                    <!-- v3.16 (16.8): 功能未开启时的统一占位 -->
+                    <qc-state-panel v-if="!researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
+                        desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
+                    <template v-else>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">🔬 量化研究</div>
-                        <div class="empty-state">🔬 敬请期待</div>
+                        <qc-state-panel type="empty" icon="🔬" title="敬请期待" desc="量化研究功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
                         <div class="card-title">⚙️ 策略编写</div>
-                        <div class="empty-state">🛠️ 敬请期待</div>
+                        <qc-state-panel type="empty" icon="🛠️" title="敬请期待" desc="策略编写功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">🔬 策略回测</div>
@@ -60,8 +64,9 @@
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title">📋 回测记录</div>
-                        <div class="empty-state">📝 敬请期待</div>
+                        <qc-state-panel type="empty" icon="📝" title="敬请期待" desc="回测记录功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
+                    </template>
                 </div>`,
     setup() {
       const state = inject('qcState');

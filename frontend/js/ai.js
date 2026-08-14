@@ -232,22 +232,25 @@ function addVendorModel(v) {
     v.models.push({ name: '', enabled: false, locked: false, max_tokens: 4096, _testing: false, testResult: undefined });
 }
 
-function removeVendorModel(v, idx) {
+// v3.16 (16.5): confirm() → ElMessageBox.confirm（统一确认弹窗风格）
+async function removeVendorModel(v, idx) {
     const m = v.models[idx];
     if (!m || m.locked) return;
-    if (confirm('确定删除模型 "' + m.name + '"？')) {
-        v.models.splice(idx, 1);
-        ElementPlus.ElMessage.success('已删除，请点击保存生效');
-    }
+    try {
+        await ElementPlus.ElMessageBox.confirm('确定删除模型 "' + (m.name || '未命名') + '"？', '删除模型', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' });
+    } catch (cancel) { return; }
+    v.models.splice(idx, 1);
+    ElementPlus.ElMessage.success('已删除，请点击保存生效');
 }
 
-function removeVendor(v) {
+async function removeVendor(v) {
     if (v.locked) return;
-    if (confirm('确定删除厂商 "' + v.name + '"？')) {
-        const idx = aiVendors.value.indexOf(v);
-        if (idx >= 0) aiVendors.value.splice(idx, 1);
-        ElementPlus.ElMessage.success('已删除，请点击保存生效');
-    }
+    try {
+        await ElementPlus.ElMessageBox.confirm('确定删除厂商 "' + (v.name || '未命名') + '"？', '删除厂商', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' });
+    } catch (cancel) { return; }
+    const idx = aiVendors.value.indexOf(v);
+    if (idx >= 0) aiVendors.value.splice(idx, 1);
+    ElementPlus.ElMessage.success('已删除，请点击保存生效');
 }
 const autoEvaluateConfig = ref({
     enabled: false,
@@ -329,25 +332,47 @@ function onProviderChange() {
 }
 // ===== 数据加载域（v3.11 从 app-logic 数据加载段并入；consensus 经 deps 注入）=====
 // v3.7.11: 获取入池/出池 AI 解读
+// v3.16 (16.8): 并发拉取（限流 8）+ AbortController 可取消（重复调用/离开页面时取消在途请求）
+let _poolSignalAbort = null;
+const POOL_SIGNAL_CONCURRENCY = 8;
+
 async function fetchPoolSignals() {
+    if (_poolSignalAbort) { _poolSignalAbort.abort(); _poolSignalAbort = null; }
     const items = consensus.value || [];
-    const targets = items.filter(i => i.status === 'new' || i.status === 'out');
-    for (const item of targets) {
-        if (poolSignals.value[item.code]) continue; // 已有缓存
-        try {
-            const res = await fetch('/api/calendar/pool-signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stock_code: item.code, stock_name: item.name, event_type: item.status === 'new' ? 'enter' : 'exit' })
-            });
-            const data = await res.json();
-            if (data.success && data.signal) {
-                poolSignals.value = { ...poolSignals.value, [item.code]: data.signal };
+    const targets = items
+        .filter(i => i.status === 'new' || i.status === 'out')
+        .filter(i => !poolSignals.value[i.code]); // 已有缓存跳过
+    if (targets.length === 0) return;
+    const ac = new AbortController();
+    _poolSignalAbort = ac;
+    let idx = 0;
+    const worker = async () => {
+        while (idx < targets.length) {
+            const item = targets[idx++];
+            try {
+                const res = await fetch('/api/calendar/pool-signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock_code: item.code, stock_name: item.name, event_type: item.status === 'new' ? 'enter' : 'exit' }),
+                    signal: ac.signal
+                });
+                const data = await res.json();
+                if (data.success && data.signal) {
+                    poolSignals.value = { ...poolSignals.value, [item.code]: data.signal };
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return; // 已取消
+                // 其余静默失败
             }
-        } catch (e) {
-            // 静默失败
         }
-    }
+    };
+    const workers = Array.from({ length: Math.min(POOL_SIGNAL_CONCURRENCY, targets.length) }, () => worker());
+    await Promise.all(workers);
+}
+
+// v3.16 (16.8): 取消在途池信号请求（离开日历页/刷新池时调用）
+function cancelPoolSignals() {
+    if (_poolSignalAbort) { _poolSignalAbort.abort(); _poolSignalAbort = null; }
 }
 
 // 加载最近一次 AI 评估（供 showStockDetail 弹窗使用）
@@ -430,7 +455,7 @@ function updateChecklist(result) {
         aiConfig, selectedPreset, providerInfo, aiPresets,
         applyPreset, onProviderChange,
         // v3.11: 数据加载域（原 app-logic 数据加载段并入）
-        fetchPoolSignals, loadLastEvaluation,
+        fetchPoolSignals, cancelPoolSignals, loadLastEvaluation,
       };
     }
   };

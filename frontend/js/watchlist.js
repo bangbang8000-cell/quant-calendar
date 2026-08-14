@@ -14,7 +14,7 @@
   window.__quantModules.watchlist = {
     create(deps) {
       const { ref, computed, watch } = Vue;
-      const { currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible,
+      const { currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockDetailLoading,
                stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline,
                aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, autoEvaluateConfig, autoEvaluateScope,
                batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses,
@@ -30,6 +30,9 @@ const evalStrategy = ref('default');  // v1.10: 评估策略
 const watchlistSort = ref('default');  // v1.10: 自选排序
 const watchlist = ref([]);
 const watchlistCodes = computed(() => new Set(watchlist.value.map(s => s.code)));
+// v3.16 (16.7): 评估历史加载/错误态（供 ai-page 统一错误态可重试）
+const aiHistoryLoading = ref(false);
+const aiHistoryError = ref(false);
 // v1.10: 排序后的自选列表
 const sortedWatchlist = computed(() => {
     const list = [...watchlist.value];
@@ -142,6 +145,9 @@ async function doAiEvaluate() {
 }
 
 async function loadAiHistory() {
+    // v3.16 (16.7): 统一错误态状态机
+    aiHistoryLoading.value = true;
+    aiHistoryError.value = false;
     try {
         const token = localStorage.getItem('quant_token');
         if (!token) { aiHistory.value = []; return; }
@@ -158,8 +164,11 @@ async function loadAiHistory() {
         const data = await res.json();
         if (data.success) {
             aiHistory.value = data.data;
+        } else {
+            aiHistoryError.value = true;
         }
-    } catch (e) { console.error('[loadAiHistory] error:', e); }
+    } catch (e) { console.error('[loadAiHistory] error:', e); aiHistoryError.value = true; }
+    finally { aiHistoryLoading.value = false; }
 }
 
 // 删除单条记录
@@ -395,15 +404,24 @@ async function showStockKline(code, name) {
     // v1.8.0: 先获取完整股票详情（含今日行情+均线+评分）
     const today = new Date().toISOString().split('T')[0];
     const date = selectedDate.value || today;
+    // v3.16 (16.10-fix): 立即弹窗（加载态），数据异步填充 — 避免行情接口慢导致弹窗延迟
+    // v3.16 (bugfix): 强制切到 K线 tab + 销毁旧图表实例 — 否则上次停留在 AI/问股 tab 时
+    // 打开自选个股，#stockKlineChart 不存在 → loadStockKline 抛错 → 不加载K线
+    stockDetailTab.value = 'kline';
+    disposeStockKline('stockKlineChart');
+    stockDetail.value = null;
+    stockDetailLoading.value = true;
+    stockKlineLoaded.value = false;
+    stockDetailVisible.value = true;
+    nextTick(() => animateScoreEntrance());
     try {
         const res = await fetch(`/api/calendar/stock/${encodeURIComponent(code)}?date=${date}`);
         stockDetail.value = await res.json();
     } catch(e) {
         stockDetail.value = { stock: code, name, total_days: 0 };
+    } finally {
+        stockDetailLoading.value = false;
     }
-    stockKlineLoaded.value = false;
-    stockDetailVisible.value = true;
-    nextTick(() => animateScoreEntrance());
     await nextTick();
     await loadStockKline('daily');
     refreshStockScore();
@@ -983,6 +1001,7 @@ async function doBatchEvaluate() {
         getWatchlistScore, getLatestScore, addSearchResult, evaluatedCodes, klineLoadedCodes,
         markKlineLoaded, watchlistSearch, watchlistResults, watchlistSearching,
         dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
+        aiHistoryLoading, aiHistoryError,
         doAiEvaluate, loadAiHistory, deleteSingleHistory, toggleSelectHistory, clearSelection,
         clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchRemoveWatchlist,
         toggleSelectWatchlist, selectAllHistory, selectAllWatchlist, deleteSelectedHistory,

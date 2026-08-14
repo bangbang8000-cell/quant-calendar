@@ -22,11 +22,11 @@
                             <div class="card-title">💎 策略共识度股票池</div>
                             
                             <!-- 状态筛选 -->
-                            <div class="status-tabs">
-                                <div class="status-tab" :class="{active: statusFilter === 'all'}" @click="statusFilter = 'all'">📋 全部 <span class="count">{{ statusCounts.all }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'new'}" @click="statusFilter = 'new'">🆕 新入池 <span class="count">{{ statusCounts.newCount }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'current'}" @click="statusFilter = 'current'">📌 当前持仓 <span class="count">{{ statusCounts.current }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'out'}" @click="statusFilter = 'out'">📤 已出池 <span class="count">{{ statusCounts.out }}</span></div>
+                            <div class="status-tabs" role="tablist">
+                                <div class="status-tab" :class="{active: statusFilter === 'all'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'all'" @click="statusFilter = 'all'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📋 全部 <span class="count">{{ statusCounts.all }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'new'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'new'" @click="statusFilter = 'new'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🆕 新入池 <span class="count">{{ statusCounts.newCount }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'current'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'current'" @click="statusFilter = 'current'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📌 当前持仓 <span class="count">{{ statusCounts.current }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'out'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'out'" @click="statusFilter = 'out'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📤 已出池 <span class="count">{{ statusCounts.out }}</span></div>
                             </div>
 
                             <div class="search-box">
@@ -42,7 +42,7 @@
                                 <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
                                 <qc-virtual-list :items="stockPool" :row-height="78" style="height: calc(100vh - 250px);">
                                     <template #default="{ item, index }">
-                                    <div class="consensus-item" style="margin-bottom: 0;" @click="showStockDetail(item.code)">
+                                    <div class="consensus-item" style="margin-bottom: 0;" @click="showStockDetail(item.code)" tabindex="0" role="button" :aria-label="'查看 ' + item.name + ' ' + item.code" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                         <div class="consensus-badge">{{ index + 1 }}</div>
                                         <div class="consensus-info">
                                             <div class="consensus-code">
@@ -50,7 +50,7 @@
                                                 <span v-if="item.status === 'new'" class="status-badge status-new">新入池</span>
                                                 <span v-else-if="item.status === 'out'" class="status-badge status-out">已出池</span>
                                             </div>
-                                            <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                                            <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
                                         </div>
                                         <div class="consensus-tags">
                                             <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
@@ -109,12 +109,14 @@
                                         </template>
                                         <span v-if="item.names.length > 5 && !expandedStrategies[item.strategy]" 
                                             style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--text-tertiary); font-size: var(--font-xs); cursor: pointer;"
-                                            @click="expandedStrategies[item.strategy] = true">
+                                            tabindex="0" role="button" :aria-expanded="false"
+                                            @click="expandedStrategies[item.strategy] = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                             +{{ item.names.length - 5 }}只 展开 ▾
                                         </span>
                                         <span v-if="item.names.length > 5 && expandedStrategies[item.strategy]"
                                             style="display: inline-flex; align-items: center; padding: 3px 8px; color: var(--primary-color); font-size: var(--font-xs); cursor: pointer;"
-                                            @click="expandedStrategies[item.strategy] = false">
+                                            tabindex="0" role="button" :aria-expanded="true"
+                                            @click="expandedStrategies[item.strategy] = false" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                             收起 ▴
                                         </span>
                                     </div>

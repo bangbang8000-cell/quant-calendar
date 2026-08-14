@@ -6,6 +6,7 @@
 
 import json
 import os
+import time
 from typing import Dict, Optional
 from paths import STOCK_INFO_FILE
 
@@ -27,8 +28,13 @@ TUSHARE_TOKEN = _get_tushare_token()
 
 
 class StockInfoManager:
+    # v3.16 (16.10-fix): 行情/均线缓存 TTL — 详情弹窗每次打开会重复拉取 tushare，
+    # 无缓存时同步请求（timeout 10s）阻塞弹窗展示；同股同日 1 小时内直接命中缓存。
+    QUOTE_CACHE_TTL = 3600  # 秒
+
     def __init__(self):
         self.stock_map: Dict[str, str] = {}  # code -> name
+        self._quote_cache: Dict[str, tuple] = {}  # key -> (timestamp, data)
         self._load_from_file()
 
     def _load_from_file(self):
@@ -49,6 +55,16 @@ class StockInfoManager:
         with open(STOCK_INFO_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.stock_map, f, ensure_ascii=False, indent=2)
         print(f"✅ 已保存 {len(self.stock_map)} 只股票信息到本地")
+
+    # v3.16 (16.10-fix): 行情/均线 TTL 缓存读写
+    def _cache_get(self, key: str):
+        hit = self._quote_cache.get(key)
+        if hit and time.time() - hit[0] < self.QUOTE_CACHE_TTL:
+            return hit[1]
+        return None
+
+    def _cache_set(self, key: str, data):
+        self._quote_cache[key] = (time.time(), data)
 
     def fetch_from_tushare(self) -> bool:
         """从Tushare获取股票基础信息"""
@@ -113,7 +129,11 @@ class StockInfoManager:
         return stock_code in self.stock_map
 
     def get_daily_data(self, ts_code: str, trade_date: str) -> Optional[Dict]:
-        """获取指定日期的股票行情数据"""
+        """获取指定日期的股票行情数据（带 TTL 缓存，避免每次打开详情重复拉取 tushare）"""
+        key = f"daily|{ts_code}|{trade_date}"
+        cached = self._cache_get(key)
+        if cached is not None:
+            return cached
         try:
             import requests
             url = 'http://api.tushare.pro'
@@ -134,14 +154,20 @@ class StockInfoManager:
             if data.get('code') == 0 and data.get('data', {}).get('items'):
                 item = data['data']['items'][0]
                 fields = data['data']['fields']
-                return dict(zip(fields, item))
+                result = dict(zip(fields, item))
+                self._cache_set(key, result)
+                return result
             return None
         except Exception as e:
             print(f"❌ 获取行情数据失败 {ts_code}: {e}")
             return None
 
     def get_ma_data(self, ts_code: str, end_date: str, days: int = 30) -> Optional[Dict]:
-        """获取均线数据（MA5, MA14, MA20）"""
+        """获取均线数据（MA5, MA14, MA20）（带 TTL 缓存）"""
+        key = f"ma|{ts_code}|{end_date}|{days}"
+        cached = self._cache_get(key)
+        if cached is not None:
+            return cached
         try:
             import requests
             url = 'http://api.tushare.pro'
@@ -185,6 +211,7 @@ class StockInfoManager:
                 ma_data['current_price'] = closes[0] if closes else None
                 ma_data['data_count'] = len(closes)
 
+                self._cache_set(key, ma_data)
                 return ma_data
             return None
         except Exception as e:

@@ -39,7 +39,10 @@
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;
   --color-danger:  #C62828;  --color-info:    #1976d2;
-  --color-up:      #E63946;  --color-down:    #457B9D;
+  /* v3.16 (16.5): 行情涨跌语义 — 统一"红涨绿跌"，跌由原蓝(#457B9D)改绿 */
+  --color-up:      #E63946;  --color-down:    #2E7D32;
+  --color-rise:    var(--color-up);    /* 行情涨跌专用：涨=红 */
+  --color-fall:    var(--color-down);  /* 行情涨跌专用：跌=绿 */
   --color-neutral: #43a047;
   /* v3.11 (FR-3.11.6): 补齐缺失语义色令牌 */
   --color-ai:      #6366f1;  /* AI 品牌紫/靛蓝系（评估/模型徽标） */

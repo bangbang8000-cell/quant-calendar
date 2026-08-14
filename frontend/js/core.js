@@ -7,11 +7,11 @@
   const { ref, computed, watch, onMounted, nextTick } = VueRef;
 
   // ─── API Fetch 封装 ─────────────────────────────────
+  // v3.16 (16.3): 鉴权统一 —— Token 由 index.html 全局 fetch 拦截器统一注入（所有 /api 请求），
+  // 此处仅负责默认 Content-Type 与 401 处理，不再重复拼接 Authorization（避免双头/双源）。
   async function apiFetch(url, options = {}) {
-    const token = localStorage.getItem('quant_token');
     const headers = {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers
     };
 
@@ -199,6 +199,59 @@
     }
   }
 
+  // ─── v3.16 (16.6): HTML 消毒 — v-html 前端双保险（后端已过滤，此处防深度/防漏） ───
+  // 仅保留白名单标签，剥离 on* / javascript: / 内联脚本，其余标签解包为文本。
+  const SANITIZE_ALLOW = ['B', 'STRONG', 'EM', 'I', 'CODE', 'PRE', 'P', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A', 'BR', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'SPAN', 'DIV', 'BLOCKQUOTE', 'HR'];
+
+  function sanitizeHtml(html, opts = {}) {
+    if (html == null) return '';
+    const allow = (opts && opts.allow) || SANITIZE_ALLOW;
+    const allowSet = new Set(allow.map(t => String(t).toUpperCase()));
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(String(html), 'text/html');
+    } catch (e) {
+      return String(html).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    }
+    const body = doc.body || doc;
+    function clean(node) {
+      Array.from(node.childNodes).forEach((child) => {
+        if (child.nodeType === 1) { // element
+          const tag = child.tagName;
+          if (allowSet.has(tag)) {
+            Array.from(child.attributes).forEach((attr) => {
+              const n = attr.name.toLowerCase();
+              const v = (attr.value || '').trim().toLowerCase();
+              if (n.startsWith('on') ||
+                  ((n === 'href' || n === 'src' || n === 'xlink:href') && v.startsWith('javascript:')) ||
+                  (n === 'style' && /(expression|javascript|behavior\s*:|url\s*\(\s*['"]?\s*javascript)/.test(v))) {
+                child.removeAttribute(attr.name);
+              }
+              if (n === 'href' && !/^(https?:|mailto:|#|\/)/.test(v)) {
+                child.removeAttribute('href');
+              }
+            });
+            if (tag === 'A') { child.setAttribute('rel', 'noopener noreferrer'); }
+            clean(child);
+          } else {
+            const parent = child.parentNode;
+            while (child.firstChild) parent.insertBefore(child.firstChild, child);
+            parent.removeChild(child);
+          }
+        } else if (child.nodeType === 3) {
+          // 文本节点保留
+        } else if (child.nodeType === 8) { // 注释
+          child.parentNode && child.parentNode.removeChild(child);
+        } else if (child.nodeType === 4) { // CDATA → 文本
+          const t = doc.createTextNode(child.nodeValue || '');
+          child.parentNode && child.parentNode.replaceChild(t, child);
+        }
+      });
+    }
+    clean(body);
+    return body.innerHTML;
+  }
+
   // ─── 注册 ───────────────────────────────────────────
   const core = {
     apiFetch,
@@ -213,6 +266,7 @@
     CacheStore,
     createTtlCache,
     silentRefresh,
+    sanitizeHtml,
   };
   if (typeof window !== 'undefined') {
     if (!window.__quantModules) window.__quantModules = {};

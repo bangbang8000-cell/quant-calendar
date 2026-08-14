@@ -468,7 +468,7 @@ def smoke_version(page):
     log('SM-15.5 版本')
     html = page.evaluate("() => document.documentElement.outerHTML")
     versions = set(re.findall(r'\?v=(\d+\.\d+\.\d+)', html))
-    check('SM-15.5 前端资源 ?v=3.15.1', '3.15.1' in versions, f'versions={sorted(versions)}')
+    check('SM-15.5 前端资源 ?v=3.16.1', '3.16.1' in versions, f'versions={sorted(versions)}')
     # 注意: dev 首次加载时 /api/market/merrill-clock 同步 akshare 会阻塞事件循环 ~15s,
     # health 可能瞬时超时 — 重试几次容错
     for label, port in (('dev', 8001), ('ops', 8000)):

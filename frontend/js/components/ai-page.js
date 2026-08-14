@@ -23,28 +23,28 @@
 
                         <!-- 统计卡片 -->
                         <div class="dashboard-grid" style="margin-bottom: 20px;">
-                            <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--color-primary);">
+                            <div class="stat-card" @click="currentSubPage = 'history'" tabindex="0" role="button" aria-label="历史评估" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--color-primary);">
                                 <div class="stat-icon" style="background: var(--badge-info-bg); color: var(--color-primary);">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistory.length }}</div>
                                     <div class="stat-label">总评估数</div>
                                 </div>
                             </div>
-                            <div class="stat-card" @click="currentSubPage = 'history'" style="cursor:pointer; border-left: 3px solid var(--el-success);">
+                            <div class="stat-card" @click="currentSubPage = 'history'" tabindex="0" role="button" aria-label="覆盖股票" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--el-success);">
                                 <div class="stat-icon" style="background: var(--badge-success-bg); color: var(--el-success);">📈</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistoryStockCount }}</div>
                                     <div class="stat-label">覆盖股票</div>
                                 </div>
                             </div>
-                            <div class="stat-card" @click="currentSubPage = 'watchlist'" style="cursor:pointer; border-left: 3px solid var(--color-gold);">
+                            <div class="stat-card" @click="currentSubPage = 'watchlist'" tabindex="0" role="button" aria-label="自选股" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--color-gold);">
                                 <div class="stat-icon" style="background: var(--badge-gold-bg); color: var(--color-gold);">⭐</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
                                     <div class="stat-label">自选股</div>
                                 </div>
                             </div>
-                            <div class="stat-card" @click="showAutoEvaluateSettings = true" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
+                            <div class="stat-card" @click="showAutoEvaluateSettings = true" tabindex="0" role="button" aria-label="自动评估设置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
                                 <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--badge-gold-bg)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
@@ -178,7 +178,11 @@
 
                         <div class="card">
                             <div class="card-title">📋 评估历史记录 <span style="font-weight: normal; color: var(--text-tertiary); font-size: var(--font-sm); margin-left: 8px;">共 {{ Object.keys(groupedByDate).length }} 天 · {{ aiHistory.length }} 条</span></div>
-                        <div v-if="aiHistory.length === 0" class="empty-state">
+                        <!-- v3.16 (16.7): 统一加载/离线/错误态（可重试） -->
+                        <qc-state-panel v-if="aiHistoryLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadAiHistory"></qc-state-panel>
+                        <qc-state-panel v-else-if="aiHistoryError" type="error" @retry="loadAiHistory"></qc-state-panel>
+                        <div v-else-if="aiHistory.length === 0" class="empty-state">
                             <div style="font-size: 64px; margin-bottom: 20px;">🤖</div>
                             <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">暂无评估记录</div>
                             <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">
@@ -197,7 +201,7 @@
                         <div v-if="aiHistoryView === 'date'" class="ai-history-list">
                             <template v-for="(records, date) in groupedByDate" :key="date">
                                 <div class="date-group-card" :style="{marginBottom: '8px'}">
-                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                    <div class="date-group-header">
                                         <!-- 日期级复选框 -->
                                         <div @click.stop="toggleSelectDate(date)" class="history-checkbox" style="display: flex; align-items: center;">
                                             <div class="checkbox-inner" :class="{'checked': records.every(r => selectedHistoryIds.includes(r.id))}" :style="records.some(r => selectedHistoryIds.includes(r.id)) && !records.every(r => selectedHistoryIds.includes(r.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
@@ -207,42 +211,19 @@
                                         <div style="flex:1;" @click="toggleDateExpand(date)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📅 {{ date }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
+                                                <span class="count-badge-sm">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
                                         <div @click="toggleDateExpand(date)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedDates.includes(date) ? 'rotate(90deg)' : ''}">▶</div>
                                     </div>
                                     <div v-if="expandedDates.includes(date)" class="date-group-records" style="padding: 4px 0 4px 34px;">
-                                        <div v-for="record in records" :key="record.id" class="ai-history-item" :class="{'selected': selectedHistoryIds.includes(record.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                            <div @click.stop="toggleSelectHistory(record.id)" class="history-checkbox">
-                                                <div class="checkbox-inner" :class="{'checked': selectedHistoryIds.includes(record.id)}">
-                                                    {{ selectedHistoryIds.includes(record.id) ? '✓' : '' }}
-                                                </div>
-                                            </div>
-                                            <div class="history-content" @click="viewAiResult(record)">
-                                                <div class="history-header">
-                                                    <div class="stock-info">
-                                                        <span class="stock-code">{{ record.stock_code }}</span>
-                                                        <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
-                                                    </div>
-                                                    <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
-                                                        <span class="score-num">{{ record.result.total_score }}</span>
-                                                        <span class="score-level">{{ record.result.level }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="history-footer">
-                                                    <span class="history-time">🕐 {{ (record.evaluate_time.split('T')[1] || '').split('.')[0] || record.evaluate_time }}</span>
-                                                    <span class="history-provider">🤖 {{ record.result.provider }}</span>
-                                                    <span class="history-dims">🔬 {{ record.result.dimensions?.length || 9 }}维度分析</span>
-                                                </div>
-                                            </div>
-                                            <div class="history-actions">
-                                                <el-button size="small" type="danger" text @click.stop="deleteSingleHistory(record.id)">
-                                                    🗑️
-                                                </el-button>
-                                            </div>
-                                        </div>
+                                        <!-- v3.16 (16.7): 内层虚拟滚动（分组较大时仅渲染可视区记录） -->
+                                        <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                        <qc-virtual-list :items="records" :row-height="72" style="max-height: 420px;">
+                                            <template #default="{ item: record }">
+                                            <qc-history-record :item="record" type="history" :show-dims="true" time-format="time"></qc-history-record>
+                                            </template>
+                                        </qc-virtual-list>
                                     </div>
                                 </div>
                             </template>
@@ -252,7 +233,7 @@
                         <div v-else-if="aiHistoryView === 'month'" class="ai-history-list">
                             <template v-for="(records, month) in groupedByMonth" :key="month">
                                 <div class="date-group-card" :style="{marginBottom: '8px'}">
-                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                    <div class="date-group-header">
                                         <div @click.stop="toggleSelectMonth(month)" class="history-checkbox" style="display: flex; align-items: center;">
                                             <div class="checkbox-inner" :class="{'checked': records.every(r => selectedHistoryIds.includes(r.id))}" :style="records.some(r => selectedHistoryIds.includes(r.id)) && !records.every(r => selectedHistoryIds.includes(r.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
                                                 {{ records.every(r => selectedHistoryIds.includes(r.id)) ? '✓' : (records.some(r => selectedHistoryIds.includes(r.id)) ? '−' : '') }}
@@ -261,39 +242,19 @@
                                         <div style="flex:1;" @click="toggleMonthExpand(month)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📆 {{ month }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}条评估</span>
+                                                <span class="count-badge-sm">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
                                         <div @click="toggleMonthExpand(month)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedMonths.includes(month) ? 'rotate(90deg)' : ''}">▶</div>
                                     </div>
                                     <div v-if="expandedMonths.includes(month)" class="date-group-records" style="padding: 4px 0 4px 34px;">
-                                        <div v-for="record in records" :key="record.id" class="ai-history-item" :class="{'selected': selectedHistoryIds.includes(record.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                            <div @click.stop="toggleSelectHistory(record.id)" class="history-checkbox">
-                                                <div class="checkbox-inner" :class="{'checked': selectedHistoryIds.includes(record.id)}">
-                                                    {{ selectedHistoryIds.includes(record.id) ? '✓' : '' }}
-                                                </div>
-                                            </div>
-                                            <div class="history-content" @click="viewAiResult(record)">
-                                                <div class="history-header">
-                                                    <div class="stock-info">
-                                                        <span class="stock-code">{{ record.stock_code }}</span>
-                                                        <span class="stock-name">{{ record.stock_name }}</span>
-                                                        <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
-                                                    </div>
-                                                    <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
-                                                        <span class="score-num">{{ record.result.total_score }}</span>
-                                                        <span class="score-level">{{ record.result.level }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="history-footer">
-                                                    <span class="history-time">🕐 {{ (record.evaluate_time.split('T')[0]) }} {{ (record.evaluate_time.split('T')[1] || '').split('.')[0] }}</span>
-                                                    <span class="history-provider">🤖 {{ record.result.provider }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="history-actions">
-                                                <el-button size="small" type="danger" text @click.stop="deleteSingleHistory(record.id)">🗑️</el-button>
-                                            </div>
-                                        </div>
+                                        <!-- v3.16 (16.7): 内层虚拟滚动 -->
+                                        <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                        <qc-virtual-list :items="records" :row-height="72" style="max-height: 420px;">
+                                            <template #default="{ item: record }">
+                                            <qc-history-record :item="record" type="history" time-format="datetime"></qc-history-record>
+                                            </template>
+                                        </qc-virtual-list>
                                     </div>
                                 </div>
                             </template>
@@ -302,7 +263,7 @@
                         <!-- 按股票聚合展示 -->
                         <div v-else class="ai-history-list">
                             <div v-for="(records, code) in aiHistoryByStock" :key="code" style="border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; gap: 10px;">
+                                <div class="date-group-header">
                                         <!-- 股票级复选框 -->
                                         <div @click.stop="toggleSelectStock(code)" class="history-checkbox" style="display: flex; align-items: center;">
                                             <div class="checkbox-inner" :class="{'checked': records.every(r => selectedHistoryIds.includes(r.id))}" :style="records.some(r => selectedHistoryIds.includes(r.id)) && !records.every(r => selectedHistoryIds.includes(r.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
@@ -313,7 +274,7 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <strong>{{ code }}</strong>
                                             <span style="color: var(--text-tertiary);">{{ records[0].stock_name }}</span>
-                                            <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ records.length }}次</span>
+                                            <span class="count-badge-sm">{{ records.length }}次</span>
                                             <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ records[0].result.total_score }}分</span>
                                         </div>
                                     </div>
@@ -322,33 +283,13 @@
                                 <div v-if="expandedStocks.includes(code)" style="padding: 4px 0 4px 12px;">
                                     <!-- v3.7.14: 评估历史趋势图 -->
                                     <div v-if="records.length > 1" :ref="el => registerTrendChart(el, code, records)" style="width:100%;height:200px;margin-bottom:8px;border:1px solid var(--border-light);border-radius:8px;"></div>
-                                    <div v-for="record in records" :key="record.id" class="ai-history-item" :class="{'selected': selectedHistoryIds.includes(record.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                        <div @click.stop="toggleSelectHistory(record.id)" class="history-checkbox">
-                                            <div class="checkbox-inner" :class="{'checked': selectedHistoryIds.includes(record.id)}">
-                                                {{ selectedHistoryIds.includes(record.id) ? '✓' : '' }}
-                                            </div>
-                                        </div>
-                                        <div class="history-content" @click="viewAiResult(record)">
-                                            <div class="history-header">
-                                                <div class="stock-info">
-                                                    <span class="stock-code">{{ record.stock_code }}</span>
-                                                    <span class="stock-name">{{ record.stock_name }}</span>
-                                                    <span @click.stop="toggleWatchlist(record.stock_code, record.stock_name)" style="cursor:pointer;color:var(--color-gold);font-size:var(--font-base);margin-left:4px;" :title="watchlistCodes.has(record.stock_code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(record.stock_code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(record.stock_code)" title="已AI评估" style="font-size:var(--font-xs);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(record.stock_code)" title="已加载K线" style="font-size:var(--font-xs);margin-left:2px;">📈</span>
-                                                </div>
-                                                <div class="score-badge-small" :style="{background: record.result.level_color + '20', color: record.result.level_color}">
-                                                    <span class="score-num">{{ record.result.total_score }}</span>
-                                                    <span class="score-level">{{ record.result.level }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="history-footer">
-                                                <span class="history-time">🕐 {{ (record.evaluate_time.split('T')[1] || '').split('.')[0] || record.evaluate_time }}</span>
-                                                <span class="history-provider">🤖 {{ record.result.provider }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="history-actions">
-                                            <el-button size="small" type="danger" text @click.stop="deleteSingleHistory(record.id)">🗑️</el-button>
-                                        </div>
-                                    </div>
+                                    <!-- v3.16 (16.7): 内层虚拟滚动（单股多次评估时仅渲染可视区） -->
+                                    <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                    <qc-virtual-list :items="records" :row-height="72" style="max-height: 420px;">
+                                        <template #default="{ item: record }">
+                                    <qc-history-record :item="record" type="history" time-format="time"></qc-history-record>
+                                        </template>
+                                    </qc-virtual-list>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +315,11 @@
 
                         <div class="card">
                             <div class="card-title">💬 AI 问股历史 <span style="font-weight: normal; color: var(--text-tertiary); font-size: var(--font-sm); margin-left: 8px;">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span></div>
-                        <div v-if="allChatSessionsFlat.length === 0" class="empty-state">
+                        <!-- v3.16 (16.7): 统一加载/离线/错误态（可重试） -->
+                        <qc-state-panel v-if="chatHistoryLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadChatHistory"></qc-state-panel>
+                        <qc-state-panel v-else-if="chatHistoryError" type="error" @retry="loadChatHistory"></qc-state-panel>
+                        <div v-else-if="allChatSessionsFlat.length === 0" class="empty-state">
                             <div style="font-size: 64px; margin-bottom: 20px;">💬</div>
                             <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">暂无问股记录</div>
                             <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">
@@ -393,7 +338,7 @@
                         <div v-if="chatHistoryView === 'date' && allChatSessionsFlat.length > 0" class="ai-history-list">
                             <template v-for="(sessions, date) in chatGroupedByDate" :key="date">
                                 <div class="date-group-card" :style="{marginBottom: '8px'}">
-                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                    <div class="date-group-header">
                                         <div @click.stop="toggleSelectChatDate(date)" class="history-checkbox" style="display: flex; align-items: center;">
                                             <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
                                                 {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
@@ -402,38 +347,19 @@
                                         <div style="flex:1;" @click="toggleChatDateExpand(date)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📅 {{ date }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                                <span class="count-badge-sm">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
                                         <div @click="toggleChatDateExpand(date)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatDates.includes(date) ? 'rotate(90deg)' : ''}">▶</div>
                                     </div>
                                     <div v-if="expandedChatDates.includes(date)" class="date-group-records" style="padding: 4px 0 4px 34px;">
-                                        <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                            <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
-                                                <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
-                                                    {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
-                                                </div>
-                                            </div>
-                                            <div class="history-content" @click="viewChatSession(session)">
-                                                <div class="history-header">
-                                                    <div class="stock-info">
-                                                        <span class="stock-code">{{ session.stock_code }}</span>
-                                                        <span class="stock-name">{{ session.stock_name }}</span>
-                                                    </div>
-                                                    <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
-                                                        <span class="score-num">{{ session.msg_count }}</span>
-                                                        <span class="score-level">条消息</span>
-                                                    </span>
-                                                </div>
-                                                <div class="history-footer">
-                                                    <span class="history-time">🕐 {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
-                                                    <span class="history-provider">💬 {{ session.first_msg }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="history-actions">
-                                                <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
-                                            </div>
-                                        </div>
+                                        <!-- v3.16 (16.7): 内层虚拟滚动 -->
+                                        <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                        <qc-virtual-list :items="sessions" :row-height="72" style="max-height: 420px;">
+                                            <template #default="{ item: session }">
+                                        <qc-history-record :item="session" type="chat" time-format="time"></qc-history-record>
+                                            </template>
+                                        </qc-virtual-list>
                                     </div>
                                 </div>
                             </template>
@@ -443,7 +369,7 @@
                         <div v-else-if="chatHistoryView === 'month' && allChatSessionsFlat.length > 0" class="ai-history-list">
                             <template v-for="(sessions, month) in chatGroupedByMonth" :key="month">
                                 <div class="date-group-card" :style="{marginBottom: '8px'}">
-                                    <div class="date-group-header" style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                    <div class="date-group-header">
                                         <div @click.stop="toggleSelectChatMonth(month)" class="history-checkbox" style="display: flex; align-items: center;">
                                             <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
                                                 {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
@@ -452,38 +378,19 @@
                                         <div style="flex:1;" @click="toggleChatMonthExpand(month)">
                                             <div style="display: flex; align-items: center; gap: 8px;">
                                                 <span style="font-size: var(--font-md); font-weight: var(--font-semibold);">📆 {{ month }}</span>
-                                                <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}条对话</span>
+                                                <span class="count-badge-sm">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
                                         <div @click="toggleChatMonthExpand(month)" style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatMonths.includes(month) ? 'rotate(90deg)' : ''}">▶</div>
                                     </div>
                                     <div v-if="expandedChatMonths.includes(month)" class="date-group-records" style="padding: 4px 0 4px 34px;">
-                                        <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                            <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
-                                                <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
-                                                    {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
-                                                </div>
-                                            </div>
-                                            <div class="history-content" @click="viewChatSession(session)">
-                                                <div class="history-header">
-                                                    <div class="stock-info">
-                                                        <span class="stock-code">{{ session.stock_code }}</span>
-                                                        <span class="stock-name">{{ session.stock_name }}</span>
-                                                    </div>
-                                                    <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
-                                                        <span class="score-num">{{ session.msg_count }}</span>
-                                                        <span class="score-level">条消息</span>
-                                                    </span>
-                                                </div>
-                                                <div class="history-footer">
-                                                    <span class="history-time">🕐 {{ session.created_at?.split('T')[0] }} {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
-                                                    <span class="history-provider">💬 {{ session.first_msg }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="history-actions">
-                                                <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
-                                            </div>
-                                        </div>
+                                        <!-- v3.16 (16.7): 内层虚拟滚动 -->
+                                        <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                        <qc-virtual-list :items="sessions" :row-height="72" style="max-height: 420px;">
+                                            <template #default="{ item: session }">
+                                        <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
+                                            </template>
+                                        </qc-virtual-list>
                                     </div>
                                 </div>
                             </template>
@@ -492,7 +399,7 @@
                         <!-- 按股票聚合 -->
                         <div v-else-if="allChatSessionsFlat.length > 0" class="ai-history-list">
                             <div v-for="(sessions, code) in chatGroupedByStock" :key="code" style="border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; gap: 10px;">
+                                <div class="date-group-header">
                                     <div @click.stop="toggleSelectChatStock(code)" class="history-checkbox" style="display: flex; align-items: center;">
                                         <div class="checkbox-inner" :class="{'checked': sessions.every(s => selectedChatIds.includes(s.id))}" :style="sessions.some(s => selectedChatIds.includes(s.id)) && !sessions.every(s => selectedChatIds.includes(s.id)) ? {background: 'var(--primary-color)', borderColor: 'var(--primary-color)', opacity: '0.5'} : {}">
                                             {{ sessions.every(s => selectedChatIds.includes(s.id)) ? '✓' : (sessions.some(s => selectedChatIds.includes(s.id)) ? '−' : '') }}
@@ -502,38 +409,19 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <strong>{{ code }}</strong>
                                             <span style="color: var(--text-tertiary);">{{ sessions[0].stock_name }}</span>
-                                            <span class="count-badge" style="background: var(--primary-color); color: var(--white); padding: 2px 8px; border-radius: 10px; font-size: var(--font-xs);">{{ sessions.length }}次</span>
+                                            <span class="count-badge-sm">{{ sessions.length }}次</span>
                                         </div>
                                     </div>
                                     <span style="color: var(--text-tertiary); transition: transform 0.2s;" :style="{transform: expandedChatStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
                                 </div>
                                 <div v-if="expandedChatStocks.includes(code)" style="padding: 4px 0 4px 12px;">
-                                    <div v-for="session in sessions" :key="session.id" class="ai-history-item" :class="{'selected': selectedChatIds.includes(session.id)}" style="border-bottom: 1px solid var(--border-light);">
-                                        <div @click.stop="toggleSelectChat(session.id)" class="history-checkbox">
-                                            <div class="checkbox-inner" :class="{'checked': selectedChatIds.includes(session.id)}">
-                                                {{ selectedChatIds.includes(session.id) ? '✓' : '' }}
-                                            </div>
-                                        </div>
-                                        <div class="history-content" @click="viewChatSession(session)">
-                                            <div class="history-header">
-                                                <div class="stock-info">
-                                                    <span class="stock-code">{{ session.stock_code }}</span>
-                                                    <span class="stock-name">{{ session.stock_name }}</span>
-                                                </div>
-                                                <span class="score-badge-small" style="background: var(--primary-color); color: var(--white);">
-                                                    <span class="score-num">{{ session.msg_count }}</span>
-                                                    <span class="score-level">条消息</span>
-                                                </span>
-                                            </div>
-                                            <div class="history-footer">
-                                                <span class="history-time">🕐 {{ session.created_at?.split('T')[0] }} {{ session.created_at?.split('T')[1]?.substring(0,5) || '' }}</span>
-                                                <span class="history-provider">💬 {{ session.first_msg }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="history-actions">
-                                            <el-button size="small" type="danger" text @click.stop="deleteChatSession(session.id)">🗑️</el-button>
-                                        </div>
-                                    </div>
+                                    <!-- v3.16 (16.7): 内层虚拟滚动 -->
+                                    <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
+                                    <qc-virtual-list :items="sessions" :row-height="72" style="max-height: 420px;">
+                                        <template #default="{ item: session }">
+                                    <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
+                                        </template>
+                                    </qc-virtual-list>
                                 </div>
                             </div>
                         </div>
@@ -583,31 +471,38 @@
                                 </el-radio-group>
                             </div>
                             <!-- 空状态 -->
-                            <div v-if="watchlist.length === 0" class="watchlist-empty">
+                            <!-- v3.16 (16.7): 离线检测 -->
+                            <qc-state-panel v-if="!isOnline && watchlist.length === 0" type="offline" @retry="loadWatchlist"></qc-state-panel>
+                            <div v-else-if="watchlist.length === 0" class="watchlist-empty">
                                 <div class="watchlist-empty-icon">⭐</div>
                                 <div class="watchlist-empty-title">暂无自选股</div>
                                 <div class="watchlist-empty-hint">搜索股票代码或名称添加</div>
                             </div>
                             <!-- 自选列表 -->
                             <div v-else>
-                                <div v-for="stock in sortedWatchlist" :key="stock.code" class="watchlist-item" @click="showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code)}">
-                                    <div class="watchlist-checkbox" @click.stop="toggleSelectWatchlist(stock.code)">
-                                        <span v-if="selectedWatchlistCodes.includes(stock.code)" class="watchlist-checkbox-check">✓</span>
+                                <!-- v3.16 (16.7): 虚拟滚动，仅渲染可视区行（500+ 自选不卡顿） -->
+                                <qc-virtual-list :items="sortedWatchlist" :row-height="56" style="height: calc(100vh - 320px); min-height: 200px;">
+                                    <template #default="{ item: stock }">
+                                    <div class="watchlist-item" @click="showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code)}">
+                                        <div class="watchlist-checkbox" @click.stop="toggleSelectWatchlist(stock.code)">
+                                            <span v-if="selectedWatchlistCodes.includes(stock.code)" class="watchlist-checkbox-check">✓</span>
+                                        </div>
+                                        <div class="watchlist-info">
+                                            <span class="watchlist-code">{{ stock.code }}</span>
+                                            <span class="watchlist-name">{{ stock.name }}</span>
+                                            <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning">⏳</span>
+                                            <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
+                                                {{ getWatchlistScore(stock.code).score }}
+                                            </span>
+                                        </div>
+                                        <div class="watchlist-actions">
+                                            <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
+                                            <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
+                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
+                                        </div>
                                     </div>
-                                    <div class="watchlist-info">
-                                        <span class="watchlist-code">{{ stock.code }}</span>
-                                        <span class="watchlist-name">{{ stock.name }}</span>
-                                        <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning">⏳</span>
-                                        <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
-                                            {{ getWatchlistScore(stock.code).score }}
-                                        </span>
-                                    </div>
-                                    <div class="watchlist-actions">
-                                        <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
-                                        <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
-                                        <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
-                                    </div>
-                                </div>
+                                    </template>
+                                </qc-virtual-list>
                             </div>
                         </div>
                     </div>

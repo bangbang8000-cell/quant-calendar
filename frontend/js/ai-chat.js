@@ -14,6 +14,9 @@
 
 // ===== v2.4: AI 问股 =====
 const chatSessions = ref([]);
+// v3.16 (16.7): 问股历史加载/错误态（统一错误态可重试）
+const chatHistoryLoading = ref(false);
+const chatHistoryError = ref(false);
 const chatHistoryView = ref('date');
 const selectedChatIds = ref([]);
 const expandedChatDates = ref([]);
@@ -23,21 +26,23 @@ const expandedChatStocks = ref([]);
 const allChatSessionsFlat = computed(() => {
     const flat = [];
     for (const s of chatSessions.value) {
-        if (s.messages) {
-            // v3.15: stock_name 兜底 → 代码 (后端已修, 旧记录仍可能缺名)
-            const stock_name = s.stock_name || s.stock_code || '';
-            flat.push({
-                id: s.id,
-                stock_code: s.stock_code,
-                stock_name,
-                first_msg: s.messages[0]?.content?.substring(0, 50) || '',
-                msg_count: s.messages.length,
-                created_at: s.created_at,
-                date: (s.created_at || '').substring(0, 10),
-                month: (s.created_at || '').substring(0, 7),
-                messages: s.messages,
-            });
-        }
+        if (!s || s.id == null) continue;
+        // v3.16 (bugfix): 历史列表只载会话元数据（16.8 起消息体点击才惰性加载），
+        // 不能再以 s.messages 为过滤条件，否则所有会话都被丢弃 → 问股历史恒空。
+        // 行内 first_msg/msg_count 直接来自元数据；活动会话仍可回退到 messages 推导。
+        const stock_name = s.stock_name || s.stock_code || '';
+        const msgs = Array.isArray(s.messages) ? s.messages : [];
+        flat.push({
+            id: s.id,
+            stock_code: s.stock_code,
+            stock_name,
+            first_msg: s.first_msg || msgs[0]?.content?.substring(0, 50) || '',
+            msg_count: s.msg_count || msgs.length || 0,
+            created_at: s.created_at,
+            date: (s.created_at || '').substring(0, 10),
+            month: (s.created_at || '').substring(0, 7),
+            messages: msgs,
+        });
     }
     return flat;
 });
@@ -143,13 +148,36 @@ async function deleteSelectedChatSessions() {
     }
     selectedChatIds.value = [];
 }
-function viewChatSession(session) {
+// v3.16 (16.8): 问股历史消息缓存（点击会话时惰性加载，避免首屏 N 连发）
+const chatSessionMessagesCache = {};
+
+async function viewChatSession(session) {
     stockDetail.value = { stock: session.stock_code, name: session.stock_name };
     stockDetailVisible.value = true;
     stockDetailTab.value = 'chat';
     stockKlineLoaded.value = false;
     disposeStockKline();
-    stockChatMessages.value = session.messages?.map(m => ({role: m.role, content: m.content})) || [];
+    // v3.16 (16.8): 消息体惰性加载 — 点击时拉取并缓存
+    stockChatLoading.value = true;
+    stockChatError.value = '';
+    stockChatMessages.value = [];
+    try {
+        let messages = chatSessionMessagesCache[session.id];
+        if (!messages) {
+            const token = localStorage.getItem('quant_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            const res = await fetch('/api/ai/chat/history/' + session.id, { headers });
+            if (!res.ok) throw new Error('load history failed');
+            const d = await res.json();
+            messages = d.messages || [];
+            chatSessionMessagesCache[session.id] = messages;
+        }
+        stockChatMessages.value = messages.map(m => ({ role: m.role, content: m.content }));
+    } catch (e) {
+        stockChatError.value = '历史消息加载失败，请重试';
+    } finally {
+        stockChatLoading.value = false;
+    }
 }
 
 // Stock detail chat
@@ -231,6 +259,9 @@ async function askStockQuick(mode) {
 }
 
 async function loadChatHistory() {
+    // v3.16 (16.7): 统一错误态状态机
+    chatHistoryLoading.value = true;
+    chatHistoryError.value = false;
     try {
         const token = localStorage.getItem('quant_token');
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
@@ -238,18 +269,16 @@ async function loadChatHistory() {
         if (res.ok) {
             const groups = await res.json();
             const sessions = [];
+            // v3.16 (16.8): 只取会话元数据，消息体点击时惰性加载（首屏不再 N 连发）
             for (const group of groups) {
-                for (const s of (group.items || [])) {
-                    try {
-                        const dres = await fetch('/api/ai/chat/history/' + s.id, { headers });
-                        if (dres.ok) { const d = await dres.json(); s.messages = d.messages || []; }
-                    } catch { }
-                    sessions.push(s);
-                }
+                for (const s of (group.items || [])) sessions.push(s);
             }
             chatSessions.value = sessions;
+        } else {
+            chatHistoryError.value = true;
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); chatHistoryError.value = true; }
+    finally { chatHistoryLoading.value = false; }
 }
 
 async function deleteChatSession(id) {
@@ -276,12 +305,17 @@ function renderMarkdown(md) {
         .replace(/^- (.+)$/gm, '<li>$1</li>')
         .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
         .replace(/\n/g, '<br>');
+    // v3.16 (16.6): 前端双保险 — 再走一遍白名单消毒（防 LLM 输出携带脚本/事件属性）
+    if (window.__quantModules && window.__quantModules.core && window.__quantModules.core.sanitizeHtml) {
+        html = window.__quantModules.core.sanitizeHtml(html);
+    }
     return html;
 }
 
 
       return {
         chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
+        chatHistoryLoading, chatHistoryError,
         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
         toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,

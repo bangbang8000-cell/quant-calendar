@@ -19,7 +19,7 @@
                         <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
-                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
+                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
                         <div class="label">{{ indexDetail.pct_chg >= 0 ? '上涨' : '下跌' }}</div>
                     </div>
                 </div>
@@ -32,7 +32,7 @@
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">涨跌额</div>
-                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">
+                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">
                             {{ indexDetail.change >= 0 ? '+' : '' }}{{ Number(indexDetail.change).toFixed(2) }}
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                 <!-- AI评估结果 -->
                 <div v-if="indexAiResult" class="ai-result-box">
                     <div class="section-title"><span>🤖</span> AI智能指数评估结果</div>
-                    <div class="ai-analysis" v-html="indexAiResult.analysis"></div>
+                    <div class="ai-analysis" v-html="sanitizeHtml(indexAiResult.analysis)"></div>
                     <div style="margin-top: 16px;">
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
                             📌 {{ indexAiResult.suggestion || '暂无' }}
