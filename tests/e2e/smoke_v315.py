@@ -7,7 +7,7 @@
   SM-15.2 批量评估 SSE 逐只实时进度 + 失败原因 + 完成汇总
   SM-15.3 智能评估诚实进度 (真实计时/阶段文案) + 结果模型信息 + 复制报告
   SM-15.4 7 主题走查 (暗色无白块 + K线图随主题重绘 + 无 pageerror)
-  SM-15.5 版本 (前端资源 ?v=3.15.0 + 双端 /api/health)
+  SM-15.5 版本 (前端资源 ?v=3.15.1 + 双端 /api/health)
 
 已知 headless 限制 (见 memory browser-smoke-playwright-facts):
   - el-select 无法在 headless 合成选择 → 批量评估用「批量评估（输入代码）」弹窗的
@@ -468,7 +468,7 @@ def smoke_version(page):
     log('SM-15.5 版本')
     html = page.evaluate("() => document.documentElement.outerHTML")
     versions = set(re.findall(r'\?v=(\d+\.\d+\.\d+)', html))
-    check('SM-15.5 前端资源 ?v=3.15.0', '3.15.0' in versions, f'versions={sorted(versions)}')
+    check('SM-15.5 前端资源 ?v=3.15.1', '3.15.1' in versions, f'versions={sorted(versions)}')
     # 注意: dev 首次加载时 /api/market/merrill-clock 同步 akshare 会阻塞事件循环 ~15s,
     # health 可能瞬时超时 — 重试几次容错
     for label, port in (('dev', 8001), ('ops', 8000)):
@@ -481,7 +481,7 @@ def smoke_version(page):
                 break
             except Exception:
                 time.sleep(3)
-        check(f'SM-15.5 /api/health :{port}', ok and ver == '3.15.0',
+        check(f'SM-15.5 /api/health :{port}', ok and ver == '3.15.1',
               f"version={ver}" if ok else 'timeout×5')
 
 

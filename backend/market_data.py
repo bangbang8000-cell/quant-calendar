@@ -7,7 +7,7 @@
 import numpy as np
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import logging
 from paths import MARKET_CACHE_FILE as CACHE_FILE
 
@@ -164,7 +164,8 @@ class MarketData:
         """保存缓存"""
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.cache, f, ensure_ascii=False, indent=2)
+            # v3.15.1: default=str 兜底 — 任何未被规范化的 date/datetime 不阻塞落盘
+            json.dump(self.cache, f, ensure_ascii=False, indent=2, default=str)
 
     def _is_cache_valid(self, cache_key):
         """检查缓存是否有效"""
@@ -190,6 +191,10 @@ class MarketData:
         # 使用统一数据源管理器
         result = self.ds_manager.get_index_daily(ts_code, trade_date)
         if result:
+            # v3.15.1: 实时源 trade_date 可能为 datetime.date (tushare/akshare) —
+            # 归一化字符串, 否则写缓存 (json.dump) 与 API 响应序列化双双 500
+            if isinstance(result.get('trade_date'), (datetime, date)):
+                result['trade_date'] = result['trade_date'].strftime('%Y%m%d')
             # 存入缓存
             self.cache[cache_key] = {
                 'fetch_time': datetime.now().isoformat(),
