@@ -56,9 +56,9 @@ def test_qcstate_no_duplicate_keys():
 
 
 def test_qcstate_key_count_stable():
-    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 437（v3.17.4 回测工作台 +19）"""
+    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 439（v3.17.12 健康面板 +2）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 437, f"qcState 唯一键数异常: {len(set(keys))} (期望 437)"
+    assert len(set(keys)) == 439, f"qcState 唯一键数异常: {len(set(keys))} (期望 439)"
 
 
 def test_watch_currentpage_single():
@@ -67,20 +67,54 @@ def test_watch_currentpage_single():
     assert src.count("watch(currentPage") == 1, "watch(currentPage) 应合并为唯一"
 
 
-def test_themes_module_data_only():
-    """FR-3.16.2 (16.3): themes.js 收敛为纯主题数据模块（无 applyTheme/changeTheme 重复实现）"""
+def test_themes_module_authority():
+    """FR-3.17.11.4: themes.js 为权威单一 applyTheme（定义 data-theme+持久化实现），
+    app-logic/system.js 仅引用不重复实现主题应用函数体"""
     src = _read("js/themes.js")
-    assert "function applyTheme" not in src, "themes.js 不应再含 applyTheme 重复实现"
+    # 权威 applyTheme 定义在 themes.js（含 data-theme 设置 + quant_theme 持久化）
+    assert "function applyTheme(theme)" in src, "themes.js 应定义权威 applyTheme"
+    assert "setAttribute('data-theme'" in src, "themes.js applyTheme 应设置 data-theme"
+    assert "localStorage.setItem('quant_theme'" in src, "themes.js applyTheme 应持久化 quant_theme"
+    # 主题应用（data-theme/持久化）实现不得散落在其他文件
+    for rel in ("js/app-logic.js", "js/system.js"):
+        other = _read(rel)
+        assert "setAttribute('data-theme'" not in other, f"{rel} 不应重复设置 data-theme"
+        assert "localStorage.setItem('quant_theme'" not in other, f"{rel} 不应重复持久化 quant_theme"
+    # app-logic 委托权威实现（引用 themes.applyTheme）
+    app = _read("js/app-logic.js")
+    assert "themes.applyTheme(theme)" in app, "app-logic 应委托 themes.applyTheme 权威实现"
     assert "function changeTheme" not in src, "themes.js 不应再含 changeTheme 重复实现"
     assert "window.__quantModules.themes" in src
 
 
+def test_auth_injection_single_impl():
+    """FR-3.17.11.3: 鉴权注入仅一份实现 —— core.js withAuthHeaders 唯一负责拼接
+    Authorization；index.html 全局 fetch monkey-patch 仅委托，不重复实现"""
+    core = _read("js/core.js")
+    m = re.search(r"function withAuthHeaders[\s\S]*?\n  \}", core)
+    assert m, "core.js 应定义唯一鉴权注入实现 withAuthHeaders"
+    auth_impl = m.group(0)
+    assert "Authorization" in auth_impl, "withAuthHeaders 应负责拼接 Authorization"
+    assert "localStorage.getItem('quant_token')" in auth_impl, "withAuthHeaders 应读取 quant_token"
+    # apiFetch 通过 withAuthHeaders 注入（不另起一套鉴权）
+    assert "withAuthHeaders(url, options)" in core, "apiFetch 应调用 withAuthHeaders 统一注入"
+    idx = _read("index.html")
+    # index.html monkey-patch 只委托 withAuthHeaders，不内联拼接 Authorization
+    assert "core.withAuthHeaders" in idx, "index.html 应委托 core.withAuthHeaders"
+    m2 = re.search(r"window\.fetch = function[\s\S]*?originalFetch\.apply", idx)
+    assert m2, "index.html monkey-patch 未找到"
+    assert "withAuthHeaders(url, options)" in m2.group(0), "monkey-patch 应调用 withAuthHeaders"
+    assert "options.headers['Authorization']" not in m2.group(0), "monkey-patch 不应重复拼接 Authorization"
+
+
 def test_apifetch_no_token_duplication():
-    """FR-3.16.2 (16.3): apiFetch 不重复注入 Authorization（鉴权统一由 index.html 全局拦截器负责）"""
+    """FR-3.17.11.3: apiFetch 经唯一 withAuthHeaders 注入 Authorization（不另起鉴权实现）"""
     src = _read("js/core.js")
     m = re.search(r"async function apiFetch[\s\S]*?^  \}\n", src, re.M)
     assert m, "apiFetch 函数未找到"
-    assert "Authorization" not in m.group(0), "apiFetch 不应再重复拼接 Authorization"
+    # apiFetch 内不应自行拼 Authorization（应由 withAuthHeaders 统一注入）
+    assert "options.headers['Authorization']" not in m.group(0), "apiFetch 不应重复拼接 Authorization"
+    assert "withAuthHeaders(url, options)" in m.group(0), "apiFetch 应经 withAuthHeaders 注入鉴权"
 
 
 # ─── v3.16 (16.5 / FR-3.16.3) 一致性回归 ────────────────────────────────
@@ -639,3 +673,173 @@ def test_scan_subpage_no_inline_style():
     css = _read("css/themes.css")
     for cls in (".scan-group", ".scan-row", ".scan-tag", ".scan-note", ".scan-section", ".scan-toolbar", ".scan-event-row"):
         assert cls in css, f"themes.css 应定义 {cls}"
+
+
+# ─── v3.17.9 (内联样式收敛治理) 回归 ─────────────────────────────
+
+def test_static_inline_style_budget():
+    """v3.17.9: 前端静态内联 style="..." 总数 ≤279（≥60% 已收敛为类；排除 :style= 动态绑定）"""
+    roots = ("js", "js/components", "js/components/dialogs")
+    total = 0
+    for rel in roots:
+        d = os.path.join(FRONTEND_ROOT, *rel.split("/"))
+        for fn in os.listdir(d):
+            if not fn.endswith(".js"):
+                continue
+            with open(os.path.join(d, fn), encoding="utf-8") as f:
+                total += len(re.findall(r'(?<!:)style="', f.read()))
+    assert total <= 279, f"静态内联 style 计数 {total} 超过预算 279"
+
+
+def test_migrated_utility_classes_defined():
+    """v3.17.9: 迁移后所有模板静态 class 引用的类必须在 CSS 中定义（未定义类不得新增）"""
+    import glob as _glob
+    defined = set()
+    for fn in _glob.glob(os.path.join(FRONTEND_ROOT, "css", "*.css")):
+        with open(fn, encoding="utf-8") as f:
+            defined.update(re.findall(r"\.([A-Za-z_][\w-]*)\s*[,{]", f.read()))
+    refs = {}
+    for rel in ("js", "js/components", "js/components/dialogs", "js/app-logic"):
+        d = os.path.join(FRONTEND_ROOT, *rel.split("/"))
+        if not os.path.isdir(d):
+            continue
+        for fn in os.listdir(d):
+            if not fn.endswith(".js"):
+                continue
+            with open(os.path.join(d, fn), encoding="utf-8") as f:
+                src = f.read()
+            for m in re.finditer(r'(?<!:)(?<![A-Za-z0-9_-])class="([^"]*)"', src):
+                for tok in m.group(1).split():
+                    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", tok):
+                        refs[tok] = refs.get(tok, 0) + 1
+    # 基线 34 个已知未定义类（qc-* 组件名/审计正则漏检），不得新增
+    baseline_undef = {
+        "status-info", "date-group-card", "date-group-records", "market-review-sector-col",
+        "market-review-sector-list", "is-loading", "hover-row", "spinning", "command-palette",
+        "command-group", "global-search-wrapper", "history-time", "history-provider", "history-dims",
+        "market-review-card", "qc-state-panel", "qc-state-info", "qc-state-icon", "qc-state-title",
+        "qc-state-desc", "qc-state-action", "qc-state-retry", "backtest-workbench", "system-page-root",
+        "qc-virtual-list", "qc-vlist-spacer", "qc-vrow", "detail-score", "ai-result-box", "ai-analysis",
+        "merrill-detail-dialog", "risk-section", "shortcut-keys", "tour-dialog",
+    }
+    undef = {c for c in refs if c not in defined}
+    new_undef = undef - baseline_undef
+    assert not new_undef, f"新增未定义类: {sorted(new_undef)}"
+
+
+# ─── v3.17.11 (FR-3.17.11.3/4/5) 收敛与清理回归 ──────────────────────
+
+def test_no_empty_shell_scripts_loaded():
+    """FR-3.17.11.5: 空壳脚本 calendar.js/strategies.js 已删除，index.html 不得再加载"""
+    idx = _read("index.html")
+    assert "js/calendar.js" not in idx, "index.html 不应加载已删除的空壳 calendar.js"
+    assert "js/strategies.js" not in idx, "index.html 不应加载已删除的空壳 strategies.js"
+    # 空壳文件本身不得存在
+    for rel in ("js/calendar.js", "js/strategies.js"):
+        assert not os.path.exists(os.path.join(FRONTEND_ROOT, rel.replace("/", os.sep))), \
+            f"空壳文件 {rel} 应已删除"
+
+
+def test_no_debug_console_log_in_entry():
+    """FR-3.17.11.5: index.html 与 app-logic* 不再含 [DEBUG] 调试日志"""
+    idx = _read("index.html")
+    assert "[DEBUG]" not in idx, "index.html 不应残留 [DEBUG] console.log"
+    for root, _dirs, files in os.walk(os.path.join(FRONTEND_ROOT, "js")):
+        if "app-logic" not in root:
+            continue
+        for fn in files:
+            if not fn.endswith(".js"):
+                continue
+            p = os.path.join(root, fn)
+            with open(p, encoding="utf-8") as f:
+                assert "[DEBUG]" not in f.read(), f"{os.path.relpath(p, FRONTEND_ROOT)} 不应残留 [DEBUG]"
+
+
+def test_backend_print_count_budget():
+    """FR-3.17.11.5: 后端 print() 计数 ≤16（print→logging 收敛 ≥80%）"""
+    import glob as _glob
+    count = 0
+    for fn in _glob.glob(os.path.join(ROOT, "backend", "**", "*.py"), recursive=True):
+        with open(fn, encoding="utf-8") as f:
+            count += len(re.findall(r"\bprint\(", f.read()))
+    assert count <= 16, f"后端 print() 计数 {count} 超过预算 16（应改为 logging）"
+
+
+# ─── v3.17.12 (FR-3.17.12 / 可观测性) 回归 ─────────────────────
+
+def test_health_detail_endpoint_invoked():
+    """FR-3.17.12: 前端应调用 /api/system/health-detail 并展示调度任务'最近运行'文案"""
+    ops = _read("js/app-logic/ops.js")
+    assert "/api/system/health-detail" in ops, "ops.js 应调用 /api/system/health-detail"
+    syspage = _read("js/components/system-page.js")
+    assert "最近运行" in syspage, "system-page 应含'最近运行'文案"
+    assert "调度任务" in syspage, "system-page 应展示调度任务面板"
+    # 后端路由配套存在
+    sysapi = _read_backend("api/v1/system.py")
+    assert "health-detail" in sysapi, "后端应提供 /api/system/health-detail 路由"
+    # /metrics 端点配套存在
+    main = _read_backend("main_new.py")
+    assert "@app.get(\"/metrics\")" in main, "后端应注册 GET /metrics 端点"
+
+
+def test_health_detail_no_inline_style():
+    """FR-3.17.12: 调度任务健康面板新增片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    src = _read("js/components/system-page.js")
+    start = src.index("v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点")
+    end = src.index("v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束")
+    seg = src[start:end]
+    assert 'style="' not in seg, "调度任务健康面板不应含内联 style 属性"
+    assert "style={" not in seg, "调度任务健康面板不应含绑定式内联 style"
+
+
+# ─── v3.17.13 (FR-3.17.13 / 多用户隔离与数据一致性收敛) 回归 ────────────
+
+def test_chat_no_hardcoded_default_user():
+    """FR-3.17.13: chat.py 业务路径不得硬编码 username="default"（仅函数默认参数单引号兜底）"""
+    src = _read_backend("api/v1/chat.py")
+    assert 'username="default"' not in src, "chat.py 仍存在 username=\"default\" 硬编码"
+    # 按当前用户隔离: 统一经 _resolve_username 解析 + 读写按 username
+    assert "_resolve_username" in src, "应提供 _resolve_username 统一解析当前用户"
+
+
+def test_chat_history_isolated_by_user():
+    """FR-3.17.13: 聊天历史读写按用户（SQLite chat_all/clear/append 均按 username）"""
+    src = _read_backend("api/v1/chat.py")
+    assert "db.chat_all(username)" in src, "_load_history 应按 username 过滤"
+    assert "db.chat_clear(username)" in src, "_save_history 应按 username 清空"
+    assert "db.chat_append(username," in src, "_save_history 应按 username 写入"
+
+
+def test_rate_limiter_backend_abstraction():
+    """FR-3.17.13: rate_limit.py 提供 RateLimiterBackend 接口 + SimpleMemoryBackend 默认实现"""
+    src = _read_backend("rate_limit.py")
+    assert "class RateLimiterBackend" in src, "应定义 RateLimiterBackend 接口"
+    assert "def check(self, key: str, limit: int, window: int)" in src, \
+        "接口应定义 check(key, limit, window) -> (allowed, remaining)"
+    assert "class SimpleMemoryBackend(RateLimiterBackend)" in src, "应保留单机内存实现"
+    assert "class SimpleLimiter" in src, "应保留 SimpleLimiter 向后兼容门面"
+    assert "RATE_LIMIT_BACKEND" in src, "应提供后端类型配置项"
+
+
+def test_db_chat_ownership_migration():
+    """FR-3.17.13: db.py 提供存量归属迁移函数 migrate_chat_ownership + username 列增量迁移"""
+    src = _read_backend("db.py")
+    assert "def migrate_chat_ownership" in src, "应提供存量归属迁移函数 migrate_chat_ownership"
+    assert "ADD COLUMN username" in src, "migrate 应含 chat_history.username 列增量迁移"
+
+
+def test_storage_convergence_no_json_double_write():
+    """FR-3.17.13: 用户/聊天/自选写路径收敛 SQLite 为主（写实现不再落 JSON）"""
+    chat_src = _read_backend("api/v1/chat.py")
+    wl_src = _read_backend("api/v1/watchlist.py")
+    um_src = _read_backend("user_manager.py")
+    # 聊天写路径: _save_history 内不得再 open 写 HISTORY_FILE
+    save_seg = chat_src[chat_src.index("def _save_history"):chat_src.index("def _load_session_messages")]
+    assert "json.dump" not in save_seg and 'HISTORY_FILE, \'w\'' not in save_seg, \
+        "_save_history 不应再写 JSON (SQLite 为主)"
+    # 自选写路径: _save_watchlist 内不得再写 watchlist.json
+    wl_seg = wl_src[wl_src.index("def _save_watchlist"):wl_src.index("@router.get(\"\")")]
+    assert "json.dump" not in wl_seg, "_save_watchlist 不应再写 JSON (SQLite 为主)"
+    # 用户写路径: _save_users 内不得再写 users.json
+    um_seg = um_src[um_src.index("def _save_users"):um_src.index("def _hash_password")]
+    assert "json.dump" not in um_seg, "_save_users 不应再写 JSON (SQLite 为主)"

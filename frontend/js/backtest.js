@@ -200,7 +200,7 @@
           start_date: (range && range[0]) || undefined,
           end_date: (range && range[1]) || undefined,
         };
-        const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+        const headers = { 'Content-Type': 'application/json' };
         btRunning.value = true;
         btResult.value = null;
         btError.value = '';

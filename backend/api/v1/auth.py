@@ -3,12 +3,16 @@
 """
 用户认证与权限 API 路由
 """
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from typing import Dict, Any
 
 from auth import login_user, get_current_active_user, get_admin_user, get_non_guest_user
 from rate_limit import check_login_rate_limit
 from user_manager import user_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["用户认证"])
 
@@ -30,14 +34,14 @@ async def login(request: Request, req: Dict[str, str]):
             from .user_config import init_user_config
             init_user_config(req.get("username"))
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
         # v3.4.0-T1: 审计 — 登录成功
         try:
             from audit_log import log
             log("login", req.get("username"), {"ip": client_ip, "result": "success"})
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
         return {
             "success": True,
@@ -49,7 +53,7 @@ async def login(request: Request, req: Dict[str, str]):
         from audit_log import log
         log("login_failed", req.get("username"), {"ip": client_ip, "result": "failed"})
     except Exception:
-        print("[warn] 操作异常 (v3.4.0-T8)")
+        logger.warning("[warn] 操作异常 (v3.4.0-T8)")
         pass
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -104,7 +108,7 @@ async def add_user(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
             from .user_config import init_user_config
             init_user_config(username)
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
     return {"success": success, "message": "添加成功" if success else "用户名已存在"}
 

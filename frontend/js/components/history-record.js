@@ -18,7 +18,7 @@
       timeFormat: { type: String, default: 'time' },
     },
     template: `
-      <div class="ai-history-item" :class="{'selected': isSelected}" style="border-bottom: 1px solid var(--border-light);">
+      <div class="ai-history-item border-bottom-light" :class="{'selected': isSelected}">
         <div @click.stop="toggleSelect" class="history-checkbox">
           <div class="checkbox-inner" :class="{'checked': isSelected}">{{ isSelected ? '✓' : '' }}</div>
         </div>

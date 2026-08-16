@@ -54,7 +54,7 @@ def _init_audit_db():
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[audit] 初始化审计库失败: {e}")
+        _get_logger().error(f"[audit] 初始化审计库失败: {e}")
 
 
 def log(action: str, username: str = None, detail: dict = None):
@@ -76,7 +76,7 @@ def log(action: str, username: str = None, detail: dict = None):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"[audit] 写入审计库失败: {e}")
+        _get_logger().error(f"[audit] 写入审计库失败: {e}")
 
 
 def query(action: str = None, username: str = None, limit: int = 100) -> list:

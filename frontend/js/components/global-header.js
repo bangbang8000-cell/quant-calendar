@@ -25,19 +25,10 @@
           </div>
 
           <div class="global-search-wrapper">
-            <el-autocomplete
-                v-model="searchQuery"
-                :fetch-suggestions="searchStocks"
-                placeholder="搜索股票..."
-                :trigger-on-focus="false"
-                clearable
-                size="small"
-                style="width:200px"
-                @select="onSearchSelect"
-            >
+            <el-autocomplete class="w-200" v-model="searchQuery" :fetch-suggestions="searchStocks" placeholder="搜索股票..." :trigger-on-focus="false" clearable size="small" @select="onSearchSelect">
               <template #default="slotProps">
                 <span>{{ slotProps?.item?.icon }} {{ slotProps?.item?.label || slotProps?.item?.name }}</span>
-                <span v-if="slotProps?.item?.subLabel" style="color:var(--text-secondary);margin-left:8px;font-size:var(--font-sm)">{{ slotProps?.item?.subLabel }}</span>
+                <span class="text-sm-secondary-ml8" v-if="slotProps?.item?.subLabel">{{ slotProps?.item?.subLabel }}</span>
               </template>
             </el-autocomplete>
           </div>
@@ -55,9 +46,9 @@
             <el-date-picker v-else-if="currentSubPage === 'yearly'"
                 v-model="selectedDate" type="year" format="YYYY" value-format="YYYY-MM-DD"
                 placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-button size="small" @click="refreshCalendarData" :loading="loading" style="margin-left:8px" title="重新加载最新持仓数据">🔄 刷新</el-button>
-            <el-button size="small" @click="exportCSV" style="margin-left:4px" title="导出为CSV">📥 导出</el-button>
-            <span v-if="lastLoadTime" style="font-size: var(--font-sm);color:var(--text-tertiary);margin-left:6px;white-space:nowrap">{{ lastLoadTime }}</span>
+            <el-button class="ml-8px" size="small" @click="refreshCalendarData" :loading="loading" title="重新加载最新持仓数据">🔄 刷新</el-button>
+            <el-button class="ml-4px" size="small" @click="exportCSV" title="导出为CSV">📥 导出</el-button>
+            <span class="text-sm-tertiary-ml6-nowrap" v-if="lastLoadTime">{{ lastLoadTime }}</span>
           </div>
 
           <div class="user-menu-wrapper" @click="showUserMenu = !showUserMenu" tabindex="0" role="button"
@@ -67,8 +58,8 @@
                v-click-outside="() => showUserMenu = false">
             <div class="user-menu-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-menu-name">{{ currentUser?.username }}</span>
-            <span v-if="currentUser?.role === 'guest'" style="font-size:var(--font-xs); color:var(--badge-info-text); background:var(--badge-info-bg); padding:1px 8px; border-radius:8px; margin-left:4px;">访客</span>
-            <span style="font-size: var(--font-xs); color: var(--text-tertiary);">▼</span>
+            <span class="info-chip-xs" v-if="currentUser?.role === 'guest'">访客</span>
+            <span class="text-xs-tertiary">▼</span>
             <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop role="menu">
               <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">⚙️ 重新运行初始化向导</div>
               <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" tabindex="0" role="menuitem" @click="showUserMenu = false; showChangePassword = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🔑 修改密码</div>

@@ -8,12 +8,15 @@ SQLite 接入层 (v3.3.0-T1)
 - WAL 模式提升并发
 """
 import json
+import logging
 import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta
 
 from paths import DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 DB_FILE = os.path.join(DATA_DIR, "app.db")
 
@@ -109,7 +112,7 @@ def init_db() -> bool:
             conn.close()
         return True
     except Exception as e:
-        print(f"[db] 数据库初始化/校验失败: {e}")
+        logger.error(f"[db] 数据库初始化/校验失败: {e}")
         return False
 
 
@@ -124,38 +127,71 @@ def schema_ok() -> bool:
                     'portfolio_positions', 'portfolio_trades'}
         missing = required - set(tables)
         if missing:
-            print(f"[db] schema 校验失败, 缺少表: {missing}")
+            logger.error(f"[db] schema 校验失败, 缺少表: {missing}")
             return False
         return True
     except Exception as e:
-        print(f"[db] schema 校验异常: {e}")
+        logger.error(f"[db] schema 校验异常: {e}")
         return False
 
 
 def migrate() -> None:
-    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name; v3.17.8: portfolio 表)"""
+    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name;
+    v3.17.8: portfolio 表; v3.17.13: chat_history.username 旧库补列)"""
     try:
         with _db_lock:
             conn = get_conn()
             # v3.17.8 (FR-3.17.5): 组合/模拟持仓表 (幂等建表)
             conn.executescript(PORTFOLIO_SCHEMA)
             conn.commit()
-            print("[db] migrate: portfolio_positions/portfolio_trades 表就绪")
+            logger.info("[db] migrate: portfolio_positions/portfolio_trades 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:
                 conn.execute("ALTER TABLE watchlist ADD COLUMN name TEXT NOT NULL DEFAULT ''")
                 conn.commit()
-                print("[db] migrate: watchlist 增加 name 列")
+                logger.info("[db] migrate: watchlist 增加 name 列")
             # v3.15: chat_history 增加 stock_name 列 (问股历史缺股票名)
             chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
             if chat_cols and 'stock_name' not in chat_cols:
                 conn.execute("ALTER TABLE chat_history ADD COLUMN stock_name TEXT NOT NULL DEFAULT ''")
                 conn.commit()
-                print("[db] migrate: chat_history 增加 stock_name 列")
+                logger.info("[db] migrate: chat_history 增加 stock_name 列")
+            # v3.17.13 (FR-3.17.13): chat_history 增加 username 列 (历史旧库补列, 幂等)
+            # 新库 SCHEMA 已含 username; 仅对旧库 (chat_history 建于按用户隔离前) 补列
+            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+            if chat_cols and 'username' not in chat_cols:
+                conn.execute("ALTER TABLE chat_history ADD COLUMN username TEXT NOT NULL DEFAULT 'default'")
+                conn.commit()
+                logger.info("[db] migrate: chat_history 增加 username 列")
             conn.close()
     except Exception as e:
-        print(f"[db] migrate 失败: {e}")
+        logger.error(f"[db] migrate 失败: {e}")
+
+
+def migrate_chat_ownership(legacy_owner: str = 'default') -> int:
+    """一次性存量迁移 (FR-3.17.13): 历史上无主/共享的聊天记录归属到指定用户 (幂等可重复执行)
+
+    - 无 username / 空 username 的共享记录 → 归属 legacy_owner (默认 'default', 保留为只读归档)
+    - 已有 username 的记录保持不变 (含遗留的 'default' 记录)
+    - 重复执行返回 0, 不产生副作用
+    """
+    migrated = 0
+    try:
+        migrate()  # 确保 username 列存在 (旧库补列), 幂等
+        owner = legacy_owner or 'default'
+        with _db_lock:
+            conn = get_conn()
+            cur = conn.execute(
+                "UPDATE chat_history SET username=? WHERE username IS NULL OR username=''",
+                (owner,))
+            conn.commit()
+            migrated = cur.rowcount
+            conn.close()
+        logger.info(f"[db] migrate_chat_ownership: {migrated} 条无主聊天记录 → {owner}")
+    except Exception as e:
+        logger.error(f"[db] migrate_chat_ownership 失败: {e}")
+    return migrated
 
 
 # ─── 通用 KV 存取 (users/groups 存 JSON 串) ───────────────────────
@@ -196,7 +232,7 @@ def kv_all(table: str) -> dict:
         try:
             result[r[col]] = json.loads(r['data'])
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("操作异常 (v3.4.0-T8)")
             pass
     return result
 
@@ -485,11 +521,11 @@ def backup_db() -> str | None:
                         if t < cutoff:
                             os.remove(os.path.join(DATA_DIR, "backups", f))
                     except ValueError:
-                        print("[warn] 操作异常 (v3.4.0-T8)")
+                        logger.warning("操作异常 (v3.4.0-T8)")
                         pass
         return os.path.basename(backup_path)
     except Exception as e:
-        print(f"[db] 备份失败: {e}")
+        logger.error(f"[db] 备份失败: {e}")
         return None
 
 
@@ -534,7 +570,7 @@ def restore_backup(name: str) -> bool:
                     os.remove(p)
         return init_db()
     except Exception as e:
-        print(f"[db] 恢复失败: {e}")
+        logger.error(f"[db] 恢复失败: {e}")
         return False
 
 

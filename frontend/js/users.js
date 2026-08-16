@@ -32,10 +32,8 @@
       }
       async function removeMemberFromGroupInline(username, gid) {
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + gid + '/members/' + username, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
+            method: 'DELETE'
           });
           const data = await res.json();
           if (data.success) {
@@ -50,10 +48,9 @@
         const username = addMemberGroupMap.value[gid];
         if (!username) return;
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + gid + '/members', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username })
           });
           const data = await res.json();
@@ -68,10 +65,9 @@
       }
       async function changeUserGroup(user, newGroup) {
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/users/' + user.username, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ group: newGroup })
           });
           const data = await res.json();
@@ -126,10 +122,7 @@
 
       async function loadGroupMembers(gid) {
         try {
-          const token = localStorage.getItem('quant_token');
-          const res = await fetch('/api/groups/' + gid + '/members', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
+          const res = await fetch('/api/groups/' + gid + '/members');
           const data = await res.json();
           if (data.success) groupMembers.value = data.members || [];
         } catch(e) { groupMembers.value = []; console.error('[loadGroupMembers]', e); }
@@ -139,10 +132,9 @@
         if (!addMemberUsername.value || !selectedMemberGroup.value) return;
         savingGroup.value = true;
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + selectedMemberGroup.value + '/members', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: addMemberUsername.value })
           });
           const data = await res.json();
@@ -159,10 +151,8 @@
 
       async function removeMemberFromGroup(username) {
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + selectedMemberGroup.value + '/members/' + username, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
+            method: 'DELETE'
           });
           const data = await res.json();
           if (data.success) {
@@ -229,10 +219,9 @@
       async function saveMenuConfig() {
         savingGroup.value = true;
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + editingGroup.value, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(groupEditForm.value)
           });
           const data = await res.json();
@@ -257,10 +246,8 @@
             { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
           ).then(() => true).catch(() => false);
           if (!confirmed) return;
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups/' + gid, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
+            method: 'DELETE'
           });
           const data = await res.json();
           if (data.success) {
@@ -275,10 +262,9 @@
         if (!addGroupForm.value.group_id) return;
         savingGroup.value = true;
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch('/api/groups', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(addGroupForm.value)
           });
           const data = await res.json();
@@ -299,7 +285,7 @@
         try {
           const token = localStorage.getItem('quant_token');
           if (!token) return;
-          const res = await fetch('/api/groups', { headers: { 'Authorization': 'Bearer ' + token } });
+          const res = await fetch('/api/groups');
           if (res.ok) {
             const data = await res.json();
             allGroups.value = data.groups || {};
@@ -315,8 +301,7 @@
         try {
           const token = localStorage.getItem('quant_token');
           if (!token) { userList.value = []; return; }
-          const headers = { 'Authorization': `Bearer ${token}` };
-          const res = await fetch('/api/users', { headers });
+          const res = await fetch('/api/users');
           if (res.status === 401) {
             console.warn('[loadUsers] 401, clearing session');
             localStorage.removeItem('quant_user');
@@ -345,14 +330,13 @@
         if (!userForm.value.username) return;
         savingUser.value = true;
         try {
-          const token = localStorage.getItem('quant_token');
           const method = editingUser.value ? 'PUT' : 'POST';
           const url = editingUser.value
             ? `/api/users/${userForm.value.username}`
             : '/api/users';
           const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userForm.value)
           });
           const data = await res.json();
@@ -387,10 +371,8 @@
             cancelButtonText: '取消',
             type: 'warning'
           });
-          const token = localStorage.getItem('quant_token');
           const res = await fetch(`/api/users/${username}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            method: 'DELETE'
           });
           const data = await res.json();
           if (data.success) {
@@ -402,10 +384,9 @@
 
       async function toggleUserEnabled(user) {
         try {
-          const token = localStorage.getItem('quant_token');
           const res = await fetch(`/api/users/${user.username}/toggle-enabled`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ enabled: user.enabled })
           });
           const data = await res.json();
@@ -427,10 +408,9 @@
             { confirmButtonText: '确定', cancelButtonText: '取消', inputType: 'password' }
           );
           if (newPassword) {
-            const token = localStorage.getItem('quant_token');
             const res = await fetch(`/api/users/${user.username}/reset-password`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ new_password: newPassword })
             });
             const data = await res.json();

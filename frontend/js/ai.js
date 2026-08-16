@@ -56,9 +56,7 @@ function _stripVendorClientFlags(v) {
 async function loadAiVendors() {
     try {
         aiModelsError.value = '';
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/ai/models', { headers });
+        const res = await fetch('/api/ai/models');
         if (res.status === 401) {
             aiModelsError.value = '请先登录后再查看模型配置';
             return;
@@ -98,9 +96,7 @@ async function loadAiCatalog() {
 async function saveAiVendors() {
     savingAiModels.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
         // 数组顺序即优先级，不做客户端重排
         const res = await fetch('/api/ai/models', {
             method: 'POST',
@@ -122,10 +118,8 @@ async function saveAiVendors() {
 async function testVendorModel(v, m) {
     m._testing = true;
     try {
-        const token = localStorage.getItem('quant_token');
         // 必须显式 Content-Type: application/json (缺省 text/plain 会被 FastAPI 422 拒绝)
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
         // body 传参（模型名可含 /）+ 内联 base_url/api_key: 未保存厂商也能直接探测
         const res = await fetch('/api/ai/models/test', {
             method: 'POST',
@@ -158,9 +152,7 @@ async function testAllVendorModels() {
 async function fetchVendorModels(v) {
     v._fetching = true;
     try {
-        const token = localStorage.getItem('quant_token');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch('/api/ai/models/list', {
             method: 'POST',
             headers,
@@ -378,9 +370,7 @@ function cancelPoolSignals() {
 // 加载最近一次 AI 评估（供 showStockDetail 弹窗使用）
 async function loadLastEvaluation(stockCode) {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`/api/ai/history/last/${encodeURIComponent(stockCode)}`, { headers });
+        const res = await fetch(`/api/ai/history/last/${encodeURIComponent(stockCode)}`);
         const data = await res.json();
         if (data.success && data.data) {
             aiResult.value = data.data;
@@ -398,9 +388,7 @@ async function loadLastEvaluation(stockCode) {
 // 评估历史对比：比较本次与上次同一股票的评分
 async function updateEvalComparison(stockCode, currentResult) {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`/api/ai/history?stock=${encodeURIComponent(stockCode)}&limit=2`, { headers });
+        const res = await fetch(`/api/ai/history?stock=${encodeURIComponent(stockCode)}&limit=2`);
         const data = await res.json();
         if (data.success && data.data && data.data.length >= 2) {
             const prev = data.data[1];  // 第二新的记录

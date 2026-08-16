@@ -10,7 +10,7 @@
     name: 'qc-menu-config-dialog',
     template: `
         <el-dialog v-model="menuConfigDialog" :title="'⚙️ ' + (allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
-            <div style="padding: 15px 0;">
+            <div class="p-15-0">
                 <el-form label-width="60px" size="small">
                     <el-form-item label="组名">
                         <el-input v-model="groupEditForm.name" placeholder="组名" />
@@ -19,21 +19,17 @@
                         <el-input v-model="groupEditForm.description" placeholder="组功能描述" />
                     </el-form-item>
                 </el-form>
-                <div style="margin-bottom: 8px; font-weight: 600; font-size: var(--font-sm);">菜单访问授权</div>
-                <div v-for="menu in allMenuDefs" :key="menu.key" style="margin-bottom: 6px; border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden;">
-                    <div @click="toggleSubPageSection(menu.key)" tabindex="0" role="button"
-                         :aria-expanded="!!subPageSectionExpanded[menu.key]" aria-label="展开或收起子页配置"
-                         @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"
-                         style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-hover); cursor: pointer; user-select: none; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                <div class="mb-8-semibold-sm">菜单访问授权</div>
+                <div class="menu-item-box" v-for="menu in allMenuDefs" :key="menu.key">
+                    <div class="menu-item-row" @click="toggleSubPageSection(menu.key)" tabindex="0" role="button" :aria-expanded="!!subPageSectionExpanded[menu.key]" aria-label="展开或收起子页配置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
+                        <div class="menu-item-main">
                             <el-switch v-model="groupEditForm.visible_menus[menu.key]" @change="onParentToggle(menu.key)" size="small" @click.stop />
-                            <span style="font-weight: 600; font-size: var(--font-sm); white-space: nowrap;">{{ menu.name }}</span>
-                            <span v-if="!groupEditForm.visible_menus[menu.key]" style="font-size: 10px; color: var(--text-tertiary); white-space: nowrap;">子项已关</span>
+                            <span class="text-sm-600-nowrap">{{ menu.name }}</span>
+                            <span class="text-10-tertiary-nowrap" v-if="!groupEditForm.visible_menus[menu.key]">子项已关</span>
                         </div>
                         <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: '12px', flexShrink: 0}">▼</span>
                     </div>
-                    <div v-if="subPageSectionExpanded[menu.key]" style="padding: 8px 14px 10px 40px; display: flex; gap: 8px; flex-wrap: wrap;"
-                        :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
+                    <div class="menu-sub-row" v-if="subPageSectionExpanded[menu.key]" :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
                         <el-switch v-for="sp in menu.subPages" :key="sp"
                             v-model="groupEditForm.visible_sub_pages[menu.key + '.' + sp]"
                             :active-text="subPageNames[sp] || sp"

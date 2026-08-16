@@ -164,9 +164,7 @@ async function viewChatSession(session) {
     try {
         let messages = chatSessionMessagesCache[session.id];
         if (!messages) {
-            const token = localStorage.getItem('quant_token');
-            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-            const res = await fetch('/api/ai/chat/history/' + session.id, { headers });
+            const res = await fetch('/api/ai/chat/history/' + session.id);
             if (!res.ok) throw new Error('load history failed');
             const d = await res.json();
             messages = d.messages || [];
@@ -197,9 +195,7 @@ async function askStockSend() {
     const aiIdx = stockChatMessages.value.length;
     stockChatMessages.value.push({ role: 'assistant', content: '' });
     try {
-        const token = localStorage.getItem('quant_token');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
         const res = await fetch('/api/ai/chat/stream', {
             method: 'POST', headers,
             body: JSON.stringify({ stock_code: stockDetail.value?.stock || '', message: msg })
@@ -241,9 +237,7 @@ async function askStockQuick(mode) {
     const msgs = { trend: '帮我做一下技术趋势分析', fundamental: '帮我看看基本面情况', comprehensive: '帮我做个综合分析' };
     stockChatMessages.value.push({ role: 'user', content: msgs[mode] || msgs.comprehensive });
     try {
-        const token = localStorage.getItem('quant_token');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
         const res = await fetch('/api/ai/chat/quick', {
             method: 'POST', headers,
             body: JSON.stringify({ stock_code: stockDetail.value?.stock || '', mode })
@@ -263,9 +257,7 @@ async function loadChatHistory() {
     chatHistoryLoading.value = true;
     chatHistoryError.value = false;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        const res = await fetch('/api/ai/chat/history?view=date', { headers });
+        const res = await fetch('/api/ai/chat/history?view=date');
         if (res.ok) {
             const groups = await res.json();
             const sessions = [];
@@ -283,10 +275,8 @@ async function loadChatHistory() {
 
 async function deleteChatSession(id) {
     try {
-        const token = localStorage.getItem('quant_token');
         await fetch('/api/ai/chat/history/' + id, {
-            method: 'DELETE',
-            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            method: 'DELETE'
         });
         chatSessions.value = chatSessions.value.filter(s => s.id !== id);
     } catch (e) { console.error('deleteChatSession:', e); }

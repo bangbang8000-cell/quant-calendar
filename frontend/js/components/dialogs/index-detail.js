@@ -15,7 +15,7 @@
                 <!-- 头部信息 -->
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
+                        <h3 class="text-xl-title">{{ indexDetail.name }} <span class="text-md-muted">{{ indexDetail.code }}</span></h3>
                         <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
@@ -25,7 +25,7 @@
                 </div>
 
                 <!-- 指数基本信息 -->
-                <div class="stats-grid" style="margin-top: 16px;">
+                <div class="stats-grid mt-4">
                     <div class="stat-box">
                         <div class="stat-label">最新点位</div>
                         <div class="stat-value">{{ Number(indexDetail.close).toFixed(2) }}</div>
@@ -47,7 +47,7 @@
                 </div>
 
                 <!-- K线图区域 -->
-                <div class="section-title" style="margin-top: 20px;"><span>🕯️</span> K线图与均线</div>
+                <div class="section-title mt-20"><span>🕯️</span> K线图与均线</div>
                 <div class="kline-container">
                     <div class="kline-tabs">
                         <button
@@ -80,17 +80,17 @@
                 <div v-if="indexAiResult" class="ai-result-box">
                     <div class="section-title"><span>🤖</span> AI智能指数评估结果</div>
                     <div class="ai-analysis" v-html="sanitizeHtml(indexAiResult.analysis)"></div>
-                    <div style="margin-top: 16px;">
+                    <div class="mt-4">
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
                             📌 {{ indexAiResult.suggestion || '暂无' }}
                         </el-tag>
-                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: var(--font-base);">信心指数: {{ fmtNum(indexAiResult.confidence || 75, 0) }}%</span>
+                        <span class="ml-12-base-secondary">信心指数: {{ fmtNum(indexAiResult.confidence || 75, 0) }}%</span>
                     </div>
                 </div>
 
                 <!-- 操作按钮 -->
-                <div style="margin-top: 20px; text-align: center;">
-                    <el-button type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading" style="width: 200px;">
+                <div class="mt-20-center">
+                    <el-button class="w-200" type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading">
                         🔬 技术指标评估
                     </el-button>
                 </div>

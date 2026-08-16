@@ -4,11 +4,14 @@
 用户管理模块
 """
 import json
+import logging
 import os
 from typing import List, Dict, Optional
 import bcrypt
 
 from paths import USERS_FILE as DATA_FILE
+
+logger = logging.getLogger(__name__)
 
 # 七套主题配置 (v3.13: 名称与前端 themes.js 对齐；dark-pro 补齐, 供顶部主题切换菜单)
 THEMES = {
@@ -75,7 +78,7 @@ class UserManager:
                     self.users = db_users
                     return
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
         # 回退 JSON
         if os.path.exists(DATA_FILE):
@@ -117,19 +120,14 @@ class UserManager:
             self._save_users()
 
     def _save_users(self):
-        """保存用户数据 (v3.3.0: SQLite + JSON 双写, SQLite 失败不影响 JSON)"""
-        os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.users, f, ensure_ascii=False, indent=2)
-        # SQLite 同步 (尽力而为)
+        """保存用户数据 (v3.17.13: SQLite 为主, JSON 不再双写; JSON 仅保留兼容读取)"""
         try:
             import db
             if db.schema_ok():
                 for username, data in self.users.items():
                     db.kv_set('users', username, data)
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
-            pass
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
 
     def _hash_password(self, password: str) -> str:
         """密码哈希 (使用 bcrypt 强加密)"""

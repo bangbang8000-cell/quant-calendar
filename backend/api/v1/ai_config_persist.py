@@ -21,6 +21,6 @@ def save_ai_config(ai_config):
     try:
         with open(AI_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(ai_config, f, ensure_ascii=False, indent=2)
-            print("✅ AI 配置已保存")
+            logger.info("✅ AI 配置已保存")
     except Exception as e:
-        print(f"⚠️  保存 AI 配置失败: {e}")
+        logger.warning(f"⚠️  保存 AI 配置失败: {e}")

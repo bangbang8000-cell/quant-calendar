@@ -67,6 +67,15 @@
     <script nonce="{{NONCE}}" src="/static/js/components/dialogs/merrill-detail.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/components/dialogs/stock-detail.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/components/history-record.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/data.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/market.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/ops.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/nav.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/keys.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/auth.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/watch.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" src="/static/js/app-logic/lifecycle.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" src="/static/js/app-logic.js?v={{APP_VERSION}}"></script>
 <body>
     <div id="app">
@@ -210,34 +219,28 @@
 </div>
 
     <script nonce="{{NONCE}}">
-    // Token 自动附加拦截器 - 修复 401 问题
+    // v3.17.11 (FR-3.17.11.3/4): 鉴权注入唯一实现收敛至 core.js withAuthHeaders
+    // 全局 fetch monkey-patch 保留（SSE 流式/文件下载/直接 fetch 均依赖其注入 Token），
+    // 但不再重复实现 Authorization 拼接 —— 仅委托 __quantModules.core.withAuthHeaders。
     (function() {
         const originalFetch = window.fetch;
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        const withAuthHeaders = (typeof core.withAuthHeaders === 'function')
+            ? core.withAuthHeaders
+            : function(url, options) { return options; };
         window.fetch = function(...args) {
             const url = args[0];
             const options = args[1] || {};
-            
-            // 只给 /api 请求加 Token
-            if (url.startsWith('/api/')) {
-                const token = localStorage.getItem('quant_token');
-                if (token) {
-                    options.headers = options.headers || {};
-                    options.headers['Authorization'] = 'Bearer ' + token;
-                }
-            }
-            
-            return originalFetch.apply(this, args);
+            const opts = withAuthHeaders(url, options);
+            return originalFetch.apply(this, [url, opts]);
         };
     })();
 </script>
     <script nonce="{{NONCE}}">
         // ===== Vue 应用初始化 =====
-        console.log('[DEBUG] App init script starting');
         const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;
-        console.log('[DEBUG] Vue destructured, creating app');
         const app = createApp({
             setup() {
-                console.log('[DEBUG] setup() started');
                 // v3.6.0-T8: 逻辑已提取至 js/app-logic.js
                 const qcState = window.createAppLogic();
                 provide('qcState', qcState);
@@ -271,7 +274,6 @@
                 document.removeEventListener('click', el.__clickOutside);
             }
         });
-        console.log('[DEBUG] About to mount app');
         // v3.6.0: 注册全局组件 (零构建, 用组件 name 属性保证 kebab-case 正确)
         if (window.__quantComponents) {
             Object.values(window.__quantComponents).forEach((comp) => {
@@ -281,7 +283,6 @@
             });
         }
         app.mount('#app');
-        console.log('[DEBUG] App mounted');
 
     </script>
 </body>

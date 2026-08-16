@@ -105,10 +105,9 @@ async function doAiEvaluate() {
         if (aiLoading.value) aiEvalElapsed.value = Math.round((Date.now() - t0) / 1000);
     }, 500);
     try {
-        const token = localStorage.getItem('quant_token');
         const res = await fetch('/api/ai/evaluate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 stock_code: stockDetail.value.stock,
                 stock_name: stockDetail.value.name || stockDetail.value.stock,
@@ -151,8 +150,7 @@ async function loadAiHistory() {
     try {
         const token = localStorage.getItem('quant_token');
         if (!token) { aiHistory.value = []; return; }
-        const headers = { 'Authorization': `Bearer ${token}` };
-        const res = await fetch('/api/ai/history', { headers });
+        const res = await fetch('/api/ai/history');
         if (res.status === 401) {
             // token 过期，清除登录状态
             console.warn('[loadAiHistory] 401, clearing session');
@@ -183,10 +181,8 @@ async function deleteSingleHistory(id) {
                 type: 'warning'
             }
         );
-        const token = localStorage.getItem('quant_token');
         const res = await fetch(`/api/ai/history/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            method: 'DELETE'
         });
         const data = await res.json();
         if (data.success) {
@@ -290,10 +286,9 @@ async function deleteSelectedHistory() {
                 type: 'warning'
             }
         );
-        const token = localStorage.getItem('quant_token');
         const res = await fetch('/api/ai/history/batch-delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ids: selectedHistoryIds.value})
         });
         const data = await res.json();
@@ -349,18 +344,16 @@ async function saveAutoEvaluateConfig() {
 // v1.8.0: 自选股 CRUD
 async function loadWatchlist() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const res = await fetch('/api/watchlist', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/api/watchlist');
         const data = await res.json();
         if (data.success) watchlist.value = data.stocks || [];
     } catch (e) { console.warn('loadWatchlist failed:', e); }
 }
 async function addToWatchlist(code, name) {
     try {
-        const token = localStorage.getItem('quant_token');
         const res = await fetch('/api/watchlist', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, name })
         });
         const data = await res.json();
@@ -373,9 +366,8 @@ async function addToWatchlist(code, name) {
 }
 async function removeFromWatchlist(code) {
     try {
-        const token = localStorage.getItem('quant_token');
         await fetch(`/api/watchlist/${encodeURIComponent(code)}`, {
-            method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+            method: 'DELETE'
         });
         watchlist.value = watchlist.value.filter(s => s.code !== code);
     } catch (e) { console.warn('removeFromWatchlist failed:', e); }
@@ -383,9 +375,8 @@ async function removeFromWatchlist(code) {
 async function clearWatchlist() {
     try {
         await ElementPlus.ElMessageBox.confirm('确定清空所有自选股？', '提示', { type: 'warning' });
-        const token = localStorage.getItem('quant_token');
         await fetch('/api/watchlist', {
-            method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+            method: 'DELETE'
         });
         watchlist.value = [];
         ElementPlus.ElMessage.success('自选已清空');
@@ -431,9 +422,7 @@ async function preloadWatchlistKline() {
     if (watchlist.value.length === 0) return;
     preloadingKline.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
-        const res = await fetch('/api/watchlist/kline/preload', { method: 'POST', headers });
+        const res = await fetch('/api/watchlist/kline/preload', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
         if (data.success && data.loaded > 0) {
             // 标记已加载K线的股票
@@ -469,10 +458,9 @@ async function watchlistEvaluate(code, name) {
     await nextTick();
     // 触发新评估
     try {
-        const token = localStorage.getItem('quant_token');
         const evalRes = await fetch('/api/ai/evaluate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ stock_code: code, stock_name: name })
         });
         const evalData = await evalRes.json();
@@ -507,8 +495,7 @@ async function searchStockForWatchlist() {
     if (!watchlistSearch.value.trim()) { watchlistResults.value = []; return; }
     watchlistSearching.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const res = await fetch(`/api/watchlist/stock/search?q=${encodeURIComponent(watchlistSearch.value)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`/api/watchlist/stock/search?q=${encodeURIComponent(watchlistSearch.value)}`);
         const data = await res.json();
         watchlistResults.value = (data.results || []).filter(r => !watchlistCodes.value.has(r.code));
     } catch (e) { console.warn('searchStockForWatchlist failed:', e); } finally { watchlistSearching.value = false; }
@@ -529,13 +516,9 @@ async function loadDataRefreshConfig() {
 async function saveDataRefreshConfig() {
     dataRefreshSaving.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token
-            ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-            : { 'Content-Type': 'application/json' };
         const res = await fetch('/api/data-refresh/config', {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataRefreshConfig.value)
         });
         const data = await res.json();
@@ -576,13 +559,9 @@ const dataPullRunning = ref(false);
 async function triggerDataPull() {
     dataPullRunning.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token
-            ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-            : { 'Content-Type': 'application/json' };
         const res = await fetch('/api/data-refresh/pull', {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stock_pool: dataRefreshConfig.value.stock_pool || [] })
         });
         const data = await res.json();
@@ -681,10 +660,9 @@ async function quickEvaluate() {
         stockDetailTab.value = 'ai';
         await nextTick();
         // 借用 doAiEvaluate 逻辑
-        const token = localStorage.getItem('quant_token');
         const res = await fetch('/api/ai/evaluate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ stock_code: stock.code, stock_name: stock.name, strategy: evalStrategy.value })
         });
         const data = await res.json();
@@ -874,8 +852,7 @@ async function doBatchEvaluate() {
     batchEvalErrors.value = {};
     stockCodes.forEach(c => { batchStatuses.value[c] = 'pending'; batchResults.value[c] = null; });
 
-    const token = localStorage.getItem('quant_token');
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    const headers = { 'Content-Type': 'application/json' };
 
     // v3.15: SSE 流式 — 后端逐只完成后实时推送, 进度条真实推进 (替代一次性响应 0→N 瞬跳)
     let successCount = 0, failCount = 0, streamUsed = false;

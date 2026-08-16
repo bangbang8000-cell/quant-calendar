@@ -5,10 +5,13 @@
 """
 
 import json
+import logging
 import os
 import time
 from typing import Dict, Optional
 from paths import STOCK_INFO_FILE
+
+logger = logging.getLogger(__name__)
 
 # Tushare配置 - 优先从环境变量/配置文件读取
 def _get_tushare_token():
@@ -43,18 +46,18 @@ class StockInfoManager:
             try:
                 with open(STOCK_INFO_FILE, 'r', encoding='utf-8') as f:
                     self.stock_map = json.load(f)
-                print(f"✅ 已加载 {len(self.stock_map)} 只股票信息")
+                logger.info(f"✅ 已加载 {len(self.stock_map)} 只股票信息")
             except Exception as e:
-                print(f"⚠️ 加载股票信息失败: {e}")
+                logger.warning(f"⚠️ 加载股票信息失败: {e}")
         else:
-            print("⚠️ 股票信息文件不存在，将从Tushare获取")
+            logger.warning("⚠️ 股票信息文件不存在，将从Tushare获取")
 
     def _save_to_file(self):
         """保存股票信息到本地文件"""
         os.makedirs(os.path.dirname(STOCK_INFO_FILE), exist_ok=True)
         with open(STOCK_INFO_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.stock_map, f, ensure_ascii=False, indent=2)
-        print(f"✅ 已保存 {len(self.stock_map)} 只股票信息到本地")
+        logger.info(f"✅ 已保存 {len(self.stock_map)} 只股票信息到本地")
 
     # v3.16 (16.10-fix): 行情/均线 TTL 缓存读写
     def _cache_get(self, key: str):
@@ -101,14 +104,14 @@ class StockInfoManager:
                         self.stock_map[ts_code] = name
 
                 self._save_to_file()
-                print(f"✅ 从Tushare获取了 {len(items)} 只股票信息")
+                logger.info(f"✅ 从Tushare获取了 {len(items)} 只股票信息")
                 return True
             else:
-                print(f"❌ Tushare API错误: {data}")
+                logger.warning(f"❌ Tushare API错误: {data}")
                 return False
 
         except Exception as e:
-            print(f"❌ 获取股票信息失败: {e}")
+            logger.error(f"❌ 获取股票信息失败: {e}")
             return False
 
     def get_name(self, stock_code: str) -> str:
@@ -159,7 +162,7 @@ class StockInfoManager:
                 return result
             return None
         except Exception as e:
-            print(f"❌ 获取行情数据失败 {ts_code}: {e}")
+            logger.error(f"❌ 获取行情数据失败 {ts_code}: {e}")
             return None
 
     def get_ma_data(self, ts_code: str, end_date: str, days: int = 30) -> Optional[Dict]:
@@ -215,7 +218,7 @@ class StockInfoManager:
                 return ma_data
             return None
         except Exception as e:
-            print(f"❌ 获取均线数据失败 {ts_code}: {e}")
+            logger.error(f"❌ 获取均线数据失败 {ts_code}: {e}")
             return None
 
     def calculate_score(self, daily_data: Dict, ma_data: Dict) -> Dict:
@@ -407,10 +410,11 @@ stock_manager = StockInfoManager()
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     # 测试：获取股票信息
-    print("正在从Tushare获取股票基础信息...")
+    logger.info("正在从Tushare获取股票基础信息...")
     stock_manager.fetch_from_tushare()
-    print("\n测试查询:")
-    print(f"平安银行: {stock_manager.get_name('000001.SZ')}")
-    print(f"贵州茅台: {stock_manager.get_name('600519.SH')}")
-    print(f"搜索'银行': {stock_manager.search('银行')[:5]}")
+    logger.info("\n测试查询:")
+    logger.info("平安银行: %s", stock_manager.get_name('000001.SZ'))
+    logger.info("贵州茅台: %s", stock_manager.get_name('600519.SH'))
+    logger.info("搜索'银行': %s", stock_manager.search('银行')[:5])

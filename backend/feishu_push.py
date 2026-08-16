@@ -5,10 +5,14 @@
 """
 
 import json
+import logging
+
 import requests
 from typing import Dict
 from datetime import datetime
 from data_parser import parser, STRATEGY_CONFIG
+
+logger = logging.getLogger(__name__)
 
 
 class FeishuPusher:
@@ -22,7 +26,7 @@ class FeishuPusher:
     def _send_message(self, content: Dict) -> bool:
         """发送消息到飞书"""
         if not self.webhook_url:
-            print("⚠️ 未配置飞书Webhook")
+            logger.warning("⚠️ 未配置飞书Webhook")
             return False
 
         try:
@@ -34,13 +38,13 @@ class FeishuPusher:
             )
             result = response.json()
             if result.get('code') == 0:
-                print("✅ 飞书消息发送成功")
+                logger.info("✅ 飞书消息发送成功")
                 return True
             else:
-                print(f"❌ 飞书消息发送失败: {result}")
+                logger.warning(f"❌ 飞书消息发送失败: {result}")
                 return False
         except Exception as e:
-            print(f"❌ 发送异常: {e}")
+            logger.error(f"❌ 发送异常: {e}")
             return False
 
     def build_daily_report(self, date: str) -> Dict:
@@ -152,7 +156,7 @@ class FeishuPusher:
             date = dates[-1] if dates else None
 
         if not date:
-            print("❌ 没有可用的日期数据")
+            logger.warning("❌ 没有可用的日期数据")
             return False
 
         card = self.build_daily_report(date)
@@ -171,10 +175,11 @@ class FeishuPusher:
 
 # 测试
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     pusher = FeishuPusher()
     # 测试卡片生成
     dates = parser.get_available_dates()
     if dates:
         card = pusher.build_daily_report(dates[-1])
-        print(json.dumps(card, ensure_ascii=False, indent=2))
-        print("\n✅ 卡片生成成功，请设置webhook后调用 send_daily_report()")
+        logger.info(json.dumps(card, ensure_ascii=False, indent=2))
+        logger.info("\n✅ 卡片生成成功，请设置webhook后调用 send_daily_report()")

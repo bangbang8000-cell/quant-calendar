@@ -3,6 +3,8 @@
 """
 飞书推送 API 路由
 """
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any
 from datetime import datetime
@@ -15,6 +17,8 @@ from paths import DATA_DIR
 import json
 import os
 
+logger = logging.getLogger(__name__)
+
 FEISHU_CONFIG_FILE = os.path.join(DATA_DIR, "feishu_config.json")
 
 def load_feishu_config():
@@ -26,17 +30,17 @@ def load_feishu_config():
             for key, value in saved.items():
                 if value or key not in feishu_config:
                     feishu_config[key] = value
-            print("✅ 已加载飞书配置")
+            logger.info("✅ 已加载飞书配置")
         except Exception as e:
-            print(f"⚠️  加载飞书配置失败: {e}")
+            logger.warning(f"⚠️  加载飞书配置失败: {e}")
 
 def save_feishu_config():
     try:
         with open(FEISHU_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(feishu_config, f, ensure_ascii=False, indent=2)
-            print("✅ 飞书配置已保存")
+            logger.info("✅ 飞书配置已保存")
     except Exception as e:
-        print(f"⚠️  保存飞书配置失败: {e}")
+        logger.warning(f"⚠️  保存飞书配置失败: {e}")
 
 router = APIRouter(prefix="/feishu", tags=["飞书推送"])
 

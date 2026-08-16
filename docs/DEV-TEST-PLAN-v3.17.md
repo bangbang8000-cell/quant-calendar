@@ -112,9 +112,9 @@
 
 ---
 
-### Phase 3.17.1 — 架构健康（P0/P1）
+### Phase 3.17.1 — 架构健康（P0/P1）✅ 已完成
 
-#### T10 前端巨型文件拆分（FR-3.17.11.1）
+#### T10 前端巨型文件拆分（FR-3.17.11.1）✅
 - **目标**: `app-logic.js`(≈116KB) 按域拆分，对外 `window.createAppLogic` 签名不变；单文件 ≤30KB。
 - **文件**: 拆分 `frontend/js/app-logic.js` → `app-logic/state.js`、`app-logic/watch.js`、`app-logic/keys.js`、`app-logic/lifecycle.js` 等（保持 index.html 仅加载入口）。
 - **测试**: `tests/test_frontend_consistency.py` 现有 qcState 导出/键数断言全绿（拆分不得破坏）；新增"单文件大小"断言；全量 e2e 冒烟 0 pageerror。

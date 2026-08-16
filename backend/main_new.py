@@ -121,6 +121,13 @@ async def security_headers(request: Request, call_next):
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
+    # v3.17.12 (FR-3.17.12): Prometheus 指标埋点 (method/path/status/延迟)
+    try:
+        from metrics import record_request as record_prometheus_request
+        record_prometheus_request(request.method, request.url.path, response.status_code, elapsed_ms)
+    except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
+        pass
     # 排除静态资源和健康检查噪音
     path = request.url.path
     if not path.startswith("/static/") and path != "/api/health":
@@ -215,6 +222,14 @@ async def health_check():
         "version": APP_VERSION,
         "message": "量化选股日历服务运行中"
     }
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """FR-3.17.12: Prometheus 指标导出 (text/plain, 供 Prometheus 抓取, 无鉴权)"""
+    from fastapi.responses import PlainTextResponse
+    from metrics import render_metrics
+    return PlainTextResponse(render_metrics(), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 if __name__ == "__main__":

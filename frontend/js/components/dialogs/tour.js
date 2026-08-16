@@ -10,15 +10,15 @@
     name: 'qc-tour-dialog',
     template: `
         <el-dialog v-model="tourVisible" title="" width="440px" :show-close="false" class="tour-dialog">
-            <div style="text-align: center; padding: 8px 0 4px 0;">
-                <div style="font-size: 48px; margin-bottom: 12px;">{{ tourSteps[tourStep].icon }}</div>
-                <div style="font-size: var(--font-lg); font-weight: var(--font-semibold); margin-bottom: 8px;">{{ tourSteps[tourStep].title }}</div>
-                <div style="color: var(--text-secondary); line-height: 1.7; font-size: var(--font-base);">{{ tourSteps[tourStep].desc }}</div>
+            <div class="text-center-pad8-0">
+                <div class="empty-state-icon-sm">{{ tourSteps[tourStep].icon }}</div>
+                <div class="text-lg-semibold-mb8">{{ tourSteps[tourStep].title }}</div>
+                <div class="text-base-secondary-lh">{{ tourSteps[tourStep].desc }}</div>
             </div>
             <template #footer>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex-between">
                     <el-button size="small" text @click="skipTour">跳过</el-button>
-                    <div style="display: flex; gap: 4px;">
+                    <div class="flex-gap-4">
                         <span v-for="(s, i) in tourSteps" :key="i" class="tour-dot" :class="{active: i === tourStep}"></span>
                     </div>
                     <el-button v-if="tourStep < tourSteps.length - 1" size="small" type="primary" @click="tourStep++">下一步</el-button>

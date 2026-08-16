@@ -7,16 +7,32 @@
   const { ref, computed, watch, onMounted, nextTick } = VueRef;
 
   // ─── API Fetch 封装 ─────────────────────────────────
-  // v3.16 (16.3): 鉴权统一 —— Token 由 index.html 全局 fetch 拦截器统一注入（所有 /api 请求），
-  // 此处仅负责默认 Content-Type 与 401 处理，不再重复拼接 Authorization（避免双头/双源）。
+  // v3.17.11 (FR-3.17.11.3/4): 鉴权注入唯一实现 —— 本文件 withAuthHeaders 负责为所有
+  // /api 请求拼接 Authorization（读取 localStorage 的 quant_token）。
+  // index.html 全局 fetch monkey-patch 委托本实现；apiFetch 同样经本实现注入，
+  // 保证「仅一份鉴权注入实现」，避免多套实现/双源。
+  function withAuthHeaders(url, options = {}) {
+    if (typeof url === 'string' && url.startsWith('/api/')) {
+      const token = localStorage.getItem('quant_token');
+      if (token) {
+        return {
+          ...options,
+          headers: { ...(options.headers || {}), Authorization: 'Bearer ' + token },
+        };
+      }
+    }
+    return options;
+  }
+
   async function apiFetch(url, options = {}) {
+    const opts = withAuthHeaders(url, options);
     const headers = {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...opts.headers
     };
 
     try {
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { ...opts, headers });
 
       // v1.10: 401 自动清除登录状态
       if (res.status === 401) {
@@ -255,6 +271,7 @@
   // ─── 注册 ───────────────────────────────────────────
   const core = {
     apiFetch,
+    withAuthHeaders,
     getToday,
     formatDate,
     withTimeout,

@@ -10,7 +10,7 @@
     name: 'qc-add-group-dialog',
     template: `
         <el-dialog v-model="showAddGroup" title="+ 新建分组" width="400px">
-            <el-form label-width="80px" style="padding: 15px 0 25px 0;">
+            <el-form class="p-15-0-25" label-width="80px">
                 <el-form-item label="组ID">
                     <el-input v-model="addGroupForm.group_id" placeholder="英文标识，如：analyst" />
                 </el-form-item>

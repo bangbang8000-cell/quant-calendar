@@ -30,17 +30,12 @@
 
       const portfolioCount = computed(() => positions.value.length);
 
-      function _authHeaders() {
-        const token = localStorage.getItem('quant_token');
-        return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
-      }
-
       // ─── 持仓 ───────────────────────────────────────────────
       async function loadPortfolio() {
         loading.value = true;
         loadError.value = false;
         try {
-          const res = await fetch('/api/portfolio', { headers: _authHeaders() });
+          const res = await fetch('/api/portfolio');
           const data = await res.json();
           if (data.success) {
             positions.value = data.positions || [];
@@ -66,7 +61,7 @@
         addSaving.value = true;
         try {
           const res = await fetch('/api/portfolio/positions', {
-            method: 'POST', headers: _authHeaders(),
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stock_code: code, stock_name: (f.stock_name || '').trim(), cost_price: cost, quantity: qty })
           });
           const data = await res.json();
@@ -94,7 +89,7 @@
         } catch (e) { return; }
         try {
           const res = await fetch('/api/portfolio/positions/' + encodeURIComponent(code), {
-            method: 'DELETE', headers: _authHeaders()
+            method: 'DELETE'
           });
           const data = await res.json();
           if (data.success) {
@@ -151,7 +146,7 @@
 
       async function loadTrades() {
         try {
-          const res = await fetch('/api/portfolio/trades', { headers: _authHeaders() });
+          const res = await fetch('/api/portfolio/trades');
           const data = await res.json();
           if (data.success) trades.value = data.trades || [];
         } catch (e) {
@@ -227,7 +222,7 @@
         const d = Number(days) || equityDays.value || 30;
         equityDays.value = d;
         try {
-          const res = await fetch('/api/portfolio/equity_curve?days=' + d, { headers: _authHeaders() });
+          const res = await fetch('/api/portfolio/equity_curve?days=' + d);
           const data = await res.json();
           if (data.success) {
             equityNote.value = data.note || '';

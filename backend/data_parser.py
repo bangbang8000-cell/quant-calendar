@@ -47,7 +47,7 @@ class DataParser:
 
     def _load_all_data(self):
         """加载所有策略数据"""
-        print("📊 开始加载策略数据...")
+        logger.info("📊 开始加载策略数据...")
 
         all_dates = set()
 
@@ -63,10 +63,10 @@ class DataParser:
                     break
 
             if not filepath:
-                print(f"⚠️ 找不到 {config['name']} 的任何数据文件，已尝试: {config['files']}")
+                logger.warning(f"⚠️ 找不到 {config['name']} 的任何数据文件，已尝试: {config['files']}")
                 continue
 
-            print(f"✅ 加载: {found_file}")
+            logger.info(f"✅ 加载: {found_file}")
 
             self.holdings_data[strategy_id] = {}
 
@@ -93,7 +93,7 @@ class DataParser:
                         all_dates.add(date)
 
         self.date_list = sorted(all_dates)
-        print(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
+        logger.info(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
 
     def reload(self) -> dict:
         """重新加载所有策略数据（原子替换，失败不回滚旧数据）"""
@@ -114,10 +114,10 @@ class DataParser:
                     break
 
             if not filepath:
-                print(f"⚠️ 找不到 {config['name']} 的任何数据文件")
+                logger.warning(f"⚠️ 找不到 {config['name']} 的任何数据文件")
                 continue
 
-            print(f"✅ 加载: {found_file}")
+            logger.info(f"✅ 加载: {found_file}")
             temp_holdings[strategy_id] = {}
 
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -150,7 +150,7 @@ class DataParser:
             "stocks_count": len(self.stock_info),
             "latest_date": self.date_list[-1] if self.date_list else None
         }
-        print(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
+        logger.info(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
         return stats
 
     def get_available_dates(self) -> List[str]:
@@ -266,8 +266,8 @@ parser = DataParser()
 if __name__ == '__main__':
     # 测试
     latest_date = parser.get_available_dates()[-1]
-    print(f"最新日期: {latest_date}")
+    logger.info(f"最新日期: {latest_date}")
     summary = parser.get_date_summary(latest_date)
-    print(f"当日汇总: {summary}")
+    logger.info(f"当日汇总: {summary}")
     consensus = parser.get_strategy_consensus(latest_date)[:10]
-    print(f"前10只高共识股票: {consensus}")
+    logger.info(f"前10只高共识股票: {consensus}")

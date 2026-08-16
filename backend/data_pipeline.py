@@ -283,4 +283,4 @@ def load_financial_snapshot() -> dict:
 
 if __name__ == "__main__":
     import json
-    print(json.dumps(run_pipeline(force=True), ensure_ascii=False, indent=2))
+    logger.info(json.dumps(run_pipeline(force=True), ensure_ascii=False, indent=2))

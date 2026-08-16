@@ -56,10 +56,8 @@ async function loadRateLimit() {
 async function saveRateLimit() {
     rateLimitSaving.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
         const res = await fetch('/api/system/rate-limit', {
-            method: 'POST', headers,
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rateLimitConfig.value)
         });
         const data = await res.json();
@@ -88,11 +86,9 @@ async function saveAiConfig() {
         localStorage.setItem('quant_ai_config', JSON.stringify(aiConfig.value));
 
         // 2. 后端同步
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
         const res = await fetch('/api/ai/config', {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(aiConfig.value)
         });
         const data = await res.json();
@@ -115,9 +111,7 @@ async function saveAiConfig() {
 async function testAiApi() {
     aiLoading.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/ai/test', { headers });
+        const res = await fetch('/api/ai/test');
         const data = await res.json();
         if (data.success) {
             ElementPlus.ElMessage.success(data.message || 'API连接正常');
@@ -185,14 +179,12 @@ function importConfig(event) {
 
 async function saveAllConfig() {
     configSaving.value = true;
-    const token = localStorage.getItem('quant_token');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
     // v1.12: 并行保存，容错不中断
     const saves = [
         fetch('/api/user/config', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ config: {
                 tushare: tushareConfig.value,
                 feishu: feishuConfig.value,
@@ -206,27 +198,27 @@ async function saveAllConfig() {
         }).then(r => ['userConfig', r.ok]),
         fetch('/api/market/tushare/config', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(tushareConfig.value)
         }).then(r => ['tushare', r.ok]),
         fetch('/api/market/datasource/config', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sources: datasourceConfig.value })
         }).then(r => ['datasource', r.ok]),
         fetch('/api/feishu/config', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(feishuConfig.value)
         }).then(r => ['feishu', r.ok]),
         fetch('/api/ai/config', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(aiConfig.value)
         }).then(r => ['ai', r.ok]),
         fetch('/api/system/rate-limit', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rateLimitConfig.value)
         }).then(r => ['rateLimit', r.ok]),
         saveAiModels().then(() => ['aiModels', true], () => ['aiModels', false])
@@ -244,7 +236,7 @@ async function saveAllConfig() {
     if (currentUser.value) {
         fetch(`/api/users/${currentUser.value.username}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...headers },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ theme: currentTheme.value })
         }).catch(() => {});
     }
@@ -260,9 +252,7 @@ async function saveAllConfig() {
 async function resetAllConfig() {
     // v1.12: 真正从后端重新加载配置
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/user/config', { headers });
+        const res = await fetch('/api/user/config');
         const data = await res.json();
         if (data.success && data.config) {
             const c = data.config;
@@ -286,9 +276,7 @@ async function resetAllConfig() {
 async function testTushareConnection() {
     tushareStatus.value = 'testing';
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/market/tushare/test', { method: 'POST', headers });
+        const res = await fetch('/api/market/tushare/test', { method: 'POST' });
         const data = await res.json();
         tushareStatus.value = data.success ? 'connected' : 'disconnected';
         if (data.success) {
@@ -305,9 +293,7 @@ async function testTushareConnection() {
 // 静默检测 Tushare 连接（不弹提示）
 async function checkTushareConnection() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/market/tushare/test', { method: 'POST', headers });
+        const res = await fetch('/api/market/tushare/test', { method: 'POST' });
         const data = await res.json();
         tushareStatus.value = data.success ? 'connected' : 'disconnected';
     } catch (e) {
@@ -317,9 +303,7 @@ async function checkTushareConnection() {
 async function syncStockData() {
     syncingData.value = true;
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-        const res = await fetch('/api/market/tushare/sync', { method: 'POST', headers });
+        const res = await fetch('/api/market/tushare/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
         if (data.success) {
             stockCount.value = parseInt(data.message.match(/\d+/)?.[0] || '0');
@@ -335,9 +319,7 @@ async function syncStockData() {
 }
 async function loadTushareConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/market/tushare/config', { headers });
+        const res = await fetch('/api/market/tushare/config');
         const data = await res.json();
         if (data.success && data.config) {
             tushareConfig.value = { ...tushareConfig.value, ...data.config };
@@ -347,9 +329,7 @@ async function loadTushareConfig() {
 // v1.8.0: 多数据源配置
 async function loadDatasourceConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/market/datasource/config', { headers });
+        const res = await fetch('/api/market/datasource/config');
         const data = await res.json();
         if (data.success && data.config && data.config.sources) {
             const srcs = data.config.sources;
@@ -373,13 +353,9 @@ async function loadDatasourceConfig() {
 }
 async function saveDatasourceConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token
-            ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            : { 'Content-Type': 'application/json' };
         await fetch('/api/market/datasource/config', {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sources: datasourceConfig.value })
         });
         globalConfigDirty.value = true;
@@ -388,9 +364,7 @@ async function saveDatasourceConfig() {
 async function testDatasource(source) {
     datasourceStatus.value[source] = 'testing';
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`/api/market/datasource/test/${source}`, { method: 'POST', headers });
+        const res = await fetch(`/api/market/datasource/test/${source}`, { method: 'POST' });
         const data = await res.json();
         datasourceStatus.value[source] = data.success ? 'connected' : 'disconnected';
         if (data.success) {
@@ -405,9 +379,7 @@ async function testDatasource(source) {
 }
 async function loadFeishuConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/feishu/config', { headers });
+        const res = await fetch('/api/feishu/config');
         const data = await res.json();
         if (data && typeof data === 'object') {
             feishuConfig.value = { ...feishuConfig.value, ...data };
@@ -417,9 +389,7 @@ async function loadFeishuConfig() {
 }
 async function loadAiConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/ai/config', { headers });
+        const res = await fetch('/api/ai/config');
         const data = await res.json();
         if (data.success && data.data) {
             aiConfig.value = { ...aiConfig.value, ...data.data };
@@ -435,9 +405,7 @@ async function loadAiConfig() {
 // v1.5.7: 从用户专属端点加载所有配置
 async function loadUserConfig() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/user/config', { headers });
+        const res = await fetch('/api/user/config');
         const data = await res.json();
         if (data.success && data.config) {
             const c = data.config;
@@ -468,8 +436,6 @@ async function loadUserConfig() {
 // v1.3.0: 加载系统状态
 async function loadSystemStatus() {
     try {
-        const token = localStorage.getItem('quant_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         // 股票数据数量（从概览接口获取）
         const infoRes = await fetch('/api/dashboard');
         const infoData = await infoRes.json();
@@ -480,7 +446,7 @@ async function loadSystemStatus() {
         const datesData = await datesRes.json();
         tradeDateCount.value = datesData?.data?.total || datesData?.data?.dates?.length || null;
         // AI状态
-        const aiRes = await fetch('/api/ai/history', { headers });
+        const aiRes = await fetch('/api/ai/history');
         const aiData = await aiRes.json();
         aiStatus.value = 'ok';
     } catch (e) {

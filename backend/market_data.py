@@ -306,7 +306,7 @@ market_data = MarketData()
 if __name__ == '__main__':
     # 测试
     overview = market_data.get_market_overview()
-    print(json.dumps(overview, ensure_ascii=False, indent=2))
+    logger.info(json.dumps(overview, ensure_ascii=False, indent=2))
 
 
 # ===== K线数据获取 =====

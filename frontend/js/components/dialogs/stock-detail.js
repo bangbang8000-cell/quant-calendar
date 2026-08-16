@@ -12,15 +12,15 @@
     template: `
         <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="800px" class="kline-dialog">
             <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
-            <div v-if="stockDetailLoading && !stockDetail" class="empty-state" style="padding: 48px 0;">
-                <div style="font-size: 44px; margin-bottom: 14px;">⏳</div>
-                <div style="font-size: var(--font-md); font-weight: var(--font-medium); color: var(--text-primary);">正在加载股票详情...</div>
-                <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 8px;">行情数据拉取中，请稍候</div>
+            <div v-if="stockDetailLoading && !stockDetail" class="empty-state p-48-0">
+                <div class="empty-state-icon-xs">⏳</div>
+                <div class="text-md-medium-primary">正在加载股票详情...</div>
+                <div class="text-sm-tertiary-mt8">行情数据拉取中，请稍候</div>
             </div>
             <div v-else-if="stockDetail">
                 <div class="detail-header">
                     <div>
-                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
+                        <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
                         <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
                     </div>
                     <div class="score-badge" :class="{ pulse: scorePulse }">
@@ -35,7 +35,7 @@
                 </div>
                 <div class="detail-content">
                     <!-- Tab 切换 -->
-                    <div style="display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div class="flex-gap-6-mb16-wrap">
                         <el-button size="small" :type="stockDetailTab === 'kline' ? 'primary' : ''" @click="stockDetailTab = 'kline'">
                             📈 K线图表
                         </el-button>
@@ -48,7 +48,7 @@
                         <el-button size="small" :type="stockDetailTab === 'factor' ? 'primary' : ''" @click="stockDetailTab = 'factor'">
                             多因子体检
                         </el-button>
-                        <div style="flex: 1;"></div>
+                        <div class="flex-1"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
                             💡 智能评估
                         </el-button>
@@ -103,23 +103,23 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">最高/最低</div>
-                            <div style="font-size: var(--font-md); font-weight: var(--font-semibold);">
-                                <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high != null ? stockDetail.daily_data.high.toFixed(2) : '—' }}</span>
-                                <span style="color: var(--text-tertiary); margin: 0 4px;">/</span>
-                                <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low != null ? stockDetail.daily_data.low.toFixed(2) : '—' }}</span>
+                            <div class="text-md-semibold">
+                                <span class="color-danger">{{ stockDetail.daily_data?.high != null ? stockDetail.daily_data.high.toFixed(2) : '—' }}</span>
+                                <span class="color-tertiary-mx4">/</span>
+                                <span class="color-primary">{{ stockDetail.daily_data?.low != null ? stockDetail.daily_data.low.toFixed(2) : '—' }}</span>
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">成交量</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() : '—' }}万</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() : '—' }}万</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">换手率</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">振幅</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">MA20偏离</div>
@@ -130,7 +130,7 @@
                     <!-- K线图区域 -->
                     <div class="section-title"><span>🕯️</span> K线图与均线</div>
                     <div class="kline-container">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div class="flex-between-mb12">
                             <div class="kline-tabs">
                                 <button
                                     v-for="tab in klinePeriods"
@@ -158,7 +158,7 @@
                             <span class="ma-toggle-hint">十字线读价：悬停或点击图表</span>
                         </div>
                         <!-- 时间范围快捷按钮 -->
-                        <div v-if="stockKlineLoaded" style="display:flex;gap:4px;margin-top:8px;justify-content:center;">
+                        <div class="flex-gap-4-mt8-center" v-if="stockKlineLoaded">
                             <el-button size="small" @click="zoomKlineRange(22)">近1月</el-button>
                             <el-button size="small" @click="zoomKlineRange(66)">近3月</el-button>
                             <el-button size="small" @click="zoomKlineRange(126)">近半年</el-button>
@@ -168,7 +168,7 @@
                             <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
                         </div>
                         <div v-if="!stockKlineLoaded && !klineLoading" class="kline-placeholder">
-                            <div style="color: var(--text-tertiary); font-size: var(--font-base);">点击加载K线查看</div>
+                            <div class="text-base-tertiary">点击加载K线查看</div>
                         </div>
                     </div>
 
@@ -181,8 +181,8 @@
 
                     <!-- Tab: AI智能评估 -->
                     <div v-if="stockDetailTab === 'ai'">
-                        <div v-if="aiResult" class="card" style="margin-bottom: 16px;">
-                            <div class="card-title" style="margin:0 0 16px 0;">
+                        <div v-if="aiResult" class="card mb-4">
+                            <div class="card-title m-0-0-16">
                                 <span>🤖 AI 智能评估</span>
                                 <!-- v3.15 (15.3): 模型信息展示 -->
                                 <span v-if="aiResult.model_used" class="ai-result-meta" title="模型">🧠 {{ aiResult.model_used }}</span>
@@ -190,114 +190,114 @@
                                 <span v-if="aiResult.result && aiResult.result.provider && aiResult.result.provider !== (aiResult.model_provider || '')" class="ai-result-meta" title="引擎">{{ aiResult.result.provider }}</span>
                                 <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟">⚡ {{ aiResult.llm_latency_ms }}ms</span>
                                 <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">💾 缓存结果</span>
-                                <span style="flex:1;"></span>
+                                <span class="flex-1"></span>
                                 <el-button size="small" @click="copyAiReport">📋 复制报告</el-button>
                                 <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">🔄 重新评估</el-button>
                             </div>
-                            <div style="display:flex;align-items:center;gap:24px;margin-bottom:20px;flex-wrap:wrap;">
-                                <div style="width:100px;height:100px;position:relative;flex-shrink:0;">
-                                    <svg viewBox="0 0 100 100" style="transform:rotate(-90deg);">
+                            <div class="flex-c-gap-24-mb20-wrap">
+                                <div class="ring-box">
+                                    <svg class="rotate-90" viewBox="0 0 100 100">
                                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-light)" stroke-width="8"/>
-                                        <circle cx="50" cy="50" r="42" fill="none" :stroke="levelRingColor" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
+                                        <circle class="transition-08" cx="50" cy="50" r="42" fill="none" :stroke="levelRingColor" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'"/>
                                     </svg>
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ fmtNum(aiResult.result.total_score, 1) }}</div>
-                                        <div style="font-size:var(--font-xs);color:var(--text-tertiary);">分</div>
+                                    <div class="ring-center-text">
+                                        <div class="ring-value">{{ fmtNum(aiResult.result.total_score, 1) }}</div>
+                                        <div class="text-xs-tertiary">分</div>
                                     </div>
                                 </div>
-                                <div style="flex:1;min-width:180px;">
-                                    <div style="font-size:var(--font-xl);font-weight:var(--font-bold);color:var(--text-primary);margin-bottom:8px;">{{ aiResult.result.level }}</div>
-                                    <div style="font-size:var(--font-md);color:var(--text-secondary);line-height:1.7;">{{ aiResult.result.detailed_report || '' }}</div>
+                                <div class="flex-1-min180">
+                                    <div class="text-xl-bold-primary-mb8">{{ aiResult.result.level }}</div>
+                                    <div class="text-md-secondary-lh">{{ aiResult.result.detailed_report || '' }}</div>
                                     <!-- 评估历史对比 -->
-                                    <div v-if="evalHistoryComparison" style="margin-top:8px;padding:6px 10px;background:var(--border-light);border-radius:6px;font-size:var(--font-xs);color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px;">
+                                    <div class="inline-chip" v-if="evalHistoryComparison">
                                         📈 上次{{ fmtNum(evalHistoryComparison.prevScore, 1) }}分 → 本次{{ fmtNum(evalHistoryComparison.currScore, 1) }}分
                                         <span :style="{color:evalHistoryComparison.diff>0?'var(--el-success)':evalHistoryComparison.diff<0?'var(--el-danger)':'var(--text-tertiary)'}">
                                             {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ fmtNum(Math.abs(evalHistoryComparison.diff), 1) }}
                                         </span>
                                     </div>
                                     <!-- 操作检查清单 -->
-                                    <div v-if="checklistItems.length" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px;">
-                                        <span v-for="c in checklistItems" :key="c.label" style="font-size:var(--font-xs);color:var(--text-secondary);">{{ c.icon }} {{ c.label }}</span>
+                                    <div class="meta-tags" v-if="checklistItems.length">
+                                        <span class="text-xs-secondary" v-for="c in checklistItems" :key="c.label">{{ c.icon }} {{ c.label }}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div style="background:var(--bg-card-header);border-radius:10px;padding:16px;margin-bottom:16px;">
-                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:10px;">🔬 九维度评分</div>
-                                <div v-for="(score,name) in aiResult.result.dimensions" :key="name" style="display:flex;align-items:center;margin-bottom:6px;gap:10px;">
-                                    <span style="font-size:var(--font-sm);color:var(--text-secondary);width:76px;flex-shrink:0;text-align:right;">{{ name }}</span>
-                                    <div style="flex:1;height:12px;background:var(--border-light);border-radius:6px;overflow:hidden;">
+                            <div class="panel-card">
+                                <div class="panel-title">🔬 九维度评分</div>
+                                <div class="flex-c-gap-10-mb6" v-for="(score,name) in aiResult.result.dimensions" :key="name">
+                                    <span class="dim-label">{{ name }}</span>
+                                    <div class="dim-track">
                                         <div :style="{width:score+'%',height:'100%',background:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)',borderRadius:'6px',transition:'width 0.5s'}"></div>
                                     </div>
-                                    <span style="font-size:var(--font-sm);font-weight:var(--font-bold);width:28px;text-align:center;" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ fmtNum(score, 0) }}</span>
+                                    <span class="dim-value" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ fmtNum(score, 0) }}</span>
                                 </div>
                             </div>
-                            <div class="ai-eval-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-                                <div style="background:var(--badge-success-bg);border:1px solid var(--badge-success-bg);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-success);margin-bottom:10px;">▸ 优势</div>
-                                    <div v-for="s in aiResult.result.analysis.strengths" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
-                                    <div v-if="!aiResult.result.analysis.strengths.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
+                            <div class="ai-eval-grid grid-3col-gap12">
+                                <div class="factor-card-success">
+                                    <div class="factor-title-success">▸ 优势</div>
+                                    <div class="detail-text-primary" v-for="s in aiResult.result.analysis.strengths" :key="s">• {{ s }}</div>
+                                    <div class="muted-sm" v-if="!aiResult.result.analysis.strengths.length">-</div>
                                 </div>
-                                <div style="background:var(--badge-gold-bg);border:1px solid var(--badge-gold-bg);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-warning);margin-bottom:10px;">⚠️ 风险</div>
-                                    <div v-for="w in aiResult.result.analysis.weaknesses" :key="w" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ w }}</div>
-                                    <div v-if="!aiResult.result.analysis.weaknesses.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
+                                <div class="factor-card-gold">
+                                    <div class="factor-title-gold">⚠️ 风险</div>
+                                    <div class="detail-text-primary" v-for="w in aiResult.result.analysis.weaknesses" :key="w">• {{ w }}</div>
+                                    <div class="muted-sm" v-if="!aiResult.result.analysis.weaknesses.length">-</div>
                                 </div>
-                                <div style="background:var(--badge-info-bg);border:1px solid var(--badge-info-bg);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--color-primary);margin-bottom:10px;">💡 建议</div>
-                                    <div v-for="s in aiResult.result.analysis.suggestions" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
-                                    <div v-if="!aiResult.result.analysis.suggestions.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
+                                <div class="factor-card-info">
+                                    <div class="factor-title-info">💡 建议</div>
+                                    <div class="detail-text-primary" v-for="s in aiResult.result.analysis.suggestions" :key="s">• {{ s }}</div>
+                                    <div class="muted-sm" v-if="!aiResult.result.analysis.suggestions.length">-</div>
                                 </div>
                             </div>
                             <!-- 信号归因条 -->
-                            <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
-                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
-                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:var(--badge-info-bg);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:var(--badge-success-bg);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
-                                    <span v-if="aiResult.result.signal_attribution.capital_flow" style="background:var(--badge-gold-bg);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
-                                    <span v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment" style="background:var(--badge-gold-bg);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
+                            <div class="factor-note-box" v-if="aiResult.result.signal_attribution">
+                                <div class="panel-title-mb8">📊 信号归因</div>
+                                <div class="flex-gap-8-wrap">
+                                    <span class="chip-info" v-if="aiResult.result.signal_attribution.technical">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
+                                    <span class="chip-success" v-if="aiResult.result.signal_attribution.fundamentals">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
+                                    <span class="gold-chip" v-if="aiResult.result.signal_attribution.capital_flow">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
+                                    <span class="gold-chip" v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
                                 </div>
-                                <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
-                                    <span style="color: var(--color-success);">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
-                                    <span v-if="aiResult.result.signal_attribution.strongest_bearish" style="margin-left:12px;">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
+                                <div class="text-sm-secondary-mt6" v-if="aiResult.result.signal_attribution.strongest_bullish">
+                                    <span class="color-success">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
+                                    <span class="ml-12" v-if="aiResult.result.signal_attribution.strongest_bearish">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
                                 </div>
                             </div>
                             <!-- 狙击点卡片 -->
-                            <div v-if="aiResult.result.analysis?.sniper_points" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
-                                <div style="background:var(--badge-info-bg);border:1px solid var(--badge-info-bg);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🎯 理想买入</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ fmtNum(aiResult.result.analysis.sniper_points.ideal_buy) }}</div>
+                            <div class="grid-3col-gap10-mt12" v-if="aiResult.result.analysis?.sniper_points">
+                                <div class="factor-mini-info">
+                                    <div class="text-xs-tertiary-mb4">🎯 理想买入</div>
+                                    <div class="factor-mini-val-info">{{ fmtNum(aiResult.result.analysis.sniper_points.ideal_buy) }}</div>
                                 </div>
-                                <div style="background:var(--badge-danger-bg);border:1px solid var(--badge-danger-bg);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🛑 止损</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ fmtNum(aiResult.result.analysis.sniper_points.stop_loss) }}</div>
+                                <div class="factor-mini-danger">
+                                    <div class="text-xs-tertiary-mb4">🛑 止损</div>
+                                    <div class="factor-mini-val-danger">{{ fmtNum(aiResult.result.analysis.sniper_points.stop_loss) }}</div>
                                 </div>
-                                <div style="background:var(--badge-success-bg);border:1px solid var(--badge-success-bg);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🏁 目标</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ fmtNum(aiResult.result.analysis.sniper_points.take_profit) }}</div>
+                                <div class="factor-mini-success">
+                                    <div class="text-xs-tertiary-mb4">🏁 目标</div>
+                                    <div class="factor-mini-val-success">{{ fmtNum(aiResult.result.analysis.sniper_points.take_profit) }}</div>
                                 </div>
                             </div>
                             <!-- 仓位建议 -->
-                            <div v-if="aiResult.result.analysis?.position_advice" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;">
-                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">👤 空仓者</div>
-                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.no_position }}</div>
+                            <div class="grid-2col-gap10-mt12" v-if="aiResult.result.analysis?.position_advice">
+                                <div class="panel-box">
+                                    <div class="text-xs-tertiary-mb4">👤 空仓者</div>
+                                    <div class="text-sm-primary">{{ aiResult.result.analysis.position_advice.no_position }}</div>
                                 </div>
-                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">📦 持仓者</div>
-                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.has_position }}</div>
+                                <div class="panel-box">
+                                    <div class="text-xs-tertiary-mb4">📦 持仓者</div>
+                                    <div class="text-sm-primary">{{ aiResult.result.analysis.position_advice.has_position }}</div>
                                 </div>
                             </div>
                             <!-- 数据质量提示 -->
-                            <div v-if="aiResult.result.data_quality_note" style="margin-top:12px;padding:8px 12px;background:var(--border-light);border-radius:8px;font-size:var(--font-xs);color:var(--text-tertiary);text-align:center;">
+                            <div class="factor-empty-note" v-if="aiResult.result.data_quality_note">
                                 📋 {{ aiResult.result.data_quality_note }}
                             </div>
                         </div>
-                        <div v-else style="text-align: center; color: var(--text-tertiary); padding: 40px;">
-                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🤖</div>
+                        <div class="text-center-tertiary-pad40" v-else>
+                            <div class="text-3xl-mb12">🤖</div>
                             <div v-if="aiResult">
-                                <div style="margin-bottom: 8px;">最近评估：{{ aiResult.result.level }}</div>
-                                <div style="font-size: var(--font-sm);">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
+                                <div class="mb-8">最近评估：{{ aiResult.result.level }}</div>
+                                <div class="text-sm">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
                             </div>
                             <div v-else>点击 AI 评估按钮获取分析结果</div>
                         </div>
@@ -305,34 +305,34 @@
 
                     <!-- Tab: AI 问股对话 -->
                     <div v-if="stockDetailTab === 'chat'">
-                        <div class="card" style="margin-bottom:12px;">
-                            <div class="card-title" style="margin:0 0 12px 0;">💬 AI 智能问股</div>
+                        <div class="card mb-12">
+                            <div class="card-title m-0-0-12">💬 AI 智能问股</div>
                             <!-- Quick prompts -->
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+                            <div class="flex-wrap-gap-6-mb12">
                                 <el-button size="small" @click="askStockQuick('trend')">📈 趋势分析</el-button>
                                 <el-button size="small" @click="askStockQuick('fundamental')">📊 基本面</el-button>
                                 <el-button size="small" @click="askStockQuick('comprehensive')">🔬 综合分析</el-button>
                             </div>
                             <!-- Chat messages -->
                             <!-- v3.16 (16.8): 历史消息惰性加载提示 -->
-                            <div v-if="stockChatLoading && stockChatMessages.length === 0" style="text-align:center;color:var(--text-tertiary);padding:12px 0;font-size:var(--font-sm);">⏳ 加载历史消息中...</div>
-                            <div v-else-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
-                                <div v-for="(msg, mi) in stockChatMessages" :key="mi" style="margin-bottom:10px;">
-                                    <div v-if="msg.role==='user'" style="text-align:right;">
-                                        <span style="display:inline-block;background:var(--primary-color);color:var(--white);padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>
+                            <div class="text-center-tertiary-pad12" v-if="stockChatLoading && stockChatMessages.length === 0">⏳ 加载历史消息中...</div>
+                            <div class="scroll-300" v-else-if="stockChatMessages.length> 0">
+                                <div class="mb-10" v-for="(msg, mi) in stockChatMessages" :key="mi">
+                                    <div class="text-right" v-if="msg.role==='user'">
+                                        <span class="chat-bubble-user">{{ msg.content }}</span>
                                     </div>
-                                    <div v-else style="display:flex;gap:6px;">
+                                    <div class="flex-gap-6" v-else>
                                         <span>🤖</span>
-                                        <div style="flex:1;font-size:var(--font-sm);line-height:1.5;max-height:200px;overflow-y:auto;" v-html="renderMarkdown(msg.content)"></div>
+                                        <div class="chat-scroll" v-html="renderMarkdown(msg.content)"></div>
                                     </div>
                                 </div>
                             </div>
                             <!-- Input -->
-                            <div style="display:flex;gap:8px;">
-                                <el-input v-model="stockChatInput" placeholder="输入问题，如：这股趋势怎么样" @keyup.enter="askStockSend" size="small" style="flex:1;" />
+                            <div class="flex-gap-8">
+                                <el-input class="flex-1" v-model="stockChatInput" placeholder="输入问题，如：这股趋势怎么样" @keyup.enter="askStockSend" size="small"/>
                                 <el-button type="primary" size="small" @click="askStockSend" :loading="stockChatLoading">发送</el-button>
                             </div>
-                            <div v-if="stockChatError" style="color:var(--el-danger);font-size:var(--font-xs);margin-top:6px;">{{ stockChatError }}</div>
+                            <div class="text-xs-danger-mt6" v-if="stockChatError">{{ stockChatError }}</div>
                         </div>
                     </div>  <!-- close chat tab -->
 

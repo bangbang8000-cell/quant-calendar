@@ -50,12 +50,7 @@ def _load_watchlist(username: str) -> list:
 
 
 def _save_watchlist(username: str, stocks: list):
-    """保存自选股 (v3.3.0: JSON + SQLite 双写)"""
-    user_dir = os.path.join(BASE_USERS_DIR, username)
-    os.makedirs(user_dir, exist_ok=True)
-    with open(_get_watchlist_path(username), 'w', encoding='utf-8') as f:
-        json.dump({"stocks": stocks, "updated_at": datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
-    # SQLite 同步 (尽力而为)
+    """保存自选股 (v3.17.13: SQLite 为主, JSON 不再双写; JSON 仅保留兼容读取)"""
     try:
         import db
         if db.schema_ok():
@@ -68,7 +63,6 @@ def _save_watchlist(username: str, stocks: list):
                 db.watchlist_set(username, code, name or code)
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-        pass
 
 
 @router.get("")

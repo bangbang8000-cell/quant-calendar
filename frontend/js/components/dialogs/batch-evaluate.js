@@ -9,8 +9,8 @@
   window.__quantComponents.BatchEvaluateDialog = {
     name: 'qc-batch-evaluate-dialog',
     template: `
-        <el-dialog v-model="showBatchEvaluate" title="🤖 批量AI评估" width="95%" style="max-width:520px;">
-            <div style="padding: 15px 0 15px 0;">
+        <el-dialog class="max-w-520" v-model="showBatchEvaluate" title="🤖 批量AI评估" width="95%">
+            <div class="p-15-0-15">
                 <el-form label-width="100px" v-if="!batchRunning">
                     <el-form-item label="股票列表">
                         <el-input
@@ -22,38 +22,38 @@
                     </el-form-item>
                 </el-form>
                 <!-- 评估进度 -->
-                <div v-if="batchRunning" style="padding: 10px 0;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:var(--font-sm);color:var(--text-secondary);">
-                        <span>评估中 {{ batchCompleted }}/{{ batchTotal }} <span v-if="batchElapsed>0" style="color:var(--color-primary);">· 已用时 {{ batchElapsed }}s</span></span>
-                        <span v-if="batchCurrent" style="color:var(--color-primary);font-weight:var(--font-semibold);">{{ batchCurrent }}</span>
+                <div class="p-10-0" v-if="batchRunning">
+                    <div class="flex-between-sm-mb8">
+                        <span>评估中 {{ batchCompleted }}/{{ batchTotal }} <span class="color-token-primary" v-if="batchElapsed>0">· 已用时 {{ batchElapsed }}s</span></span>
+                        <span class="color-primary-semibold" v-if="batchCurrent">{{ batchCurrent }}</span>
                     </div>
-                    <div v-if="batchCompleted===0 && batchElapsed>=8" style="margin-bottom:8px;font-size:var(--font-xs);color:var(--text-tertiary);">全新评估需调用大模型，请耐心等待（约需数秒至1分钟）…</div>
-                    <div style="height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
+                    <div class="text-xs-tertiary-mb8" v-if="batchCompleted===0 && batchElapsed>=8">全新评估需调用大模型，请耐心等待（约需数秒至1分钟）…</div>
+                    <div class="progress-track-6">
                         <div :style="{width:(batchTotal>0?batchCompleted/batchTotal*100:0)+'%',height:'100%',background:'var(--gradient-brand)',borderRadius:'3px',transition:'width 0.4s ease'}"></div>
                     </div>
-                    <div style="margin-top:12px;max-height:240px;overflow-y:auto;">
-                        <div v-for="(status,code) in batchStatuses" :key="code" style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--font-sm);">
-                            <span v-if="status==='running'" style="color:var(--color-primary);">⏳</span>
-                            <span v-else-if="status==='success'" style="color:var(--el-success);">●</span>
-                            <span v-else-if="status==='error'" style="color:var(--el-danger);">✕</span>
-                            <span v-else style="color:var(--text-tertiary);">⏸</span>
-                            <span style="color:var(--text-primary);flex:1;">
+                    <div class="scroll-240">
+                        <div class="batch-row" v-for="(status,code) in batchStatuses" :key="code">
+                            <span class="color-token-primary" v-if="status==='running'">⏳</span>
+                            <span class="color-el-success" v-else-if="status==='success'">●</span>
+                            <span class="color-el-danger" v-else-if="status==='error'">✕</span>
+                            <span class="color-tertiary" v-else>⏸</span>
+                            <span class="color-text-primary-flex1">
                                 <!-- v3.15: 名称优先展示, 代码小字跟随 -->
-                                <template v-if="batchResults[code] && batchResults[code].stock_name && batchResults[code].stock_name!==code">{{ batchResults[code].stock_name }}<span style="color:var(--text-tertiary);font-size:var(--font-xs);"> ({{ code }})</span></template>
+                                <template v-if="batchResults[code] && batchResults[code].stock_name && batchResults[code].stock_name!==code">{{ batchResults[code].stock_name }}<span class="text-xs-tertiary"> ({{ code }})</span></template>
                                 <template v-else>{{ code }}</template>
                             </span>
-                            <span v-if="status==='success' && batchResults[code] && batchResults[code].result" style="font-weight:var(--font-bold);font-size:var(--font-sm);" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ batchResults[code].result.total_score }}分</span>
-                            <span v-else-if="status==='error' && batchEvalErrors[code]" :title="batchEvalErrors[code]" style="font-size:var(--font-xs);color:var(--el-danger);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">{{ batchEvalErrors[code] }}</span>
+                            <span class="text-sm-bold" v-if="status==='success' && batchResults[code] && batchResults[code].result" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ batchResults[code].result.total_score }}分</span>
+                            <span class="text-xs-danger-ellipsis" v-else-if="status==='error' && batchEvalErrors[code]" :title="batchEvalErrors[code]">{{ batchEvalErrors[code] }}</span>
                         </div>
                     </div>
                     <!-- v3.15: 完成汇总 -->
-                    <div v-if="batchCompleted===batchTotal && batchTotal>0" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);font-size:var(--font-sm);color:var(--text-secondary);">
-                        评估完成：<span style="color:var(--el-success);font-weight:var(--font-semibold);">成功 {{ Object.values(batchStatuses).filter(s=>s==='success').length }}</span>
-                        · <span style="color:var(--el-danger);font-weight:var(--font-semibold);">失败 {{ Object.values(batchStatuses).filter(s=>s==='error').length }}</span>
-                        <span v-if="batchElapsed>0" style="color:var(--text-tertiary);"> · 用时 {{ batchElapsed }}s</span>
+                    <div class="section-top-sm" v-if="batchCompleted===batchTotal && batchTotal>0">
+                        评估完成：<span class="text-success-semibold">成功 {{ Object.values(batchStatuses).filter(s=>s==='success').length }}</span>
+                        · <span class="text-danger-semibold">失败 {{ Object.values(batchStatuses).filter(s=>s==='error').length }}</span>
+                        <span class="color-tertiary" v-if="batchElapsed>0"> · 用时 {{ batchElapsed }}s</span>
                     </div>
                 </div>
-                <div style="text-align: right; margin-top: 20px;">
+                <div class="text-right-mt20">
                     <el-button @click="showBatchEvaluate = false" :disabled="batchRunning">取消</el-button>
                     <el-button type="primary" @click="doBatchEvaluate" :loading="batchRunning" :disabled="batchRunning">开始评估</el-button>
                 </div>

@@ -837,18 +837,18 @@ data_source_manager = DataSourceManager()
 if __name__ == '__main__':
     # 测试
     mgr = DataSourceManager()
-    print("=== 测试 get_index_daily ===")
+    logger.info("=== 测试 get_index_daily ===")
     result = mgr.get_index_daily('000001.SH')
-    print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+    logger.info(json.dumps(result, ensure_ascii=False, indent=2, default=str))
 
-    print("\n=== 测试 get_kline_data ===")
+    logger.info("\n=== 测试 get_kline_data ===")
     result = mgr.get_kline_data('000001.SZ', limit=5)
     if result:
-        print(f"数据源: {result['data_source']}, K线条数: {len(result['data'])}")
+        logger.info(f"数据源: {result['data_source']}, K线条数: {len(result['data'])}")
     else:
-        print("获取失败")
+        logger.info("获取失败")
 
-    print("\n=== 测试 test_connection ===")
+    logger.info("\n=== 测试 test_connection ===")
     for src in SOURCE_ORDER:
         r = mgr.test_connection(src)
-        print(f"  {src}: {r['message']}")
+        logger.info(f"  {src}: {r['message']}")

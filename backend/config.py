@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # v3.17.13 (FR-3.17.13): 限流后端类型 (memory|redis, 默认 memory; redis 预留未实现时回退内存)
+    RATE_LIMIT_BACKEND: str = "memory"
+
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
 

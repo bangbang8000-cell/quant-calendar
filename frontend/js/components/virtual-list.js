@@ -1,7 +1,7 @@
 // quant-calendar: VirtualList 组件 (v3.11 / FR-3.11.3)
 // 固定行高虚拟滚动列表 — 仅渲染可视区行 + 上下缓冲，滚动流畅不卡顿。
 // 用法（父模板）：
-//   <qc-virtual-list :items="stockPool" :row-height="78" style="height: calc(100vh - 260px);">
+//   <qc-virtual-list class="h-calc-260" :items="stockPool" :row-height="78">
 //     <template #default="{ item, index }">
 //       <div class="consensus-item" @click="showStockDetail(item.code)">...</div>
 //     </template>

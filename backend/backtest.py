@@ -447,18 +447,18 @@ backtest_engine = BacktestEngine()
 
 if __name__ == "__main__":
     # 测试回测引擎
-    print("=" * 60)
-    print("📊 策略回测引擎测试")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("📊 策略回测引擎测试")
+    logger.info("=" * 60)
 
     from data_parser import STRATEGY_CONFIG
 
     for sid in STRATEGY_CONFIG.keys():
-        print(f"\n🔍 回测策略: {sid}")
+        logger.info(f"\n🔍 回测策略: {sid}")
         result = backtest_engine.run_backtest(sid)
         summary = backtest_engine.get_backtest_summary(result)
-        print(f"   总收益率: {summary['total_return']}%")
-        print(f"   年化收益: {summary['annual_return']}%")
-        print(f"   最大回撤: {summary['max_drawdown']}%")
-        print(f"   夏普比率: {summary['sharpe_ratio']}")
-        print(f"   胜率: {summary['win_rate']}%")
+        logger.info(f"   总收益率: {summary['total_return']}%")
+        logger.info(f"   年化收益: {summary['annual_return']}%")
+        logger.info(f"   最大回撤: {summary['max_drawdown']}%")
+        logger.info(f"   夏普比率: {summary['sharpe_ratio']}")
+        logger.info(f"   胜率: {summary['win_rate']}%")

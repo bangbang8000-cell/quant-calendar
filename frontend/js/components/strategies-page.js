@@ -15,9 +15,9 @@
                         <div class="page-title">📈 策略总览</div>
                         <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
                         <button type="button" class="bt-entry-btn" @click="currentSubPage = 'backtest'">回测工作台</button>
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <span style="color: var(--text-secondary); font-size: var(--font-base);">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
-                            <span v-if="timeSinceRefresh" style="color: var(--text-tertiary); font-size: var(--font-xs);">{{ timeSinceRefresh }}</span>
+                        <div class="flex-c-gap-12">
+                            <span class="text-base-secondary">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
+                            <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
                         </div>
                     </div>
 
@@ -32,20 +32,20 @@
                         </div>
                         <div class="today-grid">
                             <!-- 美林时钟 -->
-                            <div class="today-cell" @click="currentSubPage = 'merrill'" style="cursor:pointer;">
+                            <div class="today-cell clickable" @click="currentSubPage = 'merrill'">
                                 <div class="today-cell-label">⏱️ 美林时钟</div>
                                 <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || '计算中...' }}</div>
                                 <div class="today-cell-sub" v-if="merrillNext">{{ merrillNext }}</div>
                                 <div class="today-cell-sub" v-else-if="merrillData?.timing?.duration_days != null">已 {{ merrillData.timing.duration_days }} 天 · 剩余 {{ merrillData.timing.days_remaining ?? '—' }} 天</div>
                             </div>
                             <!-- 市场情绪 -->
-                            <div class="today-cell" @click="currentSubPage = 'market'" style="cursor:pointer;">
+                            <div class="today-cell clickable" @click="currentSubPage = 'market'">
                                 <div class="today-cell-label">💹 市场情绪</div>
                                 <div class="today-sentiment" :class="{muted: !marketData?.market_sentiment}">{{ marketData?.market_sentiment?.text || '暂无情绪数据' }}</div>
                                 <div class="today-cell-sub">{{ tradingStatus }}</div>
                             </div>
                             <!-- 池变动 -->
-                            <div class="today-cell" @click="currentSubPage = 'consensus'" style="cursor:pointer;">
+                            <div class="today-cell clickable" @click="currentSubPage = 'consensus'">
                                 <div class="today-cell-label">📌 池变动</div>
                                 <div class="today-pool-row"><span class="today-pool-val up">+{{ dashboardData?.pool_changes?.new_count || 0 }}</span><span class="today-pool-name">新入池</span></div>
                                 <div class="today-pool-row"><span class="today-pool-val down">-{{ dashboardData?.pool_changes?.out_count || 0 }}</span><span class="today-pool-name">已出池</span></div>
@@ -110,7 +110,7 @@
                         <div class="stat-card">
                             <div class="stat-icon">💎</div>
                             <div class="stat-content">
-                                <div style="display:flex;align-items:baseline;gap:8px;">
+                                <div class="flex-baseline-gap-8">
                                     <div class="stat-value">{{ currentPoolSize }}</div>
                                     <span v-if="poolChangeBadge" :class="poolChangeBadge.dir" class="stat-trend">{{ poolChangeBadge.text }}</span>
                                 </div>
@@ -155,10 +155,10 @@
 
 <!-- 各策略选股数量 (v1.11: 可点击跳转) -->
                     <div class="card">
-                        <div class="card-title">📈 各策略选股统计 <span style="font-weight:var(--font-normal);font-size: var(--font-sm);color:var(--text-tertiary);">(点击策略跳转日历筛选)</span></div>
-                        <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item" @click="navigateToStrategyFilter(item.strategy_name)" style="cursor:pointer;">
+                        <div class="card-title">📈 各策略选股统计 <span class="text-sm-tertiary-normal">(点击策略跳转日历筛选)</span></div>
+                        <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item clickable" @click="navigateToStrategyFilter(item.strategy_name)">
                             <div class="strategy-header">
-                                <span class="strategy-name">{{ item.strategy_name }} <span style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:4px;">→</span></span>
+                                <span class="strategy-name">{{ item.strategy_name }} <span class="text-xs-tertiary-ml4">→</span></span>
                                 <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ item.percentage }}%)</span></span>
                             </div>
                             <div class="strategy-progress">
@@ -169,9 +169,9 @@
 
                     <!-- 策略共识度 TOP5 (v1.11: 嵌入概览) -->
                     <div class="card">
-                        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="card-title flex-between">
                             <span>🏆 策略共识度 TOP5</span>
-                            <span @click="currentSubPage = 'consensus'" style="font-size: var(--font-sm);color:var(--primary-color);cursor:pointer;font-weight:var(--font-normal);">查看全部 {{ filteredConsensusRank.length }}只 →</span>
+                            <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">查看全部 {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <qc-state-panel v-if="filteredConsensusRank.length === 0" type="empty" title="暂无共识数据"></qc-state-panel>
                         <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
@@ -179,8 +179,8 @@
                             <div class="consensus-info">
                                 <div class="consensus-code">{{ item.code }}</div>
                                 <div class="consensus-name">{{ item.name }}
-                                    <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                                    <span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span>
+                                    <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
                                 </div>
                             </div>
                             <div class="consensus-tags">
@@ -195,19 +195,18 @@
                     <div v-else-if="currentSubPage === 'merrill'">
 
 <!-- 美林时钟 -->
-                    <div class="card" style="overflow: hidden;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div style="font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                    <div class="card overflow-hidden">
+                        <div class="flex-between-mb16">
+                            <div class="strategy-title-bar">
                                 ⏱️ 美林时钟 · 经济周期
                             </div>
-                            <span :style="{background: merrillData.color || 'var(--color-success)'}" 
-                                  style="padding: 3px 12px; border-radius: 12px; color: white; font-size: var(--font-sm); font-weight: var(--font-semibold);">
+                            <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
                         </div>
 
                         <!-- 四阶段网格 -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+                        <div class="grid-2col-gap8-mb14">
                             <div v-for="s in stages" :key="s.key" @click.prevent="showStageDetail(s.key)"
                                  class="merrill-stage-card" :class="{active: merrillData.stage === s.key}"
                                  :style="merrillData.stage === s.key ? {borderColor: s.color, background: s.bg} : {}">
@@ -218,65 +217,61 @@
                         </div>
 
                         <!-- 描述 -->
-                        <div v-if="merrillData.description" style="font-size: var(--font-base); color: var(--text-secondary); line-height: 1.6; text-align: center; padding: 8px 0;">
+                        <div class="text-center-secondary-lh" v-if="merrillData.description">
                             {{ merrillData.description }}
                         </div>
 
                         <!-- 时间 + 进度 -->
-                        <div v-if="merrillData.timing" style="margin-top: 12px; padding: 12px; background: var(--badge-gold-bg); border-radius: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-base); margin-bottom: 6px;">
-                                <span style="color: var(--text-secondary);">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
-                                <span v-if="merrillData.timing.maturity" :style="{color: merrillData.color}" style="font-weight: var(--font-semibold); font-size: var(--font-sm); padding: 1px 8px; border-radius: 8px; background: var(--bg-card);">{{ merrillData.timing.maturity }}</span>
+                        <div class="gold-note-box" v-if="merrillData.timing">
+                            <div class="flex-between-base-mb6">
+                                <span class="color-secondary">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
+                                <span class="strategy-badge" v-if="merrillData.timing.maturity" :style="{color: merrillData.color}">{{ merrillData.timing.maturity }}</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-bottom: 7px;">
+                            <div class="flex-between-xs-mb7">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
-                                <span v-if="merrillData.next_stage_prediction?.transition_probability > 0.2" style="color: var(--el-warning); font-weight: var(--font-semibold);">
+                                <span class="text-warning-semibold" v-if="merrillData.next_stage_prediction?.transition_probability> 0.2">
                                     →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(0) }}%
                                 </span>
                                 <span v-else>均值 {{ merrillData.timing.avg_duration_months }}月</span>
                             </div>
-                            <div style="width: 100%; height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden;">
-                                <div :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', 
-                                              background: (merrillData.timing.progress_percent || 0) > 100 ? 
-                                                'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : 
-                                                (merrillData.color || 'var(--color-success)')}" 
-                                     style="height: 100%; border-radius: 4px; transition: width 0.5s;"></div>
+                            <div class="progress-track-8">
+                                <div class="progress-fill-4" :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', background: (merrillData.timing.progress_percent || 0)> 100 ? 'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : (merrillData.color || 'var(--color-success)')}"></div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: var(--font-xs); color: var(--text-secondary); margin-top: 4px;">
+                            <div class="flex-between-xs-mt4">
                                 <span>{{ merrillData.timing.progress_percent || 0 }}%<template v-if="(merrillData.timing.progress_percent || 0) > 100"> ⚠超期</template></span>
                                 <span v-if="merrillData.timing.predicted_end">预计结束 {{ merrillData.timing.predicted_end.base || merrillData.timing.predicted_end }}</span>
                             </div>
                         </div>
 
                         <!-- 多维度评分 -->
-                        <div v-if="merrillData.dimension_scores" style="margin-top: 14px; padding: 12px; background: var(--bg-card-header); border-radius: 10px;">
-                            <div style="font-size: var(--font-base); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px;">📊 多维度评分</div>
-                            <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: var(--font-sm);">
-                                <span style="width: 40px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
-                                <div style="flex: 1; height: 10px; background: var(--border-light); border-radius: 5px; overflow: hidden;">
-                                    <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 5px; transition: width 0.5s;"></div>
+                        <div class="note-box-14" v-if="merrillData.dimension_scores">
+                            <div class="text-base-semibold-primary-mb10">📊 多维度评分</div>
+                            <div class="flex-c-gap-8-mb6-sm" v-for="dim in dimensionScoreList" :key="dim.key">
+                                <span class="stat-label-40">{{ dim.label }}</span>
+                                <div class="stat-track-10">
+                                    <div class="stat-fill-5" :style="{width: dim.barWidth + '%', background: dim.barColor}"></div>
                                 </div>
-                                <span :style="{color: dim.scoreColor}" style="width: 35px; text-align: right; font-weight: var(--font-medium);">+{{ dim.scoreStr }}</span>
-                                <span :style="{color: dim.color}" style="width: 36px; text-align: right; font-weight: var(--font-medium); font-size: var(--font-xs);">{{ dim.level }}</span>
+                                <span class="stat-value-35" :style="{color: dim.scoreColor}">+{{ dim.scoreStr }}</span>
+                                <span class="stat-value-36" :style="{color: dim.color}">{{ dim.level }}</span>
                             </div>
                         </div>
 
                         <!-- 置信度 + 下阶段预测 -->
-                        <div v-if="merrillData.confidence" style="margin-top: 10px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: var(--font-sm); color: var(--text-secondary);">置信度</span>
-                                <span :style="{color: confidenceColor}" style="font-weight: var(--font-semibold); font-size: var(--font-base);">{{ merrillData.confidence.level || '—' }}</span>
+                        <div class="strategy-summary-bar" v-if="merrillData.confidence">
+                            <div class="flex-c-gap-6">
+                                <span class="text-sm-secondary">置信度</span>
+                                <span class="text-base-semibold" :style="{color: confidenceColor}">{{ merrillData.confidence.level || '—' }}</span>
                             </div>
-                            <div v-if="merrillData.next_stage_prediction" style="display: flex; align-items: center; gap: 4px; font-size: var(--font-sm);">
-                                <span style="color: var(--text-secondary);">→预测</span>
-                                <span style="font-weight: var(--font-semibold); color: var(--el-warning);">{{ merrillData.next_stage_prediction.next_stage_name || '—' }}</span>
-                                <span v-if="merrillData.next_stage_prediction.transition_probability" style="color: var(--text-secondary);">
+                            <div class="flex-c-gap-4-sm" v-if="merrillData.next_stage_prediction">
+                                <span class="color-secondary">→预测</span>
+                                <span class="text-warning-semibold">{{ merrillData.next_stage_prediction.next_stage_name || '—' }}</span>
+                                <span class="color-secondary" v-if="merrillData.next_stage_prediction.transition_probability">
                                     {{ (merrillData.next_stage_prediction.transition_probability * 100).toFixed(0) }}%
                                 </span>
                             </div>
                         </div>
 
-                        <div style="margin-top: 10px; font-size: var(--font-sm); color: var(--color-gold); text-align: center; font-weight: var(--font-medium);">
+                        <div class="gold-hint">
                             💡 点击阶段卡片查看详细分析和投资建议
                         </div>
                     </div>
@@ -291,20 +286,18 @@
                         <div class="card-title">💹 今日市场行情</div>
                         <div class="market-status">
                             <span>
-                                <span v-if="marketData.is_trading_day" style="color:var(--primary-color);font-weight:600;">● 交易日</span>
-                                <span v-else style="color:var(--text-tertiary);">○ 非交易日</span>
-                                <span v-if="marketData.in_trading_hours" style="margin-left:8px;color:var(--color-neutral);font-weight:600;">🕐 交易中</span>
-                                <span v-if="!marketData.in_trading_hours && marketData.is_trading_day" style="margin-left:8px;color:var(--text-tertiary);">已收盘</span>
+                                <span class="color-primary-semibold-600" v-if="marketData.is_trading_day">● 交易日</span>
+                                <span class="color-tertiary" v-else>○ 非交易日</span>
+                                <span class="ml-8-neutral-600" v-if="marketData.in_trading_hours">🕐 交易中</span>
+                                <span class="ml-8-tertiary" v-if="!marketData.in_trading_hours && marketData.is_trading_day">已收盘</span>
                             </span>
-                            <span style="font-size:var(--font-xs);color:var(--text-tertiary);">{{ marketData.date }}</span>
+                            <span class="text-xs-tertiary">{{ marketData.date }}</span>
                         </div>
                         <div class="market-sentiment" v-if="marketData.market_sentiment">
                             <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
                         </div>
                         <div class="market-grid">
-                            <div v-for="idx in marketData.indices" :key="idx.id" 
-                                 class="market-card" :class="idx.pct_chg >= 0 ? 'up' : 'down'"
-                                 @click="showIndexDetail(idx)" style="cursor: pointer;">
+                            <div v-for="idx in marketData.indices" :key="idx.id" class="market-card clickable" :class="idx.pct_chg>= 0 ? 'up' : 'down'" @click="showIndexDetail(idx)">
                                 <div class="market-header">
                                     <span class="market-name">{{ idx.name }}</span>
                                     <span class="market-tag">{{ idx.market }}</span>
@@ -326,13 +319,13 @@
                     <div class="card">
                         <div class="card-title">🏆 策略共识度排行 (多策略同时选中)</div>
                         <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
-                        <qc-virtual-list :items="filteredConsensusRank" :row-height="78" style="height: calc(100vh - 240px);">
+                        <qc-virtual-list class="h-calc-240" :items="filteredConsensusRank" :row-height="78">
                             <template #default="{ item, index }">
-                            <div class="consensus-item" style="margin-bottom: 0;" @click="showStockDetail(item.code)">
+                            <div class="consensus-item mb-0" @click="showStockDetail(item.code)">
                                 <div class="consensus-badge">{{ item.strategy_count || index + 1 }}</div>
                                 <div class="consensus-info">
                                     <div class="consensus-code">{{ item.code }}</div>
-                                    <div class="consensus-name">{{ item.name }} <span @click.stop="toggleWatchlist(item.code, item.name)" style="cursor:pointer;color:var(--color-gold);font-size: var(--font-base);" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span v-if="evaluatedCodes.has(item.code)" title="已AI评估" style="font-size: var(--font-sm);margin-left:2px;">🤖</span><span v-if="klineLoadedCodes.has(item.code)" title="已加载K线" style="font-size: var(--font-sm);margin-left:2px;">📈</span></div>
+                                    <div class="consensus-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span></div>
                                 </div>
                                 <div class="consensus-tags">
                                     <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>

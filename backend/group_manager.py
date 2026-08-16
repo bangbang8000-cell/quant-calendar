@@ -5,9 +5,12 @@
 管理用户组的菜单可见性配置
 """
 import json
+import logging
 import os
 from typing import Dict, Optional
 from paths import GROUPS_FILE
+
+logger = logging.getLogger(__name__)
 
 # 默认分组配置
 DEFAULT_GROUPS = {
@@ -86,7 +89,7 @@ class GroupManager:
                     self.groups = db_groups
                     return
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
         if os.path.exists(GROUPS_FILE):
             with open(GROUPS_FILE, 'r', encoding='utf-8') as f:
@@ -107,7 +110,7 @@ class GroupManager:
                 for gid, data in self.groups.items():
                     db.kv_set('groups', gid, data)
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
 
     def list_groups(self) -> Dict:

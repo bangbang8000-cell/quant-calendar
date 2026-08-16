@@ -1020,4 +1020,4 @@ merrill_clock = MerrillClock()
 
 if __name__ == '__main__':
     stage_info = merrill_clock.determine_stage()
-    print(json.dumps(stage_info, ensure_ascii=False, indent=2))
+    logger.info(json.dumps(stage_info, ensure_ascii=False, indent=2))
