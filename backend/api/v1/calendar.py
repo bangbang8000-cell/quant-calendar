@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional
 
 from data_parser import parser, STRATEGY_CONFIG
 from stock_info import stock_manager
+from data_sources import data_source_manager
 
 router = APIRouter(prefix="/calendar", tags=["策略日历"])
 
@@ -103,6 +104,28 @@ async def get_stock_score(stock_code: str, date: Optional[str] = None):
     ma_data = stock_manager.get_ma_data(stock_code, date, days=30)
     score_data = stock_manager.calculate_score(daily_data, ma_data)
     return {"success": True, "score_data": score_data, "date": date}
+
+
+@router.get("/stock/{stock_code}/factors")
+async def get_stock_factors(stock_code: str, date: Optional[str] = None):
+    """个股多因子体检面板 (v3.17 / FR-3.17.3) — 估值/基本面/资金面/情绪面/技术面
+    数据源不可达时优雅降级为"无数据"占位，不抛错"""
+    from factor_engine import build_factor_panel
+
+    class _StockInfoAdapter:
+        """从 K 线数据抽取收盘价序列（旧→新）供技术因子"""
+        def get_close_series(self, code, n=60):
+            try:
+                k = data_source_manager.get_kline_data(code, period='daily', limit=n)
+                rows = k.get('data') if isinstance(k, dict) else k
+                closes = [r.get('close') for r in (rows or []) if r and r.get('close') is not None]
+                return [float(c) for c in closes]
+            except Exception:
+                return []
+
+    panel = build_factor_panel(stock_code, data_source=data_source_manager,
+                               stock_info=_StockInfoAdapter(), today=date)
+    return {"success": True, **panel}
 
 
 @router.get("/{date}/compare")

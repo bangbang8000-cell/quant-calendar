@@ -6,7 +6,7 @@
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
 import logging
-from auth import get_admin_user
+from auth import get_admin_user, get_current_active_user
 from market_data import market_data, get_kline_data
 from merrill_clock import merrill_clock
 
@@ -356,3 +356,56 @@ async def get_industry_heatmap():
     except Exception as e:
         logger.error(f"行业热力图生成失败: {e}")
         return {"success": False, "message": str(e)}
+
+
+# ─── v3.17.2: AI 每日市场复盘 (只读端点) ──────────────────────
+
+@router.get("/reviews")
+async def get_market_reviews(limit: int = 30):
+    """获取市场复盘报告列表 (按日期倒序)"""
+    from market_review import list_reviews
+    return {"success": True, "data": list_reviews(limit=limit)}
+
+
+@router.get("/review")
+async def get_market_review(date: Optional[str] = None):
+    """获取指定日期 (YYYY-MM-DD, 可省则取最近一份) 的市场复盘报告"""
+    from market_review import get_review
+    data = get_review(date=date)
+    if data is None:
+        return {"success": False, "message": "未找到市场复盘报告"}
+    return {"success": True, "data": data}
+
+
+# ─── v3.17.7 (FR-3.17.7): 盘中增强 — 异动扫描 + 事件提醒（离线日线级） ──────
+
+@router.get("/scan")
+async def market_scan(date: Optional[str] = None, pool: str = "all",
+                      user: dict = Depends(get_current_active_user)):
+    """异动扫描（离线日线级）
+
+    Args:
+        date: 扫描日期 YYYY-MM-DD（可选；指定时异动以该日为准）
+        pool: all | strategies | watchlist（watchlist 需登录用户自选）
+    """
+    from scan_engine import run_scan, resolve_scan_pool
+    codes = resolve_scan_pool(pool, user.get("username") if user else None)
+    result = run_scan(date=date, pool=codes)
+    result['pool'] = pool
+    return {"success": True, "data": result}
+
+
+@router.get("/events")
+async def market_events(scope: str = "watchlist",
+                        user: dict = Depends(get_current_active_user)):
+    """事件提醒（离线）— 自选/持仓关联事件（业绩预告/解禁/分红/龙虎榜/两融）
+
+    Args:
+        scope: watchlist | portfolio（按用户隔离）
+    """
+    from event_alert import build_events, get_alertable_codes
+    codes = get_alertable_codes(user.get("username"), scope=scope)
+    result = build_events([c['code'] for c in codes])
+    result['scope'] = scope
+    result['tracked_count'] = len(codes)
+    return {"success": True, "data": result}

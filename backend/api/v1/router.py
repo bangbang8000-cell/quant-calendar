@@ -26,6 +26,7 @@ from .export import router as export_router
 from .audit import router as audit_router
 from .system import router as system_router
 from .analytics import router as analytics_router
+from .portfolio import router as portfolio_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -52,5 +53,6 @@ api_router.include_router(export_router)
 api_router.include_router(audit_router)
 api_router.include_router(system_router)
 api_router.include_router(analytics_router)
+api_router.include_router(portfolio_router)
 
 __all__ = ["api_router"]

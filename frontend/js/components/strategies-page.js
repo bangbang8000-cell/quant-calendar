@@ -13,6 +13,8 @@
                                         <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
                         <div class="page-title">📈 策略总览</div>
+                        <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
+                        <button type="button" class="bt-entry-btn" @click="currentSubPage = 'backtest'">回测工作台</button>
                         <div style="display:flex;align-items:center;gap:12px;">
                             <span style="color: var(--text-secondary); font-size: var(--font-base);">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
                             <span v-if="timeSinceRefresh" style="color: var(--text-tertiary); font-size: var(--font-xs);">{{ timeSinceRefresh }}</span>
@@ -340,6 +342,149 @@
                         </qc-virtual-list>
                     </div>
                     </div>
+                    <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->
+                    <div v-else-if="currentSubPage === 'backtest'" class="backtest-workbench">
+                        <div class="page-header">
+                            <div class="page-title">回测工作台</div>
+                            <div class="page-header-right">
+                                <button type="button" class="bt-back-btn" @click="currentSubPage = 'overview'">返回策略总览</button>
+                            </div>
+                        </div>
+
+                        <!-- 参数表单 -->
+                        <div class="card">
+                            <div class="card-title">回测参数</div>
+                            <div class="bt-form">
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">策略（可多选对比）</span>
+                                    <div class="bt-strategy-opts">
+                                        <label v-for="opt in btStrategyOptions" :key="opt.id" class="bt-strategy-opt" :class="{ active: btSelectedStrategies.includes(opt.id) }">
+                                            <input type="checkbox" class="bt-strategy-check" :checked="btSelectedStrategies.includes(opt.id)" @change="toggleBtStrategy(opt.id)">
+                                            <span>{{ opt.name }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">日期区间</span>
+                                    <el-date-picker v-model="btDateRange" type="daterange" size="small"
+                                        range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"
+                                        value-format="YYYY-MM-DD" class="bt-date-picker"></el-date-picker>
+                                </div>
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">初始资金</span>
+                                    <el-input-number v-model="btCapital" size="small" :min="10000" :step="50000" class="bt-input"></el-input-number>
+                                </div>
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">手续费率</span>
+                                    <el-input-number v-model="btCommissionRate" size="small" :min="0" :max="0.01" :step="0.0001" :precision="4" class="bt-input"></el-input-number>
+                                </div>
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">基准对比</span>
+                                    <el-checkbox v-model="btIncludeBenchmark">含基准对比</el-checkbox>
+                                </div>
+                                <div class="bt-form-actions">
+                                    <el-button type="primary" size="small" :loading="btRunning" @click="runBacktestWorkbench">运行回测</el-button>
+                                    <el-button size="small" :disabled="!btResult" @click="exportBacktestCSV">导出 CSV</el-button>
+                                </div>
+                                <div v-if="btError" class="bt-error">{{ btError }}</div>
+                            </div>
+                        </div>
+
+                        <!-- 结果区 -->
+                        <template v-if="btResult && btResult.success">
+                            <!-- 指标卡 -->
+                            <div class="card">
+                                <div class="card-title">核心指标 <span class="bt-period">{{ btResult.period }}</span></div>
+                                <div class="bt-metrics">
+                                    <div v-for="m in btMetrics" :key="m.key" class="bt-metric">
+                                        <div class="bt-metric-label">{{ m.label }}</div>
+                                        <div class="bt-metric-value" :class="{ 'is-up': m.dir === 'up', 'is-down': m.dir === 'down' }">{{ m.value }}<span class="bt-metric-suffix">{{ m.suffix }}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 最大回撤区间说明 -->
+                            <div v-if="btDrawdownRegion" class="card">
+                                <div class="card-title">最大回撤区间</div>
+                                <div class="bt-dd-info">回撤幅度 <b>{{ btDrawdownRegion.maxDrawdown }}%</b> · {{ btDrawdownRegion.peakDate }} → {{ btDrawdownRegion.troughDate }}（净值图中已标注）</div>
+                            </div>
+
+                            <!-- 净值曲线（多线 + 图例可切换） -->
+                            <div class="card">
+                                <div class="card-title">净值曲线（点击图例可开关各策略/基准）</div>
+                                <div id="backtestNavChart" class="bt-chart" :ref="el => registerBacktestNavChart(el)"></div>
+                            </div>
+
+                            <!-- 年度收益列表 -->
+                            <div class="card">
+                                <div class="card-title">年度收益</div>
+                                <qc-state-panel v-if="btAnnualReturns.length === 0" type="empty" title="暂无年度收益数据"></qc-state-panel>
+                                <div v-else class="table-container">
+                                    <table class="bt-annual-table">
+                                        <thead>
+                                            <tr><th>年度</th><th>收益</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="row in btAnnualReturns" :key="row.year">
+                                                <td>{{ row.year }}</td>
+                                                <td :class="row.return >= 0 ? 'is-up' : 'is-down'">{{ row.return >= 0 ? '+' : '' }}{{ row.return }}%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- 多策略指标对比 -->
+                            <div v-if="btStrategyMetricsRows.length" class="card">
+                                <div class="card-title">多策略指标对比</div>
+                                <div class="table-container">
+                                    <table class="bt-compare-table">
+                                        <thead>
+                                            <tr>
+                                                <th>策略</th>
+                                                <th v-for="m in btStrategyMetricsRows[0].metrics" :key="m.key">{{ m.label }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="row in btStrategyMetricsRows" :key="row.name">
+                                                <td>{{ row.name }}</td>
+                                                <td v-for="m in row.metrics" :key="m.key">{{ m.value }}{{ m.suffix }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- 交易明细 -->
+                            <div class="card">
+                                <div class="card-title">交易明细 <span class="bt-trade-count">{{ btTrades.length }} 笔</span></div>
+                                <qc-state-panel v-if="btTrades.length === 0" type="empty" title="本期无调仓交易"></qc-state-panel>
+                                <div v-else class="table-container bt-trades-wrap">
+                                    <table class="bt-trades-table">
+                                        <thead>
+                                            <tr><th>日期</th><th>股票代码</th><th>方向</th><th>原因</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(t, i) in btTrades" :key="i">
+                                                <td>{{ t.date }}</td>
+                                                <td>{{ t.stock }}</td>
+                                                <td :class="t.action === 'buy' ? 'is-up' : t.action === 'sell' ? 'is-down' : ''">{{ t.action === 'buy' ? '买入' : t.action === 'sell' ? '卖出' : t.action }}</td>
+                                                <td>{{ t.reason }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- 未运行 / 加载 / 失败 -->
+                        <div v-else class="card">
+                            <qc-state-panel v-if="btRunning" type="loading"></qc-state-panel>
+                            <qc-state-panel v-else-if="btError" type="error" title="回测失败" :desc="btError" @retry="runBacktestWorkbench"></qc-state-panel>
+                            <qc-state-panel v-else type="empty" title="尚未运行回测" desc="选择策略与参数后点击「运行回测」查看结果"></qc-state-panel>
+                        </div>
+                    </div>
+                    <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码终点 -->
                 </div>
     `,
     setup() {

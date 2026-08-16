@@ -3,7 +3,7 @@
 // 状态经 inject('qcState') 共享（提供方：app-logic.js setup）。
 // 注：#stockKlineChart 为 ECharts 挂载点，app-logic 的 K线 init 通过该 id 定位。
 (function () {
-  const { inject, computed } = Vue;
+  const { inject, computed, ref, watch } = Vue;
 
   window.__quantComponents = window.__quantComponents || {};
 
@@ -44,6 +44,9 @@
                         </el-button>
                         <el-button size="small" :type="stockDetailTab === 'chat' ? 'primary' : ''" @click="stockDetailTab = 'chat'">
                             💬 AI 问股
+                        </el-button>
+                        <el-button size="small" :type="stockDetailTab === 'factor' ? 'primary' : ''" @click="stockDetailTab = 'factor'">
+                            多因子体检
                         </el-button>
                         <div style="flex: 1;"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
@@ -332,6 +335,32 @@
                             <div v-if="stockChatError" style="color:var(--el-danger);font-size:var(--font-xs);margin-top:6px;">{{ stockChatError }}</div>
                         </div>
                     </div>  <!-- close chat tab -->
+
+                    <!-- Tab: 多因子体检 -->
+                    <div v-if="stockDetailTab === 'factor'">
+                        <div v-if="factorLoading" class="factor-empty">正在加载体检数据…</div>
+                        <div v-else-if="factorError || !factorGroups.length" class="factor-empty">暂无可用因子数据，请稍后重试</div>
+                        <div v-else>
+                            <div v-if="factorSummary && factorSummary.available" class="factor-summary">
+                                <span class="factor-summary-count">共 {{ factorSummary.available }} 项因子</span>
+                                <span v-if="factorSummary.categories && factorSummary.categories.length" class="factor-summary-cats">{{ factorSummary.categories.join(' / ') }}</span>
+                            </div>
+                            <div v-for="g in factorGroups" :key="g.category" class="factor-group">
+                                <div class="factor-group-title">{{ g.category }}</div>
+                                <div class="factor-grid">
+                                    <div v-for="f in g.items" :key="f.key" class="factor-card">
+                                        <div class="factor-label">{{ f.label }}</div>
+                                        <div class="factor-value-row">
+                                            <span class="factor-value">{{ f.value != null ? f.value : '—' }}<span v-if="f.unit" class="factor-unit">{{ f.unit }}</span></span>
+                                            <span v-if="f.semantic" class="factor-semantic" :class="factorSemClass(f.semantic)">{{ f.semantic }}</span>
+                                            <span v-else class="factor-semantic factor-sem-none">无数据</span>
+                                        </div>
+                                        <div v-if="f.percentile != null" class="factor-percentile">历史分位 {{ Math.round(f.percentile * 100) }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>  <!-- close factor tab -->
                 </div>
             </div>
         </el-dialog>
@@ -384,7 +413,51 @@
           catch (e2) { ElementPlus.ElMessage.error('复制失败，请手动复制'); }
         }
       }
-      return { ...state, aiStageText, levelRingColor, copyAiReport };
+      // v3.17 (FR-3.17.3): 多因子体检面板 — 按 category 分组展示因子 + 语义色标注
+      // 语义色惯例：偏低=绿(低估/便宜)、中性=灰、偏高=红（与 AI 评估优势/风险配色一致）
+      const factorLoading = ref(false);
+      const factorError = ref(false);
+      const factorSummary = ref(null);
+      const factorGroups = ref([]);
+      const FACTOR_SEM_CLASS = { '偏低': 'factor-sem-low', '中性': 'factor-sem-mid', '偏高': 'factor-sem-high' };
+      function factorSemClass(sem) {
+        return FACTOR_SEM_CLASS[sem] || 'factor-sem-none';
+      }
+      async function loadFactorPanel() {
+        const code = state.stockDetail.value && state.stockDetail.value.stock;
+        if (!code) return;
+        factorLoading.value = true;
+        factorError.value = false;
+        factorGroups.value = [];
+        factorSummary.value = null;
+        try {
+          const q = state.selectedDate.value ? `?date=${state.selectedDate.value}` : '';
+          const data = await fetch(`/api/calendar/stock/${code}/factors${q}`).then(r => r.json());
+          const list = (data && Array.isArray(data.factors)) ? data.factors : [];
+          const groups = [];
+          const seen = {};
+          list.forEach(f => {
+            if (!seen[f.category]) {
+              seen[f.category] = { category: f.category, items: [] };
+              groups.push(seen[f.category]);
+            }
+            seen[f.category].items.push(f);
+          });
+          factorGroups.value = groups;
+          factorSummary.value = (data && data.summary) || null;
+        } catch (e) {
+          factorError.value = true;
+        } finally {
+          factorLoading.value = false;
+        }
+      }
+      // 切到"多因子体检"Tab 时惰性加载（每次进入拉取最新，避免陈旧数据）
+      watch(state.stockDetailTab, (tab) => {
+        if (tab === 'factor' && state.stockDetail.value && state.stockDetailVisible.value) {
+          loadFactorPanel();
+        }
+      });
+      return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel };
     },
   };
 })();

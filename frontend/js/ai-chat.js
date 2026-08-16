@@ -294,7 +294,47 @@ async function deleteChatSession(id) {
 
 function renderMarkdown(md) {
     if (!md) return '';
-    let html = md
+    // v3.17.1 (FR-3.17.1): Markdown 表格支持（对比数据卡渲染）。
+    // 先抽取表格块 → 占位符 → 其余 md 走原流程 → 恢复表格 HTML（仍过白名单消毒）。
+    const srcLines = String(md).split('\n');
+    const tables = [];
+    const out = [];
+    let i = 0;
+    while (i < srcLines.length) {
+        if (/^\s*\|.*\|\s*$/.test(srcLines[i])) {
+            let j = i;
+            const block = [];
+            while (j < srcLines.length && /^\s*\|.*\|\s*$/.test(srcLines[j])) {
+                block.push(srcLines[j]);
+                j++;
+            }
+            const split = line => line.trim().replace(/^\|/, '').replace(/\|\s*$/, '').split('|').map(s => s.trim());
+            const rows = block.map(split);
+            const hasSep = rows.length > 1 && rows[1].every(c => /^:?-{3,}:?$/.test(c));
+            if (hasSep) {
+                const ncols = Math.max(...rows.map(r => r.length));
+                const head = rows[0].slice(0, ncols);
+                const body = rows.slice(2);
+                let t = '<table>';
+                if (body.length) {
+                    t += '<thead><tr>' + head.map(c => '<th>' + c + '</th>').join('') + '</tr></thead>';
+                    t += '<tbody>' + body.map(r => '<tr>' + r.slice(0, ncols).map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody>';
+                } else {
+                    t += '<tbody><tr>' + head.map(c => '<td>' + c + '</td>').join('') + '</tr></tbody>';
+                }
+                t += '</table>';
+                tables.push(t);
+                out.push('\u0000T' + (tables.length - 1) + '\u0000');
+                i = j;
+                continue;
+            }
+            while (i < j) { out.push(srcLines[i]); i++; }
+            continue;
+        }
+        out.push(srcLines[i]);
+        i++;
+    }
+    let html = out.join('\n')
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/^### (.+)$/gm, '<h4>$1</h4>')
         .replace(/^## (.+)$/gm, '<h3>$1</h3>')
@@ -305,6 +345,9 @@ function renderMarkdown(md) {
         .replace(/^- (.+)$/gm, '<li>$1</li>')
         .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
         .replace(/\n/g, '<br>');
+    tables.forEach((t, idx) => {
+        html = html.split('\u0000T' + idx + '\u0000').join(t);
+    });
     // v3.16 (16.6): 前端双保险 — 再走一遍白名单消毒（防 LLM 输出携带脚本/事件属性）
     if (window.__quantModules && window.__quantModules.core && window.__quantModules.core.sanitizeHtml) {
         html = window.__quantModules.core.sanitizeHtml(html);

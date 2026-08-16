@@ -133,6 +133,104 @@ def _save_history(sessions: list):
         pass
 
 
+# ── v3.17.1 (FR-3.17.1): 智能投顾助手 helpers ─────────────────
+
+def _load_session_messages(stock_code: str, limit_rounds: int = 6) -> list:
+    """读取该股票会话的历史消息（旧→新），供多轮追问使用 (A. 多轮上下文)"""
+    if not stock_code:
+        return []
+    try:
+        sessions = _load_history()
+    except Exception:
+        return []
+    msgs = []
+    for s in sessions:
+        if s.get("stock_code") == stock_code:
+            for m in s.get("messages", []):
+                msgs.append({
+                    "role": m.get("role", "user"),
+                    "content": m.get("content", ""),
+                    "time": m.get("time", ""),
+                })
+    msgs.sort(key=lambda x: x.get("time") or "")
+    return msgs[-(limit_rounds * 2):]
+
+
+def _resolve_chat_intent(message: str, current_stock: str = None):
+    """解析意图/主代码/名称 — 返回 (intent, stock_code, stock_name)"""
+    from stock_scope import parse_stock_intent
+    from stock_info import stock_manager
+    intent = parse_stock_intent(message, current_stock)
+    code = intent.get("stock_code") or current_stock or ""
+    name = intent.get("stock_name") or (stock_manager.get_name(code) if code else "")
+    return intent, code, name
+
+
+def _build_chat_prompts(message: str, stock_code: str, stock_name: str):
+    """统一组装 system/user prompt — FR-3.17.1 智能投顾助手
+
+    - A. 多轮上下文：注入同一股票会话前几轮结论
+    - B. 多股票对比：>=2 代码 → 对比数据卡 + 对比 system prompt
+    - C. 事实护栏：注入数据卡 + FACT_GUARD_RULE（禁止编造数字）
+
+    返回 (system_prompt, user_prompt, tool_data_extra)
+    """
+    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
+    from prompt_facts import parse_compare_request, build_compare_table, build_stock_fact_card, build_conversation_context
+    from prompts.ask_stock import (
+        build_ask_stock_system_prompt, build_compare_system_prompt,
+        build_ask_stock_user_prompt, FACT_GUARD_RULE,
+    )
+    from stock_info import stock_manager
+
+    trend = get_trend_analysis(stock_code) if stock_code else {}
+    consensus = get_consensus_snapshot(stock_code) if stock_code else {}
+    market = get_market_context()
+
+    # A. 多轮上下文：同一股票会话前几轮结论 (精简最近 6 轮)
+    conv = build_conversation_context(_load_session_messages(stock_code)) if stock_code else ""
+
+    # B. 多股对比检测：主代码 + 消息中解析出的全部代码
+    cmp_codes = [stock_code] if stock_code else []
+    pc = parse_compare_request(message, stock_code)
+    for c in pc.get("codes", []):
+        if c not in cmp_codes:
+            cmp_codes.append(c)
+    is_compare = len(cmp_codes) >= 2
+
+    extra = {
+        "is_compare": is_compare,
+        "compare_codes": cmp_codes if is_compare else [],
+        "trend_available": "error" not in trend,
+        "consensus_available": "error" not in consensus,
+        "market_available": "error" not in market,
+    }
+
+    if is_compare:
+        compare_data = build_compare_table(cmp_codes)
+        primary_name = stock_manager.get_name(cmp_codes[0]) if cmp_codes else stock_name
+        system_prompt = build_compare_system_prompt()
+        user_prompt = build_ask_stock_user_prompt(
+            cmp_codes[0], primary_name, message, trend, consensus, market,
+            fact_instruction=FACT_GUARD_RULE,
+            conversation_context=conv,
+            compare_data=compare_data,
+        )
+        extra["compare_available"] = bool(compare_data and compare_data.get("available"))
+    else:
+        fact_card = build_stock_fact_card(stock_code) if stock_code else {}
+        system_prompt = build_ask_stock_system_prompt()
+        user_prompt = build_ask_stock_user_prompt(
+            stock_code, stock_name, message, trend, consensus, market,
+            fact_card=fact_card,
+            fact_instruction=FACT_GUARD_RULE,
+            conversation_context=conv,
+        )
+        extra["fact_available"] = bool(fact_card and fact_card.get("source") != "unavailable")
+
+    return system_prompt, user_prompt, extra
+
+
 # ── LLM Call (async, non-blocking) ──
 
 def _call_llm_sync(system_prompt: str, user_prompt: str) -> str:
@@ -179,24 +277,10 @@ async def _call_llm(system_prompt: str, user_prompt: str) -> str:
 
 @router.post("")
 async def chat(request: Request, body: ChatRequest):
-    """AI 对话 — 主端点"""
-    from stock_scope import parse_stock_intent
-    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
-    from stock_info import stock_manager
-    from prompts.ask_stock import build_ask_stock_system_prompt, build_ask_stock_user_prompt
-
-    # 1. 解析意图
-    intent = parse_stock_intent(body.message, body.stock_code)
-    stock_code = intent.get("stock_code") or body.stock_code or ""
+    """AI 对话 — 主端点 (v3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文)"""
+    intent, stock_code, stock_name = _resolve_chat_intent(body.message, body.stock_code)
     if not stock_code:
         return {"reply": "请提供股票代码或名称，例如：\n- 分析茅台\n- 600519 趋势怎么看\n- 比亚迪怎么样", "intent": intent}
-
-    stock_name = intent.get("stock_name") or stock_manager.get_name(stock_code)
-
-    # 2. 收集数据
-    trend = get_trend_analysis(stock_code)
-    consensus = get_consensus_snapshot(stock_code)
-    market = get_market_context()
 
     # v3.5.0-T4: RAG 上下文增强 — 注入历史评估结果 + 自选状态
     rag_context = ""
@@ -228,12 +312,8 @@ async def chat(request: Request, body: ChatRequest):
     if rag_context:
         body.message = body.message + "\n\n[参考上下文]" + rag_context
 
-    # 3. 构建 Prompt
-    system_prompt = build_ask_stock_system_prompt()
-    user_prompt = build_ask_stock_user_prompt(
-        stock_code, stock_name, body.message,
-        trend, consensus, market,
-    )
+    # 3. 构建 Prompt (FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文)
+    system_prompt, user_prompt, tool_data = _build_chat_prompts(body.message, stock_code, stock_name)
 
     # 4. LLM 调用
     reply = await _call_llm(system_prompt, user_prompt)
@@ -259,11 +339,7 @@ async def chat(request: Request, body: ChatRequest):
         "reply": reply,
         "session_id": session["id"],
         "intent": intent,
-        "tool_data": {
-            "trend_available": "error" not in trend,
-            "consensus_available": "error" not in consensus,
-            "market_available": "error" not in market,
-        },
+        "tool_data": tool_data,
     }
 
 
@@ -352,23 +428,16 @@ async def delete_history(session_id: str):
 
 @router.post("/stream")
 async def chat_stream(body: ChatRequest):
-    """流式 AI 对话 — SSE (非阻塞)"""
-    from stock_scope import parse_stock_intent
-    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
-    from stock_info import stock_manager
-    from prompts.ask_stock import build_ask_stock_system_prompt, build_ask_stock_user_prompt
+    """流式 AI 对话 — SSE (非阻塞, FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文)"""
     from ai_evaluator import ai_evaluator
 
-    intent = parse_stock_intent(body.message, body.stock_code)
-    stock_code = intent.get("stock_code") or body.stock_code or ""
-    stock_name = intent.get("stock_name") or stock_manager.get_name(stock_code)
+    _intent, stock_code, stock_name = _resolve_chat_intent(body.message, body.stock_code)
+    if not stock_code:
+        async def err_gen():
+            yield "data: {\"error\": \"请提供股票代码或名称\"}\n\n"
+        return StreamingResponse(err_gen(), media_type="text/event-stream")
 
-    trend = get_trend_analysis(stock_code)
-    consensus = get_consensus_snapshot(stock_code)
-    market = get_market_context()
-
-    system_prompt = build_ask_stock_system_prompt()
-    user_prompt = build_ask_stock_user_prompt(stock_code, stock_name, body.message, trend, consensus, market)
+    system_prompt, user_prompt, _tool_data = _build_chat_prompts(body.message, stock_code, stock_name)
 
     models = ai_evaluator.get_enabled_models()
     if not models:

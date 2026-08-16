@@ -6,7 +6,7 @@ AI 评估 API
 import json
 import logging
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -94,6 +94,23 @@ async def delete_ai_history(record_id: str, user: Dict = Depends(get_current_act
         success = ai_evaluator.delete_history(user["username"], record_id)
         return {"success": success, "message": "删除成功" if success else "删除失败"}
     except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/track")
+async def get_ai_track(window: Optional[int] = None, user: Dict = Depends(get_current_active_user)):
+    """AI 评估命中率追踪（决策复盘闭环） FR-3.17.6
+
+    对照评估日后 N 日（5/10/20 交易日）实际涨跌与评级方向，统计命中率（总体/分模型/分评级）。
+    Args:
+        window: 可选 5/10/20，指定时仅返回该窗口统计；缺省返回全部窗口。
+    """
+    try:
+        from eval_track import get_track_summary
+        summary = get_track_summary(user["username"], window=window)
+        return {"success": True, "data": summary}
+    except Exception as e:
+        logger.error(f"评估命中率追踪失败: {e}")
         return {"success": False, "message": str(e)}
 
 

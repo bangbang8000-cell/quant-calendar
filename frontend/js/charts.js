@@ -198,10 +198,118 @@
     return rec && rec.chart;
   }
 
+  // ─── v3.17.4 (FR-3.17.4): 回测净值/对比图实例生命周期 — 与 K线同模式管理 ───
+  // 渲染净值对比图（多线 + 图例联动 + 最大回撤 markArea）。
+  // buildOption: () => ECharts option 工厂（渲染时读 CSS 令牌，主题切换重绘时重跑）。
+  const _backtestRegistry = new Map();  // containerId -> { chart, cache }
+  function _backtestRec(containerId) {
+    if (!_backtestRegistry.has(containerId)) _backtestRegistry.set(containerId, { chart: null, cache: null });
+    return _backtestRegistry.get(containerId);
+  }
+
+  function renderBacktestTo(containerId, buildOption, opts = {}) {
+    const rec = _backtestRec(containerId);
+    const el = document.getElementById(containerId);
+    if (!el) throw new Error('无法找到图表容器: ' + containerId);
+    if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
+    // v3.17.4: KeepAlive 子页切换后旧实例可能绑定到已脱离 DOM 的容器 → 重建
+    if (rec.chart && rec.chart.getDom && rec.chart.getDom() !== el) {
+      try { rec.chart.dispose(); } catch (e) { /* ignore */ }
+      rec.chart = null;
+    }
+    if (!rec.chart) {
+      rec.chart = echarts.init(el);
+      rec.chart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+      if (!rec.resizeBound) {
+        rec.resizeBound = true;
+        window.addEventListener('resize', function () {
+          if (rec.chart && !rec.chart.isDisposed()) rec.chart.resize();
+        });
+      }
+    }
+    const option = typeof buildOption === 'function' ? buildOption() : buildOption;
+    rec.chart.setOption(option, true);
+    rec.cache = { buildOption, key: opts.key || '' };
+    return rec.chart;
+  }
+
+  // 主题切换 → 用缓存 option 工厂重跑（新色重建，保留图例选中）
+  function redrawBacktest(containerId) {
+    const rec = _backtestRegistry.get(containerId);
+    if (!rec || !rec.chart || !rec.cache || rec.chart.isDisposed()) return;
+    const prevSel = rec.chart.getOption()?.legend?.[0]?.selected || null;
+    const option = typeof rec.cache.buildOption === 'function' ? rec.cache.buildOption() : rec.cache.buildOption;
+    rec.chart.setOption(option, true);
+    if (prevSel && option && option.legend && option.legend.selected) {
+      rec.chart.setOption({ legend: { selected: prevSel } });
+    }
+  }
+
+  function disposeBacktest(containerId) {
+    const rec = _backtestRegistry.get(containerId);
+    if (rec && rec.chart) { rec.chart.dispose(); rec.chart = null; rec.cache = null; }
+  }
+
+  function resizeBacktest(containerId) {
+    const rec = _backtestRegistry.get(containerId);
+    if (rec && rec.chart) rec.chart.resize();
+  }
+
+  // ─── v3.17.8 (FR-3.17.5): 组合收益曲线 — 与回测图同模式管理 (option 工厂缓存, 主题切换重绘) ───
+  const _portfolioRegistry = new Map();
+  function _portfolioRec(containerId) {
+    if (!_portfolioRegistry.has(containerId)) _portfolioRegistry.set(containerId, { chart: null, cache: null });
+    return _portfolioRegistry.get(containerId);
+  }
+
+  function renderPortfolioTo(containerId, buildOption, opts = {}) {
+    const rec = _portfolioRec(containerId);
+    const el = document.getElementById(containerId);
+    if (!el) return null;
+    if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
+    if (rec.chart && rec.chart.getDom && rec.chart.getDom() !== el) {
+      try { rec.chart.dispose(); } catch (e) { /* ignore */ }
+      rec.chart = null;
+    }
+    if (!rec.chart) {
+      rec.chart = echarts.init(el);
+      rec.chart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
+      if (!rec.resizeBound) {
+        rec.resizeBound = true;
+        window.addEventListener('resize', function () {
+          if (rec.chart && !rec.chart.isDisposed()) rec.chart.resize();
+        });
+      }
+    }
+    const option = typeof buildOption === 'function' ? buildOption() : buildOption;
+    rec.chart.setOption(option, true);
+    rec.cache = { buildOption, key: opts.key || '' };
+    return rec.chart;
+  }
+
+  function redrawPortfolio(containerId) {
+    const rec = _portfolioRegistry.get(containerId);
+    if (!rec || !rec.chart || !rec.cache || rec.chart.isDisposed()) return;
+    const option = typeof rec.cache.buildOption === 'function' ? rec.cache.buildOption() : rec.cache.buildOption;
+    rec.chart.setOption(option, true);
+  }
+
+  function disposePortfolio(containerId) {
+    const rec = _portfolioRegistry.get(containerId);
+    if (rec && rec.chart) { rec.chart.dispose(); rec.chart = null; rec.cache = null; }
+  }
+
+  function resizePortfolio(containerId) {
+    const rec = _portfolioRegistry.get(containerId);
+    if (rec && rec.chart) rec.chart.resize();
+  }
+
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.charts = {
     renderKlineChart,
     renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
-    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart }; },
+    renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest,
+    renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio,
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio }; },
   };
 })();

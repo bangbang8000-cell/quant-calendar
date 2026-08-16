@@ -509,7 +509,7 @@
                     localStorage.setItem('sidebar_collapsed', sidebarCollapsed.value ? '1' : '0');
                 }
 
-                const researchMenuEnabled = ref(localStorage.getItem('research_menu_enabled') === '1');
+                const researchMenuEnabled = ref(localStorage.getItem('research_menu_enabled') !== '0');
                 function toggleResearchMenu(val) {
                     researchMenuEnabled.value = val;
                     localStorage.setItem('research_menu_enabled', val ? '1' : '0');
@@ -522,7 +522,7 @@ const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
-                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'strategy-write', 'backtest', 'backtest-history'] },
+                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
@@ -930,7 +930,7 @@ const allMenuDefs = [
                     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
-                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录',
+                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
 
@@ -1537,6 +1537,15 @@ const allMenuDefs = [
                         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
                         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
                         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate } = __watchlistDomain;
+                // ===== v3.17.4 (FR-3.17.4): 回测工作台域 — 逻辑移至 js/backtest.js 模块 =====
+                const __backtestDomain = (window.__quantModules && window.__quantModules.backtest)
+                    ? window.__quantModules.backtest.create({ backtestStrategies })
+                    : {};
+                const { btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
+                        btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
+                        btRunning, btResult, btError,
+                        btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
+                        runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum } = __backtestDomain;
                 const __systemDomain = (window.__quantModules && window.__quantModules.system)
                     ? window.__quantModules.system.create({ configChanged, aiConfig, aiLoading, feishuConfig, currentTheme, changeTheme, autoEvaluateConfig, iconSystem, researchMenuEnabled, currentUser, strategyFilter, applyTheme, dashboardData, lastRefreshTime, saveAiModels })
                     : {};
@@ -1835,6 +1844,12 @@ const allMenuDefs = [
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                     backtestRunning, backtestResult, runBacktest,
+                    // v3.17.4 (FR-3.17.4): 回测工作台
+                    btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
+                    btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
+                    btRunning, btResult, btError,
+                    btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
+                    runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,

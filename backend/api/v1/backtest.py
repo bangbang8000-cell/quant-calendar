@@ -46,6 +46,7 @@ async def run_strategy_backtest(
             "summary": summary,
             "equity_curve": result.equity_curve,
             "monthly_returns": result.monthly_returns,
+            "trade_history": result.trade_history,
             "message": result.message
         }
     except Exception as e:

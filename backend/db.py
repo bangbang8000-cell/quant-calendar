@@ -55,6 +55,38 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 """
 
+# v3.17.8 (FR-3.17.5): 组合/模拟持仓 — 持仓 + 调仓记录 (per-user 隔离)
+PORTFOLIO_SCHEMA = """
+CREATE TABLE IF NOT EXISTS portfolio_positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
+    cost_price REAL NOT NULL DEFAULT 0,
+    quantity REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_portfolio_positions_user
+    ON portfolio_positions(username, stock_code);
+CREATE TABLE IF NOT EXISTS portfolio_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
+    action TEXT NOT NULL,
+    price REAL NOT NULL DEFAULT 0,
+    quantity REAL NOT NULL DEFAULT 0,
+    trade_date TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_portfolio_trades_user_time
+    ON portfolio_trades(username, id);
+"""
+
+SCHEMA += PORTFOLIO_SCHEMA
+
 
 def get_conn() -> sqlite3.Connection:
     """获取数据库连接 (每线程独立)"""
@@ -88,7 +120,8 @@ def schema_ok() -> bool:
         tables = [r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
         conn.close()
-        required = {'users', 'chat_history', 'watchlist', 'groups', 'meta'}
+        required = {'users', 'chat_history', 'watchlist', 'groups', 'meta',
+                    'portfolio_positions', 'portfolio_trades'}
         missing = required - set(tables)
         if missing:
             print(f"[db] schema 校验失败, 缺少表: {missing}")
@@ -100,10 +133,14 @@ def schema_ok() -> bool:
 
 
 def migrate() -> None:
-    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name)"""
+    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name; v3.17.8: portfolio 表)"""
     try:
         with _db_lock:
             conn = get_conn()
+            # v3.17.8 (FR-3.17.5): 组合/模拟持仓表 (幂等建表)
+            conn.executescript(PORTFOLIO_SCHEMA)
+            conn.commit()
+            print("[db] migrate: portfolio_positions/portfolio_trades 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:
@@ -276,6 +313,141 @@ def watchlist_all() -> list:
     with _db_lock:
         conn = get_conn()
         rows = conn.execute("SELECT * FROM watchlist ORDER BY username, added_at").fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+# ─── portfolio (v3.17.8 / FR-3.17.5): 组合/模拟持仓 ──────────────
+
+def _portfolio_merge(conn, username: str, stock_code: str, stock_name: str,
+                     cost_price: float, quantity: float) -> None:
+    """内部: 同股累加 — 数量相加, 成本按加权平均 (供新增持仓/买入调仓共用)"""
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    row = conn.execute(
+        "SELECT id, cost_price, quantity FROM portfolio_positions WHERE username=? AND stock_code=?",
+        (username, stock_code)
+    ).fetchone()
+    if row:
+        old_qty = row['quantity'] or 0
+        old_cost = row['cost_price'] or 0
+        new_qty = old_qty + (quantity or 0)
+        new_cost = (old_qty * old_cost + (quantity or 0) * (cost_price or 0)) / new_qty if new_qty > 0 else (cost_price or 0)
+        conn.execute(
+            "UPDATE portfolio_positions SET stock_name=?, cost_price=?, quantity=?, updated_at=? WHERE id=?",
+            (stock_name or '', round(new_cost, 4), round(new_qty, 4), now, row['id'])
+        )
+    else:
+        conn.execute(
+            "INSERT INTO portfolio_positions (username, stock_code, stock_name, cost_price, quantity, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', round(cost_price or 0, 4), round(quantity or 0, 4), now, now)
+        )
+
+
+def portfolio_upsert_position(username: str, stock_code: str, stock_name: str = '',
+                              cost_price: float = 0, quantity: float = 0) -> None:
+    """新增/更新持仓: 同股累加, 加权平均成本"""
+    with _db_lock:
+        conn = get_conn()
+        _portfolio_merge(conn, username, stock_code, stock_name, cost_price, quantity)
+        conn.commit()
+        conn.close()
+
+
+def portfolio_get_positions(username: str) -> list:
+    """返回 [{id, stock_code, stock_name, cost_price, quantity, created_at, updated_at}]"""
+    with _db_lock:
+        conn = get_conn()
+        rows = conn.execute(
+            "SELECT id, stock_code, stock_name, cost_price, quantity, created_at, updated_at "
+            "FROM portfolio_positions WHERE username=? ORDER BY updated_at DESC",
+            (username,)
+        ).fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def portfolio_delete_position(username: str, stock_code: str) -> bool:
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "DELETE FROM portfolio_positions WHERE username=? AND stock_code=?",
+            (username, stock_code)
+        )
+        conn.commit()
+        ok = cur.rowcount > 0
+        conn.close()
+    return ok
+
+
+def portfolio_apply_trade(username: str, stock_code: str, stock_name: str,
+                          action: str, price: float, quantity: float) -> str:
+    """按调仓动作更新持仓:
+    - buy: 数量累加, 成本按成交价加权平均
+    - sell: 数量减少, 减至 ≤0 自动删除持仓
+    返回 'buy'|'sell'|'sold_out' (供记录调仓语义/提示)
+    """
+    action = (action or 'buy').lower()
+    with _db_lock:
+        conn = get_conn()
+        if action == 'sell':
+            row = conn.execute(
+                "SELECT id, quantity FROM portfolio_positions WHERE username=? AND stock_code=?",
+                (username, stock_code)
+            ).fetchone()
+            if not row:
+                conn.commit()
+                conn.close()
+                return 'sell'  # 无持仓仍记录调仓, 持仓不变化
+            new_qty = (row['quantity'] or 0) - (quantity or 0)
+            if new_qty <= 0:
+                conn.execute("DELETE FROM portfolio_positions WHERE id=?", (row['id'],))
+                conn.commit()
+                conn.close()
+                return 'sold_out'
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            conn.execute(
+                "UPDATE portfolio_positions SET quantity=?, updated_at=? WHERE id=?",
+                (round(new_qty, 4), now, row['id'])
+            )
+            conn.commit()
+            conn.close()
+            return 'sell'
+        # buy: 与新增持仓同语义 (以成交价加权累加)
+        _portfolio_merge(conn, username, stock_code, stock_name, price, quantity)
+        conn.commit()
+        conn.close()
+        return 'buy'
+
+
+def portfolio_add_trade(username: str, stock_code: str, stock_name: str = '', action: str = 'buy',
+                        price: float = 0, quantity: float = 0, trade_date: str = '',
+                        note: str = '') -> int:
+    """记录一条调仓流水, 返回 id"""
+    trade_date = (trade_date or '').strip() or datetime.now().strftime('%Y-%m-%d')
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "INSERT INTO portfolio_trades (username, stock_code, stock_name, action, price, quantity, trade_date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', action, round(price or 0, 4), round(quantity or 0, 4),
+             trade_date, note or '', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        conn.commit()
+        new_id = cur.lastrowid
+        conn.close()
+    return new_id
+
+
+def portfolio_list_trades(username: str, limit: int = 200) -> list:
+    """调仓记录按时间倒序 (created_at 同秒时按 id 倒序)"""
+    with _db_lock:
+        conn = get_conn()
+        rows = conn.execute(
+            "SELECT id, stock_code, stock_name, action, price, quantity, trade_date, note, created_at "
+            "FROM portfolio_trades WHERE username=? ORDER BY created_at DESC, id DESC LIMIT ?",
+            (username, limit)
+        ).fetchall()
         conn.close()
     return [dict(r) for r in rows]
 

@@ -512,6 +512,30 @@ class Scheduler:
             except Exception as e:
                 logger.error(f"错误率监控异常: {e}")
 
+    async def daily_market_review_task(self):
+        """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行)
+        失败仅打日志, 不中断其他定时任务
+        """
+        while self.running:
+            now = datetime.now()
+            target = now.replace(hour=16, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait = (target - now).total_seconds()
+            await asyncio.sleep(max(wait, 10))
+
+            if not self.running:
+                break
+            today = datetime.now().strftime('%Y-%m-%d')
+            logger.info(f"生成每日市场复盘: {today}")
+            try:
+                from market_review import generate_review
+                review = generate_review(today)
+                logger.info(f"市场复盘生成成功: {review.get('date', today)}")
+            except Exception as e:
+                logger.error(f"市场复盘生成失败: {e}")
+            await asyncio.sleep(60)  # 避开重复触发
+
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -527,6 +551,7 @@ class Scheduler:
         asyncio.create_task(self.daily_backup_task())
         asyncio.create_task(self.health_check_task())
         asyncio.create_task(self.error_alert_task())
+        asyncio.create_task(self.daily_market_review_task())
 
     async def stop(self):
         """停止调度器"""

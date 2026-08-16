@@ -52,9 +52,9 @@
 
 > 每任务统一四步：**① 写失败测试 → ② 跑通失败 → ③ 实现 → ④ 跑通 + commit**。每任务含：目标 / 改动文件 / 测试 / 验收。
 
-### Phase 3.17.0 — 智·实主线（P0）
+### Phase 3.17.0 — 智·实主线（P0）✅ 已完成
 
-#### T1 因子引擎（FR-3.17.3 数据层）
+#### T1 因子引擎（FR-3.17.3 数据层）✅
 - **目标**: 新增多因子计算模块（估值/基本面/资金面/情绪面/技术面），输出语义化分位标注。
 - **文件**: 新建 `backend/factor_engine.py`；修改 `backend/ai_indicators.py`(复用)、`backend/prompts/evaluate_stock.txt`(注入新因子)、`backend/api/v1/market.py`(详情因子端点)。
 - **测试**: 新建 `tests/test_factor_engine.py`（≥15 例：各因子计算、分位边界、缺字段降级、空数据不抛错）。

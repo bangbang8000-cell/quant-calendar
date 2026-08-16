@@ -690,6 +690,58 @@ class DataSourceManager:
                 record_call(src_name, False, (time.monotonic() - _t0) * 1000)
         return None
 
+    def get_moneyflow(self, ts_code, limit=10):
+        """获取个股主力资金流向（带 fallback）— v3.17 / FR-3.17.3 资金面因子
+        返回 [{trade_date, net_mf_amount}, ...]（旧→新）或 None"""
+        for src_name in SOURCE_ORDER:
+            src_cfg = self._get_source_config(src_name)
+            if not src_cfg.get('enabled', True):
+                continue
+            _t0 = time.monotonic()
+            try:
+                result = self._fetch_moneyflow(src_name, ts_code, limit)
+                _elapsed = (time.monotonic() - _t0) * 1000
+                if result:
+                    record_call(src_name, True, _elapsed)
+                    return result
+                record_call(src_name, False, _elapsed)
+            except Exception as e:
+                logger.warning(f"{src_name} get_moneyflow({ts_code}) 失败: {e}")
+                self._errors[src_name] = str(e)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
+        return None
+
+    def _fetch_moneyflow(self, src_name, ts_code, limit):
+        """各数据源获取资金流向（仅支持 tushare 系；akshare 不可达返回 None → 因子降级）"""
+        if src_name == 'sxsc_tushare':
+            api = self._clients.get('sxsc_tushare')
+            if not api:
+                return None
+            df = api.query('moneyflow', ts_code=ts_code, limit=limit,
+                           fields='trade_date,net_mf_amount')
+            if df is None or len(df) == 0:
+                return None
+            rows = []
+            for _, row in df.sort_values('trade_date').iterrows():
+                rows.append({'trade_date': row.get('trade_date'), 'net_mf_amount': _safe_float(row.get('net_mf_amount'))})
+            return rows
+
+        elif src_name == 'tushare':
+            pro = self._clients.get('tushare')
+            if not pro:
+                return None
+            df = pro.moneyflow(ts_code=ts_code, limit=limit,
+                               fields='trade_date,net_mf_amount')
+            if df is None or len(df) == 0:
+                return None
+            rows = []
+            for _, row in df.sort_values('trade_date').iterrows():
+                rows.append({'trade_date': row.get('trade_date'), 'net_mf_amount': _safe_float(row.get('net_mf_amount'))})
+            return rows
+
+        # akshare 无统一逐日主力净流入接口，降级
+        return None
+
     def _fetch_daily_basic(self, src_name, ts_code, limit):
         """各数据源获取基本面数据"""
         if src_name == 'sxsc_tushare':

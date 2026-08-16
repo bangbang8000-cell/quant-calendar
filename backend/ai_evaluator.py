@@ -799,6 +799,39 @@ class AIEvaluator:
             logger.warning(f"生成入池信号失败 ({stock_code}): {e}")
             return ''
 
+    def generate_review(self, prompt: str, system_prompt: str = None, max_tokens: int = 1024) -> str:
+        """生成市场复盘解读正文 (FR-3.17.2) — 遍历启用模型, 首个非空内容即返回
+
+        复用 OpenAI 兼容 /chat/completions 调用; 全部失败返回空串 (调用方自行兜底)。
+        """
+        models = self.get_enabled_models()
+        if not models:
+            logger.warning("生成市场复盘: 无可用模型")
+            return ''
+        system_prompt = system_prompt or "你是专业的A股市场复盘分析师，严格基于给定数据解读，不编造任何数字。"
+        for model in models:
+            try:
+                endpoint = model.base_url.rstrip("/") + "/chat/completions"
+                resp = requests.post(endpoint, headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {model.api_key}"
+                }, json={
+                    "model": model.model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": max_tokens,
+                }, timeout=model.timeout)
+                resp.raise_for_status()
+                content = (resp.json()["choices"][0]["message"]["content"] or "").strip()
+                if content:
+                    return content
+            except Exception as e:
+                logger.warning(f"生成市场复盘失败 ({model.id}): {e}")
+        return ''
+
     def _load_history(self) -> List:
         """加载评估历史（已废弃，保留向后兼容）"""
         return self._load_history_for('default')

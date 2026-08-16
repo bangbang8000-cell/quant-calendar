@@ -32,7 +32,9 @@ BASE_CONFIG_DEFAULTS = {
     "ai": {"provider": "deepseek", "apiKey": "", "endpoint": "https://api.deepseek.com/v1", "model": "deepseek-chat"},
     "rate_limit": {"api_limit": 600},
     "auto_evaluate": {"enabled": False, "schedule_type": "daily", "schedule_time": "09:00", "push_to_feishu": True},
-    "theme": "tech-blue"
+    "theme": "tech-blue",
+    # v3.17 (FR-3.17.2/3.17.7): 策略研究菜单默认开启（市场复盘/异动扫描 P0 功能可达）
+    "research_menu_enabled": True
 }
 
 

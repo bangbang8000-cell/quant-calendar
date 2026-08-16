@@ -10,6 +10,8 @@ v3.16 (16.3-16.5 / FR-3.16.2, FR-3.16.3, FR-3.16.8): 前端一致性回归测试
 import os
 import re
 
+import pytest
+
 FRONTEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + os.sep + "frontend"
 
 
@@ -54,9 +56,9 @@ def test_qcstate_no_duplicate_keys():
 
 
 def test_qcstate_key_count_stable():
-    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 418（16.6 +2, 16.7 +5, 16.10-fix +1: stockDetailLoading）"""
+    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 437（v3.17.4 回测工作台 +19）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 418, f"qcState 唯一键数异常: {len(set(keys))} (期望 418)"
+    assert len(set(keys)) == 437, f"qcState 唯一键数异常: {len(set(keys))} (期望 437)"
 
 
 def test_watch_currentpage_single():
@@ -433,3 +435,207 @@ def test_watchlist_kline_tab_reset():
     assert "disposeStockKline('stockKlineChart')" in seg, "应销毁旧图表实例"
     assert seg.index("stockDetailTab.value = 'kline'") < seg.index("stockDetailVisible.value = true"), \
         "tab 重置应先于弹窗打开"
+
+
+# ─── v3.17 (FR-3.17.3 / 多因子体检面板) 回归 ─────────────────────────────
+
+def test_factor_panel_endpoint_invoked():
+    """FR-3.17.3: 多因子体检面板应调用因子端点（/api/calendar/stock/{code}/factors）并展示分组/语义"""
+    src = _read("js/components/dialogs/stock-detail.js")
+    assert "loadFactorPanel" in src, "应实现 loadFactorPanel 加载函数"
+    assert "factors" in src and "/api/calendar/stock/" in src, \
+        "应调用 /api/calendar/stock/{code}/factors 端点"
+    assert "正在加载体检数据" in src, "加载中应显示加载提示"
+    assert "无数据" in src, "semantic 为空时应显示无数据占位"
+
+
+def test_factor_panel_no_inline_style():
+    """FR-3.17.3: 多因子体检面板新增代码不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    src = _read("js/components/dialogs/stock-detail.js")
+    seg = src[src.index("loadFactorPanel"):]
+    assert 'style="' not in seg, "多因子体检面板不应含内联 style 属性"
+    assert "style={" not in seg, "多因子体检面板不应含绑定式内联 style"
+
+
+# ─── v3.17 (FR-3.17.2 / AI 每日市场复盘) 回归 ─────────────────────────
+
+def test_market_review_subpage_present():
+    """FR-3.17.2: 研究页市场复盘子页应调用 /api/market/reviews 与 /api/market/review 并含'市场复盘'文案"""
+    src = _read("js/components/research-page.js")
+    assert "/api/market/reviews" in src, "应调用 /api/market/reviews 列表端点"
+    assert "/api/market/review" in src, "应调用 /api/market/review 详情端点"
+    assert "市场复盘" in src, "应含'市场复盘'文案"
+
+
+def test_market_review_no_inline_style():
+    """FR-3.17.2: 市场复盘新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    src = _read("js/components/research-page.js")
+    seg = src[src.index("v3.17.2 FR-3.17.2 市场复盘代码起点"):]
+    assert 'style="' not in seg, "市场复盘代码不应含内联 style 属性"
+    assert "style={" not in seg, "市场复盘代码不应含绑定式内联 style"
+
+
+# ─── v3.17 (FR-3.17.4 / 回测可视化工作台) 回归 ─────────────────────────
+
+def test_backtest_workbench_endpoint_invoked():
+    """FR-3.17.4: 回测工作台应调用回测端点并含'回测'文案"""
+    bt = _read("js/backtest.js")
+    assert "window.__quantModules.backtest" in bt, "应注册 __quantModules.backtest 域模块"
+    assert "create(deps)" in bt, "应遵循 create(deps) 工厂模式"
+    assert "/api/backtest/" in bt, "应调用单策略回测端点 /api/backtest/{strategy_id}"
+    assert "/api/backtest/multi" in bt, "应调用多策略回测端点 /api/backtest/multi"
+    assert "回测" in bt, "应含'回测'文案"
+    page = _read("js/components/strategies-page.js")
+    assert "回测工作台" in page, "策略总览应含'回测工作台'入口"
+    assert "currentSubPage === 'backtest'" in page, "应支持 backtest 子页"
+    idx = _read("index.html")
+    assert "js/backtest.js" in idx, "index.html 应加载 backtest.js"
+    assert idx.index("backtest.js") < idx.index("app-logic.js"), "backtest.js 应早于 app-logic.js 加载"
+
+
+def test_backtest_workbench_no_inline_style():
+    """FR-3.17.4: 回测工作台新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    bt = _read("js/backtest.js")
+    assert 'style="' not in bt, "backtest.js 不应含内联 style 属性"
+    assert "style={" not in bt, "backtest.js 不应含绑定式内联 style"
+    page = _read("js/components/strategies-page.js")
+    seg = page[page.index("v3.17.4 (FR-3.17.4): 回测工作台 代码起点"):]
+    assert 'style="' not in seg, "回测工作台模板不应含内联 style 属性"
+    assert "style={" not in seg, "回测工作台模板不应含绑定式内联 style"
+
+
+def test_backtest_core_consumed():
+    """FR-3.17.4: 回测核心纯函数（净值/回撤/年度/CSV）齐备且被工作台消费"""
+    core = _read("js/backtest-core.js")
+    for fn in ("computeMaxDrawdownRegion", "buildAnnualReturns", "buildNavSeries", "buildMetrics", "buildBacktestCsv"):
+        assert fn in core, f"backtest-core 应提供 {fn}"
+    bt = _read("js/backtest.js")
+    assert "QuantBacktest" in bt, "backtest.js 应消费 QuantBacktest 核心"
+    charts = _read("js/charts.js")
+    for fn in ("renderBacktestTo", "redrawBacktest"):
+        assert fn in charts, f"charts.js 应提供 {fn}"
+
+
+def test_backtest_core_node():
+    """FR-3.17.4: backtest-core 纯函数 node 单测（最大回撤/年度收益/净值系列/指标/CSV）"""
+    import shutil
+    import subprocess
+    import json as _json
+
+    core_path = os.path.join(FRONTEND_ROOT, "js", "backtest-core.js")
+    if shutil.which("node") is None:
+        pytest.skip("node 不可用")
+    code = (
+        "const BT = require(process.argv[1]);\n"
+        "const out = (function(){\n"
+        "  const curve = [\n"
+        "    {date:'2025-01-02', equity:100000},\n"
+        "    {date:'2025-01-03', equity:110000},\n"
+        "    {date:'2025-01-06', equity:99000},\n"
+        "    {date:'2025-01-07', equity:108900},\n"
+        "    {date:'2025-01-08', equity:95000}\n"
+        "  ];\n"
+        "  const dd = BT.computeMaxDrawdownRegion(curve);\n"
+        "  const annual = BT.buildAnnualReturns({'2025-01':1.2,'2025-02':-0.8,'2026-01':2.0});\n"
+        "  const nav = BT.buildNavSeries([\n"
+        "    {name:'A', points:[{date:'2025-01-02',value:100},{date:'2025-01-03',value:105}]},\n"
+        "    {name:'B', points:[{date:'2025-01-03',value:200},{date:'2025-01-04',value:190}]}\n"
+        "  ]);\n"
+        "  const metrics = BT.buildMetrics({total_return:12.34,max_drawdown:8.5,sharpe_ratio:1.2,win_rate:55,profit_loss_ratio:1.8,total_trades:120});\n"
+        "  const csv = BT.buildBacktestCsv({\n"
+        "    metrics:[{label:'总收益',value:'12.34%'}],\n"
+        "    dates:['2025-01-02'],\n"
+        "    series:[{name:'A',data:[100]}],\n"
+        "    trades:[{date:'2025-01-03',stock:'000001',action:'买入',reason:'策略调仓'}]\n"
+        "  });\n"
+        "  return { dd, annual, nav, metricKeys: metrics.map(m=>m.key), csv };\n"
+        "})();\n"
+        "process.stdout.write(JSON.stringify(out));\n"
+    )
+    proc = subprocess.run(["node", "-e", code, core_path], capture_output=True, text=True, timeout=15)
+    assert proc.returncode == 0, f"node 执行失败: {proc.stderr}"
+    out = _json.loads(proc.stdout)
+
+    # 最大回撤：峰值 110000 → 谷底 95000 → (110000-95000)/110000 ≈ 13.64%
+    assert abs(out["dd"]["maxDrawdown"] - 13.64) < 0.01, f"最大回撤计算错误: {out['dd']}"
+    assert out["dd"]["peakDate"] == "2025-01-03"
+    assert out["dd"]["troughDate"] == "2025-01-08"
+    # 年度收益：2025 = 1.2 + (-0.8) = 0.4；2026 = 2.0
+    assert out["annual"] == [{"year": "2025", "return": 0.4}, {"year": "2026", "return": 2.0}], out["annual"]
+    # 净值系列：日期并集升序，缺值补 null
+    assert out["nav"]["dates"] == ["2025-01-02", "2025-01-03", "2025-01-04"]
+    assert out["nav"]["series"][0]["data"] == [100, 105, None]
+    assert out["nav"]["series"][1]["data"] == [None, 200, 190]
+    # 指标卡键顺序
+    assert out["metricKeys"][:2] == ["total_return", "annual_return"]
+    # CSV：含三个分节标题
+    assert "回测指标" in out["csv"] and "净值曲线" in out["csv"] and "交易明细" in out["csv"]
+
+
+# ─── v3.17.6 (FR-3.17.6 / AI 评估命中率追踪) 回归 ─────────────────────
+
+def test_eval_track_endpoint_invoked():
+    """FR-3.17.6: ai-page 应调用 /api/ai/track 端点并含'命中率'文案与空态"""
+    src = _read("js/components/ai-page.js")
+    assert "/api/ai/track" in src, "ai-page 应调用 /api/ai/track 端点"
+    assert "命中率" in src, "ai-page 应含'命中率'文案"
+    assert "暂无足够评估样本" in src, "应提供无数据空态"
+    # 后端路由配套存在
+    ai_api = _read_backend("api/v1/ai.py")
+    assert '@router.get("/track")' in ai_api, "后端应提供 GET /api/ai/track 路由"
+
+
+def test_eval_track_no_inline_style():
+    """FR-3.17.6: 评估命中率新增片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    src = _read("js/components/ai-page.js")
+    seg = src[src.index("v3.17.6 (FR-3.17.6): 评估命中率"):]
+    seg = seg[:seg.index("<!-- 批量操作工具栏 -->")]
+    assert 'style="' not in seg, "评估命中率卡片不应含内联 style 属性"
+    assert "style={" not in seg, "评估命中率卡片不应含绑定式内联 style"
+    css = _read("css/themes.css")
+    for cls in (".eval-track-card", ".eval-track-overall", ".eval-track-stat", ".eval-track-table", ".eval-track-note"):
+        assert cls in css, f"themes.css 应定义 {cls}"
+
+
+# ─── v3.17.7 (FR-3.17.7 / 盘中增强：异动扫描 + 事件提醒) 回归 ─────────────
+
+def test_scan_subpage_endpoint_invoked():
+    """FR-3.17.7: 研究页异动扫描子页应调用 /api/market/scan 与 /api/market/events 并含'异动'文案"""
+    src = _read("js/components/research-page.js")
+    assert "/api/market/scan" in src, "应调用 /api/market/scan 扫描端点"
+    assert "/api/market/events" in src, "应调用 /api/market/events 事件端点"
+    assert "异动" in src, "应含'异动'文案"
+    # 后端路由配套存在
+    api = _read_backend("api/v1/market.py")
+    assert '@router.get("/scan")' in api, "后端应提供 GET /api/market/scan 路由"
+    assert '@router.get("/events")' in api, "后端应提供 GET /api/market/events 路由"
+
+
+def test_scan_subpage_registered():
+    """FR-3.17.7: 研究页菜单应注册 scan 子页（subPages + subPageNames）"""
+    app = _read("js/app-logic.js")
+    m = re.search(r"\{ key: 'research'.*?\}", app)
+    assert m and "'scan'" in m.group(0), "research 菜单 subPages 应含 'scan'"
+    assert "'market-review'" in m.group(0), "research 菜单 subPages 应含 'market-review'(FR-3.17.2)"
+    assert "'scan': '异动扫描'" in app, "subPageNames 应映射 'scan' → 异动扫描"
+    assert "'market-review': '市场复盘'" in app, "subPageNames 应映射 'market-review' → 市场复盘"
+
+
+def test_research_menu_enabled_by_default():
+    """v3.17 修复: 策略研究菜单默认可见（市场复盘/异动扫描 P0 功能可达）"""
+    app = _read("js/app-logic.js")
+    assert "research_menu_enabled') !== '0'" in app, "research 菜单应默认开启（opt-out）"
+    # 后端用户配置默认同样为开启
+    ucfg = _read_backend("api/v1/user_config.py")
+    assert '"research_menu_enabled": True' in ucfg, "BASE_CONFIG_DEFAULTS 应将 research_menu_enabled 默认为 True"
+
+
+def test_scan_subpage_no_inline_style():
+    """FR-3.17.7: 异动扫描新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    src = _read("js/components/research-page.js")
+    seg = src[src.index("v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒 代码起点"):]
+    assert 'style="' not in seg, "异动扫描代码不应含内联 style 属性"
+    assert "style={" not in seg, "异动扫描代码不应含绑定式内联 style"
+    css = _read("css/themes.css")
+    for cls in (".scan-group", ".scan-row", ".scan-tag", ".scan-note", ".scan-section", ".scan-toolbar", ".scan-event-row"):
+        assert cls in css, f"themes.css 应定义 {cls}"

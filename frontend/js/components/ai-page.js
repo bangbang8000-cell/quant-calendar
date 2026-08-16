@@ -44,6 +44,14 @@
                                     <div class="stat-label">自选股</div>
                                 </div>
                             </div>
+                            <!-- v3.17.8 (FR-3.17.5): 组合持仓入口 -->
+                            <div class="stat-card" @click="currentSubPage = 'portfolio'" tabindex="0" role="button" aria-label="组合持仓" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--color-gold);">
+                                <div class="stat-icon" style="background: var(--badge-gold-bg); color: var(--color-gold);">组</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ positions.length }}</div>
+                                    <div class="stat-label">组合持仓</div>
+                                </div>
+                            </div>
                             <div class="stat-card" @click="showAutoEvaluateSettings = true" tabindex="0" role="button" aria-label="自动评估设置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" style="cursor:pointer; border-left: 3px solid var(--el-warning);" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
                                 <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--badge-gold-bg)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
@@ -159,6 +167,58 @@
 
                     <!-- history: 评估历史记录 -->
                     <div v-else-if="currentSubPage === 'history'">
+                        <!-- v3.17.6 (FR-3.17.6): 评估命中率（决策复盘） -->
+                        <div class="card eval-track-card">
+                            <div class="card-title">评估命中率 <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
+                            <div v-if="trackLoading" class="eval-track-state">正在计算命中率统计中...</div>
+                            <div v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" class="eval-track-state">暂无足够评估样本</div>
+                            <template v-else>
+                                <div class="eval-track-overall">
+                                    <div v-for="w in trackWindows" :key="w.key" class="eval-track-stat">
+                                        <div class="eval-track-stat-value">{{ fmtTrackRate(trackData.overall[w.key]) }}</div>
+                                        <div class="eval-track-stat-label">{{ w.label }}命中率（{{ trackData.overall[w.key].total }} 样本）</div>
+                                    </div>
+                                </div>
+                                <div class="eval-track-note">{{ trackData.note }}</div>
+                                <div class="eval-track-grid">
+                                    <div>
+                                        <div class="eval-track-subtitle">分模型</div>
+                                        <table class="eval-track-table">
+                                            <thead>
+                                                <tr><th>模型</th><th>5日</th><th>10日</th><th>20日</th><th>样本</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(st, name) in trackData.by_model" :key="name">
+                                                    <td>{{ name }}</td>
+                                                    <td>{{ fmtTrackRate(st.n5) }}</td>
+                                                    <td>{{ fmtTrackRate(st.n10) }}</td>
+                                                    <td>{{ fmtTrackRate(st.n20) }}</td>
+                                                    <td>{{ st.n5.total }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div>
+                                        <div class="eval-track-subtitle">分评级</div>
+                                        <table class="eval-track-table">
+                                            <thead>
+                                                <tr><th>评级</th><th>5日</th><th>10日</th><th>20日</th><th>样本</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(st, name) in trackData.by_level" :key="name">
+                                                    <td>{{ name }}</td>
+                                                    <td>{{ fmtTrackRate(st.n5) }}</td>
+                                                    <td>{{ fmtTrackRate(st.n10) }}</td>
+                                                    <td>{{ fmtTrackRate(st.n20) }}</td>
+                                                    <td>{{ st.n5.total }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
                         <!-- 批量操作工具栏 -->
                         <div class="card" style="margin-bottom: 16px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -506,11 +566,257 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- v3.17.8 (FR-3.17.5): 组合/模拟持仓视图 代码起点 -->
+                    <div v-else-if="currentSubPage === 'portfolio'" class="portfolio-view">
+                        <!-- 组合汇总条 -->
+                        <div class="card portfolio-summary-card">
+                            <div class="card-title">组合汇总</div>
+                            <div class="portfolio-summary-row">
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">总市值</div>
+                                    <div class="portfolio-summary-value">{{ fmtNum(summary && summary.total_market_value, 2) }}</div>
+                                </div>
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">总成本</div>
+                                    <div class="portfolio-summary-value">{{ fmtNum(summary && summary.total_cost, 2) }}</div>
+                                </div>
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">浮动盈亏</div>
+                                    <div class="portfolio-summary-value" :class="signClass(summary && summary.float_profit)">{{ fmtSigned(summary && summary.float_profit) }}</div>
+                                </div>
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">当日收益</div>
+                                    <div class="portfolio-summary-value" :class="signClass(summary && summary.day_profit)">{{ fmtSigned(summary && summary.day_profit) }}</div>
+                                </div>
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">累计收益</div>
+                                    <div class="portfolio-summary-value" :class="signClass(summary && summary.cumulative_profit)">{{ fmtSigned(summary && summary.cumulative_profit) }}</div>
+                                </div>
+                                <div class="portfolio-summary-item">
+                                    <div class="portfolio-summary-label">持仓收益率</div>
+                                    <div class="portfolio-summary-value" :class="signClass(summary && summary.float_profit_pct)">{{ fmtSignedPct(summary && summary.float_profit_pct) }}</div>
+                                </div>
+                            </div>
+                            <div v-if="summary && summary.note" class="portfolio-summary-note">{{ summary.note }}</div>
+                        </div>
+
+                        <!-- 组合收益曲线 -->
+                        <div class="card portfolio-chart-card">
+                            <div class="portfolio-chart-head">
+                                <div class="card-title">组合收益曲线</div>
+                                <el-radio-group v-model="equityDays" size="small" @change="loadEquity(equityDays)">
+                                    <el-radio-button :value="7">近7日</el-radio-button>
+                                    <el-radio-button :value="30">近30日</el-radio-button>
+                                    <el-radio-button :value="90">近90日</el-radio-button>
+                                </el-radio-group>
+                            </div>
+                            <qc-state-panel v-if="equityLoading" type="loading"></qc-state-panel>
+                            <div v-else-if="!equityHasData" class="portfolio-chart-empty">{{ equityNote || '暂无收益曲线数据' }}</div>
+                            <div v-else id="portfolioEquityChart" class="portfolio-equity-chart"></div>
+                            <div v-if="equityNote" class="portfolio-chart-note">{{ equityNote }}</div>
+                        </div>
+
+                        <!-- 持仓明细 / 调仓记录 -->
+                        <div class="card">
+                            <div class="portfolio-title-row">
+                                <el-radio-group v-model="portfolioTab" size="small">
+                                    <el-radio-button value="positions">持仓明细</el-radio-button>
+                                    <el-radio-button value="trades">调仓记录</el-radio-button>
+                                </el-radio-group>
+                                <el-button size="small" type="primary" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起表单' : '新增持仓' }}</el-button>
+                            </div>
+
+                            <!-- 新增持仓表单 -->
+                            <div v-if="showAddForm" class="portfolio-add-form">
+                                <el-input v-model="addForm.stock_code" placeholder="股票代码" size="small" class="portfolio-form-item" clearable />
+                                <el-input v-model="addForm.stock_name" placeholder="股票名称(可选)" size="small" class="portfolio-form-item" clearable />
+                                <el-input-number v-model="addForm.cost_price" :min="0" :precision="3" size="small" class="portfolio-form-item" placeholder="成本价" />
+                                <el-input-number v-model="addForm.quantity" :min="0" :precision="2" size="small" class="portfolio-form-item" placeholder="数量" />
+                                <el-button type="primary" size="small" :loading="addSaving" @click="addPosition">保存持仓</el-button>
+                            </div>
+
+                            <!-- 持仓列表 -->
+                            <template v-if="portfolioTab === 'positions'">
+                                <qc-state-panel v-if="loading" type="loading"></qc-state-panel>
+                                <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadPortfolio"></qc-state-panel>
+                                <qc-state-panel v-else-if="loadError" type="error" @retry="loadPortfolio"></qc-state-panel>
+                                <div v-else-if="positions.length === 0" class="portfolio-empty">
+                                    <div class="portfolio-empty-title">暂无持仓，添加一只股票开始跟踪</div>
+                                </div>
+                                <div v-else class="portfolio-table-wrap">
+                                    <table class="portfolio-table">
+                                        <thead>
+                                            <tr>
+                                                <th>代码 / 名称</th>
+                                                <th>成本价</th>
+                                                <th>数量</th>
+                                                <th>现价</th>
+                                                <th>市值</th>
+                                                <th>浮动盈亏</th>
+                                                <th>当日涨跌</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="p in positions" :key="p.stock_code">
+                                                <td>
+                                                    <div class="portfolio-stock">{{ p.stock_name }}</div>
+                                                    <div class="portfolio-code">{{ p.stock_code }}</div>
+                                                </td>
+                                                <td>{{ fmtNum(p.cost_price, 3) }}</td>
+                                                <td>{{ fmtNum(p.quantity, 2) }}</td>
+                                                <td>{{ p.close != null ? fmtNum(p.close, 2) : '数据暂不可用' }}</td>
+                                                <td>{{ p.market_value != null ? fmtNum(p.market_value, 2) : '--' }}</td>
+                                                <td>
+                                                    <span v-if="p.float_profit != null" :class="signClass(p.float_profit)">{{ fmtSigned(p.float_profit) }} ({{ fmtSignedPct(p.float_profit_pct) }})</span>
+                                                    <span v-else class="portfolio-na">数据暂不可用</span>
+                                                </td>
+                                                <td>
+                                                    <span v-if="p.pct_chg != null" :class="signClass(p.pct_chg)">{{ fmtSignedPct(p.pct_chg) }}</span>
+                                                    <span v-else class="portfolio-na">--</span>
+                                                </td>
+                                                <td>
+                                                    <el-button size="small" @click="openTradeForm(p.stock_code, p.stock_name)">调仓</el-button>
+                                                    <el-button size="small" type="danger" text @click="removePosition(p.stock_code)">删除</el-button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+
+                            <!-- 调仓记录 -->
+                            <template v-else>
+                                <div v-if="trades.length === 0" class="portfolio-empty">
+                                    <div class="portfolio-empty-title">暂无调仓记录</div>
+                                </div>
+                                <div v-else class="portfolio-trades-list">
+                                    <div v-for="t in trades" :key="t.id" class="portfolio-trade-item">
+                                        <div class="portfolio-trade-main">
+                                            <span class="portfolio-trade-action" :class="t.action === 'buy' ? 'portfolio-buy' : 'portfolio-sell'">{{ t.action === 'buy' ? '买入' : '卖出' }}</span>
+                                            <span class="portfolio-trade-stock">{{ t.stock_name }} {{ t.stock_code }}</span>
+                                        </div>
+                                        <div class="portfolio-trade-meta">价格 {{ fmtNum(t.price, 3) }} × {{ fmtNum(t.quantity, 2) }} · {{ t.trade_date || t.created_at }}</div>
+                                        <div v-if="t.note" class="portfolio-trade-note">{{ t.note }}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- 调仓弹窗 -->
+                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="420px">
+                            <div class="portfolio-trade-form">
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">股票</span>
+                                    <span class="portfolio-trade-stock">{{ tradeForm.stock_code }} {{ tradeForm.stock_name }}</span>
+                                </div>
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">方向</span>
+                                    <el-radio-group v-model="tradeForm.action" size="small">
+                                        <el-radio-button value="buy">买入</el-radio-button>
+                                        <el-radio-button value="sell">卖出</el-radio-button>
+                                    </el-radio-group>
+                                </div>
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">价格</span>
+                                    <el-input-number v-model="tradeForm.price" :min="0" :precision="3" size="small" />
+                                </div>
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">数量</span>
+                                    <el-input-number v-model="tradeForm.quantity" :min="0" :precision="2" size="small" />
+                                </div>
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">日期</span>
+                                    <el-date-picker v-model="tradeForm.trade_date" type="date" size="small" value-format="YYYY-MM-DD" placeholder="默认今天" />
+                                </div>
+                                <div class="portfolio-trade-row">
+                                    <span class="portfolio-trade-label">备注</span>
+                                    <el-input v-model="tradeForm.note" size="small" placeholder="可选" />
+                                </div>
+                            </div>
+                            <template #footer>
+                                <el-button size="small" @click="tradeFormVisible = false">取消</el-button>
+                                <el-button type="primary" size="small" :loading="tradeSaving" @click="submitTrade">保存</el-button>
+                            </template>
+                        </el-dialog>
+                    </div>
                 </div>`,
     setup() {
+      const { ref, watch } = Vue;
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+
+      // v3.17.6 (FR-3.17.6): 评估命中率（决策复盘闭环）
+      const trackData = ref(null);
+      const trackLoading = ref(false);
+      const trackWindows = [
+        { key: 'n5', label: '5 日' },
+        { key: 'n10', label: '10 日' },
+        { key: 'n20', label: '20 日' },
+      ];
+      function fmtTrackRate(st) {
+        if (!st || st.total === 0 || st.rate === null || st.rate === undefined) return '--';
+        return st.rate.toFixed(1) + '%';
+      }
+      async function loadTrack() {
+        trackLoading.value = true;
+        try {
+          const token = localStorage.getItem('quant_token');
+          const res = await fetch('/api/ai/track', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          trackData.value = data && data.success ? data.data : null;
+        } catch (e) {
+          console.warn('[eval-track] 评估命中率加载失败:', e);
+          trackData.value = null;
+        } finally {
+          trackLoading.value = false;
+        }
+      }
+      watch(
+        function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
+        function (key) { if (key === 'ai/history') loadTrack(); },
+        { immediate: true }
+      );
+      // v3.17.8 (FR-3.17.5): 组合/模拟持仓域 (工厂模块, 不经 qcState)
+      const __portfolioDomain = (window.__quantModules && window.__quantModules.portfolio)
+        ? window.__quantModules.portfolio.create({})
+        : {};
+      const {
+        positions, summary, trades, loading, loadError,
+        showAddForm, addForm, addSaving,
+        tradeFormVisible, tradeForm, tradeSaving,
+        portfolioTab, equityDays, equityLoading, equityNote, equityHasData,
+        loadPortfolio, addPosition, removePosition,
+        openTradeForm, submitTrade, loadTrades, loadEquity,
+        fmtSigned, fmtSignedPct, signClass,
+      } = __portfolioDomain;
+      // 进入「组合」子页 / 概览时加载数据 (概览用于统计卡计数)
+      watch(
+        function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
+        function (key) {
+          if (key === 'ai/portfolio') {
+            loadPortfolio();
+            loadTrades();
+            loadEquity(equityDays ? equityDays.value : 30);
+          } else if (key === 'ai/overview') {
+            loadPortfolio();
+          }
+        },
+        { immediate: true }
+      );
+      return {
+        ...state, trackData, trackLoading, trackWindows, fmtTrackRate, loadTrack,
+        positions, summary, trades, loading, loadError,
+        showAddForm, addForm, addSaving,
+        tradeFormVisible, tradeForm, tradeSaving,
+        portfolioTab, equityDays, equityLoading, equityNote, equityHasData,
+        loadPortfolio, addPosition, removePosition,
+        openTradeForm, submitTrade, loadTrades, loadEquity,
+        fmtSigned, fmtSignedPct, signClass,
+      };
     },
   };
 })();
