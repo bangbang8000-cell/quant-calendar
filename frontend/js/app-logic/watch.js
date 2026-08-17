@@ -7,16 +7,18 @@
   window.__quantAppLogic.watch = {
     register: function (ctx) {
       const { watch } = Vue;
+      let usageRefreshTimer = null;  // v3.17.6: 用量统计子页 30s 自动刷新
       const { strategyFilter, currentView, statusFilter,
               currentPage, currentSubPage, menus, currentUser, strategyFilterCounts,
               dates, selectedDate, consensus, loadConsensusData,
               fetchMerrillClock, fetchMarketData,
               loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
               loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-              loadHealthDetail, loadHealthMetrics,
+              loadHealthDetail, loadHealthMetrics, loadAiUsage,
               loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
               loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
               stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
+              currentKlinePeriod,
               showMerrillDetail, indexDetailVisible, restoreDialogFocus } = ctx;
 
       // 自动保存策略筛选配置
@@ -83,19 +85,36 @@
         // 系统配子页切换
         if (page === 'system' && currentUser.value?.role === 'admin') {
           if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
-          if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); }
+          if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage(); }
           if (sub === 'autoeval') loadAutoEvaluateConfig();
           if (sub === 'datasource') loadDatasourceConfig();
           if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); loadBackups(); }
           if (sub === 'user') { loadAllGroups(); loadUsers(); }
         }
+        // v3.17.6 (FR-3.17.6): 用量统计子页 30s 自动刷新 (离开时停止)
+        if (page === 'system' && sub === 'usage') {
+          if (!usageRefreshTimer) {
+            usageRefreshTimer = setInterval(() => {
+              loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage();
+            }, 30000);
+          }
+        } else if (usageRefreshTimer) {
+          clearInterval(usageRefreshTimer);
+          usageRefreshTimer = null;
+        }
       });
 
       // K线标签切换时自动加载
+      // v3.17.6 (bugfix): 用当前周期(currentKlinePeriod)而非硬编码 daily; 失败后 800ms 自动重试一次
       watch(stockDetailTab, (tab, oldTab) => {
         if (tab === 'kline' && oldTab && oldTab !== 'kline' && stockDetailVisible.value) {
           stockKlineLoaded.value = false;
-          setTimeout(() => loadStockKline('daily'), 50);
+          setTimeout(async () => {
+            const ok = await loadStockKline(currentKlinePeriod.value);
+            if (!ok && stockDetailVisible.value && stockDetailTab.value === 'kline') {
+              setTimeout(() => loadStockKline(currentKlinePeriod.value), 800);
+            }
+          }, 50);
         }
       });
 

@@ -716,7 +716,19 @@
                                         <span class="sys-health-name">{{ ds.name }}</span>
                                         <span :class="ds.degraded ? 'chip-warning' : 'chip-success'">{{ ds.degraded ? '降级' : '正常' }}</span>
                                     </div>
-                        <!-- v3.17.5: 数据健康度 (自策略总览移入) -->
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">成功率</span>
+                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">延迟</span>
+                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
+                        </div>
+                        <!-- v3.17.5: 数据健康度 (自策略总览移入) — v3.17.6 (bugfix): 移出数据源延迟网格, 独立成块 -->
                         <div class="section-block-top">
                             <div class="section-title-base">🩺 数据健康度</div>
                             <div class="today-health-strip">
@@ -732,19 +744,6 @@
                                     <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
                                 </div>
                             </div>
-                        </div>
-
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">成功率</span>
-                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">延迟</span>
-                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
                         </div>
 
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
@@ -764,14 +763,27 @@
                                         <span class="text-sm-tertiary">最近成功</span>
                                         <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
                                     </div>
+                                    <!-- v3.17.6: 失败详情 (detail 来自 scheduler._record_task_run) -->
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed'">
+                                        <span class="text-sm-tertiary">连续失败</span>
+                                        <span class="sys-health-meta" :style="{color: 'var(--el-danger)'}">{{ t.consecutive_failures || 0 }} 次</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed' && t.detail">
+                                        <span class="text-sm-tertiary">失败原因</span>
+                                        <span class="sys-health-meta" :title="t.detail">{{ (t.detail || '').slice(0, 60) }}{{ (t.detail || '').length > 60 ? '…' : '' }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无调度任务运行记录</div>
                         </div>
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
                         <!-- v3.17.12: 备份与磁盘 -->
+                        <!-- v3.17.6: 立即备份按钮 (createBackup 复用 feature 子页逻辑) -->
                         <div class="section-block-top">
-                            <div class="section-title-base">💾 备份与磁盘</div>
+                            <div class="section-title-base flex-between">
+                                <span>💾 备份与磁盘</span>
+                                <el-button size="small" type="primary" @click="createBackup" :loading="backupCreating">立即备份</el-button>
+                            </div>
                             <div class="sys-health-grid">
                                 <div class="sys-health-card">
                                     <div class="sys-health-card-title">最近备份成功</div>
@@ -791,11 +803,58 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- v3.4.0-T7: 页面热度排行 -->
+                        <!-- v3.17.6 (FR-3.17.6): AI 用量 — 总览卡 + 模型分布 + 近30天调用趋势 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">🔥 页面热度 (近 {{ analyticsDays }} 天)</div>
+                            <div class="section-title-base">🤖 AI 用量</div>
+                            <div class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">总调用</div>
+                                    <div class="sys-health-big color-primary">{{ aiUsage.total_calls ?? 0 }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">今日调用</div>
+                                    <div class="sys-health-big color-primary">{{ todayAiCalls }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">最近调用日</div>
+                                    <div class="sys-health-big color-primary">{{ lastAiCallDay || '--' }}</div>
+                                </div>
+                            </div>
+                            <div class="usage-sub-block" v-if="aiModelRank.length">
+                                <div class="usage-sub-title">模型调用分布</div>
+                                <div class="flex-col-gap-6">
+                                    <div class="rank-row" v-for="(m, i) in aiModelRank" :key="m.name">
+                                        <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
+                                        <span class="rank-name flex-1" :title="m.name">{{ m.name }}</span>
+                                        <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round(m.count / aiModelMax * 100) + '%'}"></span></span>
+                                        <span class="rank-views color-secondary">{{ m.count }} 次</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="usage-sub-block">
+                                <div class="usage-sub-title">近 30 天调用趋势</div>
+                                <div class="mini-bar-chart" v-if="aiDayTrend.length">
+                                    <div class="mini-bar-col" v-for="(d, idx) in aiDayTrend" :key="d.day" :title="d.day + ': ' + d.count + ' 次'">
+                                        <div class="mini-bar" :style="{height: Math.max(d.count / aiDayMax * 56, d.count ? 2 : 1) + 'px'}"></div>
+                                        <div class="mini-bar-label" v-if="idx === 0 || d.day.slice(8) === '01' || idx === aiDayTrend.length - 1">{{ d.day.slice(5) }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm-tertiary" v-else>暂无调用记录</div>
+                            </div>
+                        </div>
+                        <!-- v3.4.0-T7: 页面热度排行 -->
+                        <!-- v3.17.6: top5→top10 + 天数切换 7/14/30 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base flex-between">
+                                <span>🔥 页面热度 (近 {{ analyticsDays }} 天)</span>
+                                <div class="flex-gap-4">
+                                    <el-button size="small" :type="analyticsDays === 7 ? 'primary' : ''" @click="setAnalyticsDays(7)">近7天</el-button>
+                                    <el-button size="small" :type="analyticsDays === 14 ? 'primary' : ''" @click="setAnalyticsDays(14)">近14天</el-button>
+                                    <el-button size="small" :type="analyticsDays === 30 ? 'primary' : ''" @click="setAnalyticsDays(30)">近30天</el-button>
+                                </div>
+                            </div>
                             <div class="flex-col-gap-6" v-if="analyticsRank.length">
-                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page">
+                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 10)" :key="r.page">
                                     <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
                                     <span class="rank-name flex-1">{{ r.page }}</span>
                                     <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
@@ -1020,9 +1079,47 @@
         return days + '天前';
       }
 
+      // v3.17.6 (FR-3.17.6): AI 用量 — 模型分布/近30天趋势/今日调用 (数据源 /api/ai/usage-stats)
+      const aiUsageRef = state.aiUsage || Vue.ref({});
+      const aiModelRank = Vue.computed(() => {
+        const by = (aiUsageRef.value && aiUsageRef.value.by_model) || {};
+        return Object.entries(by).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+      });
+      const aiModelMax = Vue.computed(() => aiModelRank.value.reduce((m, r) => Math.max(m, r.count), 0) || 1);
+      const aiDayTrend = Vue.computed(() => {
+        const by = (aiUsageRef.value && aiUsageRef.value.by_day) || {};
+        const out = [];
+        const today = new Date();
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+          const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+          out.push({ day: key, count: by[key] || 0 });
+        }
+        return out;
+      });
+      const aiDayMax = Vue.computed(() => aiDayTrend.value.reduce((m, d) => Math.max(m, d.count), 0) || 1);
+      const todayAiCalls = Vue.computed(() => {
+        const by = (aiUsageRef.value && aiUsageRef.value.by_day) || {};
+        const t = new Date();
+        const key = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+        return by[key] || 0;
+      });
+      const lastAiCallDay = Vue.computed(() => {
+        const by = (aiUsageRef.value && aiUsageRef.value.by_day) || {};
+        const days = Object.keys(by).filter(k => (by[k] || 0) > 0);
+        return days.length ? days[days.length - 1] : '';
+      });
+      // v3.17.6: 页面热度天数切换 (7/14/30 天)
+      function setAnalyticsDays(days) {
+        if (state.analyticsDays) state.analyticsDays.value = days;
+        if (typeof state.loadAnalytics === 'function') state.loadAnalytics();
+      }
+
       return {
         ...state,
         analyticsMaxViews,
+        aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
+        setAnalyticsDays,
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,

@@ -208,7 +208,10 @@
     const el = document.getElementById(containerId);
     if (!el) throw new Error('无法找到图表容器: ' + containerId);
     if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
-    if (!rec.chart) {
+    // v3.17.7 (bugfix): 容器 DOM 可能被 v-if 销毁重建(tab 切换) — 旧实例仍绑定已移除的 DOM,
+    //   必须检测 getDom() 不一致后 dispose 重建, 否则图表画到不可见元素上, 新容器永远空白
+    if (!rec.chart || rec.chart.isDisposed() || rec.chart.getDom() !== el) {
+      if (rec.chart) { try { rec.chart.dispose(); } catch (e) { /* ignore */ } }
       rec.chart = echarts.init(el);
       rec.chart.setOption(window.__quantModules.echartsTheme.getEChartsTheme());
       const onLegend = opts.onLegend;

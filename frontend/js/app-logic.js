@@ -410,16 +410,26 @@ const allMenuDefs = [
                 // v3.16 (16.4): K线实例生命周期已下沉 charts.js；评分动画/触摸手势已下沉 js/app-logic/market.js
 
                 // v3.16 (16.4): K线渲染/实例生命周期/缩放已全部下沉 charts.js — 此处仅保留状态与编排
+                // v3.17.6 (bugfix): 渲染成功后才置 loaded — 容器不存在(切到 AI/问股 tab)时静默跳过,
+                //   由 watch(stockDetailTab) 在切回 K线 tab 时重新加载; 请求序号丢弃过期并发
+                let _klineReqSeq = 0;
                 async function loadStockKline(period) {
-                    if (!stockDetail.value) return;
+                    if (!stockDetail.value) return false;
+                    const seq = ++_klineReqSeq;
                     klineLoading.value = true;
                     currentKlinePeriod.value = period;
                     try {
                         const res = await fetch(`/api/market/kline/${stockDetail.value.stock}?period=${period}&limit=60`);
                         const data = await res.json();
                         if (!data.success || !data.data) throw new Error(data.message || '数据获取失败');
-                        stockKlineLoaded.value = true;
                         markKlineLoaded(stockDetail.value.stock);
+                        // 过期请求丢弃(快速切 tab 时的并发保护)
+                        if (seq !== _klineReqSeq) return false;
+                        // 仅 K线 tab 可见时渲染; 否则保持 loaded=false 等待 watcher 切回时加载
+                        if (stockDetailTab.value !== 'kline') return true;
+                        // v3.17.7 (bugfix): 容器由 v-if="stockKlineLoaded" 控制 — 必须先置 loaded
+                        //   使容器渲染, nextTick 后再渲染图表 (renderKlineTo 已能检测容器 DOM 变化重建实例)
+                        stockKlineLoaded.value = true;
                         await nextTick();
                         // v3.16 (16.4): 实例生命周期/图例联动/主题重绘缓存下沉 charts.js
                         window.__quantModules.charts.renderKlineTo('stockKlineChart', data.data, period, false, {
@@ -429,8 +439,14 @@ const allMenuDefs = [
                             },
                         });
                         resetKlineMaVisible();
+                        return true;
                     } catch (e) {
-                        ElementPlus.ElMessage.error('K线加载失败');
+                        // 仅在 K线 tab 下提示, 避免在 AI/问股 tab 后台加载误报
+                        if (stockDetailTab.value === 'kline') {
+                            stockKlineLoaded.value = false;  // 复位, 保持"加载K线"按钮可点
+                            ElementPlus.ElMessage.error('K线加载失败');
+                        }
+                        return false;
                     } finally {
                         klineLoading.value = false;
                     }
@@ -717,10 +733,11 @@ const allMenuDefs = [
                     fetchMerrillClock, fetchMarketData,
                     loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
                     loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-                    loadHealthDetail, loadHealthMetrics,
+                    loadHealthDetail, loadHealthMetrics, loadAiUsage,
                     loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
                     loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
                     stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
+                    currentKlinePeriod,
                     showMerrillDetail, indexDetailVisible, restoreDialogFocus,
                 });
 

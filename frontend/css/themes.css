@@ -4555,6 +4555,13 @@ text {
 .rank-bar { flex: 0 0 120px; height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
 .rank-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--color-primary); }
 .rank-views { flex: none; font-variant-numeric: tabular-nums; }
+/* v3.17.6 (FR-3.17.6): AI 用量 — 模型分布 + 近30天调用趋势迷你柱状图 */
+.usage-sub-block { margin-top: 14px; }
+.usage-sub-title { font-size: var(--font-sm); color: var(--text-secondary); font-weight: var(--font-medium); margin-bottom: 8px; }
+.mini-bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 74px; padding: 4px 0 0; overflow: hidden; }
+.mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+.mini-bar { width: 100%; max-width: 14px; border-radius: 2px 2px 0 0; background: var(--color-primary); opacity: 0.85; min-height: 1px; }
+.mini-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 3px; white-space: nowrap; }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
 .el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
 .el-button--success:hover, .el-button--success:focus { opacity: .85; }

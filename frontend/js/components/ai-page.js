@@ -62,7 +62,8 @@
                                 </div>
                             </div>
                             <!-- v3.5.0-T6: AI 用量统计 -->
-                            <div class="stat-card stat-card-info-border" title="AI 模型调用统计">
+                            <!-- v3.17.6: title 提示详细用量位置 (系统→用量统计) -->
+                            <div class="stat-card stat-card-info-border" title="AI 模型调用统计, 模型分布/近30天趋势见 系统→用量统计">
                                 <div class="stat-icon stat-icon-info-hover">⚡</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiUsage.total_calls || 0 }}</div>

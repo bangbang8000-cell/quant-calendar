@@ -645,8 +645,8 @@ async function watchlistEvaluate(code, name) {
         aiLoading.value = false;
         aiEvalStage.value = '';
     }
-    // 加载K线
-    setTimeout(async () => { await loadStockKline('daily'); refreshStockScore(); }, 500);
+    // v3.17.6 (bugfix): 弹窗停在 AI tab 时容器不存在, 此处加载必失败 — 删除;
+    // 切到 K线 tab 由 watch(stockDetailTab) 自动加载
 }
 async function batchEvaluateWatchlist() {
     if (watchlist.value.length === 0) return;
@@ -1006,11 +1006,8 @@ async function viewAiResult(item) {
     }
     stockDetailVisible.value = true;
     stockDetailTab.value = 'ai';
-    // 弹窗打开后加载K线
-    setTimeout(async () => {
-        await loadStockKline('daily');
-        refreshStockScore();
-    }, 500);
+    // v3.17.6 (bugfix): 弹窗停在 AI tab 时容器不存在, 定时加载必失败 — 删除;
+    // 切到 K线 tab 由 watch(stockDetailTab) 自动加载
 }
 
 async function doBatchEvaluate() {
