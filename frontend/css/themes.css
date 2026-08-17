@@ -1790,12 +1790,54 @@
         .watchlist-empty-icon { font-size: 48px; margin-bottom: 12px; }
         .watchlist-empty-title { font-size: var(--font-md); color: var(--text-secondary); }
         .watchlist-empty-hint { font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 4px; }
+        /* v3.17.7 实时化 (FR-3.17.7): 自选实时报价区 */
+        .rt-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            margin: 4px 0 10px 0;
+            border-radius: 6px;
+            background: var(--bg-hover);
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+        }
+        .rt-title { font-weight: var(--font-semibold); color: var(--text-secondary); }
+        .rt-live { color: var(--color-success); font-weight: var(--font-semibold); }
+        .rt-connecting { color: var(--text-tertiary); }
+        .rt-degraded { border: 1px dashed var(--border-heavy); }
+        .rt-degraded-text { color: var(--text-tertiary); }
+        .watchlist-quote {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 2px;
+            font-size: var(--font-xs);
+        }
+        .quote-price { font-weight: var(--font-semibold); font-size: var(--font-sm); }
+        .quote-pct { font-weight: var(--font-semibold); }
+        .quote-meta { color: var(--text-tertiary); white-space: nowrap; }
+        .rt-warn-tag {
+            font-size: var(--font-xs);
+            font-weight: var(--font-bold);
+            color: var(--color-warning);
+            background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+            padding: 1px 6px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
         /* 暗色主题：自选列表 */
 
         /* 原有样式 */
         .ai-history-list {
             max-height: 650px;
             overflow-y: auto;
+        }
+        /* v3.17.9 (FR-3.17.9): 评估历史懒加载「加载更多」区 */
+        .ai-history-loadmore {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0 4px 0;
         }
         .ai-history-item {
             display: flex;
@@ -2358,7 +2400,18 @@
     .skeleton-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
     .skeleton-item { height: 60px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); border-radius: 8px; animation: skeleton-shimmer 1.5s infinite; background-size: 200% 100%; }
     .skeleton-large { height: 120px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); border-radius: 12px; animation: skeleton-shimmer 1.5s infinite; background-size: 200% 100%; }
-    
+
+    /* v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（零内联样式），defer 下 DOM 先渲染，
+        Vue 挂载后由 index.html 移除；复用 skeleton-shimmer 动画与令牌色 */
+    .qc-boot-skeleton { position: fixed; inset: 0; z-index: 9999; background: var(--bg-page); }
+    .qc-boot-skeleton-shell { display: flex; height: 100%; }
+    .qc-boot-skeleton-sidebar { width: var(--sidebar-width); background: var(--bg-card); padding: 16px 12px; }
+    .qc-boot-skeleton-logo { height: 44px; border-radius: var(--r-md); margin-bottom: 20px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s infinite; }
+    .qc-boot-skeleton-nav { height: 36px; border-radius: var(--r-md); margin-bottom: 10px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s infinite; }
+    .qc-boot-skeleton-body { flex: 1; padding: 16px 20px; min-width: 0; }
+    .qc-boot-skeleton-header { height: 56px; border-radius: var(--r-lg); margin-bottom: 16px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s infinite; }
+    .qc-boot-skeleton-card { height: 150px; border-radius: var(--r-lg); margin-bottom: 16px; background: linear-gradient(90deg, var(--bg-stripe) 25%, var(--bg-hover) 50%, var(--bg-stripe) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s infinite; }
+
     /* 底部科技蓝金装饰 */
     .merrill-footer-decoration {
         margin-top: 30px;

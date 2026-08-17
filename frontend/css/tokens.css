@@ -5,7 +5,6 @@
   /* ─── Spacing Scale ─── */
   --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
   --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
-
   /* ─── Border Radius ─── */
   --r-sm: 6px;   --r-md: 8px;   --r-lg: 12px;  --r-xl: 16px;  --r-full: 9999px;
 
@@ -73,3 +72,6 @@
   --nav-item-height:         40px;
   --mobile-nav-height:       56px;
 }
+
+/* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
+[v-cloak] { display: none !important; }

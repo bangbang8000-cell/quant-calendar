@@ -92,6 +92,140 @@ const dataRefreshConfig = ref({
 const dataRefreshReloading = ref(false);
 const dataRefreshSaving = ref(false);
 
+// ─── v3.17.7 实时化 (FR-3.17.7): 自选实时报价（WS 接入 + 预警 + 优雅降级）──
+// 纯函数/常量统一收口于 core.js（node 可测）；本域负责 WS 生命周期与状态。
+const __coreRT = (window.__quantModules && window.__quantModules.core)
+  ? window.__quantModules.core : {};
+const REALTIME_WS_PATH = __coreRT.REALTIME_WS_PATH || '/api/market/ws/quotes';
+const REALTIME_DEGRADED_TEXT = __coreRT.REALTIME_DEGRADED_TEXT || '数据不可达';
+const REALTIME_FALLBACK_TEXT = __coreRT.REALTIME_FALLBACK_TEXT || '实时不可用，不刷新';
+const WARN_RISE_SPEED_THRESHOLD = (__coreRT.WARN_RISE_SPEED_THRESHOLD != null)
+  ? __coreRT.WARN_RISE_SPEED_THRESHOLD : 1.0;
+const WARN_VOLUME_RATIO_THRESHOLD = (__coreRT.WARN_VOLUME_RATIO_THRESHOLD != null)
+  ? __coreRT.WARN_VOLUME_RATIO_THRESHOLD : 2.5;
+const quoteFmt = __coreRT.quoteFmt || {
+  price: v => (v == null ? '--' : Number(v).toFixed(2)),
+  pct: v => (v == null ? '--' : Number(v).toFixed(2) + '%'),
+  num: v => (v == null ? '--' : Number(v).toFixed(2)),
+  color: q => '',
+};
+const REALTIME_RETRY_MAX = 3;         // 连续重连上限（超限保持降级占位，不打扰）
+const REALTIME_RETRY_BASE_MS = 5000;  // 重连退避基数
+
+const realtimeQuotes = ref({});        // code -> {price, change_pct, volume_ratio, rise_speed}
+const realtimeDegraded = ref(false);   // 数据源不可达 → 显示"数据不可达"占位
+const realtimeWsState = ref('idle');   // idle|connecting|open|offline
+let realtimeWs = null;
+let realtimeRetryTimer = null;
+let realtimeRetryCount = 0;
+
+// 预警判定（纯函数，委托 core.checkQuoteWarning）
+function checkQuoteWarning(quote) {
+  return __coreRT.checkQuoteWarning ? __coreRT.checkQuoteWarning(quote) : null;
+}
+// 返回某自选股当前预警文案（涨速/跌速/放量），无则 null
+function quoteWarningFor(code) {
+  return checkQuoteWarning(realtimeQuotes.value[code]);
+}
+function realtimeQuoteColor(code) {
+  return quoteFmt.color(realtimeQuotes.value[code]);
+}
+function realtimePriceText(code) {
+  return quoteFmt.price(realtimeQuotes.value[code] && realtimeQuotes.value[code].price);
+}
+function realtimePctText(code) {
+  return quoteFmt.pct(realtimeQuotes.value[code] && realtimeQuotes.value[code].change_pct);
+}
+function realtimeRatioText(code, field) {
+  return quoteFmt.num(realtimeQuotes.value[code] && realtimeQuotes.value[code][field]);
+}
+function _realtimeToken() {
+  try { return localStorage.getItem('quant_token') || ''; } catch (e) { return ''; }
+}
+function _realtimeSendSubscribe() {
+  if (!realtimeWs || realtimeWs.readyState !== 1) return;
+  const codes = (watchlist.value || []).map(s => s.code);
+  if (codes.length === 0) return;  // 空订阅不推送
+  realtimeWs.send(JSON.stringify({ subscribe: codes }));
+}
+function disconnectRealtimeQuotes() {
+  if (realtimeRetryTimer) { clearTimeout(realtimeRetryTimer); realtimeRetryTimer = null; }
+  if (realtimeWs) {
+    try {
+      realtimeWs.onopen = null; realtimeWs.onmessage = null;
+      realtimeWs.onerror = null; realtimeWs.onclose = null;
+      realtimeWs.close();
+    } catch (e) { /* ignore */ }
+    realtimeWs = null;
+  }
+  realtimeQuotes.value = {};
+  realtimeDegraded.value = false;
+  realtimeWsState.value = 'idle';
+}
+function connectRealtimeQuotes() {
+  const token = _realtimeToken();
+  if (!token || !__coreRT.buildRealtimeWsUrl) return;  // 未登录/无 WS 能力 → 降级不刷新
+  if (realtimeWsState.value === 'open' || realtimeWsState.value === 'connecting') return;
+  let url;
+  try {
+    url = __coreRT.buildRealtimeWsUrl() + '?token=' + encodeURIComponent(token);
+  } catch (e) { realtimeWsState.value = 'offline'; realtimeDegraded.value = true; return; }
+  realtimeWsState.value = 'connecting';
+  let ws = null;
+  try {
+    ws = new WebSocket(url);  // 原生 WebSocket API，零构建
+  } catch (e) {
+    // CSP/构造失败 → 优雅降级占位，不报错
+    realtimeWsState.value = 'offline';
+    realtimeDegraded.value = true;
+    return;
+  }
+  realtimeWs = ws;
+  ws.onopen = function () {
+    realtimeWsState.value = 'open';
+    realtimeRetryCount = 0;
+    _realtimeSendSubscribe();
+  };
+  ws.onmessage = function (evt) {
+    let msg = null;
+    try { msg = JSON.parse(evt.data || '{}'); } catch (e) { return; }
+    if (!msg || msg.type !== 'quotes') return;
+    realtimeDegraded.value = !!msg.degraded;
+    if (msg.degraded || !Array.isArray(msg.data)) {
+      realtimeQuotes.value = {};  // degraded → 空报价，占位"数据不可达"
+      return;
+    }
+    const map = {};
+    msg.data.forEach(function (q) {
+      if (q && q.code) map[q.code] = q;
+    });
+    realtimeQuotes.value = map;
+  };
+  ws.onerror = function () {
+    realtimeWsState.value = 'offline';
+    realtimeDegraded.value = true;
+  };
+  ws.onclose = function () {
+    realtimeWsState.value = 'offline';
+    if (realtimeRetryCount < REALTIME_RETRY_MAX) {
+      realtimeRetryCount++;
+      realtimeRetryTimer = setTimeout(function () {
+        if (realtimeWsState.value !== 'open') connectRealtimeQuotes();
+      }, REALTIME_RETRY_BASE_MS * realtimeRetryCount);
+    } else {
+      realtimeDegraded.value = true;  // 重连上限 → 保持降级占位，不阻塞其它功能
+    }
+  };
+}
+// 自选变化 → 重发订阅（打开连接后有效）
+watch(watchlist, function () {
+  if (realtimeWsState.value === 'open') _realtimeSendSubscribe();
+});
+// 创建即尝试连接（已登录时）：WS 不可用/数据不可达均自动降级
+if (_realtimeToken()) {
+  setTimeout(connectRealtimeQuotes, 500);
+}
+
 async function doAiEvaluate() {
     if (!stockDetail.value) return;
     aiLoading.value = true;
@@ -143,6 +277,12 @@ async function doAiEvaluate() {
     }
 }
 
+// v3.17.9 (FR-3.17.9): 评估历史懒加载分页 — 首屏只拉前 N 条, 滚动/按钮加载更多
+const AI_HISTORY_PAGE_SIZE = 50;
+const aiHistoryTotal = ref(0);
+const aiHistoryLoadingMore = ref(false);
+const hasMoreAiHistory = computed(() => aiHistory.value.length < aiHistoryTotal.value);
+
 async function loadAiHistory() {
     // v3.16 (16.7): 统一错误态状态机
     aiHistoryLoading.value = true;
@@ -150,7 +290,8 @@ async function loadAiHistory() {
     try {
         const token = localStorage.getItem('quant_token');
         if (!token) { aiHistory.value = []; return; }
-        const res = await fetch('/api/ai/history');
+        // v3.17.9: 分页首屏只拉前 N 条 (offset=0)
+        const res = await fetch(`/api/ai/history?limit=${AI_HISTORY_PAGE_SIZE}&offset=0`);
         if (res.status === 401) {
             // token 过期，清除登录状态
             console.warn('[loadAiHistory] 401, clearing session');
@@ -161,12 +302,30 @@ async function loadAiHistory() {
         }
         const data = await res.json();
         if (data.success) {
-            aiHistory.value = data.data;
+            aiHistory.value = data.data || [];
+            aiHistoryTotal.value = (data.total != null) ? data.total : aiHistory.value.length;
         } else {
             aiHistoryError.value = true;
         }
     } catch (e) { console.error('[loadAiHistory] error:', e); aiHistoryError.value = true; }
     finally { aiHistoryLoading.value = false; }
+}
+
+// 滚动/按钮加载下一页 (offset = 已加载条数), 去重追加
+async function loadMoreAiHistory() {
+    if (aiHistoryLoadingMore.value || !hasMoreAiHistory.value) return;
+    aiHistoryLoadingMore.value = true;
+    try {
+        const res = await fetch(`/api/ai/history?limit=${AI_HISTORY_PAGE_SIZE}&offset=${aiHistory.value.length}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+            const existing = new Set(aiHistory.value.map(r => r.id));
+            const fresh = data.data.filter(r => !existing.has(r.id));
+            aiHistory.value = aiHistory.value.concat(fresh);
+            if (data.total != null) aiHistoryTotal.value = data.total;
+        }
+    } catch (e) { console.warn('[loadMoreAiHistory] error:', e); }
+    finally { aiHistoryLoadingMore.value = false; }
 }
 
 // 删除单条记录
@@ -342,12 +501,16 @@ async function saveAutoEvaluateConfig() {
 }
 
 // v1.8.0: 自选股 CRUD
+// v3.17.9 (FR-3.17.9): 自选加载态（自选区骨架屏）
+const watchlistLoading = ref(false);
 async function loadWatchlist() {
+    watchlistLoading.value = true;
     try {
         const res = await fetch('/api/watchlist');
         const data = await res.json();
         if (data.success) watchlist.value = data.stocks || [];
     } catch (e) { console.warn('loadWatchlist failed:', e); }
+    finally { watchlistLoading.value = false; }
 }
 async function addToWatchlist(code, name) {
     try {
@@ -392,6 +555,10 @@ async function toggleWatchlist(code, name) {
     }
 }
 async function showStockKline(code, name) {
+    // v3.17.10 (FR-3.17.10): 记录最近查看
+    if (window.__quantModules && window.__quantModules.recent) {
+        window.__quantModules.recent.recordViewed(code, name || '');
+    }
     // v1.8.0: 先获取完整股票详情（含今日行情+均线+评分）
     const today = new Date().toISOString().split('T')[0];
     const date = selectedDate.value || today;
@@ -745,6 +912,11 @@ function registerTrendChart(el, code, records) {
     if (!el) return; // dispose
     if (records) _trendChartData[code] = { el, records };
     if (_trendChartCache[code] === el) return; // same element
+    // v3.17.9 (FR-3.17.9): echarts 懒加载 — 非首屏按需引入, 未加载先注入再渲染
+    const ensureCharts = (window.__quantModules && window.__quantModules.charts
+        && typeof window.__quantModules.charts.ensureEcharts === 'function')
+        ? window.__quantModules.charts.ensureEcharts : null;
+    const doRender = () => {
     // dispose old instance if exists
     Object.keys(_trendChartCache).forEach(key => {
         if (_trendChartCache[key] && _trendChartCache[key] !== el) {
@@ -792,6 +964,12 @@ function registerTrendChart(el, code, records) {
         }],
     });
     _trendChartCache[code] = chart;
+    };
+    if (ensureCharts) {
+        ensureCharts().then(doRender).catch(() => { /* echarts 加载失败则跳过趋势图 */ });
+    } else {
+        doRender();
+    }
 }
 // v3.15 (15.4): 趋势图随主题重绘 — dispose 后按缓存数据重建
 function _refreshTrendCharts() {
@@ -979,6 +1157,8 @@ async function doBatchEvaluate() {
         markKlineLoaded, watchlistSearch, watchlistResults, watchlistSearching,
         dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
         aiHistoryLoading, aiHistoryError,
+        aiHistoryTotal, aiHistoryLoadingMore, hasMoreAiHistory, loadMoreAiHistory,
+        watchlistLoading,
         doAiEvaluate, loadAiHistory, deleteSingleHistory, toggleSelectHistory, clearSelection,
         clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchRemoveWatchlist,
         toggleSelectWatchlist, selectAllHistory, selectAllWatchlist, deleteSelectedHistory,
@@ -990,6 +1170,11 @@ async function doBatchEvaluate() {
         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,
+        // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
+        realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
+        disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
+        realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
+        REALTIME_FALLBACK_TEXT,
       };
     }
   };

@@ -56,9 +56,14 @@ def test_qcstate_no_duplicate_keys():
 
 
 def test_qcstate_key_count_stable():
-    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 439（v3.17.12 健康面板 +2）"""
+    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 456（v3.17.12 健康面板 +2；
+    v3.17.9 FR-3.17.9 历史懒加载/自选骨架屏 +5: aiHistoryTotal/aiHistoryLoadingMore/
+    hasMoreAiHistory/loadMoreAiHistory/watchlistLoading；v3.17.7 实时化 FR-3.17.7 +12:
+    realtimeQuotes/realtimeDegraded/realtimeWsState/connectRealtimeQuotes/
+    disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
+    realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 439, f"qcState 唯一键数异常: {len(set(keys))} (期望 439)"
+    assert len(set(keys)) == 456, f"qcState 唯一键数异常: {len(set(keys))} (期望 456)"
 
 
 def test_watch_currentpage_single():
@@ -843,3 +848,366 @@ def test_storage_convergence_no_json_double_write():
     # 用户写路径: _save_users 内不得再写 users.json
     um_seg = um_src[um_src.index("def _save_users"):um_src.index("def _hash_password")]
     assert "json.dump" not in um_seg, "_save_users 不应再写 JSON (SQLite 为主)"
+
+
+# ─── v3.17.8 (FR-3.17.8 / 移动端一等公民) 回归 ─────────────────────
+
+def test_responsive_mobile_breakpoints():
+    """FR-3.17.8: responsive.css 含移动端断点（≥375px 适配：768 / 480）"""
+    css = _read("css/responsive.css")
+    assert "@media (max-width: 768px)" in css, "缺少 <768px 移动断点"
+    assert "@media (max-width: 480px)" in css, "缺少 <480px 小屏断点"
+
+
+def test_responsive_overflow_guard():
+    """FR-3.17.8: 移动端防横向溢出守卫存在（body/.main-content overflow-x:hidden）"""
+    css = _read("css/responsive.css")
+    assert "overflow-x: hidden" in css, "应含 overflow-x:hidden 横向溢出守卫"
+    assert "@media (max-width: 768px)" in css
+
+
+def test_responsive_dialog_internal_scroll():
+    """FR-3.17.8: 移动端弹窗高度封顶 + 内部滚动（375px 弹窗可滚动不超出视口）"""
+    css = _read("css/responsive.css")
+    assert "max-height: calc(100vh" in css, "弹窗应高度封顶"
+    assert ".el-dialog__body" in css, "应控制弹窗 body"
+
+
+def test_responsive_swipe_reveal_classes():
+    """FR-3.17.8: 左滑露出操作面板类齐备（.swipe-reveal / .swipe-reveal-actions）"""
+    css = _read("css/responsive.css")
+    assert ".swipe-reveal" in css and ".swipe-reveal-actions" in css and ".swipe-reveal-main" in css, \
+        "应定义左滑露出面板三件套类"
+
+
+def test_manifest_fields_complete():
+    """FR-3.17.8: manifest 字段齐全（name/short_name/icons/theme_color/display/start_url）"""
+    import json as _json
+    man = _json.loads(_read("manifest.json"))
+    assert man.get("name") and man.get("short_name"), "应含 name/short_name"
+    assert man.get("start_url") == "/", "start_url 应为 /"
+    assert man.get("display") == "standalone", "display 应为 standalone"
+    assert man.get("theme_color") and man.get("background_color"), "应含主题/背景色"
+    assert isinstance(man.get("icons"), list) and len(man["icons"]) >= 3, "应含 ≥3 个图标"
+    assert man.get("id"), "应含 id（PWA 唯一标识）"
+    assert man.get("orientation") == "portrait-primary", "应限竖屏"
+
+
+# ─── v3.17.9 (FR-3.17.9 / 首屏性能优化) 回归 ─────────────────────
+
+def test_index_all_external_scripts_deferred():
+    """FR-3.17.9: index.html 全部外链 <script src> 均带 defer（并行下载、按序执行，首屏不被阻塞）；
+    非首屏大组件同样以 defer 在首屏清单注册（避免挂载后注册触发 KeepAlive 重建错误）"""
+    idx = _read("index.html")
+    src_tags = re.findall(r'<script[^>]*src="([^"]+)"[^>]*>', idx)
+    assert len(src_tags) >= 50, f"脚本数量异常: {len(src_tags)}"
+    for m in re.finditer(r'<script[^>]*src="[^"]+"[^>]*>', idx):
+        tag = m.group(0)
+        assert "defer" in tag, f"脚本未加 defer: {tag}"
+    assert "components/dialogs/stock-detail.js" in idx, "对话框组件应在首屏清单 (defer)"
+    assert "components/ai-page.js" in idx, "页面组件应在首屏清单 (defer)"
+
+
+def test_index_echarts_lazy_loaded():
+    """FR-3.17.9: echarts 不再同步加载（移除首屏 1MB 阻塞），改由 charts.js ensureEcharts 按需注入"""
+    idx = _read("index.html")
+    assert "echarts.min.js" not in idx, "index.html 不应再同步引入 echarts.min.js"
+    charts = _read("js/charts.js")
+    assert "function ensureEcharts" in charts, "charts.js 应提供 ensureEcharts 懒加载器"
+    assert "echarts.min.js" in charts, "ensureEcharts 应动态加载 /static/lib/echarts.min.js"
+    # 三个渲染入口均先确保 echarts 就绪
+    assert "await ensureEcharts()" in charts, "renderKlineTo 应 await ensureEcharts"
+
+
+def test_index_boot_skeleton_and_vcloak():
+    """FR-3.17.9: 启动骨架屏（#qc-boot）+ v-cloak 防模板闪现 + 挂载后移除"""
+    idx = _read("index.html")
+    assert 'id="qc-boot"' in idx, "index.html 应含启动骨架屏 #qc-boot"
+    assert 'class="qc-boot-skeleton"' in idx, "骨架屏应使用 qc-boot-skeleton CSS 类"
+    assert 'v-cloak' in idx and 'id="app" v-cloak' in idx, "#app 应带 v-cloak 防原始模板闪现"
+    assert "bootEl.remove()" in idx, "挂载后应移除启动骨架屏"
+    css = _read("css/tokens.css")
+    assert "[v-cloak]" in css, "tokens.css 应定义 [v-cloak]{display:none}"
+    css2 = _read("css/themes.css")
+    for cls in (".qc-boot-skeleton", ".qc-boot-skeleton-sidebar", ".qc-boot-skeleton-card"):
+        assert cls in css2, f"themes.css 应定义 {cls}"
+
+
+def test_skeleton_classes_no_inline_style():
+    """FR-3.17.9: 骨架屏零内联样式（骨架屏结构不得携带 style 属性）"""
+    idx = _read("index.html")
+    boot = idx[idx.index('id="qc-boot"'):idx.index('id="app"')]
+    assert 'style="' not in boot, "启动骨架屏不应含内联 style"
+    assert "style={" not in boot, "启动骨架屏不应含绑定式内联 style"
+    page = _read("js/components/ai-page.js")
+    assert 'type="loading"' in page and "watchlistLoading" in page, \
+        "自选加载态应接入骨架屏 (qc-state-panel loading)"
+
+
+def test_lazy_history_pagination_params():
+    """FR-3.17.9: 评估历史懒加载 — 前端首屏只拉前 N 条 (limit/offset) + loadMore 追加; 后端支持 offset"""
+    wl = _read("js/watchlist.js")
+    assert "AI_HISTORY_PAGE_SIZE" in wl, "应定义分页大小"
+    assert "limit=${AI_HISTORY_PAGE_SIZE}&offset=0" in wl, "loadAiHistory 首屏应带 limit/offset=0"
+    assert "async function loadMoreAiHistory" in wl, "应提供 loadMoreAiHistory"
+    assert "offset=${aiHistory.value.length}" in wl, "loadMore 应以已加载数作为 offset"
+    assert "hasMoreAiHistory" in wl, "应提供 hasMoreAiHistory 判断"
+    ai_api = _read_backend("api/v1/ai.py")
+    assert "offset: int = 0" in ai_api, "后端 /api/ai/history 应支持 offset 参数"
+    assert '"total": total' in ai_api, "后端应返回 total 供前端判断是否还有更多"
+    ai_eval = _read_backend("ai_evaluator.py")
+    assert "def count_history" in ai_eval, "ai_evaluator 应提供 count_history"
+
+
+def test_chat_history_backend_pagination():
+    """FR-3.17.9: 问股历史接口支持 limit/offset 分页（后端切片会话后再分组）"""
+    chat = _read_backend("api/v1/chat.py")
+    assert "limit: int = 50, offset: int = 0" in chat, "chat 历史应支持 limit/offset"
+    assert "sessions[offset:offset + limit]" in chat, "应切片会话再分组"
+
+
+def test_lifecycle_first_screen_parallel():
+    """FR-3.17.9: 首屏请求并行化 — 有会话在 setup 先恢复主界面, 业务数据后台并行加载"""
+    app = _read("js/app-logic.js")
+    lc = _read("js/app-logic/lifecycle.js")
+    assert "currentUser.value = JSON.parse(savedUser)" in app, "app-logic setup 应先行恢复会话"
+    assert "Promise.all" in lc, "业务数据应并行加载 (Promise.all)"
+    assert "loadUserConfig(), 2000" in lc and "loadDates(), 2000" in lc, \
+        "用户配置与交易日历应并行"
+    assert "loadUsers(), 2000" in lc and "loadAiHistory(), 2000" in lc, \
+        "用户列表与评估历史应并行"
+
+
+# ─── v3.17.10 (FR-3.17.10) 个性化与搜索 一致性回归 ───────────────────
+
+def test_preferences_keys_constants():
+    """FR-3.17.10: 偏好键常量齐备（default_view/theme/chart_period + localStorage key）"""
+    prefs = _read("js/preferences.js")
+    for key in ("'default_view'", "'theme'", "'chart_period'"):
+        assert key in prefs, f"preferences.js 应含偏好键 {key}"
+    assert "PREFERENCE_KEYS" in prefs and "PREFERENCE_DEFAULTS" in prefs, \
+        "应定义 PREFERENCE_KEYS/PREFERENCE_DEFAULTS"
+    assert "'quant_preferences'" in prefs, "偏好 localStorage key 应为 quant_preferences"
+    # 偏好键与后端 PREFERENCE_KEYS 一致（后端三键）
+    ucfg = _read_backend("api/v1/user_config.py")
+    for key in ("default_view", "theme", "chart_period"):
+        assert f'"{key}"' in ucfg, f"后端 user_config 应支持偏好键 {key}"
+    assert "PREFERENCE_KEYS" in ucfg, "后端应定义 PREFERENCE_KEYS"
+
+
+def test_preferences_valid_values():
+    """FR-3.17.10: 各偏好键合法取值约束（default_view=页面; theme=亮/暗/系统; chart_period=日/周/月）"""
+    prefs = _read("js/preferences.js")
+    assert "'strategies'" in prefs and "'calendar'" in prefs, "default_view 应含 strategies/calendar"
+    assert "'light'" in prefs and "'dark'" in prefs and "'system'" in prefs, \
+        "theme 应支持 light/dark/system"
+    assert "'daily'" in prefs and "'weekly'" in prefs and "'monthly'" in prefs, \
+        "chart_period 应支持 daily/weekly/monthly"
+
+
+def test_theme_authority_not_duplicated_in_preferences():
+    """FR-3.17.10: 偏好模块不得另起主题实现 — data-theme/quant_theme 仍唯一于 themes.js"""
+    prefs = _read("js/preferences.js")
+    assert "setAttribute('data-theme'" not in prefs, "preferences.js 不应重复设置 data-theme"
+    assert "localStorage.setItem('quant_theme'" not in prefs, "preferences.js 不应重复持久化 quant_theme"
+    # 偏好通过 themes.applyTheme 权威实现应用（映射具体主题名）
+    assert "THEME_MODE_TO_THEME" in prefs, "偏好应提供主题模式→具体主题映射"
+    assert "resolveTheme" in prefs, "偏好应提供 resolveTheme"
+    # 主题仍走 applyTheme 单一权威（既有断言持续生效）
+    themes = _read("js/themes.js")
+    assert "function applyTheme(theme)" in themes, "themes.js 应保持唯一 applyTheme 权威"
+
+
+def test_i18n_module_exists():
+    """FR-3.17.10: i18n.js 骨架存在且含 t()/setLocale/getLocale/语言包占位 zh-CN+en"""
+    i18n = _read("js/i18n.js")
+    assert "function t(key" in i18n or "t: t" in i18n, "i18n.js 应提供 t(key)"
+    assert "function setLocale" in i18n, "应提供 setLocale"
+    assert "function getLocale" in i18n, "应提供 getLocale"
+    assert "'zh-CN'" in i18n and "'en'" in i18n, "语言包占位应含 zh-CN 与 en"
+    assert "DEFAULT_LOCALE" in i18n and "zh-CN" in i18n.split("DEFAULT_LOCALE")[1][:60], \
+        "默认语言应为 zh-CN"
+    assert "window.__quantModules.i18n" in i18n, "应注册到 __quantModules.i18n"
+
+
+def test_recent_viewed_localstorage_key():
+    """FR-3.17.10: 最近查看 localStorage key 断言（quant_recent_viewed，上限 10）"""
+    recent = _read("js/recent.js")
+    assert "RECENT_VIEWED_KEY" in recent and "'quant_recent_viewed'" in recent, \
+        "最近查看 localStorage key 应为 quant_recent_viewed"
+    assert "RECENT_MAX" in recent, "应定义上限 RECENT_MAX"
+    assert "function recordViewed" in recent, "应提供 recordViewed（去重、最近在前）"
+    assert "function getRecentViewed" in recent, "应提供 getRecentViewed"
+    # 记录点接线：app-logic showStockDetail 与 watchlist showStockKline 均记录
+    app = _read("js/app-logic.js")
+    assert "recordViewed(stockCode" in app, "showStockDetail 应记录最近查看"
+    wl = _read("js/watchlist.js")
+    assert "recordViewed" in wl, "watchlist 应记录最近查看"
+
+
+def test_new_personalization_modules_registered():
+    """FR-3.17.10: 新模块（i18n/pinyin/preferences/recent）已注册到入口 HTML 且早于 app-logic"""
+    idx = _read("index.html")
+    for mod in ("i18n.js", "pinyin.js", "preferences.js", "recent.js"):
+        assert mod in idx, f"index.html 应加载 {mod}"
+        assert idx.index(mod) < idx.index("app-logic.js"), f"{mod} 应早于 app-logic.js 加载"
+    # preferences 早于 app-logic（启动 setup 同步读偏好）
+    assert idx.index("preferences.js") < idx.index("app-logic.js")
+
+
+def test_pinyin_module_pure_functions():
+    """FR-3.17.10: pinyin.js 提供拼音纯函数 + 内置核心股票清单"""
+    p = _read("js/pinyin.js")
+    for fn in ("toPinyinInitials", "toPinyin", "buildStockIndex", "searchStocksByQuery",
+               "registerExtraStocks", "searchCoreStocks"):
+        assert fn in p, f"pinyin.js 应提供 {fn}"
+    assert "CORE_STOCKS" in p, "应内置核心股票清单"
+    assert "CHAR_PINYIN" in p, "应内置汉字拼音映射"
+    assert "'贵州茅台'" in p, "内置清单应含 贵州茅台（测试样例）"
+    assert "module.exports" in p, "应支持 Node require（供 pytest 单测）"
+
+
+def test_command_panel_pinyin_quick_entries():
+    """FR-3.17.10: 命令面板接入本地拼音检索 + 空查询直达（最近查看/自选）"""
+    cp = _read("js/components/command-panel.js")
+    assert "searchLocal" in cp and "buildLocalIndex" in cp, "命令面板应构建本地拼音索引"
+    assert "window.__quantModules.pinyin" in cp, "命令面板应消费 pinyin 模块"
+    assert "buildQuickEntries" in cp, "命令面板应提供空查询直达条目"
+    assert "最近查看" in cp, "直达条目应含'最近查看'"
+    assert "我的自选" in cp, "直达条目应含'我的自选'"
+    keys = _read("js/app-logic/keys.js")
+    assert "searchCoreStocks" in keys, "全局搜索应接本地拼音兜底"
+
+
+# ─── v3.17.7 实时化 (FR-3.17.7) 前端一致性回归 ─────────────────────────
+
+def test_realtime_ws_path_constant():
+    """FR-3.17.7 实时化: WS 连接地址常量唯一于 core.js，watchlist.js 消费"""
+    core = _read("js/core.js")
+    assert "REALTIME_WS_PATH" in core and "'/api/market/ws/quotes'" in core, \
+        "core.js 应定义 REALTIME_WS_PATH=/api/market/ws/quotes"
+    assert "function buildRealtimeWsUrl" in core, "core.js 应提供 buildRealtimeWsUrl"
+    wl = _read("js/watchlist.js")
+    assert "REALTIME_WS_PATH" in wl, "watchlist.js 应消费 WS 路径常量"
+    assert "new WebSocket(url)" in wl, "watchlist.js 应使用原生 WebSocket API（零构建）"
+    # 后端路由配套存在
+    ws_api = _read_backend("api/v1/market_ws.py")
+    assert '@router.websocket("/ws/quotes")' in ws_api, "后端应提供 WS /api/market/ws/quotes 路由"
+    main = _read_backend("main_new.py")
+    assert "ws: wss:" in main, "CSP connect-src 应放行 ws/wss"
+
+
+def test_realtime_warn_thresholds_constants():
+    """FR-3.17.7 实时化: 预警阈值常量（|涨速|>1%、量比>2.5），与后端一致"""
+    core = _read("js/core.js")
+    assert "WARN_RISE_SPEED_THRESHOLD = 1.0" in core, "涨速阈值应为 1.0"
+    assert "WARN_VOLUME_RATIO_THRESHOLD = 2.5" in core, "量比阈值应为 2.5"
+    assert "function checkQuoteWarning" in core, "core.js 应提供 checkQuoteWarning 纯函数"
+    wl = _read("js/watchlist.js")
+    assert "WARN_RISE_SPEED_THRESHOLD" in wl and "WARN_VOLUME_RATIO_THRESHOLD" in wl, \
+        "watchlist.js 应消费预警阈值"
+    assert "quoteWarningFor" in wl, "watchlist.js 应提供 quoteWarningFor 预警标记"
+    backend = _read_backend("realtime_quotes.py")
+    assert "WARN_RISE_SPEED_THRESHOLD = 1.0" in backend, "后端涨速阈值应与前端一致"
+    assert "WARN_VOLUME_RATIO_THRESHOLD = 2.5" in backend, "后端量比阈值应与前端一致"
+
+
+def test_realtime_degraded_placeholder_text():
+    """FR-3.17.7 实时化: degraded 占位文案'数据不可达'（core.js 常量 + 模板使用）"""
+    core = _read("js/core.js")
+    assert "REALTIME_DEGRADED_TEXT" in core and "'数据不可达'" in core, \
+        "core.js 应定义 REALTIME_DEGRADED_TEXT='数据不可达'"
+    wl = _read("js/watchlist.js")
+    assert "REALTIME_DEGRADED_TEXT" in wl, "watchlist.js 应消费占位文案"
+    page = _read("js/components/ai-page.js")
+    assert "数据不可达" in page, "自选页模板应显示'数据不可达'占位"
+    assert "rt-degraded" in page, "降级态应使用 rt-degraded 样式类"
+
+
+def test_realtime_fallback_path_exists():
+    """FR-3.17.7 实时化: WS 不可用时回退路径存在（降级不刷新，不中断其它功能）"""
+    wl = _read("js/watchlist.js")
+    # 回退轮询路径: WS 不可用/失败 → 降级占位 + 不刷新（对其它功能零影响）
+    assert "REALTIME_FALLBACK_TEXT" in wl, "watchlist.js 应定义回退文案常量"
+    assert "'不刷新'" in wl or "REALTIME_FALLBACK_TEXT" in wl, "回退路径应存在"
+    assert "REALTIME_RETRY_MAX" in wl, "应限制连续重连次数（防抖）"
+    assert "realtimeDegraded.value = true" in wl, "onerror/onclose 应置降级标记"
+    page = _read("js/components/ai-page.js")
+    assert "REALTIME_FALLBACK_TEXT" in page, "自选页模板应消费回退文案"
+    assert "realtimeQuotes" in wl, "watchlist.js 应维护行内报价状态"
+
+
+def test_realtime_no_inline_style():
+    """FR-3.17.7 实时化: 实时报价新增片段不得使用内联 style（走 CSS 类 + 动态绑定色）"""
+    page = _read("js/components/ai-page.js")
+    seg = page[page.index("v3.17.7 实时化 (FR-3.17.7): 自选实时报价区"):]
+    seg = seg[:seg.index("<!-- 搜索添加 -->")]
+    assert 'style="' not in seg, "实时报价区不应含静态内联 style 属性"
+    assert ":style=\"{color: realtimeQuoteColor" in page, "涨跌色应经动态绑定（--color-rise/fall）"
+    wl = _read("js/watchlist.js")
+    assert "quoteFmt.color" in wl or "var(--color-rise)" in wl, "涨跌色应使用 --color-rise/fall 令牌"
+
+
+def test_realtime_css_classes_defined():
+    """FR-3.17.7 实时化: 实时报价区新增类已定义于 themes.css"""
+    css = _read("css/themes.css")
+    for cls in (".rt-bar", ".rt-title", ".rt-live", ".rt-connecting",
+                ".rt-degraded", ".rt-degraded-text", ".watchlist-quote",
+                ".quote-price", ".quote-pct", ".quote-meta", ".rt-warn-tag"):
+        assert cls in css, f"themes.css 应定义 {cls}"
+
+
+def test_realtime_backend_pure_function_exists():
+    """FR-3.17.7 实时化: 后端报价聚合纯函数 + 订阅校验 + 数据源降级齐备"""
+    rt = _read_backend("realtime_quotes.py")
+    assert "def build_quote_payload" in rt, "应提供 build_quote_payload 纯函数"
+    assert "def parse_subscribe" in rt, "应提供 parse_subscribe 订阅校验"
+    assert "class RealtimeQuoteSource" in rt, "应提供 RealtimeQuoteSource 数据源"
+    assert "degraded" in rt, "应支持 degraded 降级标记"
+    assert "MAX_SUBSCRIBE_CODES" in rt, "应定义订阅上限"
+    ws_api = _read_backend("api/v1/market_ws.py")
+    assert "get_current_user" in ws_api, "WS 鉴权应复用现有 JWT 校验"
+    assert "QUOTE_PUSH_INTERVAL" in ws_api, "WS 应按间隔推送"
+
+
+def test_realtime_core_node_pure():
+    """FR-3.17.7 实时化: core.js checkQuoteWarning 纯函数 node 单测（涨速/量比阈值）"""
+    import shutil
+    import subprocess
+
+    if shutil.which("node") is None:
+        pytest.skip("node 不可用")
+    core_path = os.path.join(FRONTEND_ROOT, "js", "core.js")
+    code = (
+        "const C = require(process.argv[1]);\n"
+        "const out = (function(){\n"
+        "  return {\n"
+        "    riseUp: C.checkQuoteWarning({rise_speed: 1.5, volume_ratio: 1.0}),\n"
+        "    riseDown: C.checkQuoteWarning({rise_speed: -1.5, volume_ratio: 1.0}),\n"
+        "    vol: C.checkQuoteWarning({rise_speed: 0.0, volume_ratio: 3.0}),\n"
+        "    none: C.checkQuoteWarning({rise_speed: 0.5, volume_ratio: 2.0}),\n"
+        "    path: C.REALTIME_WS_PATH,\n"
+        "    price: C.quoteFmt.price(12.345),\n"
+        "    pct: C.quoteFmt.pct(-1.234),\n"
+        "    colorUp: C.quoteFmt.color({change_pct: 1.0}),\n"
+        "    colorDown: C.quoteFmt.color({change_pct: -1.0}),\n"
+        "  };\n"
+        "})();\n"
+        "process.stdout.write(JSON.stringify(out));\n"
+    )
+    proc = subprocess.run(["node", "-e", code, core_path], capture_output=True, text=True, timeout=15)
+    assert proc.returncode == 0, f"node 执行失败: {proc.stderr}"
+    import json as _json
+    out = _json.loads(proc.stdout)
+    assert out["riseUp"] == "涨速预警"
+    assert out["riseDown"] == "跌速预警"
+    assert out["vol"] == "放量预警"
+    assert out["none"] is None
+    assert out["path"] == "/api/market/ws/quotes"
+    assert out["price"] == "12.35"
+    assert out["pct"] == "-1.23%"
+    assert out["colorUp"] == "var(--color-rise)"
+    assert out["colorDown"] == "var(--color-fall)"
+
+
+

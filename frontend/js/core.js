@@ -268,6 +268,61 @@
     return body.innerHTML;
   }
 
+  // ─── v3.17.7 实时化 (FR-3.17.7): 实时报价 WS 常量 + 预警/格式化纯函数 ──
+  // 阈值与后端 backend/realtime_quotes.py 保持一致；纯逻辑，node 可 require 单测。
+  const REALTIME_WS_PATH = '/api/market/ws/quotes';
+  const WARN_RISE_SPEED_THRESHOLD = 1.0;    // |涨速| > 1% → 涨速预警
+  const WARN_VOLUME_RATIO_THRESHOLD = 2.5;  // 量比 > 2.5 → 放量预警
+  const REALTIME_DEGRADED_TEXT = '数据不可达';
+  const REALTIME_FALLBACK_TEXT = '实时不可用，不刷新';
+
+  // WS 连接地址（同源 /api/market/ws/quotes；https 下用 wss）
+  function buildRealtimeWsUrl() {
+    const proto = (typeof location !== 'undefined' && location.protocol === 'https:') ? 'wss:' : 'ws:';
+    const host = (typeof location !== 'undefined') ? location.host : 'localhost:8001';
+    return proto + '//' + host + REALTIME_WS_PATH;
+  }
+
+  // 预警判定纯函数：quote 满足阈值返回预警文案（涨速/跌速/放量），否则 null
+  function checkQuoteWarning(quote, thresholds) {
+    if (!quote) return null;
+    const t = thresholds || {
+      riseSpeed: WARN_RISE_SPEED_THRESHOLD,
+      volumeRatio: WARN_VOLUME_RATIO_THRESHOLD,
+    };
+    const riseSpeedT = (t.riseSpeed != null) ? t.riseSpeed : WARN_RISE_SPEED_THRESHOLD;
+    const volumeRatioT = (t.volumeRatio != null) ? t.volumeRatio : WARN_VOLUME_RATIO_THRESHOLD;
+    const rise = parseFloat(quote.rise_speed);
+    if (!isNaN(rise) && Math.abs(rise) > riseSpeedT) {
+      return rise > 0 ? '涨速预警' : '跌速预警';
+    }
+    const vr = parseFloat(quote.volume_ratio);
+    if (!isNaN(vr) && vr > volumeRatioT) {
+      return '放量预警';
+    }
+    return null;
+  }
+
+  // 报价展示格式化纯函数（-- 兜底，node 可测）
+  function _rtNum(v) {
+    const n = Number(v);
+    return (v === null || v === undefined || isNaN(n)) ? null : n;
+  }
+  const quoteFmt = {
+    price: function (v) { const n = _rtNum(v); return n === null ? '--' : n.toFixed(2); },
+    pct: function (v) {
+      const n = _rtNum(v);
+      return n === null ? '--' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    },
+    num: function (v) { const n = _rtNum(v); return n === null ? '--' : n.toFixed(2); },
+    color: function (q) {
+      const p = q ? q.change_pct : null;
+      const n = _rtNum(p);
+      if (n === null) return '';
+      return n >= 0 ? 'var(--color-rise)' : 'var(--color-fall)';
+    },
+  };
+
   // ─── 注册 ───────────────────────────────────────────
   const core = {
     apiFetch,
@@ -284,6 +339,14 @@
     createTtlCache,
     silentRefresh,
     sanitizeHtml,
+    REALTIME_WS_PATH,
+    WARN_RISE_SPEED_THRESHOLD,
+    WARN_VOLUME_RATIO_THRESHOLD,
+    REALTIME_DEGRADED_TEXT,
+    REALTIME_FALLBACK_TEXT,
+    buildRealtimeWsUrl,
+    checkQuoteWarning,
+    quoteFmt,
   };
   if (typeof window !== 'undefined') {
     if (!window.__quantModules) window.__quantModules = {};

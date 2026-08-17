@@ -1,0 +1,11 @@
+{
+  "base_url": "http://127.0.0.1:8001/",
+  "interactive_ms": 1068.4,
+  "dcl_ms": 662,
+  "script_bytes": 2764125,
+  "script_count": 55,
+  "kline_dt_ms": 509.6,
+  "kline_points": 5000,
+  "kline_error": [],
+  "runs": 5
+}

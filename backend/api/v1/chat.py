@@ -366,9 +366,12 @@ async def quick_chat(body: QuickChatRequest, user: Optional[dict] = Depends(get_
 
 
 @router.get("/history")
-async def get_history(view: str = "date", user: Optional[dict] = Depends(get_current_user)):
-    """获取问股历史列表 — 支持 date/month/stock 分组视图 (v3.17.13: 按当前用户)"""
+async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
+                      user: Optional[dict] = Depends(get_current_user)):
+    """获取问股历史列表 — 支持 date/month/stock 分组视图 (v3.17.13: 按当前用户;
+    v3.17.9 FR-3.17.9: 支持 limit/offset 分页, 先切片会话再分组)"""
     sessions = _load_history(_resolve_username(user))
+    sessions = sessions[offset:offset + limit]
     items = []
     for s in sessions:
         code = s.get("stock_code", "") or ""

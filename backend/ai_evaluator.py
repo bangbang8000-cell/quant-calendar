@@ -2035,10 +2035,14 @@ class AIEvaluator:
 
     # ─── 历史管理 ───────────────────────────────────────────────
 
-    def get_history(self, username: str = 'default', limit: int = 50) -> List[Dict]:
-        """获取评估历史"""
+    def get_history(self, username: str = 'default', limit: int = 50, offset: int = 0) -> List[Dict]:
+        """获取评估历史 (v3.17.9 FR-3.17.9: 支持 limit/offset 分页; offset 默认 0 兼容旧调用)"""
         history = self._load_history_for(username)
-        return history[:limit]
+        return history[offset:offset + limit]
+
+    def count_history(self, username: str = 'default') -> int:
+        """评估历史总数 (分页 total 用)"""
+        return len(self._load_history_for(username))
     def delete_history(self, username: str, record_id: str) -> bool:
         """删除单条评估记录"""
         history = self._load_history_for(username)

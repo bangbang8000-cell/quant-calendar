@@ -1,7 +1,62 @@
 // quant-calendar: charts module v3.2.0
 // K线图表渲染 (从 index.html 提取, 保持签名兼容)
 // renderKlineChart(chart, data, period, isIndex, isMobile)
+// v3.17.9 (FR-3.17.9): 大样本降采样(桶式 min/max, 纯函数) + echarts 懒加载
 (function() {
+  // 降采样阈值: 超过该点数先压缩再送 ECharts, 保证 5000 点不卡顿
+  const KLINE_MAX_RENDER_POINTS = 2000;
+
+  // v3.17.9 (FR-3.17.9): 桶式 min/max 降采样 — 纯函数 (浏览器/Node 均可 require 测试)
+  // 每桶保留「最低价最低」与「最高价最高」两根K线 (最多2点/桶, 保留价格包络极值),
+  // 桶数为 maxPoints/2, 保证输出点数 ≤ maxPoints。
+  // data 行格式: [date, open, close, low, high, vol, ma5, ma10, ma20, ma60, vol_ma5]
+  // 返回新数组 (不修改入参); 少于/等于 maxPoints 时原样返回。
+  function downsampleSeries(data, maxPoints) {
+    if (!Array.isArray(data)) return data;
+    if (data.length <= maxPoints) return data;
+    const out = [];
+    // 每桶最多产出 2 点 (minLow + maxHigh), 故桶数 = maxPoints / 2 → 输出 ≤ maxPoints
+    const bucketSize = (data.length / maxPoints) * 2;
+    for (let i = 0; i < data.length; i += bucketSize) {
+      const start = Math.floor(i);
+      const end = Math.min(data.length, Math.ceil(i + bucketSize));
+      let minLow = Infinity, minLowIdx = -1;
+      let maxHigh = -Infinity, maxHighIdx = -1;
+      for (let j = start; j < end; j++) {
+        const row = data[j];
+        if (!row) continue;
+        const low = (row[3] != null) ? Number(row[3]) : Infinity;
+        const high = (row[4] != null) ? Number(row[4]) : -Infinity;
+        if (low < minLow) { minLow = low; minLowIdx = j; }
+        if (high > maxHigh) { maxHigh = high; maxHighIdx = j; }
+      }
+      if (minLowIdx >= 0) out.push(data[minLowIdx]);
+      if (maxHighIdx >= 0 && maxHighIdx !== minLowIdx) out.push(data[maxHighIdx]);
+    }
+    return out;
+  }
+
+  // v3.17.9 (FR-3.17.9): echarts 懒加载 — 非首屏按需注入, 首次进入图表时经动态 script 加载
+  // CSP script-src 含 'self', 同源 /static/lib/echarts.min.js 可被动态加载。
+  let _echartsPromise = null;
+  function ensureEcharts() {
+    if (typeof echarts !== 'undefined') return Promise.resolve();
+    if (!_echartsPromise) {
+      _echartsPromise = new Promise(function (resolve, reject) {
+        const s = document.createElement('script');
+        s.src = '/static/lib/echarts.min.js';
+        s.async = true;
+        s.onload = function () {
+          if (typeof echarts !== 'undefined') resolve();
+          else reject(new Error('echarts 加载后未定义'));
+        };
+        s.onerror = function () { reject(new Error('echarts.min.js 加载失败')); };
+        document.head.appendChild(s);
+      });
+    }
+    return _echartsPromise;
+  }
+
   function getThemeColors() {
     const rootStyle = getComputedStyle(document.documentElement);
     return {
@@ -18,6 +73,11 @@
 
   function renderKlineChart(chart, data, period, isIndex = false, isMobile = false) {
     if (!data || data.length === 0) return;
+
+    // v3.17.9 (FR-3.17.9): 大样本降采样 — 超过阈值先做桶式 min/max, 保证 5000 点渲染不卡顿
+    if (data.length > KLINE_MAX_RENDER_POINTS) {
+      data = downsampleSeries(data, KLINE_MAX_RENDER_POINTS);
+    }
 
     const dates = data.map(d => d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
     const colors = getThemeColors();
@@ -142,7 +202,8 @@
 
   // 渲染到指定容器（实例懒创建 + 主题注入 + 图例联动 + 缓存）
   // opts: { onLegend:(selected)=>void, isMobile:bool }
-  function renderKlineTo(containerId, data, period, isIndex = false, opts = {}) {
+  async function renderKlineTo(containerId, data, period, isIndex = false, opts = {}) {
+    await ensureEcharts();  // v3.17.9: 懒加载 echarts（非首屏按需）
     const rec = _klineRec(containerId);
     const el = document.getElementById(containerId);
     if (!el) throw new Error('无法找到图表容器: ' + containerId);
@@ -208,6 +269,7 @@
   }
 
   function renderBacktestTo(containerId, buildOption, opts = {}) {
+    return ensureEcharts().then(function () {  // v3.17.9: 懒加载 echarts（非首屏按需）
     const rec = _backtestRec(containerId);
     const el = document.getElementById(containerId);
     if (!el) throw new Error('无法找到图表容器: ' + containerId);
@@ -231,6 +293,7 @@
     rec.chart.setOption(option, true);
     rec.cache = { buildOption, key: opts.key || '' };
     return rec.chart;
+    });
   }
 
   // 主题切换 → 用缓存 option 工厂重跑（新色重建，保留图例选中）
@@ -263,6 +326,7 @@
   }
 
   function renderPortfolioTo(containerId, buildOption, opts = {}) {
+    return ensureEcharts().then(function () {  // v3.17.9: 懒加载 echarts（非首屏按需）
     const rec = _portfolioRec(containerId);
     const el = document.getElementById(containerId);
     if (!el) return null;
@@ -285,6 +349,7 @@
     rec.chart.setOption(option, true);
     rec.cache = { buildOption, key: opts.key || '' };
     return rec.chart;
+    });
   }
 
   function redrawPortfolio(containerId) {
@@ -304,12 +369,20 @@
     if (rec && rec.chart) rec.chart.resize();
   }
 
-  if (!window.__quantModules) window.__quantModules = {};
-  window.__quantModules.charts = {
+  const chartsApi = {
     renderKlineChart,
     renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
     renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest,
     renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio,
-    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio }; },
+    downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS,
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS }; },
   };
+  if (typeof window !== 'undefined') {
+    if (!window.__quantModules) window.__quantModules = {};
+    window.__quantModules.charts = chartsApi;
+  }
+  // v3.17.9: 降采样纯函数供 Node/pytest 单测（tests/test_performance.py）
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { downsampleSeries, KLINE_MAX_RENDER_POINTS };
+  }
 })();

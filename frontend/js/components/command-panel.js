@@ -62,8 +62,46 @@
 
       // ─── 检索 ───
       const menus = computed(() => state.menus.value || []);
+      // v3.17.10 (FR-3.17.10): 本地拼音检索索引（内置核心清单 + 自选 + 评估历史 + 持仓）
+      function buildLocalIndex() {
+        const P = window.__quantModules && window.__quantModules.pinyin;
+        if (!P) return [];
+        const extra = [];
+        (state.watchlist && state.watchlist.value || []).forEach(function (s) {
+          extra.push({ code: s.code, name: s.name });
+        });
+        (state.aiHistory && state.aiHistory.value || []).forEach(function (r) {
+          if (r && r.stock_code) extra.push({ code: r.stock_code, name: r.stock_name || r.stock_code });
+        });
+        extra.push.apply(extra, P.getExtraStocks());
+        return P.buildStockIndex(extra);
+      }
+      function searchLocal(q) {
+        const P = window.__quantModules && window.__quantModules.pinyin;
+        if (!P) return [];
+        return P.searchStocksByQuery(q, buildLocalIndex()).map(function (r) {
+          return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
+        });
+      }
+      // v3.17.10 (FR-3.17.10): 空查询 → 最近查看 + 我的自选直达
+      function buildQuickEntries() {
+        const recent = [];
+        const R = window.__quantModules && window.__quantModules.recent;
+        if (R) {
+          R.getRecentViewed().slice(0, 5).forEach(function (r) {
+            recent.push({ type: 'stock', code: r.code, name: r.name || r.code, label: r.name || r.code, subLabel: '最近查看 · ' + r.code, icon: '📈' });
+          });
+        }
+        const wl = (state.watchlist && state.watchlist.value || []).slice(0, 8).map(function (s) {
+          return { type: 'stock', code: s.code, name: s.name || s.code, label: s.name || s.code, subLabel: '我的自选 · ' + s.code, icon: '📈' };
+        });
+        return recent.concat(wl);
+      }
       const result = computed(() => {
         const q = query.value;
+        if (!q) {
+          return QCP.mergeResults([], [], buildQuickEntries());
+        }
         const m = QCP.searchMenus(q, menus.value, state.subPageNames);
         const c = QCP.searchCommands(q, commandDefs.value);
         const s = stockResults.value; // 远程股票结果（本地上过滤在 fetch 回调中）
@@ -82,18 +120,28 @@
         return (item.type || '') + ':' + (item.code || item.menuKey || item.key || item.label);
       }
 
-      // ─── 股票远程搜索（防抖）───
+      // ─── 股票远程搜索（防抖，本地拼音索引优先 + 远程补充）───
       let stockTimer = null;
       function fetchStocks() {
         const q = query.value.trim();
         if (q.length < 1) { stockResults.value = []; return; }
         if (stockTimer) clearTimeout(stockTimer);
         stockTimer = setTimeout(function () {
+          // v3.17.10 (FR-3.17.10): 本地拼音索引结果立即展示（不等待远程，数据源不可达也可直达）
+          const local = searchLocal(q);
+          stockResults.value = local;
+          activeIndex.value = 0;
           state.searchStocks(q, function (items) {
             if (query.value.trim() !== q) return; // 过期回调丢弃
-            stockResults.value = items.map(function (r) {
+            const remote = items.map(function (r) {
               return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
             });
+            // v3.17.10 (FR-3.17.10): 本地拼音索引优先，远程结果按 code 去重补充
+            const seen = {};
+            const merged = [];
+            local.forEach(function (it) { if (!seen[it.code]) { seen[it.code] = true; merged.push(it); } });
+            remote.forEach(function (it) { if (!seen[it.code]) { seen[it.code] = true; merged.push(it); } });
+            stockResults.value = merged;
             activeIndex.value = 0;
           });
         }, 200);

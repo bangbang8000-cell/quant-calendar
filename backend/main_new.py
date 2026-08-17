@@ -157,7 +157,7 @@ async def security_headers(request: Request, call_next):
         f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https:; "
+        "connect-src 'self' https: ws: wss:; " \
         "font-src 'self' https://cdn.jsdelivr.net; "
         "frame-ancestors 'none'"
     )
@@ -182,9 +182,23 @@ async def get_manifest():
 
 @app.get("/sw.js")
 async def get_service_worker():
-    """PWA Service Worker"""
-    from fastapi.responses import FileResponse
-    return FileResponse(SW_JS_FILE, media_type="application/javascript")
+    """PWA Service Worker
+
+    v3.17.8 (FR-3.17.8): 注入 APP_VERSION（与 /api/health 版本同源），
+    cacheName 含版本 → 发布新版本即缓存爆破。Cache-Control: no-cache
+    保证 SW 每次更新时都取到最新版本脚本。"""
+    from fastapi.responses import Response
+    try:
+        with open(SW_JS_FILE, "r", encoding="utf-8") as f:
+            sw = f.read()
+    except OSError:
+        return Response(content="// sw.js not found", media_type="application/javascript")
+    sw = sw.replace("__APP_VERSION__", APP_VERSION)
+    return Response(
+        content=sw,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 # v3.7.9: index.html 内存缓存 (避免每次请求读磁盘)

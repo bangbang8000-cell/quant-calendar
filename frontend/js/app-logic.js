@@ -217,6 +217,11 @@ const allMenuDefs = [
                 function renderBacktestChart(equityCurve) {
                     const el = document.getElementById('backtestEquityChart');
                     if (!el || !equityCurve || equityCurve.length === 0) return;
+                    // v3.17.9 (FR-3.17.9): echarts 懒加载 — 非首屏按需引入后再渲染
+                    const ensure = (window.__quantModules && window.__quantModules.charts
+                        && typeof window.__quantModules.charts.ensureEcharts === 'function')
+                        ? window.__quantModules.charts.ensureEcharts : null;
+                    const doRender = () => {
                     _backtestCurve = equityCurve;  // v3.15: 主题重绘缓存
                     if (backtestChart) { backtestChart.dispose(); backtestChart = null; }
                     backtestChart = echarts.init(el);
@@ -235,6 +240,9 @@ const allMenuDefs = [
                             areaStyle: { opacity: 0.1 },
                         }],
                     });
+                    };
+                    if (ensure) { ensure().then(doRender).catch(() => {}); }
+                    else { doRender(); }
                 }
                 // v3.15 (15.4): 注册主题切换 → ECharts 按新主题重建（缓存数据, 保留 MA 图例选择）
                 if (window.__quantModules && window.__quantModules.echartsTheme && !window.__quantModules.echartsTheme.__appChartsRegistered) {
@@ -273,6 +281,15 @@ const allMenuDefs = [
 
                 // ===== 登录状态 =====
                 const currentUser = ref(null);
+                // v3.17.9 (FR-3.17.9): 会话先行恢复 — 主界面首帧即渲染（无需等 onMounted 再恢复登录态）
+                (function() {
+                    if (typeof localStorage === 'undefined') return;
+                    const savedUser = localStorage.getItem('quant_user');
+                    const savedToken = localStorage.getItem('quant_token');
+                    if (savedUser && savedToken) {
+                        try { currentUser.value = JSON.parse(savedUser); } catch (e) { /* 解析失败按未登录 */ }
+                    }
+                })();
                 // 登录表单/密码/初始化向导已下沉 js/app-logic/auth.js
 
                 // ===== v3.11(11.3): AI 问股域 — 共享状态（前置，供 ai-chat 域 deps 与 K线/评分/自选段引用）=====
@@ -357,6 +374,15 @@ const allMenuDefs = [
                     {label: '年线', value: 'yearly'}
                 ];
                 const currentKlinePeriod = ref('daily');
+                // v3.17.10 (FR-3.17.10): 图表默认周期应用用户偏好（chart_period: 日/周/月）
+                (function () {
+                    try {
+                        const __pref0 = (window.__quantModules && window.__quantModules.preferences)
+                            ? window.__quantModules.preferences.getLocal() : {};
+                        const cp = __pref0.chart_period;
+                        if (cp === 'weekly' || cp === 'monthly') currentKlinePeriod.value = cp;
+                    } catch (e) { /* 偏好不可用则保持默认 daily */ }
+                })();
                 const klineLoading = ref(false);
                 const indexKlineLoading = ref(false);
                 const stockKlineLoaded = ref(false);
@@ -508,6 +534,10 @@ const allMenuDefs = [
                 // ===== 详情弹窗（护栏片段保留: 先弹窗后拉数据, 加载态）=====
                 async function showStockDetail(stockCode) {
                     rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
+                    // v3.17.10 (FR-3.17.10): 记录最近查看（先记代码，数据返回后补名称）
+                    if (window.__quantModules && window.__quantModules.recent) {
+                        window.__quantModules.recent.recordViewed(stockCode, '');
+                    }
                     // v3.16 (16.10-fix): 立即弹窗（加载态），数据异步填充 —
                     // 原实现先 await 行情接口（tushare 同步拉取可长达 10s）再弹窗，导致点击后迟迟无响应
                     aiResult.value = null;
@@ -523,6 +553,11 @@ const allMenuDefs = [
                     try {
                         const res = await fetch(`/api/calendar/stock/${stockCode}?date=${selectedDate.value}`);
                         stockDetail.value = await res.json();
+                        // v3.17.10 (FR-3.17.10): 数据返回后补全最近查看名称
+                        if (stockDetail.value && stockDetail.value.name
+                            && window.__quantModules && window.__quantModules.recent) {
+                            window.__quantModules.recent.recordViewed(stockCode, stockDetail.value.name);
+                        }
                     } catch (e) {
                         ElementPlus.ElMessage.error('加载失败');
                         stockDetail.value = { stock: stockCode, name: '', total_days: 0 };
@@ -606,6 +641,8 @@ const allMenuDefs = [
                         markKlineLoaded, watchlistSearch, watchlistResults, watchlistSearching,
                         dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
                         aiHistoryLoading, aiHistoryError,
+                        aiHistoryTotal, aiHistoryLoadingMore, hasMoreAiHistory, loadMoreAiHistory,
+                        watchlistLoading,
                         doAiEvaluate, loadAiHistory, deleteSingleHistory, toggleSelectHistory, clearSelection,
                         clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchRemoveWatchlist,
                         toggleSelectWatchlist, selectAllHistory, selectAllWatchlist, deleteSelectedHistory,
@@ -616,7 +653,12 @@ const allMenuDefs = [
                         triggerDataPull, dataPullRunning,
                         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
                         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
-                        toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate } = __watchlistDomain;
+                        toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,
+                        // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
+                        realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
+                        disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
+                        realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
+                        REALTIME_FALLBACK_TEXT } = __watchlistDomain;
                 // ===== v3.17.4 (FR-3.17.4): 回测工作台域 — 逻辑移至 js/backtest.js 模块 =====
                 const __backtestDomain = (window.__quantModules && window.__quantModules.backtest)
                     ? window.__quantModules.backtest.create({ backtestStrategies })
@@ -668,7 +710,7 @@ const allMenuDefs = [
                 // ===== v3.17.11.1: 生命周期初始化域 (js/app-logic/lifecycle.js) =====
                 const __lifecycle = window.__quantAppLogic.lifecycle.create({
                     handleGlobalKeydown, applyTheme, menus,
-                    currentPage, currentSubPage, currentView,
+                    currentPage, currentSubPage, currentView, currentKlinePeriod,
                     selectedDate, dates, loadDates, loadConsensusData, loadDashboardCached,
                     appVersion, themes, fetchMarketData,
                     fetchMerrillStages, fetchMerrillClock,
@@ -828,6 +870,8 @@ const allMenuDefs = [
                     statusCounts, stockPool, poolSignals, aiResult, aiHistory, groupedByDate, groupedByMonth, expandedDates,
                     expandedMonths, aiHistoryByStock, aiHistoryStockCount, expandedStocks, aiHistoryView,
                     aiHistoryLoading, aiHistoryError,
+                    aiHistoryTotal, aiHistoryLoadingMore, hasMoreAiHistory, loadMoreAiHistory,
+                    watchlistLoading,
                     scoreDistribution, quickEvalStock, evalStrategy, checklistItems, evalHistoryComparison, quickEvaluate,
                     selectedHistoryIds, showAutoEvaluateSettings, savingConfig, autoEvaluateConfig, autoEvaluateScope, strategyList,
                     toggleDateExpand, toggleMonthExpand, toggleSelectDate, toggleSelectMonth, toggleSelectStock, toggleStockExpand, registerTrendChart,
@@ -845,6 +889,11 @@ const allMenuDefs = [
                     loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist,
                     searchStockForWatchlist, toggleWatchlist, batchEvaluateWatchlist, watchlistEvaluate, showStockKline,
                     preloadWatchlistKline, preloadingKline,
+                    // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
+                    realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
+                    disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
+                    realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
+                    REALTIME_FALLBACK_TEXT,
                     toggleSelectHistory, clearSelection, deleteSingleHistory, deleteSelectedHistory, saveAutoEvaluateConfig,
                     editUser, saveUser, deleteUser, loadUsers,
                     allGroups, loadAllGroups, getGroupName,

@@ -6,79 +6,111 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="量化日历">
+    <!-- theme-color meta 需字面量色值（浏览器不解析 CSS 变量），与 manifest 品牌色一致 -->
+    <meta name="theme-color" content="#667eea"><!-- qc-allow-hardcode -->
+    <link rel="manifest" href="/manifest.json">
     <title>🗓️ 量化日历</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script nonce="{{NONCE}}" src="/static/lib/vue.global.prod.min.js"></script>
+    <!-- v3.17.9 (FR-3.17.9): 关键 CSS 提前于脚本加载（render-blocking 但并行下载，保证首屏样式先就绪）；
+         脚本全部 defer（并行下载、按序执行于 DOM 解析后），首屏 DOM + 启动骨架屏先渲染 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="/static/lib/element-plus.css">
-    <script nonce="{{NONCE}}" src="/static/lib/element-plus.min.js"></script>
-    <script nonce="{{NONCE}}" src="/static/lib/echarts.min.js"></script>
-    <script nonce="{{NONCE}}" src="/static/lib/zh-cn.min.js"></script>
+    <script nonce="{{NONCE}}" defer src="/static/lib/element-plus.min.js"></script>
+    <!-- v3.17.9 (FR-3.17.9): echarts 改为按需懒加载（非首屏，见 charts.js ensureEcharts），不再同步阻塞首屏 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/zh-cn.min.js"></script>
     <link rel="stylesheet" href="/static/css/tokens.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/themes.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/layout.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/animations.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/responsive.css?v={{APP_VERSION}}">
 
-    <!-- Module JS -->
-    <script nonce="{{NONCE}}" src="/static/js/themes.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/icons.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/core.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/charts.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/ai.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/system.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/users.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/ai-chat.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/stock-pool.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/watchlist.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/portfolio.js?v={{APP_VERSION}}"></script>
+    <!-- Module JS (v3.17.9: 全部 defer, 按文档顺序执行, 依赖通过 window.__quantModules 全局保持) -->
+    <script nonce="{{NONCE}}" defer src="/static/js/themes.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.10 (FR-3.17.10): 个性化与搜索纯模块（拼音/偏好/最近查看/i18n，早于 app-logic 装配） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/i18n.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/pinyin.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/preferences.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/recent.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/icons.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/charts.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/ai.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/system.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/users.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/ai-chat.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/stock-pool.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/watchlist.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/portfolio.js?v={{APP_VERSION}}"></script>
     <!-- v3.17.4 (FR-3.17.4): 回测工作台（先加载纯函数核心，再加载域模块） -->
-    <script nonce="{{NONCE}}" src="/static/js/backtest-core.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/backtest.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/merrill.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/echarts-theme.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/sidebar.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/global-header.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/system-page.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/strategies-page.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/calendar-page.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/ai-page.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/research-page.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/virtual-list-core.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/virtual-list.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/backtest-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/backtest.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/merrill.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/echarts-theme.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/sidebar.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/global-header.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/system-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/strategies-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/calendar-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/ai-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/research-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/virtual-list-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/virtual-list.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.8 (FR-3.17.8): 移动端手势核心（左滑露出/下拉刷新判定/长按复制，纯函数可测） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/mobile-gestures.js?v={{APP_VERSION}}"></script>
     <!-- v3.11 (FR-3.11.5): 状态面板（四态核心纯数据 + 组件，先加载 core） -->
-    <script nonce="{{NONCE}}" src="/static/js/state-panel-core.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/state-panel.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/state-panel-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/state-panel.js?v={{APP_VERSION}}"></script>
     <!-- v3.11 (FR-3.11.1): 命令面板核心逻辑(纯函数) + 组件 -->
-    <script nonce="{{NONCE}}" src="/static/js/command-panel-core.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/command-panel.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/command-panel-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/command-panel.js?v={{APP_VERSION}}"></script>
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/change-password.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/shortcut-help.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/tour.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/menu-config.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/add-group.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/add-user.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/batch-evaluate.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/auto-evaluate.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/index-detail.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/setup-wizard.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/merrill-detail.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/dialogs/stock-detail.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/components/history-record.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/change-password.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/shortcut-help.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/tour.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/menu-config.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/add-group.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/add-user.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/batch-evaluate.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/auto-evaluate.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/index-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/setup-wizard.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/merrill-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/stock-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/history-record.js?v={{APP_VERSION}}"></script>
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/data.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/market.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/ops.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/nav.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/keys.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/auth.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/watch.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic/lifecycle.js?v={{APP_VERSION}}"></script>
-    <script nonce="{{NONCE}}" src="/static/js/app-logic.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/data.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/market.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/ops.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/nav.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/keys.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/auth.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/watch.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/lifecycle.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic.js?v={{APP_VERSION}}"></script>
 <body>
-    <div id="app">
+    <!-- v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（无内联样式），
+         defer 使 DOM 先于脚本渲染，此骨架屏在脚本下载/初始化期间展示，Vue 挂载后立即移除 -->
+    <div id="qc-boot" class="qc-boot-skeleton" aria-hidden="true">
+        <div class="qc-boot-skeleton-shell">
+            <div class="qc-boot-skeleton-sidebar">
+                <div class="qc-boot-skeleton-logo"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+            </div>
+            <div class="qc-boot-skeleton-body">
+                <div class="qc-boot-skeleton-header"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div id="app" v-cloak>
         <!-- 登录页 (v3.16 / 16.9: 品牌化) -->
         <div v-if="!currentUser" class="app-container login-screen">
             <div class="card login-box">
@@ -218,11 +250,13 @@
     
 </div>
 
+    <!-- v3.17.9 (FR-3.17.9): 内联启动脚本全部延迟到 DOMContentLoaded 执行 —
+         defer 的模块脚本在 DOM 解析完成后、DOMContentLoaded 前按序执行，故此处可安全引用 window.__quantModules -->
     <script nonce="{{NONCE}}">
     // v3.17.11 (FR-3.17.11.3/4): 鉴权注入唯一实现收敛至 core.js withAuthHeaders
     // 全局 fetch monkey-patch 保留（SSE 流式/文件下载/直接 fetch 均依赖其注入 Token），
     // 但不再重复实现 Authorization 拼接 —— 仅委托 __quantModules.core.withAuthHeaders。
-    (function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const originalFetch = window.fetch;
         const core = (window.__quantModules && window.__quantModules.core) || {};
         const withAuthHeaders = (typeof core.withAuthHeaders === 'function')
@@ -234,11 +268,16 @@
             const opts = withAuthHeaders(url, options);
             return originalFetch.apply(this, [url, opts]);
         };
-    })();
+    });
 </script>
     <script nonce="{{NONCE}}">
-        // ===== Vue 应用初始化 =====
-        const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;
+        // ===== Vue 应用初始化 (v3.17.9: 延迟到 DOMContentLoaded, 先于模块脚本执行完) =====
+        // 保持 Vue 解构为「顶层 var 全局词法绑定」: 各域模块(app-logic/market.js 等)裸引用
+        // ref/computed/watch/nextTick 依赖此声明 (原同步方案由顶层 const 提供, defer 后需显式声明)。
+        // 赋值延迟到 DOMContentLoaded (Vue 已加载), 域模块在 create 时调用, 时序安全。
+        var createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide;
+        document.addEventListener('DOMContentLoaded', function () {
+        ({ createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue);
         const app = createApp({
             setup() {
                 // v3.6.0-T8: 逻辑已提取至 js/app-logic.js
@@ -279,11 +318,35 @@
             Object.values(window.__quantComponents).forEach((comp) => {
                 if (comp && comp.name) {
                     app.component(comp.name, comp);
+                    comp.__quantRegistered = true;
                 }
             });
         }
         app.mount('#app');
 
+        // v3.17.9 (FR-3.17.9): 挂载完成立即移除启动骨架屏（首屏主区域随后由各页状态面板骨架接管）
+        const bootEl = document.getElementById('qc-boot');
+        if (bootEl) bootEl.remove();
+        });
+
+    </script>
+    <script nonce="{{NONCE}}">
+        // v3.17.8 (FR-3.17.8): PWA Service Worker 注册 + 移动端手势装配
+        // - SW: cacheName 含 APP_VERSION（后端 /sw.js 注入），发布新版本即缓存爆破
+        // - 手势: 左滑露出操作 / 长按复制代码（委托式，仅移动端生效由 CSS/touch 天然限制）
+        document.addEventListener('DOMContentLoaded', function () {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                        console.warn('[sw] 注册失败:', err);
+                    });
+                });
+            }
+            if (window.__quantModules && window.__quantModules.gestures
+                && typeof window.__quantModules.gestures.initGestures === 'function') {
+                window.__quantModules.gestures.initGestures();
+            }
+        });
     </script>
 </body>
 </html>

@@ -22,6 +22,13 @@
         if (QCP && menus.value) {
           localHits = QCP.buildSearchSuggestions(queryString, menus.value, subPageNames, QCP.DEFAULT_COMMANDS);
         }
+        // v3.17.10 (FR-3.17.10): 本地拼音检索兜底（内置核心清单 + 注册股票；数据源不可达时仍可直达）
+        const P = window.__quantModules && window.__quantModules.pinyin;
+        if (P) {
+          P.searchCoreStocks(queryString).forEach(function (r) {
+            localHits.push({ value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' });
+          });
+        }
         try {
           const res = await fetch('/api/search?q=' + encodeURIComponent(queryString));
           const data = await res.json();

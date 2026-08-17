@@ -8,7 +8,13 @@
   window.__quantComponents.CalendarPage = {
     name: 'qc-calendar-page',
     template: `
-                <div v-if="currentPage === 'calendar'" key="calendar" @touchstart="onCalTouchStart" @touchend="onCalTouchEnd">
+                <div v-if="currentPage === 'calendar'" key="calendar" data-cal-root @touchstart="onCalTouchStart" @touchend="onCalTouchEnd">
+
+                    <!-- v3.17.8 (FR-3.17.8): 下拉刷新指示器（页面顶部下拉时显示） -->
+                    <div class="pull-refresh-indicator" :class="{'is-active': pullRefreshing}">
+                        <span class="pull-refresh-spinner"></span>
+                        <span>正在刷新数据...</span>
+                    </div>
 
                     <!-- 日/周/月/年视图 -->
                     <template v-if="currentSubPage !== 'pool'">
@@ -42,7 +48,7 @@
                                 <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
                                 <qc-virtual-list class="h-calc-250" :items="stockPool" :row-height="78">
                                     <template #default="{ item, index }">
-                                    <div class="consensus-item mb-0" @click="showStockDetail(item.code)" tabindex="0" role="button" :aria-label="'查看 ' + item.name + ' ' + item.code" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
+                                    <div class="consensus-item mb-0" :data-copy-code="item.code" @click="showStockDetail(item.code)" tabindex="0" role="button" :aria-label="'查看 ' + item.name + ' ' + item.code" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                         <div class="consensus-badge">{{ index + 1 }}</div>
                                         <div class="consensus-info">
                                             <div class="consensus-code">
@@ -123,20 +129,44 @@
       if (!state) return {};
       // v3.11 (FR-3.11.5): 日历页手势翻日期（水平滑动切上一/下一交易日）
       // 仅移动端；纵向滚动/点击忽略；消费手势后 stopPropagation 避免触发上层 main-content 的翻页
+      // v3.17.8 (FR-3.17.8): 叠加下拉刷新 — 页面顶部下拉超过阈值触发 refreshCalendarData
       const { ref } = Vue;
       const calTouchX = ref(0);
       const calTouchY = ref(0);
+      const pullRefreshing = ref(false);
+      let _pullTimer = null;
       function onCalTouchStart(e) {
         const t = e.touches && e.touches[0];
         if (!t) return;
         calTouchX.value = t.clientX;
         calTouchY.value = t.clientY;
       }
+      async function doPullRefresh() {
+        if (pullRefreshing.value) return;
+        pullRefreshing.value = true;
+        try {
+          await state.refreshCalendarData();
+        } catch (err) {
+          // 数据源不可达时优雅降级（后台已 catch），指示器照常收尾
+        }
+        if (_pullTimer) clearTimeout(_pullTimer);
+        _pullTimer = setTimeout(() => { pullRefreshing.value = false; }, 500);
+      }
       function onCalTouchEnd(e) {
         if (!(window.innerWidth <= 768)) return;
-        if (state.currentSubPage.value === 'pool') return;
         const t = e.changedTouches && e.changedTouches[0];
         if (!t) return;
+        // 下拉刷新: 页面处于顶部 + 纵向下拉超过阈值（优先于横向翻日期判定）
+        const G = (window.__quantModules && window.__quantModules.gestures) || {};
+        const pullOk = (typeof G.judgePullToRefresh === 'function')
+          ? G.judgePullToRefresh(calTouchY.value, t.clientY)
+          : (t.clientY - calTouchY.value >= 60);
+        if (pullOk && (window.scrollY || 0) <= 0) {
+          e.stopPropagation();
+          doPullRefresh();
+          return;
+        }
+        if (state.currentSubPage.value === 'pool') return;
         const dx = t.clientX - calTouchX.value;
         const dy = t.clientY - calTouchY.value;
         if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
@@ -144,7 +174,7 @@
           e.stopPropagation();
         }
       }
-      return { ...state, onCalTouchStart, onCalTouchEnd };
+      return { ...state, pullRefreshing, onCalTouchStart, onCalTouchEnd };
     },
   };
 })();

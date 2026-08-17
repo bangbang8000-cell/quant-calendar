@@ -148,9 +148,9 @@
 
 ---
 
-### Phase 3.17.2 — 体验卓越（P0/P1/P2）
+### Phase 3.17.2 — 体验卓越（P0/P1/P2）✅ 已完成
 
-#### T15 移动端一等公民（FR-3.17.8）
+#### T15 移动端一等公民（FR-3.17.8）✅
 - **目标**: 375px 三大高频任务可用（日历池→体检→评估/复盘）；手势（左滑/下拉刷新/长按）；PWA 缓存与版本联动 + 核心页离线可读。
 - **文件**: `frontend/css/responsive.css`, `frontend/js/components/calendar-page.js`, `ai-page.js`, `stock-detail.js`, `sw.js`, `manifest.json`。
 - **测试**: 新增 Playwright 移动视口用例（375px 三任务流程）；`tests/e2e/visual_regression.py` 补移动基线；PWA 离线断言。

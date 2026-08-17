@@ -79,11 +79,15 @@ async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_a
 
 
 @router.get("/history")
-async def get_ai_history(limit: int = 50, user: Dict = Depends(get_current_active_user)):
-    """获取当前用户的评估历史"""
+async def get_ai_history(limit: int = 50, offset: int = 0, user: Dict = Depends(get_current_active_user)):
+    """获取当前用户的评估历史 (v3.17.9 FR-3.17.9: 支持 limit/offset 分页, 返回 total 供前端懒加载)"""
+    total = ai_evaluator.count_history(user["username"])
     return {
         "success": True,
-        "data": ai_evaluator.get_history(user["username"], limit)
+        "data": ai_evaluator.get_history(user["username"], limit, offset),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
     }
 
 

@@ -353,6 +353,13 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- v3.17.9 (FR-3.17.9): 评估历史懒加载 — 滚动触底 + 手动按钮加载更多 -->
+                        <div v-if="aiHistory.length > 0 && hasMoreAiHistory" class="ai-history-loadmore">
+                            <el-button size="small" :loading="aiHistoryLoadingMore" @click="loadMoreAiHistory">
+                                加载更多（剩余 {{ aiHistoryTotal - aiHistory.length }} 条）
+                            </el-button>
+                        </div>
                     </div>
                     </div>
 
@@ -510,6 +517,15 @@
                         </div>
                         <div class="card">
                             <div class="card-title">⭐ 我的自选 <span class="card-title-hint">共 {{ watchlist.length }} 只</span></div>
+                            <!-- v3.17.7 实时化 (FR-3.17.7): 自选实时报价区（WS；数据不可达降级占位，不阻塞其它功能） -->
+                            <div v-if="watchlist.length > 0" class="rt-bar" :class="{'rt-degraded': realtimeDegraded || realtimeWsState === 'offline'}">
+                                <span class="rt-title">实时报价</span>
+                                <span v-if="realtimeDegraded || realtimeWsState === 'offline'" class="rt-degraded-text">
+                                    {{ realtimeDegraded ? REALTIME_DEGRADED_TEXT : REALTIME_FALLBACK_TEXT }}
+                                </span>
+                                <span v-else-if="realtimeWsState === 'open'" class="rt-live">实时</span>
+                                <span v-else class="rt-connecting">连接中...</span>
+                            </div>
                             <!-- 搜索添加 -->
                             <div class="flex-gap-8-mb12">
                                 <el-input class="flex-1" v-model="watchlistSearch" placeholder="输入股票代码或名称搜索..." size="small" @input="searchStockForWatchlist" clearable/>
@@ -530,9 +546,11 @@
                                     <el-radio-button label="score">评分</el-radio-button>
                                 </el-radio-group>
                             </div>
+                            <!-- v3.17.9 (FR-3.17.9): 自选加载骨架屏（数据到达前展示, 到达后替换） -->
+                            <qc-state-panel v-if="watchlistLoading" type="loading"></qc-state-panel>
                             <!-- 空状态 -->
                             <!-- v3.16 (16.7): 离线检测 -->
-                            <qc-state-panel v-if="!isOnline && watchlist.length === 0" type="offline" @retry="loadWatchlist"></qc-state-panel>
+                            <qc-state-panel v-else-if="!isOnline && watchlist.length === 0" type="offline" @retry="loadWatchlist"></qc-state-panel>
                             <div v-else-if="watchlist.length === 0" class="watchlist-empty">
                                 <div class="watchlist-empty-icon">⭐</div>
                                 <div class="watchlist-empty-title">暂无自选股</div>
@@ -543,7 +561,9 @@
                                 <!-- v3.16 (16.7): 虚拟滚动，仅渲染可视区行（500+ 自选不卡顿） -->
                                 <qc-virtual-list class="vlist-h-calc" :items="sortedWatchlist" :row-height="56">
                                     <template #default="{ item: stock }">
-                                    <div class="watchlist-item" @click="showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code)}">
+                                    <!-- v3.17.8 (FR-3.17.8): 移动端左滑露出删除操作（.swipe-reveal），长按复制代码 -->
+                                    <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" @click="showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code)}">
+                                        <div class="swipe-reveal-main">
                                         <div class="watchlist-checkbox" @click.stop="toggleSelectWatchlist(stock.code)">
                                             <span v-if="selectedWatchlistCodes.includes(stock.code)" class="watchlist-checkbox-check">✓</span>
                                         </div>
@@ -554,11 +574,23 @@
                                             <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
                                                 {{ getWatchlistScore(stock.code).score }}
                                             </span>
+                                            <!-- v3.17.7 实时化 (FR-3.17.7): 行内实时报价（涨跌色/涨跌幅/量比/涨速 + 预警标记） -->
+                                            <div v-if="realtimeQuotes[stock.code]" class="watchlist-quote">
+                                                <span class="quote-price" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePriceText(stock.code) }}</span>
+                                                <span class="quote-pct" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePctText(stock.code) }}</span>
+                                                <span class="quote-meta">量比 {{ realtimeRatioText(stock.code, 'volume_ratio') }}</span>
+                                                <span class="quote-meta">涨速 {{ realtimeRatioText(stock.code, 'rise_speed') }}%</span>
+                                                <span v-if="quoteWarningFor(stock.code)" class="rt-warn-tag">{{ quoteWarningFor(stock.code) }}</span>
+                                            </div>
                                         </div>
                                         <div class="watchlist-actions">
                                             <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
                                             <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
                                             <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
+                                        </div>
+                                        </div>
+                                        <div class="swipe-reveal-actions">
+                                            <el-button size="small" type="danger" @click.stop="removeFromWatchlist(stock.code)">🗑️ 删除</el-button>
                                         </div>
                                     </div>
                                     </template>
@@ -743,9 +775,21 @@
                     </div>
                 </div>`,
     setup() {
-      const { ref, watch } = Vue;
+      const { ref, watch, onUnmounted } = Vue;
       const state = inject('qcState');
       if (!state) return {};
+
+      // v3.17.9 (FR-3.17.9): 评估历史滚动加载更多 — 窗口触底自动拉取下一页 (懒加载)
+      function onHistoryScroll() {
+        if (!state.hasMoreAiHistory || !state.loadMoreAiHistory) return;
+        if (state.currentPage.value !== 'ai' || state.currentSubPage.value !== 'history') return;
+        const d = document.documentElement;
+        if (d.scrollTop + window.innerHeight >= d.scrollHeight - 300) {
+          state.loadMoreAiHistory();
+        }
+      }
+      window.addEventListener('scroll', onHistoryScroll, { passive: true });
+      onUnmounted(() => window.removeEventListener('scroll', onHistoryScroll));
 
       // v3.17.6 (FR-3.17.6): 评估命中率（决策复盘闭环）
       const trackData = ref(null);
@@ -790,6 +834,14 @@
         openTradeForm, submitTrade, loadTrades, loadEquity,
         fmtSigned, fmtSignedPct, signClass,
       } = __portfolioDomain;
+      // v3.17.10 (FR-3.17.10): 持仓纳入本地拼音检索索引（自选/持仓/评估历史构造可测索引）
+      watch(positions, function (list) {
+        if (window.__quantModules && window.__quantModules.pinyin) {
+          window.__quantModules.pinyin.registerExtraStocks((list || []).map(function (p) {
+            return { code: p.stock_code, name: p.stock_name || p.stock_code };
+          }));
+        }
+      }, { deep: true });
       // 进入「组合」子页 / 概览时加载数据 (概览用于统计卡计数)
       watch(
         function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
