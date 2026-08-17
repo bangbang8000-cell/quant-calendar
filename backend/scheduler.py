@@ -170,6 +170,12 @@ class Scheduler:
                     report = generate_daily_report(dates[-1])
                     if report.get("success"):
                         logger.info(f"✅ 批量日报生成: {report['stats']['strategies']} 策略 / {report['stats']['stocks']} 只")
+                        # v3.17.15 (FR-3.17.15): Webhook — review_ready 事件
+                        try:
+                            from webhook import dispatch as webhook_dispatch
+                            webhook_dispatch("review_ready", {"date": dates[-1], "type": "daily_report"})
+                        except Exception as we:
+                            logger.warning("webhook review_ready 投递失败 (忽略): %s", we)
                         # 飞书推送 (Markdown 文本)
                         self.pusher.send_text(report["content"][:3500])
                         logger.info("📮 日报已推送飞书")
@@ -248,6 +254,16 @@ class Scheduler:
 
                     logger.info(f"✅ 自动评估完成: {len(results)} 条记录")
                     self._record_task_run("auto_evaluate", True, f"评估 {len(results)} 只")
+                    # v3.17.15 (FR-3.17.15): Webhook — evaluate_done 事件
+                    try:
+                        from webhook import dispatch as webhook_dispatch
+                        webhook_dispatch("evaluate_done", {
+                            "username": "auto_scheduler",
+                            "count": len(results),
+                            "at": datetime.now().isoformat(),
+                        })
+                    except Exception as we:
+                        logger.warning("webhook evaluate_done 投递失败 (忽略): %s", we)
 
                 except Exception as e:
                     logger.error(f" 自动评估失败: {e}")
@@ -675,6 +691,12 @@ class Scheduler:
                 review = generate_review(today)
                 logger.info(f"市场复盘生成成功: {review.get('date', today)}")
                 self._record_task_run("daily_market_review", True, today)
+                # v3.17.15 (FR-3.17.15): Webhook — market_review_ready 事件
+                try:
+                    from webhook import dispatch as webhook_dispatch
+                    webhook_dispatch("market_review_ready", {"date": today})
+                except Exception as we:
+                    logger.warning("webhook market_review_ready 投递失败 (忽略): %s", we)
             except Exception as e:
                 logger.error(f"市场复盘生成失败: {e}")
                 self._record_task_run("daily_market_review", False, str(e)[:120])

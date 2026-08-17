@@ -178,9 +178,9 @@
 
 ---
 
-### Phase 3.17.3 — 开放与国际化（P2）
+### Phase 3.17.3 — 开放与国际化（P2）✅ 已完成
 
-#### T19 开放 API v2 起步（FR-3.17.15）
+#### T19 开放 API v2 起步（FR-3.17.15）✅
 - **目标**: 只读开放 API + API Key 鉴权（admin 生成/吊销）+ Swagger 文档开关 + Webhook 订阅（复盘/异动/评估完成）。
 - **文件**: 新建 `backend/api_keys.py`, `backend/api/v1/openapi.py`；修改 `backend/main_new.py`(开关)、`frontend/js/components/system-page.js`(Key 管理)。
 - **测试**: 新建 `tests/test_api_keys.py`（签发/吊销/无 Key 拒绝/不落明文日志）；Webhook 投递单测。

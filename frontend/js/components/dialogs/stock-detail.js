@@ -10,18 +10,18 @@
   window.__quantComponents.StockDetailDialog = {
     name: 'qc-stock-detail-dialog',
     template: `
-        <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="800px" class="kline-dialog">
+        <el-dialog v-model="stockDetailVisible" :title="t('detail.title')" width="800px" class="kline-dialog">
             <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
             <div v-if="stockDetailLoading && !stockDetail" class="empty-state p-48-0">
                 <div class="empty-state-icon-xs">⏳</div>
-                <div class="text-md-medium-primary">正在加载股票详情...</div>
-                <div class="text-sm-tertiary-mt8">行情数据拉取中，请稍候</div>
+                <div class="text-md-medium-primary">{{ t('detail.loading') }}</div>
+                <div class="text-sm-tertiary-mt8">{{ t('detail.loadingHint') }}</div>
             </div>
             <div v-else-if="stockDetail">
                 <div class="detail-header">
                     <div>
                         <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
-                        <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
+                        <div class="detail-subtitle">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</div>
                     </div>
                     <div class="score-badge" :class="{ pulse: scorePulse }">
                         <div class="score-num-wrap">
@@ -37,23 +37,23 @@
                     <!-- Tab 切换 -->
                     <div class="flex-gap-6-mb16-wrap">
                         <el-button size="small" :type="stockDetailTab === 'kline' ? 'primary' : ''" @click="stockDetailTab = 'kline'">
-                            📈 K线图表
+                            {{ t('detail.tabKline') }}
                         </el-button>
                         <el-button size="small" :type="stockDetailTab === 'ai' ? 'primary' : ''" @click="stockDetailTab = 'ai'">
-                            🤖 评估结果
+                            {{ t('detail.tabEval') }}
                         </el-button>
                         <el-button size="small" :type="stockDetailTab === 'chat' ? 'primary' : ''" @click="stockDetailTab = 'chat'">
-                            💬 AI 问股
+                            {{ t('detail.tabChat') }}
                         </el-button>
                         <el-button size="small" :type="stockDetailTab === 'factor' ? 'primary' : ''" @click="stockDetailTab = 'factor'">
-                            多因子体检
+                            {{ t('detail.tabFactor') }}
                         </el-button>
                         <div class="flex-1"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
-                            💡 智能评估
+                            {{ t('detail.evaluate') }}
                         </el-button>
                         <el-button size="small" @click="toggleWatchlist(stockDetail.stock, stockDetail.name)" :type="watchlistCodes.has(stockDetail.stock) ? 'success' : 'primary'">
-                            {{ watchlistCodes.has(stockDetail.stock) ? '★ 已自选' : '⭐ 加入自选' }}
+                            {{ watchlistCodes.has(stockDetail.stock) ? t('detail.inWatch') : t('detail.addWatch') }}
                         </el-button>
                     </div>
                     <!-- 按钮底部进度条 -->
@@ -84,25 +84,25 @@
                     <div v-if="aiEvalError && !aiLoading" class="ai-eval-error">
                         <span class="ai-eval-error-icon">⚠️</span>
                         <span class="ai-eval-error-text" :title="aiEvalError">{{ aiEvalError }}</span>
-                        <el-button size="small" type="primary" @click="doAiEvaluate">🔄 重试</el-button>
+                        <el-button size="small" type="primary" @click="doAiEvaluate">{{ t('detail.retry') }}</el-button>
                     </div>
 
                     <!-- Tab: K线图表 -->
                     <div v-if="stockDetailTab === 'kline'">
-                    <div class="section-title"><span>📈</span> 今日行情与均线</div>
+                    <div class="section-title"><span>📈</span> {{ t('detail.sectionQuote') }}</div>
                     <div class="grid-auto">
                         <div class="stat-box">
-                            <div class="stat-label">收盘价</div>
+                            <div class="stat-label">{{ t('detail.close') }}</div>
                             <div class="stat-value">{{ (stockDetail.daily_data?.close != null ? stockDetail.daily_data.close.toFixed(2) : '—') }}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">涨跌幅</div>
+                            <div class="stat-label">{{ t('detail.pctChg') }}</div>
                             <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">
                                 {{ (stockDetail.daily_data?.pct_chg != null ? stockDetail.daily_data.pct_chg.toFixed(2) : '—') }}%
                             </div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">最高/最低</div>
+                            <div class="stat-label">{{ t('detail.highLow') }}</div>
                             <div class="text-md-semibold">
                                 <span class="color-danger">{{ stockDetail.daily_data?.high != null ? stockDetail.daily_data.high.toFixed(2) : '—' }}</span>
                                 <span class="color-tertiary-mx4">/</span>
@@ -110,25 +110,25 @@
                             </div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">成交量</div>
+                            <div class="stat-label">{{ t('detail.volume') }}</div>
                             <div class="stat-value text-md">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() : '—' }}万</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">换手率</div>
+                            <div class="stat-label">{{ t('detail.turnover') }}</div>
                             <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">振幅</div>
+                            <div class="stat-label">{{ t('detail.amplitude') }}</div>
                             <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">MA20偏离</div>
+                            <div class="stat-label">{{ t('detail.ma20Dev') }}</div>
                             <div class="stat-value" :style="{fontSize:'var(--font-md)',color:(stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close > stockDetail.ma_data.ma20) ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ (stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close) ? ((stockDetail.daily_data.close - stockDetail.ma_data.ma20) / stockDetail.ma_data.ma20 * 100).toFixed(2) + '%' : '--' }}</div>
                         </div>
                     </div>
 
                     <!-- K线图区域 -->
-                    <div class="section-title"><span>🕯️</span> K线图与均线</div>
+                    <div class="section-title"><span>🕯️</span> {{ t('detail.sectionKline') }}</div>
                     <div class="kline-container">
                         <div class="flex-between-mb12">
                             <div class="kline-tabs">
@@ -142,40 +142,40 @@
                                 </button>
                             </div>
                             <el-button v-if="!stockKlineLoaded" type="primary" size="small" @click="loadStockKline(currentKlinePeriod)" :loading="klineLoading">
-                                🕯️ 加载K线
+                                {{ t('detail.loadKline') }}
                             </el-button>
                         </div>
                         <div v-if="stockKlineLoaded" class="kline-chart" id="stockKlineChart"></div>
                         <!-- v3.11 (FR-3.11.8): 均线开关（与图表图例双向联动） -->
                         <div v-if="stockKlineLoaded" class="ma-toggle-row">
-                            <span class="ma-toggle-label">均线</span>
+                            <span class="ma-toggle-label">{{ t('detail.maLabel') }}</span>
                             <button
                                 v-for="m in MA_LINES"
                                 :key="m"
                                 :class="['ma-toggle-btn', { active: klineMaVisible[m] !== false }]"
                                 @click="toggleKlineMa(m)"
                             >{{ m }}</button>
-                            <span class="ma-toggle-hint">十字线读价：悬停或点击图表</span>
+                            <span class="ma-toggle-hint">{{ t('detail.crosshairHint') }}</span>
                         </div>
                         <!-- 时间范围快捷按钮 -->
                         <div class="flex-gap-4-mt8-center" v-if="stockKlineLoaded">
-                            <el-button size="small" @click="zoomKlineRange(22)">近1月</el-button>
-                            <el-button size="small" @click="zoomKlineRange(66)">近3月</el-button>
-                            <el-button size="small" @click="zoomKlineRange(126)">近半年</el-button>
-                            <el-button size="small" @click="zoomKlineRange(0)">全部</el-button>
+                            <el-button size="small" @click="zoomKlineRange(22)">{{ t('detail.range1M') }}</el-button>
+                            <el-button size="small" @click="zoomKlineRange(66)">{{ t('detail.range3M') }}</el-button>
+                            <el-button size="small" @click="zoomKlineRange(126)">{{ t('detail.range6M') }}</el-button>
+                            <el-button size="small" @click="zoomKlineRange(0)">{{ t('detail.rangeAll') }}</el-button>
                         </div>
                         <div v-if="klineLoading" class="kline-loading">
-                            <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
+                            <el-icon class="is-loading"><Loading /></el-icon> {{ t('detail.loadingKline') }}
                         </div>
                         <div v-if="!stockKlineLoaded && !klineLoading" class="kline-placeholder">
-                            <div class="text-base-tertiary">点击加载K线查看</div>
+                            <div class="text-base-tertiary">{{ t('detail.clickToLoadKline') }}</div>
                         </div>
                     </div>
 
-                    <div class="section-title"><span>📋</span> 策略持仓记录</div>
+                    <div class="section-title"><span>📋</span> {{ t('detail.strategyHoldings') }}</div>
                     <div v-for="h in stockDetail.history" :key="h.strategy" class="hold-item">
                         <span class="hold-name">{{ h.strategy_name }}</span>
-                        <span class="hold-days">{{ h.hold_count }} 天</span>
+                        <span class="hold-days">{{ t('detail.holdDays', { days: h.hold_count }) }}</span>
                     </div>
                     </div>  <!-- close kline tab -->
 
@@ -183,16 +183,16 @@
                     <div v-if="stockDetailTab === 'ai'">
                         <div v-if="aiResult" class="card mb-4">
                             <div class="card-title m-0-0-16">
-                                <span>🤖 AI 智能评估</span>
+                                <span>{{ t('detail.evalTitle') }}</span>
                                 <!-- v3.15 (15.3): 模型信息展示 -->
                                 <span v-if="aiResult.model_used" class="ai-result-meta" title="模型">🧠 {{ aiResult.model_used }}</span>
                                 <span v-if="aiResult.model_provider" class="ai-result-meta" title="厂商">{{ aiResult.model_provider }}</span>
                                 <span v-if="aiResult.result && aiResult.result.provider && aiResult.result.provider !== (aiResult.model_provider || '')" class="ai-result-meta" title="引擎">{{ aiResult.result.provider }}</span>
                                 <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟">⚡ {{ aiResult.llm_latency_ms }}ms</span>
-                                <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">💾 缓存结果</span>
+                                <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">{{ t('detail.cachedResult') }}</span>
                                 <span class="flex-1"></span>
-                                <el-button size="small" @click="copyAiReport">📋 复制报告</el-button>
-                                <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">🔄 重新评估</el-button>
+                                <el-button size="small" @click="copyAiReport">{{ t('detail.copyReport') }}</el-button>
+                                <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">{{ t('detail.reevaluate') }}</el-button>
                             </div>
                             <div class="flex-c-gap-24-mb20-wrap">
                                 <div class="ring-box">
@@ -202,7 +202,7 @@
                                     </svg>
                                     <div class="ring-center-text">
                                         <div class="ring-value">{{ fmtNum(aiResult.result.total_score, 1) }}</div>
-                                        <div class="text-xs-tertiary">分</div>
+                                        <div class="text-xs-tertiary">{{ t('detail.scoreUnit') }}</div>
                                     </div>
                                 </div>
                                 <div class="flex-1-min180">
@@ -299,7 +299,7 @@
                                 <div class="mb-8">最近评估：{{ aiResult.result.level }}</div>
                                 <div class="text-sm">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
                             </div>
-                            <div v-else>点击 AI 评估按钮获取分析结果</div>
+                            <div v-else>{{ t('detail.noEvalYet') }}</div>
                         </div>
                     </div>  <!-- close ai tab -->
 
@@ -338,11 +338,11 @@
 
                     <!-- Tab: 多因子体检 -->
                     <div v-if="stockDetailTab === 'factor'">
-                        <div v-if="factorLoading" class="factor-empty">正在加载体检数据…</div>
-                        <div v-else-if="factorError || !factorGroups.length" class="factor-empty">暂无可用因子数据，请稍后重试</div>
+                        <div v-if="factorLoading" class="factor-empty">{{ t('detail.factorLoading') }}</div>
+                        <div v-else-if="factorError || !factorGroups.length" class="factor-empty">{{ t('detail.factorEmpty') }}</div>
                         <div v-else>
                             <div v-if="factorSummary && factorSummary.available" class="factor-summary">
-                                <span class="factor-summary-count">共 {{ factorSummary.available }} 项因子</span>
+                                <span class="factor-summary-count">{{ t('detail.factorCount', { count: factorSummary.available }) }}</span>
                                 <span v-if="factorSummary.categories && factorSummary.categories.length" class="factor-summary-cats">{{ factorSummary.categories.join(' / ') }}</span>
                             </div>
                             <div v-for="g in factorGroups" :key="g.category" class="factor-group">
@@ -353,9 +353,9 @@
                                         <div class="factor-value-row">
                                             <span class="factor-value">{{ f.value != null ? f.value : '—' }}<span v-if="f.unit" class="factor-unit">{{ f.unit }}</span></span>
                                             <span v-if="f.semantic" class="factor-semantic" :class="factorSemClass(f.semantic)">{{ f.semantic }}</span>
-                                            <span v-else class="factor-semantic factor-sem-none">无数据</span>
+                                            <span v-else class="factor-semantic factor-sem-none">{{ t('detail.factorNoData') }}</span>
                                         </div>
-                                        <div v-if="f.percentile != null" class="factor-percentile">历史分位 {{ Math.round(f.percentile * 100) }}%</div>
+                                        <div v-if="f.percentile != null" class="factor-percentile">{{ t('detail.factorPercentile', { pct: Math.round(f.percentile * 100) }) }}</div>
                                     </div>
                                 </div>
                             </div>

@@ -7,6 +7,23 @@
     const { ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
                 // ===== v3.11(11.3): 共享配置脏标记（AI 配置段与系统配置域共用，提前声明避免 TDZ）=====
                 const configChanged = ref(false);
+                // ===== v3.17.14 (FR-3.17.14): i18n 装配（locale ref + 全局 t + 语言切换）=====
+                // locale 为响应式 ref：模板 t(key) 读取其 .value → locale 变化整页重渲染
+                const i18n = (window.__quantModules && window.__quantModules.i18n) || {};
+                const _supportedLocales = (i18n.SUPPORTED_LOCALES || ['zh-CN', 'en']);
+                const _prefLanguage = (window.__quantModules && window.__quantModules.preferences)
+                  ? ((window.__quantModules.preferences.getLocal() || {}).language || 'zh-CN') : 'zh-CN';
+                const locale = ref(_supportedLocales.indexOf(_prefLanguage) !== -1 ? _prefLanguage : 'zh-CN');
+                if (typeof i18n.bindLocale === 'function') i18n.bindLocale(locale);
+                const t = (typeof i18n.t === 'function') ? i18n.t : (function (k) { return String(k); });
+                function changeLanguage(l) {
+                  if (_supportedLocales.indexOf(l) === -1) return;
+                  locale.value = l;
+                  if (typeof i18n.setLocale === 'function') i18n.setLocale(l);
+                  if (window.__quantModules && window.__quantModules.preferences) {
+                    window.__quantModules.preferences.setPreference('language', l);
+                  }
+                }
                 // ===== 导航菜单 =====
                 // 全局搜索/快捷键已下沉 js/app-logic/keys.js（searchQuery/searchStocks/onSearchSelect/handleGlobalKeydown）
                 // ===== v3.16 (16.6): v-html 消毒委托（核心实现见 core.js；经 qcState 注入各组件模板使用）=====
@@ -109,7 +126,7 @@ const allMenuDefs = [
                         if (group && group.visible_menus && m.key in group.visible_menus) {
                             if (!group.visible_menus[m.key]) return null;
                         }
-                        const item = { ...m, icon: icons[m.key] || m.icon };
+                        const item = { ...m, name: t('nav.' + m.key) || m.name, icon: icons[m.key] || m.icon };
                         // Filter subPages by group config
                         if (group?.visible_sub_pages) {
                             item.subPages = m.subPages.filter(sp => {
@@ -814,6 +831,8 @@ const allMenuDefs = [
                     currentPage, currentSubPage, sidebarCollapsed, menus,
                     fmtNum, sanitizeHtml, keyClick, isOnline,
                     currentUser, iconSystem, allMenuDefs,
+                    // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
+                    t, locale, changeLanguage,
                     currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV,
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,

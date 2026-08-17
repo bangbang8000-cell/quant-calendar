@@ -1,5 +1,5 @@
 // quant-calendar: 用户个性化偏好模块 (v3.17.10 / FR-3.17.10)
-// 偏好键：default_view(默认视图) / theme(亮/暗/跟随系统) / chart_period(图表周期)
+// 偏好键：default_view(默认视图) / theme(亮/暗/跟随系统) / chart_period(图表周期) / language(界面语言)
 // 存储策略：
 //   - 登录用户: 后端 /api/user/preferences（重启保持）
 //   - 游客/后端不可达: localStorage 降级（quant_preferences）
@@ -20,14 +20,16 @@
     default_view: 'strategies',
     theme: 'system',
     chart_period: 'daily',
+    language: 'zh-CN',
   };
 
-  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period'];
+  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language'];
 
   const PREFERENCE_VALUES = {
     default_view: ['strategies', 'calendar', 'ai', 'research', 'system'],
     theme: ['light', 'dark', 'system'],
     chart_period: ['daily', 'weekly', 'monthly'],
+    language: ['zh-CN', 'en'],
   };
 
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）

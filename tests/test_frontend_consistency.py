@@ -56,14 +56,15 @@ def test_qcstate_no_duplicate_keys():
 
 
 def test_qcstate_key_count_stable():
-    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 456（v3.17.12 健康面板 +2；
-    v3.17.9 FR-3.17.9 历史懒加载/自选骨架屏 +5: aiHistoryTotal/aiHistoryLoadingMore/
-    hasMoreAiHistory/loadMoreAiHistory/watchlistLoading；v3.17.7 实时化 FR-3.17.7 +12:
+    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 459（v3.17.14 i18n +3:
+    t/locale/changeLanguage；v3.17.12 健康面板 +2；v3.17.9 FR-3.17.9 历史懒加载/自选骨架屏 +5:
+    aiHistoryTotal/aiHistoryLoadingMore/hasMoreAiHistory/loadMoreAiHistory/watchlistLoading；
+    v3.17.7 实时化 FR-3.17.7 +12:
     realtimeQuotes/realtimeDegraded/realtimeWsState/connectRealtimeQuotes/
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 456, f"qcState 唯一键数异常: {len(set(keys))} (期望 456)"
+    assert len(set(keys)) == 459, f"qcState 唯一键数异常: {len(set(keys))} (期望 459)"
 
 
 def test_watch_currentpage_single():
@@ -423,9 +424,11 @@ def test_stock_detail_immediate_open():
     assert "stockDetailLoading" in seg, "showStockDetail 应维护加载态"
     assert "stockDetailLoading.value = true" in seg, "应置加载态"
     assert "stockDetailLoading.value = false" in seg, "应结束加载态"
-    # 弹窗组件应含加载态视图
+    # 弹窗组件应含加载态视图（文案经 i18n 抽取，zh 语言包保留原文）
     sd = _read("js/components/dialogs/stock-detail.js")
-    assert "正在加载股票详情" in sd, "弹窗应显示加载态视图"
+    zh = _read("js/locales/zh-CN.js")
+    assert "正在加载股票详情" in zh, "zh 语言包应保留'正在加载股票详情'加载态文案"
+    assert "detail.loading" in sd, "弹窗应经 t('detail.loading') 渲染加载态"
     # 自选入口同样立即弹窗
     wl = _read("js/watchlist.js")
     assert wl.index("stockDetailVisible.value = true") < wl.index("await fetch(`/api/calendar/stock/"), \
@@ -484,8 +487,11 @@ def test_factor_panel_endpoint_invoked():
     assert "loadFactorPanel" in src, "应实现 loadFactorPanel 加载函数"
     assert "factors" in src and "/api/calendar/stock/" in src, \
         "应调用 /api/calendar/stock/{code}/factors 端点"
-    assert "正在加载体检数据" in src, "加载中应显示加载提示"
-    assert "无数据" in src, "semantic 为空时应显示无数据占位"
+    zh = _read("js/locales/zh-CN.js")
+    assert "正在加载体检数据" in zh, "zh 语言包应保留加载中提示（detail.factorLoading）"
+    assert "无数据" in zh, "zh 语言包应保留无数据占位（detail.factorNoData）"
+    assert "detail.factorLoading" in src and "detail.factorNoData" in src, \
+        "体检面板应经 t() 渲染加载/无数据文案"
 
 
 def test_factor_panel_no_inline_style():
@@ -503,7 +509,8 @@ def test_market_review_subpage_present():
     src = _read("js/components/research-page.js")
     assert "/api/market/reviews" in src, "应调用 /api/market/reviews 列表端点"
     assert "/api/market/review" in src, "应调用 /api/market/review 详情端点"
-    assert "市场复盘" in src, "应含'市场复盘'文案"
+    assert "research.marketReview" in src, "应经 t('research.marketReview') 渲染'市场复盘'标题"
+    assert "市场复盘" in _read("js/locales/zh-CN.js"), "zh 语言包应保留'市场复盘'文案"
 
 
 def test_market_review_no_inline_style():
@@ -617,8 +624,10 @@ def test_eval_track_endpoint_invoked():
     """FR-3.17.6: ai-page 应调用 /api/ai/track 端点并含'命中率'文案与空态"""
     src = _read("js/components/ai-page.js")
     assert "/api/ai/track" in src, "ai-page 应调用 /api/ai/track 端点"
-    assert "命中率" in src, "ai-page 应含'命中率'文案"
-    assert "暂无足够评估样本" in src, "应提供无数据空态"
+    assert "ai.evalHitRate" in src, "应经 t('ai.evalHitRate') 渲染'评估命中率'"
+    assert "命中率" in src, "ai-page 应含'命中率'文案（t() key + 注释）"
+    zh = _read("js/locales/zh-CN.js")
+    assert "暂无足够评估样本" in zh, "zh 语言包应保留空态文案（ai.insufficientSamples）"
     # 后端路由配套存在
     ai_api = _read_backend("api/v1/ai.py")
     assert '@router.get("/track")' in ai_api, "后端应提供 GET /api/ai/track 路由"
@@ -1208,6 +1217,108 @@ def test_realtime_core_node_pure():
     assert out["pct"] == "-1.23%"
     assert out["colorUp"] == "var(--color-rise)"
     assert out["colorDown"] == "var(--color-fall)"
+
+
+# ─── v3.17.15 (FR-3.17.15 / 开放 API v2) 一致性回归 ─────────────
+
+def test_system_page_openapi_card():
+    """FR-3.17.15: 系统配置页应含'开放 API'卡片 + Key 管理入口"""
+    src = _read("js/components/system-page.js")
+    assert "开放 API" in src, "system-page 应含'开放 API'卡片"
+    assert "生成 Key" in src, "应提供 Key 生成入口"
+    assert "吊销" in src, "应提供 Key 吊销入口"
+    assert "只读" in src, "应说明 Key 为只读权限"
+
+
+def test_system_page_openapi_no_plaintext():
+    """FR-3.17.15: 生成不显示明文 — 列表只显示前缀, 明文一次性展示且注明不落库"""
+    src = _read("js/components/system-page.js")
+    start = src.index("<!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
+    end = src.index("// v3.17.15 (FR-3.17.15): 开放 API — API Key 管理")
+    seg = src[start:end]
+    # 列表只显示前缀 (prefix...), 不展示完整明文
+    assert "k.prefix" in seg, "Key 列表应只显示前缀"
+    assert "明文" in seg and "仅展示一次" in seg, "应注明明文只展示一次"
+    assert "哈希" in seg, "应注明库中仅存哈希"
+    # 后端管理端点在签发响应才一次性返回明文
+    oa = _read_backend("api/v1/openapi.py")
+    assert '"api_key": plain_key' in oa, "明文应仅在签发响应一次性返回"
+
+
+def test_system_page_openapi_no_inline_style():
+    """FR-3.17.15: 开放 API 卡片新增模板不得使用内联 style（走 CSS 类 + tokens）"""
+    src = _read("js/components/system-page.js")
+    start = src.index("<!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
+    end = src.index("// v3.17.15 (FR-3.17.15): 开放 API — API Key 管理")
+    seg = src[start:end]
+    assert 'style="' not in seg, "开放 API 卡片不应含内联 style 属性"
+    assert "style={" not in seg, "开放 API 卡片不应含绑定式内联 style"
+    css = _read("css/themes.css")
+    for cls in (".openapi-new-key", ".openapi-key-code", ".openapi-key-row", ".openapi-key-prefix"):
+        assert cls in css, f"themes.css 应定义 {cls}"
+
+
+def test_openapi_route_constant():
+    """FR-3.17.15: openapi 路由常量单一来源 (core.js) 且被系统页消费"""
+    core = _read("js/core.js")
+    assert "OPENAPI_ROUTE_BASE" in core and "'/api/openapi'" in core, \
+        "core.js 应定义 OPENAPI_ROUTE_BASE=/api/openapi"
+    page = _read("js/components/system-page.js")
+    assert "OPENAPI_ROUTE_BASE" in page, "system-page 应消费 OPENAPI_ROUTE_BASE 路由常量"
+    # 后端路由配套存在
+    oa = _read_backend("api/v1/openapi.py")
+    assert 'prefix="/openapi"' in oa, "后端应提供 /api/openapi 路由"
+    assert '@router.get("/keys"' in oa, "后端应提供 GET /api/openapi/keys"
+    assert '@router.post("/keys"' in oa, "后端应提供 POST /api/openapi/keys"
+    assert '@router.delete("/keys/{key_id}"' in oa, "后端应提供 DELETE /api/openapi/keys/{key_id}"
+    assert 'X-API-Key' in oa, "开放 API 应以 X-API-Key 鉴权"
+    # config 提供 OPENAPI_ENABLED 开关
+    cfg = _read_backend("config.py")
+    assert "OPENAPI_ENABLED" in cfg, "config 应提供 OPENAPI_ENABLED 开关"
+    # main_new 按开关挂载 Swagger
+    main = _read_backend("main_new.py")
+    assert "OPENAPI_ENABLED" in main, "main_new 应按 OPENAPI_ENABLED 挂载 Swagger"
+
+
+# ─── v3.17.14 (FR-3.17.14 / i18n 国际化) 一致性回归 ─────────────
+
+def test_i18n_language_switch_entry_exists():
+    """FR-3.17.14: 语言切换入口存在（系统配置页：language 卡片 + changeLanguage 接线）"""
+    page = _read("js/components/system-page.js")
+    assert "changeLanguage" in page, "system-page 应提供语言切换事件接线"
+    assert "system.language" in page, "系统配置页应含'语言'卡片标题"
+    assert "locale" in page, "语言卡片应绑定当前 locale"
+    app = _read("js/app-logic.js")
+    assert "function changeLanguage" in app, "app-logic 应实现 changeLanguage"
+    assert "setPreference('language'" in app, "切换语言应写入 preferences language 偏好"
+    keys = _extract_qcstate_keys(app)
+    assert "t" in keys and "locale" in keys and "changeLanguage" in keys, \
+        "qcState 应注入 t/locale/changeLanguage（模板可用 + 响应式）"
+
+
+def test_i18n_default_locale_zh_cn():
+    """FR-3.17.14: 默认语言仍为 zh-CN（i18n 模块 + app-logic 恢复兜底）"""
+    i18n = _read("js/i18n.js")
+    assert "DEFAULT_LOCALE = 'zh-CN'" in i18n, "i18n.js 默认语言应为 zh-CN"
+    app = _read("js/app-logic.js")
+    assert "'zh-CN'" in app, "app-logic locale 恢复默认应为 zh-CN"
+    # 语言包注册入口在 index.html 早于 app-logic 装配
+    idx = _read("index.html")
+    assert "locales/zh-CN.js" in idx and "locales/en.js" in idx, \
+        "index.html 应加载 zh-CN/en 语言包"
+    assert idx.index("locales/zh-CN.js") < idx.index("app-logic.js"), \
+        "语言包应早于 app-logic.js 加载"
+
+
+def test_i18n_preferences_language_key():
+    """FR-3.17.14: 语言偏好持久化 — preferences.js language 键 + 后端 user_config 同步"""
+    prefs = _read("js/preferences.js")
+    assert "'language'" in prefs, "preferences.js 应含 language 偏好键"
+    assert "'zh-CN'" in prefs and "'en'" in prefs, "language 取值应含 zh-CN/en"
+    assert "language" in prefs.split("PREFERENCE_VALUES")[1], \
+        "language 应注册到 PREFERENCE_VALUES"
+    ucfg = _read_backend("api/v1/user_config.py")
+    assert '"language"' in ucfg, "后端 user_config 应支持 language 偏好键（重启保持）"
 
 
 

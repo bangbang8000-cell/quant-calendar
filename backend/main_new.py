@@ -76,15 +76,19 @@ async def lifespan(app: FastAPI):
     logger.info("⏰ 定时任务调度器已停止")
 
 # 应用版本单一来源（与发布版本保持一致，用于健康检查与 OpenAPI 元数据）
-APP_VERSION = "3.17.0"
+# v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3
+APP_VERSION = "3.17.3"
 
 # 创建 FastAPI 应用
+# v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404
+_docs_url = "/docs" if settings.OPENAPI_ENABLED else None
 app = FastAPI(
     title=f"量化选股日历 API v{APP_VERSION}",
     version=APP_VERSION,
     description="基于美林时钟的量化选股系统",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=_docs_url,
+    redoc_url="/redoc" if settings.OPENAPI_ENABLED else None,
+    openapi_url="/openapi.json" if settings.OPENAPI_ENABLED else None,
     lifespan=lifespan,
 )
 

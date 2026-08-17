@@ -189,12 +189,13 @@ async def save_my_config(req: dict, user: dict = Depends(get_current_active_user
 
 
 # ===== v3.17.10 (FR-3.17.10): 个性化偏好 =====
-# 偏好键：default_view(默认视图) / theme(亮/暗/跟随系统) / chart_period(图表周期)
+# 偏好键：default_view(默认视图) / theme(亮/暗/跟随系统) / chart_period(图表周期) / language(界面语言)
 # 统一存后端 user_config（登录用户）的顶层 preferences 子对象；游客由前端降级 localStorage。
 PREFERENCE_DEFAULTS = {
     "default_view": "strategies",
     "theme": "system",
     "chart_period": "daily",
+    "language": "zh-CN",
 }
 PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
 # 各偏好键合法取值（后端仅做键校验，值合法性由前端偏好模块约束）
@@ -202,6 +203,7 @@ PREFERENCE_ALLOWED_VALUES = {
     "default_view": {"strategies", "calendar", "ai", "research", "system"},
     "theme": {"light", "dark", "system"},
     "chart_period": {"daily", "weekly", "monthly"},
+    "language": {"zh-CN", "en"},
 }
 
 

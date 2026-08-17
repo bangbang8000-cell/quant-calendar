@@ -28,6 +28,7 @@ from .audit import router as audit_router
 from .system import router as system_router
 from .analytics import router as analytics_router
 from .portfolio import router as portfolio_router
+from .openapi import router as openapi_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -56,5 +57,7 @@ api_router.include_router(audit_router)
 api_router.include_router(system_router)
 api_router.include_router(analytics_router)
 api_router.include_router(portfolio_router)
+# v3.17.15 (FR-3.17.15): 开放 API v2 (公开只读 + Key/Webhook 管理)
+api_router.include_router(openapi_router)
 
 __all__ = ["api_router"]

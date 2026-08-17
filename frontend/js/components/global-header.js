@@ -18,14 +18,14 @@
                      @click="currentSubPage = sp" tabindex="0" role="tab"
                      :aria-selected="currentSubPage === sp"
                      @keydown.enter.prevent="currentSubPage = sp" @keydown.space.prevent="keyClick($event)">
-                  {{ subPageNames[sp] || sp }}
+                  {{ t('sub.' + sp) || subPageNames[sp] || sp }}
                 </div>
               </template>
             </template>
           </div>
 
           <div class="global-search-wrapper">
-            <el-autocomplete class="w-200" v-model="searchQuery" :fetch-suggestions="searchStocks" placeholder="搜索股票..." :trigger-on-focus="false" clearable size="small" @select="onSearchSelect">
+            <el-autocomplete class="w-200" v-model="searchQuery" :fetch-suggestions="searchStocks" :placeholder="t('common.searchPlaceholder')" :trigger-on-focus="false" clearable size="small" @select="onSearchSelect">
               <template #default="slotProps">
                 <span>{{ slotProps?.item?.icon }} {{ slotProps?.item?.label || slotProps?.item?.name }}</span>
                 <span class="text-sm-secondary-ml8" v-if="slotProps?.item?.subLabel">{{ slotProps?.item?.subLabel }}</span>
@@ -36,18 +36,18 @@
           <div class="header-date-area" v-if="currentPage === 'calendar'">
             <el-date-picker v-if="currentSubPage === 'daily'"
                 v-model="selectedDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD"
-                placeholder="选择日期" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
+                :placeholder="t('calendar.selectDate')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
             <el-date-picker v-else-if="currentSubPage === 'weekly'"
                 v-model="selectedDate" type="week" format="YYYY 第w周" value-format="YYYY-MM-DD"
-                placeholder="选择周" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
+                :placeholder="t('calendar.selectWeek')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
             <el-date-picker v-else-if="currentSubPage === 'monthly'"
                 v-model="selectedDate" type="month" format="YYYY-MM" value-format="YYYY-MM-DD"
-                placeholder="选择月份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
+                :placeholder="t('calendar.selectMonth')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
             <el-date-picker v-else-if="currentSubPage === 'yearly'"
                 v-model="selectedDate" type="year" format="YYYY" value-format="YYYY-MM-DD"
-                placeholder="选择年份" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-button class="ml-8px" size="small" @click="refreshCalendarData" :loading="loading" title="重新加载最新持仓数据">🔄 刷新</el-button>
-            <el-button class="ml-4px" size="small" @click="exportCSV" title="导出为CSV">📥 导出</el-button>
+                :placeholder="t('calendar.selectYear')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
+            <el-button class="ml-8px" size="small" @click="refreshCalendarData" :loading="loading" :title="t('calendar.refreshData')">🔄 {{ t('common.refresh') }}</el-button>
+            <el-button class="ml-4px" size="small" @click="exportCSV" :title="t('calendar.exportCsv')">📥 {{ t('common.export') }}</el-button>
             <span class="text-sm-tertiary-ml6-nowrap" v-if="lastLoadTime">{{ lastLoadTime }}</span>
           </div>
 
@@ -112,6 +112,7 @@
         handleLogout: state.handleLogout,
         subPageNames: state.subPageNames,
         keyClick: state.keyClick,
+        t: state.t,
       };
     },
   };

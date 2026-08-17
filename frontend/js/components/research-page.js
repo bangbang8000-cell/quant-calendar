@@ -15,7 +15,7 @@
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
-                        <div class="card-title">🔬 量化研究</div>
+                        <div class="card-title">{{ t('research.quantResearch') }}</div>
                         <qc-state-panel type="empty" icon="🔬" title="敬请期待" desc="量化研究功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
@@ -23,7 +23,7 @@
                         <qc-state-panel type="empty" icon="🛠️" title="敬请期待" desc="策略编写功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
-                        <div class="card-title">🔬 策略回测</div>
+                        <div class="card-title">{{ t('research.backtest') }}</div>
                         <!-- v3.2.0-T21: 回测参数 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-select class="w-180" v-model="backtestStrategy" size="small" placeholder="选择策略">
@@ -61,12 +61,12 @@
                         <div v-else class="empty-state p-30-0">选择策略和日期范围后点击"运行回测"</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
-                        <div class="card-title">📋 回测记录</div>
+                        <div class="card-title">{{ t('research.backtestHistory') }}</div>
                         <qc-state-panel type="empty" icon="📝" title="敬请期待" desc="回测记录功能正在建设中，敬请关注"></qc-state-panel>
                     </div>
                     <!-- v3.17.2 FR-3.17.2 市场复盘代码起点 -->
                     <div v-else-if="currentSubPage === 'market-review'" class="card market-review-card">
-                        <div class="card-title">市场复盘</div>
+                        <div class="card-title">{{ t('research.marketReview') }}</div>
 
                         <!-- ===== 列表视图 ===== -->
                         <template v-if="!selectedReviewDate">

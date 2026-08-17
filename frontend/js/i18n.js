@@ -1,6 +1,9 @@
-// quant-calendar: i18n 国际化骨架 (v3.17.10 / FR-3.17.10, 供 FR-3.17.3 使用)
-// 本任务仅保证模块存在与可切换接口（t(key) + 语言包占位 zh-CN/en，默认 zh-CN），
-// 不抽取现有文案。后续国际化改造时向 messages 语言包补充条目并替换硬编码文案。
+// quant-calendar: i18n 国际化模块 (FR-3.17.3 / FR-3.17.14)
+// 语言包分离在 js/locales/zh-CN.js 与 js/locales/en.js（零构建原生 JS 对象），
+// 经 registerLocale(name, table) 装配进本模块；index.html 在 i18n.js 后按序加载。
+// 核心界面文案经 t(key, params) 渲染；占位符 {name} 由 params 替换。
+// 响应式：app-logic 注入 Vue ref（bindLocale），t() 读取 ref.value →
+// 模板渲染 effect 自动收集依赖，locale 变化即整页重渲染（无需手动刷新）。
 // 纯逻辑模块，UMD 导出：浏览器 window.__quantModules.i18n / Node require(...)。
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -14,17 +17,33 @@
   const DEFAULT_LOCALE = 'zh-CN';
   const SUPPORTED_LOCALES = ['zh-CN', 'en'];
 
-  // 语言包占位：3.17.10 不抽文案，保持空包；3.17.3 起逐条填充
-  const messages = {
-    'zh-CN': {},
-    'en': {},
-  };
+  // 语言包注册表：外部 locales/*.js 经 registerLocale 填充
+  const messages = {};
 
   let _locale = DEFAULT_LOCALE;
+  // 响应式 locale ref（由 app-logic 经 bindLocale 注入；t() 读取其 .value 以获得 Vue 依赖收集）
+  let _localeRef = null;
+
+  function _currentLocale() {
+    if (_localeRef && typeof _localeRef === 'object' && 'value' in _localeRef) {
+      return _localeRef.value || DEFAULT_LOCALE;
+    }
+    return _locale;
+  }
+
+  // 注册/覆盖某语言的语言包表
+  function registerLocale(name, table) {
+    if (SUPPORTED_LOCALES.indexOf(name) === -1) return false;
+    messages[name] = table && typeof table === 'object' ? table : {};
+    return true;
+  }
 
   function setLocale(locale) {
     const l = SUPPORTED_LOCALES.indexOf(locale) !== -1 ? locale : DEFAULT_LOCALE;
     _locale = l;
+    if (_localeRef && typeof _localeRef === 'object' && 'value' in _localeRef) {
+      _localeRef.value = l;
+    }
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('lang', l);
     }
@@ -32,14 +51,26 @@
   }
 
   function getLocale() {
+    return _currentLocale();
+  }
+
+  // 绑定响应式 locale ref：locale 变化 → 依赖 t() 的模板自动重渲染
+  function bindLocale(ref) {
+    if (ref && typeof ref === 'object' && 'value' in ref) {
+      _localeRef = ref;
+      const v = SUPPORTED_LOCALES.indexOf(ref.value) !== -1 ? ref.value : DEFAULT_LOCALE;
+      ref.value = v;
+      _locale = v;
+    }
     return _locale;
   }
 
   // t(key, params)：取当前语言包条目；缺失回落英文/键本身；支持 {name} 占位替换
   function t(key, params) {
-    const table = messages[_locale] || {};
+    const l = _currentLocale();
+    const table = messages[l] || {};
     let text = (key in table) ? table[key] : null;
-    if (text == null && _locale !== 'en') {
+    if (text == null && l !== 'en') {
       const en = messages['en'] || {};
       text = (key in en) ? en[key] : null;
     }
@@ -56,8 +87,10 @@
     DEFAULT_LOCALE: DEFAULT_LOCALE,
     SUPPORTED_LOCALES: SUPPORTED_LOCALES,
     messages: messages,
+    registerLocale: registerLocale,
     setLocale: setLocale,
     getLocale: getLocale,
+    bindLocale: bindLocale,
     t: t,
   };
 

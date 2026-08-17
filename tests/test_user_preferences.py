@@ -52,7 +52,7 @@ def _auth(username='admin'):
 
 class TestUserPreferences:
     def test_defaults_when_never_set(self, pref):
-        """未设置任何偏好时返回默认值（default_view/theme/chart_period）"""
+        """未设置任何偏好时返回默认值（default_view/theme/chart_period/language）"""
         c = pref()
         r = c.get('/user/preferences', headers=_auth('admin'))
         assert r.status_code == 200
@@ -62,6 +62,7 @@ class TestUserPreferences:
             'default_view': 'strategies',
             'theme': 'system',
             'chart_period': 'daily',
+            'language': 'zh-CN',
         }
 
     def test_set_single_preference(self, pref):
@@ -81,6 +82,7 @@ class TestUserPreferences:
         assert r.status_code == 200
         assert r.json()['preferences'] == {
             'default_view': 'calendar', 'theme': 'dark', 'chart_period': 'weekly',
+            'language': 'zh-CN',
         }
 
     def test_restart_keep_new_client(self, pref):

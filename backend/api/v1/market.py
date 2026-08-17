@@ -392,6 +392,16 @@ async def market_scan(date: Optional[str] = None, pool: str = "all",
     codes = resolve_scan_pool(pool, user.get("username") if user else None)
     result = run_scan(date=date, pool=codes)
     result['pool'] = pool
+    # v3.17.15 (FR-3.17.15): Webhook — anomaly_scan_done 事件 (扫描完成即触发, 失败仅日志)
+    try:
+        from webhook import dispatch as webhook_dispatch
+        webhook_dispatch("anomaly_scan_done", {
+            "date": result.get('date'),
+            "moves_count": len(result.get('moves') or []),
+            "pool": pool,
+        })
+    except Exception as we:
+        logger.warning("webhook anomaly_scan_done 投递失败 (忽略): %s", we)
     return {"success": True, "data": result}
 
 

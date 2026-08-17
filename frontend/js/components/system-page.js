@@ -12,7 +12,7 @@
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">
-                            <span>🖥️ 系统状态</span>
+                            <span>{{ t('system.title') }}</span>
                             <div class="flex-c-gap-8">
                                 <span class="text-sm-secondary" v-if="dashboardData.latest_date">📅 {{ dashboardData.latest_date }}</span>
                             </div>
@@ -21,87 +21,106 @@
                             <div class="status-item">
                                 <div class="status-icon">📈</div>
                                 <div class="status-info">
-                                    <div class="status-label">股票数据</div>
-                                    <div class="status-value color-primary">{{ stockCount || '---' }} 只</div>
+                                    <div class="status-label">{{ t('system.stockData') }}</div>
+                                    <div class="status-value color-primary">{{ stockCount || '---' }} {{ t('common.unitStock') }}</div>
                                 </div>
                             </div>
                             <div class="status-item">
                                 <div class="status-icon">🎯</div>
                                 <div class="status-info">
-                                    <div class="status-label">选股策略</div>
+                                    <div class="status-label">{{ t('system.strategyData') }}</div>
                                     <div class="status-value color-primary">{{ dashboardData.stats?.strategy_count || '---' }} 个</div>
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'autoeval'" title="点击配置 AI 自动评估">
                                 <div class="status-icon">🤖</div>
                                 <div class="status-info">
-                                    <div class="status-label">AI服务</div>
+                                    <div class="status-label">{{ t('system.aiService') }}</div>
                                     <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ aiStatus === 'ok' ? '正常' : '⏳ 需配置' }}
+                                        {{ aiStatus === 'ok' ? t('system.ok') : t('system.needsConfig') }}
                                     </div>
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'feature'" title="点击配置飞书推送">
                                 <div class="status-icon">📢</div>
                                 <div class="status-info">
-                                    <div class="status-label">飞书推送</div>
+                                    <div class="status-label">{{ t('system.feishuPush') }}</div>
                                     <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ feishuConfig.webhook_url ? '已配置' : '⏳ 未配置' }}
+                                        {{ feishuConfig.webhook_url ? t('system.configured') : t('system.notConfigured') }}
                                     </div>
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'datasource'" title="点击配置数据源">
                                 <div class="status-icon">📊</div>
                                 <div class="status-info">
-                                    <div class="status-label">Tushare</div>
+                                    <div class="status-label">{{ t('system.tushare') }}</div>
                                     <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
-                                        {{ tushareStatus === 'connected' ? '已连接' : '⏳ 未连接' }}
+                                        {{ tushareStatus === 'connected' ? t('system.connected') : t('system.notConnected') }}
                                     </div>
                                 </div>
                             </div>
                             <div class="status-item">
                                 <div class="status-icon">📆</div>
                                 <div class="status-info">
-                                    <div class="status-label">交易日历</div>
-                                    <div class="status-value color-primary">{{ tradeDateCount || '---' }} 天</div>
+                                    <div class="status-label">{{ t('system.tradeCalendar') }}</div>
+                                    <div class="status-value color-primary">{{ tradeDateCount || '---' }} {{ t('system.unitDays') }}</div>
                                 </div>
                             </div>
                             <div class="status-item">
                                 <div class="status-icon">💎</div>
                                 <div class="status-info">
-                                    <div class="status-label">在池股票</div>
-                                    <div class="status-value color-primary">{{ currentPoolSize }} 只</div>
+                                    <div class="status-label">{{ t('system.poolStocks') }}</div>
+                                    <div class="status-value color-primary">{{ currentPoolSize }} {{ t('common.unitStock') }}</div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (靠上放置, v3.17 UI优化) -->
+                        <div class="card mt-24">
+                            <div class="card-title flex-between">
+                                <span>{{ t('system.configManage') }}</span>
+                                <span class="text-xs-tertiary" v-if="lastSavedTime">{{ t('system.lastSaved') }}{{ lastSavedTime }}</span>
+                            </div>
+                            <div class="flex-wrap-gap-10">
+                                <el-button type="primary" :loading="configSaving" @click="saveAllConfig">{{ t('system.saveAll') }}</el-button>
+                                <el-button @click="resetAllConfig">{{ t('system.reset') }}</el-button>
+                                <el-button @click="exportConfig">{{ t('system.exportConfig') }}</el-button>
+                                <el-button @click="$refs.importFileInput && $refs.importFileInput.click()">{{ t('system.importConfig') }}</el-button>
+                                <input class="hide" ref="importFileInput" type="file" accept=".json,application/json" @change="importConfig"/>
+                            </div>
+                            <div class="text-sm-tertiary-mt10">保存全部：将 AI / 数据源 / 飞书 / 限流 / 主题 / 图标等配置一并写入后端；重置：从后端重新加载已保存配置；导出 / 导入：配置文件整体备份与迁移。</div>
+                        </div>
+
                         <!-- v3.4.0-T4: 系统监控面板 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">📊 资源监控</div>
-                            <div class="grid-auto-fit-140">
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">CPU</div>
-                                    <div class="status-value color-primary">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                            <div class="section-title-base">{{ t('system.resourceMonitor') }}</div>
+                            <div class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.cpu') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">内存</div>
-                                    <div class="status-value color-primary">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.memory') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">磁盘</div>
-                                    <div class="status-value color-primary">{{ sysMonitor.percent ?? '--' }}%</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.disk') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">运行时长</div>
-                                    <div class="status-value color-primary">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.uptime') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">平均延迟</div>
-                                    <div class="status-value color-primary">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.avgLatency') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">错误率</div>
-                                    <div class="status-value" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.errorRate') }}</div>
+                                    <div class="sys-health-big" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                 </div>
                             </div>
                         </div>
@@ -109,12 +128,20 @@
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
                         <div class="section-block-top">
                             <div class="section-title-base">🧩 调度任务</div>
-                            <div class="flex-col-gap-6" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
-                                <div class="flex-between flex-c-gap-8" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
-                                    <span class="flex-1">{{ t.name || k }}</span>
-                                    <span class="text-sm-tertiary">最近运行: {{ t.last_run || '—' }}</span>
-                                    <span class="text-sm-tertiary">最近成功: {{ t.last_success || '—' }}</span>
-                                    <span :class="t.last_status === 'success' ? 'text-success-sm' : t.last_status === 'failed' ? 'text-warning-sm' : 'text-sm-tertiary'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
+                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
+                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ t.name || k }}</span>
+                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近运行</span>
+                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近成功</span>
+                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无调度任务运行记录</div>
@@ -123,12 +150,20 @@
                         <!-- v3.17.12: 数据源延迟趋势 -->
                         <div class="section-block-top">
                             <div class="section-title-base">📊 数据源延迟趋势</div>
-                            <div class="flex-col-gap-6" v-if="(healthDetail.data_sources || []).length">
-                                <div class="flex-between flex-c-gap-8" v-for="(ds, i) in healthDetail.data_sources" :key="i">
-                                    <span class="flex-1">{{ ds.name }}</span>
-                                    <span class="text-sm-tertiary">成功率: {{ ds.success_rate ?? '--' }}%</span>
-                                    <span class="text-sm-tertiary">延迟: {{ ds.avg_latency_ms ?? '--' }}ms</span>
-                                    <span :class="ds.degraded ? 'text-warning-sm' : 'text-success-sm'">{{ ds.degraded ? '降级' : '正常' }}</span>
+                            <div class="sys-health-grid" v-if="(healthDetail.data_sources || []).length">
+                                <div class="sys-health-card" v-for="(ds, i) in healthDetail.data_sources" :key="i">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ ds.name }}</span>
+                                        <span :class="ds.degraded ? 'chip-warning' : 'chip-success'">{{ ds.degraded ? '降级' : '正常' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">成功率</span>
+                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">延迟</span>
+                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
@@ -137,22 +172,22 @@
                         <!-- v3.17.12: 备份与磁盘 -->
                         <div class="section-block-top">
                             <div class="section-title-base">💾 备份与磁盘</div>
-                            <div class="grid-auto-fit-140">
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">最近备份成功</div>
-                                    <div class="status-value color-primary">{{ healthDetail.backup_last_success || '暂无备份' }}</div>
+                            <div class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">最近备份成功</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_last_success || '暂无备份' }}</div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">备份数量</div>
-                                    <div class="status-value color-primary">{{ healthDetail.backup_count ?? 0 }} 个</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">备份数量</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_count ?? 0 }} 个</div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">磁盘剩余</div>
-                                    <div class="status-value color-primary">{{ healthDetail.disk?.free_gb ?? '--' }} GB</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">磁盘剩余</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.free_gb ?? '--' }} GB</div>
                                 </div>
-                                <div class="status-item soft-tile">
-                                    <div class="status-label">磁盘使用</div>
-                                    <div class="status-value color-primary">{{ healthDetail.disk?.percent ?? '--' }}%</div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">磁盘使用</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.percent ?? '--' }}%</div>
                                 </div>
                             </div>
                         </div>
@@ -162,30 +197,15 @@
                         <div class="section-block-top">
                             <div class="section-title-base">🔥 页面热度 (近 {{ analyticsDays }} 天)</div>
                             <div class="flex-col-gap-6" v-if="analyticsRank.length">
-                                <div class="flex-c-gap-10-base" v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page">
-                                    <span class="w-20-tertiary">{{ i + 1 }}</span>
-                                    <span class="flex-1">{{ r.page }}</span>
-                                    <span class="color-secondary">{{ r.views }} 次</span>
+                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page">
+                                    <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
+                                    <span class="rank-name flex-1">{{ r.page }}</span>
+                                    <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
+                                    <span class="rank-views color-secondary">{{ r.views }} 次</span>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无访问数据</div>
                         </div>
-
-                    <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (保存全部/重置/导出/导入) -->
-                    <div class="card mt-24">
-                        <div class="card-title flex-between">
-                            <span>⚙️ 配置管理</span>
-                            <span class="text-xs-tertiary" v-if="lastSavedTime">上次保存: {{ lastSavedTime }}</span>
-                        </div>
-                        <div class="flex-wrap-gap-10">
-                            <el-button type="primary" :loading="configSaving" @click="saveAllConfig">💾 保存全部配置</el-button>
-                            <el-button @click="resetAllConfig">🔄 重置配置</el-button>
-                            <el-button @click="exportConfig">📤 导出配置</el-button>
-                            <el-button @click="$refs.importFileInput && $refs.importFileInput.click()">📥 导入配置</el-button>
-                            <input class="hide" ref="importFileInput" type="file" accept=".json,application/json" @change="importConfig"/>
-                        </div>
-                        <div class="text-sm-tertiary-mt10">保存全部：将 AI / 数据源 / 飞书 / 限流 / 主题 / 图标等配置一并写入后端；重置：从后端重新加载已保存配置；导出 / 导入：配置文件整体备份与迁移。</div>
-                    </div>
 
                     <!-- 访问限速配置 -->
                     <div class="card mt-24">
@@ -208,6 +228,18 @@
                                 </div>
                                 <span v-if="currentTheme === key" class="theme-current-badge">当前</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- v3.17.14 (FR-3.17.14): 语言切换（立即生效 + 偏好持久化） -->
+                    <div class="card">
+                        <div class="card-title">{{ t('system.language') }}</div>
+                        <div class="flex-c-gap-12-wrap">
+                            <el-select class="w-180" :model-value="locale" size="small" @change="changeLanguage">
+                                <el-option value="zh-CN" :label="t('lang.zh-CN')" />
+                                <el-option value="en" :label="t('lang.en')" />
+                            </el-select>
+                            <span class="text-sm-tertiary-ml4">{{ t('system.languageDesc') }}</span>
                         </div>
                     </div>
 
@@ -366,7 +398,7 @@
                     <div class="card mb-14">
                         <div class="card-title">🔄 数据同步</div>
                         <div class="flex-c-gap-12-wrap">
-                            <el-button type="success" :loading="syncingData" @click="syncStockData">📥 同步股票数据</el-button>
+                            <el-button type="primary" :loading="syncingData" @click="syncStockData">📥 同步股票数据</el-button>
                             <span class="text-sm-secondary">从 Tushare 拉取最新行情并更新本地缓存</span>
                         </div>
                     </div>
@@ -532,7 +564,7 @@
                             <el-button size="small" type="primary" @click="triggerDataReload" :loading="dataRefreshReloading">
                                 🔄 手动加载
                             </el-button>
-                            <el-button size="small" type="success" @click="triggerDataPull" :loading="dataPullRunning">
+                            <el-button size="small" type="primary" @click="triggerDataPull" :loading="dataPullRunning">
                                 📥 手动拉取
                             </el-button>
                         </div>
@@ -714,6 +746,42 @@
                     <div class="text-center-tertiary-pad20" v-if="Object.keys(allGroups).length === 0">暂无分组数据</div>
                     </div>
 
+                    <!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->
+                    <div class="card mt-14">
+                        <div class="card-title">🔑 开放 API</div>
+                        <p class="color-secondary">为外部程序签发只读 API Key（库中仅存哈希，明文只展示一次；行情数据不可达时开放接口返回 degraded 占位）。</p>
+                        <div class="flex-gap-8-mb12">
+                            <el-input class="w-160" v-model="openApiKeyName" placeholder="Key 名称（可选）" size="small" />
+                            <el-select class="w-120" v-model="openApiKeyRole" size="small">
+                                <el-option label="只读" value="read" />
+                            </el-select>
+                            <el-button type="primary" size="small" :loading="openApiLoading" @click="generateOpenApiKey">生成 Key</el-button>
+                            <el-button size="small" @click="loadOpenApiKeys">刷新</el-button>
+                        </div>
+                        <div v-if="newOpenApiKey" class="openapi-new-key">
+                            <div class="text-sm-secondary">新 Key（仅展示一次，请立即复制保存）:</div>
+                            <div class="flex-gap-6">
+                                <code class="openapi-key-code">{{ newOpenApiKey }}</code>
+                                <el-button size="small" @click="copyOpenApiKey">复制</el-button>
+                            </div>
+                        </div>
+                        <div class="section-sub-block-top" v-if="openApiKeys.length">
+                            <div v-for="k in openApiKeys" :key="k.id" class="openapi-key-row">
+                                <div class="flex-between-wrap-gap6">
+                                    <div class="flex-1-min200">
+                                        <span class="openapi-key-prefix">{{ k.prefix }}...</span>
+                                        <span class="text-sm-tertiary">{{ k.name }} · {{ k.role }} · {{ k.created_at }}</span>
+                                        <span v-if="k.enabled === 0" class="user-disabled-badge">已吊销</span>
+                                    </div>
+                                    <div class="flex-gap-6-shrink0">
+                                        <el-button v-if="k.enabled" size="small" type="danger" @click="revokeOpenApiKey(k)">吊销</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-sm-tertiary" v-else>暂无 API Key</div>
+                    </div>
+
                     </div>
                     </div>
                     <div v-else-if="currentSubPage === 'about'">
@@ -723,9 +791,18 @@
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p class="m-0"><strong class="color-text-primary">核心功能：</strong></p>
                                 <ul class="about-ul">
-                                    美林时钟 — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换
+                                    美林时钟 — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯
                                     多策略选股 — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证
-                                    AI 评估 — 多模型串行评估，技术指标自动注入
+                                    AI 每日复盘 — 收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪
+                                    多因子体检 — 估值/基本面/资金面/情绪面/技术面，个股五维体检
+                                    回测工作台 — 单/多策略回测对比，收益/回撤/夏普/净值可视化
+                                    评估胜率追踪 — 评估命中率统计，决策复盘
+                                    模拟组合 — 持仓/买卖调仓/实时盈亏/收益曲线
+                                    异动扫描 — 涨停/跌停/放量/连板，自选/持仓事件提醒
+                                    AI 问股 — 多轮上下文 + 多股对比 + 事实数据护栏
+                                    移动端 & PWA — 375px 优化、离线可读、手势操作
+                                    开放 API — API Key 接入只读行情/日历/评估，Webhook 事件订阅
+                                    国际化 — 中/英双语切换
                                     飞书推送 — 定时推送每日选股报告
                                     数据源 — Tushare Pro / sxsc / akshare 三源热备
                                 </ul>
@@ -817,7 +894,90 @@
       const state = inject('qcState');
       if (!state) return {};
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
-      return { ...state };
+      // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
+      const openApiKeys = Vue.ref([]);
+      const openApiKeyName = Vue.ref('');
+      const openApiKeyRole = Vue.ref('read');
+      const newOpenApiKey = Vue.ref('');
+      const openApiLoading = Vue.ref(false);
+      const _core = () => (window.__quantModules && window.__quantModules.core) || {};
+      // 页面热度相对条最大参考值 (v3.17 UI优化)
+      const analyticsMaxViews = Vue.computed(() => {
+        const rank = (state && state.analyticsRank) || [];
+        return rank.reduce((m, r) => Math.max(m, r.views || 0), 0) || 1;
+      });
+      // 开放 API 路由常量 (core.js 单一来源, 供一致性测试断言)
+      const _openapiBase = () => _core().OPENAPI_ROUTE_BASE || '/api/openapi';
+
+      async function loadOpenApiKeys() {
+        openApiLoading.value = true;
+        try {
+          const r = await _core().apiFetch(_openapiBase() + '/keys');
+          openApiKeys.value = (r && r.data) || [];
+        } catch (e) {
+          ElementPlus.ElMessage.error('加载 API Key 失败: ' + (e.message || ''));
+        } finally {
+          openApiLoading.value = false;
+        }
+      }
+
+      async function generateOpenApiKey() {
+        try {
+          const r = await _core().apiFetch(_openapiBase() + '/keys', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: openApiKeyName.value || '未命名',
+              role: openApiKeyRole.value || 'read',
+              expire_days: 365,
+            }),
+          });
+          if (r && r.success) {
+            // 明文仅本次返回一次性展示, 不落库/不落日志
+            newOpenApiKey.value = r.api_key || '';
+            openApiKeyName.value = '';
+            ElementPlus.ElMessage.success('API Key 已生成（明文仅展示一次）');
+            await loadOpenApiKeys();
+          } else {
+            ElementPlus.ElMessage.error((r && (r.detail || r.message)) || '生成失败');
+          }
+        } catch (e) {
+          ElementPlus.ElMessage.error('生成失败: ' + (e.message || ''));
+        }
+      }
+
+      async function copyOpenApiKey() {
+        if (!newOpenApiKey.value) return;
+        try {
+          await navigator.clipboard.writeText(newOpenApiKey.value);
+          ElementPlus.ElMessage.success('已复制');
+        } catch (e) {
+          ElementPlus.ElMessage.error('复制失败，请手动复制');
+        }
+      }
+
+      async function revokeOpenApiKey(k) {
+        try {
+          const r = await _core().apiFetch(_openapiBase() + '/keys/' + k.id, { method: 'DELETE' });
+          if (r && r.success) {
+            ElementPlus.ElMessage.success('Key 已吊销');
+            if (newOpenApiKey.value && k.prefix && newOpenApiKey.value.includes(k.prefix)) {
+              newOpenApiKey.value = '';
+            }
+            await loadOpenApiKeys();
+          } else {
+            ElementPlus.ElMessage.error((r && (r.detail || r.message)) || '吊销失败');
+          }
+        } catch (e) {
+          ElementPlus.ElMessage.error('吊销失败: ' + (e.message || ''));
+        }
+      }
+
+      return {
+        ...state,
+        analyticsMaxViews,
+        openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
+        loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
+      };
     },
   };
 })();

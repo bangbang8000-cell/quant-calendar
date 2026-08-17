@@ -78,31 +78,54 @@
 | UI 主题 | 7 套主题 + 4 套图标系统 + 设计 Token 体系 + 骨架屏加载 |
 | 键盘导航 | Tab/Enter 导航，面包屑，侧边栏折叠 |
 | 初始化向导 | 首次启动引导配置密码、AI Key、Tushare Token |
-| 安全 | JWT + bcrypt + CSP + HSTS |
+| AI 每日复盘 | 收盘后自动生成市场复盘，指数/板块/资金/情绪 + AI 解读，16:00 调度 |
+| 多因子体检 | 个股五维因子体检（估值/基本面/资金面/情绪面/技术面）+ 分位语义标注 |
+| 回测工作台 | 单/多策略回测对比，收益/回撤/夏普/净值/年度收益 + CSV 导出 |
+| 评估胜率追踪 | 评估命中率统计（总体/分模型/分评级），决策复盘 |
+| 模拟组合 | 持仓/买卖调仓/实时盈亏/组合收益曲线 |
+| 异动扫描 | 涨停/跌停/放量/振幅/连板分类，自选/持仓事件提醒 |
+| 移动端 & PWA | 375px 三任务链路、手势操作、离线核心页可读、版本化缓存 |
+| 开放 API | API Key 接入只读行情/日历/自选/评估，Swagger 文档，Key 限流 |
+| Webhook 订阅 | evaluate_done / review_ready / anomaly_scan_done / market_review_ready 事件推送 |
+| 国际化 | 中/英双语切换，偏好持久化重启保持 |
+| 可观测性 | Prometheus /metrics + 健康面板（调度/数据源/备份/磁盘）+ 飞书告警 |
+| 安全 | JWT + bcrypt + CSP + HSTS + API Key 哈希存储 |
 
 ---
 
 ## 仓库结构
 
+本仓库采用**双目录物理分离**：`quant-calendar-dev/`（开发，端口 8001）与 `quant-calendar-ops/`（生产，端口 8000）同源同步；各自的 `.env` / `data/` / `.venv` 严格独立。
+
 ```
 quant-calendar/
 ├── README.md
-├── quant-calendar-ops/          ← 应用代码
+├── DEPLOYMENT.md                ← 部署指南（双端分离/同步/更新）
+├── docs/                        ← 需求与计划（PRD-v3.17、DEV-TEST-PLAN-v3.17 等）
+├── quant-calendar-dev/          ← 开发环境（端口 8001）
 │   ├── backend/                 ← FastAPI 后端 (Python)
-│   │   ├── main_new.py          ← 主入口
+│   │   ├── main_new.py          ← 主入口（APP_VERSION 单一来源）
 │   │   ├── merrill_clock.py     ← 美林时钟引擎（五维度评分+周期判断）
-│   │   ├── merrill_history.py   ← 历史周期结构化数据（14条转换记录）
-│   │   ├── ai_evaluator.py      ← AI 多模型评估
+│   │   ├── ai_evaluator.py      ← AI 多模型评估 + 每日复盘生成
 │   │   ├── data_sources.py      ← 多数据源管理 (sxsc/tushare/akshare)
+│   │   ├── factor_engine.py     ← 多因子引擎（估值/基本面/资金面/情绪面/技术面）
+│   │   ├── portfolio.py         ← 模拟组合/持仓（backend 层）
+│   │   ├── market_review.py     ← AI 每日复盘
+│   │   ├── scan_engine.py       ← 异动扫描（涨停/跌停/放量/连板）
+│   │   ├── eval_track.py        ← 评估胜率追踪
+│   │   ├── backtest.py          ← 回测核心
+│   │   ├── api_keys.py          ← 开放 API Key（仅存哈希）
+│   │   ├── webhook.py           ← Webhook 事件订阅
+│   │   ├── metrics.py           ← Prometheus 可观测性 (/metrics)
 │   │   ├── scheduler.py         ← 定时任务调度
-│   │   └── api/v1/              ← REST API
-│   ├── frontend/                ← Vue 3 SPA
+│   │   └── api/v1/              ← REST API（含 /api/openapi 开放端点）
+│   ├── frontend/                ← Vue 3 SPA（零构建）
 │   │   ├── index.html           ← 单文件应用
 │   │   ├── css/                 ← tokens.css / themes.css / layout.css
-│   │   ├── js/                  ← JS 模块 (merrill.js / ai.js / core.js 等)
+│   │   ├── js/                  ← JS 模块（含 locales/ 中英语言包、sw.js PWA）
 │   │   └── lib/                 ← Element Plus / ECharts
-│   └── tests/
-└── qresult/                     ← 策略选股 CSV 数据
+│   └── tests/                   ← pytest 全量 719 项 + e2e 冒烟
+└── quant-calendar-ops/          ← 生产环境（端口 8000，同源同步）
 ```
 
 ---
@@ -112,12 +135,14 @@ quant-calendar/
 | 层 | 技术 | 备注 |
 |----|------|------|
 | 后端 | FastAPI (Python 3.10+) | 异步，自带 OpenAPI 文档 |
-| 前端 | Vue 3 + Element Plus + ECharts | 单文件 SPA，无需编译 |
-| 认证 | JWT (python-jose) + bcrypt | 24h 过期，角色权限 |
-| 数据源 | Tushare Pro / sxsc_tushare / akshare | 三源热备自动切换 |
+| 认证 | JWT (python-jose) + bcrypt | 24h 过期，角色权限，多用户隔离 |
+| 数据源 | Tushare Pro / sxsc_tushare / akshare | 三源热备自动切换，不可达优雅降级 |
 | AI | OpenAI 兼容协议 | DeepSeek / 豆包 / 通义千问 / GPT / Claude / GLM / Moonshot |
-| 推送 | 飞书 Webhook | 机器人消息推送 |
-| 存储 | JSON 文件 | 无数据库依赖 |
+| 推送 | 飞书 Webhook | 机器人消息推送 + Webhook 事件订阅 |
+| 存储 | SQLite + JSON | 写路径统一 SQLite，无数据库依赖可部署 |
+| 可观测性 | Prometheus /metrics | 请求/状态/延迟/数据源/调度/备份/磁盘 + 飞书告警 |
+| 开放 API | FastAPI OpenAPI + API Key | 只读端点，Swagger 开关，Key 限流 |
+| 前端 | Vue 3 + Element Plus + ECharts | 单文件 SPA，无需编译，中英 i18n，PWA 离线 |
 
 ---
 
@@ -177,6 +202,10 @@ python main_new.py --port 8000
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v3.17 | 2026-08 | 智·实主线（AI 复盘/多因子体检/回测/胜率追踪/组合/异动）+ 架构健康（拆分/内联治理/鉴权收敛/可观测性/多用户隔离）+ 体验卓越（移动端/PWA/性能+42%/个性化/盘中增强）+ 开放与国际化（开放 API/Webhook/i18n）；719 测试全绿 |
+| v3.15.1 | 2026-08 | 视觉回归基线、UI 审计修复 |
+| v3.14.0 | 2026-08 | 前端组件化拆分、备份恢复、页面热度 |
+| v3.10.0 | 2026-08 | 前端模块化、主题 Token、性能优化 |
 | v3.1.0 | 2026-07 | 美林时钟历史周期数据：14条结构化转换记录（2008-至今），弹窗展示触发原因+关键指标 |
 | v3.0.0 | 2026-07 | 美林时钟模块解耦：提取 merrill.js composable，清理 ~1400 行冗余代码，CSS Token 体系 |
 | v2.5.0 | 2026-07 | UI 全面升级：侧边栏修复、Token 去重、8 Composables 清理、移动端增强 |
@@ -185,10 +214,13 @@ python main_new.py --port 8000
 
 ## 路线图
 
-- PostgreSQL 存储后端（可选替代 JSON）
-- 策略回测收益归因可视化
-- 移动端 PWA 离线支持
-- 实时行情 WebSocket 推送
+- ✅ 策略回测收益归因可视化（v3.17 已交付回测工作台）
+- ✅ 移动端 PWA 离线支持（v3.17 已交付）
+- ✅ 实时行情 WebSocket 推送（v3.17 已交付盘中增强，部署环境装齐 websockets 依赖后真实推送）
+- 开放 API 扩容（更多端点/写权限/按用户配额）
+- 更多语言包（en 之外）
+- PostgreSQL 存储后端（可选替代 SQLite）
+- 真实行情数据源接入后的完整链路验证
 
 ---
 

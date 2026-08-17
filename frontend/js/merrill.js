@@ -279,13 +279,7 @@
         merrillDetailData.value._dimensions = merrillData.value.dimension_scores;
       }
 
-      // 弹窗打开后强制刷新布局
-      setTimeout(() => {
-        document.body.style.display = 'none';
-        setTimeout(() => { document.body.style.display = ''; }, 10);
-      }, 100);
-
-      // 后台异步请求API更新
+      // 后台异步请求API更新（就地合并，避免整对象替换引发弹窗内容闪动）
       try {
         const res = await fetch('/api/market/merrill-clock/stage/' + stage);
         const data = await res.json();
@@ -308,7 +302,8 @@
             apiData._stage = merrillDetailData.value._stage;
           if (merrillDetailData.value._dimensions)
             apiData._dimensions = merrillDetailData.value._dimensions;
-          merrillDetailData.value = apiData;
+          // v3.17 UI修复: 就地合并（保留响应式引用，Vue 增量渲染，消除内容切换闪动）
+          Object.assign(merrillDetailData.value, apiData);
         }
       } catch (e) {
         console.warn('获取阶段详情失败:', e);

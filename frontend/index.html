@@ -29,7 +29,10 @@
     <!-- Module JS (v3.17.9: 全部 defer, 按文档顺序执行, 依赖通过 window.__quantModules 全局保持) -->
     <script nonce="{{NONCE}}" defer src="/static/js/themes.js?v={{APP_VERSION}}"></script>
     <!-- v3.17.10 (FR-3.17.10): 个性化与搜索纯模块（拼音/偏好/最近查看/i18n，早于 app-logic 装配） -->
+    <!-- v3.17.14 (FR-3.17.14): 语言包 zh-CN/en（零构建原生对象，i18n.js 之后按序装配） -->
     <script nonce="{{NONCE}}" defer src="/static/js/i18n.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/locales/zh-CN.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/locales/en.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" defer src="/static/js/pinyin.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" defer src="/static/js/preferences.js?v={{APP_VERSION}}"></script>
     <script nonce="{{NONCE}}" defer src="/static/js/recent.js?v={{APP_VERSION}}"></script>
@@ -117,14 +120,14 @@
                 <div class="login-brand">
                     <div class="login-icon">📈</div>
                     <div class="login-brand-text">
-                        <div class="login-title">量化选股日历</div>
-                        <div class="login-subtitle">QuantCalendar · 全 A 股智能量化研究平台</div>
+                        <div class="login-title">{{ t('login.title') }}</div>
+                        <div class="login-subtitle">{{ t('login.subtitle') }}</div>
                     </div>
                 </div>
-                <div class="login-desc">策略共识 · AI 评估 · 每日量化日历，一键掌握</div>
+                <div class="login-desc">{{ t('login.desc') }}</div>
                 <el-form @submit.prevent="handleLogin">
                     <el-form-item>
-                        <el-input v-model="loginForm.username" placeholder="用户名" size="large" @keyup.enter="handleLogin">
+                        <el-input v-model="loginForm.username" :placeholder="t('login.username')" size="large" @keyup.enter="handleLogin">
                             <template #prefix>
                                 <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -145,14 +148,14 @@
                     </el-form-item>
                     <el-form-item>
                         <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="logining">
-                            登 录
+                            {{ t('login.submit') }}
                         </el-button>
                     </el-form-item>
                 </el-form>
                 <el-button type="primary" size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
-                    访客登录
+                    {{ t('login.guest') }}
                 </el-button>
-                <div class="login-footer">🚀 量化选股 · 智能决策 · 让数据说话</div>
+                <div class="login-footer">{{ t('login.footer') }}</div>
             </div>
         </div>
 

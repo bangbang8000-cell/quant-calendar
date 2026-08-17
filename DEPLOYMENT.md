@@ -288,22 +288,32 @@ quant-calendar-ops/
 ├── .env                    # 环境变量（不入 git）
 ├── .venv/                  # Python 虚拟环境（不入 git）
 ├── backend/                # FastAPI 后端
-│   ├── main_new.py         # 主入口
+│   ├── main_new.py         # 主入口（APP_VERSION 单一来源）
 │   ├── data_sources.py     # 多数据源管理
 │   ├── merrill_clock.py    # 美林时钟引擎
-│   ├── merrill_history.py  # 历史周期数据
-│   ├── ai_evaluator.py     # AI 多模型评估
+│   ├── ai_evaluator.py     # AI 多模型评估 + 每日复盘
+│   ├── factor_engine.py    # 多因子引擎
+│   ├── portfolio.py        # 模拟组合/持仓
+│   ├── market_review.py    # AI 每日复盘
+│   ├── scan_engine.py      # 异动扫描
+│   ├── eval_track.py       # 评估胜率追踪
+│   ├── backtest.py         # 回测核心
+│   ├── api_keys.py         # 开放 API Key（仅存哈希）
+│   ├── webhook.py          # Webhook 事件订阅
+│   ├── metrics.py          # Prometheus 可观测性
 │   ├── scheduler.py        # 定时任务
-│   └── api/v1/             # REST API 路由
+│   └── api/v1/             # REST API 路由（含 /api/openapi）
 ├── frontend/               # Vue 3 SPA
 │   ├── index.html          # 单文件应用
 │   ├── css/                # tokens.css / themes.css / layout.css
-│   └── js/                 # JS 模块
+│   ├── js/                 # JS 模块（含 locales/ 中英语言包、sw.js PWA）
+│   └── lib/                # Element Plus / ECharts
 ├── data/                   # 运行时数据（不入 git）
 │   ├── datasource_config.json
 │   ├── ai_models.json
 │   ├── users.json
-│   └── users/<name>/       # 每用户目录
+│   ├── users/<name>/       # 每用户目录
+│   └── app.db              # SQLite（组合/持仓/自选等写路径）
 ├── requirements.in / requirements.lock
 └── DEPLOYMENT.md
 ```
@@ -314,6 +324,10 @@ quant-calendar-ops/
 
 | 版本 | 日期 | 关键变更 |
 |------|------|----------|
+| v3.17 | 2026-08 | 全版交付：AI 复盘/多因子体检/回测/胜率追踪/模拟组合/异动扫描；架构拆分/内联治理/鉴权收敛/可观测性/多用户隔离；移动端 PWA/性能优化/个性化/盘中增强；开放 API（API Key + Swagger + Webhook）/i18n。`APP_VERSION=3.17.3`，719 测试全绿 |
+| v3.15.1 | 2026-08 | 视觉回归基线、UI 审计修复 |
+| v3.14.0 | 2026-08 | 前端组件化拆分、备份恢复、页面热度 |
+| v3.10.0 | 2026-08 | 前端模块化、版本注入、依赖锁定 |
 | v3.6.0 | 2026-07 | 前端模块化（app-logic.js 拆分组件）、数据备份恢复、页面热度统计 |
 | v3.1.0 | 2026-07 | 美林时钟历史周期数据（14条记录，2008至今） |
 | v3.0.0 | 2026-07 | 美林时钟模块解耦、CSS Token 体系 |

@@ -90,6 +90,35 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_trades_user_time
 
 SCHEMA += PORTFOLIO_SCHEMA
 
+# v3.17.15 (FR-3.17.15): 开放 API v2 — API Key + Webhook 订阅
+# 只存 key 的 sha256 哈希, 不落明文; events 存 JSON 数组字符串
+OPENAPI_SCHEMA = """
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    prefix TEXT NOT NULL DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'read',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    expires_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_prefix
+    ON api_keys(prefix);
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT NOT NULL,
+    events TEXT NOT NULL DEFAULT '[]',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_enabled
+    ON webhook_subscriptions(enabled);
+"""
+
+SCHEMA += OPENAPI_SCHEMA
+
 
 def get_conn() -> sqlite3.Connection:
     """获取数据库连接 (每线程独立)"""
@@ -145,6 +174,10 @@ def migrate() -> None:
             conn.executescript(PORTFOLIO_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: portfolio_positions/portfolio_trades 表就绪")
+            # v3.17.15 (FR-3.17.15): 开放 API — api_keys/webhook_subscriptions 表 (幂等建表)
+            conn.executescript(OPENAPI_SCHEMA)
+            conn.commit()
+            logger.info("[db] migrate: api_keys/webhook_subscriptions 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:

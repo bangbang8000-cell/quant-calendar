@@ -217,7 +217,9 @@
 
   // ─── v3.16 (16.6): HTML 消毒 — v-html 前端双保险（后端已过滤，此处防深度/防漏） ───
   // 仅保留白名单标签，剥离 on* / javascript: / 内联脚本，其余标签解包为文本。
-  const SANITIZE_ALLOW = ['B', 'STRONG', 'EM', 'I', 'CODE', 'PRE', 'P', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A', 'BR', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'SPAN', 'DIV', 'BLOCKQUOTE', 'HR'];
+  // v3.17 UI修复: 白名单加入 SVG 绘图标签（图标系统 edge/crystal 用 SVG 渲染，曾被误剥离导致图标不显示；
+  //               SVG 绘图标签本身无脚本能力，on* / javascript: 仍被下方统一剥离）
+  const SANITIZE_ALLOW = ['B', 'STRONG', 'EM', 'I', 'CODE', 'PRE', 'P', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'A', 'BR', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'SPAN', 'DIV', 'BLOCKQUOTE', 'HR', 'SVG', 'G', 'PATH', 'RECT', 'CIRCLE', 'POLYGON', 'POLYLINE', 'LINE', 'ELLIPSE', 'TEXT', 'TSPAN', 'DEFS', 'USE', 'MARKER', 'SYMBOL'];
 
   function sanitizeHtml(html, opts = {}) {
     if (html == null) return '';
@@ -233,7 +235,9 @@
     function clean(node) {
       Array.from(node.childNodes).forEach((child) => {
         if (child.nodeType === 1) { // element
-          const tag = child.tagName;
+          // v3.17 UI修复: SVG 元素在 HTML 文档中 tagName 为小写(svg/line...), 统一大写后匹配白名单,
+          // 否则 <svg> 根被解包导致图标(edge/crystal)只剩裸绘图元素不渲染
+          const tag = String(child.tagName).toUpperCase();
           if (allowSet.has(tag)) {
             Array.from(child.attributes).forEach((attr) => {
               const n = attr.name.toLowerCase();
@@ -267,6 +271,9 @@
     clean(body);
     return body.innerHTML;
   }
+
+  // ─── v3.17.15 (FR-3.17.15): 开放 API v2 路由常量 ──
+  const OPENAPI_ROUTE_BASE = '/api/openapi';
 
   // ─── v3.17.7 实时化 (FR-3.17.7): 实时报价 WS 常量 + 预警/格式化纯函数 ──
   // 阈值与后端 backend/realtime_quotes.py 保持一致；纯逻辑，node 可 require 单测。
@@ -339,6 +346,7 @@
     createTtlCache,
     silentRefresh,
     sanitizeHtml,
+    OPENAPI_ROUTE_BASE,
     REALTIME_WS_PATH,
     WARN_RISE_SPEED_THRESHOLD,
     WARN_VOLUME_RATIO_THRESHOLD,

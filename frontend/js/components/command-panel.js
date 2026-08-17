@@ -24,7 +24,7 @@
               <div class="command-group-label">{{ g.label }}</div>
               <div v-for="item in g.items" :key="itemKey(item)" class="command-item"
                    :class="{active: isActive(item)}" @click="execute(item)" @mouseenter="setActive(item)">
-                <span class="command-item-icon">{{ item.icon }}</span>
+                <span class="command-item-icon" v-html="sanitizeHtml(item.icon || '')"></span>
                 <span class="command-item-label">{{ item.label }}</span>
                 <span class="command-item-sub">{{ item.subLabel }}</span>
               </div>
@@ -203,6 +203,7 @@
 
       return {
         visible, query, results, inputEl,
+        sanitizeHtml: state.sanitizeHtml,
         onDown, onUp, onEnter, execute, isActive, setActive, itemKey,
       };
     },

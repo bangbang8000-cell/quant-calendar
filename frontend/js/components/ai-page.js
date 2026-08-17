@@ -14,10 +14,10 @@
                     <div v-if="currentSubPage === 'overview'">
                         <div class="flex-end-gap-8-mb16">
                             <el-button size="small" @click="showBatchEvaluate = true">
-                                批量评估
+                                {{ t('ai.batchEval') }}
                             </el-button>
                             <el-button size="small" @click="showAutoEvaluateSettings = true">
-                                <span class="mr-4">⚙️</span>自动评估
+                                <span class="mr-4">⚙️</span>{{ t('ai.autoEval') }}
                             </el-button>
                         </div>
 
@@ -27,21 +27,21 @@
                                 <div class="stat-icon stat-icon-info">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistory.length }}</div>
-                                    <div class="stat-label">总评估数</div>
+                                    <div class="stat-label">{{ t('ai.totalEval') }}</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-success" @click="currentSubPage = 'history'" tabindex="0" role="button" aria-label="覆盖股票" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                 <div class="stat-icon stat-icon-success">📈</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistoryStockCount }}</div>
-                                    <div class="stat-label">覆盖股票</div>
+                                    <div class="stat-label">{{ t('ai.coveredStocks') }}</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-gold" @click="currentSubPage = 'watchlist'" tabindex="0" role="button" aria-label="自选股" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                 <div class="stat-icon stat-icon-gold">⭐</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
-                                    <div class="stat-label">自选股</div>
+                                    <div class="stat-label">{{ t('ai.watchlist') }}</div>
                                 </div>
                             </div>
                             <!-- v3.17.8 (FR-3.17.5): 组合持仓入口 -->
@@ -49,7 +49,7 @@
                                 <div class="stat-icon stat-icon-gold">组</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ positions.length }}</div>
-                                    <div class="stat-label">组合持仓</div>
+                                    <div class="stat-label">{{ t('ai.portfolio') }}</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-warning" @click="showAutoEvaluateSettings = true" tabindex="0" role="button" aria-label="自动评估设置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
@@ -57,8 +57,8 @@
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value text-md">{{ autoEvaluateConfig.enabled ? '运行中' : '已暂停' }}</div>
-                                    <div class="stat-label">自动评估</div>
+                                    <div class="stat-value text-md">{{ autoEvaluateConfig.enabled ? t('ai.running') : t('ai.paused') }}</div>
+                                    <div class="stat-label">{{ t('ai.autoEval') }}</div>
                                 </div>
                             </div>
                             <!-- v3.5.0-T6: AI 用量统计 -->
@@ -66,14 +66,14 @@
                                 <div class="stat-icon stat-icon-info-hover">⚡</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiUsage.total_calls || 0 }}</div>
-                                    <div class="stat-label">AI 调用量</div>
+                                    <div class="stat-label">{{ t('ai.aiCalls') }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- v3.5.0-T5: 策略推荐 -->
                         <div class="card mb-4" v-if="strategyRecommendations.length">
-                            <div class="card-title">💡 策略推荐 <span class="text-sm-tertiary-normal">基于你的 {{ strategyRecommendations.length > 0 ? watchlist.length : 0 }} 只自选股风格</span></div>
+                            <div class="card-title">{{ t('ai.strategyRecommend') }} <span class="text-sm-tertiary-normal">基于你的 {{ strategyRecommendations.length > 0 ? watchlist.length : 0 }} 只自选股风格</span></div>
                             <div class="grid-auto-fit-240">
                                 <div class="rec-card" v-for="r in strategyRecommendations" :key="r.strategy_id">
                                     <div class="flex-between-mb6">
@@ -92,8 +92,8 @@
                         <!-- 最近评估 -->
                         <div class="card mb-4" v-if="aiHistory.length> 0">
                             <div class="card-title flex-between">
-                                <span>🕒 最近评估</span>
-                                <el-button size="small" text @click="currentSubPage = 'history'">查看全部 →</el-button>
+                                <span>{{ t('ai.recentEval') }}</span>
+                                <el-button size="small" text @click="currentSubPage = 'history'">{{ t('ai.viewAll') }}</el-button>
                             </div>
                             <div class="hscroll-gap-12">
                                 <div v-for="item in aiHistory.slice(0,3)" :key="item.id" @click="viewAiResult(item)" class="hover-lift recent-card">
@@ -114,7 +114,7 @@
                         <div class="grid-2col-gap16-mb16">
                             <!-- 评分分布 -->
                             <div class="card" v-if="aiHistory.length > 0">
-                                <div class="card-title">📊 评分分布</div>
+                                <div class="card-title">{{ t('ai.scoreDist') }}</div>
                                 <div class="flex-c-gap-8-mb6" v-for="bar in scoreDistribution" :key="bar.label">
                                     <span class="bar-label">{{ bar.label }}</span>
                                     <div class="bar-track">
@@ -125,14 +125,14 @@
                             </div>
                             <!-- 快捷操作 -->
                             <div class="card">
-                                <div class="card-title">🔧 快捷操作</div>
+                                <div class="card-title">{{ t('ai.quickOps') }}</div>
                                 <div class="flex-col-gap-10">
-                                    <div class="text-sm-secondary-mb4" v-if="watchlist.length> 0">从自选中选择股票快速评估：</div>
-                                    <el-select class="w-100" v-if="watchlist.length> 0" v-model="quickEvalStock" placeholder="选择自选股..." size="small" clearable>
+                                    <div class="text-sm-secondary-mb4" v-if="watchlist.length> 0">{{ t('ai.chooseFromWatchlist') }}</div>
+                                    <el-select class="w-100" v-if="watchlist.length> 0" v-model="quickEvalStock" :placeholder="t('ai.chooseFromWatchlist')" size="small" clearable>
                                         <el-option v-for="s in watchlist" :key="s.code" :label="s.code + ' ' + s.name" :value="s.code" />
                                     </el-select>
                                     <div class="flex-gap-8-c" v-if="watchlist.length> 0">
-                                        <span class="text-xs-tertiary-nowrap">策略:</span>
+                                        <span class="text-xs-tertiary-nowrap">{{ t('ai.strategyLabel') }}</span>
                                         <el-radio-group v-model="evalStrategy" size="small">
                                             <el-radio-button value="default">综合</el-radio-button>
                                             <el-radio-button value="trend">趋势</el-radio-button>
@@ -140,14 +140,14 @@
                                             <el-radio-button value="short_term">短线</el-radio-button>
                                         </el-radio-group>
                                     </div>
-                                    <el-button class="align-self-start" v-if="watchlist.length> 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading">🤖 快速评估</el-button>
+                                    <el-button class="align-self-start" v-if="watchlist.length> 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading">{{ t('ai.quickEval') }}</el-button>
                                     <div class="text-center-tertiary-pad20x0" v-if="watchlist.length === 0">
                                         <div class="text-3xl-mb8">⭐</div>
-                                        <div class="text-sm">还没有自选股</div>
-                                        <el-button class="mt-2" size="small" @click="currentSubPage = 'watchlist'">去添加自选 →</el-button>
+                                        <div class="text-sm">{{ t('ai.noWatchlist') }}</div>
+                                        <el-button class="mt-2" size="small" @click="currentSubPage = 'watchlist'">{{ t('ai.goAddWatchlist') }}</el-button>
                                     </div>
                                     <div class="section-top-thin">
-                                        <el-button class="w-100" size="small" @click="showBatchEvaluate = true">批量评估（输入代码）</el-button>
+                                        <el-button class="w-100" size="small" @click="showBatchEvaluate = true">{{ t('ai.batchEvalInput') }}</el-button>
                                     </div>
                                 </div>
                             </div>
@@ -156,11 +156,11 @@
                         <!-- 空状态：无任何评估记录 -->
                         <div v-if="aiHistory.length === 0" class="card text-center-pad40x20">
                             <div class="empty-state-icon-md">🤖</div>
-                            <div class="text-lg-semibold-primary-mb8">智能评估</div>
-                            <div class="text-md-secondary-mb20">多模型串行评估，技术指标自动注入</div>
+                            <div class="text-lg-semibold-primary-mb8">{{ t('ai.title') }}</div>
+                            <div class="text-md-secondary-mb20">{{ t('ai.subtitle') }}</div>
                             <div class="flex-gap-12-center">
-                                <el-button type="primary" @click="currentSubPage = 'watchlist'">⭐ 管理自选股</el-button>
-                                <el-button @click="showBatchEvaluate = true">批量评估</el-button>
+                                <el-button type="primary" @click="currentSubPage = 'watchlist'">{{ t('ai.manageWatchlist') }}</el-button>
+                                <el-button @click="showBatchEvaluate = true">{{ t('ai.batchEval') }}</el-button>
                             </div>
                         </div>
                     </div>
@@ -169,9 +169,9 @@
                     <div v-else-if="currentSubPage === 'history'">
                         <!-- v3.17.6 (FR-3.17.6): 评估命中率（决策复盘） -->
                         <div class="card eval-track-card">
-                            <div class="card-title">评估命中率 <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
-                            <div v-if="trackLoading" class="eval-track-state">正在计算命中率统计中...</div>
-                            <div v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" class="eval-track-state">暂无足够评估样本</div>
+                            <div class="card-title">{{ t('ai.evalHitRate') }} <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
+                            <div v-if="trackLoading" class="eval-track-state">{{ t('ai.hitRateLoading') }}</div>
+                            <div v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" class="eval-track-state">{{ t('ai.insufficientSamples') }}</div>
                             <template v-else>
                                 <div class="eval-track-overall">
                                     <div v-for="w in trackWindows" :key="w.key" class="eval-track-stat">
@@ -182,7 +182,7 @@
                                 <div class="eval-track-note">{{ trackData.note }}</div>
                                 <div class="eval-track-grid">
                                     <div>
-                                        <div class="eval-track-subtitle">分模型</div>
+                                        <div class="eval-track-subtitle">{{ t('ai.hitRateByModel') }}</div>
                                         <table class="eval-track-table">
                                             <thead>
                                                 <tr><th>模型</th><th>5日</th><th>10日</th><th>20日</th><th>样本</th></tr>
@@ -199,7 +199,7 @@
                                         </table>
                                     </div>
                                     <div>
-                                        <div class="eval-track-subtitle">分评级</div>
+                                        <div class="eval-track-subtitle">{{ t('ai.hitRateByLevel') }}</div>
                                         <table class="eval-track-table">
                                             <thead>
                                                 <tr><th>评级</th><th>5日</th><th>10日</th><th>20日</th><th>样本</th></tr>
@@ -237,24 +237,24 @@
                         </div>
 
                         <div class="card">
-                            <div class="card-title">📋 评估历史记录 <span class="card-title-hint">共 {{ Object.keys(groupedByDate).length }} 天 · {{ aiHistory.length }} 条</span></div>
+                            <div class="card-title">{{ t('ai.historyTitle') }} <span class="card-title-hint">共 {{ Object.keys(groupedByDate).length }} 天 · {{ aiHistory.length }} 条</span></div>
                         <!-- v3.16 (16.7): 统一加载/离线/错误态（可重试） -->
                         <qc-state-panel v-if="aiHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadAiHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="aiHistoryError" type="error" @retry="loadAiHistory"></qc-state-panel>
                         <div v-else-if="aiHistory.length === 0" class="empty-state">
                             <div class="empty-state-icon">🤖</div>
-                            <div class="text-md-medium-primary">暂无评估记录</div>
+                            <div class="text-md-medium-primary">{{ t('ai.noEvalRecord') }}</div>
                             <div class="text-sm-tertiary-mt8">
-                                点击股票详情页的「智能评估」按钮开始分析股票
+                                {{ t('ai.evalHint') }}
                             </div>
                         </div>
 
                         <!-- 视图切换 -->
                         <div class="flex-gap-8-mb12" v-if="aiHistory.length> 0">
-                            <el-button size="small" @click="aiHistoryView = 'date'" :type="aiHistoryView === 'date' ? 'primary' : ''">📅 按日期</el-button>
-                            <el-button size="small" @click="aiHistoryView = 'month'" :type="aiHistoryView === 'month' ? 'primary' : ''">📆 按月</el-button>
-                            <el-button size="small" @click="aiHistoryView = 'stock'" :type="aiHistoryView === 'stock' ? 'primary' : ''">📈 按股票</el-button>
+                            <el-button size="small" @click="aiHistoryView = 'date'" :type="aiHistoryView === 'date' ? 'primary' : ''">{{ t('ai.byDate') }}</el-button>
+                            <el-button size="small" @click="aiHistoryView = 'month'" :type="aiHistoryView === 'month' ? 'primary' : ''">{{ t('ai.byMonth') }}</el-button>
+                            <el-button size="small" @click="aiHistoryView = 'stock'" :type="aiHistoryView === 'stock' ? 'primary' : ''">{{ t('ai.byStock') }}</el-button>
                         </div>
 
                         <!-- 按日期聚合展示 -->
@@ -516,7 +516,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-title">⭐ 我的自选 <span class="card-title-hint">共 {{ watchlist.length }} 只</span></div>
+                            <div class="card-title">{{ t('ai.myWatchlist') }} <span class="card-title-hint">共 {{ watchlist.length }} 只</span></div>
                             <!-- v3.17.7 实时化 (FR-3.17.7): 自选实时报价区（WS；数据不可达降级占位，不阻塞其它功能） -->
                             <div v-if="watchlist.length > 0" class="rt-bar" :class="{'rt-degraded': realtimeDegraded || realtimeWsState === 'offline'}">
                                 <span class="rt-title">实时报价</span>
@@ -603,7 +603,7 @@
                     <div v-else-if="currentSubPage === 'portfolio'" class="portfolio-view">
                         <!-- 组合汇总条 -->
                         <div class="card portfolio-summary-card">
-                            <div class="card-title">组合汇总</div>
+                            <div class="card-title">{{ t('ai.portfolioSummary') }}</div>
                             <div class="portfolio-summary-row">
                                 <div class="portfolio-summary-item">
                                     <div class="portfolio-summary-label">总市值</div>
@@ -636,7 +636,7 @@
                         <!-- 组合收益曲线 -->
                         <div class="card portfolio-chart-card">
                             <div class="portfolio-chart-head">
-                                <div class="card-title">组合收益曲线</div>
+                                <div class="card-title">{{ t('ai.portfolioCurve') }}</div>
                                 <el-radio-group v-model="equityDays" size="small" @change="loadEquity(equityDays)">
                                     <el-radio-button :value="7">近7日</el-radio-button>
                                     <el-radio-button :value="30">近30日</el-radio-button>

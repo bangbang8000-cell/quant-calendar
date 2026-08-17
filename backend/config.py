@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # v3.17.13 (FR-3.17.13): 限流后端类型 (memory|redis, 默认 memory; redis 预留未实现时回退内存)
     RATE_LIMIT_BACKEND: str = "memory"
 
+    # v3.17.15 (FR-3.17.15): 开放 API — Swagger 文档开关 (默认开启; 关则 /docs /redoc /openapi.json 404)
+    OPENAPI_ENABLED: bool = True
+
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
 

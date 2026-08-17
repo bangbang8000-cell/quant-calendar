@@ -93,7 +93,8 @@ class TestResultUI:
         """复制报告 / 重新评估按钮"""
         assert 'copyAiReport' in STOCK_DETAIL
         assert '@click="copyAiReport"' in STOCK_DETAIL
-        assert '重新评估' in STOCK_DETAIL
+        assert "detail.reevaluate" in STOCK_DETAIL, "重新评估按钮应经 t('detail.reevaluate') 渲染"
+        assert "重新评估" in _read('frontend/js/locales/zh-CN.js'), "zh 语言包应保留'重新评估'文案"
 
 
 class TestRefThreading:

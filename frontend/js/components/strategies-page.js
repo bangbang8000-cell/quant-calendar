@@ -12,11 +12,11 @@
                 <div v-if="currentPage === 'strategies'" key="strategies">
                                         <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
-                        <div class="page-title">📈 策略总览</div>
+                        <div class="page-title">{{ t('strategies.title') }}</div>
                         <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
                         <button type="button" class="bt-entry-btn" @click="currentSubPage = 'backtest'">回测工作台</button>
                         <div class="flex-c-gap-12">
-                            <span class="text-base-secondary">最新交易日: {{ dashboardData.latest_date || '-' }}</span>
+                            <span class="text-base-secondary">{{ t('strategies.latestTradeDay') }}{{ dashboardData.latest_date || '-' }}</span>
                             <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
                         </div>
                     </div>
@@ -24,7 +24,7 @@
                     <!-- v3.11 (FR-3.11.7): 今日一屏 — 聚合当日决策要素（美林/情绪/池变动/健康/重点） -->
                     <div v-if="!(loading && loadingView === 'overview')" class="today-hero card">
                         <div class="today-hero-head">
-                            <div class="today-hero-title">☀️ 今日一屏</div>
+                            <div class="today-hero-title">{{ t('strategies.todayScreen') }}</div>
                             <div class="today-hero-date">
                                 <span>{{ todayText }}</span>
                                 <span class="today-hero-status">{{ tradingStatus }}</span>
@@ -33,28 +33,28 @@
                         <div class="today-grid">
                             <!-- 美林时钟 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'merrill'">
-                                <div class="today-cell-label">⏱️ 美林时钟</div>
-                                <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || '计算中...' }}</div>
+                                <div class="today-cell-label">{{ t('strategies.merrillLabel') }}</div>
+                                <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || t('strategies.computing') }}</div>
                                 <div class="today-cell-sub" v-if="merrillNext">{{ merrillNext }}</div>
                                 <div class="today-cell-sub" v-else-if="merrillData?.timing?.duration_days != null">已 {{ merrillData.timing.duration_days }} 天 · 剩余 {{ merrillData.timing.days_remaining ?? '—' }} 天</div>
                             </div>
                             <!-- 市场情绪 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'market'">
-                                <div class="today-cell-label">💹 市场情绪</div>
+                                <div class="today-cell-label">{{ t('strategies.marketSentiment') }}</div>
                                 <div class="today-sentiment" :class="{muted: !marketData?.market_sentiment}">{{ marketData?.market_sentiment?.text || '暂无情绪数据' }}</div>
                                 <div class="today-cell-sub">{{ tradingStatus }}</div>
                             </div>
                             <!-- 池变动 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'consensus'">
-                                <div class="today-cell-label">📌 池变动</div>
-                                <div class="today-pool-row"><span class="today-pool-val up">+{{ dashboardData?.pool_changes?.new_count || 0 }}</span><span class="today-pool-name">新入池</span></div>
-                                <div class="today-pool-row"><span class="today-pool-val down">-{{ dashboardData?.pool_changes?.out_count || 0 }}</span><span class="today-pool-name">已出池</span></div>
+                                <div class="today-cell-label">{{ t('strategies.poolChanges') }}</div>
+                                <div class="today-pool-row"><span class="today-pool-val up">+{{ dashboardData?.pool_changes?.new_count || 0 }}</span><span class="today-pool-name">{{ t('calendar.newPool') }}</span></div>
+                                <div class="today-pool-row"><span class="today-pool-val down">-{{ dashboardData?.pool_changes?.out_count || 0 }}</span><span class="today-pool-name">{{ t('calendar.outPool') }}</span></div>
                             </div>
                             <!-- 今日重点 -->
                             <div class="today-cell">
-                                <div class="today-cell-label">🎯 今日重点</div>
+                                <div class="today-cell-label">{{ t('strategies.todayFocus') }}</div>
                                 <div class="today-focus-list">
-                                    <div v-if="todayFocus.length === 0" class="today-focus-empty">✅ 无预警 · 一切正常</div>
+                                    <div v-if="todayFocus.length === 0" class="today-focus-empty">{{ t('strategies.noAlert') }}</div>
                                     <div v-for="(f, i) in todayFocus.slice(0, 3)" :key="i" class="today-focus-item" :class="f.level" @click="f.action">
                                         <span class="today-focus-icon">{{ f.icon }}</span><span class="today-focus-text">{{ f.text }}</span>
                                     </div>
@@ -63,9 +63,9 @@
                         </div>
                         <!-- 数据健康度 -->
                         <div class="today-health">
-                            <div class="today-health-title">🩺 数据健康度 <span class="today-health-hint">成功率 / 延迟 / 新鲜度 / 次数</span></div>
+                            <div class="today-health-title">{{ t('strategies.health') }} <span class="today-health-hint">{{ t('strategies.healthHint') }}</span></div>
                             <div class="today-health-strip">
-                                <div v-if="healthRows.length === 0" class="today-health-empty">今日暂无数据源调用记录</div>
+                                <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
                                 <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
                                     <span class="today-health-dot" :class="healthClass(s)"></span>
                                     <span class="today-health-name">{{ s.name }}</span>
@@ -90,21 +90,21 @@
                             <div class="stat-icon">📅</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_trading_days || 0 }}</div>
-                                <div class="stat-label">交易日总数</div>
+                                <div class="stat-label">{{ t('strategies.tradingDays') }}</div>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📈</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_stocks_covered || 0 }}</div>
-                                <div class="stat-label">覆盖股票数</div>
+                                <div class="stat-label">{{ t('strategies.coveredStocks') }}</div>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">🎯</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.strategy_count || 0 }}</div>
-                                <div class="stat-label">选股策略数</div>
+                                <div class="stat-label">{{ t('strategies.strategyCount') }}</div>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -114,7 +114,7 @@
                                     <div class="stat-value">{{ currentPoolSize }}</div>
                                     <span v-if="poolChangeBadge" :class="poolChangeBadge.dir" class="stat-trend">{{ poolChangeBadge.text }}</span>
                                 </div>
-                                <div class="stat-label">当前在池股票</div>
+                                <div class="stat-label">{{ t('strategies.currentPool') }}</div>
                             </div>
                         </div>
                     </div>
@@ -123,7 +123,7 @@
 
                     <!-- 数据概览卡片 (v1.11 重构: 时间轴+多维度换手) -->
                     <div class="card">
-                        <div class="card-title">📋 数据概览</div>
+                        <div class="card-title">{{ t('strategies.dataOverview') }}</div>
                         <!-- 时间覆盖条 -->
                         <div class="time-coverage-bar">
                             <div class="time-bar-label">{{ dashboardData.time_coverage?.start_date }}</div>
@@ -136,19 +136,19 @@
                         <!-- 持仓变动 多时间维度 -->
                         <div class="pool-change-multi">
                             <div class="pool-change-col">
-                                <div class="pool-change-period">今日变动</div>
-                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.new_count || 0 }}</span><span class="pool-change-label">新入池</span></div>
-                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.out_count || 0 }}</span><span class="pool-change-label">已出池</span></div>
+                                <div class="pool-change-period">{{ t('strategies.todayChanges') }}</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.new_count || 0 }}</span><span class="pool-change-label">{{ t('calendar.newPool') }}</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.out_count || 0 }}</span><span class="pool-change-label">{{ t('calendar.outPool') }}</span></div>
                             </div>
                             <div class="pool-change-col">
-                                <div class="pool-change-period">本周累计</div>
-                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.weekly_new || 0 }}</span><span class="pool-change-label">新入池</span></div>
-                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.weekly_out || 0 }}</span><span class="pool-change-label">已出池</span></div>
+                                <div class="pool-change-period">{{ t('strategies.weekChanges') }}</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.weekly_new || 0 }}</span><span class="pool-change-label">{{ t('calendar.newPool') }}</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.weekly_out || 0 }}</span><span class="pool-change-label">{{ t('calendar.outPool') }}</span></div>
                             </div>
                             <div class="pool-change-col">
-                                <div class="pool-change-period">本月累计</div>
-                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.monthly_new || 0 }}</span><span class="pool-change-label">新入池</span></div>
-                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.monthly_out || 0 }}</span><span class="pool-change-label">已出池</span></div>
+                                <div class="pool-change-period">{{ t('strategies.monthChanges') }}</div>
+                                <div class="pool-change-row"><span class="pool-change-val up">+{{ dashboardData.pool_changes?.monthly_new || 0 }}</span><span class="pool-change-label">{{ t('calendar.newPool') }}</span></div>
+                                <div class="pool-change-row"><span class="pool-change-val down">-{{ dashboardData.pool_changes?.monthly_out || 0 }}</span><span class="pool-change-label">{{ t('calendar.outPool') }}</span></div>
                             </div>
                         </div>
                     </div>
@@ -170,8 +170,8 @@
                     <!-- 策略共识度 TOP5 (v1.11: 嵌入概览) -->
                     <div class="card">
                         <div class="card-title flex-between">
-                            <span>🏆 策略共识度 TOP5</span>
-                            <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">查看全部 {{ filteredConsensusRank.length }}只 →</span>
+                            <span>{{ t('strategies.consensusTop5') }}</span>
+                            <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <qc-state-panel v-if="filteredConsensusRank.length === 0" type="empty" title="暂无共识数据"></qc-state-panel>
                         <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">

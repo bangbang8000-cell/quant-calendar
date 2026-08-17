@@ -3775,15 +3775,30 @@ text {
 }
 
 /* ===== v3.0: 侧边栏折叠按钮 ===== */
+/* v3.17 UI优化: 侧边栏收起按钮 — 细长圆角矩形(上下长左右细) + 三点拖拽手柄, 替代原圆形三角箭头 */
 .sidebar-collapse-btn {
-    position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
-    width: 28px; height: 28px; border-radius: 50%;
+    position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 58px; border-radius: 999px;
     background: var(--bg-card); border: 1px solid var(--border-light);
-    color: var(--text-secondary); font-size: var(--font-sm); cursor: pointer;
-    display: flex; align-items: center; justify-content: center; z-index: 101;
-    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 101;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
-.sidebar-collapse-btn:hover { background: var(--primary-color); color: var(--white); border-color: var(--primary-color); }
+.sidebar-collapse-btn::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--text-tertiary);
+    box-shadow: 0 10px 0 var(--text-tertiary), 0 -10px 0 var(--text-tertiary);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.sidebar-collapse-btn:hover {
+    background: var(--primary-color); border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+}
+.sidebar-collapse-btn:hover::before {
+    background: var(--white);
+    box-shadow: 0 10px 0 var(--white), 0 -10px 0 var(--white);
+}
+.sidebar-collapse-btn:active { transform: translateY(-50%) scale(0.94); }
 .sidebar.collapsed { width: 56px; }
 .sidebar.collapsed .sidebar-logo h2,
 .sidebar.collapsed .user-info span,
@@ -4158,6 +4173,13 @@ text {
     .eval-track-overall { grid-template-columns: repeat(3, 1fr); gap: 8px; }
 }
 
+/* ===== v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 ===== */
+.openapi-new-key { margin: 8px 0 12px; padding: 10px 12px; background: var(--bg-card-header); border-radius: 8px; }
+.openapi-key-code { display: inline-block; max-width: 100%; word-break: break-all; font-family: var(--font-mono, monospace); font-size: var(--font-sm); color: var(--primary-color); background: var(--bg-card-header); padding: 4px 8px; border-radius: 6px; }
+.openapi-key-row { padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+.openapi-key-row:last-child { border-bottom: none; }
+.openapi-key-prefix { font-family: var(--font-mono, monospace); font-size: var(--font-sm); font-weight: var(--font-semibold); color: var(--text-primary); margin-right: 8px; }
+
 /* ===== v3.17.8 (FR-3.17.5): 组合/模拟持仓 ===== */
 .portfolio-view { display: flex; flex-direction: column; gap: 16px; }
 .portfolio-summary-card { margin: 0; }
@@ -4511,6 +4533,37 @@ text {
 .section-top-sm { margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);font-size:var(--font-sm);color:var(--text-secondary); }
 .section-top-thin { border-top:1px solid var(--border-light);margin-top:4px;padding-top:10px; }
 .soft-tile { background: var(--bg-card-header); border-radius: 8px; padding: 10px; }
+/* ===== v3.17 UI优化: 系统状态页健康面板卡片布局 ===== */
+.sys-health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.sys-health-card { border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px; }
+.sys-health-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sys-health-name { flex: 1; min-width: 0; font-weight: var(--font-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sys-health-card-title { font-size: var(--font-sm); color: var(--text-tertiary); margin-bottom: 8px; }
+.sys-health-big { font-size: var(--font-lg); font-weight: var(--font-semibold); }
+.sys-health-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border-light); }
+.sys-health-row:first-of-type { border-top: 0; }
+.sys-health-meta { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.meter-bar { height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; margin-top: 8px; }
+.meter-fill { height: 100%; border-radius: 999px; background: var(--color-primary); transition: width .3s ease; }
+.chip-warning { background: var(--badge-warning-bg); color: var(--el-warning); padding: 4px 10px; border-radius: 12px; font-size: var(--font-sm); }
+.chip-danger { background: var(--badge-danger-bg); color: var(--el-danger); padding: 4px 10px; border-radius: 12px; font-size: var(--font-sm); }
+.rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+.rank-row:last-child { border-bottom: 0; }
+.rank-no { width: 22px; height: 22px; border-radius: 6px; background: var(--bg-card-header); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-sm); flex: none; }
+.rank-no-top { background: var(--badge-info-bg); color: var(--color-primary); font-weight: var(--font-semibold); }
+.rank-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-bar { flex: 0 0 120px; height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
+.rank-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--color-primary); }
+.rank-views { flex: none; font-variant-numeric: tabular-nums; }
+/* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
+.el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
+.el-button--success:hover, .el-button--success:focus { opacity: .85; }
+.el-button--warning { background-color: var(--el-warning) !important; border-color: var(--el-warning) !important; }
+.el-button--warning:hover, .el-button--warning:focus { opacity: .85; }
+.el-button--danger { background-color: var(--el-danger) !important; border-color: var(--el-danger) !important; }
+.el-button--danger:hover, .el-button--danger:focus { opacity: .85; }
+.el-button--info { background-color: var(--el-info) !important; border-color: var(--el-info) !important; }
+.el-button--info:hover, .el-button--info:focus { opacity: .85; }
 .stage-chip { padding: 1px 6px; border-radius: 4px; font-size: var(--font-xs); margin-right: 6px; background: var(--el-fill-color-light); }
 .stat-card-gold { cursor:pointer; border-left: 3px solid var(--color-gold); }
 .stat-card-info-border { border-left: 3px solid var(--el-info); }
