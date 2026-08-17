@@ -11,7 +11,7 @@
 - 安全: Key 明文仅在签发响应一次性返回; 审计只记 prefix 不落明文
 """
 import logging
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel

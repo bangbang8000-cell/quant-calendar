@@ -207,7 +207,10 @@ def track_evaluations(username: str = 'default', kline_getter: Optional[Callable
         return []
     if kline_getter is None:
         from data_sources import data_source_manager
-        kline_getter = lambda code: data_source_manager.get_kline_data(code, period='daily', limit=KLINE_LIMIT)
+
+        def _default_kline_getter(code):
+            return data_source_manager.get_kline_data(code, period='daily', limit=KLINE_LIMIT)
+        kline_getter = _default_kline_getter
 
     # 按股票缓存 K 线，同股多次评估不重复拉取
     kline_cache: Dict[str, Optional[Dict]] = {}

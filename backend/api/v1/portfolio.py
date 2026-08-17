@@ -9,7 +9,6 @@
 全部写操作走 audit_log 简单审计; 数据不可达时返回 "数据暂不可用" 而非报错。
 """
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 

@@ -12,7 +12,7 @@
 - 数据不可达优雅降级：events 为空 + note 注明哪些源不可达，不报错
 """
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

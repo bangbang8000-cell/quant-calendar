@@ -9,7 +9,7 @@
 - run_scan: 遍历股票池拉取日线并扫描；数据不可达优雅降级（不报错）
 """
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ import os
 import time
 from datetime import datetime
 
-from paths import DATA_DIR, EXTERNAL_DATA_DIR
+from paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
