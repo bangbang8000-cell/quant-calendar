@@ -93,27 +93,6 @@
 
 
 
-                        <!-- v3.17.12: 数据源延迟趋势 (调度/备份/热度已移至用量统计) -->
-                        <div class="section-block-top">
-                            <div class="section-title-base">📊 数据源延迟趋势</div>
-                            <div class="sys-health-grid" v-if="(healthDetail.data_sources || []).length">
-                                <div class="sys-health-card" v-for="(ds, i) in healthDetail.data_sources" :key="i">
-                                    <div class="sys-health-card-head">
-                                        <span class="sys-health-name">{{ ds.name }}</span>
-                                        <span :class="ds.degraded ? 'chip-warning' : 'chip-success'">{{ ds.degraded ? '降级' : '正常' }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">成功率</span>
-                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">延迟</span>
-                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
-                        </div>
 
                     <!-- 访问限速配置 -->
                     <div class="card mt-24">
@@ -728,6 +707,46 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- v3.17.12: 数据源延迟趋势 (调度/备份/热度已移至用量统计) -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">📊 数据源延迟趋势</div>
+                            <div class="sys-health-grid" v-if="(healthDetail.data_sources || []).length">
+                                <div class="sys-health-card" v-for="(ds, i) in healthDetail.data_sources" :key="i">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ ds.name }}</span>
+                                        <span :class="ds.degraded ? 'chip-warning' : 'chip-success'">{{ ds.degraded ? '降级' : '正常' }}</span>
+                                    </div>
+                        <!-- v3.17.5: 数据健康度 (自策略总览移入) -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">🩺 数据健康度</div>
+                            <div class="today-health-strip">
+                                <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
+                                <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
+                                    <span class="today-health-dot" :class="healthClass(s)"></span>
+                                    <span class="today-health-name">{{ s.name }}</span>
+                                    <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
+                                    <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
+                                    <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
+                                    <span class="today-health-calls">{{ s.calls }}次</span>
+                                    <span v-if="s.degraded" class="today-health-badge">degraded</span>
+                                    <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
+                                </div>
+                            </div>
+                        </div>
+
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">成功率</span>
+                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">延迟</span>
+                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
+                        </div>
+
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
                         <div class="section-block-top">
                             <div class="section-title-base">🧩 调度任务</div>
@@ -975,11 +994,38 @@
         }
       }
 
+      // v3.17.5: 数据健康度 (自策略总览移入) — 各源成功率/degraded/延迟/新鲜度
+      const HEALTH_NAMES = { 'sxsc_tushare': '东财', 'tushare': 'Tushare', 'akshare': 'AkShare' };
+      function healthName(name) { return HEALTH_NAMES[name] || name; }
+      const healthRows = computed(() => (state.healthMetrics?.value || []).map(s => ({
+        name: healthName(s.name), source: s.name,
+        success_rate: s.success_rate, avg_latency_ms: s.avg_latency_ms,
+        calls: s.calls || 0, degraded: !!s.degraded,
+        data_age_hours: s.data_age_hours != null ? s.data_age_hours : null,
+        stale: !!s.stale, last_fetch: s.last_fetch || s.last_success || null,
+      })));
+      function healthClass(s) {
+        if (s.degraded) return 'degraded';
+        if (s.success_rate == null) return 'unknown';
+        if (s.success_rate >= 90) return 'ok';
+        if (s.success_rate >= 60) return 'warn';
+        return 'bad';
+      }
+      // v3.12 (FR-3.12.2): 数据年龄格式化 (小时 → 友好文案)
+      function fmtAge(hours) {
+        if (hours == null) return '';
+        if (hours < 1) return '刚刚';
+        if (hours < 24) return Math.round(hours) + '小时前';
+        const days = Math.floor(hours / 24);
+        return days + '天前';
+      }
+
       return {
         ...state,
         analyticsMaxViews,
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
+        healthRows, healthClass, fmtAge,
       };
     },
   };

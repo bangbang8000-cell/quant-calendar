@@ -717,7 +717,7 @@ const allMenuDefs = [
                     fetchMerrillClock, fetchMarketData,
                     loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
                     loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-                    loadHealthDetail,
+                    loadHealthDetail, loadHealthMetrics,
                     loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
                     loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
                     stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,

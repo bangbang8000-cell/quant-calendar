@@ -61,23 +61,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 数据健康度 -->
-                        <div class="today-health">
-                            <div class="today-health-title">{{ t('strategies.health') }} <span class="today-health-hint">{{ t('strategies.healthHint') }}</span></div>
-                            <div class="today-health-strip">
-                                <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
-                                <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
-                                    <span class="today-health-dot" :class="healthClass(s)"></span>
-                                    <span class="today-health-name">{{ s.name }}</span>
-                                    <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
-                                    <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
-                                    <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
-                                    <span class="today-health-calls">{{ s.calls }}次</span>
-                                    <span v-if="s.degraded" class="today-health-badge">degraded</span>
-                                    <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- 核心数据卡片 (v1.11: +趋势徽标) -->
@@ -568,31 +551,7 @@
         return items;
       });
 
-      // 数据健康卡行（各源成功率/degraded/延迟 + v3.12 新鲜度）
-      const healthRows = computed(() => health.value.map(s => ({
-        name: healthName(s.name), source: s.name,
-        success_rate: s.success_rate, avg_latency_ms: s.avg_latency_ms,
-        calls: s.calls || 0, degraded: !!s.degraded,
-        data_age_hours: s.data_age_hours != null ? s.data_age_hours : null,
-        stale: !!s.stale, last_fetch: s.last_fetch || s.last_success || null,
-      })));
-      function healthClass(s) {
-        if (s.degraded) return 'degraded';
-        if (s.success_rate == null) return 'unknown';
-        if (s.success_rate >= 90) return 'ok';
-        if (s.success_rate >= 60) return 'warn';
-        return 'bad';
-      }
-      // v3.12 (FR-3.12.2): 数据年龄格式化 (小时 → 友好文案)
-      function fmtAge(hours) {
-        if (hours == null) return '';
-        if (hours < 1) return '刚刚';
-        if (hours < 24) return Math.round(hours) + '小时前';
-        const days = Math.floor(hours / 24);
-        return days + '天前';
-      }
-
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, healthRows, healthClass, fmtAge };
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus };
     },
   };
 })();

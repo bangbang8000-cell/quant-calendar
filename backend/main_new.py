@@ -76,8 +76,8 @@ async def lifespan(app: FastAPI):
     logger.info("⏰ 定时任务调度器已停止")
 
 # 应用版本单一来源（与发布版本保持一致，用于健康检查与 OpenAPI 元数据）
-# v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破 (功能配置页还原后浏览器仍持旧缓存)
-APP_VERSION = "3.17.4"
+# v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破; 3.17.5: 数据源延迟趋势+数据健康度移入用量统计
+APP_VERSION = "3.17.5"
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404
