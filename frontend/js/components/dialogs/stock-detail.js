@@ -89,7 +89,7 @@
 
                     <!-- Tab: K线图表 -->
                     <div v-if="stockDetailTab === 'kline'">
-                    <div class="section-title"><span>📈</span> {{ t('detail.sectionQuote') }}</div>
+                    <div class="section-title">{{ t('detail.sectionQuote') }}</div>
                     <div class="grid-auto">
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.close') }}</div>
@@ -128,7 +128,7 @@
                     </div>
 
                     <!-- K线图区域 -->
-                    <div class="section-title"><span>🕯️</span> {{ t('detail.sectionKline') }}</div>
+                    <div class="section-title">{{ t('detail.sectionKline') }}</div>
                     <div class="kline-container">
                         <div class="flex-between-mb12">
                             <div class="kline-tabs">
@@ -172,7 +172,7 @@
                         </div>
                     </div>
 
-                    <div class="section-title"><span>📋</span> {{ t('detail.strategyHoldings') }}</div>
+                    <div class="section-title">{{ t('detail.strategyHoldings') }}</div>
                     <div v-for="h in stockDetail.history" :key="h.strategy" class="hold-item">
                         <span class="hold-name">{{ h.strategy_name }}</span>
                         <span class="hold-days">{{ t('detail.holdDays', { days: h.hold_count }) }}</span>

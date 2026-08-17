@@ -1234,7 +1234,7 @@ def test_system_page_openapi_no_plaintext():
     """FR-3.17.15: 生成不显示明文 — 列表只显示前缀, 明文一次性展示且注明不落库"""
     src = _read("js/components/system-page.js")
     start = src.index("<!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
-    end = src.index("// v3.17.15 (FR-3.17.15): 开放 API — API Key 管理")
+    end = src.index("<!-- /v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
     seg = src[start:end]
     # 列表只显示前缀 (prefix...), 不展示完整明文
     assert "k.prefix" in seg, "Key 列表应只显示前缀"
@@ -1249,7 +1249,7 @@ def test_system_page_openapi_no_inline_style():
     """FR-3.17.15: 开放 API 卡片新增模板不得使用内联 style（走 CSS 类 + tokens）"""
     src = _read("js/components/system-page.js")
     start = src.index("<!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
-    end = src.index("// v3.17.15 (FR-3.17.15): 开放 API — API Key 管理")
+    end = src.index("<!-- /v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->")
     seg = src[start:end]
     assert 'style="' not in seg, "开放 API 卡片不应含内联 style 属性"
     assert "style={" not in seg, "开放 API 卡片不应含绑定式内联 style"

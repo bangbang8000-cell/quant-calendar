@@ -91,63 +91,9 @@
                             <div class="text-sm-tertiary-mt10">保存全部：将 AI / 数据源 / 飞书 / 限流 / 主题 / 图标等配置一并写入后端；重置：从后端重新加载已保存配置；导出 / 导入：配置文件整体备份与迁移。</div>
                         </div>
 
-                        <!-- v3.4.0-T4: 系统监控面板 -->
-                        <div class="section-block-top">
-                            <div class="section-title-base">{{ t('system.resourceMonitor') }}</div>
-                            <div class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.cpu') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.memory') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.mem_percent ?? '--' }}%</div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.disk') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.percent ?? '--' }}%</div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.uptime') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.avgLatency') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.errorRate') }}</div>
-                                    <div class="sys-health-big" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
-                        <div class="section-block-top">
-                            <div class="section-title-base">🧩 调度任务</div>
-                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
-                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
-                                    <div class="sys-health-card-head">
-                                        <span class="sys-health-name">{{ t.name || k }}</span>
-                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">最近运行</span>
-                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">最近成功</span>
-                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录</div>
-                        </div>
 
-                        <!-- v3.17.12: 数据源延迟趋势 -->
+                        <!-- v3.17.12: 数据源延迟趋势 (调度/备份/热度已移至用量统计) -->
                         <div class="section-block-top">
                             <div class="section-title-base">📊 数据源延迟趋势</div>
                             <div class="sys-health-grid" v-if="(healthDetail.data_sources || []).length">
@@ -167,44 +113,6 @@
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
-                        </div>
-
-                        <!-- v3.17.12: 备份与磁盘 -->
-                        <div class="section-block-top">
-                            <div class="section-title-base">💾 备份与磁盘</div>
-                            <div class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">最近备份成功</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_last_success || '暂无备份' }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">备份数量</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_count ?? 0 }} 个</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">磁盘剩余</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.free_gb ?? '--' }} GB</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">磁盘使用</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.percent ?? '--' }}%</div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
-
-                        <!-- v3.4.0-T7: 页面热度排行 -->
-                        <div class="section-block-top">
-                            <div class="section-title-base">🔥 页面热度 (近 {{ analyticsDays }} 天)</div>
-                            <div class="flex-col-gap-6" v-if="analyticsRank.length">
-                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page">
-                                    <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
-                                    <span class="rank-name flex-1">{{ r.page }}</span>
-                                    <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
-                                    <span class="rank-views color-secondary">{{ r.views }} 次</span>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无访问数据</div>
                         </div>
 
                     <!-- 访问限速配置 -->
@@ -781,9 +689,104 @@
                         </div>
                         <div class="text-sm-tertiary" v-else>暂无 API Key</div>
                     </div>
+                    <!-- /v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->
 
                     </div>
                     </div>
+                    <!-- v3.17.5 (FR-3.17.5): 用量统计 — 资源监控/调度任务/备份磁盘/页面热度 (自系统状态移入) -->
+                    <div v-else-if="currentSubPage === 'usage'">
+                        <!-- v3.4.0-T4: 系统监控面板 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">{{ t('system.resourceMonitor') }}</div>
+                            <div class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.cpu') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.memory') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.disk') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.percent ?? '--' }}%</div>
+                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.uptime') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.avgLatency') }}</div>
+                                    <div class="sys-health-big color-primary">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">{{ t('system.errorRate') }}</div>
+                                    <div class="sys-health-big" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">🧩 调度任务</div>
+                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
+                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ t.name || k }}</span>
+                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近运行</span>
+                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近成功</span>
+                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录</div>
+                        </div>
+                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
+                        <!-- v3.17.12: 备份与磁盘 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">💾 备份与磁盘</div>
+                            <div class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">最近备份成功</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_last_success || '暂无备份' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">备份数量</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_count ?? 0 }} 个</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">磁盘剩余</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.free_gb ?? '--' }} GB</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">磁盘使用</div>
+                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.percent ?? '--' }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- v3.4.0-T7: 页面热度排行 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">🔥 页面热度 (近 {{ analyticsDays }} 天)</div>
+                            <div class="flex-col-gap-6" v-if="analyticsRank.length">
+                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page">
+                                    <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
+                                    <span class="rank-name flex-1">{{ r.page }}</span>
+                                    <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
+                                    <span class="rank-views color-secondary">{{ r.views }} 次</span>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无访问数据</div>
+                        </div>
+                    </div>
+
                     <div v-else-if="currentSubPage === 'about'">
                         <div class="card">
                             <div class="card-title">📖 软件简介</div>

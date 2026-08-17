@@ -42,6 +42,7 @@
     'sub.datasource': 'Data Source',
     'sub.feature': 'Features',
     'sub.user': 'Users & Permissions',
+    'sub.usage': 'Usage Stats',
     'sub.about': 'About',
     // 视图
     'view.day': 'Daily',

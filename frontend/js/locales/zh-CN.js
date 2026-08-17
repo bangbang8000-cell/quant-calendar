@@ -42,6 +42,7 @@
     'sub.datasource': '数据源',
     'sub.feature': '功能配置',
     'sub.user': '用户与权限',
+    'sub.usage': '用量统计',
     'sub.about': '关于',
     // 视图
     'view.day': '日视图',
