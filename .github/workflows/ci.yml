@@ -62,8 +62,9 @@ jobs:
       - name: 测试 + 总覆盖率护栏 (≥20%, FR-3.10.4; e2e 场景单独 job 跑)
         run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=20 -m "not e2e"
       - name: 核心模块覆盖率门禁 (美林时钟 ≥70%)
-        run: python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
-             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
+        run: |
+          python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
+            --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
