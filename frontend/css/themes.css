@@ -4606,8 +4606,8 @@ text {
 .usage-ai-model-row:last-child { border-bottom: 0; }
 .usage-ai-model-no { width: 20px; height: 20px; border-radius: 6px; background: var(--bg-hover); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-xs); flex: none; }
 .usage-ai-model-no-top { background: var(--bg-selected); color: var(--color-primary); font-weight: var(--font-semibold); }
-.usage-ai-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 0 38%; color: var(--text-primary); font-size: var(--font-sm); }
-.usage-ai-model-bar { flex: 1; height: 7px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
+.usage-ai-model-name { min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; color: var(--text-primary); font-size: var(--font-sm); }
+.usage-ai-model-bar { flex: 0 0 90px; height: 7px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
 .usage-ai-model-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600)); }
 .usage-ai-model-pct { flex: none; min-width: 42px; text-align: right; font-size: var(--font-xs); color: var(--color-primary); font-variant-numeric: tabular-nums; }
 .usage-ai-model-count { flex: none; min-width: 44px; text-align: right; font-size: var(--font-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }

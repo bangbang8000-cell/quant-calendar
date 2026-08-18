@@ -1049,9 +1049,9 @@
       const newOpenApiKey = Vue.ref('');
       const openApiLoading = Vue.ref(false);
       const _core = () => (window.__quantModules && window.__quantModules.core) || {};
-      // 页面热度相对条最大参考值 (v3.17 UI优化)
+      // 页面热度相对条最大参考值 (v3.17 UI优化) — v3.18.6 fix: state.analyticsRank 为 ref, 需 .value 取数组
       const analyticsMaxViews = Vue.computed(() => {
-        const rank = (state && state.analyticsRank) || [];
+        const rank = (state && state.analyticsRank && state.analyticsRank.value) || [];
         return rank.reduce((m, r) => Math.max(m, r.views || 0), 0) || 1;
       });
       // 开放 API 路由常量 (core.js 单一来源, 供一致性测试断言)
