@@ -760,6 +760,49 @@ def test_scan_subpage_no_inline_style():
 
 # ─── v3.17.9 (内联样式收敛治理) 回归 ─────────────────────────────
 
+# ─── v3.18 (FR-3.18.14 修复): 前端 return 暴露标识符必须已定义 ─────────
+
+def _extract_return_idents(src):
+    idents = set()
+    for m in re.finditer(r'return\s*\{([^}]*)\}', src):
+        block = m.group(1)
+        if '...state' not in block:
+            continue  # 仅检查 Vue 组件 setup 的 return (含 ...state 展开), 排除纯函数返回对象
+        for item in block.split(','):
+            item = item.strip()
+            if not item or item.startswith('...'):
+                continue
+            name = item.split(':')[0].strip()
+            if re.match(r'^[A-Za-z_$][\w$]*$', name):
+                idents.add(name)
+    return idents
+
+
+def _is_defined(src, name):
+    esc = re.escape(name)
+    patterns = (
+        rf'\bconst\s+{esc}\s*=',
+        rf'\bfunction\s+{esc}\s*\(',
+        rf'\basync\s+function\s+{esc}\s*\(',
+        rf'\bconst\s*\{{[^{{}}]*\b{esc}\b[^{{}}]*\}}\s*=',
+    )
+    return any(re.search(p, src) for p in patterns)
+
+
+def test_frontend_return_refs_defined():
+    """回归: 组件 setup 的 return 中每个标识符必须在文件内定义 (防'暴露未定义'致白屏)"""
+    import glob
+    bad = []
+    for fn in glob.glob(os.path.join(FRONTEND_ROOT, "js", "**", "*.js"), recursive=True):
+        src = open(fn, encoding="utf-8").read()
+        if 'return {' not in src:
+            continue
+        for name in sorted(_extract_return_idents(src)):
+            if not _is_defined(src, name):
+                bad.append(f"{os.path.relpath(fn, FRONTEND_ROOT)}: return 暴露未定义标识符 {name}")
+    assert not bad, "存在 return 暴露未定义标识符: " + " | ".join(bad)
+
+
 def test_static_inline_style_budget():
     """v3.17.9: 前端静态内联 style="..." 总数 ≤279（≥60% 已收敛为类；排除 :style= 动态绑定）"""
     roots = ("js", "js/components", "js/components/dialogs")

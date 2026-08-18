@@ -119,6 +119,31 @@
           if (data.success) analyticsRank.value = data.rank || [];
         } catch (e) { console.warn('loadAnalytics failed:', e); }
       }
+      // v3.18 (FR-3.18.1): 手动触发当日 AI 市场复盘 (补齐历史/验收; 失败可见)
+      const reviewTriggering = ref(false);
+      async function triggerMarketReview() {
+        if (reviewTriggering.value) return;
+        reviewTriggering.value = true;
+        try {
+          const res = await fetch('/api/system/review/trigger', { method: 'POST' });
+          const data = await res.json();
+          if (data && data.success) {
+            if (data.degraded) {
+              ElementPlus.ElMessage.warning(`复盘已生成但数据不可达（${data.reason || ''}）`);
+            } else {
+              ElementPlus.ElMessage.success(`复盘已生成（${data.date}）`);
+            }
+          } else {
+            ElementPlus.ElMessage.error((data && (data.detail || data.message)) || '生成复盘失败');
+          }
+          loadHealthDetail();
+          return data;
+        } catch (e) {
+          ElementPlus.ElMessage.error('生成复盘失败: ' + (e.message || ''));
+        } finally {
+          reviewTriggering.value = false;
+        }
+      }
       // v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查
       const factCheck = ref(null);
       const factCheckRunning = ref(false);
