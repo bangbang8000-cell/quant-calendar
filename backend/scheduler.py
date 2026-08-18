@@ -774,6 +774,28 @@ class Scheduler:
                 self._record_task_run("event_alert_scan", False, str(e)[:120])
             await asyncio.sleep(60)
 
+    async def fact_check_audit_task(self):
+        """每日 AI 事实护栏抽查 (FR-3.18.9): 17:30 抽查历史回复数值与数据卡一致性, 产出审计报告"""
+        while self.running:
+            now = datetime.now()
+            target = now.replace(hour=17, minute=30, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            await asyncio.sleep(max((target - now).total_seconds(), 10))
+            if not self.running:
+                break
+            try:
+                from fact_check import run_daily_audit, save_audit_report
+                report = run_daily_audit()
+                save_audit_report(report)
+                self._record_task_run("fact_check_audit", True,
+                                      f"抽查 {report.get('checked', 0)} 数字, 通过率 {report.get('pass_rate')}%")
+                logger.info("事实护栏抽查完成: %s", report.get('pass_rate'))
+            except Exception as e:
+                logger.error(f"事实护栏抽查失败: {e}")
+                self._record_task_run("fact_check_audit", False, str(e)[:120])
+            await asyncio.sleep(60)
+
     async def daily_market_review_task(self):
         """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行; FR-3.18.1 激活)
 

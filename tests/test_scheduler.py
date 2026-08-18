@@ -55,3 +55,17 @@ class TestSchedulerSetWebhook:
         from scheduler import Scheduler
         s = Scheduler()
         s.set_webhook("")
+
+
+def test_start_registered_tasks_have_methods():
+    """start() 注册的每个任务名必须对应 Scheduler 上的真实方法 (防漏定义/拼写错致启动崩溃)"""
+    import inspect
+    import re
+    from scheduler import Scheduler
+    src = inspect.getsource(Scheduler.start)
+    names = set(re.findall(r'create_task\(self\.(\w+)\(', src))
+    assert names, "start() 应注册至少一个任务"
+    for name in names:
+        assert hasattr(Scheduler, name), f"start() 注册了未定义的方法 {name}"
+    for task in ("daily_market_review_task", "event_alert_scan_task", "fact_check_audit_task"):
+        assert task in names, f"应注册 {task}"
