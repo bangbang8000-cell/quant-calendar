@@ -67,7 +67,10 @@ jobs:
             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_factor_ic.py tests/test_fact_check.py tests/test_eval_track.py \
             --cov=factor_ic --cov=fact_check --cov=eval_track --cov-report=term --cov-fail-under=70 -m "not e2e"
-          python -m pytest tests/test_data_source_routing.py tests/test_market_review_activation.py tests/test_event_alert_live.py \
+          # 数据源自愈门禁含既有 data_sources 测试 (test_data_sources/test_data_sources_fetch),
+          # 否则仅路由测试对 data_sources 覆盖不足 (40% < 60%), CI 恒红
+          python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
+            tests/test_market_review_activation.py tests/test_event_alert_live.py \
             --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
