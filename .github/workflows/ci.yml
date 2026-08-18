@@ -59,12 +59,16 @@ jobs:
           EOF
       - name: Lint
         run: ruff check backend/ --select=E,F,W --ignore=E501
-      - name: 测试 + 总覆盖率护栏 (≥20%, FR-3.10.4; e2e 场景单独 job 跑)
-        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=20 -m "not e2e"
-      - name: 核心模块覆盖率门禁 (美林时钟 ≥70%)
+      - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
+        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"
+      - name: 核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)
         run: |
           python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
+          python -m pytest tests/test_factor_ic.py tests/test_fact_check.py tests/test_eval_track.py \
+            --cov=factor_ic --cov=fact_check --cov=eval_track --cov-report=term --cov-fail-under=70 -m "not e2e"
+          python -m pytest tests/test_data_source_routing.py tests/test_market_review_activation.py tests/test_event_alert_live.py \
+            --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
