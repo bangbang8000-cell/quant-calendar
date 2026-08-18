@@ -4641,6 +4641,8 @@ text {
 .usage-src-row:first-of-type { border-top: 0; }
 .usage-src-row-label { color: var(--text-tertiary); }
 .usage-src-row-value { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* 空状态占位: 实心虚线卡 (用量统计页统一, v3.18.5) */
+.usage-ai-empty { border: 1px dashed var(--border-base); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); padding: 18px 16px; text-align: center; font-size: var(--font-sm); color: var(--text-tertiary); }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
 .el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
 .el-button--success:hover, .el-button--success:focus { opacity: .85; }

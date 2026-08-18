@@ -738,7 +738,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
+                            <div class="usage-ai-empty" v-else>暂无数据源调用记录</div>
                         </div>
                         <!-- v3.17.5: 数据健康度 (自策略总览移入) — v3.17.6 (bugfix): 移出数据源延迟网格, 独立成块 -->
                         <div class="section-block-top">
@@ -918,15 +918,17 @@
                                     <el-button size="small" :type="analyticsDays === 30 ? 'primary' : ''" @click="setAnalyticsDays(30)">近30天</el-button>
                                 </div>
                             </div>
-                            <div class="flex-col-gap-6" v-if="analyticsRank.length">
-                                <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 10)" :key="r.page">
-                                    <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
-                                    <span class="rank-name flex-1">{{ r.page }}</span>
-                                    <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
-                                    <span class="rank-views color-secondary">{{ r.views }} 次</span>
+                            <div class="usage-ai-panel">
+                                <div class="flex-col-gap-6" v-if="analyticsRank.length">
+                                    <div class="rank-row" v-for="(r, i) in analyticsRank.slice(0, 10)" :key="r.page">
+                                        <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
+                                        <span class="rank-name flex-1">{{ r.page }}</span>
+                                        <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round((r.views || 0) / analyticsMaxViews * 100) + '%'}"></span></span>
+                                        <span class="rank-views color-secondary">{{ r.views }} 次</span>
+                                    </div>
                                 </div>
+                                <div class="usage-ai-empty" v-else>暂无访问数据</div>
                             </div>
-                            <div class="text-sm-tertiary" v-else>暂无访问数据</div>
                         </div>
                     </div>
 
