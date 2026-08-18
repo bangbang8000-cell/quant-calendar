@@ -35,6 +35,23 @@ UNAVAILABLE = "unavailable"
 MONEYFLOW_UNAVAILABLE = "数据不可达"
 AI_UNAVAILABLE = "AI解读暂不可用"
 
+# FR-3.18.1: 产出判定 — 数据卡关键字段(indexes/sectors/moneyflow/sentiment) 全部不可达视为失败
+_UNAVAILABLE_SOURCE_VALUES = (UNAVAILABLE, MONEYFLOW_UNAVAILABLE, "")
+
+
+def is_review_degraded(report):
+    """报告是否"降级产出"(本次产出失败): 数据卡 data_sources 四字段全部不可达 → True。
+
+    FR-3.18.1 产出判定修正: 任一关键字段来自真实数据源 (tushare/akshare/sxsc 等)
+    → 视为可接受产出; 全部 unavailable → 判定失败 (供调度器记失败 + 告警 + 16:30 重试)。
+    """
+    if not isinstance(report, dict):
+        return True
+    ds = report.get("data_sources", {})
+    if not ds:
+        return True
+    return all(str(v) in _UNAVAILABLE_SOURCE_VALUES for v in ds.values())
+
 
 # ==================== 工具函数 ====================
 

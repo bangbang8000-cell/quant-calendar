@@ -186,3 +186,23 @@ async def system_alerts(user: dict = Depends(get_current_active_user)):
         return {"success": True, "alerts": get_alerts()}
     except Exception as e:
         return {"success": False, "error": str(e), "alerts": []}
+
+
+@router.post("/review/trigger")
+async def trigger_market_review(user: dict = Depends(get_current_active_user)):
+    """FR-3.18.1: 手动触发当日 AI 市场复盘 (补齐历史/验收; 返回产出判定)
+
+    产出判定: 数据卡关键字段全不可达 → degraded=True (记失败 + 飞书告警)
+    """
+    from scheduler import scheduler
+    today = datetime.now().strftime('%Y-%m-%d')
+    outcome = scheduler.run_daily_review(today)
+    produced = scheduler._handle_review_outcome(today, outcome, stage="手动触发")
+    return {
+        "success": True,
+        "date": today,
+        "degraded": bool(outcome.get("degraded")),
+        "produced": produced,
+        "reason": outcome.get("reason", ""),
+        "report": outcome.get("report"),
+    }

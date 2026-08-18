@@ -670,9 +670,93 @@ class Scheduler:
                 logger.error(f"错误率监控异常: {e}")
                 self._record_task_run("error_alert", False, str(e)[:120])
 
+    def run_daily_review(self, today=None):
+        """产出当日复盘并判定 (FR-3.18.1): 返回 {report, degraded, reason}。
+
+        - 异常 → 视为失败 (degraded=True, report=None)
+        - 数据卡关键字段全不可达 → degraded=True (降级产出, 记失败 + 触发 16:30 重试)
+        """
+        from market_review import generate_review, is_review_degraded
+        try:
+            review = generate_review(today)
+        except Exception as e:
+            logger.error(f"市场复盘生成异常: {e}")
+            return {"report": None, "degraded": True, "reason": f"生成异常: {e}"}
+        degraded = is_review_degraded(review)
+        reason = "数据卡关键字段全不可达(降级产出)" if degraded else "正常产出"
+        return {"report": review, "degraded": degraded, "reason": reason}
+
+    def _handle_review_outcome(self, today, outcome, stage="16:00"):
+        """按产出判定记录任务状态 + 失败飞书告警 (FR-3.18.1, 不再静默)。
+
+        返回 True = 本次产出成功; False = 失败(已告警)。
+        """
+        if not outcome.get("degraded"):
+            self._record_task_run("daily_market_review", True, f"{today}({stage})")
+            # v3.17.15: Webhook — market_review_ready 事件
+            try:
+                from webhook import dispatch as webhook_dispatch
+                webhook_dispatch("market_review_ready", {"date": today})
+            except Exception as we:
+                logger.warning("webhook market_review_ready 投递失败 (忽略): %s", we)
+            return True
+        self._record_task_run("daily_market_review", False, f"{today}({stage}) {outcome.get('reason', '')}")
+        consecutive = self.task_status.get("daily_market_review", {}).get("consecutive_failures", 1)
+        self._send_feishu_alert(
+            "AI 每日复盘产出失败(数据不可达)",
+            f"{today} ({stage}) {outcome.get('reason', '')} (连续失败 {consecutive} 次)",
+        )
+        return False
+
+    async def _sleep_until(self, hour, minute):
+        """休眠到当日指定时刻 (跨日则等次日)"""
+        now = datetime.now()
+        target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+        await asyncio.sleep(max((target - now).total_seconds(), 1))
+
+    def _should_retry_review(self, now_hm=None):
+        """16:30 前允许重试 (FR-3.18.1); now_hm 可注入便于测试"""
+        now_hm = now_hm or datetime.now().strftime('%H:%M')
+        return now_hm < '16:30'
+
+    async def _run_market_review_with_retry(self, today):
+        """16:00 主跑 → 降级则 16:30 重试一次 → 失败可见 (FR-3.18.1)"""
+        outcome = self.run_daily_review(today)
+        if self._handle_review_outcome(today, outcome, stage="16:00"):
+            return
+        # 降级 → 16:30 自动重试一次 (不再静默)
+        if self._should_retry_review():
+            await self._sleep_until(hour=16, minute=30)
+            if not self.running:
+                return
+            retry = self.run_daily_review(today)
+            self._handle_review_outcome(today, retry, stage="16:30 重试")
+
+    def review_produced_today(self, today=None):
+        """今日是否已有"非降级"复盘归档 (FR-3.18.1 错过补偿门控)"""
+        from market_review import get_review, is_review_degraded
+        today = today or datetime.now().strftime('%Y-%m-%d')
+        r = get_review(date=today)
+        return bool(r) and not is_review_degraded(r)
+
+    async def _catchup_market_review(self):
+        """FR-3.18.1 错过补偿: 服务启动时若 16:00 已过且当日未产出 → 补跑一次"""
+        await asyncio.sleep(3)  # 等调度器就绪
+        try:
+            now = datetime.now()
+            today = now.strftime('%Y-%m-%d')
+            if now.hour >= 16 and not self.review_produced_today(today):
+                logger.info(f"[复盘错过补偿] {today} 已过 16:00 未产出, 补跑")
+                await self._run_market_review_with_retry(today)
+        except Exception as e:
+            logger.error(f"复盘错过补偿异常: {e}")
+
     async def daily_market_review_task(self):
-        """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行)
-        失败仅打日志, 不中断其他定时任务
+        """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行; FR-3.18.1 激活)
+
+        失败仅打日志, 不中断其他定时任务; 产出判定/16:30 重试/错过补偿见 FR-3.18.1。
         """
         while self.running:
             now = datetime.now()
@@ -686,20 +770,7 @@ class Scheduler:
                 break
             today = datetime.now().strftime('%Y-%m-%d')
             logger.info(f"生成每日市场复盘: {today}")
-            try:
-                from market_review import generate_review
-                review = generate_review(today)
-                logger.info(f"市场复盘生成成功: {review.get('date', today)}")
-                self._record_task_run("daily_market_review", True, today)
-                # v3.17.15 (FR-3.17.15): Webhook — market_review_ready 事件
-                try:
-                    from webhook import dispatch as webhook_dispatch
-                    webhook_dispatch("market_review_ready", {"date": today})
-                except Exception as we:
-                    logger.warning("webhook market_review_ready 投递失败 (忽略): %s", we)
-            except Exception as e:
-                logger.error(f"市场复盘生成失败: {e}")
-                self._record_task_run("daily_market_review", False, str(e)[:120])
+            await self._run_market_review_with_retry(today)
             await asyncio.sleep(60)  # 避开重复触发
 
     async def start(self):
@@ -718,6 +789,8 @@ class Scheduler:
         asyncio.create_task(self.health_check_task())
         asyncio.create_task(self.error_alert_task())
         asyncio.create_task(self.daily_market_review_task())
+        # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
+        asyncio.create_task(self._catchup_market_review())
 
     async def stop(self):
         """停止调度器"""
