@@ -645,6 +645,24 @@ def test_eval_track_no_inline_style():
         assert cls in css, f"themes.css 应定义 {cls}"
 
 
+# ─── v3.18 (FR-3.18.6 / 决策复盘页) 回归 ─────────────────────────
+
+def test_review_decision_by_date_section():
+    """FR-3.18.6: AI 页决策复盘 — 按日期浏览 + 窗口切换 + 命中标注 + 风险说明"""
+    src = _read("js/components/ai-page.js")
+    assert "按日期浏览" in src, "AI 页应含按日期浏览(决策复盘)视图"
+    assert "trackHitText" in src, "应实现命中标注 trackHitText"
+    assert "trackData.by_date" in src, "应消费后端 by_date 分组"
+    assert "/api/ai/track" in src, "应调用 /api/ai/track"
+    # 决策复盘新增片段不得使用内联 style
+    seg = src[src.index("v3.18 (FR-3.18.6): 决策复盘"):]
+    seg = seg[:seg.index("</template>")]
+    assert 'style="' not in seg, "决策复盘片段不应含内联 style 属性"
+    assert "style={" not in seg, "决策复盘片段不应含绑定式内联 style"
+    # 风险说明 (eval_track 免责) 后端已保证, 前端卡片有 note 展示
+    assert "trackData.note" in src, "应展示风险说明 note"
+
+
 # ─── v3.17.7 (FR-3.17.7 / 盘中增强：异动扫描 + 事件提醒) 回归 ─────────────
 
 def test_scan_subpage_endpoint_invoked():

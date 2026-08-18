@@ -217,6 +217,29 @@
                                         </table>
                                     </div>
                                 </div>
+                                <!-- v3.18 (FR-3.18.6): 决策复盘 — 按日期浏览 (by_date 命中标注) -->
+                                <div class="eval-track-subtitle">按日期浏览（{{ trackWindow }} 日窗口命中标注）</div>
+                                <div class="flex-gap-4">
+                                    <el-button size="small" :type="trackWindow === 5 ? 'primary' : ''" @click="setTrackWindow(5)">5日</el-button>
+                                    <el-button size="small" :type="trackWindow === 10 ? 'primary' : ''" @click="setTrackWindow(10)">10日</el-button>
+                                    <el-button size="small" :type="trackWindow === 20 ? 'primary' : ''" @click="setTrackWindow(20)">20日</el-button>
+                                </div>
+                                <div v-for="(samples, date) in trackData.by_date" :key="date">
+                                    <div class="eval-track-subtitle">{{ date }}（{{ samples.length }} 条）</div>
+                                    <table class="eval-track-table">
+                                        <thead>
+                                            <tr><th>股票</th><th>评级</th><th>模型</th><th>{{ trackWindow }}日命中</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="s in samples" :key="s.id">
+                                                <td>{{ s.stock_name || s.stock_code }}</td>
+                                                <td>{{ s.level }}</td>
+                                                <td>{{ s.provider }}</td>
+                                                <td>{{ trackHitText(s, trackWindow) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </template>
                         </div>
 
@@ -804,6 +827,17 @@
         if (!st || st.total === 0 || st.rate === null || st.rate === undefined) return '--';
         return st.rate.toFixed(1) + '%';
       }
+      // v3.18 (FR-3.18.6): 决策复盘 — 按日期浏览窗口切换 + 命中标注
+      const trackWindow = ref(5);
+      function setTrackWindow(w) { trackWindow.value = w; }
+      function trackHitText(s, w) {
+        if (!s) return '--';
+        if (s.available === false) return '— 数据不可达';
+        const hit = s['hit_n' + w];
+        if (hit === true) return '✓ 命中';
+        if (hit === false) return '✗ 未中';
+        return '– 中性/待验证';
+      }
       async function loadTrack() {
         trackLoading.value = true;
         try {
@@ -859,6 +893,7 @@
       );
       return {
         ...state, trackData, trackLoading, trackWindows, fmtTrackRate, loadTrack,
+        trackWindow, setTrackWindow, trackHitText,
         positions, summary, trades, loading, loadError,
         showAddForm, addForm, addSaving,
         tradeFormVisible, tradeForm, tradeSaving,

@@ -10,6 +10,7 @@ from eval_track import (
     compute_hit,
     compute_stats,
     get_track_summary,
+    group_samples_by_date,
     parse_level_direction,
     track_evaluations,
     DISCLAIMER,
@@ -254,9 +255,9 @@ class TestGetTrackSummary:
         return get_track_summary("alice", window=window, kline_getter=lambda code: klines.get(code))
 
     def test_summary_structure_complete(self, isolated_data_dir):
-        """返回结构完整：overall/by_model/by_level/samples/note"""
+        """返回结构完整：overall/by_model/by_level/by_date/samples/note"""
         summary = self._summary(isolated_data_dir)
-        assert set(summary) == {"overall", "by_model", "by_level", "samples", "note"}
+        assert set(summary) == {"overall", "by_model", "by_level", "by_date", "samples", "note"}
         for w in TRACK_WINDOWS:
             assert w in summary["overall"]
             assert "hit" in summary["overall"][w] and "total" in summary["overall"][w] and "rate" in summary["overall"][w]
@@ -290,3 +291,46 @@ class TestGetTrackSummary:
         assert summary["samples"] == []
         assert "暂无足够评估样本" in summary["note"]
         assert "历史命中率不代表未来收益" in summary["note"]
+
+
+# ─── FR-3.18.6 决策复盘页 (by_date 分组 + 端点) ───────────────────────────
+
+
+def test_group_samples_by_date():
+    samples = [
+        {"evaluate_date": "2026-08-10", "stock_code": "000001.SZ"},
+        {"evaluate_date": "2026-08-10", "stock_code": "600519.SH"},
+        {"evaluate_date": "2026-08-11", "stock_code": "000002.SZ"},
+        {"evaluate_date": None, "stock_code": "300750.SZ"},
+    ]
+    grouped = group_samples_by_date(samples)
+    assert len(grouped["2026-08-10"]) == 2
+    assert len(grouped["2026-08-11"]) == 1
+    assert grouped.get("未知") and len(grouped["未知"]) == 1
+
+
+def test_summary_includes_by_date():
+    """get_track_summary 返回 by_date 分组 (决策复盘页日历式)"""
+    summary = get_track_summary("nobody", kline_getter=lambda code: None)
+    assert "by_date" in summary
+    assert summary["by_date"] == {}
+
+
+def test_review_tracking_endpoint(monkeypatch):
+    """GET /ai/track 返回决策复盘摘要 (窗口切换注入)"""
+    import asyncio
+
+    from api.v1 import ai as ai_api
+    import eval_track
+
+    fake = {
+        "overall": {"n5": {"hit": 1, "total": 1, "rate": 100.0}},
+        "by_model": {}, "by_level": {}, "by_date": {},
+        "samples": [], "note": "历史命中率不代表未来收益",
+    }
+    monkeypatch.setattr(eval_track, "get_track_summary",
+                        lambda username, window=None, kline_getter=None: fake)
+    res = asyncio.run(ai_api.get_ai_track(window=5, user={"username": "admin"}))
+    assert res["success"] is True
+    assert res["data"]["overall"]["n5"]["rate"] == 100.0
+    assert "历史命中率不代表未来收益" in res["data"]["note"]

@@ -297,6 +297,15 @@ def _filter_stats_window(stats: Dict, wkey: str) -> Dict:
     }
 
 
+def group_samples_by_date(samples: List[Dict]) -> Dict[str, List[Dict]]:
+    """按评估日期分组样本 (FR-3.18.6 决策复盘页日历式浏览)"""
+    out: Dict[str, List[Dict]] = {}
+    for s in samples:
+        d = s.get("evaluate_date") or "未知"
+        out.setdefault(d, []).append(s)
+    return out
+
+
 def get_track_summary(username: str = 'default', window=None, kline_getter: Optional[Callable] = None) -> Dict:
     """计算评估命中率汇总。
 
@@ -320,6 +329,7 @@ def get_track_summary(username: str = 'default', window=None, kline_getter: Opti
         "overall": stats["overall"],
         "by_model": stats["by_model"],
         "by_level": stats["by_level"],
+        "by_date": group_samples_by_date(samples),
         "samples": samples,
         "note": note,
     }
