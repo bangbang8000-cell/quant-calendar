@@ -676,65 +676,91 @@
                     <div v-else-if="currentSubPage === 'usage'">
                         <!-- v3.4.0-T4: 系统监控面板 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">{{ t('system.resourceMonitor') }}</div>
-                            <div class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.cpu') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                            <div class="section-title-base flex-between">
+                                <span>{{ t('system.resourceMonitor') }}</span>
+                                <span class="text-sm-tertiary">服务器实时资源</span>
+                            </div>
+                            <div class="usage-ai-summary">
+                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
+                                    <div class="usage-ai-card-top">
+                                        <span class="usage-ai-card-icon">⚙️</span>
+                                        <div class="usage-ai-card-body">
+                                            <div class="usage-ai-card-label">CPU</div>
+                                            <div class="usage-ai-card-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                        </div>
+                                    </div>
                                     <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.memory') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
+                                    <div class="usage-ai-card-top">
+                                        <span class="usage-ai-card-icon">🧠</span>
+                                        <div class="usage-ai-card-body">
+                                            <div class="usage-ai-card-label">内存</div>
+                                            <div class="usage-ai-card-num">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                        </div>
+                                    </div>
                                     <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.disk') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.percent ?? '--' }}%</div>
+                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
+                                    <div class="usage-ai-card-top">
+                                        <span class="usage-ai-card-icon">💾</span>
+                                        <div class="usage-ai-card-body">
+                                            <div class="usage-ai-card-label">磁盘</div>
+                                            <div class="usage-ai-card-num">{{ sysMonitor.percent ?? '--' }}%</div>
+                                        </div>
+                                    </div>
                                     <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                 </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.uptime') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                <div class="usage-ai-card usage-ai-card-last">
+                                    <span class="usage-ai-card-icon">⏱️</span>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">运行时长</div>
+                                        <div class="usage-ai-card-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                    </div>
+                                    <div class="usage-ai-card-hint">持续在线</div>
                                 </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.avgLatency') }}</div>
-                                    <div class="sys-health-big color-primary">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
+                                <div class="usage-ai-card usage-ai-card-today">
+                                    <span class="usage-ai-card-icon">📡</span>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">平均延迟</div>
+                                        <div class="usage-ai-card-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<span class="usage-ai-card-date">ms</span></div>
+                                    </div>
+                                    <div class="usage-ai-card-hint">接口耗时</div>
                                 </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">{{ t('system.errorRate') }}</div>
-                                    <div class="sys-health-big" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                <div class="usage-ai-card" :class="(sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'usage-ai-card-last' : 'usage-ai-card-total'">
+                                    <span class="usage-ai-card-icon">⚠️</span>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">错误率</div>
+                                        <div class="usage-ai-card-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                    </div>
+                                    <div class="usage-ai-card-hint">{{ (sysMonitor.metrics?.error_rate ?? 0) > 5 ? '偏高' : '正常' }}</div>
                                 </div>
                             </div>
                         </div>
-                        <!-- v3.17.12: 数据源延迟趋势 (调度/备份/热度已移至用量统计) -->
+                        <!-- v3.18.3 (UI 统一): 数据源健康 — 强调面板 + 状态徽标 + 明细行 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">📊 数据源延迟趋势</div>
-                            <div class="sys-health-grid" v-if="(healthDetail.data_sources || []).length">
-                                <div class="sys-health-card" v-for="(ds, i) in healthDetail.data_sources" :key="i">
-                                    <div class="sys-health-card-head">
-                                        <span class="sys-health-name">{{ ds.name }}</span>
-                                        <span :class="ds.degraded ? 'chip-warning' : 'chip-success'">{{ ds.degraded ? '降级' : '正常' }}</span>
+                            <div class="section-title-base">📊 数据源健康</div>
+                            <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
+                                <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
+                                    <div class="usage-src-head">
+                                        <span class="usage-src-name">{{ ds.name }}</span>
+                                        <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
                                     </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">成功率</span>
-                                        <span class="sys-health-meta">{{ ds.success_rate ?? '--' }}%</span>
+                                    <div class="usage-src-row">
+                                        <span class="usage-src-row-label">成功率</span>
+                                        <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
                                     </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">延迟</span>
-                                        <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                    <div class="usage-src-row">
+                                        <span class="usage-src-row-label">平均延迟</span>
+                                        <span class="usage-src-row-value">{{ ds.avg_latency_ms ?? '--' }}ms</span>
                                     </div>
-                                    <!-- v3.18 (FR-3.18.4): 路由状态 + 最近切换 (自动切换/冷却回切) -->
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">路由状态</span>
-                                        <span class="sys-health-meta">
-                                            <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
-                                            <span v-if="ds.consecutive_failures"> · 连续失败 {{ ds.consecutive_failures }} 次</span>
-                                        </span>
+                                    <div class="usage-src-row" v-if="ds.consecutive_failures">
+                                        <span class="usage-src-row-label">连续失败</span>
+                                        <span class="usage-src-row-value">{{ ds.consecutive_failures }} 次</span>
                                     </div>
-                                    <div class="sys-health-row" v-if="ds.switch_reason">
-                                        <span class="text-sm-tertiary">最近切换</span>
-                                        <span class="sys-health-meta" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
+                                    <div class="usage-src-row" v-if="ds.switch_reason">
+                                        <span class="usage-src-row-label">最近切换</span>
+                                        <span class="usage-src-row-value" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
                                     </div>
                                 </div>
                             </div>

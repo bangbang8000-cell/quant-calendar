@@ -4611,6 +4611,29 @@ text {
 .usage-ai-bar-today { opacity: 1; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
 .usage-ai-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
 @media (max-width: 1100px) { .usage-ai-grid { grid-template-columns: 1fr; } }
+/* ===== 系统状态/资源监控/数据源健康 视觉统一 (v3.18.3) ===== */
+/* 系统状态概览卡: 左侧渐变强调条 + 悬停微动效 */
+.status-item { position: relative; overflow: hidden; }
+.status-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); opacity: 0; transition: opacity .25s ease; }
+.status-item:hover::before { opacity: 1; }
+.status-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border-base); }
+.status-icon { background: var(--bg-card-header); transition: background .2s ease; }
+.status-item:hover .status-icon { background: var(--bg-selected); }
+/* 资源监控: 强调卡 + 仪表 (竖排变体) */
+.usage-ai-card-meter { flex-direction: column; align-items: stretch; gap: 10px; }
+.usage-ai-card-meter .usage-ai-card-top { display: flex; align-items: center; gap: 10px; }
+.usage-ai-card-meter .meter-bar { margin-top: 0; }
+/* 数据源健康: 强调面板 + 状态徽标 + 明细行 */
+.usage-src-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.usage-src-card { position: relative; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px 10px; overflow: hidden; }
+.usage-src-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
+.usage-src-card.is-degraded::before { background: linear-gradient(180deg, #f59e0b, #b45309); }
+.usage-src-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.usage-src-name { flex: 1; min-width: 0; font-weight: var(--font-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage-src-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px dashed var(--border-light); font-size: var(--font-sm); }
+.usage-src-row:first-of-type { border-top: 0; }
+.usage-src-row-label { color: var(--text-tertiary); }
+.usage-src-row-value { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
 .el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
 .el-button--success:hover, .el-button--success:focus { opacity: .85; }
