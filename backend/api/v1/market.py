@@ -377,6 +377,17 @@ async def get_market_review(date: Optional[str] = None):
     return {"success": True, "data": data}
 
 
+@router.get("/factor-ic")
+async def factor_ic_report(user: dict = Depends(get_current_active_user)):
+    """FR-3.18.7: 因子有效性检验 IC/IR 报告 (数据不可达优雅降级为空)"""
+    from factor_ic import get_factor_ic_report
+    try:
+        return {"success": True, "data": get_factor_ic_report()}
+    except Exception as e:
+        logger.warning("因子 IC 报告失败 (降级): %s", e)
+        return {"success": False, "message": str(e), "data": {}}
+
+
 # ─── v3.17.7 (FR-3.17.7): 盘中增强 — 异动扫描 + 事件提醒（离线日线级） ──────
 
 @router.get("/scan")

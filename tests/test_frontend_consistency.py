@@ -502,6 +502,25 @@ def test_factor_panel_no_inline_style():
     assert "style={" not in seg, "多因子体检面板不应含绑定式内联 style"
 
 
+# ─── v3.18 (FR-3.18.7 / 因子有效性 IC-IR) 回归 ─────────────────────────
+
+def test_factor_ic_wiring():
+    """FR-3.18.7: 因子有效性 IC/IR — 后端端点 + 前端面板接线 + 三档标注"""
+    api = _read_backend("api/v1/market.py")
+    assert '@router.get("/factor-ic")' in api, "后端应提供 GET /api/market/factor-ic"
+    be = _read_backend("factor_ic.py")
+    for fn in ("spearman_corr", "compute_cross_section_ic", "evaluate_ic_series", "build_factor_ic_report"):
+        assert fn in be, f"factor_ic.py 应提供 {fn}"
+    assert "'有效'" in be and "'失效'" in be and "'不稳定'" in be, "应含三档标注"
+    src = _read("js/components/dialogs/stock-detail.js")
+    assert "factorIc" in src and "loadFactorIc" in src, "个股详情应接入因子有效性"
+    assert "/api/market/factor-ic" in src, "应调用 /api/market/factor-ic"
+    # 因子有效性片段不得使用内联 style
+    seg = src[src.index("v3.18 (FR-3.18.7): 因子有效性"):]
+    assert 'style="' not in seg, "因子有效性片段不应含内联 style 属性"
+    assert "style={" not in seg, "因子有效性片段不应含绑定式内联 style"
+
+
 # ─── v3.17 (FR-3.17.2 / AI 每日市场复盘) 回归 ─────────────────────────
 
 def test_market_review_subpage_present():

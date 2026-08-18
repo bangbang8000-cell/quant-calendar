@@ -345,6 +345,14 @@
                                 <span class="factor-summary-count">{{ t('detail.factorCount', { count: factorSummary.available }) }}</span>
                                 <span v-if="factorSummary.categories && factorSummary.categories.length" class="factor-summary-cats">{{ factorSummary.categories.join(' / ') }}</span>
                             </div>
+                            <!-- v3.18 (FR-3.18.7): 因子有效性 IC/IR 标注 (数据不可达优雅降级) -->
+                            <div v-if="factorIc !== null" class="factor-summary">
+                                <span class="factor-summary-count">因子有效性</span>
+                                <template v-if="Object.keys(factorIc).length">
+                                    <span v-for="(r, fk) in factorIc" :key="fk" class="factor-summary-cats">{{ fk }}: {{ factorIcGrade(r) }}</span>
+                                </template>
+                                <span v-else class="factor-summary-cats">数据不可达</span>
+                            </div>
                             <div v-for="g in factorGroups" :key="g.category" class="factor-group">
                                 <div class="factor-group-title">{{ g.category }}</div>
                                 <div class="factor-grid">
@@ -455,9 +463,25 @@
       watch(state.stockDetailTab, (tab) => {
         if (tab === 'factor' && state.stockDetail.value && state.stockDetailVisible.value) {
           loadFactorPanel();
+          loadFactorIc();
         }
       });
-      return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel };
+      // v3.18 (FR-3.18.7): 因子有效性 IC/IR (数据不可达优雅降级为空)
+      const factorIc = ref(null);
+      async function loadFactorIc() {
+        try {
+          const data = await fetch('/api/market/factor-ic').then(r => r.json());
+          factorIc.value = (data && data.success && data.data) ? data.data : {};
+        } catch (e) {
+          factorIc.value = {};
+        }
+      }
+      function factorIcGrade(r) {
+        if (!r || !r.n5) return '—';
+        const icir = (r.n5.icir != null) ? 'ICIR ' + r.n5.icir : 'ICIR —';
+        return r.n5.grade + ' (' + icir + ')';
+      }
+      return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade };
     },
   };
 })();
