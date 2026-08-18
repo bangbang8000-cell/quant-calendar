@@ -1,7 +1,7 @@
 [tool.coverage.report]
 # 覆盖率门禁配置 (v3.10 / FR-3.10.4)
 # - 核心模块门禁（美林时钟 ≥70%）在 .github/workflows/ci.yml 中通过 --cov-fail-under 执行
-# - 总覆盖率门槛随版本递增: v3.10 ≥20%(护栏) → v3.11 ≥30% → v3.12 ≥40% → v3.13 ≥50% → v4.0 ≥60%
+# - 总覆盖率门槛: v3.10~v3.17 实际护栏 20% → v3.18 对齐路线图提升至 ≥40% → v4.0 ≥60%（门禁在 ci.yml --cov-fail-under 执行）
 exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
