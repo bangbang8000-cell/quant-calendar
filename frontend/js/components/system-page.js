@@ -676,64 +676,38 @@
                     <div v-else-if="currentSubPage === 'usage'">
                         <!-- v3.4.0-T4: 系统监控面板 -->
                         <div class="section-block-top">
-                            <div class="section-title-base flex-between">
-                                <span>{{ t('system.resourceMonitor') }}</span>
-                                <span class="text-sm-tertiary">服务器实时资源</span>
-                            </div>
-                            <div class="usage-ai-summary">
-                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
-                                    <div class="usage-ai-card-top">
-                                        <span class="usage-ai-card-icon">⚙️</span>
-                                        <div class="usage-ai-card-body">
-                                            <div class="usage-ai-card-label">CPU</div>
-                                            <div class="usage-ai-card-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
-                                        </div>
-                                    </div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
+                            <div class="usage-ai-panel">
+                                <div class="usage-ai-panel-title">资源监控
+                                    <span class="usage-ai-panel-meta">服务器实时资源</span>
                                 </div>
-                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
-                                    <div class="usage-ai-card-top">
-                                        <span class="usage-ai-card-icon">🧠</span>
-                                        <div class="usage-ai-card-body">
-                                            <div class="usage-ai-card-label">内存</div>
-                                            <div class="usage-ai-card-num">{{ sysMonitor.mem_percent ?? '--' }}%</div>
-                                        </div>
+                                <div class="usage-ai-summary">
+                                    <div class="usage-ai-stat usage-ai-stat-meter">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙️</span><span class="usage-ai-stat-label">CPU</span></div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                        <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
-                                </div>
-                                <div class="usage-ai-card usage-ai-card-meter usage-ai-card-total">
-                                    <div class="usage-ai-card-top">
-                                        <span class="usage-ai-card-icon">💾</span>
-                                        <div class="usage-ai-card-body">
-                                            <div class="usage-ai-card-label">磁盘</div>
-                                            <div class="usage-ai-card-num">{{ sysMonitor.percent ?? '--' }}%</div>
-                                        </div>
+                                    <div class="usage-ai-stat usage-ai-stat-meter">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">🧠</span><span class="usage-ai-stat-label">内存</span></div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                        <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
-                                    <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
-                                </div>
-                                <div class="usage-ai-card usage-ai-card-last">
-                                    <span class="usage-ai-card-icon">⏱️</span>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">运行时长</div>
-                                        <div class="usage-ai-card-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                    <div class="usage-ai-stat usage-ai-stat-meter">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">💾</span><span class="usage-ai-stat-label">磁盘</span></div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.percent ?? '--' }}%</div>
+                                        <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
-                                    <div class="usage-ai-card-hint">持续在线</div>
-                                </div>
-                                <div class="usage-ai-card usage-ai-card-today">
-                                    <span class="usage-ai-card-icon">📡</span>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">平均延迟</div>
-                                        <div class="usage-ai-card-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<span class="usage-ai-card-date">ms</span></div>
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱️</span><span class="usage-ai-stat-label">运行时长</span></div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
                                     </div>
-                                    <div class="usage-ai-card-hint">接口耗时</div>
-                                </div>
-                                <div class="usage-ai-card" :class="(sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'usage-ai-card-last' : 'usage-ai-card-total'">
-                                    <span class="usage-ai-card-icon">⚠️</span>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">错误率</div>
-                                        <div class="usage-ai-card-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">📡</span><span class="usage-ai-stat-label">平均延迟</span></div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<small>ms</small></div>
                                     </div>
-                                    <div class="usage-ai-card-hint">{{ (sysMonitor.metrics?.error_rate ?? 0) > 5 ? '偏高' : '正常' }}</div>
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠️</span><span class="usage-ai-stat-label">错误率</span></div>
+                                        <div class="usage-ai-stat-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -885,30 +859,23 @@
                                     <el-button size="small" @click="loadAiUsage">刷新</el-button>
                                 </div>
                             </div>
-                            <div class="usage-ai-summary">
-                                <div class="usage-ai-card usage-ai-card-total">
-                                    <div class="usage-ai-card-icon">Σ</div>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">累计调用</div>
-                                        <div class="usage-ai-card-num">{{ aiUsage.total_calls ?? 0 }}</div>
-                                    </div>
-                                    <div class="usage-ai-card-hint">全部模型合计</div>
+                            <div class="usage-ai-panel">
+                                <div class="usage-ai-panel-title">AI 用量汇总
+                                    <span class="usage-ai-panel-meta">累计 · 今日 · 最近</span>
                                 </div>
-                                <div class="usage-ai-card usage-ai-card-today">
-                                    <div class="usage-ai-card-icon">今</div>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">今日调用</div>
-                                        <div class="usage-ai-card-num">{{ todayAiCalls }}</div>
+                                <div class="usage-ai-summary">
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">Σ</span><span class="usage-ai-stat-label">累计调用</span></div>
+                                        <div class="usage-ai-stat-num">{{ aiUsage.total_calls ?? 0 }}</div>
                                     </div>
-                                    <div class="usage-ai-card-hint">今日新增</div>
-                                </div>
-                                <div class="usage-ai-card usage-ai-card-last">
-                                    <div class="usage-ai-card-icon">历</div>
-                                    <div class="usage-ai-card-body">
-                                        <div class="usage-ai-card-label">最近调用日</div>
-                                        <div class="usage-ai-card-num usage-ai-card-date">{{ lastAiCallDay || '--' }}</div>
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">今</span><span class="usage-ai-stat-label">今日调用</span></div>
+                                        <div class="usage-ai-stat-num">{{ todayAiCalls }}</div>
                                     </div>
-                                    <div class="usage-ai-card-hint">最近有调用</div>
+                                    <div class="usage-ai-stat">
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">历</span><span class="usage-ai-stat-label">最近调用日</span></div>
+                                        <div class="usage-ai-stat-num">{{ lastAiCallDay || '--' }}</div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="usage-ai-grid">

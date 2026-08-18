@@ -4540,7 +4540,7 @@ text {
 .soft-tile { background: var(--bg-card-header); border-radius: 8px; padding: 10px; }
 /* ===== v3.17 UI优化: 系统状态页健康面板卡片布局 ===== */
 .sys-health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.sys-health-card { border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px; }
+.sys-health-card { border: 1px solid var(--border-base); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); padding: 12px 14px; }
 .sys-health-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
 .sys-health-name { flex: 1; min-width: 0; font-weight: var(--font-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sys-health-card-title { font-size: var(--font-sm); color: var(--text-tertiary); margin-bottom: 8px; }
@@ -4591,8 +4591,15 @@ text {
 .usage-ai-card-num { font-size: var(--font-xl); font-weight: var(--font-semibold); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .usage-ai-card-date { font-size: var(--font-md); }
 .usage-ai-card-hint { margin-left: auto; align-self: flex-end; font-size: var(--font-xs); color: var(--text-tertiary); white-space: nowrap; }
+/* 合并单元格: 置于面板内, 无独立边框/背景 (减少散卡, v3.18.4) */
+.usage-ai-stat, .usage-ai-stat-meter { padding: 2px; }
+.usage-ai-stat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.usage-ai-stat-label { font-size: var(--font-sm); color: var(--text-tertiary); }
+.usage-ai-stat-num { font-size: var(--font-xl); font-weight: var(--font-semibold); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.usage-ai-stat-num small { font-size: var(--font-xs); color: var(--text-tertiary); font-weight: var(--font-normal); }
+.usage-ai-stat-meter .meter-bar { margin-top: 6px; }
 .usage-ai-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 12px; }
-.usage-ai-panel { border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px; }
+.usage-ai-panel { border: 1px solid var(--border-base); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); padding: 12px 14px; }
 .usage-ai-panel-title { display: flex; align-items: baseline; gap: 8px; font-size: var(--font-sm); font-weight: var(--font-medium); color: var(--text-secondary); margin-bottom: 10px; }
 .usage-ai-panel-meta { font-size: var(--font-xs); color: var(--text-tertiary); font-weight: var(--font-normal); }
 .usage-ai-model-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--border-light); }
