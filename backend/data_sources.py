@@ -63,6 +63,10 @@ AKSHARE_STOCK_COLUMN_MAP = {
 DEGRADE_THRESHOLD = 3  # 连续失败次数达到该值 → degraded
 FRESHNESS_STALE_HOURS = 24  # v3.12 (FR-3.12.2): 距上次成功拉取超过该小时数 → stale 超期标黄
 
+# v3.18 (FR-3.18.4): 数据源健康自动路由
+ROUTE_FAIL_THRESHOLD = 3        # 连续失败达该值 → 源进入冷却(暂停参与路由, 直接切备用源)
+ROUTE_COOLDOWN_SECONDS = 300    # 冷却窗口: 期满后源恢复参与路由(回切探测), 避免抖动
+
 _health_lock = threading.Lock()
 _health = {}
 
@@ -85,8 +89,14 @@ def _health_slot(source):
     return _health[source]
 
 
-def record_call(source, success, elapsed_ms):
-    """记录一次数据源调用结果（线程安全）"""
+def record_call(source, success, elapsed_ms, rate_limited=False):
+    """记录一次数据源调用结果（线程安全）。
+
+    v3.18 (FR-3.18.4): 联动健康自动路由
+    - rate_limited=True (限流/429): 不计入连续失败 → 不判死源
+    - 连续失败达 ROUTE_FAIL_THRESHOLD → 自动暂停该源参与路由(冷却)
+    - 成功 → 清除暂停并记录回切
+    """
     with _health_lock:
         s = _health_slot(source)
         s['calls'] += 1
@@ -98,10 +108,16 @@ def record_call(source, success, elapsed_ms):
         else:
             s['failures'] += 1
             s['last_failure'] = datetime.now().isoformat()
-            s['consecutive_failures'] += 1
+            if not rate_limited:
+                s['consecutive_failures'] += 1
         s['success_rate'] = round(s['successes'] / s['calls'] * 100, 1)
         s['avg_latency_ms'] = round(s['total_latency_ms'] / s['calls'], 1)
         s['degraded'] = s['consecutive_failures'] >= DEGRADE_THRESHOLD
+    # 路由联动 (独立锁, 避免与健康锁重入)
+    if success:
+        _resume_source(source)
+    elif not rate_limited and s['consecutive_failures'] >= ROUTE_FAIL_THRESHOLD:
+        _pause_source(source, f"连续 {s['consecutive_failures']} 次失败")
     return s
 
 
@@ -126,10 +142,18 @@ def get_health_metrics(now=None):
     - last_fetch: 最近成功拉取时间 (与 last_success 一致)
     """
     now = now or datetime.now()
+    now_ts = time.time()
     with _health_lock:
         out = []
         for v in _health.values():
             slot = dict(v)
+            # v3.18 (FR-3.18.4): 路由状态 (active/cooling) + 最近切换记录
+            rs = _route_slot(slot['name'])
+            with _route_lock:
+                cooling = bool(rs['paused_until']) and now_ts < rs['paused_until']
+            slot['routing_status'] = 'cooling' if cooling else 'active'
+            slot['last_switch_at'] = rs['last_switch_at']
+            slot['switch_reason'] = rs['switch_reason']
             age = _age_hours(slot.get('last_success'), now)
             slot['data_age_hours'] = age
             slot['stale'] = age is None or age > FRESHNESS_STALE_HOURS
@@ -139,9 +163,80 @@ def get_health_metrics(now=None):
 
 
 def reset_health():
-    """清空健康记录（测试用）"""
+    """清空健康记录与路由状态（测试用）"""
     with _health_lock:
         _health.clear()
+    with _route_lock:
+        _route_state.clear()
+
+
+# ==================== 数据源健康自动路由 (v3.18 / FR-3.18.4) ====================
+# 健康状态从"只读仪表盘"变为"自动开关":
+# - 连续失败达 ROUTE_FAIL_THRESHOLD → 源进入冷却(暂停参与路由, 直接切备用源)
+# - 冷却窗口 ROUTE_COOLDOWN_SECONDS 期满 → 源恢复参与路由(回切探测)
+# - 成功调用立即清除暂停(回切); 429 限流不计失败(不判死源)
+# - 切换事件写审计日志 + 告警队列
+
+_route_lock = threading.Lock()
+_route_state = {}  # source -> {paused_until(epoch), paused_reason, last_switch_at, switch_reason}
+
+
+def _route_slot(source):
+    if source not in _route_state:
+        _route_state[source] = {
+            'paused_until': 0.0,
+            'paused_reason': None,
+            'last_switch_at': None,
+            'switch_reason': None,
+        }
+    return _route_state[source]
+
+
+def _pause_source(source, reason):
+    """暂停源参与路由 (冷却开始), 记录切换 + 审计告警"""
+    with _route_lock:
+        s = _route_slot(source)
+        s['paused_until'] = time.time() + ROUTE_COOLDOWN_SECONDS
+        s['paused_reason'] = reason
+        s['last_switch_at'] = datetime.now().isoformat()
+        s['switch_reason'] = reason
+    enqueue_alert('info', source, f"数据源 {source} 暂停路由: {reason} (冷却 {ROUTE_COOLDOWN_SECONDS}s)")
+    logger.warning("[路由] 数据源 %s 暂停: %s", source, reason)
+
+
+def _resume_source(source, reason='恢复正常'):
+    """恢复源参与路由 (回切), 记录切换"""
+    with _route_lock:
+        s = _route_slot(source)
+        if s['paused_until']:
+            s['last_switch_at'] = datetime.now().isoformat()
+            s['switch_reason'] = reason
+        s['paused_until'] = 0.0
+        s['paused_reason'] = None
+
+
+def get_route_order(now=None):
+    """按健康状态返回参与路由的源顺序 (FR-3.18.4)。
+
+    - 冷却中的源被跳过 → 请求直达健康备用源 (主源故障服务无感切换)
+    - 全部冷却 → 兜底仍返回全量, 避免空路由
+    """
+    now_f = now if now is not None else time.time()
+    active, cooling = [], []
+    with _route_lock:
+        for src in SOURCE_ORDER:
+            s = _route_slot(src)
+            if s['paused_until'] and now_f < s['paused_until']:
+                cooling.append(src)
+            else:
+                active.append(src)
+    return active if active else cooling
+
+
+def _is_rate_limited(exc):
+    """限流(429/频率限制)与网络故障区分: 限流不判死源 (FR-3.18.4)"""
+    msg = str(exc)
+    return any(k in msg for k in ('429', '频率', 'frequen', 'RateLimit', 'limit reached', '访问太频繁', '接口权限'))
 
 
 # ==================== 拉取失败补偿 + 告警队列 (v3.12 / FR-3.12.3) ====================
@@ -448,7 +543,7 @@ class DataSourceManager:
         if period in ('quarterly', 'yearly'):
             result = self._get_resampled_kline(ts_code, period, limit)
         else:
-            for src_name in SOURCE_ORDER:
+            for src_name in get_route_order():
                 src_cfg = self._get_source_config(src_name)
                 if not src_cfg.get('enabled', True):
                     continue
@@ -464,7 +559,7 @@ class DataSourceManager:
                 except Exception as e:
                     logger.warning(f"{src_name} get_kline_data({ts_code}) 失败: {e}")
                     self._errors[src_name] = str(e)
-                    record_call(src_name, False, (time.monotonic() - _t0) * 1000)
+                    record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
 
         if result:
             # 简单淘汰: 缓存条目超限时整体清空 (K线场景条目有限, 无需 LRU)
@@ -525,7 +620,7 @@ class DataSourceManager:
 
     def get_daily_basic(self, ts_code, limit=5):
         """获取基本面数据（带 fallback）"""
-        for src_name in SOURCE_ORDER:
+        for src_name in get_route_order():
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -541,7 +636,7 @@ class DataSourceManager:
             except Exception as e:
                 logger.warning(f"{src_name} get_daily_basic({ts_code}) 失败: {e}")
                 self._errors[src_name] = str(e)
-                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
         return None
 
     # ==================== 各数据源适配器 ====================
@@ -693,7 +788,7 @@ class DataSourceManager:
     def get_moneyflow(self, ts_code, limit=10):
         """获取个股主力资金流向（带 fallback）— v3.17 / FR-3.17.3 资金面因子
         返回 [{trade_date, net_mf_amount}, ...]（旧→新）或 None"""
-        for src_name in SOURCE_ORDER:
+        for src_name in get_route_order():
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -708,7 +803,7 @@ class DataSourceManager:
             except Exception as e:
                 logger.warning(f"{src_name} get_moneyflow({ts_code}) 失败: {e}")
                 self._errors[src_name] = str(e)
-                record_call(src_name, False, (time.monotonic() - _t0) * 1000)
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
         return None
 
     def _fetch_moneyflow(self, src_name, ts_code, limit):

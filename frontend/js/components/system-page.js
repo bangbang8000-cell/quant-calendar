@@ -724,6 +724,18 @@
                                         <span class="text-sm-tertiary">延迟</span>
                                         <span class="sys-health-meta">{{ ds.avg_latency_ms ?? '--' }}ms</span>
                                     </div>
+                                    <!-- v3.18 (FR-3.18.4): 路由状态 + 最近切换 (自动切换/冷却回切) -->
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">路由状态</span>
+                                        <span class="sys-health-meta">
+                                            <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
+                                            <span v-if="ds.consecutive_failures"> · 连续失败 {{ ds.consecutive_failures }} 次</span>
+                                        </span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="ds.switch_reason">
+                                        <span class="text-sm-tertiary">最近切换</span>
+                                        <span class="sys-health-meta" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无数据源调用记录</div>
@@ -766,7 +778,7 @@
                                     <!-- v3.17.6: 失败详情 (detail 来自 scheduler._record_task_run) -->
                                     <div class="sys-health-row" v-if="t.last_status === 'failed'">
                                         <span class="text-sm-tertiary">连续失败</span>
-                                        <span class="sys-health-meta" :style="{color: 'var(--el-danger)'}">{{ t.consecutive_failures || 0 }} 次</span>
+                                        <span class="sys-health-meta">{{ t.consecutive_failures || 0 }} 次</span>
                                     </div>
                                     <div class="sys-health-row" v-if="t.last_status === 'failed' && t.detail">
                                         <span class="text-sm-tertiary">失败原因</span>
