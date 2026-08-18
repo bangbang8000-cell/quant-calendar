@@ -569,6 +569,18 @@ def test_backtest_workbench_no_inline_style():
     assert "style={" not in seg, "回测工作台模板不应含绑定式内联 style"
 
 
+# ─── v3.18 (FR-3.18.8 / 回测真实性) 回归 ─────────────────────────
+
+def test_backtest_realism_wiring():
+    """FR-3.18.8: 回测真实性 — 样本内/外标注 + 过拟合警示接线"""
+    be = _read_backend("backtest.py")
+    for fn in ("split_insample_outsample", "compute_period_metrics", "sensitivity_analysis", "overfitting_assessment", "attach_overfitting_analysis"):
+        assert fn in be, f"backtest.py 应提供 {fn}"
+    bt = _read("js/backtest.js")
+    assert "insample_total_return" in bt and "outsample_total_return" in bt, "前端应透传样本内/外收益"
+    assert "overfit_warning" in bt and "overfit_reason" in bt, "前端应携带过拟合警示"
+
+
 def test_backtest_core_consumed():
     """FR-3.17.4: 回测核心纯函数（净值/回撤/年度/CSV）齐备且被工作台消费"""
     core = _read("js/backtest-core.js")

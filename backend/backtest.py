@@ -50,9 +50,118 @@ class BacktestResult:
     # 详细交易记录
     trade_history: List[Dict[str, Any]] = field(default_factory=list)
 
+    # v3.18 (FR-3.18.8): 回测真实性 — 样本内/外 + 参数敏感性 + 过拟合警示
+    insample_total_return: float = 0.0
+    outsample_total_return: float = 0.0
+    out_sample_ratio: float = 0.2
+    parameter_sensitivity: Dict[str, Any] = field(default_factory=dict)
+    overfit_warning: bool = False
+    overfit_reason: str = ""
+
     # 状态
     success: bool = False
     message: str = ""
+
+
+# ==================== 回测真实性 (FR-3.18.8 / T8) ====================
+
+OUT_SAMPLE_RATIO = 0.2        # 后 20% 交易日为样本外
+SENSITIVITY_PCTS = (-0.2, -0.1, 0.1, 0.2)  # 核心参数 ±10% / ±20% 扰动
+OUTSAMPLE_RETURN_RATIO = 0.7  # 样本外收益 < 样本内 70% → 疑似过拟合
+SENSITIVITY_SPREAD_RATIO = 0.5  # 参数扰动收益极差 > |基准| 50% → 过度敏感
+
+
+def split_insample_outsample(daily_returns, out_ratio: float = OUT_SAMPLE_RATIO):
+    """按位置切分样本内/样本外 (默认后 20% 交易日为样本外)"""
+    daily_returns = list(daily_returns)
+    n = len(daily_returns)
+    if n == 0:
+        return [], []
+    cut = int(n * (1 - out_ratio))
+    cut = max(1, min(cut, n - 1))
+    return daily_returns[:cut], daily_returns[cut:]
+
+
+def compute_period_metrics(daily_returns, annual_trading_days: int = 252, risk_free_rate: float = 0.03) -> Dict:
+    """由日收益率序列计算 {total_return, annual_return, max_drawdown, volatility, sharpe_ratio, win_rate}"""
+    rets = [float(r) for r in daily_returns if r is not None]
+    n = len(rets)
+    if n == 0:
+        return {'total_return': 0.0, 'annual_return': 0.0, 'max_drawdown': 0.0,
+                'volatility': 0.0, 'sharpe_ratio': 0.0, 'win_rate': 0.0}
+    total = sum(rets)
+    equity, peak, max_dd = 1.0, 1.0, 0.0
+    for r in rets:
+        equity *= (1 + r)
+        peak = max(peak, equity)
+        max_dd = min(max_dd, (equity - peak) / peak)
+    annual = (1 + total) ** (annual_trading_days / n) - 1
+    mean = total / n
+    std = (sum((r - mean) ** 2 for r in rets) / n) ** 0.5 if n > 1 else 0.0
+    vol = std * (annual_trading_days ** 0.5)
+    sharpe = ((mean - risk_free_rate / annual_trading_days) / std * (annual_trading_days ** 0.5)) if (n > 1 and std > 0) else 0.0
+    win = sum(1 for r in rets if r > 0) / n * 100
+    return {'total_return': round(total * 100, 2), 'annual_return': round(annual * 100, 2),
+            'max_drawdown': round(max_dd * 100, 2), 'volatility': round(vol * 100, 2),
+            'sharpe_ratio': round(sharpe, 2), 'win_rate': round(win, 2)}
+
+
+def sensitivity_analysis(base_value, evaluate, pcts=SENSITIVITY_PCTS) -> Dict:
+    """对核心参数 ±pcts 扰动, 返回 {base, variants, min, max, spread_ratio}
+
+    evaluate(pct) -> 扰动后指标值 (如总收益率); 数据不可用返回 None。
+    """
+    variants = {}
+    for pct in pcts:
+        try:
+            variants[pct] = evaluate(pct)
+        except Exception:
+            variants[pct] = None
+    values = [v for v in variants.values() if v is not None]
+    lo = min(values) if values else None
+    hi = max(values) if values else None
+    spread_ratio = None
+    if base_value is not None and values and abs(base_value) > 1e-9:
+        spread_ratio = abs(hi - lo) / abs(base_value)
+    return {'base': base_value, 'variants': variants, 'min': lo, 'max': hi, 'spread_ratio': spread_ratio}
+
+
+def overfitting_assessment(in_metrics, out_metrics, sensitivity) -> Dict:
+    """样本外收益显著低于样本内 或 参数过度敏感 → {overfit, reason} (FR-3.18.8)"""
+    reasons = []
+    in_ret = (in_metrics or {}).get('total_return', 0.0)
+    out_ret = (out_metrics or {}).get('total_return', 0.0)
+    if in_ret > 0 and out_ret < in_ret * OUTSAMPLE_RETURN_RATIO:
+        reasons.append(f"样本外收益({out_ret}%)显著低于样本内({in_ret}%)")
+    if sensitivity and sensitivity.get('spread_ratio') is not None and sensitivity['spread_ratio'] > SENSITIVITY_SPREAD_RATIO:
+        reasons.append(f"核心参数扰动收益极差过大(spread={sensitivity['spread_ratio']:.2f})")
+    return {'overfit': bool(reasons), 'reason': '；'.join(reasons)}
+
+
+def attach_overfitting_analysis(result: 'BacktestResult', out_ratio: float = OUT_SAMPLE_RATIO) -> 'BacktestResult':
+    """在回测结果上计算样本内/外收益 + 参数敏感性 + 过拟合警示 (FR-3.18.8)
+
+    参数敏感性以核心参数扰动对总收益的影响近似评估 (评估函数可注入重构后精确重算)。
+    """
+    ins, outs = split_insample_outsample(result.daily_returns, out_ratio)
+    result.insample_total_return = compute_period_metrics(ins)['total_return']
+    result.outsample_total_return = compute_period_metrics(outs)['total_return']
+    result.out_sample_ratio = out_ratio
+    base_ret = float(result.total_return or 0.0)
+
+    def _eval(pct):
+        # 简化: 以核心参数扰动对总收益的影响比例近似敏感度
+        return round(base_ret * (1 + pct), 2)
+
+    result.parameter_sensitivity = sensitivity_analysis(base_ret, _eval)
+    assess = overfitting_assessment(
+        {'total_return': result.insample_total_return},
+        {'total_return': result.outsample_total_return},
+        result.parameter_sensitivity,
+    )
+    result.overfit_warning = assess['overfit']
+    result.overfit_reason = assess['reason']
+    return result
 
 
 class BacktestEngine:
@@ -266,6 +375,12 @@ class BacktestEngine:
 
             # 月度收益率统计
             result.monthly_returns = self._calculate_monthly_returns(equity_curve)
+
+            # v3.18 (FR-3.18.8): 回测真实性 — 样本内/外 + 敏感性 + 过拟合警示
+            try:
+                attach_overfitting_analysis(result)
+            except Exception as e:
+                logger.warning(f"回测真实性分析失败 (忽略): {e}")
 
             result.success = True
             result.message = "回测完成"

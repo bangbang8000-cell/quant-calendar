@@ -81,6 +81,12 @@
           turnover_rate: s.turnover_rate,
           success: s.success !== false,
           message: s.message || '',
+          // v3.18 (FR-3.18.8): 回测真实性 — 样本内/外 + 过拟合警示
+          insample_total_return: s.insample_total_return != null ? s.insample_total_return : null,
+          outsample_total_return: s.outsample_total_return != null ? s.outsample_total_return : null,
+          out_sample_ratio: s.out_sample_ratio != null ? s.out_sample_ratio : 0.2,
+          overfit_warning: !!s.overfit_warning,
+          overfit_reason: s.overfit_reason || '',
         };
       }
 
