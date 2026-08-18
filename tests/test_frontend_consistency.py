@@ -694,6 +694,26 @@ def test_review_decision_by_date_section():
     assert "trackData.note" in src, "应展示风险说明 note"
 
 
+# ─── v3.18 (FR-3.18.9 / AI 事实护栏) 回归 ─────────────────────────
+
+def test_fact_check_wiring():
+    """FR-3.18.9: AI 事实护栏 — 后端抽查/报告 + 系统页审计展示 + 无内联样式"""
+    be = _read_backend("fact_check.py")
+    for fn in ("extract_numbers", "find_card_numbers", "check_consistency", "run_daily_audit", "save_audit_report", "get_latest_audit"):
+        assert fn in be, f"fact_check.py 应提供 {fn}"
+    ai_api = _read_backend("api/v1/ai.py")
+    assert '@router.post("/fact-check/audit")' in ai_api, "应提供 POST /api/ai/fact-check/audit"
+    assert '@router.get("/fact-check/latest")' in ai_api, "应提供 GET /api/ai/fact-check/latest"
+    src = _read("js/components/system-page.js")
+    assert "事实护栏审计" in src, "系统配置页应展示事实护栏审计"
+    assert "triggerFactCheck" in src and "factCheckRunning" in src, "应接入立即抽查"
+    assert "/api/ai/fact-check/latest" in _read("js/app-logic/ops.js"), "ops 应加载最近审计"
+    seg = src[src.index("v3.18 (FR-3.18.9): AI 事实护栏审计"):]
+    seg = seg[:seg.index("<!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->")]
+    assert 'style="' not in seg, "事实护栏审计片段不应含内联 style 属性"
+    assert "style={" not in seg, "事实护栏审计片段不应含绑定式内联 style"
+
+
 # ─── v3.17.7 (FR-3.17.7 / 盘中增强：异动扫描 + 事件提醒) 回归 ─────────────
 
 def test_scan_subpage_endpoint_invoked():

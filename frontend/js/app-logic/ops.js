@@ -119,6 +119,35 @@
           if (data.success) analyticsRank.value = data.rank || [];
         } catch (e) { console.warn('loadAnalytics failed:', e); }
       }
+      // v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查
+      const factCheck = ref(null);
+      const factCheckRunning = ref(false);
+      async function loadFactCheck() {
+        try {
+          const res = await fetch('/api/ai/fact-check/latest');
+          const data = await res.json();
+          factCheck.value = data && data.success ? (data.data || null) : null;
+        } catch (e) { console.warn('loadFactCheck failed:', e); }
+      }
+      async function triggerFactCheck() {
+        if (factCheckRunning.value) return;
+        factCheckRunning.value = true;
+        try {
+          const res = await fetch('/api/ai/fact-check/audit', { method: 'POST' });
+          const data = await res.json();
+          if (data && data.success) {
+            ElementPlus.ElMessage.success(`事实护栏抽查完成: 通过率 ${data.data.pass_rate != null ? data.data.pass_rate + '%' : '--'} (${data.data.checked} 个数字)`);
+            loadFactCheck();
+          } else {
+            ElementPlus.ElMessage.error((data && (data.detail || data.message)) || '事实护栏抽查失败');
+          }
+          return data;
+        } catch (e) {
+          ElementPlus.ElMessage.error('事实护栏抽查失败: ' + (e.message || ''));
+        } finally {
+          factCheckRunning.value = false;
+        }
+      }
 
       // v3.3.0-T8: 数据备份与恢复
       const backups = ref([]);
@@ -225,6 +254,7 @@
         sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
         healthDetail, loadHealthDetail,
         reviewTriggering, triggerMarketReview,
+        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
         backups, backupCreating, loadBackups, createBackup, restoreBackup,
         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
         feedbackText, feedbackSubmitting, submitFeedback,

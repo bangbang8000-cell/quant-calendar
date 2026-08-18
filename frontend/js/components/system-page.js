@@ -762,6 +762,37 @@
                             </div>
                         </div>
 
+                        <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base flex-between">
+                                <span>🔍 AI 事实护栏审计</span>
+                                <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
+                            </div>
+                            <div v-if="factCheck" class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">抽查日期</div>
+                                    <div class="sys-health-big">{{ factCheck.date || '—' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">检查数字</div>
+                                    <div class="sys-health-big">{{ factCheck.checked ?? 0 }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">通过率</div>
+                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">未验证</div>
+                                    <div class="sys-health-big">{{ factCheck.unverified ?? 0 }}</div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无事实护栏审计报告（点击"立即抽查"生成）</div>
+                            <div v-if="factCheck && factCheck.failures && factCheck.failures.length" class="sys-health-row">
+                                <span class="text-sm-tertiary">失败明细</span>
+                                <span class="sys-health-meta">{{ factCheck.failures.length }} 条（最近 {{ factCheck.failures[0].number }} 等）</span>
+                            </div>
+                        </div>
+
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
                         <div class="section-block-top">
                             <div class="section-title-base">🧩 调度任务</div>

@@ -118,6 +118,26 @@ async def get_ai_track(window: Optional[int] = None, user: Dict = Depends(get_cu
         return {"success": False, "message": str(e)}
 
 
+@router.post("/fact-check/audit")
+async def run_fact_check_audit(user: Dict = Depends(get_current_active_user)):
+    """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》"""
+    from fact_check import run_daily_audit, save_audit_report
+    try:
+        report = run_daily_audit()
+        save_audit_report(report)
+        return {"success": True, "data": report}
+    except Exception as e:
+        logger.error(f"事实护栏抽查失败: {e}")
+        return {"success": False, "message": str(e)}
+
+
+@router.get("/fact-check/latest")
+async def get_fact_check_latest(user: Dict = Depends(get_current_active_user)):
+    """FR-3.18.9: 最近一份事实护栏审计报告"""
+    from fact_check import get_latest_audit
+    return {"success": True, "data": get_latest_audit()}
+
+
 @router.get("/history/last/{stock_code}")
 async def get_last_evaluation(stock_code: str, user: Dict = Depends(get_current_active_user)):
     """获取某只股票的最近一次评估记录"""

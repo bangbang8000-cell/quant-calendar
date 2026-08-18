@@ -814,6 +814,8 @@ class Scheduler:
         asyncio.create_task(self._catchup_market_review())
         # v3.18 (FR-3.18.2): 每日事件提醒扫描
         asyncio.create_task(self.event_alert_scan_task())
+        # v3.18 (FR-3.18.9): 每日 AI 事实护栏抽查
+        asyncio.create_task(self.fact_check_audit_task())
 
     async def stop(self):
         """停止调度器"""
