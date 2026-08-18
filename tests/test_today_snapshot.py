@@ -69,21 +69,25 @@ def test_metrics_no_calls_returns_empty_sources():
 
 
 def test_today_snapshot_wiring_frontend():
-    """今日一屏前端接线完整：策略总览含美林/情绪/池变动/健康/重点，且数据健康已消费"""
+    """今日一屏前端接线完整：策略总览含美林/情绪/池变动/重点/健康卡，且数据健康已消费"""
     sp = open(os.path.join(BASE, 'frontend/js/components/strategies-page.js'), encoding='utf-8').read()
     # 四个决策要素 + 健康卡 + 重点，均在"今日一屏"内
     assert 'today-hero' in sp
-    for marker in ['美林时钟', '市场情绪', '池变动', '今日重点', '数据健康度']:
+    for marker in ['美林时钟', '市场情绪', '池变动', '今日重点']:
         assert marker in sp, f'今日一屏缺少聚合要素: {marker}'
-    assert 'merrillNext' in sp and 'todayFocus' in sp and 'healthRows' in sp
+    assert 'merrillNext' in sp and 'todayFocus' in sp
+    # v3.17.5: 数据健康度/healthRows 已自策略总览移入系统页 (用量统计子页)
+    sysp = open(os.path.join(BASE, 'frontend/js/components/system-page.js'), encoding='utf-8').read()
+    assert '数据健康度' in sysp, '数据健康度应位于系统页'
+    assert 'healthRows' in sysp, '数据健康度(healthRows)应位于系统页'
     assert '/api/system/metrics' in open(os.path.join(BASE, 'frontend/js/app-logic.js'), encoding='utf-8').read() \
         or '/api/system/metrics' in sp, 'app-logic 应消费 /api/system/metrics'
 
     al = open(os.path.join(BASE, 'frontend/js/app-logic.js'), encoding='utf-8').read()
     assert 'healthMetrics' in al, 'app-logic 应暴露 healthMetrics 状态'
     assert 'loadHealthMetrics' in al, 'app-logic 应实现 loadHealthMetrics'
-    # 前端应按 degraded/success_rate 渲染健康状态
-    assert 'degraded' in sp and 'success_rate' in sp
+    # 前端应按 degraded/success_rate 渲染健康状态 (位于系统页数据健康度)
+    assert 'degraded' in sysp and 'success_rate' in sysp
 
 
 def test_today_snapshot_css_uses_tokens():
