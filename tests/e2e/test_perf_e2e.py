@@ -27,10 +27,10 @@ def test_perf_first_screen_and_kline_thresholds():
     """FR-3.17.9: 首屏 ≥30% 提升 (≤基线×0.7) + 5000 点渲染在阈值内"""
     if not os.path.exists(os.path.join(BASE, "perf_baseline.json")):
         pytest.skip("缺少 perf_baseline.json, 先运行 perf_smoke.py --store-baseline")
-    proc = subprocess.run(
-        [sys.executable, SCRIPT, "--compare", "--runs", "3"],
-        capture_output=True, text=True, timeout=300,
-    )
+    cmd = [sys.executable, SCRIPT, "--compare", "--runs", "3"]
+    if os.environ.get("PERF_CHROMIUM"):  # 本机 playwright 无法下载浏览器时, 指定系统 chromium
+        cmd += ["--chromium", os.environ["PERF_CHROMIUM"]]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     print("\n" + (proc.stdout or ""))
     if proc.stderr:
         print("[stderr]", proc.stderr[-2000:])

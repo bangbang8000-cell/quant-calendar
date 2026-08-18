@@ -172,21 +172,25 @@ def _run_once(page, base_url):
     }
 
 
-def measure(base_url, runs=3):
+def measure(base_url, runs=3, chromium=None):
     """跑 runs 次取中位数, 返回聚合指标"""
     from playwright.sync_api import sync_playwright
 
     interactive_vals, dcl_vals, kline_dt, kline_pts = [], [], [], []
     errors = []
+    launch_kwargs = {"headless": True, "args": ["--no-sandbox"]}
+    if chromium:  # 本机 playwright 无法下载浏览器时, 指定系统 chromium (如 /snap/bin/chromium)
+        launch_kwargs["executable_path"] = chromium
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        browser = p.chromium.launch(**launch_kwargs)
         for i in range(runs):
             ctx = browser.new_context(viewport={"width": 1280, "height": 900})
             page = ctx.new_page()
             try:
                 r = _run_once(page, base_url)
-                log(f"  第 {i + 1}/{runs} 次: interactive={r['interactive_ms']:.0f}ms "
-                    f"dcl={r['dcl_ms']}ms kline_dt={r['kline_dt_ms']}ms points={r['kline_points']}")
+                log(f"  第 {i + 1}/{runs} 次: interactive={_fmt(r['interactive_ms'], 'ms')} "
+                    f"dcl={_fmt(r['dcl_ms'], 'ms')} kline_dt={_fmt(r['kline_dt_ms'], 'ms')} "
+                    f"points={_fmt(r['kline_points'])}")
                 if r["interactive_ms"] is not None:
                     interactive_vals.append(r["interactive_ms"])
                 if r["dcl_ms"] is not None:
@@ -230,6 +234,8 @@ def main():
     ap = argparse.ArgumentParser(description="quant-calendar 性能冒烟 (FR-3.17.9)")
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--chromium", default=None,
+                    help="chromium 可执行文件路径 (缺省用 playwright 自带; 本机如 /snap/bin/chromium)")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--measure", action="store_true", help="仅测量打印")
     g.add_argument("--store-baseline", action="store_true", help="测量并写入基线")
@@ -237,7 +243,7 @@ def main():
     args = ap.parse_args()
 
     mode = "compare" if args.compare else ("store" if args.store_baseline else "measure")
-    cur = measure(args.base_url, runs=args.runs)
+    cur = measure(args.base_url, runs=args.runs, chromium=args.chromium)
 
     if mode == "store":
         with open(BASELINE_FILE, "w", encoding="utf-8") as f:
