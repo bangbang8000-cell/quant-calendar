@@ -753,6 +753,27 @@ class Scheduler:
         except Exception as e:
             logger.error(f"复盘错过补偿异常: {e}")
 
+    async def event_alert_scan_task(self):
+        """每日事件提醒扫描 (FR-3.18.2): 09:30 扫描关注股票事件 + 24h 去重 + 飞书推送"""
+        while self.running:
+            now = datetime.now()
+            target = now.replace(hour=9, minute=30, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            await asyncio.sleep(max((target - now).total_seconds(), 10))
+            if not self.running:
+                break
+            try:
+                from event_alert import run_event_scan
+                res = run_event_scan(username='default', scope='watchlist')
+                self._record_task_run("event_alert_scan", True,
+                                      f"新事件 {res.get('new_count', 0)} 条 | {res.get('note') or ''}")
+                logger.info("事件提醒扫描完成: %s", res.get('note'))
+            except Exception as e:
+                logger.error(f"事件提醒扫描失败: {e}")
+                self._record_task_run("event_alert_scan", False, str(e)[:120])
+            await asyncio.sleep(60)
+
     async def daily_market_review_task(self):
         """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行; FR-3.18.1 激活)
 
@@ -791,6 +812,8 @@ class Scheduler:
         asyncio.create_task(self.daily_market_review_task())
         # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
         asyncio.create_task(self._catchup_market_review())
+        # v3.18 (FR-3.18.2): 每日事件提醒扫描
+        asyncio.create_task(self.event_alert_scan_task())
 
     async def stop(self):
         """停止调度器"""
