@@ -288,31 +288,43 @@ class TestV3142Regression:
 
     def test_resolve_stock_name(self):
         """_resolve_stock_name: 真实名保留 / 空名解析 / ==代码解析 / 裸代码后缀推断"""
-        evaluator = AIEvaluator()
-        # 传入真实中文名 → 保留
-        assert evaluator._resolve_stock_name('600085.SH', '同仁堂') == '同仁堂'
-        # 空名 → stock_manager 解析
-        assert evaluator._resolve_stock_name('600085.SH', '') == '同仁堂'
-        # 传入名 == 代码 → 解析
-        assert evaluator._resolve_stock_name('600085.SH', '600085.SH') == '同仁堂'
-        # 裸代码(无后缀) → 补 .SZ/.SH 解析
-        assert evaluator._resolve_stock_name('000002', '') == '万科A'
-        # 无法解析 → 返回原代码
-        assert evaluator._resolve_stock_name('999999.XY', '') == '999999.XY'
+        from stock_info import stock_manager
+        _orig = dict(stock_manager.stock_map)
+        stock_manager.stock_map = {'600085.SH': '同仁堂', '000002.SZ': '万科A'}
+        try:
+            evaluator = AIEvaluator()
+            # 传入真实中文名 → 保留
+            assert evaluator._resolve_stock_name('600085.SH', '同仁堂') == '同仁堂'
+            # 空名 → stock_manager 解析
+            assert evaluator._resolve_stock_name('600085.SH', '') == '同仁堂'
+            # 传入名 == 代码 → 解析
+            assert evaluator._resolve_stock_name('600085.SH', '600085.SH') == '同仁堂'
+            # 裸代码(无后缀) → 补 .SZ/.SH 解析
+            assert evaluator._resolve_stock_name('000002', '') == '万科A'
+            # 无法解析 → 返回原代码
+            assert evaluator._resolve_stock_name('999999.XY', '') == '999999.XY'
+        finally:
+            stock_manager.stock_map = _orig
 
     def test_batch_evaluate_resolves_names(self, isolated_data_dir):
         """批量评估: 缺失名称经 _resolve_stock_name 解析 (含裸代码) 后传给 evaluate_stock"""
-        evaluator = AIEvaluator()
-        seen = {}
+        from stock_info import stock_manager
+        _orig = dict(stock_manager.stock_map)
+        stock_manager.stock_map = {'600085.SH': '同仁堂', '000002.SZ': '万科A'}
+        try:
+            evaluator = AIEvaluator()
+            seen = {}
 
-        async def fake_evaluate(code, name, stock_data, username, strategy='default'):
-            seen[code] = name
-            return {"stock_code": code, "result": {"level": "推荐", "total_score": 88}}
+            async def fake_evaluate(code, name, stock_data, username, strategy='default'):
+                seen[code] = name
+                return {"stock_code": code, "result": {"level": "推荐", "total_score": 88}}
 
-        with patch.object(AIEvaluator, 'evaluate_stock', side_effect=fake_evaluate):
-            results = asyncio.run(evaluator.batch_evaluate(['600085.SH', '000002'], None, 2, 'default'))
+            with patch.object(AIEvaluator, 'evaluate_stock', side_effect=fake_evaluate):
+                results = asyncio.run(evaluator.batch_evaluate(['600085.SH', '000002'], None, 2, 'default'))
 
-        assert seen['600085.SH'] == '同仁堂'
-        assert seen['000002'] == '万科A'
-        assert results[0]['success'] is True
-        assert results[0]['result']['total_score'] == 88
+            assert seen['600085.SH'] == '同仁堂'
+            assert seen['000002'] == '万科A'
+            assert results[0]['success'] is True
+            assert results[0]['result']['total_score'] == 88
+        finally:
+            stock_manager.stock_map = _orig

@@ -24,23 +24,33 @@ def patch_data_dir():
     import paths
     import db
     old_data = paths.DATA_DIR
-    paths.DATA_DIR = tempfile.mkdtemp()
-    old_config = paths.AI_CONFIG_FILE
-    paths.AI_CONFIG_FILE = os.path.join(paths.DATA_DIR, 'ai_config.json')
-    old_history = paths.AI_EVALUATION_HISTORY_FILE
-    paths.AI_EVALUATION_HISTORY_FILE = os.path.join(paths.DATA_DIR, 'ai_evaluation_history.json')
-    old_models = os.path.join(paths.DATA_DIR, 'ai_models.json')
+    tmp = tempfile.mkdtemp(prefix='qc-test-data-')
+    paths.DATA_DIR = tmp
+
+    # v3.18 (FR-3.18.12): 统一重定向全部数据文件常量 (此前仅 users/db/ai_config,
+    # 其余常量在 import 时捕获真实 DATA_DIR 导致写真实 data/ 污染)
+    _DATA_FILE_KEYS = (
+        'USERS_FILE', 'STOCK_INFO_FILE', 'MERRILL_CACHE_FILE', 'MERRILL_HISTORY_FILE',
+        'MERRILL_SNAPSHOT_FILE', 'MARKET_CACHE_FILE', 'CONSENSUS_DATA_FILE',
+        'AI_CONFIG_FILE', 'AI_EVALUATION_HISTORY_FILE', 'AUTO_EVALUATE_CONFIG_FILE',
+        'GROUPS_FILE',
+    )
+    _saved = {}
+    for _key in _DATA_FILE_KEYS:
+        _old = getattr(paths, _key, None)
+        _saved[_key] = _old
+        if _old:
+            setattr(paths, _key, os.path.join(tmp, os.path.basename(_old)))
     # 关键修复: db 模块在导入时即捕获 DATA_DIR/DB_FILE (db.py:18),
     # 若不重定向, 测试会读写真实 data/app.db 造成跨测试/跨会话污染
-    # (TC-11.11 回归暴露: watchlist/user_manager 在 schema_ok 时读真实库)
     old_db_data_dir = db.DATA_DIR
     old_db_file = db.DB_FILE
-    db.DATA_DIR = paths.DATA_DIR
-    db.DB_FILE = os.path.join(paths.DATA_DIR, 'app.db')
+    db.DATA_DIR = tmp
+    db.DB_FILE = os.path.join(tmp, 'app.db')
     yield
     paths.DATA_DIR = old_data
-    paths.AI_CONFIG_FILE = old_config
-    paths.AI_EVALUATION_HISTORY_FILE = old_history
+    for _key, _val in _saved.items():
+        setattr(paths, _key, _val)
     db.DATA_DIR = old_db_data_dir
     db.DB_FILE = old_db_file
 
