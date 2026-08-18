@@ -4572,9 +4572,9 @@ text {
 .usage-ai-live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--text-tertiary); }
 .usage-ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); animation: usageAiPulse 1.8s infinite; }
 @keyframes usageAiPulse {
-  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
-  70% { box-shadow: 0 0 0 7px rgba(37, 99, 235, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.35); }
+  70% { box-shadow: 0 0 0 7px rgba(var(--primary-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
 }
 .usage-ai-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; }
 .usage-ai-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); overflow: hidden; }
@@ -4634,7 +4634,7 @@ text {
 .usage-src-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .usage-src-card { position: relative; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px 10px; overflow: hidden; }
 .usage-src-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
-.usage-src-card.is-degraded::before { background: linear-gradient(180deg, #f59e0b, #b45309); }
+.usage-src-card.is-degraded::before { background: linear-gradient(180deg, var(--color-warning), var(--badge-warning-text)); }
 .usage-src-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .usage-src-name { flex: 1; min-width: 0; font-weight: var(--font-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-src-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px dashed var(--border-light); font-size: var(--font-sm); }
