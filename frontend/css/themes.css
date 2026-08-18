@@ -27,6 +27,11 @@
             --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             /* 主题色 */
             --primary-color: #2563eb;
+            /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义
+               (导致进度条/高亮等透明失效); 别名随各主题 --primary-color 联动 */
+            --color-primary: var(--primary-color);
+            --color-primary-400: #3b82f6;
+            --color-primary-600: #2563eb;
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
@@ -4562,6 +4567,50 @@ text {
 .mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
 .mini-bar { width: 100%; max-width: 14px; border-radius: 2px 2px 0 0; background: var(--color-primary); opacity: 0.85; min-height: 1px; }
 .mini-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 3px; white-space: nowrap; }
+/* ===== AI 用量 (v3.18.2 UI 优化): 实时指示 + 强调卡 + 模型占比 + 趋势(今日高亮) ===== */
+.usage-ai-actions { align-items: center; }
+.usage-ai-live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--text-tertiary); }
+.usage-ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); animation: usageAiPulse 1.8s infinite; }
+@keyframes usageAiPulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+  70% { box-shadow: 0 0 0 7px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+.usage-ai-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; }
+.usage-ai-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); overflow: hidden; }
+.usage-ai-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.usage-ai-card-total, .usage-ai-card-today, .usage-ai-card-last { position: relative; }
+.usage-ai-card-total::before { background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
+.usage-ai-card-today::before { background: var(--color-primary); }
+.usage-ai-card-last::before { background: var(--text-secondary); }
+.usage-ai-card-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: var(--font-md); font-weight: var(--font-semibold); flex: none; }
+.usage-ai-card-total .usage-ai-card-icon, .usage-ai-card-today .usage-ai-card-icon { background: var(--bg-selected); color: var(--color-primary); }
+.usage-ai-card-last .usage-ai-card-icon { background: var(--bg-hover); color: var(--text-secondary); }
+.usage-ai-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.usage-ai-card-label { font-size: var(--font-xs); color: var(--text-tertiary); }
+.usage-ai-card-num { font-size: var(--font-xl); font-weight: var(--font-semibold); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.usage-ai-card-date { font-size: var(--font-md); }
+.usage-ai-card-hint { margin-left: auto; align-self: flex-end; font-size: var(--font-xs); color: var(--text-tertiary); white-space: nowrap; }
+.usage-ai-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 12px; }
+.usage-ai-panel { border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card-header); padding: 12px 14px; }
+.usage-ai-panel-title { display: flex; align-items: baseline; gap: 8px; font-size: var(--font-sm); font-weight: var(--font-medium); color: var(--text-secondary); margin-bottom: 10px; }
+.usage-ai-panel-meta { font-size: var(--font-xs); color: var(--text-tertiary); font-weight: var(--font-normal); }
+.usage-ai-model-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--border-light); }
+.usage-ai-model-row:last-child { border-bottom: 0; }
+.usage-ai-model-no { width: 20px; height: 20px; border-radius: 6px; background: var(--bg-hover); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-xs); flex: none; }
+.usage-ai-model-no-top { background: var(--bg-selected); color: var(--color-primary); font-weight: var(--font-semibold); }
+.usage-ai-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 0 38%; color: var(--text-primary); font-size: var(--font-sm); }
+.usage-ai-model-bar { flex: 1; height: 7px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
+.usage-ai-model-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600)); }
+.usage-ai-model-pct { flex: none; min-width: 42px; text-align: right; font-size: var(--font-xs); color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.usage-ai-model-count { flex: none; min-width: 44px; text-align: right; font-size: var(--font-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.usage-ai-chart { display: flex; align-items: flex-end; gap: 3px; height: 86px; padding: 4px 2px 0; overflow: hidden; }
+.usage-ai-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+.usage-ai-bar { width: 100%; max-width: 12px; border-radius: 3px 3px 0 0; background: var(--color-primary); opacity: 0.5; min-height: 1px; transition: opacity .2s ease, transform .2s ease; }
+.usage-ai-bar-col:hover .usage-ai-bar { opacity: 0.9; transform: scaleY(1.03); transform-origin: bottom; }
+.usage-ai-bar-today { opacity: 1; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
+.usage-ai-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
+@media (max-width: 1100px) { .usage-ai-grid { grid-template-columns: 1fr; } }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
 .el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
 .el-button--success:hover, .el-button--success:focus { opacity: .85; }

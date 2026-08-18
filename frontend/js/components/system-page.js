@@ -850,43 +850,68 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- v3.17.6 (FR-3.17.6): AI 用量 — 总览卡 + 模型分布 + 近30天调用趋势 -->
+                        <!-- v3.18.2 (UI 优化): AI 用量 — 实时指示 + 强调汇总卡 + 模型分布(占比) + 近30天趋势(今日高亮) -->
                         <div class="section-block-top">
-                            <div class="section-title-base">🤖 AI 用量</div>
-                            <div class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">总调用</div>
-                                    <div class="sys-health-big color-primary">{{ aiUsage.total_calls ?? 0 }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">今日调用</div>
-                                    <div class="sys-health-big color-primary">{{ todayAiCalls }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">最近调用日</div>
-                                    <div class="sys-health-big color-primary">{{ lastAiCallDay || '--' }}</div>
+                            <div class="section-title-base flex-between">
+                                <span>🤖 AI 用量</span>
+                                <div class="flex-gap-4 usage-ai-actions">
+                                    <span class="usage-ai-live"><span class="usage-ai-dot"></span>30s 自动刷新</span>
+                                    <el-button size="small" @click="loadAiUsage">刷新</el-button>
                                 </div>
                             </div>
-                            <div class="usage-sub-block" v-if="aiModelRank.length">
-                                <div class="usage-sub-title">模型调用分布</div>
-                                <div class="flex-col-gap-6">
-                                    <div class="rank-row" v-for="(m, i) in aiModelRank" :key="m.name">
-                                        <span class="rank-no" :class="i < 3 ? 'rank-no-top' : ''">{{ i + 1 }}</span>
-                                        <span class="rank-name flex-1" :title="m.name">{{ m.name }}</span>
-                                        <span class="rank-bar"><span class="rank-bar-fill" :style="{width: Math.round(m.count / aiModelMax * 100) + '%'}"></span></span>
-                                        <span class="rank-views color-secondary">{{ m.count }} 次</span>
+                            <div class="usage-ai-summary">
+                                <div class="usage-ai-card usage-ai-card-total">
+                                    <div class="usage-ai-card-icon">Σ</div>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">累计调用</div>
+                                        <div class="usage-ai-card-num">{{ aiUsage.total_calls ?? 0 }}</div>
                                     </div>
+                                    <div class="usage-ai-card-hint">全部模型合计</div>
+                                </div>
+                                <div class="usage-ai-card usage-ai-card-today">
+                                    <div class="usage-ai-card-icon">今</div>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">今日调用</div>
+                                        <div class="usage-ai-card-num">{{ todayAiCalls }}</div>
+                                    </div>
+                                    <div class="usage-ai-card-hint">今日新增</div>
+                                </div>
+                                <div class="usage-ai-card usage-ai-card-last">
+                                    <div class="usage-ai-card-icon">历</div>
+                                    <div class="usage-ai-card-body">
+                                        <div class="usage-ai-card-label">最近调用日</div>
+                                        <div class="usage-ai-card-num usage-ai-card-date">{{ lastAiCallDay || '--' }}</div>
+                                    </div>
+                                    <div class="usage-ai-card-hint">最近有调用</div>
                                 </div>
                             </div>
-                            <div class="usage-sub-block">
-                                <div class="usage-sub-title">近 30 天调用趋势</div>
-                                <div class="mini-bar-chart" v-if="aiDayTrend.length">
-                                    <div class="mini-bar-col" v-for="(d, idx) in aiDayTrend" :key="d.day" :title="d.day + ': ' + d.count + ' 次'">
-                                        <div class="mini-bar" :style="{height: Math.max(d.count / aiDayMax * 56, d.count ? 2 : 1) + 'px'}"></div>
-                                        <div class="mini-bar-label" v-if="idx === 0 || d.day.slice(8) === '01' || idx === aiDayTrend.length - 1">{{ d.day.slice(5) }}</div>
+                            <div class="usage-ai-grid">
+                                <div class="usage-ai-panel" v-if="aiModelRank.length">
+                                    <div class="usage-ai-panel-title">模型调用分布
+                                        <span class="usage-ai-panel-meta">{{ aiModelRank.length }} 个模型</span>
+                                    </div>
+                                    <div class="usage-ai-model-row" v-for="(m, i) in aiModelRank" :key="m.name">
+                                        <span class="usage-ai-model-no" :class="i < 3 ? 'usage-ai-model-no-top' : ''">{{ i + 1 }}</span>
+                                        <span class="usage-ai-model-name" :title="m.name">{{ m.name }}</span>
+                                        <span class="usage-ai-model-bar">
+                                            <span class="usage-ai-model-fill" :style="{width: Math.round(m.count / aiModelMax * 100) + '%'}"></span>
+                                        </span>
+                                        <span class="usage-ai-model-pct">{{ Math.round(m.count / aiTotal * 100) }}%</span>
+                                        <span class="usage-ai-model-count">{{ m.count }}</span>
                                     </div>
                                 </div>
-                                <div class="text-sm-tertiary" v-else>暂无调用记录</div>
+                                <div class="usage-ai-panel">
+                                    <div class="usage-ai-panel-title">近 30 天调用趋势
+                                        <span class="usage-ai-panel-meta">峰值 {{ aiDayPeak }} 次</span>
+                                    </div>
+                                    <div class="usage-ai-chart" v-if="aiDayTrend.length">
+                                        <div class="usage-ai-bar-col" v-for="(d, idx) in aiDayTrend" :key="d.day" :title="d.day + ': ' + d.count + ' 次'">
+                                            <div class="usage-ai-bar" :class="idx === aiDayTrend.length - 1 ? 'usage-ai-bar-today' : ''" :style="{height: Math.max(d.count / aiDayMax * 64, d.count ? 2 : 1) + 'px'}"></div>
+                                            <div class="usage-ai-bar-label" v-if="idx === 0 || d.day.slice(8) === '01' || idx === aiDayTrend.length - 1">{{ d.day.slice(5) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm-tertiary" v-else>暂无调用记录</div>
+                                </div>
                             </div>
                         </div>
                         <!-- v3.4.0-T7: 页面热度排行 -->
@@ -1133,6 +1158,9 @@
         return Object.entries(by).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
       });
       const aiModelMax = Vue.computed(() => aiModelRank.value.reduce((m, r) => Math.max(m, r.count), 0) || 1);
+      // v3.18.2 (UI 优化): 模型总调用数 / 趋势峰值 (用于占比与峰值标注)
+      const aiTotal = Vue.computed(() => aiModelRank.value.reduce((s, r) => s + r.count, 0) || 1);
+      const aiDayPeak = Vue.computed(() => aiDayTrend.value.reduce((m, d) => Math.max(m, d.count), 0) || 0);
       const aiDayTrend = Vue.computed(() => {
         const by = (aiUsageRef.value && aiUsageRef.value.by_day) || {};
         const out = [];
@@ -1166,6 +1194,7 @@
         ...state,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
+        aiTotal, aiDayPeak,
         setAnalyticsDays,
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
