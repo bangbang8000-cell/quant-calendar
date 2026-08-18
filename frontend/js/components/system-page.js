@@ -742,7 +742,11 @@
                         </div>
                         <!-- v3.17.5: 数据健康度 (自策略总览移入) — v3.17.6 (bugfix): 移出数据源延迟网格, 独立成块 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">🩺 数据健康度</div>
+                            <!-- v3.18 (FR-3.18.1): 手动生成复盘入口 + 失败可见 -->
+                            <div class="section-title-base flex-between">
+                                <span>🩺 数据健康度</span>
+                                <el-button size="small" :loading="reviewTriggering" @click="triggerMarketReview">立即生成复盘</el-button>
+                            </div>
                             <div class="today-health-strip">
                                 <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
                                 <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">

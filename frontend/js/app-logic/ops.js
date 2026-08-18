@@ -224,6 +224,7 @@
         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
         sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
         healthDetail, loadHealthDetail,
+        reviewTriggering, triggerMarketReview,
         backups, backupCreating, loadBackups, createBackup, restoreBackup,
         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
         feedbackText, feedbackSubmitting, submitFeedback,
