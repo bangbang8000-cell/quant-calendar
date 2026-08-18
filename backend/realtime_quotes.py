@@ -214,10 +214,22 @@ class RealtimeQuoteSource:
             return {}, True
 
     def _fetch_from_data_source(self, codes: List[str]) -> Tuple[Dict, bool]:
-        """真实源拉取：优先 akshare 全市场快照（含量比/涨速字段），失败抛异常由上层降级。
+        """真实源拉取: akshare 全市场快照 → tushare 实时快照回退 (FR-3.18.3)。
 
-        沙箱网络不可达时天然抛异常 → fetch_quotes 捕获并返回 degraded=True。
+        两者皆失败抛最后一个异常, 由 fetch_quotes 捕获 → 优雅降级 degraded=True。
         """
+        try:
+            return self._fetch_from_akshare(codes)
+        except Exception as e1:
+            logger.warning('akshare 实时快照不可达, 尝试 tushare 回退: %s', e1)
+            try:
+                return self._fetch_from_tushare(codes)
+            except Exception as e2:
+                logger.warning('tushare 实时快照也不可达: %s', e2)
+                raise
+
+    def _fetch_from_akshare(self, codes: List[str]) -> Tuple[Dict, bool]:
+        """akshare 全市场快照 (含量比/涨速字段), 失败抛异常由上层回退/降级。"""
         try:
             import akshare as ak
             df = ak.stock_zh_a_spot_em()
