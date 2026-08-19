@@ -32,6 +32,17 @@
                             </div>
                             <div v-if="activeStrategy" class="strategy-detail">
                                 <div class="text-sm-tertiary-mt8">{{ activeStrategy.description }}</div>
+                                <!-- v3.21 (P0-3): 参数方案保存/加载 -->
+                                <div class="strategy-params">
+                                    <div class="strategy-param-row">
+                                        <el-select class="w-200" size="small" v-model="profileSelect" placeholder="加载已存方案" @change="applyProfile">
+                                            <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
+                                        </el-select>
+                                        <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
+                                        <el-button size="small" type="primary" @click="saveProfile">💾 保存方案</el-button>
+                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
+                                    </div>
+                                </div>
                                 <!-- schema 驱动参数表单 -->
                                 <div class="strategy-params">
                                     <div v-for="f in activeStrategy.schema" :key="f.key" class="strategy-param-row">
@@ -534,6 +545,9 @@
       const runAsOf = ref('');  // v3.21: 手工运行评估日(可选, 默认最近交易日)
       const ptradeCode = ref('');
       const strategyRuns = ref([]);
+      const profiles = ref([]);           // v3.21 (P0-3): 已存参数方案
+      const profileSelect = ref('');
+      const profileName = ref('');
       const activeStrategy = computed(function () {
         return strategies.value.find(function (s) { return s.id === activeStrategyId.value; }) || null;
       });
@@ -571,6 +585,59 @@
         st.schema.forEach(function (f) { paramValues.value[f.key] = f.default; });
         ptradeCode.value = '';
         loadRuns();
+        loadProfiles();
+      }
+
+      // ─── v3.21 (P0-3): 参数方案 CRUD ───
+      async function loadProfiles() {
+        if (!activeStrategyId.value) { profiles.value = []; return; }
+        try {
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/profiles')
+            .then(function (r) { return r.json(); });
+          profiles.value = (res && res.data && res.data.profiles) || [];
+          profileSelect.value = '';
+        } catch (e) {
+          console.error('[research] 方案列表加载失败:', e);
+          profiles.value = [];
+        }
+      }
+
+      async function saveProfile() {
+        const name = (profileName.value || '').trim();
+        if (!name) { window._core && window._core.showToast('请输入方案名称'); return; }
+        try {
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/profiles', {
+            method: 'POST',
+            body: JSON.stringify({ name: name, params: paramValues.value }),
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) { window._core && window._core.showToast(String(res.detail)); return; }
+          profileName.value = '';
+          await loadProfiles();
+          window._core && window._core.showToast('方案已保存');
+        } catch (e) {
+          console.error('[research] 方案保存失败:', e);
+          window._core && window._core.showToast('方案保存失败');
+        }
+      }
+
+      function applyProfile() {
+        const p = profiles.value.find(function (x) { return x.id === profileSelect.value; });
+        if (!p) return;
+        Object.keys(p.params || {}).forEach(function (k) { paramValues.value[k] = p.params[k]; });
+        window._core && window._core.showToast('已应用方案: ' + p.name);
+      }
+
+      async function deleteProfile() {
+        if (!profileSelect.value) return;
+        try {
+          await withAuth('/api/strategies/' + activeStrategyId.value + '/profiles/' + profileSelect.value, {
+            method: 'DELETE',
+          }).then(function (r) { return r.json(); });
+          await loadProfiles();
+          window._core && window._core.showToast('方案已删除');
+        } catch (e) {
+          console.error('[research] 方案删除失败:', e);
+        }
       }
 
       async function loadRuns() {
