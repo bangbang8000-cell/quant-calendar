@@ -82,6 +82,50 @@ class ParamSpec:
         return str(value)
 
 
+# P2: PT 策略生成三要素公共参数 (选股范围/择时/风控) — 所有策略统一复用,
+# 与模板占位符同源, 保证前端 schema 与 PTrade 代码一致
+COMMON_TRADING_PARAMS: List[ParamSpec] = [
+    # ---- 选股范围 ----
+    ParamSpec(key="universe_source", label="选股范围", type="enum",
+              default="universe", options=["universe", "index"],
+              ptrade_var="universe_source",
+              description="universe=自定义股票池, index=指数成分股"),
+    ParamSpec(key="universe_codes", label="自定义股票池", type="str",
+              default="600000.SH,600004.SH,600519.SH,601318.SH,600036.SH,601166.SH,600030.SH,601888.SH",
+              ptrade_var="universe_codes",
+              description="逗号分隔股票代码, universe_source=universe 时生效"),
+    ParamSpec(key="index_code", label="成分股指数", type="enum",
+              default="000300.SH", options=["000300.SH", "000905.SH", "000852.SH"],
+              ptrade_var="index_code",
+              description="universe_source=index 时选该指数成分股"),
+    # ---- 择时 ----
+    ParamSpec(key="timing_enabled", label="市场择时", type="bool", default=True,
+              ptrade_var="timing_enabled",
+              description="开启后: 择时指数收盘价跌破均线时空仓/降仓, 规避系统性下行"),
+    ParamSpec(key="timing_index", label="择时基准指数", type="enum",
+              default="000300.SH", options=["000300.SH", "000905.SH", "000852.SH"],
+              ptrade_var="timing_index",
+              description="市场择时用的指数(判断大盘趋势)"),
+    ParamSpec(key="timing_ma_window", label="择时均线周期", type="int",
+              default=20, min=5, max=120, step=5,
+              ptrade_var="timing_ma_window",
+              description="指数 N 日均线: 收盘价在其上方持仓, 跌破空仓"),
+    # ---- 风控 ----
+    ParamSpec(key="stop_loss_pct", label="单票止损比例", type="float",
+              default=0.08, min=0.01, max=0.30, step=0.01,
+              ptrade_var="stop_loss_pct",
+              description="持仓个股相对买入价跌幅达该比例时强制卖出 (0.08=8%)"),
+    ParamSpec(key="take_profit_pct", label="单票止盈比例", type="float",
+              default=0.15, min=0.01, max=0.50, step=0.01,
+              ptrade_var="take_profit_pct",
+              description="持仓个股相对买入价涨幅达该比例时止盈卖出 (0.15=15%)"),
+    ParamSpec(key="max_drawdown_pct", label="账户最大回撤止损", type="float",
+              default=0.20, min=0.05, max=0.60, step=0.05,
+              ptrade_var="max_drawdown_pct",
+              description="账户净值相对峰值回撤达该比例时全部清仓并停止开仓 (0.20=20%)"),
+]
+
+
 @dataclass
 class FactorSpec:
     """因子声明"""

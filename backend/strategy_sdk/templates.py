@@ -150,20 +150,40 @@ def initialize(context):
     set_benchmark("000300.SS")
     set_commission(0.0003)
     set_slippage(0.001)
+    # ---- 三要素: 选股范围 / 择时 / 风控 ----
+    g.universe_source = "{universe_source}"   # universe | index
+    g.universe_codes = "{universe_codes}"      # 逗号分隔自定义池
+    g.index_code = "{index_code}"              # 指数成分基准
+    g.timing_enabled = {timing_enabled}
+    g.timing_index = "{timing_index}"
+    g.timing_ma_window = {timing_ma_window}
+    g.stop_loss_pct = {stop_loss_pct}
+    g.take_profit_pct = {take_profit_pct}
+    g.max_drawdown_pct = {max_drawdown_pct}
+    g.peak_value = context.portfolio.portfolio_value
     run_daily(rebalance, time="09:35")
+    run_daily(risk_controls, time="14:50")
 
 def handle_data(context, data):
-    """日线回调(骨架): 实际调仓由 rebalance 按周期执行"""
+    """日线回调(骨架): 实际调仓由 rebalance 按周期执行, 风控由 risk_controls 日终执行"""
     pass
 
 def rebalance(context, data):
-    # 行业打分 → Top{sector_k} 行业 → 行业内 Top{stock_per_sector}
+    # 1) 择时: 决定仓位(空仓避险时清仓)
+    position_scale = market_timing(context, data)
+    if position_scale <= 0:
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        return
+    # 2) 行业打分 → Top{sector_k} 行业 → 行业内 Top{stock_per_sector}
     sectors = score_sectors(context, data)
     picks = []
     for s in sectors[:{sector_k}]:
         picks.extend(pick_in_sector(context, data, s, {stock_per_sector}))
+    if not picks:
+        picks = get_universe_candidates(context, data)  # 行业打分为空时回退选股范围
     set_universe(picks)
-    target = 1.0 / len(picks)
+    target = position_scale * (1.0 / len(picks))
     for stock in picks:
         order_target_value(stock, context.portfolio.total_value * target)
 
@@ -172,6 +192,70 @@ def score_sectors(context, data):
 
 def pick_in_sector(context, data, sector, n):
     return []
+
+# ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
+def risk_controls(context, data):
+    """日终风控: 1) 账户最大回撤清仓 2) 单票止盈止损"""
+    cur = context.portfolio.portfolio_value
+    if cur > g.peak_value:
+        g.peak_value = cur
+    if g.peak_value > 0 and cur < g.peak_value * (1 - g.max_drawdown_pct):
+        log.info("触发账户回撤止损: 峰值 %s, 当前 %s, 比例 %s",
+                 g.peak_value, cur, g.max_drawdown_pct)
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        g.halted = True
+        return
+    for stock, pos in list(context.portfolio.positions.items()):
+        if pos.amount <= 0:
+            continue
+        cost = pos.avg_cost
+        if cost <= 0:
+            continue
+        price = data.current(stock).close
+        pnl_pct = (price - cost) / cost
+        if pnl_pct <= -g.stop_loss_pct:
+            log.info("单票止损 %s: 成本 %s, 现价 %s, 跌幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+        elif pnl_pct >= g.take_profit_pct:
+            log.info("单票止盈 %s: 成本 %s, 现价 %s, 涨幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+
+# ============ 择时: 指数均线趋势 (三要素) ============
+def market_timing(context, data):
+    """市场择时: 择时指数收盘价 >= N日均线 -> 正常持仓(1.0), 否则空仓避险(0.0)"""
+    if not g.timing_enabled:
+        return 1.0
+    try:
+        hist = get_history(g.timing_ma_window + 1, "1d", "close",
+                           g.timing_index, skip_paused=True)
+        if hist is None or len(hist) == 0:
+            return 1.0
+        closes = list(hist.columns[0])
+        if len(closes) < 2:
+            return 1.0
+        cur_price = closes[-1]
+        ma = sum(closes[-g.timing_ma_window:]) / g.timing_ma_window
+        if cur_price >= ma:
+            return 1.0
+        return 0.0
+    except Exception as e:
+        log.info("择时计算异常, 默认持仓: %s", e)
+        return 1.0
+
+# ============ 选股: 自定义池 / 指数成分 (三要素) ============
+def get_universe_candidates(context, data):
+    """选股范围: universe_source=universe -> 自定义代码; =index -> 指数成分股"""
+    if g.universe_source == "index":
+        try:
+            stocks = get_index_stocks(g.index_code, date=None)
+            return list(stocks)
+        except Exception as e:
+            log.info("指数成分取数失败, 回退自定义池: %s", e)
+    codes = [c.strip() for c in g.universe_codes.split(",") if c.strip()]
+    return codes
 '''
 
 INDEX_ENHANCE_TPL = '''# -*- coding: utf-8 -*-
@@ -185,25 +269,109 @@ def initialize(context):
     set_benchmark("{benchmark}")
     set_commission(0.0003)
     set_slippage(0.001)
+    # ---- 三要素: 选股范围 / 择时 / 风控 ----
+    g.universe_source = "{universe_source}"   # universe | index
+    g.universe_codes = "{universe_codes}"      # 逗号分隔自定义池
+    g.index_code = "{index_code}"              # 指数成分基准
+    g.timing_enabled = {timing_enabled}
+    g.timing_index = "{timing_index}"
+    g.timing_ma_window = {timing_ma_window}
+    g.stop_loss_pct = {stop_loss_pct}
+    g.take_profit_pct = {take_profit_pct}
+    g.max_drawdown_pct = {max_drawdown_pct}
+    g.peak_value = context.portfolio.portfolio_value
     run_daily(rebalance, time="09:35")
+    run_daily(risk_controls, time="14:50")
 
 def handle_data(context, data):
-    """日线回调(骨架): 实际调仓由 rebalance 按周期执行"""
+    """日线回调(骨架): 实际调仓由 rebalance 按周期执行, 风控由 risk_controls 日终执行"""
     pass
 
 def rebalance(context, data):
-    # 基准成分内因子增强打分 → 行业/市值中性约束
+    # 1) 择时: 决定仓位(空仓避险时清仓)
+    position_scale = market_timing(context, data)
+    if position_scale <= 0:
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        return
+    # 2) 基准成分内因子增强打分 → 行业/市值中性约束
     universe = enhanced_universe(context, data, {industry_neutral})
+    if not universe:
+        universe = get_universe_candidates(context, data)  # 打分空时回退选股范围
     if not universe:
         return
     set_universe(universe)
-    target = 1.0 / len(universe)
+    target = position_scale * (1.0 / len(universe))
     for stock in universe:
         order_target_value(stock, context.portfolio.total_value * target)
 
 def enhanced_universe(context, data, industry_neutral):
     """指数增强选股: 基准成分 + 因子打分 + 中性化(模板骨架)"""
     return []
+
+# ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
+def risk_controls(context, data):
+    """日终风控: 1) 账户最大回撤清仓 2) 单票止盈止损"""
+    cur = context.portfolio.portfolio_value
+    if cur > g.peak_value:
+        g.peak_value = cur
+    if g.peak_value > 0 and cur < g.peak_value * (1 - g.max_drawdown_pct):
+        log.info("触发账户回撤止损: 峰值 %s, 当前 %s, 比例 %s",
+                 g.peak_value, cur, g.max_drawdown_pct)
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        g.halted = True
+        return
+    for stock, pos in list(context.portfolio.positions.items()):
+        if pos.amount <= 0:
+            continue
+        cost = pos.avg_cost
+        if cost <= 0:
+            continue
+        price = data.current(stock).close
+        pnl_pct = (price - cost) / cost
+        if pnl_pct <= -g.stop_loss_pct:
+            log.info("单票止损 %s: 成本 %s, 现价 %s, 跌幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+        elif pnl_pct >= g.take_profit_pct:
+            log.info("单票止盈 %s: 成本 %s, 现价 %s, 涨幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+
+# ============ 择时: 指数均线趋势 (三要素) ============
+def market_timing(context, data):
+    """市场择时: 择时指数收盘价 >= N日均线 -> 正常持仓(1.0), 否则空仓避险(0.0)"""
+    if not g.timing_enabled:
+        return 1.0
+    try:
+        hist = get_history(g.timing_ma_window + 1, "1d", "close",
+                           g.timing_index, skip_paused=True)
+        if hist is None or len(hist) == 0:
+            return 1.0
+        closes = list(hist.columns[0])
+        if len(closes) < 2:
+            return 1.0
+        cur_price = closes[-1]
+        ma = sum(closes[-g.timing_ma_window:]) / g.timing_ma_window
+        if cur_price >= ma:
+            return 1.0
+        return 0.0
+    except Exception as e:
+        log.info("择时计算异常, 默认持仓: %s", e)
+        return 1.0
+
+# ============ 选股: 自定义池 / 指数成分 (三要素) ============
+def get_universe_candidates(context, data):
+    """选股范围: universe_source=universe -> 自定义代码; =index -> 指数成分股"""
+    if g.universe_source == "index":
+        try:
+            stocks = get_index_stocks(g.index_code, date=None)
+            return list(stocks)
+        except Exception as e:
+            log.info("指数成分取数失败, 回退自定义池: %s", e)
+    codes = [c.strip() for c in g.universe_codes.split(",") if c.strip()]
+    return codes
 '''
 
 CAPITAL_FLOW_TPL = '''# -*- coding: utf-8 -*-
@@ -217,24 +385,109 @@ def initialize(context):
     set_benchmark("000300.SS")
     set_commission(0.0003)
     set_slippage(0.001)
+    # ---- 三要素: 选股范围 / 择时 / 风控 ----
+    g.universe_source = "{universe_source}"   # universe | index
+    g.universe_codes = "{universe_codes}"      # 逗号分隔自定义池
+    g.index_code = "{index_code}"              # 指数成分基准
+    g.timing_enabled = {timing_enabled}
+    g.timing_index = "{timing_index}"
+    g.timing_ma_window = {timing_ma_window}
+    g.stop_loss_pct = {stop_loss_pct}
+    g.take_profit_pct = {take_profit_pct}
+    g.max_drawdown_pct = {max_drawdown_pct}
+    g.peak_value = context.portfolio.portfolio_value
     run_daily(rebalance, time="09:35")
+    run_daily(risk_controls, time="14:50")
 
 def handle_data(context, data):
-    """日线回调(骨架): 实际调仓由 rebalance 按周期执行"""
+    """日线回调(骨架): 实际调仓由 rebalance 按周期执行, 风控由 risk_controls 日终执行"""
     pass
 
 def rebalance(context, data):
+    # 1) 择时: 决定仓位(空仓避险时清仓)
+    position_scale = market_timing(context, data)
+    if position_scale <= 0:
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        return
+    # 2) 资金流选股
     universe = capital_flow_picks(context, data, {flow_window}, {inflow_threshold}, {top_n})
+    if not universe:
+        universe = get_universe_candidates(context, data)  # 打分空时回退选股范围
     if not universe:
         return
     set_universe(universe)
-    target = 1.0 / len(universe)
+    target = position_scale * (1.0 / len(universe))
     for stock in universe:
         order_target_value(stock, context.portfolio.total_value * target)
 
 def capital_flow_picks(context, data, window, threshold, n):
     """资金流选股: 主力/北向净流入因子(模板骨架)"""
     return []
+
+# ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
+def risk_controls(context, data):
+    """日终风控: 1) 账户最大回撤清仓 2) 单票止盈止损"""
+    cur = context.portfolio.portfolio_value
+    if cur > g.peak_value:
+        g.peak_value = cur
+    if g.peak_value > 0 and cur < g.peak_value * (1 - g.max_drawdown_pct):
+        log.info("触发账户回撤止损: 峰值 %s, 当前 %s, 比例 %s",
+                 g.peak_value, cur, g.max_drawdown_pct)
+        for stock in list(context.portfolio.positions.keys()):
+            order_target_value(stock, 0)
+        g.halted = True
+        return
+    for stock, pos in list(context.portfolio.positions.items()):
+        if pos.amount <= 0:
+            continue
+        cost = pos.avg_cost
+        if cost <= 0:
+            continue
+        price = data.current(stock).close
+        pnl_pct = (price - cost) / cost
+        if pnl_pct <= -g.stop_loss_pct:
+            log.info("单票止损 %s: 成本 %s, 现价 %s, 跌幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+        elif pnl_pct >= g.take_profit_pct:
+            log.info("单票止盈 %s: 成本 %s, 现价 %s, 涨幅 %s%%",
+                     stock, cost, price, round(pnl_pct * 100, 2))
+            order_target_value(stock, 0)
+
+# ============ 择时: 指数均线趋势 (三要素) ============
+def market_timing(context, data):
+    """市场择时: 择时指数收盘价 >= N日均线 -> 正常持仓(1.0), 否则空仓避险(0.0)"""
+    if not g.timing_enabled:
+        return 1.0
+    try:
+        hist = get_history(g.timing_ma_window + 1, "1d", "close",
+                           g.timing_index, skip_paused=True)
+        if hist is None or len(hist) == 0:
+            return 1.0
+        closes = list(hist.columns[0])
+        if len(closes) < 2:
+            return 1.0
+        cur_price = closes[-1]
+        ma = sum(closes[-g.timing_ma_window:]) / g.timing_ma_window
+        if cur_price >= ma:
+            return 1.0
+        return 0.0
+    except Exception as e:
+        log.info("择时计算异常, 默认持仓: %s", e)
+        return 1.0
+
+# ============ 选股: 自定义池 / 指数成分 (三要素) ============
+def get_universe_candidates(context, data):
+    """选股范围: universe_source=universe -> 自定义代码; =index -> 指数成分股"""
+    if g.universe_source == "index":
+        try:
+            stocks = get_index_stocks(g.index_code, date=None)
+            return list(stocks)
+        except Exception as e:
+            log.info("指数成分取数失败, 回退自定义池: %s", e)
+    codes = [c.strip() for c in g.universe_codes.split(",") if c.strip()]
+    return codes
 '''
 
 TEMPLATES: Dict[str, str] = {

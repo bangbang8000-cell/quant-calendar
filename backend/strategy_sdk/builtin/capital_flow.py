@@ -8,7 +8,7 @@ from typing import List
 
 import pandas as pd
 
-from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext
+from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext, COMMON_TRADING_PARAMS
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ class CapitalFlowStrategy(BaseStrategy):
     param_specs: List[ParamSpec] = [
         ParamSpec(key="flow_window", label="资金回看窗口", type="int", default=10, min=3, max=60, step=1, ptrade_var="flow_window"),
         ParamSpec(key="inflow_threshold", label="净流入阈值(万元)", type="float", default=5000, min=0, max=100000, step=500, ptrade_var="inflow_threshold"),
-        ParamSpec(key="top_n", label="选股数", type="int", default=20, min=5, max=100, step=5, ptrade_var="top_n")
-    ]
+        ParamSpec(key="top_n", label="选股数", type="int", default=20, min=5, max=100, step=5, ptrade_var="top_n"),
+    ] + list(COMMON_TRADING_PARAMS)
 
     def generate_signals(self, ctx: StrategyContext) -> pd.DataFrame:
         """返回持仓矩阵(骨架: 等权占位, 因子打分后续接入)"""

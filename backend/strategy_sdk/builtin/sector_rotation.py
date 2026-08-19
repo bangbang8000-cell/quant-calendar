@@ -8,7 +8,7 @@ from typing import List
 
 import pandas as pd
 
-from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext
+from strategy_sdk.base import COMMON_TRADING_PARAMS, BaseStrategy, ParamSpec, StrategyContext
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ class SectorRotationStrategy(BaseStrategy):
     param_specs: List[ParamSpec] = [
         ParamSpec(key="sector_k", label="行业数K", type="int", default=5, min=2, max=20, step=1, ptrade_var="sector_k"),
         ParamSpec(key="stock_per_sector", label="每行业选股数", type="int", default=4, min=1, max=20, step=1, ptrade_var="stock_per_sector"),
-        ParamSpec(key="momentum_window", label="动量回看窗口", type="int", default=60, min=10, max=250, step=10, ptrade_var="momentum_window")
-    ]
+        ParamSpec(key="momentum_window", label="动量回看窗口", type="int", default=60, min=10, max=250, step=10, ptrade_var="momentum_window"),
+    ] + list(COMMON_TRADING_PARAMS)
 
     def generate_signals(self, ctx: StrategyContext) -> pd.DataFrame:
         """返回持仓矩阵(骨架: 等权占位, 因子打分后续接入)"""

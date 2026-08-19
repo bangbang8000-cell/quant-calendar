@@ -8,7 +8,7 @@ from typing import List
 
 import pandas as pd
 
-from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext
+from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext, COMMON_TRADING_PARAMS
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,8 @@ class IndexEnhanceStrategy(BaseStrategy):
         ParamSpec(key="benchmark", label="基准指数", type="enum", default="000300.SH", options=["000300.SH", "000905.SH", "000852.SH"], ptrade_var="benchmark"),
         ParamSpec(key="excess_target", label="超额收益目标", type="float", default=0.05, min=0.0, max=0.5, step=0.01, ptrade_var="excess_target"),
         ParamSpec(key="tracking_error_max", label="跟踪误差上限", type="float", default=0.05, min=0.01, max=0.2, step=0.01, ptrade_var="tracking_error_max"),
-        ParamSpec(key="industry_neutral", label="行业中性", type="bool", default=True, ptrade_var="industry_neutral")
-    ]
+        ParamSpec(key="industry_neutral", label="行业中性", type="bool", default=True, ptrade_var="industry_neutral"),
+    ] + list(COMMON_TRADING_PARAMS)
 
     def generate_signals(self, ctx: StrategyContext) -> pd.DataFrame:
         """返回持仓矩阵(骨架: 等权占位, 因子打分后续接入)"""

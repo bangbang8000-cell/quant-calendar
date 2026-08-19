@@ -78,7 +78,7 @@ def validate_ptrade_code(code: str) -> List[str]:
                       "min", "max", "sum", "sorted", "enumerate", "zip", "dict",
                       "list", "tuple", "set", "type", "isinstance", "round",
                       "current", "items", "keys", "split", "strip", "info",
-                      "log", "round", "sum", "format"}
+                      "log", "round", "sum", "format", "extend", "append", "copy"}
     for name in sorted(called - custom):
         if name not in _ALLOWED_APIS and not name.startswith("_"):
             errors.append(f"未知/不允许的 API: {name}")
