@@ -30,6 +30,19 @@
                                 <el-date-picker class="w-150" v-model="runAsOf" type="date" size="small" placeholder="评估日(默认最新)" value-format="YYYY-MM-DD"/>
                                 <el-button size="small" @click="exportActivePtradeCode">📤 导出 PTrade 代码</el-button>
                             </div>
+                            <!-- v3.21 (P0-6): 策略纳管卡片 (默认纳管不可删, 可复制调参) -->
+                            <div class="strategy-params flex-wrap-gap-12-mb16-c">
+                                <div class="strategy-param-row">
+                                    <span class="strategy-param-label">纳管</span>
+                                    <el-switch v-model="govEnabled" @change="updateGov" />
+                                    <el-select class="w-110" size="small" v-model="govSchedule" @change="updateGov">
+                                        <el-option v-for="t in ['20:00','21:00','22:00','08:00']" :key="t" :label="t" :value="t" />
+                                    </el-select>
+                                    <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning">⚡ 立即生成持仓</el-button>
+                                    <el-button v-if="lastHoldings" size="small" @click="openLastHoldings">📄 查看最近持仓</el-button>
+                                    <el-button size="small" @click="cloneStrategy">📋 复制为副本调参</el-button>
+                                </div>
+                            </div>
                             <div v-if="activeStrategy" class="strategy-detail">
                                 <div class="text-sm-tertiary-mt8">{{ activeStrategy.description }}</div>
                                 <!-- v3.21 (P0-3): 参数方案保存/加载 -->
@@ -548,6 +561,10 @@
       const profiles = ref([]);           // v3.21 (P0-3): 已存参数方案
       const profileSelect = ref('');
       const profileName = ref('');
+      const govEnabled = ref(true);        // v3.21 (P0-6): 纳管状态
+      const govSchedule = ref('20:00');
+      const govRunning = ref(false);
+      const lastHoldings = ref('');
       const activeStrategy = computed(function () {
         return strategies.value.find(function (s) { return s.id === activeStrategyId.value; }) || null;
       });
@@ -586,6 +603,7 @@
         ptradeCode.value = '';
         loadRuns();
         loadProfiles();
+        loadGov();
       }
 
       // ─── v3.21 (P0-3): 参数方案 CRUD ───
@@ -637,6 +655,82 @@
           window._core && window._core.showToast('方案已删除');
         } catch (e) {
           console.error('[research] 方案删除失败:', e);
+        }
+      }
+
+      // ─── v3.21 (P0-6): 策略纳管 ───
+      async function loadGov() {
+        try {
+          const res = await withAuth('/api/strategies/governance').then(function (r) { return r.json(); });
+          const s = (res && res.data && res.data.strategies) || {};
+          const cur = s[activeStrategyId.value] || {};
+          govEnabled.value = cur.enabled !== false;
+          govSchedule.value = cur.schedule || '20:00';
+          lastHoldings.value = cur.last_holdings || '';
+        } catch (e) {
+          console.error('[research] 纳管状态加载失败:', e);
+        }
+      }
+
+      async function updateGov() {
+        try {
+          await withAuth('/api/strategies/governance', {
+            method: 'PUT',
+            body: JSON.stringify({
+              strategies: (function () {
+                const o = {};
+                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value };
+                return o;
+              })(),
+            }),
+          }).then(function (r) { return r.json(); });
+          window._core && window._core.showToast('纳管设置已更新');
+        } catch (e) {
+          console.error('[research] 纳管更新失败:', e);
+        }
+      }
+
+      async function runOnceActive() {
+        if (!activeStrategyId.value) return;
+        govRunning.value = true;
+        try {
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/run-once', {
+            method: 'POST',
+            body: JSON.stringify({ as_of: runAsOf.value || undefined }),
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) { window._core && window._core.showToast(String(res.detail)); return; }
+          window._core && window._core.showToast('持仓已生成');
+          await loadGov();
+        } catch (e) {
+          console.error('[research] run-once 失败:', e);
+          window._core && window._core.showToast('持仓生成失败');
+        } finally {
+          govRunning.value = false;
+        }
+      }
+
+      function openLastHoldings() {
+        if (!lastHoldings.value) return;
+        window.open(lastHoldings.value.replace(/\./g, '/').replace(/^\/?home\/evergreen\/dsh-workspace\/quant-calendar-ops\//, '/api/static/'), '_blank');
+      }
+
+      function cloneStrategy() {
+        const st = activeStrategy.value;
+        if (!st) return;
+        const name = (profileName.value || '').trim() || (st.name + '-副本');
+        saveProfileAs(name, Object.assign({}, paramValues.value));
+        window._core && window._core.showToast('已复制为副本方案: ' + name);
+      }
+
+      async function saveProfileAs(name, params) {
+        try {
+          await withAuth('/api/strategies/' + activeStrategyId.value + '/profiles', {
+            method: 'POST',
+            body: JSON.stringify({ name: name, params: params }),
+          }).then(function (r) { return r.json(); });
+          await loadProfiles();
+        } catch (e) {
+          console.error('[research] 副本保存失败:', e);
         }
       }
 
@@ -799,6 +893,10 @@
         strategyRunning, ptradeCode, strategyRuns,
         loadStrategies, onStrategyChange, runActiveStrategy,
         exportActivePtradeCode, copyPtradeCode,
+        profiles, profileSelect, profileName,
+        loadProfiles, saveProfile, applyProfile, deleteProfile,
+        govEnabled, govSchedule, govRunning, lastHoldings,
+        loadGov, updateGov, runOnceActive, openLastHoldings, cloneStrategy,
         factorKey, factorIcLoading, factorLayerLoading,
         factorIcReport, factorLayerResult, factorOptions,
         runFactorIc, runFactorLayer,
