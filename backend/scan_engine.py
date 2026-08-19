@@ -10,6 +10,7 @@
 """
 import logging
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
@@ -18,11 +19,24 @@ logger = logging.getLogger(__name__)
 
 # v3.22 (异动扫描性能优化):
 # - 并发扫描: 数据源请求是 IO 密集, 线程池并发可把全量串行 N 秒 → 秒级
+# - 速率限制: sxsc-tushare 对 daily 接口硬限 20次/秒, 并发12会瞬间超限全挂
+#   → 用信号量把全局吞吐控制在 SCAN_RATE_PER_SEC(默认12/s), 留余量防限流
 # - 结果缓存: 同日期同池短时间重复扫描直接命中, 避免前端反复触发重扫
 # - 默认范围收敛: pool=all 不再扫全市场(5530只), 改用 策略池→配置池, 秒级出结果
-SCAN_CONCURRENCY = int(os.environ.get('SCAN_CONCURRENCY', '12'))   # 并发线程数
+SCAN_CONCURRENCY = int(os.environ.get('SCAN_CONCURRENCY', '10'))   # 并发线程数
+SCAN_RATE_PER_SEC = int(os.environ.get('SCAN_RATE_PER_SEC', '12'))  # 全局请求速率上限(次/秒)
 SCAN_RESULT_TTL = int(os.environ.get('SCAN_RESULT_TTL', '600'))     # 扫描结果缓存秒数(10分钟)
 _scan_cache = {}  # (date_key, pool_key) -> (ts, result) 线程安全由 GIL + 单写保证
+_scan_sem = threading.Semaphore(SCAN_RATE_PER_SEC)  # 令牌桶: 每秒放行 N 个请求
+
+def _rate_limited_request(fn, *args, **kwargs):
+    """对数据源请求做速率限制: 信号量保证 全局 ≤SCAN_RATE_PER_SEC 次/秒, 防 sxsc 限流"""
+    _scan_sem.acquire()
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        # 延迟释放, 使释放速率≈1/SCAN_RATE_PER_SEC 次/秒
+        threading.Timer(1.0 / SCAN_RATE_PER_SEC, _scan_sem.release).start()
 
 # ==================== 规则常量（可配） ====================
 LIMIT_TOLERANCE = 0.3          # 涨停/跌停判定容差（%），接近阈值即判定（四舍五入误差）
@@ -355,7 +369,8 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
 
     def _scan_one(code: str):
         try:
-            raw = manager.get_kline_data(code, period='daily', limit=limit_n)
+            # v3.22: 速率限制请求, 防止并发瞬时打爆 sxsc 20次/秒限流
+            raw = _rate_limited_request(manager.get_kline_data, code, period='daily', limit=limit_n)
             rows = _normalize_kline_response(code, raw)
             if not rows:
                 return None
