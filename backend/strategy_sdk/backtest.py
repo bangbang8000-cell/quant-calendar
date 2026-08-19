@@ -34,12 +34,22 @@ def backtest_holdings(holdings: pd.DataFrame,
     if holdings is None or holdings.empty:
         return {"success": False, "message": "持仓矩阵为空, 无法回测"}
 
-    # 对齐日期
+    # 对齐日期 (统一 YYYYMMDD 无横线格式比较与索引, 兼容 YYYYMMDD / YYYY-MM-DD)
+    def _norm(d):
+        return str(d).replace('-', '').replace('/', '')[:8]
+    _s = _norm(start_date) if start_date else None
+    _e = _norm(end_date) if end_date else None
+    # 归一化 holdings/returns 索引, 后续用归一化日期访问
+    holdings = holdings.copy()
+    holdings.index = [_norm(d) for d in holdings.index]
+    if returns is not None:
+        returns = returns.copy()
+        returns.index = [_norm(d) for d in returns.index]
     dates = sorted(holdings.index)
-    if start_date:
-        dates = [d for d in dates if d >= start_date]
-    if end_date:
-        dates = [d for d in dates if d <= end_date]
+    if _s:
+        dates = [d for d in dates if d >= _s]
+    if _e:
+        dates = [d for d in dates if d <= _e]
     if len(dates) < 2:
         return {"success": False, "message": f"有效回测日期不足 (需>=2, 实际 {len(dates)})"}
 
