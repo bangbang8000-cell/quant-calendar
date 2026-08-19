@@ -1,4 +1,5 @@
-import subprocess, os, tempfile
+import subprocess
+import os
 
 
 def test_prepush_gate_script_exists():
