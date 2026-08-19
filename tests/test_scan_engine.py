@@ -257,3 +257,29 @@ def test_get_alertable_codes_portfolio(monkeypatch):
     codes = event_alert.get_alertable_codes('alice', scope='portfolio')
     assert [c['code'] for c in codes] == ['000001.SZ', '600036.SH']
     assert codes[1]['name'] == '600036.SH'
+
+
+# ==================== resolve_scan_pool 多池并集 (v3.23) ====================
+
+
+def test_resolve_scan_pool_union_dedup(monkeypatch):
+    """watchlist,strategies 并集去重保序；单池与空池兼容"""
+    import scan_engine
+    monkeypatch.setattr(scan_engine, '_strategy_pool_codes',
+                        lambda: ['600519.SH', '600036.SH', '601318.SH'])
+    monkeypatch.setattr('event_alert.get_alertable_codes',
+                        lambda u, scope='watchlist': [
+                            {'code': '600519.SH', 'name': '贵州茅台'},
+                            {'code': '000001.SZ', 'name': '平安银行'},
+                        ])
+    # 并集: 自选 + 入池, 600519 去重
+    codes = scan_engine.resolve_scan_pool('watchlist,strategies', username='alice')
+    assert codes == ['600519.SH', '000001.SZ', '600036.SH', '601318.SH']
+    # 单池
+    assert scan_engine.resolve_scan_pool('strategies', username='alice') ==         ['600519.SH', '600036.SH', '601318.SH']
+    assert scan_engine.resolve_scan_pool('watchlist', username='alice') ==         ['600519.SH', '000001.SZ']
+    # 空/仅 all → 默认范围(None)
+    assert scan_engine.resolve_scan_pool('', username='alice') is None
+    assert scan_engine.resolve_scan_pool('all', username='alice') is None
+    # 无用户名时 watchlist 不报错, 仅返回入池
+    assert scan_engine.resolve_scan_pool('watchlist,strategies') ==         ['600519.SH', '600036.SH', '601318.SH']

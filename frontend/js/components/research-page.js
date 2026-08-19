@@ -265,9 +265,8 @@
 
                         <!-- ===== 扫描工具栏 ===== -->
                         <div class="scan-toolbar">
-                            <el-select v-model="scanPool" size="small" class="scan-pool-select" aria-label="扫描范围">
-                                <el-option label="全市场" value="all"></el-option>
-                                <el-option label="策略池" value="strategies"></el-option>
+                            <el-select v-model="scanPool" size="small" class="scan-pool-select" aria-label="扫描范围" multiple collapse-tags placeholder="扫描范围">
+                                <el-option label="当日入池" value="strategies"></el-option>
                                 <el-option label="我的自选" value="watchlist"></el-option>
                             </el-select>
                             <el-button type="primary" size="small" @click="loadScan" :loading="scanLoading">刷新扫描</el-button>
@@ -425,7 +424,7 @@
       }
 
       // ===== v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒（离线日线级） =====
-      const scanPool = ref('all');
+      const scanPool = ref(['strategies', 'watchlist']);  // v3.23: 多选扫描范围(当日入池/我的自选), 默认同时
       const scanLoading = ref(false);
       const scanError = ref(false);
       const scanResult = ref(null);
@@ -437,7 +436,8 @@
         scanLoading.value = true;
         scanError.value = false;
         try {
-          const url = '/api/market/scan?pool=' + encodeURIComponent(scanPool.value);
+          // v3.23: 多选范围 → 逗号并集(如 watchlist,strategies)
+          const url = '/api/market/scan?pool=' + encodeURIComponent((scanPool.value || []).join(',') || 'all');
           const res = await fetch(url).then(r => r.json());
           if (res && res.success) {
             scanResult.value = res.data || { moves: [], note: '' };
@@ -470,10 +470,11 @@
         }
       }
 
-      // 扫描范围中文名（loading 提示用）
+      // 扫描范围中文名（loading 提示用）— v3.23 多选
       const scanPoolLabel = computed(function () {
-        const m = { 'all': '策略池', 'strategies': '策略池', 'watchlist': '自选股' };
-        return m[scanPool.value] || '策略池';
+        const m = { 'strategies': '当日入池', 'watchlist': '自选股' };
+        const names = (scanPool.value || []).map(function (p) { return m[p]; }).filter(Boolean);
+        return names.length ? names.join('+') : '所选范围';
       });
 
       // 异动标签分组（按固定展示顺序）

@@ -320,17 +320,25 @@ def _resolve_scan_codes(pool: Optional[List[str]]) -> List[str]:
 def resolve_scan_pool(pool: str = 'all', username: Optional[str] = None) -> Optional[List[str]]:
     """将 pool 名称解析为代码列表；返回 None 表示使用默认扫描范围（由 run_scan 决定）
 
-    pool: all | strategies | watchlist
+    pool: watchlist | strategies | 逗号分隔并集(如 'watchlist,strategies')
+    v3.23: 只保留自选 + 当日入池两范围, 支持同时扫描(并集去重)
     """
-    pool = (pool or 'all').lower()
-    if pool == 'watchlist':
-        if not username:
-            return []
-        from event_alert import get_alertable_codes
-        return [c['code'] for c in get_alertable_codes(username, scope='watchlist')]
-    if pool == 'strategies':
-        return _strategy_pool_codes()
-    return None  # 'all' → 默认范围
+    names = [p.strip().lower() for p in (pool or 'all').split(',') if p.strip()]
+    names = [n for n in names if n != 'all']
+    if not names:
+        return None
+    codes: List[str] = []
+    for n in names:
+        if n == 'watchlist':
+            if username:
+                try:
+                    from event_alert import get_alertable_codes
+                    codes.extend(c['code'] for c in get_alertable_codes(username, scope='watchlist'))
+                except Exception as e:
+                    logger.warning('解析自选池失败: %s', e)
+        elif n == 'strategies':
+            codes.extend(_strategy_pool_codes())
+    return list(dict.fromkeys(c for c in codes if c)) or None
 
 
 def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
