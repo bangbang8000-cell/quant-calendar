@@ -37,6 +37,7 @@
     'sub.backtest-history': '回测记录',
     'sub.market-review': '市场复盘',
     'sub.scan': '异动扫描',
+    'sub.custom-write': '全新策略',
     'sub.status': '系统状态',
     'sub.autoeval': '自动评估',
     'sub.datasource': '数据源',

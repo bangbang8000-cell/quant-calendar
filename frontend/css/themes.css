@@ -25,6 +25,12 @@
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             /* 渐变品牌色 */
             --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            /* v3.22-logo: K线折线日历 logo 品牌渐变 (与 manifest theme-color #667eea 一致) */
+            --logo-grad-1: #667eea;
+            --logo-grad-2: #764ba2;
+            --logo-grad-3: #4c1d95;
+            --logo-white: #ffffff;
+            --logo-shadow: #000000;
             /* 主题色 */
             --primary-color: #2563eb;
             /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义
@@ -644,6 +650,12 @@
             align-items: center;
             gap: 8px;
         }
+        /* v3.22-logo: K线折线日历 logo (方案B) — 侧边栏品牌图标 */
+        .sidebar-logo-img {
+            flex-shrink: 0;
+            display: block;
+        }
+        .sidebar-logo h2 .sidebar-logo-img { margin-right: 8px; }
         .sidebar-nav {
             flex: 1;
             padding: 0 12px;
@@ -827,9 +839,10 @@
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
         .empty-state { text-align: center; padding: 40px; color: var(--text-tertiary); }
         .search-box { margin-bottom: 16px; }
+        /* v3.22-scroll: 双滚动条修复(方案A) — 去掉外层滚动, 虚拟列表(qc-virtual-list 自带 overflow-y:auto)
+           成为唯一列表滚动容器, 页面滚动(main-content)与列表内滚动互不嵌套 */
         .stock-list {
-            max-height: 500px;
-            overflow-y: auto;
+            width: 100%;
         }
         .stock-list::-webkit-scrollbar { width: 4px; }
         .stock-list::-webkit-scrollbar-thumb { background: var(--border-base); border-radius: 2px; }
@@ -3831,6 +3844,8 @@ text {
 }
 .sidebar-collapse-btn:active { transform: translateY(-50%) scale(0.94); }
 .sidebar.collapsed { width: 56px; }
+.sidebar.collapsed .sidebar-logo { padding: 0 15px 20px 15px; display: flex; justify-content: center; }
+.sidebar.collapsed .sidebar-logo-img { margin: 0; }
 .sidebar.collapsed .sidebar-logo h2,
 .sidebar.collapsed .user-info span,
 .sidebar.collapsed .sidebar-footer .user-info { display: none; }

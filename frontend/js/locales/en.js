@@ -37,6 +37,7 @@
     'sub.backtest-history': 'Backtest History',
     'sub.market-review': 'Market Review',
     'sub.scan': 'Anomaly Scan',
+    'sub.custom-write': 'New Strategy',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',
