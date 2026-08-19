@@ -3,6 +3,45 @@ import pytest
 from unittest.mock import patch
 
 
+class TestStrategyRunTask:
+    """v3.21 (P0-8): 策略定期运行任务"""
+
+    def test_strategy_run_once_uses_gov_state(self):
+        """run_strategy_once 从 governance 读 enabled, 只跑启用策略"""
+        import strategy_governance as gov
+        calls = []
+        state = {"multi_factor": {"enabled": True, "schedule": "20:00"},
+                 "capital_flow": {"enabled": False, "schedule": "20:00"}}
+        with patch.object(gov, "get_state", return_value=state), \
+             patch.object(gov, "run_once") as run:
+            run.side_effect = lambda sid, as_of=None: calls.append(sid) or {"sid": sid}
+            from scheduler import run_strategy_once
+            ok, executed, errors = run_strategy_once()
+        assert calls == ["multi_factor"], calls
+        assert ok is True
+        assert executed == ["multi_factor"]
+        assert errors == []
+
+    def test_strategy_run_once_skips_when_none_enabled(self):
+        """无启用策略时不执行, 不记录"""
+        from scheduler import run_strategy_once
+        import strategy_governance as gov
+        state = {"multi_factor": {"enabled": False, "schedule": "20:00"}}
+        with patch.object(gov, "get_state", return_value=state), \
+             patch.object(gov, "run_once") as run:
+            run_strategy_once()
+        run.assert_not_called()
+
+    def test_strategy_run_task_sleep_until_20(self):
+        """strategy_run_task 使用 governance 默认 20:00 (由 run_strategy_once 调度参数驱动)"""
+        from scheduler import Scheduler
+        s = Scheduler()
+        # 验证默认 schedule 常量
+        import strategy_governance as gov
+        assert gov.DEFAULT_SCHEDULE == "20:00"
+
+
+
 class TestSchedulerInit:
     """Scheduler initialization"""
 

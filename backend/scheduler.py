@@ -22,6 +22,29 @@ logger = logging.getLogger(__name__)
 PULL_ALERT_THRESHOLD = 3
 
 
+
+
+# v3.21 (P0-8): 策略定期运行 — 对 governance 中 enabled 策略逐个 run-once 生成持仓
+def run_strategy_once():
+    """执行所有启用策略的 run-once (同步, 供调度任务与手工触发共用)
+    返回 (ok, executed_sids, errors)
+    """
+    import strategy_governance as gov
+    state = gov.get_state()
+    executed = []
+    errors = []
+    for sid, s in state.items():
+        if not s.get("enabled"):
+            continue
+        try:
+            gov.run_once(sid)
+            executed.append(sid)
+        except Exception as e:
+            logger.error("策略 %s 定期运行失败: %s", sid, e)
+            errors.append({"sid": sid, "error": str(e)[:120]})
+    return (not errors, executed, errors)
+
+
 def detect_csv_changes(prev_mtimes: dict, current_mtimes: dict):
     """检测 CSV 文件变动 (FR-3.12.1 / task 12.3, 纯函数可测)
 
@@ -370,6 +393,44 @@ class Scheduler:
                 self._record_task_run("weekly_report", False, str(e)[:120])
             await asyncio.sleep(60)  # 避开重复触发
 
+    # ─── v3.21 (P0-8): 策略定期运行(默认 20:00) ───
+    async def strategy_run_task(self):
+        """每日收盘后按 governance 纳管状态定时运行启用策略 → 持仓文件"""
+        last_date = None
+        while self.running:
+            try:
+                import strategy_governance as gov
+                state = gov.get_state()
+                # 用第一个启用策略的 schedule(全局默认), 单任务统一调度
+                schedule_time = gov.DEFAULT_SCHEDULE
+                for _sid, _s in state.items():
+                    if _s.get("enabled"):
+                        schedule_time = _s.get("schedule") or gov.DEFAULT_SCHEDULE
+                        break
+                now = datetime.now()
+                th, tm = map(int, schedule_time.split(":"))
+                target = now.replace(hour=th, minute=tm, second=0, microsecond=0)
+                if target <= now:
+                    target += timedelta(days=1)
+                await asyncio.sleep(max((target - now).total_seconds(), 10))
+                if not self.running:
+                    break
+                today = datetime.now().strftime("%Y-%m-%d")
+                if last_date == today:
+                    await asyncio.sleep(60)
+                    continue
+                last_date = today
+                logger.info("⏰ 策略定期运行: %s", today)
+                try:
+                    run_strategy_once()
+                    self._record_task_run("strategy_run", True, f"策略持仓已生成 {today}")
+                except Exception as e:
+                    logger.error("策略定期运行失败: %s", e)
+                    self._record_task_run("strategy_run", False, str(e)[:120])
+                await asyncio.sleep(60)
+            except Exception as e:
+                logger.info("策略定时任务异常: %s", e)
+                await asyncio.sleep(60)
     async def data_refresh_task(self):
         """定时刷新策略数据任务"""
         last_refresh_date = None
@@ -825,6 +886,7 @@ class Scheduler:
         asyncio.create_task(self.daily_report_task())
         asyncio.create_task(self.weekly_report_task())
         asyncio.create_task(self.auto_evaluate_task())
+        asyncio.create_task(self.strategy_run_task())
         asyncio.create_task(self.data_refresh_task())
         asyncio.create_task(self.tushare_pull_task())
         asyncio.create_task(self.file_watch_task())
