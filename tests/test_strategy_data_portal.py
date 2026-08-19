@@ -113,3 +113,29 @@ def test_float_mv_mapped_from_circ_mv():
                              universe=["000001.SZ"])
     assert "float_mv" in panel.columns, list(panel.columns)
     assert panel["float_mv"].notna().any(), "float_mv 不应全空"
+
+
+def test_get_panel_concurrent_matches_serial():
+    """v3.21 (遗留1): 并发取数结果与串行一致 (max_workers>1)"""
+    from strategy_sdk.data_portal import RealDataPortal
+    portal = RealDataPortal(source=StubSource())
+    symbols = ["000001.SZ", "000002.SZ", "000006.SZ"]
+    ser = portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
+                           universe=symbols)
+    par = portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
+                           universe=symbols, max_workers=3)
+    assert ser is not None and par is not None
+    assert sorted(ser.index.get_level_values("symbol").unique()) == sorted(par.index.get_level_values("symbol").unique())
+    assert (ser["close"].sort_index() == par["close"].sort_index()).all()
+
+
+def test_get_panel_concurrent_limited_rate():
+    """并发模式尊重限流: 每股仍只取数 1 次"""
+    from strategy_sdk.data_portal import RealDataPortal
+    src = StubSource()
+    portal = RealDataPortal(source=src)
+    symbols = ["000001.SZ", "000002.SZ", "000006.SZ"]
+    portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
+                     universe=symbols, max_workers=3)
+    kline_calls = [c for c in src.calls if c[0] == "kline"]
+    assert len(kline_calls) == 3, f"每股取数1次, got {len(kline_calls)}"

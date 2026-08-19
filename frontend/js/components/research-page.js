@@ -38,6 +38,10 @@
                                     <el-select class="w-110" size="small" v-model="govSchedule" @change="updateGov">
                                         <el-option v-for="t in ['20:00','21:00','22:00','08:00']" :key="t" :label="t" :value="t" />
                                     </el-select>
+                                    <el-select class="w-110" size="small" v-model="govUniverse" @change="updateGov" :disabled="!govEnabled">
+                                        <el-option value="default" label="内置池" />
+                                        <el-option value="all" label="全市场" />
+                                    </el-select>
                                     <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning">⚡ 立即生成持仓</el-button>
                                     <el-button v-if="lastHoldings" size="small" @click="openLastHoldings">📄 查看最近持仓</el-button>
                                     <el-button size="small" @click="cloneStrategy">📋 复制为副本调参</el-button>
@@ -563,6 +567,7 @@
       const profileName = ref('');
       const govEnabled = ref(true);        // v3.21 (P0-6): 纳管状态
       const govSchedule = ref('20:00');
+      const govUniverse = ref('default');  // v3.21: default=内置池 | all=全市场5530
       const govRunning = ref(false);
       const lastHoldings = ref('');
       const activeStrategy = computed(function () {
@@ -666,6 +671,7 @@
           const cur = s[activeStrategyId.value] || {};
           govEnabled.value = cur.enabled !== false;
           govSchedule.value = cur.schedule || '20:00';
+          govUniverse.value = cur.universe === 'all' ? 'all' : 'default';
           lastHoldings.value = cur.last_holdings || '';
         } catch (e) {
           console.error('[research] 纳管状态加载失败:', e);
@@ -679,7 +685,7 @@
             body: JSON.stringify({
               strategies: (function () {
                 const o = {};
-                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value };
+                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value, universe: govUniverse.value };
                 return o;
               })(),
             }),
@@ -895,7 +901,7 @@
         exportActivePtradeCode, copyPtradeCode,
         profiles, profileSelect, profileName,
         loadProfiles, saveProfile, applyProfile, deleteProfile,
-        govEnabled, govSchedule, govRunning, lastHoldings,
+        govEnabled, govSchedule, govUniverse, govRunning, lastHoldings,
         loadGov, updateGov, runOnceActive, openLastHoldings, cloneStrategy,
         factorKey, factorIcLoading, factorLayerLoading,
         factorIcReport, factorLayerResult, factorOptions,

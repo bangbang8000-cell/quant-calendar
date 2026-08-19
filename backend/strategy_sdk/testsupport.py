@@ -15,9 +15,9 @@ class FakePortal:
         self.requests = []
         self._rng = __import__("numpy").random.default_rng(seed)
 
-    def get_panel(self, fields, start, end, universe=None):
+    def get_panel(self, fields, start, end, universe=None, max_workers=None):
         self.requests.append({"start": start, "end": end, "fields": list(fields),
-                              "universe": universe})
+                              "universe": universe, "max_workers": max_workers})
         idx = [(d, s) for d in self.dates for s in self.symbols]
         data = {"close": self._rng.uniform(5, 50, len(idx))}
         for f in fields:

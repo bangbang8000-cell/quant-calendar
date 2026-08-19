@@ -151,14 +151,17 @@ class DataPortal(Protocol):
 class StrategyContext:
     """策略执行上下文: 数据门户 + 参数 + 评估日"""
 
-    def __init__(self, portal: DataPortal, params: Dict[str, Any], as_of: str):
+    def __init__(self, portal: DataPortal, params: Dict[str, Any], as_of: str,
+                 max_workers: int = 1):
         self.portal = portal
         self.params = params
         self.as_of = as_of          # YYYY-MM-DD, 信号只可用 <= as_of 的数据
+        self.max_workers = max_workers   # v3.21: 全池取数并发度(默认1串行)
 
     def panel(self, fields: List[str], start: str, universe: Optional[List[str]] = None) -> pd.DataFrame:
-        """取数(自动限制 end=as_of, 防前视)"""
-        return self.portal.get_panel(fields, start, self.as_of, universe)
+        """取数(自动限制 end=as_of, 防前视); 全池模式并发取数"""
+        return self.portal.get_panel(fields, start, self.as_of, universe,
+                                     max_workers=self.max_workers)
 
 
 # ---------- 策略基类 ----------

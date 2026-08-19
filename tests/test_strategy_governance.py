@@ -64,3 +64,23 @@ def test_run_once_generates_holdings_file(admin_client, tmp_path):
     data_vals = [v for v in rows[1][1:] if v.strip()]
     assert data_vals, "持仓矩阵应有非空值"
     assert all(v == "1" for v in data_vals), data_vals[:5]
+
+
+def test_generate_holdings_all_mode_uses_full_universe(admin_client, monkeypatch, tmp_path):
+    """v3.21 (遗留1): universe_mode=all 用全量清单 + 并发取数"""
+    import strategy_governance as gov
+    import sys as _sys
+    import types as _types
+    from strategy_sdk.testsupport import FakePortal
+    class _SM:
+        stock_map = {"600000.SH": {}, "600004.SH": {}, "600519.SH": {},
+                     "601318.SH": {}, "600036.SH": {}, "601166.SH": {}}
+    _sys.modules["stock_info"] = _types.SimpleNamespace(stock_manager=_SM())
+    fake = FakePortal(dates=["2026-07-01", "2026-07-02"],
+                      symbols=["600000.SH", "600004.SH", "600519.SH",
+                               "601318.SH", "600036.SH", "601166.SH"])
+    holdings, universe = gov._generate_holdings("sector_rotation", portal=fake,
+                                                universe_mode="all")
+    assert universe, "全池模式应取全量清单"
+    assert len(universe) >= 6
+    assert any(r.get("max_workers", 1) > 1 for r in fake.requests), fake.requests

@@ -30,6 +30,7 @@ def _default_state() -> dict:
     """4 内置策略默认纳管状态"""
     return {
         sid: {"enabled": True, "schedule": DEFAULT_SCHEDULE,
+              "universe": "default",  # v3.21: default=策略自带池 | all=全市场5530
               "last_run": None, "last_holdings": None}
         for sid in BUILTIN_SIDS
     }
@@ -60,6 +61,7 @@ def save_state(state: dict) -> dict:
         clean[sid] = {
             "enabled": bool(s.get("enabled", True)),
             "schedule": str(s.get("schedule") or DEFAULT_SCHEDULE)[:5],
+            "universe": "all" if s.get("universe") == "all" else "default",
             "last_run": s.get("last_run"),
             "last_holdings": s.get("last_holdings"),
         }
@@ -68,8 +70,12 @@ def save_state(state: dict) -> dict:
     return clean
 
 
-def _generate_holdings(sid: str, portal=None):
-    """运行策略生成持仓矩阵 (复用 registry + generate_signals)"""
+def _generate_holdings(sid: str, portal=None, universe_mode: str = None):
+    """运行策略生成持仓矩阵 (复用 registry + generate_signals)
+
+    universe_mode: None=读纳管状态 | 'default'=策略自带池 | 'all'=全市场5530
+    全池模式(all): 并发取数(ThreadPoolExecutor)提速, 与 qresult 全市场覆盖等价。
+    """
     from strategy_sdk.base import StrategyContext
     from strategy_sdk.registry import registry
     st = registry.get(sid)
@@ -77,19 +83,23 @@ def _generate_holdings(sid: str, portal=None):
     if portal is None:
         from strategy_sdk.data_portal import RealDataPortal
         portal = RealDataPortal()
+    if universe_mode is None:
+        universe_mode = (get_state().get(sid) or {}).get("universe") or "default"
     universe = list(getattr(st, "universe", []) or [])
-    as_of = datetime.now().strftime("%Y-%m-%d")
-    ctx = StrategyContext(portal=portal, params=params, as_of=as_of)
-    # 扩展 universe: 若策略未定义 universe 则用全量股票清单
-    if not universe:
+    max_workers = 1
+    if universe_mode == "all" or not universe:
         try:
             from stock_info import stock_manager
             universe = sorted(stock_manager.stock_map.keys())
         except Exception:
             universe = []
+        max_workers = int(os.environ.get("STRATEGY_FETCH_WORKERS", "8"))
     if not universe:
         raise ValueError("策略无可用股票池")
     st.universe = universe
+    as_of = datetime.now().strftime("%Y-%m-%d")
+    ctx = StrategyContext(portal=portal, params=params, as_of=as_of,
+                          max_workers=max_workers)
     return st.generate_signals(ctx), universe
 
 

@@ -40,8 +40,12 @@ class RealDataPortal:
     # ---- 协议 -
 
     def get_panel(self, fields: List[str], start: str, end: str,
-                  universe: Optional[List[str]] = None) -> pd.DataFrame:
-        """组装 MultiIndex(date, symbol) 面板(列含请求 fields)"""
+                  universe: Optional[List[str]] = None,
+                  max_workers: int = 1) -> pd.DataFrame:
+        """组装 MultiIndex(date, symbol) 面板(列含请求 fields)
+
+        v3.21 (遗留1): max_workers>1 时并发取数(全池5530只提速), 尊重数据源限流。
+        """
         self.requests.append({'start': start, 'end': end, 'fields': list(fields),
                               'universe': universe})
         if self.source is None:
@@ -54,15 +58,28 @@ class RealDataPortal:
         basic_fields = [f for f in fields if _FIELD_SOURCE.get(f) == 'basic']
         flow_fields = [f for f in fields if _FIELD_SOURCE.get(f) == 'moneyflow']
         frames = []
-        for code in symbols:
+
+        def _fetch_one(code):
+            """单股取数(线程安全: data_sources 内部有锁)"""
             try:
                 stock_df = self._stock_panel(code, start, end, kline_fields,
                                              basic_fields, flow_fields)
-                if stock_df is not None and not stock_df.empty:
-                    frames.append(stock_df)
+                return stock_df if stock_df is not None and not stock_df.empty else None
             except Exception as e:
                 logger.warning('股票 %s 取数失败: %s', code, e)
-                continue
+                return None
+
+        if max_workers and max_workers > 1 and len(symbols) > 1:
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+                for df in ex.map(_fetch_one, symbols):
+                    if df is not None:
+                        frames.append(df)
+        else:
+            for code in symbols:
+                df = _fetch_one(code)
+                if df is not None:
+                    frames.append(df)
         if not frames:
             return pd.DataFrame()
         panel = pd.concat(frames)
