@@ -27,6 +27,7 @@
                                     <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning">▶ 手工运行</el-button>
+                                <el-date-picker class="w-150" v-model="runAsOf" type="date" size="small" placeholder="评估日(默认最新)" value-format="YYYY-MM-DD"/>
                                 <el-button size="small" @click="exportActivePtradeCode">📤 导出 PTrade 代码</el-button>
                             </div>
                             <div v-if="activeStrategy" class="strategy-detail">
@@ -520,6 +521,7 @@
       const activeStrategyId = ref('');
       const paramValues = ref({});
       const strategyRunning = ref(false);
+      const runAsOf = ref('');  // v3.21: 手工运行评估日(可选, 默认最近交易日)
       const ptradeCode = ref('');
       const strategyRuns = ref([]);
       const activeStrategy = computed(function () {
@@ -579,7 +581,7 @@
           const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ params: paramValues.value }),
+            body: JSON.stringify({ params: paramValues.value, as_of: runAsOf.value || undefined }),
           }).then(function (r) { return r.json(); });
           if (res && res.status === 'success') {
             loadRuns();

@@ -200,10 +200,19 @@ def build_factor_panel(stock_code: str, data_source=None, stock_info=None,
 
     if data_source is not None:
         try:
-            basic = data_source.get_daily_basic(stock_code, limit=20)
-            if basic:
-                # 以单日估值快照构建（如仅 1 行，分位退化为 None 语义标注）
-                factors.extend(compute_valuation_factors([basic]))
+            # v3.21: 优先取基本面历史序列算真实分位(PE/PB历史低位→偏低)
+            if hasattr(data_source, 'get_daily_basic_series'):
+                series = data_source.get_daily_basic_series(stock_code, limit=20)
+                if series:
+                    factors.extend(compute_valuation_factors(series))
+                else:
+                    basic = data_source.get_daily_basic(stock_code, limit=1)
+                    if basic:
+                        factors.extend(compute_valuation_factors([basic]))
+            else:
+                basic = data_source.get_daily_basic(stock_code, limit=20)
+                if basic:
+                    factors.extend(compute_valuation_factors([basic]))
         except Exception:
             pass
         try:

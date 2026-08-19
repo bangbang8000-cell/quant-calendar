@@ -661,6 +661,58 @@ class DataSourceManager:
                 record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
         return None
 
+    def get_daily_basic_series(self, ts_code, limit=20):
+        """获取基本面历史序列（旧→新列表, 用于因子分位计算）— v3.21
+        优先 tushare 标准版(多日); sxsc 券商版返回格式不兼容跳过; akshare 单元素快照"""
+        for src_name in ('tushare', 'sxsc_tushare', 'akshare'):
+            src_cfg = self._get_source_config(src_name)
+            if not src_cfg.get('enabled', True):
+                continue
+            _t0 = time.monotonic()
+            try:
+                result = self._fetch_daily_basic_series(src_name, ts_code, limit)
+                _elapsed = (time.monotonic() - _t0) * 1000
+                if result:
+                    record_call(src_name, True, _elapsed)
+                    return result
+                record_call(src_name, False, _elapsed)
+            except Exception as e:
+                logger.warning(f"{src_name} get_daily_basic_series({ts_code}) 失败: {e}")
+                record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
+        return []
+
+    def _fetch_daily_basic_series(self, src_name, ts_code, limit):
+        """各数据源获取基本面历史序列（旧→新）
+        tushare 系(标准版/券商版)走 daily_basic 多日; akshare 无历史接口返回单元素快照"""
+        if src_name in ('sxsc_tushare', 'tushare'):
+            api = self._clients.get(src_name)
+            if not api:
+                return []
+            try:
+                if src_name == 'sxsc_tushare':
+                    df = api.query('daily_basic', ts_code=ts_code, limit=limit,
+                                   fields='trade_date,pe,pb,turnover_rate,total_mv')
+                else:
+                    df = api.daily_basic(ts_code=ts_code, limit=limit,
+                                         fields='trade_date,pe,pb,turnover_rate,total_mv')
+            except Exception:
+                return []
+            if df is None or len(df) == 0:
+                return []
+            rows = []
+            for _, row in df.sort_values('trade_date').iterrows():
+                d = {'trade_date': row.get('trade_date')}
+                for f in ('pe', 'pb', 'turnover_rate', 'total_mv'):
+                    d[f] = _safe_float(row.get(f))
+                rows.append(d)
+            return rows
+        # akshare: 无历史接口, 返回单元素快照(自身异常不影响路由)
+        try:
+            one = self._fetch_daily_basic(src_name, ts_code, 1)
+        except Exception:
+            one = None
+        return [one] if one else []
+
     # ==================== 各数据源适配器 ====================
 
     def _fetch_index_daily(self, src_name, ts_code, trade_date):

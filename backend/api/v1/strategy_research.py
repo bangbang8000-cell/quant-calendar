@@ -74,7 +74,18 @@ async def run_strategy(sid: str, body: Dict[str, Any],
         # 数据门户: 真实三源优先, 不可达降级模拟
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=universe)
-        ctx = StrategyContext(portal=portal, params=params, as_of='2026-08-18')
+        # v3.21: 评估日支持前端传入 as_of(YYYY-MM-DD), 默认取最近交易日(数据中心最后一个交易日)
+        as_of = body.get('as_of') or body.get('run_date')
+        if not as_of:
+            from data_sources import data_source_manager
+            try:
+                latest = data_source_manager.get_index_daily('000300.SH', None)
+                as_of = str(latest.get('trade_date') or '')[:4] + '-' + str(latest.get('trade_date') or '')[4:6] + '-' + str(latest.get('trade_date') or '')[6:8]
+            except Exception:
+                as_of = None
+        if not as_of or len(as_of) != 10:
+            as_of = '2026-08-18'
+        ctx = StrategyContext(portal=portal, params=params, as_of=as_of)
         holdings = st.generate_signals(ctx)
         summary = {
             'holdings_days': len(holdings) if holdings is not None else 0,
