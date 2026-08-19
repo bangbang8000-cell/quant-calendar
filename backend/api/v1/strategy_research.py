@@ -101,11 +101,22 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
         from strategy_sdk.backtest import backtest_holdings
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=universe)
-        ctx = StrategyContext(portal=portal, params=params,
-                              as_of=body.get('end_date') or '2026-08-18')
+        end = body.get('end_date') or '2026-08-18'
+        start = body.get('start_date') or '2024-01-01'
+        ctx = StrategyContext(portal=portal, params=params, as_of=end)
         holdings = st.generate_signals(ctx)
+        # 真实收益序列: 取 close 面板 → 日收益率 (date×symbol, 回测器内部防前视)
+        returns = None
+        try:
+            close_panel = portal.get_panel(['close'], start, end, universe=universe)
+            if close_panel is not None and not close_panel.empty:
+                df = close_panel['close'].unstack('symbol').sort_index()
+                returns = df.pct_change()
+        except Exception as e:
+            logger.info('收益序列取数失败(%s), 走模拟收益', e)
         result = backtest_holdings(
             holdings,
+            returns=returns,
             start_date=body.get('start_date'),
             end_date=body.get('end_date'),
             commission_rate=body.get('commission_rate', 0.0003),
