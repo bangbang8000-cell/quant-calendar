@@ -963,6 +963,22 @@
                                 <span class="text-success-md">● 服务运行中</span>
                             </div>
                         </div>
+                        <!-- v3.21 (遗留2): 操作审计 — admin 查看最近敏感操作 -->
+                        <div class="card">
+                            <div class="card-title">🛡 操作审计 <span class="text-sm-tertiary">(管理员)</span></div>
+                            <div class="flex-end-gap-8 mb-8">
+                                <el-button size="small" @click="loadAuditLogs" :loading="auditLoading">刷新</el-button>
+                            </div>
+                            <div v-if="auditLogs.length" class="audit-list">
+                                <div v-for="l in auditLogs" :key="l.id" class="audit-row">
+                                    <span class="audit-action">{{ l.action }}</span>
+                                    <span class="text-sm">{{ l.username }}</span>
+                                    <span class="text-sm-tertiary">{{ l.ts }}</span>
+                                    <span class="text-sm-tertiary audit-detail">{{ l.detail }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="text-sm-tertiary m-0-0-12">暂无审计记录</div>
+                        </div>
                         <!-- v3.2.0-T24: 问题反馈 -->
                         <div class="card">
                             <div class="card-title">📮 问题反馈</div>
@@ -1049,6 +1065,23 @@
       const newOpenApiKey = Vue.ref('');
       const openApiLoading = Vue.ref(false);
       const _core = () => (window.__quantModules && window.__quantModules.core) || {};
+      // v3.21 (遗留2): 操作审计
+      const auditLogs = Vue.ref([]);
+      const auditLoading = Vue.ref(false);
+
+      async function loadAuditLogs() {
+        auditLoading.value = true;
+        try {
+          const res = await fetch('/api/audit/logs?limit=20', { headers: _core().authHeaders ? _core().authHeaders() : {} })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+          auditLogs.value = (res && res.logs) || [];
+        } catch (e) {
+          console.error('[system] 审计加载失败:', e);
+          auditLogs.value = [];
+        } finally {
+          auditLoading.value = false;
+        }
+      }
       // 页面热度相对条最大参考值 (v3.17 UI优化) — v3.18.6 fix: state.analyticsRank 为 ref, 需 .value 取数组
       const analyticsMaxViews = Vue.computed(() => {
         const rank = (state && state.analyticsRank && state.analyticsRank.value) || [];
@@ -1194,6 +1227,7 @@
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,
+        auditLogs, auditLoading, loadAuditLogs,
       };
     },
   };

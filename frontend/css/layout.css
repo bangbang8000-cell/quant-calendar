@@ -148,3 +148,9 @@
 .factor-research { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); }
 .factor-ic-report { margin-top: 8px; }
 .factor-layer-result { margin-top: 8px; }
+
+/* ===== v3.21 遗留2: 操作审计 ===== */
+.audit-list { display: flex; flex-direction: column; gap: 4px; }
+.audit-row { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: var(--font-sm); }
+.audit-action { padding: 2px 8px; border-radius: var(--r-full); background: var(--badge-info-bg); color: var(--badge-info-text); font-size: var(--font-xs); flex-shrink: 0; }
+.audit-detail { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
