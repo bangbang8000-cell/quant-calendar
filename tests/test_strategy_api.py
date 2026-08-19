@@ -4,7 +4,8 @@
 策略注册表 API 测试 (FR: 策略研究 P0)
 覆盖: strategy_defs/strategy_runs 持久化 + /api/strategies 端点契约
 """
-import sys, os, json
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +20,56 @@ def authed_client():
     client = TestClient(app)
     client.headers.update({"Authorization": f"Bearer {token}"})
     return client
+
+
+# ---------- v3.21 (P0-3): 策略参数方案 profiles ----------
+
+def test_profiles_save_list_delete(authed_client):
+    """保存/列出/删除策略参数方案 (per sid 隔离)"""
+    r = authed_client.post('/api/strategies/multi_factor/profiles',
+                           json={'name': '激进版', 'params': {'top_n': 30, 'benchmark': '000300.SH'}})
+    assert r.status_code == 200, r.text
+    data = r.json().get('data') or {}
+    assert data.get('id')
+    pid = data['id']
+    r = authed_client.get('/api/strategies/multi_factor/profiles')
+    assert r.status_code == 200
+    lst = (r.json().get('data') or {}).get('profiles') or []
+    assert any(p['id'] == pid and p['name'] == '激进版' for p in lst), lst
+    r = authed_client.delete(f'/api/strategies/multi_factor/profiles/{pid}')
+    assert r.status_code == 200
+    r = authed_client.get('/api/strategies/multi_factor/profiles')
+    lst = (r.json().get('data') or {}).get('profiles') or []
+    assert not any(p['id'] == pid for p in lst)
+
+
+def test_profiles_sid_isolation(authed_client):
+    """不同策略的方案互相隔离"""
+    r1 = authed_client.post('/api/strategies/multi_factor/profiles',
+                            json={'name': 'mf方案', 'params': {'top_n': 25}})
+    r2 = authed_client.post('/api/strategies/capital_flow/profiles',
+                            json={'name': 'cf方案', 'params': {'flow_window': 20}})
+    assert r1.status_code == 200 and r2.status_code == 200
+    mf = (authed_client.get('/api/strategies/multi_factor/profiles').json().get('data') or {}).get('profiles') or []
+    cf = (authed_client.get('/api/strategies/capital_flow/profiles').json().get('data') or {}).get('profiles') or []
+    assert all(p['name'] == 'mf方案' for p in mf)
+    assert all(p['name'] == 'cf方案' for p in cf)
+    for p in mf: authed_client.delete(f'/api/strategies/multi_factor/profiles/{p["id"]}')
+    for p in cf: authed_client.delete(f'/api/strategies/capital_flow/profiles/{p["id"]}')
+
+
+def test_profiles_validation(authed_client):
+    """非法输入 400/422: 空name / 非dict params"""
+    r = authed_client.post('/api/strategies/multi_factor/profiles', json={'name': '', 'params': {}})
+    assert r.status_code in (400, 422)
+    r = authed_client.post('/api/strategies/multi_factor/profiles', json={'name': 'x', 'params': 'not-dict'})
+    assert r.status_code in (400, 422)
+
+
+def test_profiles_delete_missing_404(authed_client):
+    """删除不存在方案 → 404"""
+    r = authed_client.delete('/api/strategies/multi_factor/profiles/nonexistent-id')
+    assert r.status_code in (404, 400)
 
 
 # ---------- db 持久化层 ----------

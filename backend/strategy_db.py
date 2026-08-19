@@ -46,6 +46,17 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_strategy_runs_sid_time
     ON strategy_runs(strategy_id, started_at DESC);
+CREATE TABLE IF NOT EXISTS strategy_profiles (
+    id TEXT PRIMARY KEY,
+    strategy_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    params TEXT NOT NULL DEFAULT '{}',
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_profiles_sid
+    ON strategy_profiles(strategy_id);
 """
 
 
@@ -72,6 +83,80 @@ def init_db() -> None:
 
 def _now() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+# ─── v3.21 (P0-3): 策略参数方案 profiles ──────────────
+
+def _pid() -> str:
+    import uuid
+    return uuid.uuid4().hex[:12]
+
+
+def save_profile(strategy_id: str, name: str, params: dict,
+                 is_default: bool = False) -> dict:
+    """保存参数方案；name 为空 / params 非 dict 抛 ValueError"""
+    if not name or not str(name).strip():
+        raise ValueError("方案名称不能为空")
+    if not isinstance(params, dict):
+        raise ValueError("params 必须是对象")
+    init_db()
+    pid = _pid()
+    now = _now()
+    with _db_lock:
+        conn = get_conn()
+        try:
+            conn.execute(
+                "INSERT INTO strategy_profiles"
+                "(id, strategy_id, name, params, is_default, created_at, updated_at)"
+                " VALUES (?,?,?,?,?,?,?)",
+                (pid, strategy_id, str(name).strip(), json.dumps(params, ensure_ascii=False),
+                 int(bool(is_default)), now, now),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    return {"id": pid, "strategy_id": strategy_id, "name": str(name).strip(),
+            "params": params, "is_default": bool(is_default),
+            "created_at": now, "updated_at": now}
+
+
+def list_profiles(strategy_id: str) -> list:
+    init_db()
+    with _db_lock:
+        conn = get_conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM strategy_profiles WHERE strategy_id=? ORDER BY created_at DESC",
+                (strategy_id,),
+            ).fetchall()
+        finally:
+            conn.close()
+    out = []
+    for r in rows:
+        try:
+            p = json.loads(r["params"])
+        except Exception:
+            p = {}
+        out.append({"id": r["id"], "strategy_id": r["strategy_id"], "name": r["name"],
+                    "params": p, "is_default": bool(r["is_default"]),
+                    "created_at": r["created_at"], "updated_at": r["updated_at"]})
+    return out
+
+
+def delete_profile(strategy_id: str, profile_id: str) -> bool:
+    """删除；不存在返回 False"""
+    init_db()
+    with _db_lock:
+        conn = get_conn()
+        try:
+            cur = conn.execute(
+                "DELETE FROM strategy_profiles WHERE id=? AND strategy_id=?",
+                (profile_id, strategy_id),
+            )
+            conn.commit()
+            return cur.rowcount > 0
+        finally:
+            conn.close()
 
 
 # ---------- strategy_defs ----------

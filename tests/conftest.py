@@ -1,5 +1,7 @@
 """pytest configuration — fixtures and mocks"""
-import sys, os, tempfile, json
+import sys
+import os
+import tempfile
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
@@ -47,12 +49,22 @@ def patch_data_dir():
     old_db_file = db.DB_FILE
     db.DATA_DIR = tmp
     db.DB_FILE = os.path.join(tmp, 'app.db')
+    # v3.21: strategy_db 同源隔离 (strategy.db 含参数方案/运行记录)
+    import strategy_db as _sdb
+    _old_sdb_dir = getattr(_sdb, 'DATA_DIR', None)
+    _old_sdb_file = getattr(_sdb, 'DB_FILE', None)
+    _sdb.DATA_DIR = tmp
+    _sdb.DB_FILE = os.path.join(tmp, 'strategy.db')
     yield
     paths.DATA_DIR = old_data
     for _key, _val in _saved.items():
         setattr(paths, _key, _val)
     db.DATA_DIR = old_db_data_dir
     db.DB_FILE = old_db_file
+    if _old_sdb_dir is not None:
+        _sdb.DATA_DIR = _old_sdb_dir
+    if _old_sdb_file is not None:
+        _sdb.DB_FILE = _old_sdb_file
 
 
 @pytest.fixture

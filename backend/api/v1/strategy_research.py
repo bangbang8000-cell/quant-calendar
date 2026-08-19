@@ -29,6 +29,45 @@ async def list_strategies(_: Dict = Depends(get_current_active_user)):
     return registry.list()
 
 
+# ─── v3.21 (P0-3): 策略参数方案 profiles ────────────
+
+@router.get('/{sid}/profiles')
+async def list_profiles_api(sid: str, _: Dict = Depends(get_current_active_user)):
+    """列出策略已保存的参数方案"""
+    try:
+        registry.get(sid)
+    except StrategyNotFoundError:
+        raise HTTPException(404, f'策略不存在: {sid}')
+    from strategy_db import list_profiles
+    return {"data": {"sid": sid, "profiles": list_profiles(sid)}}
+
+
+@router.post('/{sid}/profiles')
+async def save_profile_api(sid: str, body: Dict, _: Dict = Depends(get_current_active_user)):
+    """保存参数方案 {name, params}"""
+    try:
+        registry.get(sid)
+    except StrategyNotFoundError:
+        raise HTTPException(404, f'策略不存在: {sid}')
+    from strategy_db import save_profile
+    try:
+        prof = save_profile(sid, body.get('name') or '', body.get('params') or {},
+                            bool(body.get('is_default')))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"data": prof}
+
+
+@router.delete('/{sid}/profiles/{profile_id}')
+async def delete_profile_api(sid: str, profile_id: str,
+                             _: Dict = Depends(get_current_active_user)):
+    """删除参数方案"""
+    from strategy_db import delete_profile
+    if not delete_profile(sid, profile_id):
+        raise HTTPException(404, '方案不存在')
+    return {"data": {"deleted": True}}
+
+
 @router.get('/{sid}/schema')
 async def get_strategy_schema(sid: str, _: Dict = Depends(get_current_active_user)):
     """参数表单 schema(前端零构建渲染契约)"""
