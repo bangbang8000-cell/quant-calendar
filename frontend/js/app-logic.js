@@ -86,7 +86,7 @@
 
                 // v3.0: 美林时钟模块 - 从 merrill.js 加载
                 const merrill = useMerrillClock();
-                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh } = merrill;
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh } = merrill;
 
                 // v3.0: 图标系统映射 — 使用外部模块
                 const ICON_MAPS = window.__quantModules.icons.ICON_MAPS;
@@ -747,7 +747,8 @@ const allMenuDefs = [
                     currentPage, currentSubPage, currentView, currentKlinePeriod,
                     selectedDate, dates, loadDates, loadConsensusData, loadDashboardCached,
                     appVersion, themes, fetchMarketData,
-                    fetchMerrillStages, fetchMerrillClock,
+                    fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage,
+                    merrillTimeline, timelineLoading,
                     loadAiConfig, loadAiVendors, loadAiCatalog, currentUser,
                     loadUserConfig, loadAutoEvaluateConfig, loadGroupConfig,
                     loadUsers, loadAllGroups, loadAiHistory,
@@ -832,6 +833,9 @@ const allMenuDefs = [
                 // v3.0: 美林时钟自动刷新（由 merrill.js 模块管理）
                 startAutoRefresh();
 
+                // v3.22-I4: 加载历史周期时间轴(最近4轮)
+                loadMerrillTimeline();
+
                 onUnmounted(() => {
                     if (strategyPollTimer) clearInterval(strategyPollTimer);
                     window.removeEventListener('keydown', handleGlobalKeydown);
@@ -855,7 +859,7 @@ const allMenuDefs = [
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, handleLogout,
 
-                    marketData, merrillData, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    marketData, merrillData, merrillTimeline, timelineLoading, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,

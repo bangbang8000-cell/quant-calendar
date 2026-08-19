@@ -154,3 +154,74 @@
 .audit-row { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: var(--font-sm); }
 .audit-action { padding: 2px 8px; border-radius: var(--r-full); background: var(--badge-info-bg); color: var(--badge-info-text); font-size: var(--font-xs); flex-shrink: 0; }
 .audit-detail { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─── v3.22-I4: 美林时钟历史周期时间轴 ─── */
+.merrill-timeline-block {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg-card-header);
+  border-radius: 12px;
+}
+.merrill-timeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.merrill-timeline-sub {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+.merrill-cycle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.merrill-cycle-label {
+  min-width: 44px;
+  font-size: 12px;
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.merrill-cycle-track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.merrill-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--white);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.merrill-stage-chip:hover { opacity: 0.85; transform: translateY(-1px); }
+.merrill-stage-chip.is-current { box-shadow: 0 0 0 2px var(--color-primary); }
+.merrill-stage-chip-name { font-weight: var(--font-semibold, 600); }
+.merrill-stage-chip-date { font-size: 11px; opacity: 0.85; }
+.merrill-stage-chip-current {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.merrill-stage-arrow { color: var(--text-tertiary); font-size: 12px; }
+.merrill-timeline-empty { color: var(--text-tertiary); font-size: 12px; padding: 8px 0; text-align: center; }
+
+
+.merrill-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

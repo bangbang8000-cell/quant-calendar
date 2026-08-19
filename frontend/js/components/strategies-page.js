@@ -257,6 +257,34 @@
                         <div class="gold-hint">
                             💡 点击阶段卡片查看详细分析和投资建议
                         </div>
+
+                        <!-- v3.22-I4: 历史周期时间轴(最近4轮) -->
+                        <div class="merrill-timeline-block">
+                            <div class="merrill-timeline-head">
+                                <span>🕰️ 历史周期时间轴</span>
+                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 点击阶段查看详情</span>
+                                <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
+                            </div>
+                            <div class="merrill-timeline" v-if="merrillTimeline?.cycles?.length">
+                                <div class="merrill-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
+                                    <div class="merrill-cycle-label">{{ cycle.label }}</div>
+                                    <div class="merrill-cycle-track">
+                                        <div v-for="(st, si) in cycle.stages" :key="si"
+                                             class="merrill-stage-chip"
+                                             :class="{ 'is-current': st.is_current }"
+                                             :style="{background: getTimelineStageColor(st.stage), borderColor: st.is_current ? 'var(--color-primary)' : 'transparent'}"
+                                             @click.prevent="showTimelineStage(st.stage)"
+                                             :title="(st.name || st.stage) + ' · ' + (st.start ? st.start.slice(0,10) : '起点') + ' → ' + (st.end ? st.end.slice(0,10) : '至今')">
+                                            <span class="merrill-stage-chip-name">{{ st.name || st.stage }}</span>
+                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}</span>
+                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                        </div>
+                                        <div class="merrill-stage-arrow" v-if="si < cycle.stages.length - 1">→</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="merrill-timeline-empty" v-else-if="!timelineLoading">暂无历史周期数据</div>
+                        </div>
                     </div>
                     </div>
                     
@@ -551,7 +579,21 @@
         return items;
       });
 
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus };
+      // v3.22-I4: 美林时间轴 (显式解包 ref)
+      const merrillTimeline = computed(() => state.merrillTimeline?.value || state.merrillTimeline || { cycles: [] });
+      const timelineLoading = computed(() => state.timelineLoading?.value || false);
+      function showTimelineStage(stage) {
+        if (state.showTimelineStage) state.showTimelineStage(stage);
+      }
+
+      // v3.22-I4: 美林时间轴阶段取色
+      function getTimelineStageColor(stage) {
+        const cfg = state.merrillStagesConfig?.value || {};
+        const s = cfg[stage] || {};
+        return s.color || s.bg_color || 'var(--border-strong)';
+      }
+
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, getTimelineStageColor, merrillTimeline, timelineLoading, showTimelineStage };
     },
   };
 })();

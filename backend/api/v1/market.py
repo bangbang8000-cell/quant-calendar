@@ -56,6 +56,34 @@ async def get_merrill_history():
         return {"success": False, "message": str(e)}
 
 
+@router.get("/merrill-clock/timeline")
+async def get_merrill_timeline():
+    """v3.22-I4: 美林时钟历史周期时间轴(最近4轮, 每轮阶段序列可点击看详情)
+    数据源 = 内置完整历史(13条/4轮) + 运行时新增转换(按 transition_date 去重) + 当前阶段补全"""
+    try:
+        import json
+        import os
+        from paths import MERRILL_HISTORY_FILE
+        from merrill_history import build_timeline, HISTORICAL_TRANSITIONS
+        transitions = list(HISTORICAL_TRANSITIONS)
+        data = {}
+        if os.path.exists(MERRILL_HISTORY_FILE):
+            with open(MERRILL_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        # 合并运行时新增(去重: 同日期+同 to_stage 视为同一条)
+        seen = {(t.get('transition_date'), t.get('to_stage')) for t in transitions}
+        for t in (data.get('transitions') or []):
+            key = (t.get('transition_date'), t.get('to_stage'))
+            if key not in seen:
+                transitions.append(t)
+                seen.add(key)
+        current_stage = data.get('current_stage') or ''
+        current_start = data.get('current_stage_start') or ''
+        return {"success": True, "data": build_timeline(transitions, current_stage, current_start)}
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
 @router.post("/merrill-clock/reevaluate")
 async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
     """强制重评估美林时钟（忽略缓存）"""
