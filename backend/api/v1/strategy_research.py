@@ -29,6 +29,45 @@ async def list_strategies(_: Dict = Depends(get_current_active_user)):
     return registry.list()
 
 
+# ─── v3.21 (P0-6): 策略纳管中心 ────────────────────
+
+@router.get('/governance')
+async def governance_get(_: Dict = Depends(get_current_active_user)):
+    """纳管状态(4 内置策略)"""
+    import strategy_governance as gov
+    return {"data": {"strategies": gov.get_state()}}
+
+
+@router.put('/governance')
+async def governance_put(body: Dict, _: Dict = Depends(get_current_active_user)):
+    """更新纳管状态 {strategies: {sid: {enabled, schedule}}}"""
+    import strategy_governance as gov
+    new_state = gov.save_state(body.get('strategies') or {})
+    return {"data": {"strategies": new_state}}
+
+
+@router.post('/{sid}/run-once')
+async def governance_run_once(sid: str, body: Dict = None,
+                              _: Dict = Depends(get_current_active_user)):
+    """run-once: 运行策略生成持仓文件(可指定 as_of)"""
+    import strategy_governance as gov
+    from strategy_sdk.registry import StrategyNotFoundError
+    try:
+        result = gov.run_once(sid, as_of=(body or {}).get('as_of'))
+    except StrategyNotFoundError:
+        raise HTTPException(404, f'策略不存在或非纳管: {sid}')
+    except RuntimeError as e:
+        raise HTTPException(500, str(e))
+    return {"data": result}
+
+
+@router.get('/{sid}/holdings')
+async def governance_holdings(sid: str, _: Dict = Depends(get_current_active_user)):
+    """列出该策略最近持仓文件"""
+    import strategy_governance as gov
+    return {"data": {"sid": sid, "holdings": gov.list_holdings(sid)}}
+
+
 # ─── v3.21 (P0-3): 策略参数方案 profiles ────────────
 
 @router.get('/{sid}/profiles')

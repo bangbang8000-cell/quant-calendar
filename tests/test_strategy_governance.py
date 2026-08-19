@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+"""
+v3.21 (P0-6): 策略纳管中心测试
+覆盖: governance 状态存取 + run-once 生成持仓文件(qresult矩阵)
+"""
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+import pytest
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture(scope="module")
+def admin_client():
+    """注入 admin token 的测试客户端"""
+    from main_new import app
+    from auth import create_access_token
+    token = create_access_token({"sub": "admin", "role": "admin"})
+    client = TestClient(app)
+    client.headers.update({"Authorization": "Bearer " + token})
+    return client
+
+
+def test_governance_get_put_defaults(admin_client):
+    """GET governance 返回 4 策略默认状态; PUT 更新 enabled/schedule"""
+    r = admin_client.get("/api/strategies/governance")
+    assert r.status_code == 200, r.text
+    data = (r.json().get("data") or {}).get("strategies") or {}
+    assert "multi_factor" in data and "capital_flow" in data
+    # PUT 更新
+    r = admin_client.put("/api/strategies/governance",
+                         json={"strategies": {"multi_factor": {"enabled": True, "schedule": "20:00"}}})
+    assert r.status_code == 200, r.text
+    r = admin_client.get("/api/strategies/governance")
+    data = (r.json().get("data") or {}).get("strategies") or {}
+    assert data.get("multi_factor", {}).get("enabled") is True
+    assert data.get("multi_factor", {}).get("schedule") == "20:00"
+
+
+def test_run_once_generates_holdings_file(admin_client, tmp_path):
+    """run-once 生成持仓文件 (qresult 矩阵: 行=日期/列=代码/值=1)"""
+    # 用 FakePortal 注入确定性数据 (无网络依赖)
+    from strategy_sdk.testsupport import FakePortal
+    fake = FakePortal(dates=["2026-07-01", "2026-07-02", "2026-07-03"],
+                      symbols=["600000.SH", "600004.SH"], seed=1)
+    # patch 门户工厂路径: run-once 内部走 _resolve_portal, 这里直接调用 governance 函数
+    import strategy_governance as gov
+    sid = "sector_rotation"
+    # 显式调用内部 run 函数(绕过真实数据源)
+    holdings, universe = gov._generate_holdings(sid, portal=fake)
+    assert holdings is not None and len(holdings) > 0
+    # 写持仓文件
+    out_dir = str(tmp_path / "holdings" / "2026-07-03")
+    os.makedirs(out_dir, exist_ok=True)
+    path = gov._write_holdings_matrix(holdings, sid, out_dir)
+    assert path and os.path.exists(path)
+    import csv
+    rows = list(csv.reader(open(path)))
+    # 表头: 空+BOM + 股票列
+    assert len(rows) >= 2, "应有表头+至少1数据行"
+    header = rows[0]
+    assert any("600000.SH" in c for c in header), header[:5]
+    # 值=1(持有)
+    data_vals = [v for v in rows[1][1:] if v.strip()]
+    assert data_vals, "持仓矩阵应有非空值"
+    assert all(v == "1" for v in data_vals), data_vals[:5]
