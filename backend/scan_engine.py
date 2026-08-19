@@ -367,24 +367,27 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
     if hit and now - hit[0] < SCAN_RESULT_TTL:
         return hit[1]
 
+    # v3.22 修复: _scan_one 返回 (move|None, reachable) —
+    #   数据不可达(rows空/日期不匹配/异常) → (None, False) 计入 failed
+    #   数据可达但无异动 → (None, True) 不计入 failed(note 不应误报"不可达")
     def _scan_one(code: str):
         try:
             # v3.22: 速率限制请求 + tushare 优先(绕开 sxsc 20次/秒限流)
             raw = _rate_limited_request(manager.get_kline_data, code, period='daily', limit=limit_n, preferred='tushare')
             rows = _normalize_kline_response(code, raw)
             if not rows:
-                return None
+                return None, False
             if req_key:
                 rows = [r for r in rows if _normalize_date_key(r.get('date')) <= req_key]
                 if not rows or _normalize_date_key(rows[-1].get('date')) != req_key:
-                    return None
+                    return None, False
             labels = classify_moves(rows, code=code, name=_name_of(code))
             if labels:
-                return _build_move(code, rows, labels)
-            return None
+                return _build_move(code, rows, labels), True
+            return None, True
         except Exception as e:
             logger.warning('异动扫描失败 %s: %s', code, e)
-            return None
+            return None, False
 
     moves: List[dict] = []
     failed = 0
@@ -392,10 +395,10 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
         futures = [ex.submit(_scan_one, c) for c in codes]
         for fut in as_completed(futures):
             try:
-                r = fut.result()
+                r, reachable = fut.result()
                 if r:
                     moves.append(r)
-                else:
+                elif not reachable:
                     failed += 1
             except Exception as e:
                 failed += 1
