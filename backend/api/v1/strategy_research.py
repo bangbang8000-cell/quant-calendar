@@ -148,17 +148,34 @@ async def strategy_run_detail(sid: str, rid: str,
 @router.get('/{sid}/ptrade-code')
 async def strategy_ptrade_code(sid: str, top_n: Optional[int] = None,
                                benchmark: Optional[str] = None,
+                               universe_source: Optional[str] = None,
+                               universe_codes: Optional[str] = None,
+                               index_code: Optional[str] = None,
+                               timing_enabled: Optional[bool] = None,
+                               timing_index: Optional[str] = None,
+                               timing_ma_window: Optional[int] = None,
+                               stop_loss_pct: Optional[float] = None,
+                               take_profit_pct: Optional[float] = None,
+                               max_drawdown_pct: Optional[float] = None,
                                _: Dict = Depends(get_current_active_user)):
-    """导出 PTrade 可直接运行的策略代码(模板+参数填充+静态校验)"""
+    """导出 PTrade 可直接运行的策略代码(模板+参数填充+静态校验)
+    P2: 三要素参数(选股范围/择时/风控)均可通过 query 透传"""
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
         raise HTTPException(status_code=404, detail=f'策略 {sid} 不存在')
     params: Dict[str, Any] = {}
-    if top_n is not None:
-        params['top_n'] = top_n
-    if benchmark is not None:
-        params['benchmark'] = benchmark
+    overrides = {
+        'top_n': top_n, 'benchmark': benchmark,
+        'universe_source': universe_source, 'universe_codes': universe_codes,
+        'index_code': index_code, 'timing_enabled': timing_enabled,
+        'timing_index': timing_index, 'timing_ma_window': timing_ma_window,
+        'stop_loss_pct': stop_loss_pct, 'take_profit_pct': take_profit_pct,
+        'max_drawdown_pct': max_drawdown_pct,
+    }
+    for k, v in overrides.items():
+        if v is not None:
+            params[k] = v
     try:
         code = st.to_ptrade_code(params)
         return {'strategy_id': sid, 'code': code}
