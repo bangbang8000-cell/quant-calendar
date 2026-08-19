@@ -20,6 +20,15 @@ class FakeDataSourceManager:
     def __init__(self, index_rows=None, moneyflow_rows=None):
         self.index_rows = index_rows or {}
         self.moneyflow_rows = moneyflow_rows
+        # v3.21: _fetch_moneyflow_detail 直连 tushare client (_clients['tushare'])
+        moneyflow_rows = self.moneyflow_rows
+        class _FakePro:
+            def moneyflow(self, ts_code, limit=1, fields=None):
+                if moneyflow_rows:
+                    import pandas as pd
+                    return pd.DataFrame(moneyflow_rows, columns=['trade_date', 'net_mf_amount'])
+                return None
+        self._clients = {'tushare': _FakePro()}
 
     def get_index_daily(self, ts_code, trade_date=None):
         return self.index_rows.get(ts_code)

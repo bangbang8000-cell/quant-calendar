@@ -162,13 +162,19 @@ def _fetch_moneyflow_detail(today=None):
     """尝试获取大盘资金面简述 (tushare 系 moneyflow 为个股接口, 用代表个股反映资金面)
     不可达返回 '数据不可达'"""
     try:
-        # 用贵州茅台(600519)等代表个股的主/净流入反映大盘资金面; tushare 优先
-        rows = data_source_manager.get_moneyflow("600519.SH", limit=1)
-        if rows:
-            latest = rows[-1]
-            net = latest.get("net_mf_amount")
+        # 用贵州茅台(600519)等代表个股的主/净流入反映大盘资金面。
+        # 直接走 tushare client(标准版), 避开 sxsc 券商版对 moneyflow 接口不兼容导致的
+        # 路由暂停污染(get_route_order 会因 sxsc 失败连坐暂停 tushare → 复盘数据卡空)。
+        pro = data_source_manager._clients.get('tushare')
+        if pro is None:
+            return MONEYFLOW_UNAVAILABLE
+        df = pro.moneyflow(ts_code="600519.SH", limit=1, fields='trade_date,net_mf_amount')
+        if df is not None and len(df) > 0:
+            latest = df.sort_values('trade_date').iloc[-1]
+            net = latest.get('net_mf_amount')
+            trade_date = latest.get('trade_date', '未知')
             if net is not None:
-                return f"代表个股(贵州茅台)主力净流入 {float(net):.2f} 万元 (交易日 {latest.get('trade_date', '未知')})"
+                return f"代表个股(贵州茅台)主力净流入 {float(net):.2f} 万元 (交易日 {trade_date})"
         return MONEYFLOW_UNAVAILABLE
     except Exception as e:
         logger.warning(f"获取资金面数据失败, 降级: {e}")
