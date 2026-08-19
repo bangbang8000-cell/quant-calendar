@@ -32,13 +32,14 @@
 - [ ] T3.0.2 策略副本库: 复制内置策略 → strategy_defs type=variant(存母本+参数)
 - [ ] T3.0.3 后端单测: code 存取/variant 复制/参数隔离
 
-### 3.1 路径 A — 基于现有策略微调 (信号层 + AI 交易层)
+### 3.1 路径 A — 基于现有策略微调 (信号层 + AI 交易层, AI 可微调选股) — 评审v3
 - [ ] T3A.1 POST /api/strategies/{sid}/copy-variant (复制母本 → 新 variant sid)
 - [ ] T3A.2 参数配置界面: 复用 schema 表单, 支持 variant 策略编辑参数
 - [ ] T3A.3 生成新持仓矩阵: 复用 run-once, variant 用自身参数生成独立矩阵文件
-- [ ] T3A.4 POST /api/strategies/{sid}/ai-trade-code: 输入持仓矩阵(抽样优选topN) → LLM 生成 PTrade 交易代码(get_history+order_target按矩阵调仓) + 风控(止损/止盈/最大回撤/仓位) → _ALLOWED_APIS 校验 → 返回代码
-- [ ] T3A.5 后端单测: copy-variant/ai-trade-code 代码结构/风控片段/无key降级
-- [ ] T3A.6 前端: 微调流程向导(复制 → 改参数 → 生成持仓 → AI交易码 → 导出/回测)
+- [ ] T3A.4 **SelectionSpec 协议**: schema 扩展 stock_count/industry_scope/market_cap_range/exclude_st/index_membership/turnover_range/rebalance_cycle; 后端校验+持久化
+- [ ] T3A.5 POST /api/strategies/{sid}/ai-trade-code: 输入持仓矩阵(抽样topN) + SelectionSpec → LLM 生成 PTrade 交易代码(矩阵优选股 + 按 SelectionSpec 微调选股 + order_target 调仓 + 风控) → _ALLOWED_APIS 校验 → 返回代码
+- [ ] T3A.6 后端单测: copy-variant/ai-trade-code 代码结构/SelectionSpec 微调片段/风控片段/无key降级
+- [ ] T3A.7 前端: 微调流程向导(复制 → 改参数 → 生成持仓 → 配置 SelectionSpec → AI交易码 → 导出/回测)
 
 ### 3.2 路径 B — 全新策略 (PTrade 兼容 + AI 代写)
 - [ ] T3B.1 POST /api/strategies/custom (AI 代写: prompt → LLM 生成完整代码 → 校验 → 存 code)

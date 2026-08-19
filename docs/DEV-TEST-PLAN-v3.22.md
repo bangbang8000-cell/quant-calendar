@@ -21,8 +21,11 @@
 - [ ] 复制不存在 sid → 404
 
 ### 路径 A — AI 交易码 (tests/test_ai_trade_code.py)
-- [ ] ai-trade-code: 输入持仓矩阵(抽样 topN) → mock LLM → 返回 PTrade 交易代码
-- [ ] 代码含 get_history + order_target(按矩阵调仓) + 风控片段(止损/止盈/回撤)
+- [ ] ai-trade-code: 输入持仓矩阵(抽样 topN) + SelectionSpec → mock LLM → 返回 PTrade 交易代码
+- [ ] 代码含 get_history + order_target(按最终持仓调仓) + 风控片段(止损/止盈/回撤)
+- [ ] SelectionSpec 微调: AI 在矩阵优选股基础上应用筛选(数量/行业/市值/ST/指数成分) → 最终调仓清单
+- [ ] SelectionSpec 校验: 非法值(market_cap_range min>max / 未知 index_membership) → 400
+- [ ] SelectionSpec 持久化: 存 variant 参数 → 重启可读回
 - [ ] 生成代码通过 _ALLOWED_APIS 静态校验
 - [ ] 无 key → 降级提示(非500)
 - [ ] 持仓矩阵抽样: 全池矩阵 → 只取优选 topN 给 LLM(避免 token 超限)
@@ -67,7 +70,9 @@
 ### I3 路径 A — 基于现有微调
 - [ ] 复制母本(如多因子) → 独立策略出现
 - [ ] 改参数(参数配置界面) → 生成新持仓矩阵文件(独立命名)
-- [ ] AI 交易码: 输入思路/矩阵 → 生成代码(含风控) → 校验通过 → 导出可粘贴 PTrade
+- [ ] 配置 SelectionSpec(数量/行业/市值/ST/指数成分) → 保存
+- [ ] AI 交易码: 输入思路/矩阵+SelectionSpec → 生成代码(含微调选股+风控) → 校验通过 → 导出可粘贴 PTrade
+- [ ] SelectionSpec 非法值 → 明确报错提示
 - [ ] 复制品不影响原策略
 
 ### I3 路径 B — 全新 PTrade 策略

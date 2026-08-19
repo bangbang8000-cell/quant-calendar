@@ -90,26 +90,42 @@ v3.21 已实现 P0-8 全部业务功能。用户反馈 5 处问题, 第 3 项经
 - **基于现有微调的策略**(路径 A 产物): 复制母本 + 新参数 + AI 交易代码(叠加风控)
 - **全新策略**(路径 B 产物): 纯 PTrade 兼容代码, AI 代写 + 迭代
 
-#### 2.3.1 路径 A — 基于现有策略微调 (信号层 + AI 交易层)
+#### 2.3.1 路径 A — 基于现有策略微调 (信号层 + AI 交易层) — 评审v3: AI 可微调选股
 
 **流程**:
 ```
-复制母本策略 ─→ 参数配置界面(改参数) ─→ 生成新持仓矩阵(独立)
+复制母本策略 ─→ 参数配置界面(改参数) ─→ 生成新持仓矩阵(独立, 信号层母池)
                                           │
                                           ▼
-        AI 交易层: 读取持仓矩阵优选股 ─→ 编写 PTrade 交易代码
-                                          │  (get_history 取数 + order_target 按矩阵调仓
+        AI 交易层: 读取持仓矩阵优选股 + 按 SelectionSpec 微调选股
+                                          │  (AI 可增删: 数量/行业/市值/ST/指数成分)
+                                          │  → 生成 PTrade 交易代码
+                                          │  (get_history + order_target 按最终持仓调仓
                                           │   + 风控: 止损/止盈/最大回撤/仓位)
                                           ▼
                     导出 → PTrade 直接回测/实盘
 ```
 
-**复用**(已具备): 复制(profile clone) + 参数配置界面(schema 表单) + 持仓矩阵生成(run-once/_write_holdings_matrix) + PTrade 导出(ptrade-code)
+**SelectionSpec — AI 可微调选股参数协议** (用户可定义, 作为 AI 交易层输入约束):
+| 参数 | 类型 | 说明 | 现状 |
+|---|---|---|---|
+| stock_count | int | 最终持仓数量 (top N) | 已有 top_n |
+| industry_scope | list[enum] | 行业偏好(白名单/黑名单) | 新增 |
+| market_cap_range | [min,max] 亿 | 市值范围筛选 | 新增 |
+| exclude_st | bool | 是否剔除 ST | 已有 st_filter |
+| index_membership | enum | 限定沪深300/中证500/中证1000 成分股 | 已有 index_code/benchmark |
+| turnover_range | [min,max] % | 换手率范围(可选) | 部分 |
+| rebalance_cycle | int | 调仓周期(交易日) | 已有 |
+
+> AI 在矩阵优选股基础上**应用 SelectionSpec 二次筛选**(可增删标的), 输出最终调仓清单。
+
+**复用**(已具备): 复制(profile clone) + 参数配置界面(schema 表单) + 持仓矩阵生成(run-once/_write_holdings_matrix) + PTrade 导出(ptrade-code) + 部分筛选参数(top_n/st_filter/index_code)
 
 **新增**:
 - 复制策略 → 独立 sid + 参数(策略副本库, 存 strategy_defs type=variant)
-- AI 交易层端点: POST /api/strategies/{sid}/ai-trade-code — 输入持仓矩阵(或 sid) → LLM 生成 PTrade 交易代码(含风控) → _ALLOWED_APIS 校验 → 返回代码
-- 前端: 微调流程向导(复制 → 改参数 → 生成持仓 → AI 交易码 → 导出/回测)
+- SelectionSpec 参数协议(schema 扩展: industry_scope/market_cap_range 等)
+- AI 交易层端点: POST /api/strategies/{sid}/ai-trade-code — 输入持仓矩阵(抽样 topN) + SelectionSpec → LLM 生成 PTrade 交易代码(含微调选股+风控) → _ALLOWED_APIS 校验 → 返回代码
+- 前端: 微调流程向导(复制 → 改参数 → 生成持仓 → 配置 SelectionSpec → AI 交易码 → 导出/回测)
 
 #### 2.3.2 路径 B — 全新策略 (PTrade 兼容 + AI 代写)
 
