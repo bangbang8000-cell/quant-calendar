@@ -193,7 +193,7 @@ async def factor_ic_research(body: Dict[str, Any],
             symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
-        panel = portal.get_panel(fields, start=start_date, end=end_date)
+        panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
         factor_values = compute_cross_section_factors(panel, [spec])
         if not factor_values:
             return {'factor_key': factor_key, 'sid': sid, 'report': {},
@@ -232,7 +232,7 @@ async def factor_layer_research(body: Dict[str, Any],
             symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
-        panel = portal.get_panel(fields, start=start_date, end=end_date)
+        panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
         factor_values = compute_cross_section_factors(panel, [spec])
         if not factor_values:
             return {'factor_key': factor_key, 'sid': sid, 'layers': [],
