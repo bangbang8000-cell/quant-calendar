@@ -30,10 +30,11 @@
       'Content-Type': 'application/json',
       ...opts.headers
     };
-
-    try {
+    const method = (options.method || 'GET').toUpperCase();
+    // v3.21 (P0-1): GET 同 URL 并发去重(in-flight 共享), POST/PUT/DELETE 直连
+    const dedupeKey = method + '|' + url;
+    const run = async () => {
       const res = await fetch(url, { ...opts, headers });
-
       // v1.10: 401 自动清除登录状态
       if (res.status === 401) {
         localStorage.removeItem('quant_token');
@@ -41,12 +42,21 @@
         window.location.reload();
         throw new Error('登录已过期');
       }
-
+      if (!res.ok) {
+        let detail = '';
+        try { const j = await res.json(); detail = (j && j.detail) || ''; } catch (_e) {}
+        throw Object.assign(new Error(detail || ('请求失败（HTTP ' + res.status + '）')), { status: res.status });
+      }
       return await res.json();
+    };
+    try {
+      const wrapped = options.noLoading ? run : () => withLoading(run);
+      if (method === 'GET' && !options.noDedupe) return await dedupeRequest(dedupeKey, wrapped);
+      return await wrapped();
     } catch (e) {
       if (e.message === '登录已过期') throw e;
-      console.error(`[apiFetch] ${url}:`, e.message);
-      throw e;
+      console.error('[apiFetch] ' + url + ':', e.message);
+      throw Object.assign(e, { _formatted: formatApiError(e, e.status) });
     }
   }
 
@@ -108,6 +118,42 @@
     } catch (e) {
       console.warn(`[timeout] ${label || 'task'} failed:`, e.message);
     }
+  }
+
+  // ─── v3.21 (P0-1): 请求去重 / loading 计数 / 统一错误（纯逻辑，node 可测）──
+  const _inFlight = new Map();
+  function resetInFlight() { _inFlight.clear(); return true; }
+  function dedupeRequest(key, fn) {
+    if (!key || typeof fn !== 'function') return Promise.reject(new Error('bad dedupe args'));
+    if (_inFlight.has(key)) return _inFlight.get(key);
+    const p = Promise.resolve().then(fn).finally(() => { _inFlight.delete(key); });
+    _inFlight.set(key, p);
+    return p;
+  }
+
+  let _loadingCount = 0;
+  function resetLoading() { _loadingCount = 0; return true; }
+  function loadingCount() { return _loadingCount; }
+  async function withLoading(fn) {
+    _loadingCount++;
+    try {
+      return await fn();
+    } finally {
+      _loadingCount--;
+    }
+  }
+
+  function formatApiError(err, status) {
+    if (!err) return '请求失败';
+    if (err && typeof err === 'object' && err.detail) return String(err.detail);
+    if (typeof err === 'string' && err) return err;
+    if (err && err.message) {
+      const m = String(err.message);
+      if (/Failed to fetch|fetch failed|networkerror/i.test(m)) return '网络连接失败，请检查网络后重试';
+      return m;
+    }
+    if (status) return '请求失败（HTTP ' + status + '）';
+    return '请求失败';
   }
 
   // ─── v3.11 (FR-3.11.4): 请求级 TTL 缓存 + 静默刷新 ──
@@ -174,7 +220,7 @@
   }
 
   // 同一 key 的在途刷新去重（避免重复进入页面时并发拉取）
-  const _inFlight = new Set();
+  const _silentInFlight = new Set();
 
   // 后台静默刷新：以缓存值为基线悄悄拉取最新
   //  - 数据有变：apply(fresh) 更新界面 + onChanged 提示"有新数据"
@@ -188,10 +234,10 @@
     if (!cache || !key || typeof fetchFn !== 'function') {
       return { ok: false, changed: false, skipped: true, fresh: null };
     }
-    if (_inFlight.has(key)) {
+    if (_silentInFlight.has(key)) {
       return { ok: false, changed: false, skipped: true, fresh: null };
     }
-    _inFlight.add(key);
+    _silentInFlight.add(key);
     try {
       const oldVal = cache.get(key);
       let fresh;
@@ -211,7 +257,7 @@
       }
       return { ok: true, changed, fresh };
     } finally {
-      _inFlight.delete(key);
+      _silentInFlight.delete(key);
     }
   }
 
@@ -340,6 +386,12 @@
     showToast,
     debounce,
     throttle,
+    resetInFlight,
+    dedupeRequest,
+    resetLoading,
+    loadingCount,
+    withLoading,
+    formatApiError,
     jsonEquals,
     makeCacheKey,
     CacheStore,

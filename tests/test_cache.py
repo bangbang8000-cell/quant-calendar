@@ -42,6 +42,80 @@ def _sleep_blocking(ms: int):
     return f"Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, {ms});"
 
 
+# ─── v3.21 (P0-1): 请求去重 / loading 计数 / 统一错误 ──
+
+@NEEDS_NODE
+def test_inflight_dedup_shared_promise():
+    """同 key 并发请求共享同一 in-flight Promise（只发一次）"""
+    out = _run_js("""
+        let calls = 0;
+        core.resetInFlight();
+        const p1 = core.dedupeRequest('GET|/api/x', async () => { calls++; await new Promise(r => setTimeout(r, 20)); return {v: 1}; });
+        const p2 = core.dedupeRequest('GET|/api/x', async () => { calls++; await new Promise(r => setTimeout(r, 20)); return {v: 1}; });
+        return Promise.all([p1, p2]).then(([a, b]) => ({ calls, a, b, same: a === b }));
+    """)
+    assert out['calls'] == 1, '同 key 并发应只执行 1 次'
+    assert out['a'] == {'v': 1} and out['b'] == {'v': 1}
+    assert out['same'] is True, '并发共享同一 Promise'
+
+
+@NEEDS_NODE
+def test_inflight_dedup_release_after_done():
+    """请求完成后释放 in-flight 槽（后续同 key 请求重新执行）"""
+    out = _run_js("""
+        core.resetInFlight();
+        return core.dedupeRequest('GET|/api/x', async () => ({v: 1}))
+            .then(() => core.dedupeRequest('GET|/api/x', async () => ({v: 2})))
+            .then(r => ({ second: r }));
+    """)
+    assert out['second'] == {'v': 2}, '完成后应释放，二次请求重新执行'
+
+
+@NEEDS_NODE
+def test_loading_counter():
+    """withLoading 包裹异步：计数进入+1 / 退出-1，异常也恢复"""
+    out = _run_js("""
+        core.resetLoading();
+        const during = {};
+        const p = core.withLoading(async () => { during.cnt = core.loadingCount(); await new Promise(r => setTimeout(r, 10)); return 'ok'; });
+        during.atStart = core.loadingCount();
+        return p.then(r => ({ start: during.atStart, during: during.cnt, after: core.loadingCount(), result: r }));
+    """)
+    assert out['start'] == 1, '进入时计数=1'
+    assert out['during'] == 1
+    assert out['after'] == 0, '完成后归零'
+    assert out['result'] == 'ok'
+
+
+@NEEDS_NODE
+def test_loading_counter_error_release():
+    """withLoading 抛错时计数也恢复（避免永久卡 loading）"""
+    out = _run_js("""
+        core.resetLoading();
+        return core.withLoading(async () => { throw new Error('boom'); })
+            .then(() => ({after: core.loadingCount()}))
+            .catch(e => ({after: core.loadingCount(), err: e.message}));
+    """)
+    assert out['after'] == 0, '异常后计数归零'
+
+
+@NEEDS_NODE
+def test_format_api_error():
+    """统一错误格式化: 详情优先/HTTP状态/网络错误文案"""
+    out = _run_js("""
+        return {
+            detail: core.formatApiError({detail: '参数错误'}, 400),
+            http: core.formatApiError({message: 'server down'}, 503),
+            net: core.formatApiError(new Error('Failed to fetch'), 0),
+            noDetail: core.formatApiError({}, 500),
+        };
+    """)
+    assert out['detail'] == '参数错误'
+    assert 'server down' in out['http']
+    assert '网络' in out['net'] or 'Failed' in out['net']
+    assert out['noDetail'] != ''
+
+
 # ─── 缓存键生成 ───────────────────────────────────
 
 @NEEDS_NODE
