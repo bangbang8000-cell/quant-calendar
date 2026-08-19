@@ -7,6 +7,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 import pytest
+from fastapi.testclient import TestClient
 import numpy as np
 import pandas as pd
 
@@ -176,3 +177,48 @@ def test_multi_factor_signal_weights_sum_to_one():
         pytest.skip("数据不足")
     row_sums = holdings.sum(axis=1)
     assert all(abs(v - 1.0) < 1e-9 for v in row_sums)
+
+
+@pytest.fixture(scope="module")
+def authed_client():
+    """注入 admin token 的测试客户端"""
+    from main_new import app
+    from auth import create_access_token
+    token = create_access_token({"sub": "admin", "role": "admin"})
+    client = TestClient(app)
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    return client
+
+
+# ---------- 因子研究 API (FR: P1-F8) ----------
+
+def test_api_factor_ic_endpoint(authed_client):
+    """POST /api/strategies/factors/ic → 因子 IC 报告"""
+    client = authed_client
+    r = client.post('/api/strategies/factors/ic', json={
+        'sid': 'multi_factor',
+        'factor_key': 'mom20',
+        'params': {'top_n': 20},
+        'start_date': '2026-05-01', 'end_date': '2026-06-30',
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert 'factor_key' in data
+    assert 'report' in data
+    rep = data['report']
+    assert isinstance(rep, dict)
+
+
+def test_api_factor_layer_endpoint(authed_client):
+    """POST /api/strategies/factors/layer → 分层回测结果"""
+    client = authed_client
+    r = client.post('/api/strategies/factors/layer', json={
+        'sid': 'multi_factor',
+        'factor_key': 'mom20',
+        'params': {'top_n': 20},
+        'n_layers': 5,
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert 'factor_key' in data
+    assert 'layers' in data or 'message' in data
