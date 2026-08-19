@@ -59,6 +59,52 @@
                                 </div>
                             </div>
                         </template>
+
+                        <!-- v3.20 (P1-F8): 因子研究 — 单因子IC评价 + 分层回测 -->
+                        <div class="factor-research">
+                            <div class="card-title">📊 因子研究</div>
+                            <div class="flex-wrap-gap-12-mb16-c">
+                                <el-select class="w-220" v-model="factorKey" size="small" placeholder="选择因子">
+                                    <el-option v-for="f in activeStrategy.factor_specs || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
+                                </el-select>
+                                <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
+                                <el-button size="small" @click="runFactorLayer" :loading="factorLayerLoading">分层回测</el-button>
+                            </div>
+                            <!-- IC 报告 -->
+                            <div v-if="factorIcReport" class="factor-ic-report">
+                                <div class="grid-auto-fit-140-mb16">
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ factorIcReport.ic_mean }}</div>
+                                        <div class="stat-label">IC 均值</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ factorIcReport.icir }}</div>
+                                        <div class="stat-label">ICIR</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ factorIcReport.win_rate }}</div>
+                                        <div class="stat-label">IC>0 胜率</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ factorIcReport.grade }}</div>
+                                        <div class="stat-label">评级</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm-tertiary-mt8">样本 {{ factorIcReport.count }} 日</div>
+                            </div>
+                            <!-- 分层回测 -->
+                            <div v-if="factorLayerResult" class="factor-layer-result">
+                                <div class="flex-wrap-gap-12-mb16-c">
+                                    <div class="stat-card p-12" v-for="ly in factorLayerResult.layers" :key="ly.layer">
+                                        <div class="stat-value text-lg" :class="ly.layer === factorLayerResult.layers.length ? 'up' : (ly.return < 0 ? 'down' : 'flat')">{{ ly.return }}%</div>
+                                        <div class="stat-label">层 {{ ly.layer }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
+                                    单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ factorLayerResult.spread }}%
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
                         <div class="card-title">⚙️ 策略编写</div>
@@ -599,6 +645,67 @@
         { immediate: true }
       );
 
+      // ===== 因子研究 (v3.20 P1-F8) =====
+      const factorKey = ref('mom20');
+      const factorIcLoading = ref(false);
+      const factorLayerLoading = ref(false);
+      const factorIcReport = ref(null);
+      const factorLayerResult = ref(null);
+      const factorOptions = [
+        { name: 'mom20', category: 'technical' },
+        { name: 'pe', category: 'valuation' },
+        { name: 'pb', category: 'valuation' },
+        { name: 'turnover20', category: 'sentiment' },
+        { name: 'capital_flow', category: 'capital' },
+      ];
+
+      async function runFactorIc() {
+        factorIcLoading.value = true;
+        try {
+          const res = await withAuth('/api/strategies/factors/ic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sid: activeStrategyId.value || 'multi_factor',
+              factor_key: factorKey.value,
+              params: paramValues.value || {},
+            }),
+          }).then(function (r) { return r.json(); });
+          const rep = res && res.report ? (res.report.n1 || {}) : {};
+          factorIcReport.value = rep;
+        } catch (e) {
+          console.error('[research] 因子IC分析失败:', e);
+          alert('因子 IC 分析失败: ' + e.message);
+        } finally {
+          factorIcLoading.value = false;
+        }
+      }
+
+      async function runFactorLayer() {
+        factorLayerLoading.value = true;
+        try {
+          const res = await withAuth('/api/strategies/factors/layer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sid: activeStrategyId.value || 'multi_factor',
+              factor_key: factorKey.value,
+              params: paramValues.value || {},
+            }),
+          }).then(function (r) { return r.json(); });
+          if (res && res.layers) {
+            factorLayerResult.value = res;
+          } else {
+            alert('分层回测: ' + (res.message || '无数据'));
+          }
+        } catch (e) {
+          console.error('[research] 分层回测失败:', e);
+          alert('分层回测失败: ' + e.message);
+        } finally {
+          factorLayerLoading.value = false;
+        }
+      }
+
       return {
         ...state,
         marketReviews, marketReviewLoading, marketReviewError,
@@ -613,6 +720,9 @@
         strategyRunning, ptradeCode, strategyRuns,
         loadStrategies, onStrategyChange, runActiveStrategy,
         exportActivePtradeCode, copyPtradeCode,
+        factorKey, factorIcLoading, factorLayerLoading,
+        factorIcReport, factorLayerResult, factorOptions,
+        runFactorIc, runFactorLayer,
         tagClass, formatPrice, chgClass, chgText,
       };
     },

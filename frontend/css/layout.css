@@ -143,3 +143,8 @@
 .strategy-run-status.success { background: var(--badge-success-bg); color: var(--badge-success-text); }
 .strategy-run-status.failed { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
 .strategy-run-status.running { background: var(--badge-info-bg); color: var(--badge-info-text); }
+
+/* ===== v3.20 因子研究 (P1-F8) ===== */
+.factor-research { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+.factor-ic-report { margin-top: 8px; }
+.factor-layer-result { margin-top: 8px; }
