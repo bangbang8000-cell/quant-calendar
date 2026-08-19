@@ -266,10 +266,12 @@ def _resolve_portal(universe: Optional[list] = None, seed: int = 2026):
         try:
             from strategy_sdk.data_portal import RealDataPortal
             portal = RealDataPortal()
-            # 探测: 用首只股票试取 K 线, 成功即用真实
-            probe = portal._fetch_kline(universe[0], '2020-01-01', '2026-08-18')
-            if probe is not None and not probe.empty:
+            # 探测: 用完整三源 fallback(get_kline_data 含东财→新浪兜底)
+            probe = portal.source.get_kline_data(universe[0], period='daily', limit=5)
+            probe_data = (probe or {}).get('data') or []
+            if probe_data:
                 return portal, True
+            logger.info('真实数据探测为空(首源失败), 降级模拟')
         except Exception as e:
             logger.info('真实数据门户不可用, 降级模拟: %s', e)
     from strategy_sdk.testsupport import FakePortal
