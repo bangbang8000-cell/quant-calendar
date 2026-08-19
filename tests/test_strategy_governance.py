@@ -84,3 +84,25 @@ def test_generate_holdings_all_mode_uses_full_universe(admin_client, monkeypatch
     assert universe, "全池模式应取全量清单"
     assert len(universe) >= 6
     assert any(r.get("max_workers", 1) > 1 for r in fake.requests), fake.requests
+
+
+def test_list_holdings_falls_back_to_reference(admin_client, tmp_path, monkeypatch):
+    """v3.21 (遗留3): 无本地持仓时回退 reference_holdings 参考样例"""
+    import strategy_governance as gov
+    import os as _os
+    # 指向空 holdings 目录
+    empty = tmp_path / "holdings"
+    _os.makedirs(empty, exist_ok=True)
+    monkeypatch.setattr(gov, "HOLDINGS_ROOT", str(empty))
+    # 指向真实仓库的 reference_holdings (随发布入库)
+    repo_docs = _os.path.join(
+        _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+        "docs", "reference_holdings")
+    if not _os.path.isdir(repo_docs):
+        _os.makedirs(repo_docs, exist_ok=True)
+        with open(_os.path.join(repo_docs, "行业轮动策略持仓-预览.csv"),
+                  "w", encoding="utf-8-sig") as f:
+            f.write("\ufeff,600000.SH\n20260701,1\n")
+    files = gov.list_holdings("行业轮动")
+    assert files, "应回退到参考样例"
+    assert files[0]["file"].endswith("-预览.csv"), files[0]

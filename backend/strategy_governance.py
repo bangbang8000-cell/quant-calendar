@@ -171,15 +171,27 @@ def run_once(sid: str, as_of: str = None) -> dict:
 
 
 def list_holdings(sid: str) -> list:
-    """列出该策略最近生成的持仓文件"""
+    """列出该策略最近生成的持仓文件
+
+    v3.21 (遗留3): 无本地持仓记录时回退随发布入库的 reference_holdings 预览样例
+    (docs/reference_holdings/, 0 token, 供无 key 部署预览)。
+    """
     files = []
-    if not os.path.isdir(HOLDINGS_ROOT):
-        return files
-    for d in sorted(os.listdir(HOLDINGS_ROOT), reverse=True):
-        dd = os.path.join(HOLDINGS_ROOT, d)
-        if not os.path.isdir(dd):
-            continue
-        for fn in os.listdir(dd):
-            if sid in fn and fn.endswith(".csv"):
-                files.append({"date": d, "file": os.path.join(dd, fn)})
+    if os.path.isdir(HOLDINGS_ROOT):
+        for d in sorted(os.listdir(HOLDINGS_ROOT), reverse=True):
+            dd = os.path.join(HOLDINGS_ROOT, d)
+            if not os.path.isdir(dd):
+                continue
+            for fn in os.listdir(dd):
+                if sid in fn and fn.endswith(".csv"):
+                    files.append({"date": d, "file": os.path.join(dd, fn)})
+    if files:
+        return files[:20]
+    # 回退: 随发布入库的参考样例 (基准文件随仓库同步到部署目录)
+    ref_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "docs", "reference_holdings")
+    if os.path.isdir(ref_root):
+        for fn in os.listdir(ref_root):
+            if sid in fn and fn.endswith("-预览.csv"):
+                files.append({"date": "参考样例", "file": os.path.join(ref_root, fn)})
     return files[:20]
