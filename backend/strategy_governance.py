@@ -70,16 +70,31 @@ def save_state(state: dict) -> dict:
     return clean
 
 
+def _is_variant(sid: str) -> bool:
+    """是否 variant 策略(基于内置母本复制, 存 strategy_defs)"""
+    from strategy_db import get_def
+    if sid in BUILTIN_SIDS:
+        return False
+    d = get_def(sid)
+    return bool(d and d.get("type") in BUILTIN_SIDS)
+
+
 def _generate_holdings(sid: str, portal=None, universe_mode: str = None):
     """运行策略生成持仓矩阵 (复用 registry + generate_signals)
 
+    variant 策略: 读取已存参数覆盖(strategy_defs.params)后调母本信号层。
     universe_mode: None=读纳管状态 | 'default'=策略自带池 | 'all'=全市场5530
     全池模式(all): 并发取数(ThreadPoolExecutor)提速, 与 qresult 全市场覆盖等价。
     """
     from strategy_sdk.base import StrategyContext
     from strategy_sdk.registry import registry
-    st = registry.get(sid)
-    params = st.validate_params({})
+    from strategy_db import get_def
+    st = registry.get(sid if sid in BUILTIN_SIDS else (get_def(sid) or {}).get("type") or sid)
+    if sid in BUILTIN_SIDS:
+        params = st.validate_params({})
+    else:
+        d = get_def(sid) or {}
+        params = st.validate_params(d.get("params") or {})
     if portal is None:
         from strategy_sdk.data_portal import RealDataPortal
         portal = RealDataPortal()
@@ -140,20 +155,30 @@ def _write_holdings_matrix(holdings, sid, out_dir: str, universe=None) -> str:
 
 
 def _display_name(sid: str) -> str:
-    """策略 sid → 展示名 (与 qresult 命名一致)"""
+    """策略 sid → 展示名 (与 qresult 命名一致); variant 用其存名称"""
     names = {
         "multi_factor": "多因子策略",
         "sector_rotation": "行业轮动策略",
         "capital_flow": "资金流策略",
         "index_enhance": "指数增强策略",
     }
-    return names.get(sid, sid)
+    if sid in names:
+        return names[sid]
+    if _is_variant(sid):
+        from strategy_db import get_def
+        d = get_def(sid) or {}
+        if d.get("name"):
+            return str(d["name"])
+    return sid
 
 
 def run_once(sid: str, as_of: str = None) -> dict:
-    """run-once: 运行策略 + 生成持仓文件 + 更新纳管状态"""
+    """run-once: 运行策略 + 生成持仓文件 + 更新纳管状态
+
+    variant(基于内置复制)同样支持: 走 strategy_defs 参数 + 母本信号层。
+    """
     from strategy_sdk.registry import StrategyNotFoundError
-    if sid not in BUILTIN_SIDS:
+    if sid not in BUILTIN_SIDS and not _is_variant(sid):
         raise StrategyNotFoundError(sid)
     date = (as_of or datetime.now().strftime("%Y-%m-%d"))[:10]
     try:
@@ -162,10 +187,21 @@ def run_once(sid: str, as_of: str = None) -> dict:
         raise RuntimeError("策略运行失败: %s" % e)
     out_dir = os.path.join(HOLDINGS_ROOT, date)
     path = _write_holdings_matrix(holdings, sid, out_dir, universe)
-    state = get_state()
-    state[sid]["last_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    state[sid]["last_holdings"] = path
-    save_state(state)
+    if sid in BUILTIN_SIDS:
+        state = get_state()
+        state[sid]["last_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        state[sid]["last_holdings"] = path
+        save_state(state)
+    else:
+        from strategy_db import get_def, upsert_def
+        d = get_def(sid) or {}
+        upsert_def(sid, {
+            "name": d.get("name") or _display_name(sid),
+            "version": d.get("version") or "0.1.0",
+            "type": d.get("type") or sid,
+            "params": d.get("params") or {},
+            "enabled": True,
+        })
     return {"sid": sid, "date": date, "holdings_file": path,
             "symbols": len(list(holdings.columns))}
 

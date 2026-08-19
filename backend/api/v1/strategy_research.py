@@ -272,6 +272,56 @@ async def strategy_ptrade_code(sid: str, top_n: Optional[int] = None,
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ==================== I3A (v3.22): 策略变体 / SelectionSpec / AI 交易码 ====================
+
+@router.post('/{sid}/clone')
+async def clone_strategy_api(sid: str, body: Dict = None,
+                             _: Dict = Depends(get_current_active_user)):
+    """复制内置策略为 variant(独立 sid + 参数覆盖 + 母本信号层)"""
+    import strategy_variant as sv
+    from strategy_sdk.registry import StrategyNotFoundError
+    try:
+        result = sv.clone_strategy(sid, new_name=(body or {}).get("name"),
+                                   params=(body or {}).get("params"))
+    except StrategyNotFoundError:
+        raise HTTPException(status_code=404, detail=f"策略 {sid} 不存在")
+    return {"data": result}
+
+@router.get('/variants')
+async def list_variants_api(_: Dict = Depends(get_current_active_user)):
+    """列出全部 variant 策略"""
+    import strategy_variant as sv
+    return {"data": {"variants": sv.list_variants()}}
+
+@router.get('/{sid}/selection-spec')
+async def get_selection_spec_api(sid: str, _: Dict = Depends(get_current_active_user)):
+    """读取 SelectionSpec(可微调选股协议)"""
+    import strategy_variant as sv
+    return {"data": {"sid": sid, "spec": sv.get_selection_spec(sid),
+                     "fields": sv.SPEC_FIELDS}}
+
+@router.put('/{sid}/selection-spec')
+async def put_selection_spec_api(sid: str, body: Dict,
+                                 _: Dict = Depends(get_current_active_user)):
+    """保存 SelectionSpec"""
+    import strategy_variant as sv
+    spec = sv.save_selection_spec(sid, body.get("spec") or {})
+    return {"data": {"sid": sid, "spec": spec}}
+
+@router.post('/{sid}/ai-trade-code')
+async def ai_trade_code_api(sid: str, body: Dict = None,
+                            _: Dict = Depends(get_current_active_user)):
+    """AI 交易码: 读持仓矩阵 + SelectionSpec -> LLM 生成 PTrade 交易码(含风控)
+    硬约束: 交易标的必须 ⊆ 持仓矩阵内股票(否则 400)"""
+    import strategy_variant as sv
+    try:
+        result = sv.generate_ai_trade_code(
+            sid, spec=(body or {}).get("spec"),
+            matrix=(body or {}).get("matrix"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"data": result}
+
 # ==================== 因子研究 (FR: P1-F8) ====================
 
 
