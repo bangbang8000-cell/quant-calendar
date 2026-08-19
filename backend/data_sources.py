@@ -547,11 +547,13 @@ class DataSourceManager:
                 record_call(src_name, False, (time.monotonic() - _t0) * 1000)
         return None
 
-    def get_kline_data(self, ts_code, period='daily', limit=60):
+    def get_kline_data(self, ts_code, period='daily', limit=60, preferred=None):
         """获取K线数据（带 fallback + MA计算）
 
         支持 period: daily, weekly, monthly, quarterly, yearly
         quarterly/yearly 使用月线数据聚合
+        preferred: 优先数据源(如 'tushare'); 用于高并发场景(如异动扫描)绕开
+                   sxsc 20次/秒限流 — 指定时先试 preferred, 失败再按路由顺序 fallback
         """
         # v3.8.1: 内存 TTL 缓存 — 同股票同周期短时间重复请求直接命中
         key = (ts_code, period, limit)
@@ -565,7 +567,9 @@ class DataSourceManager:
         if period in ('quarterly', 'yearly'):
             result = self._get_resampled_kline(ts_code, period, limit)
         else:
-            for src_name in get_route_order():
+            # v3.22: preferred 优先 — 高并发场景(异动扫描)先走 tushare 绕开 sxsc 20次/秒限流
+            route = [preferred] + [s for s in get_route_order() if s != preferred] if preferred else get_route_order()
+            for src_name in route:
                 src_cfg = self._get_source_config(src_name)
                 if not src_cfg.get('enabled', True):
                     continue

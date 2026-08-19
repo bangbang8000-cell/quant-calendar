@@ -369,8 +369,8 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
 
     def _scan_one(code: str):
         try:
-            # v3.22: 速率限制请求, 防止并发瞬时打爆 sxsc 20次/秒限流
-            raw = _rate_limited_request(manager.get_kline_data, code, period='daily', limit=limit_n)
+            # v3.22: 速率限制请求 + tushare 优先(绕开 sxsc 20次/秒限流)
+            raw = _rate_limited_request(manager.get_kline_data, code, period='daily', limit=limit_n, preferred='tushare')
             rows = _normalize_kline_response(code, raw)
             if not rows:
                 return None

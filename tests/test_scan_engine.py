@@ -143,7 +143,7 @@ def test_run_scan_data_unavailable_degrades():
     """数据不可达整体降级：moves 空 + note '数据暂不可用'"""
 
     class FakeManager:
-        def get_kline_data(self, ts_code, period='daily', limit=60):
+        def get_kline_data(self, ts_code, period='daily', limit=60, **kwargs):
             return None
 
     result = scan_engine.run_scan(pool=['000001.SZ'], manager=FakeManager())
@@ -163,7 +163,7 @@ def test_run_scan_partial_success_with_note():
                 ], 'data_source': 'fake'},
             }
 
-        def get_kline_data(self, ts_code, period='daily', limit=60):
+        def get_kline_data(self, ts_code, period='daily', limit=60, **kwargs):
             return self.good.get(ts_code)
 
     result = scan_engine.run_scan(pool=['000001.SZ', '600519.SH'], manager=FakeManager())
@@ -177,7 +177,7 @@ def test_run_scan_empty_pool():
     """空扫描范围 → 优雅提示"""
 
     class FakeManager:
-        def get_kline_data(self, ts_code, period='daily', limit=60):
+        def get_kline_data(self, ts_code, period='daily', limit=60, **kwargs):
             return None
 
     result = scan_engine.run_scan(pool=[], manager=FakeManager())
@@ -189,7 +189,7 @@ def test_run_scan_date_filter():
     """指定日期：仅纳入截至该日的K线，异动以该日为准"""
 
     class FakeManager:
-        def get_kline_data(self, ts_code, period='daily', limit=60):
+        def get_kline_data(self, ts_code, period='daily', limit=60, **kwargs):
             return {'data': [
                 _bar('20260710', 10.0, 10.0, 9.9, 10.1, 1e6),
                 _bar('20260713', 10.0, 11.0, 10.0, 11.0, 2e6),
