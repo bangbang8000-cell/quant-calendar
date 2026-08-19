@@ -129,3 +129,17 @@
 .command-item-label { flex: 1; font-size: var(--font-base); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .command-item-sub { font-size: var(--font-xs); color: var(--text-tertiary); flex-shrink: 0; }
 .command-empty { text-align: center; color: var(--text-tertiary); font-size: var(--font-sm); padding: 18px 0 8px; }
+
+/* ===== v3.19 策略研究 P0: 策略管理面板 ===== */
+.strategy-detail { margin-top: 4px; }
+.strategy-params { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.strategy-param-row { display: flex; align-items: center; gap: 12px; }
+.strategy-param-label { width: 150px; flex-shrink: 0; font-size: var(--font-sm); color: var(--text-primary); }
+.ptrade-code-box { margin: 12px 0; }
+.ptrade-code-pre { max-height: 240px; overflow: auto; background: var(--bg-code); border: 1px solid var(--border-color); border-radius: var(--r-md); padding: 12px; font-family: var(--font-mono); font-size: var(--font-xs); color: var(--text-primary); white-space: pre; }
+.strategy-runs { margin-top: 12px; }
+.strategy-run-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-color); }
+.strategy-run-status { padding: 2px 8px; border-radius: var(--r-full); font-size: var(--font-xs); }
+.strategy-run-status.success { background: var(--badge-success-bg); color: var(--badge-success-text); }
+.strategy-run-status.failed { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
+.strategy-run-status.running { background: var(--badge-info-bg); color: var(--badge-info-text); }

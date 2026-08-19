@@ -15,8 +15,50 @@
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
-                        <div class="card-title">{{ t('research.quantResearch') }}</div>
-                        <qc-state-panel type="empty" icon="🔬" title="敬请期待" desc="量化研究功能正在建设中，敬请关注"></qc-state-panel>
+                        <div class="card-title">🔬 {{ t('research.quantResearch') }}</div>
+                        <!-- v3.19 (策略研究 P0): 策略注册表 → schema 表单 → 运行/回测/PTrade 导出 -->
+                        <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategiesError" type="error" title="策略加载失败"
+                            desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
+                        <template v-else>
+                            <!-- 策略列表: 卡片 + 选择 -->
+                            <div class="flex-wrap-gap-12-mb16-c">
+                                <el-select class="w-220" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
+                                    <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
+                                </el-select>
+                                <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning">▶ 手工运行</el-button>
+                                <el-button size="small" @click="exportActivePtradeCode">📤 导出 PTrade 代码</el-button>
+                            </div>
+                            <div v-if="activeStrategy" class="strategy-detail">
+                                <div class="text-sm-tertiary-mt8">{{ activeStrategy.description }}</div>
+                                <!-- schema 驱动参数表单 -->
+                                <div class="strategy-params">
+                                    <div v-for="f in activeStrategy.schema" :key="f.key" class="strategy-param-row">
+                                        <label class="strategy-param-label">{{ f.label }}</label>
+                                        <el-select v-if="f.type === 'enum'" class="w-200" size="small" v-model="paramValues[f.key]" @change="paramValues[f.key] = $event">
+                                            <el-option v-for="o in f.options" :key="o" :label="o" :value="o" />
+                                        </el-select>
+                                        <el-switch v-else-if="f.type === 'bool'" v-model="paramValues[f.key]"></el-switch>
+                                        <el-input-number v-else class="w-200" size="small" :min="f.min" :max="f.max" :step="f.step || 1" v-model="paramValues[f.key]"></el-input-number>
+                                    </div>
+                                </div>
+                                <!-- PTrade 代码预览 -->
+                                <div v-if="ptradeCode" class="ptrade-code-box">
+                                    <div class="strategy-param-label">PTrade 代码预览 ({{ ptradeCode.length }} 字符)</div>
+                                    <pre class="ptrade-code-pre">{{ ptradeCode }}</pre>
+                                    <el-button size="small" type="primary" @click="copyPtradeCode">复制代码</el-button>
+                                </div>
+                                <!-- 运行历史 -->
+                                <div v-if="strategyRuns.length" class="strategy-runs">
+                                    <div class="strategy-param-label">最近运行</div>
+                                    <div v-for="run in strategyRuns.slice(0, 5)" :key="run.id" class="strategy-run-row">
+                                        <span class="strategy-run-status" :class="run.status">{{ run.status }}</span>
+                                        <span class="text-sm">{{ run.mode }} · {{ run.started_at }}</span>
+                                        <span v-if="run.summary && run.summary.symbols" class="text-sm">选股 {{ run.summary.symbols.length }} 只</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
                         <div class="card-title">⚙️ 策略编写</div>
@@ -425,6 +467,116 @@
         return (pct > 0 ? '+' : '') + Number(pct).toFixed(2) + '%';
       }
 
+      // ===== 策略管理 (v3.19 策略研究 P0) =====
+      const strategies = ref([]);
+      const strategiesLoading = ref(false);
+      const strategiesError = ref(false);
+      const activeStrategyId = ref('');
+      const paramValues = ref({});
+      const strategyRunning = ref(false);
+      const ptradeCode = ref('');
+      const strategyRuns = ref([]);
+      const activeStrategy = computed(function () {
+        return strategies.value.find(function (s) { return s.id === activeStrategyId.value; }) || null;
+      });
+
+      async function withAuth(url, opts) {
+        opts = opts || {};
+        opts.headers = Object.assign({}, opts.headers || {});
+        const token = localStorage.getItem('token') || '';
+        if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+        return fetch(url, opts);
+      }
+
+      async function loadStrategies() {
+        strategiesLoading.value = true;
+        strategiesError.value = false;
+        try {
+          const res = await withAuth('/api/strategies').then(function (r) { return r.json(); });
+          strategies.value = Array.isArray(res) ? res : [];
+          if (strategies.value.length && !activeStrategyId.value) {
+            activeStrategyId.value = strategies.value[0].id;
+            onStrategyChange();
+          }
+        } catch (e) {
+          console.error('[research] 策略列表加载失败:', e);
+          strategiesError.value = true;
+        } finally {
+          strategiesLoading.value = false;
+        }
+      }
+
+      function onStrategyChange() {
+        const st = activeStrategy.value;
+        if (!st) return;
+        paramValues.value = {};
+        st.schema.forEach(function (f) { paramValues.value[f.key] = f.default; });
+        ptradeCode.value = '';
+        loadRuns();
+      }
+
+      async function loadRuns() {
+        if (!activeStrategyId.value) return;
+        try {
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/runs?limit=5')
+            .then(function (r) { return r.json(); });
+          strategyRuns.value = Array.isArray(res) ? res : [];
+        } catch (e) {
+          strategyRuns.value = [];
+        }
+      }
+
+      async function runActiveStrategy() {
+        if (!activeStrategyId.value) return;
+        strategyRunning.value = true;
+        try {
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ params: paramValues.value }),
+          }).then(function (r) { return r.json(); });
+          if (res && res.status === 'success') {
+            loadRuns();
+          } else {
+            alert('运行失败: ' + (res.detail || JSON.stringify(res)));
+          }
+        } catch (e) {
+          console.error('[research] 策略运行失败:', e);
+          alert('运行失败: ' + e.message);
+        } finally {
+          strategyRunning.value = false;
+        }
+      }
+
+      async function exportActivePtradeCode() {
+        if (!activeStrategyId.value) return;
+        try {
+          const qs = Object.keys(paramValues.value).map(function (k) {
+            return encodeURIComponent(k) + '=' + encodeURIComponent(paramValues.value[k]);
+          }).join('&');
+          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/ptrade-code?' + qs)
+            .then(function (r) { return r.json(); });
+          if (res && res.code) {
+            ptradeCode.value = res.code;
+          } else {
+            alert('导出失败: ' + (res.detail || JSON.stringify(res)));
+          }
+        } catch (e) {
+          console.error('[research] PTrade 导出失败:', e);
+          alert('导出失败: ' + e.message);
+        }
+      }
+
+      function copyPtradeCode() {
+        if (!ptradeCode.value) return;
+        const ta = document.createElement('textarea');
+        ta.value = ptradeCode.value;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) { /* noop */ }
+        document.body.removeChild(ta);
+      }
+
       watch(
         function () {
           return state.currentPage.value + '/' + state.currentSubPage.value;
@@ -439,6 +591,10 @@
             loadScan();
             loadEvents();
           }
+          // v3.19: 进入「量化研究」时加载策略列表
+          if (key === 'research/quant-research') {
+            loadStrategies();
+          }
         },
         { immediate: true }
       );
@@ -452,6 +608,11 @@
         scanPool, scanLoading, scanError, scanResult,
         eventScope, eventsLoading, eventsData,
         loadScan, loadEvents, scanGroups, eventGroups,
+        strategies, strategiesLoading, strategiesError,
+        activeStrategyId, activeStrategy, paramValues,
+        strategyRunning, ptradeCode, strategyRuns,
+        loadStrategies, onStrategyChange, runActiveStrategy,
+        exportActivePtradeCode, copyPtradeCode,
         tagClass, formatPrice, chgClass, chgText,
       };
     },
