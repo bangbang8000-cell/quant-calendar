@@ -113,7 +113,7 @@ const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
-                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'backtest', 'backtest-history'] },
+                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
@@ -320,7 +320,7 @@ const allMenuDefs = [
                     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
-                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
+                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
 

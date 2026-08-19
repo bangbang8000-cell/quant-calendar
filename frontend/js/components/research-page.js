@@ -201,6 +201,50 @@
                             <div v-if="aiCode" class="ptrade-code-pre">{{ aiCode }}</div>
                         </div>
                     </div>
+                    <div v-else-if="currentSubPage === 'custom-write'" class="card">
+                        <div class="card-title">🚀 全新策略 <span class="text-sm-tertiary">AI 代写 → 本地回测 → AI 优化</span></div>
+                        <!-- v3.22 (I3B): 第1步 AI 代写 -->
+                        <div class="strategy-params">
+                            <div class="flex-wrap-gap-12-mb16-c">
+                                <el-input class="w-180" size="small" v-model="customName" placeholder="策略名(如 均线突破)" />
+                                <el-button size="small" type="primary" @click="genCustomCode" :loading="customGenLoading">🤖 AI 代写</el-button>
+                                <el-button size="small" @click="loadCustoms">🔄 刷新列表</el-button>
+                            </div>
+                            <el-input type="textarea" :rows="3" size="small" v-model="customPrompt"
+                                placeholder="描述策略思路, 如: 双均线金叉买入, 死叉卖出, 单只仓位20%, 止损8%" class="w-full" />
+                        </div>
+                        <!-- 自定义策略列表 -->
+                        <div v-if="customs.length" class="strategy-params flex-wrap-gap-12-mb16-c">
+                            <span class="strategy-param-label">自定义策略</span>
+                            <el-select class="w-220" size="small" v-model="customSelected" placeholder="选择策略">
+                                <el-option v-for="c in customs" :key="c.id" :label="(c.name || c.id) + ' (' + c.id + ')'" :value="c.id" />
+                            </el-select>
+                            <el-button size="small" @click="loadCustomCode" :disabled="!customSelected">📄 读取代码</el-button>
+                            <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading">⚡ 本地回测</el-button>
+                            <el-button size="small" type="danger" @click="runCustomOptimize" :loading="customOptLoading">🧠 AI 优化</el-button>
+                        </div>
+                        <div v-if="customMsg" class="text-sm-primary mt-8">{{ customMsg }}</div>
+                        <!-- 代码区 -->
+                        <div v-if="customCode" class="strategy-params">
+                            <div class="section-title-base mt-8">💻 策略代码 <span class="text-sm-tertiary">PTrade 兼容</span></div>
+                            <pre class="ptrade-code-pre">{{ customCode }}</pre>
+                            <div class="flex-wrap-gap-12-mb16-c">
+                                <el-button size="small" @click="copyCustomCode">📋 复制代码</el-button>
+                            </div>
+                        </div>
+                        <!-- 回测结果 -->
+                        <div v-if="customBtResult" class="strategy-params">
+                            <div class="section-title-base mt-8">📊 回测结果</div>
+                            <div class="custom-bt-grid">
+                                <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
+                                <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">年化</span><b>{{ customBtResult.metrics.annual_return_pct }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">最大回撤</span><b>{{ customBtResult.metrics.max_drawdown_pct }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">夏普</span><b>{{ customBtResult.metrics.sharpe }}</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ customBtResult.metrics.win_rate_pct }}%</b></div>
+                            </div>
+                        </div>
+                    </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">{{ t('research.backtest') }}</div>
                         <!-- v3.2.0-T21: 回测参数 -->
@@ -1066,6 +1110,93 @@
         }
       }
 
+      // ===== v3.22 (I3B): 全新 PTrade 策略 (AI 代写 + 本地回测 + AI 优化) =====
+      const customName = ref("");
+      const customPrompt = ref("");
+      const customs = ref([]);
+      const customSelected = ref("");
+      const customCode = ref("");
+      const customMsg = ref("");
+      const customBtResult = ref(null);
+      const customGenLoading = ref(false);
+      const customBtLoading = ref(false);
+      const customOptLoading = ref(false);
+
+      function _customAuthHeaders() {
+        const t = localStorage.getItem("quant_token") || "";
+        return t ? { "Authorization": "Bearer " + t, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+      }
+
+      async function loadCustoms() {
+        try {
+          const res = await fetch("/api/strategies/custom", { headers: _customAuthHeaders() }).then(function (r) { return r.json(); });
+          customs.value = (res && res.data && res.data.customs) || [];
+        } catch (e) { console.error("[i3b] 加载自定义策略失败:", e); }
+      }
+
+      async function genCustomCode() {
+        if (!customPrompt.value.trim()) { customMsg.value = "请描述策略思路"; return; }
+        customGenLoading.value = true; customMsg.value = "";
+        try {
+          const res = await fetch("/api/strategies/custom", {
+            method: "POST", headers: _customAuthHeaders(),
+            body: JSON.stringify({ name: customName.value.trim() || "自定义策略", prompt: customPrompt.value })
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) { customMsg.value = String(res.detail); return; }
+          if (res && res.data) {
+            customCode.value = res.data.code || "";
+            customMsg.value = "AI 代写成功: " + res.data.sid + (res.data.api_errors && res.data.api_errors.length ? " (API 告警 " + res.data.api_errors.length + " 条)" : " (校验通过)");
+            await loadCustoms();
+          }
+        } catch (e) { console.error("[i3b] AI 代写失败:", e); customMsg.value = "AI 代写失败: " + e.message; }
+        finally { customGenLoading.value = false; }
+      }
+
+      async function loadCustomCode() {
+        if (!customSelected.value) return;
+        try {
+          const res = await fetch("/api/strategies/custom/" + customSelected.value + "/code", { headers: _customAuthHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.data) { customCode.value = res.data.code || ""; customMsg.value = ""; }
+        } catch (e) { console.error("[i3b] 读取代码失败:", e); }
+      }
+
+      async function runCustomBacktest() {
+        if (!customSelected.value) { customMsg.value = "请先选择自定义策略"; return; }
+        customBtLoading.value = true; customMsg.value = "";
+        try {
+          const res = await fetch("/api/strategies/custom/" + customSelected.value + "/backtest", {
+            method: "POST", headers: _customAuthHeaders(), body: "{}"
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) { customMsg.value = String(res.detail); return; }
+          if (res && res.data) { customBtResult.value = res.data; customMsg.value = "回测完成"; }
+        } catch (e) { console.error("[i3b] 回测失败:", e); customMsg.value = "回测失败: " + e.message; }
+        finally { customBtLoading.value = false; }
+      }
+
+      async function runCustomOptimize() {
+        if (!customSelected.value) { customMsg.value = "请先选择自定义策略"; return; }
+        customOptLoading.value = true; customMsg.value = "";
+        try {
+          const res = await fetch("/api/strategies/custom/" + customSelected.value + "/ai-optimize", {
+            method: "POST", headers: _customAuthHeaders(),
+            body: JSON.stringify({ backtest: customBtResult.value })
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) { customMsg.value = String(res.detail); return; }
+          if (res && res.data) { customCode.value = res.data.code || ""; customMsg.value = "AI 优化完成" + (res.data.api_errors && res.data.api_errors.length ? " (API 告警 " + res.data.api_errors.length + " 条)" : " (校验通过)"); }
+        } catch (e) { console.error("[i3b] AI 优化失败:", e); customMsg.value = "AI 优化失败: " + e.message; }
+        finally { customOptLoading.value = false; }
+      }
+
+      function copyCustomCode() {
+        if (!customCode.value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(customCode.value).then(function () { customMsg.value = "代码已复制"; });
+        } else {
+          const ta = document.createElement("textarea"); ta.value = customCode.value; document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); document.body.removeChild(ta); customMsg.value = "代码已复制";
+        }
+      }
+
       return {
         ...state,
         marketReviews, marketReviewLoading, marketReviewError,
@@ -1089,6 +1220,9 @@
         runFactorIc, runFactorLayer,
         variants, variantSelected, variantSpec, specFields, aiCode, aiCodeLoading, variantBusy, variantMsg,
         loadVariants, cloneNewStrategy, selectVariant, loadVariantSpec, saveVariantSpec, runVariantOnce, genVariantAiCode, copyVariantCode,
+        customName, customPrompt, customs, customSelected, customCode, customMsg, customBtResult,
+        customGenLoading, customBtLoading, customOptLoading,
+        loadCustoms, genCustomCode, loadCustomCode, runCustomBacktest, runCustomOptimize, copyCustomCode,
         tagClass, formatPrice, chgClass, chgText,
       };
     },
