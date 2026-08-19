@@ -24,6 +24,8 @@
 - [ ] ai-trade-code: 输入持仓矩阵(抽样 topN) + SelectionSpec → mock LLM → 返回 PTrade 交易代码
 - [ ] 代码含 get_history + order_target(按最终持仓调仓) + 风控片段(止损/止盈/回撤)
 - [ ] SelectionSpec 微调: AI 在矩阵优选股基础上应用筛选(数量/行业/市值/ST/指数成分) → 最终调仓清单
+- [ ] 矩阵内硬约束: 生成代码 order_target 标的在矩阵内; 出现矩阵外标的 → 拦截 400
+- [ ] 硬约束拦截: 模拟 LLM 返回含矩阵外股票代码 → 后端拒绝, 提示超出母策略候选池
 - [ ] SelectionSpec 校验: 非法值(market_cap_range min>max / 未知 index_membership) → 400
 - [ ] SelectionSpec 持久化: 存 variant 参数 → 重启可读回
 - [ ] 生成代码通过 _ALLOWED_APIS 静态校验
@@ -72,7 +74,9 @@
 - [ ] 改参数(参数配置界面) → 生成新持仓矩阵文件(独立命名)
 - [ ] 配置 SelectionSpec(数量/行业/市值/ST/指数成分) → 保存
 - [ ] AI 交易码: 输入思路/矩阵+SelectionSpec → 生成代码(含微调选股+风控) → 校验通过 → 导出可粘贴 PTrade
+- [ ] 微调结果不失真: 生成的持仓在母策略矩阵内(无池外股票)
 - [ ] SelectionSpec 非法值 → 明确报错提示
+- [ ] 提示 AI 加入矩阵外股票 → 后端拦截并提示
 - [ ] 复制品不影响原策略
 
 ### I3 路径 B — 全新 PTrade 策略

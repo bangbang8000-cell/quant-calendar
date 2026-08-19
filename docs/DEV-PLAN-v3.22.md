@@ -117,7 +117,8 @@ v3.21 已实现 P0-8 全部业务功能。用户反馈 5 处问题, 第 3 项经
 | turnover_range | [min,max] % | 换手率范围(可选) | 部分 |
 | rebalance_cycle | int | 调仓周期(交易日) | 已有 |
 
-> AI 在矩阵优选股基础上**应用 SelectionSpec 二次筛选**(可增删标的), 输出最终调仓清单。
+> **硬约束**: AI 交易层**只能在持仓矩阵内二次筛选(删减/调整权重), 禁止扩充矩阵外股票** —— 微调效果不失真(信号层=母策略决定候选池, 交易层仅在池内优化)。
+> **SelectionSpec 为纯收紧(子集)约束**: 所有筛选条件只会减少候选, 不会引入矩阵外标的。
 
 **复用**(已具备): 复制(profile clone) + 参数配置界面(schema 表单) + 持仓矩阵生成(run-once/_write_holdings_matrix) + PTrade 导出(ptrade-code) + 部分筛选参数(top_n/st_filter/index_code)
 
