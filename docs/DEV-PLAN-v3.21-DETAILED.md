@@ -63,20 +63,24 @@
 ### 验收
 - [ ] 高危操作 100% 确认; 审计面板可查最近操作
 
-## I4b: 策略纳管与发布 (P0-6/7/8)
+## I4b: 策略纳管与发布 (P0-6/7/8) — 评审定稿
 
 ### 任务拆解
-- [ ] T4b.1 strategy_governance.py (纳管状态存取 + run-once 端点)
-- [ ] T4b.2 前端纳管面板 (4 策略卡片: 启用/定时/状态/持仓链接)
-- [ ] T4b.3 调度器 strategy_run_task (定时跑启用策略 → 持仓文件)
-- [ ] T4b.4 持仓文件生成 (data/holdings/{date}/{sid}.csv, 含权重/日期)
-- [ ] T4b.5 release_builder.py (发布包生成 + 无密钥校验)
-- [ ] T4b.6 部署向导 (setup-wizard 扩展: 无 key 引导配置 + 测试连接)
-- [ ] T4b.7 测试: governance/run-once/holdings/release 无密钥/向导
+- [ ] T4b.1 strategy_governance.py (纳管状态存取: enabled/schedule(默认20:00)/last_run + run-once 端点)
+- [ ] T4b.2 研究页纳管面板 (4 内置策略: 不可删/启用/定时/状态/持仓链接 + 复制为副本可调参)
+- [ ] T4b.3 调度器 strategy_run_task (每日收盘后, 默认 20:00, 每策略可自定义)
+- [ ] T4b.4 持仓文件生成 (data/holdings/{date}/{sid}.csv, 与 qresult 矩阵等价)
+- [ ] T4b.5 float_mv 字段修复 (data_portal 映射 float_mv=circ_mv, 修复 turnover 因子退化)
+- [ ] T4b.6 策略 universe 扩展 (8 只 → 配置池/全池 5544, 支撑等价覆盖)
+- [ ] T4b.7 密钥安全门禁 pre-push-hook.sh (扫描 0 token + 不含 data/.env/qresult/holdings)
+- [ ] T4b.8 部署向导 (setup-wizard 扩展: 无 key 引导配置 + 测试连接 + 无 key 预览历史持仓)
+- [ ] T4b.9 历史持仓样例入库 (docs/reference_holdings/, 脱敏)
+- [ ] T4b.10 测试: governance/run-once/holdings 等价/float_mv/门禁/向导
 
 ### 验收
-- [ ] 4 策略可启用停用; run-once 生成持仓; 定时任务可跑
-- [ ] 发布包 zip 解压扫描 0 token; 部署向导配置 key 后数据源可用
+- [ ] 4 策略研究页纳管不可删; 副本可调参删除; run-once 生成持仓
+- [ ] 定时默认 20:00 可自定义; 持仓文件与 qresult 同构
+- [ ] pre-push 门禁扫描 0 token; 无 key 部署可预览历史持仓
 - [ ] 全量测试绿 + 前端一致性绿
 ## I5: 效率增强
 

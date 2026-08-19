@@ -140,5 +140,42 @@ UI界面    ★★★★ (4.0)
 - **P1（体验增强）**：高危操作确认(C1)、数据源一键检测(E2)、前端 gzip(D2)、操作审计(C3)
 - **P2（打磨）**：主题收敛(A1)、JS 硬编码色清理(A2)、图表主题联动(A3/A4)、空态覆盖(B3)
 
+
+## 7. 补充评估: 策略纳管 / 发布安全 / tushare pro 支撑 / 持仓等价性 (评审补充)
+
+### 7.1 密钥安全现状 (发布前提, 已审计)
+- **四大策略/模板/PTrade 导出代码 0 token** (策略 SDK 与模板不含任何 key)
+- 山西证券 sxsc key (46a2...) 与 tushare key (ab2e...) 存于 **.env 的 SXSC_TUSHARE_TOKEN / TUSHARE_TOKEN 变量** (已变量化), 代码运行时从 config.settings 读取 → 部署方替换 .env 即换 key
+- data/ .env datasource_config.json 均已 gitignore; git 已跟踪文件 0 token → **可安全 push GitHub**
+
+### 7.2 tushare pro 支撑度评估 (四策略 + 持仓文件)
+| 策略 | 所需字段 | tushare pro 接口 | 实测 | 结论 |
+|---|---|---|---|---|
+| 多因子 | close/pe/pb/volume/float_mv/moneyflow | daily/daily_basic/moneyflow | ✅ 全部可用 | 支持 |
+| 行业轮动 | close | daily | ✅ | 支持 |
+| 资金流 | close/main_net_inflow | daily/moneyflow | ✅ | 支持 |
+| 指数增强 | close/pe/pb | daily/daily_basic | ✅ | 支持 |
+
+**结论**: 常规 tushare pro 可完整支撑四大策略并生成持仓文件 (标准版 token 实测四接口全通)。
+**注意**: ① moneyflow 属积分接口, 低积分 token 可能受限 → 程序降级(该因子空→回退量能), 文档注明; ② 全池 5544 只并发取数约 3 分钟, 建议收盘后(默认 20:00)执行。
+
+### 7.3 持仓文件等价性 (程序 vs 既有 qresult)
+- **既有 qresult**: 外部程序生成, 矩阵格式 (行=日期 628 天, 列=全 A 股 5535 列, 值=1 持有/空), 覆盖 2024-01~2026-08
+- **程序能力**: generate_signals 生成 日期×股票 持仓矩阵 (值=权重 1/N), **与 qresult 同构** → 可导出等价格式 (程序自接管后替代外部生成)
+- **差异**: 当前内置策略 universe 为 8 只小池, 需扩展至配置池/全池 5544 只 (约 3 分钟/策略) 实现等价覆盖
+- **已知缺口**: multi_factor 的 float_mv 字段未在 data_portal 映射 (仅有 circ_mv) → turnover 因子退化为量能, 需补 float_mv=circ_mv 别名 (P0-8 前置修复)
+
+### 7.4 无 key 预览 (部署体验)
+- 部署方未配 key 时: 用内置历史持仓样例 (docs/reference_holdings/) 预览策略列表/持仓查看; 实时数据功能提示配置 key
+
+### 7.5 用户补充决定 (已并入 PRD)
+1. 发布方式: 直接 push GitHub, 不含运行数据文件 (pre-push 密钥门禁)
+2. 四大策略 key: 确认已变量化 (.env SXSC_TUSHARE_TOKEN/TUSHARE_TOKEN)
+3. tushare pro 支撑: 实测支持, 文档注明积分接口风险与降级
+4. 持仓等价: 程序可生成与 qresult 等价矩阵, 需扩展 universe + float_mv 修复
+5. 定时: 每日收盘后一次, 默认 20:00, 可自定义
+6. 无 key 预览: 内置历史持仓样例
+7. 纳管为主: 放研究页, 默认不可删, 可复制调参
+
 ---
-*本报告基于 3.20.0 实测评估，具体优化方案见 DEV-PLAN-v3.21.md*
+*补充评估完成, 详见 DEV-PLAN-v3.21.md (P0-6/7/8) 与 DEV-TEST-PLAN-v3.21.md*

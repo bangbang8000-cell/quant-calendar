@@ -99,40 +99,54 @@ index.html 瘦身: 非核心 script 从 HTML 移除, 改 loader 注入。注意:
 
 前端: 系统页新增'操作审计'区块展示。
 
-### 3.6 P0-6 策略纳管中心
+### 3.6 P0-6 策略纳管中心 (评审定稿: 纳管为主, 放研究页, 不可删可复制)
 
-目标: 让 4 个策略成为程序可直接'接管'的运行单元, 而非仅研究页的独立工具。
+目标: 让 4 个策略成为程序可直接'接管'的运行单元, **研究页为纳管主场**。
 
 新增后端模块 strategy_governance.py:
   - 纳管状态存储: data/strategy_governance.json (gitignore)
-    { sid: { enabled: bool, schedule: '09:35'|null, last_run: str, last_holdings: str } }
+    { sid: { enabled: bool, schedule: '20:00'|null, last_run: str, last_holdings: str } }
   - 端点: GET/PUT /api/strategies/governance (状态) | POST /api/strategies/{sid}/run-once (立即运行)
   - run-once: 复用现有 run_strategy 流程, 额外生成持仓文件并记录 last_run
 
-前端: 新增'策略纳管'面板(可并入研究页或系统页), 4 策略卡片: 启用开关/定时时间/状态/最近运行/持仓文件链接。
+前端研究页 (评审决定):
+  - 4 内置策略: **默认纳管(不可删除)**, 卡片含 启用开关/定时时间/运行状态/最近运行/持仓文件链接
+  - 提供'复制为副本' → 副本可自由调参/删除/导出 (原策略只读纳管)
+  - 纳管状态与副本均持久化 (strategy_governance.json + profiles)
 
-### 3.7 P0-7 策略发布(去 token) + 部署导入 key
+### 3.7 P0-7 策略发布(去 token) + 部署导入 key (评审定稿: 直接 push GitHub, 不含运行数据)
 
-目标: 程序可安全发布(含策略与模板), 但绝不携带 tushare/sxsc token; 部署方通过配置导入自己的 key。
+目标: 程序可安全发布到 GitHub(含策略与模板), **绝不含运行过程产生的数据文件与 token**; 部署方通过配置导入自己的 key。
 
-后端 release_builder.py:
-  - build_release_package() → data/releases/quant-calendar-vX.zip
-    打包: backend/ + frontend/ + requirements.lock + README.md + DEPLOYMENT.md
-    排除: data/ .env datasource_config.json *.db *.log 等含密钥/运行态文件
-  - verify_no_secrets(package) → 扫描 zip 内文件, 断言无 token 模式(46a2.../ab2e.../token=xxx)
-  - 端点: POST /api/system/release/build + GET /api/system/release/latest(下载)
+发布方式 (评审决定): **直接 push GitHub master** (bangbang8000-cell/quant-calendar), 不是 zip 包。
+  - 发布前密钥安全门禁 (pre-push-hook.sh): 扫描待提交文件, 断言:
+    - 无 token 模式 (46a2.../ab2e.../token=xxx / sxsc token)
+    - 不含 data/ .env datasource_config.json *.db *.log (已在 .gitignore, 双保险)
+    - 不含 data/qresult/ (运行态持仓) data/holdings/
+  - 已确认: data/ .env 均已 gitignore; git 已跟踪文件 0 token
+  - 历史持仓(预览用): 提交一份样例/脱敏历史持仓到仓库 (docs/reference_holdings/), 供无 key 部署方预览程序功能
+
+tushare pro 支撑度评估 (评审结论, 写入 DEPLOYMENT.md):
+  - daily / daily_basic / moneyflow / index_daily 四接口标准版 pro 实测可用 (当前 token 验证通过)
+  - 四大策略所需字段 (close/pe/pb/moneyflow/volume) 全可由 tushare pro 提供
+  - 注意: moneyflow 属积分接口, 免费/低积分 token 可能无权访问 → 程序自动降级 (该因子为空, 回退量能), 文档注明
+  - 每日调用量受积分/频率限制 → 持仓生成默认全池约 3 分钟(并发), 建议交易日收盘后(默认 20:00)执行
 
 部署向导 (setup-wizard 扩展, 已有组件):
   - 首次启动检测 data/datasource_config.json 无 token → 弹向导: ① 填 tushare token ② 填 sxsc token ③ 测试连接 ④ 完成
-  - 文档 DEPLOYMENT.md 增加'密钥配置'章节
+  - 无 key 预览模式: 未配 key 时可用内置历史持仓样例预览程序功能(策略列表/持仓查看), 数据实时功能提示需配置 key
+  - 文档 DEPLOYMENT.md 增加'密钥配置'与'tushare pro 支持度'章节
 
-### 3.8 P0-8 策略定期运行 + 持仓文件
+### 3.8 P0-8 策略定期运行 + 持仓文件 (评审定稿: 默认 20:00, 可自定义; 与 qresult 等价)
 
-目标: 程序定时运行启用策略, 生成可落地的持仓文件(供 PTrade 参考/策略交接)。
+目标: 程序定时运行启用策略, 生成与既有 qresult 持仓等价的持仓文件(程序自接管, 替代外部生成)。
 
 调度器 scheduler.py 新增 strategy_run_task:
-  - 每日按 strategy_governance.json 的 schedule 定时(默认 09:35, 可配)
+  - 每日收盘后执行一次, 默认 20:00, 可自定义(strategy_governance.json 每策略 schedule 可配)
   - 对 enabled 策略: asyncio.to_thread(run_strategy) → 生成持仓文件
+  - 文件与 qresult 等价: data/holdings/{YYYY-MM-DD}/{sid}.csv
+    - 格式: 矩阵(行=信号日期, 列=股票代码, 值=权重) — 与 qresult 同构
+    - 或: 明细列 symbol/weight/close/signal_date (二选一, 与 qresult 对齐后定)
   - 持仓文件: data/holdings/{YYYY-MM-DD}/{sid}.csv
     列: symbol, weight, close, signal_date (T 日收盘信号, T+1 生效, 防前视)
   - 记录 _record_task_run('strategy_run', ok, detail) → 系统页 scheduler_tasks 可见
