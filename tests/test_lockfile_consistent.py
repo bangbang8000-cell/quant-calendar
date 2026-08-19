@@ -69,9 +69,13 @@ def test_lock_matches_in_no_drift():
         import pytest
         pytest.skip(pytest_skip)
     out = '/tmp/_qc_lock_check.lock'
+    # 清坏代理(系统 127.0.0.1:7892 无监听)避免 uv 拉索引结果漂移
+    env = {k: v for k, v in os.environ.items() if not k.lower().endswith('proxy')}
+    env['no_proxy'] = '*'
+    env['NO_PROXY'] = '*'
     subprocess.run(['uv', 'pip', 'compile', '--universal', '--python-version', '3.11',
                     '-q', '-o', out, os.path.join(BASE, 'requirements.in')],
-                   check=True, capture_output=True)
+                   check=True, capture_output=True, env=env)
     # 忽略头部自动生成注释（含 -o 输出路径，会随路径变化），只比对依赖钉版本
     def package_lines(path):
         return [ln for ln in open(path, encoding='utf-8')

@@ -188,6 +188,9 @@ def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20) -> Di
 
 def save_audit_report(report: Dict, date: Optional[str] = None) -> str:
     date = date or report.get("date") or datetime.now().strftime("%Y-%m-%d")
+    # v3.21: 报告内容 date 与文件名日期保持一致(避免 get_latest_audit 读内容日期≠文件名)
+    report = dict(report)
+    report["date"] = date
     d = _audit_dir()
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"{date}.json")

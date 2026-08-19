@@ -16,6 +16,14 @@ import pytest
 import fact_check as fc
 
 
+@pytest.fixture(autouse=True)
+def _isolate_audit_dir(tmp_path, monkeypatch):
+    """每个测试用独立审计目录并自动恢复全局 override, 避免跨测试污染导致 get_latest_audit 读到真实报告"""
+    fc.set_audit_dir(str(tmp_path / "audit"))
+    yield
+    monkeypatch.setattr(fc, "_AUDIT_DIR_OVERRIDE", None)
+
+
 # ==================== extract_numbers ====================
 
 
