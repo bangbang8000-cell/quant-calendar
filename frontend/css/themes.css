@@ -708,7 +708,8 @@
             max-width: min(1400px, calc(100% - 220px));
             height: calc(100vh - 40px);
             overflow-y: auto;
-            overflow-x: hidden;
+            /* v3.22-sticky: overflow-x 用 clip 而非 hidden — hidden 会破坏子元素 position:sticky(二级菜单跟随滚动), clip 不创建滚动上下文 */
+            overflow-x: clip;
         }
         .main-content::-webkit-scrollbar {
             width: 8px;
@@ -3589,15 +3590,19 @@ text {
 }
 
 /* ===== v1.5.0: 全局 Header ===== */
-.global-header {
+/* v3.22-sticky: 二级菜单(global-header)滚动固定 — sticky 移到组件根(.global-header-root),
+   使它在 main-content 滚动容器内固定; .global-header 自身不再 sticky */
+.global-header-root {
     position: sticky;
     top: 0;
     z-index: 100;
+    margin-bottom: 20px;
+}
+.global-header {
     background: var(--bg-sidebar);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 0 24px;
-    margin-bottom: 20px;
     box-shadow: var(--shadow-lg);
     display: flex;
     justify-content: space-between;
