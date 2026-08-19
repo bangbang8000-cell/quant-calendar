@@ -139,7 +139,7 @@ class TestGenerateReview:
         report = market_review.generate_review("2026-08-14")
         assert report["sectors"]["leader"] == FAKE_SECTORS[0]
         assert report["sectors"]["laggard"] == FAKE_SECTORS[1]
-        assert report["data_sources"]["sectors"] == "akshare"
+        assert report["data_sources"]["sectors"] == "ths"
 
     def test_all_unavailable_degrade(self, isolated_reviews_dir, monkeypatch):
         """数据源全部不可达时优雅降级: 空列表 + unavailable, 不抛错, 且数据卡如实告知 AI"""

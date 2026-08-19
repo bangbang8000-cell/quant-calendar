@@ -135,27 +135,40 @@ def _parse_sector_rows(df):
 
 
 def _fetch_sector_performance():
-    """尝试获取行业板块领涨/领跌 (akshare 东方财富行业板块)
+    """尝试获取行业板块领涨/领跌 (akshare: 东财 -> 同花顺 fallback)
     返回 (leader, laggard); 数据不可达返回空列表
+    v3.21 (网络修复): 东财被反爬时自动切同花顺源 (stock_board_industry_summary_ths 实测90行业可用)
     """
+    import akshare as ak
+    # 1) 东财行业板块
     try:
-        import akshare as ak
         df = ak.stock_board_industry_name_em()
+        leader, laggard = _parse_sector_rows(df)
+        if leader or laggard:
+            return leader, laggard
+    except Exception as e:
+        logger.warning("东财行业板块失败(%s), 切同花顺", e)
+    # 2) 同花顺行业板块 (列名: 板块/涨跌幅 -> 适配为 板块名称/涨跌幅)
+    try:
+        df = ak.stock_board_industry_summary_ths()
+        df = df.rename(columns={"板块": "板块名称"})
         return _parse_sector_rows(df)
     except Exception as e:
-        logger.warning(f"获取行业板块数据失败, 降级: {e}")
+        logger.warning(f"同花顺行业板块失败, 降级: {e}")
         return [], []
 
 
 def _fetch_moneyflow_detail(today=None):
-    """尝试获取大盘资金面简述; 不可达返回 '数据不可达'"""
+    """尝试获取大盘资金面简述 (tushare 系 moneyflow 为个股接口, 用代表个股反映资金面)
+    不可达返回 '数据不可达'"""
     try:
-        rows = data_source_manager.get_moneyflow("000001.SH", limit=1)
+        # 用贵州茅台(600519)等代表个股的主/净流入反映大盘资金面; tushare 优先
+        rows = data_source_manager.get_moneyflow("600519.SH", limit=1)
         if rows:
             latest = rows[-1]
             net = latest.get("net_mf_amount")
             if net is not None:
-                return f"最新主力净流入 {float(net):.2f} 万元 (交易日 {latest.get('trade_date', '未知')})"
+                return f"代表个股(贵州茅台)主力净流入 {float(net):.2f} 万元 (交易日 {latest.get('trade_date', '未知')})"
         return MONEYFLOW_UNAVAILABLE
     except Exception as e:
         logger.warning(f"获取资金面数据失败, 降级: {e}")
@@ -194,7 +207,7 @@ def market_data_context(today=None):
 
     if leader or laggard:
         sectors = {"leader": leader, "laggard": laggard}
-        sectors_source = "akshare"
+        sectors_source = "ths"   # 同花顺源(stock_board_industry_summary_ths), 东财被反爬时兜底
     else:
         sectors = UNAVAILABLE
         sectors_source = UNAVAILABLE
