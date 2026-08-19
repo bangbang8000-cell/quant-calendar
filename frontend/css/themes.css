@@ -696,11 +696,26 @@
         }
 
         /* ===== 主内容区 ===== */
+        /* v3.22-I1: 滚动模型统一 — 页面级滚动收敛到 main-content, 桌面仅 1 垂直滚动条(在内容区最右) */
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
         .main-content {
             flex: 1;
             margin-left: 220px;
             padding: 20px;
             max-width: min(1400px, calc(100% - 220px));
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .main-content::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 4px;
         }
         .page-header {
             background: var(--bg-sidebar);
@@ -738,8 +753,14 @@
 
         /* ===== 移动端响应式适配 ===== */
         @media (max-width: 768px) {
-            .sidebar { display: none; }
+            /* v3.22-I1: 移动端恢复 body 滚动(无固定 sidebar) */
+            html, body {
+                height: auto;
+                overflow: visible;
+            }
             .main-content {
+                height: auto;
+                overflow: visible;
                 margin-left: 0;
                 padding: 12px;
                 padding-bottom: 80px;
