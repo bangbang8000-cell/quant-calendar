@@ -13,6 +13,13 @@ import pandas as pd
 from datetime import datetime
 from paths import DATA_DIR
 
+# v3.20.1 (网络修复): 清掉失效的系统代理环境变量, 强制直连外网。
+# 本机历史遗留 http_proxy=127.0.0.1:7892 指向不存在的代理端口, requests 默认读取导致数据源全挂。
+for _k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY', 'ftp_proxy', 'FTP_PROXY'):
+    os.environ.pop(_k, None)
+os.environ['no_proxy'] = '*'
+os.environ['NO_PROXY'] = '*'
+
 # v3.8.1: K线内存缓存 TTL (秒) — 同股票同周期短时间重复请求直接命中, 避免每次切换实时调外部API
 KLINE_CACHE_TTL = 300
 KLINE_CACHE_MAX = 1000
@@ -49,6 +56,13 @@ AKSHARE_INDEX_COLUMN_MAP = {
     'date': 'trade_date', 'open': 'open', 'close': 'close',
     'high': 'high', 'low': 'low', 'volume': 'vol',
 }
+_SINA_STOCK_COLUMN_MAP = {
+    'date': 'trade_date', 'open': 'open', 'close': 'close',
+    'high': 'high', 'low': 'low', 'volume': 'vol', 'amount': 'amount',
+    'turnover': 'turnover_rate', 'pct_change': 'pct_chg',
+}
+
+
 AKSHARE_STOCK_COLUMN_MAP = {
     '日期': 'trade_date', '开盘': 'open', '收盘': 'close',
     '最高': 'high', '最低': 'low', '成交量': 'vol', '成交额': 'amount',
@@ -341,6 +355,14 @@ def _ts_code_to_akshare_stock(ts_code):
     000001.SZ → 000001 (去后缀)
     """
     return ts_code.split('.')[0]
+
+
+def _ts_code_to_sina_symbol(ts_code):
+    """tushare代码 → 新浪符号: 600519.SH → sh600519, 000001.SZ → sz000001 (v3.20.1)"""
+    code = ts_code.split('.')[0]
+    suffix = ts_code.split('.')[-1].upper()
+    prefix = 'sh' if suffix == 'SH' else 'sz' if suffix == 'SZ' else ''
+    return prefix + code
 
 
 def _is_index_code(ts_code):
@@ -720,8 +742,16 @@ class DataSourceManager:
                 df = _map_akshare_columns(df, AKSHARE_INDEX_COLUMN_MAP)
                 return df.tail(limit)
             else:
-                symbol = _ts_code_to_akshare_stock(ts_code)
-                df = ak.stock_zh_a_hist(symbol=symbol, period=period, adjust="qfq")
+                # v3.20.1 (网络修复): 东财源反爬拦截时 fallback 到新浪源
+                try:
+                    symbol = _ts_code_to_akshare_stock(ts_code)
+                    df = ak.stock_zh_a_hist(symbol=symbol, period=period, adjust="qfq")
+                except Exception as e:
+                    logger.warning('akshare 东财源失败(%s), 切新浪源', e)
+                    sina = _ts_code_to_sina_symbol(ts_code)
+                    df = ak.stock_zh_a_daily(symbol=sina, adjust="qfq")
+                    # 新浪源返回英文列: date/volume/amount 等, 补一层映射到 tushare 标准列
+                    df = _map_akshare_columns(df, _SINA_STOCK_COLUMN_MAP)
                 df = _map_akshare_columns(df, AKSHARE_STOCK_COLUMN_MAP)
                 return df.tail(limit)
 
