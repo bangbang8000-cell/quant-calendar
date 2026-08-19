@@ -90,18 +90,30 @@ async def run_strategy(sid: str, body: Dict[str, Any],
 @router.post("/{sid}/backtest")
 async def backtest_strategy(sid: str, body: Dict[str, Any],
                             _: Dict = Depends(get_current_active_user)):
-    """回测(复用 backtest.py 口径) —— 骨架: 返回占位结果"""
+    """回测: SDK 信号生成持仓矩阵 → 回测器(复用 backtest.py 绩效口径)"""
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
         raise HTTPException(status_code=404, detail=f"策略 {sid} 不存在")
     params = st.validate_params(body.get("params") or {})
-    return {
-        "strategy_id": sid,
-        "params": params,
-        "note": "回测引擎接入中: 下一步对接 backtest.BacktestEngine",
-        "result": None,
-    }
+    try:
+        from strategy_sdk.backtest import backtest_holdings
+        from strategy_sdk.testsupport import FakePortal
+        portal = FakePortal(dates=[], symbols=[])
+        ctx = StrategyContext(portal=portal, params=params,
+                              as_of=body.get("end_date") or "2026-08-18")
+        holdings = st.generate_signals(ctx)
+        result = backtest_holdings(
+            holdings,
+            start_date=body.get("start_date"),
+            end_date=body.get("end_date"),
+            commission_rate=body.get("commission_rate", 0.0003),
+            slippage=body.get("slippage", 0.001),
+        )
+        return {"strategy_id": sid, "params": params, "result": result}
+    except Exception as e:
+        logger.exception("策略 %s 回测失败", sid)
+        raise HTTPException(status_code=500, detail=f"回测失败: {e}")
 
 
 @router.get("/{sid}/runs")
