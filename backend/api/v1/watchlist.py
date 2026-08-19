@@ -113,8 +113,16 @@ async def remove_from_watchlist(code: str, user: dict = Depends(get_current_acti
 @router.delete("")
 async def clear_watchlist(user: dict = Depends(get_current_active_user)):
     """清空自选"""
+    stocks = _load_watchlist(user["username"])
+    cnt = len(stocks)
     _save_watchlist(user["username"], [])
-    return {"success": True, "message": "自选已清空"}
+    # v3.21 (P0-5): 高危操作审计
+    try:
+        from audit_log import log
+        log("clear_watchlist", user["username"], {"count": cnt})
+    except Exception:
+        pass
+    return {"success": True, "message": "自选已清空", "count": cnt}
 
 
 @router.get("/check/{code}")

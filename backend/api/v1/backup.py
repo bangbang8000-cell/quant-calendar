@@ -42,6 +42,13 @@ async def backup_restore(req: RestoreRequest, user: dict = Depends(get_current_a
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="仅管理员可执行恢复操作")
     ok = restore_backup(req.name)
+    # v3.21 (P0-5): 高危操作审计
+    try:
+        from audit_log import log
+        log("restore_backup", user.get("username", "admin"),
+            {"name": req.name, "success": ok})
+    except Exception:
+        pass
     if not ok:
         return {"success": False, "message": "恢复失败, 请检查备份文件"}
     return {"success": True, "message": "恢复成功, 数据已回滚到备份时间点"}

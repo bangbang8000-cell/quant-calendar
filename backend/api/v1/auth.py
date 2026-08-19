@@ -140,9 +140,16 @@ async def update_user(
 
 
 @router.delete("/users/{username}")
-async def delete_user(username: str, _: Dict = Depends(get_admin_user)):
+async def delete_user(username: str, admin: Dict = Depends(get_admin_user)):
     """删除用户（仅管理员可访问）"""
     success = user_manager.delete_user(username)
+    # v3.21 (P0-5): 高危操作审计
+    try:
+        from audit_log import log
+        log("delete_user", admin.get("username", "admin"),
+            {"target": username, "success": success})
+    except Exception:
+        pass
     return {"success": success, "message": "删除成功" if success else "无法删除admin或用户不存在"}
 
 
