@@ -225,3 +225,51 @@
   flex-direction: column;
   gap: 8px;
 }
+
+/* ─── v3.22-I2: 用量统计卡片化 (4卡片网格) ─── */
+.usage-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.usage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-base);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+}
+.usage-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-md);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+.usage-card-title-sub {
+  font-size: var(--font-xs);
+  font-weight: var(--font-normal);
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+.usage-card .section-block-top {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.usage-card .usage-ai-panel,
+.usage-card .usage-src-grid,
+.usage-card .sys-health-grid {
+  margin-top: 0;
+}
+.usage-card-grid + .usage-card-extra {
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .usage-card-grid { grid-template-columns: 1fr; }
+}
