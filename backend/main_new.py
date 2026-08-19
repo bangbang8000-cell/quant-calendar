@@ -108,6 +108,14 @@ app.add_middleware(
 )
 logger.info(f"✅ CORS 配置已加载，允许的源: {settings.cors_origin_list}")
 
+# v3.21 (P1-1): GZip 压缩 — 大 JSON API 响应/静态 JS 传输体积降 60%+ (min_size=1KB)
+try:
+    from fastapi.middleware.gzip import GZipMiddleware
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
+    logger.info("✅ GZip 中间件已启用 (min_size=1024B)")
+except Exception as e:
+    logger.warning(f"⚠️ GZip 中间件启用失败: {e}")
+
 # v1.10: 安全响应头中间件
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
