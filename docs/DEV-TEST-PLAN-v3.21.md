@@ -45,6 +45,21 @@
 - [ ] 查询: GET /api/audit/latest 返回最近 N 条倒序
 - [ ] 关键操作触发: 跑策略/回测/改配置 自动记录 (后端拦截)
 
+### P0-6 策略纳管中心 (test_strategy_governance.py)
+- [ ] 纳管状态存取: PUT 后 GET 回读 (enabled/schedule/last_run)
+- [ ] run-once: 立即运行策略 → 生成持仓文件 + 更新 last_run
+- [ ] 禁用策略: run-once 拒绝 403 或跳过
+
+### P0-7 策略发布 + 部署向导 (test_release_builder.py)
+- [ ] build_release_package: 生成 zip, 含 backend/frontend/README, 排除 data/.env/db
+- [ ] verify_no_secrets: 解压扫描, 断言无 token 模式 (46a2.../ab2e.../token=)
+- [ ] 部署向导: 无 token 时 setup-wizard 弹出; 配置 key 后 test_connection 通过 (手动)
+
+### P0-8 定时持仓文件 (test_strategy_holdings.py)
+- [ ] 持仓文件格式: data/holdings/{date}/{sid}.csv 含 symbol/weight/close/signal_date
+- [ ] 防前视: signal_date = T 收盘, 文件含生成时间戳
+- [ ] 定时任务: schedule 触发后 _record_task_run('strategy_run') 记录
+
 ### P1-1 GZip 压缩 (性能验证)
 - [ ] 大 JSON 端点 (扫描/回测) 响应头含 Content-Encoding: gzip
 - [ ] 压缩后体积较基线降 >= 60%

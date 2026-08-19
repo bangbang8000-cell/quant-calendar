@@ -24,6 +24,9 @@
 | P0-3 | 策略参数方案管理: 保存当前参数为方案/加载方案/命名, 服务端持久化 | 可保存≥3 方案; 切换方案参数联动; 重启不丢 | E1 |
 | P0-4 | 高危操作确认: 调仓/删自选/清空/覆盖配置/删用户 统一 confirm | 高危操作 100% 有确认; 文案含操作对象名 | C1 |
 | P0-5 | 关键操作审计日志: 跑策略/回测/改配置/删数据写入 audit, 系统页可查 | 审计面板展示最近 N 条; 含时间/用户/操作/对象 | C3 |
+| P0-6 | **策略纳管中心**: 4 策略统一面板(启用/停用/状态/最近运行/持仓文件/定时开关), 策略从研究页升级为程序管理的运行单元 | 4 策略可启用停用; 状态/持仓可视化; 与注册表/run/回测打通 | 补充需求 |
+| P0-7 | **策略发布(去 token)**: 发布包生成(策略代码+模板+README, 排除 data/.env/datasource_config); 密钥安全审计; 部署向导(首次启动检测无 key 引导配置) | 发布包不含任何 token; git 审计 0 token; 部署后向导配置 key 可用 | 补充需求 |
+| P0-8 | **策略定期运行 + 持仓文件**: 调度器新增 strategy_run_task 定时跑启用策略 → 生成持仓文件(data/holdings/{date}/{sid}.csv) + 系统页展示 | 每日定时生成持仓文件; 含权重/日期/生成时间; 面板可查可下载 | 补充需求 |
 
 ### 2.2 P1 — 应做 (体验增强)
 
@@ -95,6 +98,46 @@ index.html 瘦身: 非核心 script 从 HTML 移除, 改 loader 注入。注意:
 字段: {time, user, action, target, detail}
 
 前端: 系统页新增'操作审计'区块展示。
+
+### 3.6 P0-6 策略纳管中心
+
+目标: 让 4 个策略成为程序可直接'接管'的运行单元, 而非仅研究页的独立工具。
+
+新增后端模块 strategy_governance.py:
+  - 纳管状态存储: data/strategy_governance.json (gitignore)
+    { sid: { enabled: bool, schedule: '09:35'|null, last_run: str, last_holdings: str } }
+  - 端点: GET/PUT /api/strategies/governance (状态) | POST /api/strategies/{sid}/run-once (立即运行)
+  - run-once: 复用现有 run_strategy 流程, 额外生成持仓文件并记录 last_run
+
+前端: 新增'策略纳管'面板(可并入研究页或系统页), 4 策略卡片: 启用开关/定时时间/状态/最近运行/持仓文件链接。
+
+### 3.7 P0-7 策略发布(去 token) + 部署导入 key
+
+目标: 程序可安全发布(含策略与模板), 但绝不携带 tushare/sxsc token; 部署方通过配置导入自己的 key。
+
+后端 release_builder.py:
+  - build_release_package() → data/releases/quant-calendar-vX.zip
+    打包: backend/ + frontend/ + requirements.lock + README.md + DEPLOYMENT.md
+    排除: data/ .env datasource_config.json *.db *.log 等含密钥/运行态文件
+  - verify_no_secrets(package) → 扫描 zip 内文件, 断言无 token 模式(46a2.../ab2e.../token=xxx)
+  - 端点: POST /api/system/release/build + GET /api/system/release/latest(下载)
+
+部署向导 (setup-wizard 扩展, 已有组件):
+  - 首次启动检测 data/datasource_config.json 无 token → 弹向导: ① 填 tushare token ② 填 sxsc token ③ 测试连接 ④ 完成
+  - 文档 DEPLOYMENT.md 增加'密钥配置'章节
+
+### 3.8 P0-8 策略定期运行 + 持仓文件
+
+目标: 程序定时运行启用策略, 生成可落地的持仓文件(供 PTrade 参考/策略交接)。
+
+调度器 scheduler.py 新增 strategy_run_task:
+  - 每日按 strategy_governance.json 的 schedule 定时(默认 09:35, 可配)
+  - 对 enabled 策略: asyncio.to_thread(run_strategy) → 生成持仓文件
+  - 持仓文件: data/holdings/{YYYY-MM-DD}/{sid}.csv
+    列: symbol, weight, close, signal_date (T 日收盘信号, T+1 生效, 防前视)
+  - 记录 _record_task_run('strategy_run', ok, detail) → 系统页 scheduler_tasks 可见
+
+前端系统页: 纳管面板展示今日持仓文件(可下载), 调度任务状态。
 
 ## 4. 非目标 (Non-Goals)
 
