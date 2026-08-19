@@ -588,10 +588,17 @@ class DataSourceManager:
                     record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
 
         if result:
-            # 简单淘汰: 缓存条目超限时整体清空 (K线场景条目有限, 无需 LRU)
-            if len(self._kline_cache) >= KLINE_CACHE_MAX:
-                self._kline_cache.clear()
-            self._kline_cache[key] = (now, result)
+            # v3.22: 仅缓存 data 非空的结果 — 空数据(如数据源限流/无行)不落缓存,
+            # 避免"坏缓存"污染后续请求(曾导致异动扫描 78/80 只读到空 K 线)
+            if isinstance(result, dict):
+                _cacheable = bool(result.get('data'))
+            else:
+                _cacheable = bool(result)
+            if _cacheable:
+                # 简单淘汰: 缓存条目超限时整体清空 (K线场景条目有限, 无需 LRU)
+                if len(self._kline_cache) >= KLINE_CACHE_MAX:
+                    self._kline_cache.clear()
+                self._kline_cache[key] = (now, result)
         return result
 
     def _get_resampled_kline(self, ts_code, period, limit):
