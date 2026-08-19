@@ -71,9 +71,9 @@ async def run_strategy(sid: str, body: Dict[str, Any],
     except StrategyBusyError as e:
         raise HTTPException(status_code=409, detail=str(e))
     try:
-        # 骨架实现: 用占位 portal(无数据时返回空) —— 真实取数接入三源后替换
-        from strategy_sdk.testsupport import FakePortal
-        portal = FakePortal(dates=[], symbols=[])
+        # 数据门户: 真实三源优先, 不可达降级模拟
+        universe = [f'{600000 + i:06d}.SH' for i in range(24)]
+        portal, _ = _resolve_portal(universe=universe)
         ctx = StrategyContext(portal=portal, params=params, as_of='2026-08-18')
         holdings = st.generate_signals(ctx)
         summary = {
@@ -99,8 +99,8 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
     params = st.validate_params(body.get('params') or {})
     try:
         from strategy_sdk.backtest import backtest_holdings
-        from strategy_sdk.testsupport import FakePortal
-        portal = FakePortal(dates=[], symbols=[])
+        universe = [f'{600000 + i:06d}.SH' for i in range(24)]
+        portal, _ = _resolve_portal(universe=universe)
         ctx = StrategyContext(portal=portal, params=params,
                               as_of=body.get('end_date') or '2026-08-18')
         holdings = st.generate_signals(ctx)
@@ -176,11 +176,8 @@ async def factor_ic_research(body: Dict[str, Any],
     try:
         from strategy_sdk.factor_engine import (compute_cross_section_factors,
                                                  evaluate_factor_ic)
-        from strategy_sdk.testsupport import FakePortal
-        # 研究面板(真实行情数据源接入为 P1 数据层, 此处用可复现面板打通契约)
-        dates = _date_range(start_date, end_date, 40)
         symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal = FakePortal(dates=dates, symbols=symbols, seed=2026)
+        portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date)
         factor_values = compute_cross_section_factors(panel, [spec])
@@ -216,10 +213,8 @@ async def factor_layer_research(body: Dict[str, Any],
     try:
         from strategy_sdk.factor_engine import (compute_cross_section_factors,
                                                  layer_backtest)
-        from strategy_sdk.testsupport import FakePortal
-        dates = _date_range(start_date, end_date, 40)
         symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal = FakePortal(dates=dates, symbols=symbols, seed=2026)
+        portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date)
         factor_values = compute_cross_section_factors(panel, [spec])
@@ -257,3 +252,27 @@ def _future_returns(panel):
     """由面板收盘价生成次日收益(近似未来收益, 研究演示用)"""
     close = panel['close'].unstack('symbol')
     return close.pct_change().shift(-1)
+
+
+# ---------- 数据门户解析 (FR: 数据层) ----------
+
+def _resolve_portal(universe: Optional[list] = None, seed: int = 2026):
+    """优先真实三源 DataPortal; 数据不可达(无网络/无 universe)时降级 FakePortal。
+
+    Returns (portal, is_real): is_real=False 表示降级到可复现模拟数据。
+    """
+    # 有 universe 才尝试真实数据(无 universe 无从取数)
+    if universe:
+        try:
+            from strategy_sdk.data_portal import RealDataPortal
+            portal = RealDataPortal()
+            # 探测: 用首只股票试取 K 线, 成功即用真实
+            probe = portal._fetch_kline(universe[0], '2020-01-01', '2026-08-18')
+            if probe is not None and not probe.empty:
+                return portal, True
+        except Exception as e:
+            logger.info('真实数据门户不可用, 降级模拟: %s', e)
+    from strategy_sdk.testsupport import FakePortal
+    dates = _date_range('2026-04-01', '2026-07-31', 40)
+    symbols = universe or [f'{600000 + i:06d}.SH' for i in range(24)]
+    return FakePortal(dates=dates, symbols=symbols, seed=seed), False

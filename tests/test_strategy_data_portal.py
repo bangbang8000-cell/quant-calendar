@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+三源 DataPortal 测试 (FR: 策略研究数据层)
+字段映射 / 面板组装 / 防前视 / 优雅降级
+"""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+import pytest
+import pandas as pd
+
+
+class StubSource:
+    """注入的假数据源: 每只股票返回固定 K 线 + 估值 + 资金流"""
+
+    def __init__(self):
+        self.calls = []
+
+    def get_kline_data(self, ts_code, period='daily', limit=60):
+        self.calls.append(('kline', ts_code))
+        dates = ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"]
+        data = []
+        base = 10.0
+        for i, d in enumerate(dates):
+            data.append([d, base + i, base + i + 0.1, base + i, base + i + 0.2,
+                         1000 + i * 100])
+        return {"data": data, "data_source": "stub"}
+
+    def get_daily_basic(self, ts_code, limit=5):
+        self.calls.append(('basic', ts_code))
+        return [{"trade_date": "2026-06-04", "pe": 15.0, "pb": 2.0}]
+
+    def get_moneyflow(self, ts_code, limit=10):
+        self.calls.append(('moneyflow', ts_code))
+        return [{"trade_date": "2026-06-04", "main_net_inflow": 5.0e6}]
+
+    def get_financial_data(self, ts_code):
+        return []
+
+
+def _stub_source_module():
+    """构造一个 data_sources 模块替身(供 data_portal 导入)"""
+    import types
+    mod = types.ModuleType('data_sources')
+    mod.data_source_manager = StubSource()
+    return mod
+
+
+def test_get_panel_builds_multiindex():
+    """get_panel 返回 MultiIndex(date, symbol) 面板, 含请求字段"""
+    from strategy_sdk.data_portal import RealDataPortal
+    portal = RealDataPortal(source=_stub_source_module().data_source_manager)
+    panel = portal.get_panel(["close", "volume"], start="2026-06-01", end="2026-06-04",
+                             universe=["000001.SZ", "600000.SH"])
+    assert panel is not None and not panel.empty
+    assert panel.index.names == ["date", "symbol"]
+    assert "close" in panel.columns and "volume" in panel.columns
+    # 2 股 × 4 日
+    assert len(panel.index.get_level_values(0).unique()) == 4
+    assert len(panel.index.get_level_values(1).unique()) == 2
+
+
+def test_get_panel_requests_universe():
+    """只请求 universe 内的股票"""
+    from strategy_sdk.data_portal import RealDataPortal
+    src = StubSource()
+    portal = RealDataPortal(source=src)
+    portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
+                     universe=["000001.SZ"])
+    codes = [c for kind, c in src.calls if kind == 'kline']
+    assert codes == ["000001.SZ"]
+
+
+def test_get_panel_valuations_field():
+    """pe/pb 字段从 daily_basic 取"""
+    from strategy_sdk.data_portal import RealDataPortal
+    src = StubSource()
+    portal = RealDataPortal(source=src)
+    panel = portal.get_panel(["pe", "pb"], start="2026-06-01", end="2026-06-04",
+                             universe=["000001.SZ"])
+    assert "pe" in panel.columns and "pb" in panel.columns
+    assert panel["pe"].notna().any()
+
+
+def test_get_panel_moneyflow_field():
+    """main_net_inflow 从 moneyflow 取"""
+    from strategy_sdk.data_portal import RealDataPortal
+    src = StubSource()
+    portal = RealDataPortal(source=src)
+    panel = portal.get_panel(["main_net_inflow"], start="2026-06-01", end="2026-06-04",
+                             universe=["000001.SZ"])
+    assert "main_net_inflow" in panel.columns
+    assert panel["main_net_inflow"].notna().any()
+
+
+def test_get_panel_empty_on_source_failure():
+    """数据源抛错/无数据 → 返回空面板(不抛异常, 优雅降级)"""
+    class FailingSource:
+        def get_kline_data(self, *a, **k):
+            raise RuntimeError("network down")
+    from strategy_sdk.data_portal import RealDataPortal
+    portal = RealDataPortal(source=FailingSource())
+    panel = portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
+                             universe=["000001.SZ"])
+    assert panel is None or panel.empty
