@@ -175,7 +175,9 @@ def list_holdings(sid: str) -> list:
 
     v3.21 (遗留3): 无本地持仓记录时回退随发布入库的 reference_holdings 预览样例
     (docs/reference_holdings/, 0 token, 供无 key 部署预览)。
+    匹配用 _display_name(sid) (文件名=中文策略名, sid=英文)。
     """
+    name = _display_name(sid)
     files = []
     if os.path.isdir(HOLDINGS_ROOT):
         for d in sorted(os.listdir(HOLDINGS_ROOT), reverse=True):
@@ -183,7 +185,7 @@ def list_holdings(sid: str) -> list:
             if not os.path.isdir(dd):
                 continue
             for fn in os.listdir(dd):
-                if sid in fn and fn.endswith(".csv"):
+                if name in fn and fn.endswith(".csv"):
                     files.append({"date": d, "file": os.path.join(dd, fn)})
     if files:
         return files[:20]
@@ -192,6 +194,6 @@ def list_holdings(sid: str) -> list:
                             "docs", "reference_holdings")
     if os.path.isdir(ref_root):
         for fn in os.listdir(ref_root):
-            if sid in fn and fn.endswith("-预览.csv"):
+            if name in fn and fn.endswith("-预览.csv"):
                 files.append({"date": "参考样例", "file": os.path.join(ref_root, fn)})
     return files[:20]

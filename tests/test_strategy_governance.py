@@ -106,3 +106,18 @@ def test_list_holdings_falls_back_to_reference(admin_client, tmp_path, monkeypat
     files = gov.list_holdings("行业轮动")
     assert files, "应回退到参考样例"
     assert files[0]["file"].endswith("-预览.csv"), files[0]
+
+
+def test_list_holdings_english_sid_matches_display_name(admin_client, tmp_path, monkeypatch):
+    """v3.21 (遗留3): 英文 sid(multi_factor) 通过 display_name 匹配中文文件名"""
+    import strategy_governance as gov
+    import os as _os
+    # 构造本地持仓目录(中文文件名)
+    local = tmp_path / "holdings" / "2026-08-01"
+    _os.makedirs(local, exist_ok=True)
+    with open(local / "多因子策略持仓.csv", "w", encoding="utf-8-sig") as f:
+        f.write("\ufeff,600000.SH\n20260801,1\n")
+    monkeypatch.setattr(gov, "HOLDINGS_ROOT", str(tmp_path / "holdings"))
+    files = gov.list_holdings("multi_factor")
+    assert files, "英文 sid 应匹配中文文件名"
+    assert "多因子策略持仓.csv" in files[0]["file"], files[0]
