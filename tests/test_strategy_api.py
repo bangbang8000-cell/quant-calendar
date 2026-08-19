@@ -54,8 +54,10 @@ def test_profiles_sid_isolation(authed_client):
     cf = (authed_client.get('/api/strategies/capital_flow/profiles').json().get('data') or {}).get('profiles') or []
     assert all(p['name'] == 'mf方案' for p in mf)
     assert all(p['name'] == 'cf方案' for p in cf)
-    for p in mf: authed_client.delete(f'/api/strategies/multi_factor/profiles/{p["id"]}')
-    for p in cf: authed_client.delete(f'/api/strategies/capital_flow/profiles/{p["id"]}')
+    for p in mf:
+        authed_client.delete(f'/api/strategies/multi_factor/profiles/{p["id"]}')
+    for p in cf:
+        authed_client.delete(f'/api/strategies/capital_flow/profiles/{p["id"]}')
 
 
 def test_profiles_validation(authed_client):
