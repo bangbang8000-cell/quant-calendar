@@ -4,7 +4,8 @@
 策略 SDK 核心单元测试 (FR: 策略研究 P0)
 覆盖: ParamSpec→schema 生成 / 数据层注入 / 信号前视语义 / 注册表 / PTrade 代码生成与校验
 """
-import sys, os, json
+import os
+import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 import pytest
 
@@ -52,7 +53,6 @@ def test_strategy_params_schema_endpoint_shape():
 def test_data_portal_contract():
     """因子代码只依赖 DataPortal 接口, 不 import 具体数据源"""
     from strategy_sdk.base import DataPortal
-    import inspect
     methods = [m for m in dir(DataPortal) if not m.startswith("_")]
     assert "get_panel" in methods
 
@@ -87,6 +87,52 @@ def test_signal_uses_shifted_data():
     # get_panel 请求的 end 不得晚于 as_of
     for req in portal.requests:
         assert req["end"] <= ctx.as_of
+
+
+# ---------- v3.23: 三大策略真实选股逻辑(替代空骨架, 修复回测"持仓矩阵为空") ----------
+
+def _assert_holdings_nonempty(strategy_cls):
+    """通用断言: generate_signals 返回非空持仓矩阵(修复回测失败)"""
+    from strategy_sdk.base import StrategyContext
+    from strategy_sdk.testsupport import FakePortal
+
+    portal = FakePortal(dates=["2026-01-05", "2026-01-06", "2026-01-07"],
+                        symbols=["600000.SH", "600004.SH", "600519.SH", "601318.SH"])
+    ctx = StrategyContext(portal=portal, params={}, as_of="2026-01-07")
+    holdings = strategy_cls().generate_signals(ctx)
+    assert holdings is not None and not holdings.empty,         f"{strategy_cls.id} 持仓矩阵为空(回测失败)"
+    assert holdings.shape[0] == 3  # 三个日期都有持仓
+    assert len(holdings.columns) == 4
+    # 首日必须有持仓(修复"持仓矩阵为空")
+    assert (holdings.iloc[0] > 0).any(), f"{strategy_cls.id} 首日无持仓"
+
+
+def test_sector_rotation_generate_signals_nonempty():
+    """行业轮动: 真实行业动量选股 → 非空持仓矩阵"""
+    from strategy_sdk.builtin.sector_rotation import SectorRotationStrategy
+    _assert_holdings_nonempty(SectorRotationStrategy)
+
+
+def test_capital_flow_generate_signals_nonempty():
+    """资金流: 主力净流入选股 → 非空持仓矩阵(阈值设0验证资金流路径)"""
+    from strategy_sdk.base import StrategyContext
+    from strategy_sdk.builtin.capital_flow import CapitalFlowStrategy
+    from strategy_sdk.testsupport import FakePortal
+
+    portal = FakePortal(dates=["2026-01-05", "2026-01-06", "2026-01-07"],
+                        symbols=["600000.SH", "600004.SH", "600519.SH", "601318.SH"])
+    # 净流入阈值=0: FakePortal 随机 1~100 全通过 → 验证资金流选股路径非空
+    ctx = StrategyContext(portal=portal, params={"inflow_threshold": 0}, as_of="2026-01-07")
+    holdings = CapitalFlowStrategy().generate_signals(ctx)
+    assert holdings is not None and not holdings.empty, "资金流策略持仓矩阵为空"
+    assert holdings.shape[0] == 3
+    assert (holdings.iloc[0] > 0).any(), "资金流策略首日无持仓"
+
+
+def test_index_enhance_generate_signals_nonempty():
+    """指数增强: 双因子+行业中性 → 非空持仓矩阵"""
+    from strategy_sdk.builtin.index_enhance import IndexEnhanceStrategy
+    _assert_holdings_nonempty(IndexEnhanceStrategy)
 
 
 # ---------- 4. 注册表 ----------
