@@ -72,7 +72,7 @@ async def run_strategy(sid: str, body: Dict[str, Any],
         raise HTTPException(status_code=409, detail=str(e))
     try:
         # 数据门户: 真实三源优先, 不可达降级模拟
-        universe = [f'{600000 + i:06d}.SH' for i in range(24)]
+        universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=universe)
         ctx = StrategyContext(portal=portal, params=params, as_of='2026-08-18')
         holdings = st.generate_signals(ctx)
@@ -99,7 +99,7 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
     params = st.validate_params(body.get('params') or {})
     try:
         from strategy_sdk.backtest import backtest_holdings
-        universe = [f'{600000 + i:06d}.SH' for i in range(24)]
+        universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=universe)
         ctx = StrategyContext(portal=portal, params=params,
                               as_of=body.get('end_date') or '2026-08-18')
@@ -176,7 +176,10 @@ async def factor_ic_research(body: Dict[str, Any],
     try:
         from strategy_sdk.factor_engine import (compute_cross_section_factors,
                                                  evaluate_factor_ic)
-        symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
+        # 用策略声明的研究股票池(新浪源可用性已知), 而非连续代码段
+        symbols = list(getattr(st, 'universe', []) or [])
+        if not symbols:
+            symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date)
@@ -213,7 +216,9 @@ async def factor_layer_research(body: Dict[str, Any],
     try:
         from strategy_sdk.factor_engine import (compute_cross_section_factors,
                                                  layer_backtest)
-        symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
+        symbols = list(getattr(st, 'universe', []) or [])
+        if not symbols:
+            symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, _ = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date)
