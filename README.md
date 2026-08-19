@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="frontend/logo.svg" alt="量化选股日历" width="88" height="88">
   <h1 align="center">量化选股日历</h1>
   <p align="center">
     <strong>Quant Calendar</strong> — 宏观经济周期、多因子策略选股、AI 智能评估，整合到一个日历界面。

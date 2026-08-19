@@ -948,6 +948,22 @@
 
                     <div v-else-if="currentSubPage === 'about'">
                         <div class="card">
+                            <div class="about-logo-row">
+                                <svg class="about-logo-img" viewBox="0 0 100 100" width="44" height="44" aria-label="量化选股日历 logo" role="img">
+                                    <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
+                                    <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>
+                                    <line x1="20" y1="78" x2="82" y2="78" stroke="var(--logo-border)" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
+                                    <rect x="22" y="58" width="15" height="20" rx="3.5" fill="var(--logo-blue)" opacity="0.95"/>
+                                    <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="var(--logo-yellow)" opacity="0.95"/>
+                                    <rect x="63" y="26" width="15" height="52" rx="3.5" fill="var(--logo-red)"/>
+                                    <rect x="63" y="26" width="15" height="14" rx="3.5" fill="var(--logo-white)" opacity="0.35"/>
+                                    <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="var(--logo-border)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+                                </svg>
+                                <div class="about-logo-text">
+                                    <div class="about-logo-title">{{ t('login.title') }}</div>
+                                    <div class="about-logo-sub">{{ t('login.subtitle') }}</div>
+                                </div>
+                            </div>
                             <div class="card-title">📖 软件简介</div>
                             <div class="about-body-text">
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>

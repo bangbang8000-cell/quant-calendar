@@ -643,6 +643,10 @@
             padding: 0 20px 20px 20px;
             border-bottom: 1px solid var(--border-light);
             margin-bottom: 10px;
+            /* v3.22-logo: logo 与标题文字同一行 */
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .sidebar-logo h2 {
             font-size: var(--font-md);
@@ -650,7 +654,10 @@
             color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
         /* v3.22-logo: K线折线日历 logo (方案B) — 侧边栏品牌图标 */
         .sidebar-logo-img {
@@ -4339,6 +4346,29 @@ text {
 /* =====
 
 /* ===== v3.17.9 内联样式迁移工具类 (由 _tmp_migrate_map.py 生成, 值与原内联样式 1:1) ===== */
+/* v3.22-logo: 关于页品牌展示 (logo + 标题同行) */
+.about-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+}
+.about-logo-img { flex-shrink: 0; display: block; }
+.about-logo-text { min-width: 0; }
+.about-logo-title {
+    font-size: var(--font-lg);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+.about-logo-sub {
+    font-size: var(--font-sm);
+    color: var(--text-tertiary);
+    line-height: 1.4;
+    margin-top: 2px;
+}
 .about-body-text { color: var(--text-secondary); line-height: 1.8; font-size: var(--font-md); }
 .about-ul { margin: 6px 0 0 0; padding-left: 20px; }
 .align-self-start { align-self:flex-start; }

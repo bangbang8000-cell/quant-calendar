@@ -58,7 +58,7 @@
     'login.password': '密码',
     'login.submit': '登 录',
     'login.guest': '访客登录',
-    'login.footer': '🚀 量化选股 · 智能决策 · 让数据说话',
+    'login.footer': '量化选股 · 智能决策 · 让数据说话',
     // 通用
     'common.loading': '加载中...',
     'common.dataUnavailable': '数据不可达',

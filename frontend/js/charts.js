@@ -205,7 +205,16 @@
   async function renderKlineTo(containerId, data, period, isIndex = false, opts = {}) {
     await ensureEcharts();  // v3.17.9: 懒加载 echarts（非首屏按需）
     const rec = _klineRec(containerId);
-    const el = document.getElementById(containerId);
+    // v3.22-kline-fix: 容器 v-if 渲染有时序竞态(弹窗刚打开/tab切换) — 轮询等待容器就绪,
+    //   最多 ~800ms; 替代原先立即抛错导致 loadStockKline catch → "K线加载失败"
+    let el = document.getElementById(containerId);
+    if (!el) {
+      for (let i = 0; i < 16; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+        el = document.getElementById(containerId);
+        if (el) break;
+      }
+    }
     if (!el) throw new Error('无法找到图表容器: ' + containerId);
     if (el.offsetWidth < 50) { el.style.minWidth = '600px'; el.style.minHeight = '300px'; }
     // v3.17.7 (bugfix): 容器 DOM 可能被 v-if 销毁重建(tab 切换) — 旧实例仍绑定已移除的 DOM,
