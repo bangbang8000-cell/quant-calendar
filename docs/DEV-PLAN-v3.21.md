@@ -124,7 +124,7 @@ index.html 瘦身: 非核心 script 从 HTML 移除, 改 loader 注入。注意:
     - 不含 data/ .env datasource_config.json *.db *.log (已在 .gitignore, 双保险)
     - 不含 data/qresult/ (运行态持仓) data/holdings/
   - 已确认: data/ .env 均已 gitignore; git 已跟踪文件 0 token
-  - 历史持仓(预览用): 提交一份样例/脱敏历史持仓到仓库 (docs/reference_holdings/), 供无 key 部署方预览程序功能
+  - 历史持仓(预览用, 评审定稿): 每次发布时, 直接取 data/qresult/ 已有最新持仓文件随仓库发布(不做单独生成/脱敏), 供无 key 部署方预览程序功能
 
 tushare pro 支撑度评估 (评审结论, 写入 DEPLOYMENT.md):
   - daily / daily_basic / moneyflow / index_daily 四接口标准版 pro 实测可用 (当前 token 验证通过)
@@ -134,7 +134,7 @@ tushare pro 支撑度评估 (评审结论, 写入 DEPLOYMENT.md):
 
 部署向导 (setup-wizard 扩展, 已有组件):
   - 首次启动检测 data/datasource_config.json 无 token → 弹向导: ① 填 tushare token ② 填 sxsc token ③ 测试连接 ④ 完成
-  - 无 key 预览模式: 未配 key 时可用内置历史持仓样例预览程序功能(策略列表/持仓查看), 数据实时功能提示需配置 key
+  - 无 key 预览模式: 未配 key 时可用随包发布的最新历史持仓文件(qresult)预览程序功能(策略列表/持仓查看), 数据实时功能提示需配置 key
   - 文档 DEPLOYMENT.md 增加'密钥配置'与'tushare pro 支持度'章节
 
 ### 3.8 P0-8 策略定期运行 + 持仓文件 (评审定稿: 默认 20:00, 可自定义; 与 qresult 等价)
@@ -144,9 +144,9 @@ tushare pro 支撑度评估 (评审结论, 写入 DEPLOYMENT.md):
 调度器 scheduler.py 新增 strategy_run_task:
   - 每日收盘后执行一次, 默认 20:00, 可自定义(strategy_governance.json 每策略 schedule 可配)
   - 对 enabled 策略: asyncio.to_thread(run_strategy) → 生成持仓文件
-  - 文件与 qresult 等价: data/holdings/{YYYY-MM-DD}/{sid}.csv
-    - 格式: 矩阵(行=信号日期, 列=股票代码, 值=权重) — 与 qresult 同构
-    - 或: 明细列 symbol/weight/close/signal_date (二选一, 与 qresult 对齐后定)
+  - 文件与 qresult 完全一致(评审定稿): data/holdings/{YYYY-MM-DD}/{sid}.csv
+    - 格式: 矩阵 — 行=信号日期(YYYY-MM-DD), 列=全部股票代码(.SZ/.SH), 值=1(持有)/空(不持有), 与 qresult 逐列对齐
+    - 命名: {策略名}持仓.csv (与 qresult 现有命名一致, 如 多因子策略持仓.csv), 生成后亦可直接落入 data/qresult/ 供既有管线导入
   - 持仓文件: data/holdings/{YYYY-MM-DD}/{sid}.csv
     列: symbol, weight, close, signal_date (T 日收盘信号, T+1 生效, 防前视)
   - 记录 _record_task_run('strategy_run', ok, detail) → 系统页 scheduler_tasks 可见

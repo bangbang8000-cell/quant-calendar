@@ -69,12 +69,12 @@
 - [ ] T4b.1 strategy_governance.py (纳管状态存取: enabled/schedule(默认20:00)/last_run + run-once 端点)
 - [ ] T4b.2 研究页纳管面板 (4 内置策略: 不可删/启用/定时/状态/持仓链接 + 复制为副本可调参)
 - [ ] T4b.3 调度器 strategy_run_task (每日收盘后, 默认 20:00, 每策略可自定义)
-- [ ] T4b.4 持仓文件生成 (data/holdings/{date}/{sid}.csv, 与 qresult 矩阵等价)
+- [ ] T4b.4 持仓文件生成 (data/holdings/{date}/{sid}.csv, 与 qresult 完全一致矩阵: 行=日期/列=全股/值=1 持有; 命名 {策略名}持仓.csv, 可直接落 qresult)
 - [ ] T4b.5 float_mv 字段修复 (data_portal 映射 float_mv=circ_mv, 修复 turnover 因子退化)
 - [ ] T4b.6 策略 universe 扩展 (8 只 → 配置池/全池 5544, 支撑等价覆盖)
 - [ ] T4b.7 密钥安全门禁 pre-push-hook.sh (扫描 0 token + 不含 data/.env/qresult/holdings)
 - [ ] T4b.8 部署向导 (setup-wizard 扩展: 无 key 引导配置 + 测试连接 + 无 key 预览历史持仓)
-- [ ] T4b.9 历史持仓样例入库 (docs/reference_holdings/, 脱敏)
+- [ ] T4b.9 历史持仓随发布入库 (直接取发布时 data/qresult/ 最新持仓文件, 不做单独生成/脱敏)
 - [ ] T4b.10 测试: governance/run-once/holdings 等价/float_mv/门禁/向导
 
 ### 验收

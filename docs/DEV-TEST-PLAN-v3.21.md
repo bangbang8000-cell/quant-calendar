@@ -56,14 +56,14 @@
 - [ ] 部署向导: 无 token 时 setup-wizard 弹出; 配置 key 后 test_connection 通过 (手动)
 
 ### P0-8 定时持仓文件 (test_strategy_holdings.py) — 评审定稿
-- [ ] 持仓文件格式: data/holdings/{date}/{sid}.csv, 与 qresult 矩阵同构 (行=日期/列=代码/值=权重)
+- [ ] 持仓文件格式: data/holdings/{date}/{sid}.csv, 与 qresult 完全一致矩阵 (行=日期/列=全股/值=1 持有, 逐列对齐)
 - [ ] 防前视: signal_date = T 收盘, 文件含生成时间戳
 - [ ] 定时任务: 默认 20:00, 每策略可自定义, _record_task_run('strategy_run') 记录
 - [ ] 等价性: 程序生成的持仓矩阵与 qresult 同构 (同为日期×代码 权重矩阵)
 - [ ] float_mv 修复: panel 返回 float_mv (映射 circ_mv), turnover 因子非空
 - [ ] universe 扩展: 全池 5544 只可生成持仓 (并发取数, 不超时)
 - [ ] pre-push 门禁: 脚本扫描待提交文件 0 token + 不含 data/.env/qresult/holdings
-- [ ] 无 key 预览: 未配 key 时可用 docs/reference_holdings/ 历史持仓预览
+- [ ] 无 key 预览: 未配 key 时可用随发布入库的最新历史持仓(qresult 最新文件)预览
 
 ### P1-1 GZip 压缩 (性能验证)
 - [ ] 大 JSON 端点 (扫描/回测) 响应头含 Content-Encoding: gzip
