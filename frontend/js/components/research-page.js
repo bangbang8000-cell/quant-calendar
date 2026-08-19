@@ -15,7 +15,7 @@
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
-                        <div class="card-title">🔬 {{ t('research.quantResearch') }}</div>
+                        <div class="card-title">{{ t('research.quantResearch') }}</div>
                         <!-- v3.19 (策略研究 P0): 策略注册表 → schema 表单 → 运行/回测/PTrade 导出 -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" title="策略加载失败"

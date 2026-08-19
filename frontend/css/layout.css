@@ -205,14 +205,15 @@
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
-  color: var(--white);
+  /* v3.22-timeline-fix: 阶段底色为浅色(绿/橙/粉/蓝), 白字看不清 → 改深字 */
+  color: var(--merrill-chip-text);
   cursor: pointer;
   transition: opacity 0.15s, transform 0.15s;
 }
 .merrill-stage-chip:hover { opacity: 0.85; transform: translateY(-1px); }
 .merrill-stage-chip.is-current { box-shadow: 0 0 0 2px var(--color-primary); }
 .merrill-stage-chip-name { font-weight: var(--font-semibold, 600); }
-.merrill-stage-chip-date { font-size: 11px; opacity: 0.85; }
+.merrill-stage-chip-date { font-size: 11px; opacity: 0.9; }
 .merrill-stage-chip-current {
   font-size: 10px;
   padding: 1px 5px;

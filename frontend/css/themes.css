@@ -33,6 +33,8 @@
             --logo-bg: var(--bg-card);
             --logo-border: var(--primary-color);
             --logo-white: #ffffff;
+            /* v3.22-timeline-fix: 历史周期时间轴 chip 文字色 — 阶段底色为浅色, 深字才清晰 */
+            --merrill-chip-text: #1f2937;
             /* 主题色 */
             --primary-color: #2563eb;
             /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义

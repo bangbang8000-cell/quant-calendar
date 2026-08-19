@@ -859,7 +859,7 @@ const allMenuDefs = [
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, handleLogout,
 
-                    marketData, merrillData, merrillTimeline, timelineLoading, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
