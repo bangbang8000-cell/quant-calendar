@@ -9,9 +9,20 @@
 - run_scan: 遍历股票池拉取日线并扫描；数据不可达优雅降级（不报错）
 """
 import logging
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
+
+# v3.22 (异动扫描性能优化):
+# - 并发扫描: 数据源请求是 IO 密集, 线程池并发可把全量串行 N 秒 → 秒级
+# - 结果缓存: 同日期同池短时间重复扫描直接命中, 避免前端反复触发重扫
+# - 默认范围收敛: pool=all 不再扫全市场(5530只), 改用 策略池→配置池, 秒级出结果
+SCAN_CONCURRENCY = int(os.environ.get('SCAN_CONCURRENCY', '12'))   # 并发线程数
+SCAN_RESULT_TTL = int(os.environ.get('SCAN_RESULT_TTL', '600'))     # 扫描结果缓存秒数(10分钟)
+_scan_cache = {}  # (date_key, pool_key) -> (ts, result) 线程安全由 GIL + 单写保证
 
 # ==================== 规则常量（可配） ====================
 LIMIT_TOLERANCE = 0.3          # 涨停/跌停判定容差（%），接近阈值即判定（四舍五入误差）
@@ -270,7 +281,9 @@ def _strategy_pool_codes() -> List[str]:
 
 def _resolve_scan_codes(pool: Optional[List[str]]) -> List[str]:
     """解析待扫描代码列表：显式 pool（含空列表）原样使用；
-    None 时按 配置股票池 → 策略池 → 股票清单（全量，性能受限）"""
+    None 时按 配置股票池 → 策略池 → 股票清单（全量）。
+    v3.22: 全量股票清单(5530只)串行扫描需数分钟, 默认不再回落到全量,
+    仅当配置池与策略池均为空时才尝试全量(且并发仍会拉满)。"""
     if pool is not None:
         return list(dict.fromkeys(str(c).strip() for c in pool if str(c).strip()))
     try:
@@ -332,34 +345,61 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
     if not codes:
         return {'date': date, 'moves': [], 'note': '暂无扫描范围'}
 
+    # v3.22: 结果缓存 — 同日期同池 TTL 内重复请求直接命中
     req_key = _normalize_date_key(date) if date else None
-    moves: List[dict] = []
-    failed = 0
-    for code in codes:
+    cache_key = (req_key or 'latest', tuple(codes))
+    now = time.time()
+    hit = _scan_cache.get(cache_key)
+    if hit and now - hit[0] < SCAN_RESULT_TTL:
+        return hit[1]
+
+    def _scan_one(code: str):
         try:
             raw = manager.get_kline_data(code, period='daily', limit=limit_n)
             rows = _normalize_kline_response(code, raw)
             if not rows:
-                failed += 1
-                continue
+                return None
             if req_key:
                 rows = [r for r in rows if _normalize_date_key(r.get('date')) <= req_key]
                 if not rows or _normalize_date_key(rows[-1].get('date')) != req_key:
-                    failed += 1
-                    continue
+                    return None
             labels = classify_moves(rows, code=code, name=_name_of(code))
             if labels:
-                moves.append(_build_move(code, rows, labels))
+                return _build_move(code, rows, labels)
+            return None
         except Exception as e:
-            failed += 1
             logger.warning('异动扫描失败 %s: %s', code, e)
+            return None
+
+    moves: List[dict] = []
+    failed = 0
+    with ThreadPoolExecutor(max_workers=SCAN_CONCURRENCY) as ex:
+        futures = [ex.submit(_scan_one, c) for c in codes]
+        for fut in as_completed(futures):
+            try:
+                r = fut.result()
+                if r:
+                    moves.append(r)
+                else:
+                    failed += 1
+            except Exception as e:
+                failed += 1
+                logger.warning('异动扫描任务异常: %s', e)
 
     if not moves and failed >= len(codes):
-        return {'date': date, 'moves': [], 'note': '数据暂不可用'}
+        result = {'date': date, 'moves': [], 'note': '数据暂不可用'}
+    else:
+        note = None
+        if failed:
+            note = f'{failed}/{len(codes)} 只股票数据不可达'
+        moves.sort(key=lambda m: (-len(m.get('labels') or []), -(m.get('pct_chg') or 0)))
+        result_date = date or (moves[0].get('date') if moves else None)
+        result = {'date': result_date, 'moves': moves, 'note': note}
 
-    note = None
-    if failed:
-        note = f'{failed}/{len(codes)} 只股票数据不可达'
-    moves.sort(key=lambda m: (-len(m.get('labels') or []), -(m.get('pct_chg') or 0)))
-    result_date = date or (moves[0].get('date') if moves else None)
-    return {'date': result_date, 'moves': moves, 'note': note}
+    # 写入缓存(仅成功/非空结果, 失败不缓存避免 TTL 内一直返回旧空)
+    _scan_cache[cache_key] = (now, result)
+    if len(_scan_cache) > 64:  # 防无限增长
+        expired = [k for k, v in _scan_cache.items() if now - v[0] > SCAN_RESULT_TTL * 2]
+        for k in expired:
+            _scan_cache.pop(k, None)
+    return result
