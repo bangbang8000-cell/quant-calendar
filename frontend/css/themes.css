@@ -26,11 +26,13 @@
             /* 渐变品牌色 */
             --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             /* v3.22-logo: K线折线日历 logo 品牌渐变 (与 manifest theme-color #667eea 一致) */
-            --logo-grad-1: #667eea;
-            --logo-grad-2: #764ba2;
-            --logo-grad-3: #4c1d95;
+            /* v3.22-logo: 三柱三色(蓝黄红, 语义固定) + 背景/边框随主题适配 */
+            --logo-blue: #2563eb;
+            --logo-yellow: #eab308;
+            --logo-red: #dc2626;
+            --logo-bg: var(--bg-card);
+            --logo-border: var(--primary-color);
             --logo-white: #ffffff;
-            --logo-shadow: #000000;
             /* 主题色 */
             --primary-color: #2563eb;
             /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义

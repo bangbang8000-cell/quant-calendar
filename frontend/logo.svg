@@ -1,15 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <linearGradient id="qc-g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#667eea"/>
-      <stop offset="100%" stop-color="#764ba2"/>
-    </linearGradient>
-  </defs>
-  <rect width="100" height="100" rx="20" fill="url(#qc-g)"/>
-  <line x1="20" y1="78" x2="82" y2="78" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity="0.95"/>
-  <rect x="22" y="58" width="15" height="20" rx="3.5" fill="#fff" opacity="0.7"/>
-  <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="#fff" opacity="0.86"/>
-  <rect x="63" y="26" width="15" height="52" rx="3.5" fill="#fff"/>
-  <rect x="63" y="26" width="15" height="14" rx="3.5" fill="#fff" opacity="0.35"/>
-  <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+  <!-- 背景: 深灰, 任何深浅标签栏/图标位都清晰 -->
+  <rect width="100" height="100" rx="20" fill="#2d3748"/>
+  <!-- 边框: 白/浅色 -->
+  <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.9"/>
+  <!-- 基准线 -->
+  <line x1="20" y1="78" x2="82" y2="78" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+  <!-- 三根渐升柱: 蓝 / 黄 / 红 -->
+  <rect x="22" y="58" width="15" height="20" rx="3.5" fill="#2563eb" opacity="0.95"/>
+  <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="#eab308" opacity="0.95"/>
+  <rect x="63" y="26" width="15" height="52" rx="3.5" fill="#dc2626"/>
+  <!-- 顶柱高光 -->
+  <rect x="63" y="26" width="15" height="14" rx="3.5" fill="#ffffff" opacity="0.35"/>
+  <!-- 上升趋势箭头 -->
+  <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
 </svg>
