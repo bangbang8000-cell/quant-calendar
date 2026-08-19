@@ -108,9 +108,13 @@ class RealDataPortal:
                 closes.append(float(row[2]))
                 vols.append(float(row[5]) if len(row) > 5 else 0.0)
             df = pd.DataFrame({'date': dates, 'close': closes, 'volume': vols})
-            # 过滤日期范围
-            if start or end:
-                df = df[(df['date'] >= (start or '')) & (df['date'] <= (end or '9999'))]
+            # 过滤日期范围 (统一 YYYYMMDD 格式, 兼容 K线源 YYYYMMDD/YYYY-MM-DD 差异)
+            df['_d'] = df['date'].str.replace('-', '', regex=False)
+            s = (start or '').replace('-', '')
+            e = (end or '').replace('-', '') or '99999999'
+            if s or e:
+                df = df[(df['_d'] >= s) & (df['_d'] <= e)]
+            df = df.drop(columns=['_d'])
             return df if not df.empty else None
         except Exception as e:
             logger.warning('K线取数失败 %s: %s', code, e)
