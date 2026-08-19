@@ -143,6 +143,10 @@ class BaseStrategy(ABC):
             merged[spec.key] = spec.validate(raw)
         return merged
 
+    def context(self, portal: 'DataPortal', params: Dict[str, Any], as_of: str) -> StrategyContext:
+        """便捷构造执行上下文(参数自动校验并入默认)"""
+        return StrategyContext(portal=portal, params=self.validate_params(params), as_of=as_of)
+
     # ---- 信号 ----
 
     @abstractmethod
