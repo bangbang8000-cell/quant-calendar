@@ -121,25 +121,36 @@ class RealDataPortal:
             return None
 
     def _fetch_basic(self, code) -> Dict:
-        """估值快照(最新一条) → {pe, pb, ...}"""
+        """估值快照(最新一条) → {pe, pb, ...} (兼容 dict/list 返回)"""
         try:
-            rows = self.source.get_daily_basic(code, limit=1) or []
-            if not rows or not isinstance(rows, list):
+            raw = self.source.get_daily_basic(code, limit=1)
+            if isinstance(raw, dict):
+                row = raw
+            elif isinstance(raw, list) and raw and isinstance(raw[-1], dict):
+                row = raw[-1]
+            else:
                 return {}
-            row = rows[-1] if isinstance(rows[-1], dict) else rows[0]
             return {k: v for k, v in row.items() if k in ('pe', 'pb', 'ps', 'dv_ratio', 'total_mv', 'circ_mv')}
         except Exception as e:
             logger.warning('估值取数失败 %s: %s', code, e)
             return {}
 
     def _fetch_flow(self, code) -> Dict:
-        """资金流快照(最新一天主力净流入)"""
+        """资金流快照(最新一天主力净流入), 兼容字段名 main_net_inflow/net_mf_amount/net_amount"""
         try:
-            rows = self.source.get_moneyflow(code, limit=3) or []
-            if not rows or not isinstance(rows, list):
+            rows = self.source.get_moneyflow(code, limit=3)
+            if isinstance(rows, dict):
+                rows = [rows]
+            rows = rows or []
+            if not isinstance(rows, list) or not rows:
                 return {}
             row = rows[-1] if isinstance(rows[-1], dict) else rows[0]
-            return {'main_net_inflow': row.get('main_net_inflow') or row.get('net_amount')}
+            val = row.get('main_net_inflow')
+            if val is None:
+                val = row.get('net_mf_amount')
+            if val is None:
+                val = row.get('net_amount')
+            return {'main_net_inflow': val}
         except Exception as e:
             logger.warning('资金流取数失败 %s: %s', code, e)
             return {}

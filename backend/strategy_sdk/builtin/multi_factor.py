@@ -22,6 +22,9 @@ class MultiFactorStrategy(BaseStrategy):
     version = '0.2.0'
     description = '五维因子(估值/基本面/资金面/情绪面/技术面)合成打分, 选 TopN 等权持有'
     ptrade_template = 'multi_factor.py.j2'
+    # 默认研究股票池(真实取数时仅这些股票被拉取; 新浪源可用的代表性标的)
+    universe = ['600000.SH', '600004.SH', '600519.SH', '601318.SH',
+                '600036.SH', '601166.SH', '600030.SH', '601888.SH']
 
     param_specs: List[ParamSpec] = [
         ParamSpec(key='top_n', label='选股数', type='int', default=20,
@@ -54,7 +57,7 @@ class MultiFactorStrategy(BaseStrategy):
         # 取面板(自动限制 end=as_of, 防前视); 字段 = 五维因子所需
         fields = _all_factor_inputs(self.factor_specs)
         start = _prev_trading_day(ctx.as_of, 60)
-        panel = ctx.panel(fields, start=start)
+        panel = ctx.panel(fields, start=start, universe=getattr(ctx, 'universe', None) or self.universe)
         if panel is None or panel.empty:
             return pd.DataFrame()
         # 1. 横截面因子计算
