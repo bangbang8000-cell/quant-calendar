@@ -154,8 +154,13 @@ class BaseStrategy(ABC):
 
     def to_ptrade_code(self, params: Dict[str, Any]) -> str:
         """模板填充 + 静态校验, 返回可直接粘贴进 PTrade 终端的代码"""
-        from strategy_sdk.ptrade import render_ptrade_code, validate_ptrade_code
+        from strategy_sdk.ptrade import (convert_code_format, render_ptrade_code,
+                                         validate_ptrade_code)
         validated = self.validate_params(params)
+        # 代码格式转换: 研究端 .SH/.SZ → PTrade .SS/.SZ (硬约束 §5.5)
+        for k, v in list(validated.items()):
+            if isinstance(v, str) and (v.upper().endswith(".SH") or v.upper().endswith(".SZ")):
+                validated[k] = convert_code_format(v)
         code = render_ptrade_code(self.ptrade_template, validated)
         errors = validate_ptrade_code(code)
         if errors:

@@ -159,6 +159,15 @@ def test_ptrade_code_format_conversion():
     assert convert_code_format("300750.SZ") == "300750.SZ"
 
 
+def test_ptrade_code_benchmark_format_converted():
+    """PTrade 硬约束: 研究端 .SH/.SZ 必须转为 .SS/.SZ"""
+    from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
+    code = MultiFactorStrategy().to_ptrade_code(
+        {"top_n": 20, "benchmark": "000300.SH"})
+    assert "000300.SS" in code
+    assert "000300.SH" not in code
+
+
 def test_ptrade_validator_rejects_bad_import():
     from strategy_sdk.ptrade import validate_ptrade_code
     bad = "import os\nimport requests\ndef initialize(context):\n    pass\n"
