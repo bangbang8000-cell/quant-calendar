@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 _FIELD_SOURCE = {
     'pe': 'basic', 'pb': 'basic', 'ps': 'basic', 'dv_ratio': 'basic',
-    'total_mv': 'basic', 'circ_mv': 'basic',
+    'total_mv': 'basic', 'circ_mv': 'basic', 'float_mv': 'basic',
     'main_net_inflow': 'moneyflow',
 }
 
@@ -130,7 +130,11 @@ class RealDataPortal:
                 row = raw[-1]
             else:
                 return {}
-            return {k: v for k, v in row.items() if k in ('pe', 'pb', 'ps', 'dv_ratio', 'total_mv', 'circ_mv')}
+            out = {k: v for k, v in row.items() if k in ('pe', 'pb', 'ps', 'dv_ratio', 'total_mv', 'circ_mv')}
+            # v3.21 (P0-8): float_mv(流通市值) = circ_mv 别名, 供换手因子(volume/float_mv)
+            if 'float_mv' not in out and 'circ_mv' in out:
+                out['float_mv'] = out['circ_mv']
+            return out
         except Exception as e:
             logger.warning('估值取数失败 %s: %s', code, e)
             return {}

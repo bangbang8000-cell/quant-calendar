@@ -28,7 +28,7 @@ class StubSource:
 
     def get_daily_basic(self, ts_code, limit=5):
         self.calls.append(('basic', ts_code))
-        return [{"trade_date": "2026-06-04", "pe": 15.0, "pb": 2.0}]
+        return [{"trade_date": "2026-06-04", "pe": 15.0, "pb": 2.0, "circ_mv": 3.0e6}]
 
     def get_moneyflow(self, ts_code, limit=10):
         self.calls.append(('moneyflow', ts_code))
@@ -103,3 +103,13 @@ def test_get_panel_empty_on_source_failure():
     panel = portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
                              universe=["000001.SZ"])
     assert panel is None or panel.empty
+
+
+def test_float_mv_mapped_from_circ_mv():
+    """v3.21 (P0-8): float_mv(流通市值) 由 daily_basic 的 circ_mv 映射, 供换手因子使用"""
+    from strategy_sdk.data_portal import RealDataPortal
+    portal = RealDataPortal(source=StubSource())
+    panel = portal.get_panel(["float_mv", "circ_mv"], start="2026-06-01", end="2026-06-04",
+                             universe=["000001.SZ"])
+    assert "float_mv" in panel.columns, list(panel.columns)
+    assert panel["float_mv"].notna().any(), "float_mv 不应全空"
