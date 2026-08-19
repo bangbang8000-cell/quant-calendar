@@ -4240,6 +4240,8 @@ text {
     color: var(--text-secondary); font-size: var(--font-sm);
 }
 .scan-meta { font-size: var(--font-sm); color: var(--text-tertiary); }
+.scan-loading { display: flex; flex-direction: column; gap: 6px; }
+.scan-loading-tip { font-size: var(--font-sm); color: var(--text-tertiary); text-align: center; }
 .scan-group { display: flex; flex-direction: column; gap: 8px; }
 .scan-group-title {
     display: flex; align-items: center; gap: 8px;

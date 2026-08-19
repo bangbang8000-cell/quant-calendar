@@ -273,7 +273,10 @@
                             <el-button type="primary" size="small" @click="loadScan" :loading="scanLoading">刷新扫描</el-button>
                         </div>
 
-                        <qc-state-panel v-if="scanLoading" type="loading"></qc-state-panel>
+                        <div v-if="scanLoading" class="scan-loading">
+                            <qc-state-panel type="loading"></qc-state-panel>
+                            <div class="scan-loading-tip">正在扫描 {{ scanPoolLabel }}（首次约几秒，请稍候）...</div>
+                        </div>
                         <qc-state-panel v-else-if="scanError" type="error" title="异动扫描失败"
                             desc="请检查数据源后重试" @retry="loadScan"></qc-state-panel>
                         <template v-else-if="scanResult && scanResult.moves && scanResult.moves.length">
@@ -304,7 +307,7 @@
                             </div>
                         </template>
                         <qc-state-panel v-else type="empty" title="暂无异动"
-                            desc="当前扫描范围暂无符合条件的异动个股"></qc-state-panel>
+                            :desc="(scanResult && scanResult.note) || '当前扫描范围暂无符合条件的异动个股'"></qc-state-panel>
 
                         <!-- ===== 事件提醒 ===== -->
                         <div class="scan-section">
@@ -466,6 +469,12 @@
           eventsLoading.value = false;
         }
       }
+
+      // 扫描范围中文名（loading 提示用）
+      const scanPoolLabel = computed(function () {
+        const m = { 'all': '策略池', 'strategies': '策略池', 'watchlist': '自选股' };
+        return m[scanPool.value] || '策略池';
+      });
 
       // 异动标签分组（按固定展示顺序）
       const scanGroups = computed(function () {
