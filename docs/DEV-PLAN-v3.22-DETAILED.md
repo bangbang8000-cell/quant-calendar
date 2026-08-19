@@ -1,4 +1,4 @@
-# v3.22 界面体验优化 — 详细开发计划 (DETAILED) — 评审调整 v2
+# v3.22 界面体验优化 — 详细开发计划 (DETAILED) — 评审调整 v3
 
 > 前置: PRD docs/DEV-PLAN-v3.22.md | 版本 3.22.0 | 门禁: ruff(E/F/W ignore E501) + pytest(cov>=40) + 前端一致性(新增class须有CSS/零硬编码色) + Conventional Commits 中文
 
@@ -25,29 +25,33 @@
 ### 验收
 - [ ] 用量统计 4 卡片, 无裸露指标, 移动端 1 列
 
-## I3: 策略编写页增强 — PTrade 代码策略 + AI 代写迭代 (P1, 前后端) [评审调整]
+## I3: 策略创作两层模型 (P1, 前后端) — 评审调整 v3
 
-### 后端任务
-- [ ] T3.1 strategy_db: strategy_defs 加 code 列(TEXT), save_def/list_defs 支持 code
-- [ ] T3.2 backtest_engine: 识别 custom 策略(strategy_defs 加载 code → PTrade 兼容执行层 → 生成持仓矩阵); STRATEGY_CONFIG 校验扩展
-- [ ] T3.3 PTrade 兼容执行层: 解析自定义代码的 initialize/handle_data + get_history/order 等 API → 逐日执行 → 持仓(复用 ptrade.py _ALLOWED_APIS 静态校验 + 新执行引擎)
-- [ ] T3.4 POST /api/strategies/custom (AI 代写: prompt → LLM 生成代码 → _ALLOWED_APIS 校验 → 保存 code)
-- [ ] T3.5 POST /api/strategies/{sid}/copy (复制内置/自定义 → 新 sid)
-- [ ] T3.6 POST /api/strategies/{sid}/ai-optimize (LLM 分析代码+回测 → 改进代码建议; 无key降级)
-- [ ] T3.7 后端单测: code 存取/custom 保存校验/copy 隔离/ai-optimize 结构/PTrade 执行层回测/无key降级
+### 3.0 通用基础
+- [ ] T3.0.1 strategy_db: strategy_defs 加 code 列(TEXT) + type 支持 variant/custom
+- [ ] T3.0.2 策略副本库: 复制内置策略 → strategy_defs type=variant(存母本+参数)
+- [ ] T3.0.3 后端单测: code 存取/variant 复制/参数隔离
 
-### 前端任务
-- [ ] T3.8 strategy-write 子页 3 tab(AI 新建/复制微调/AI 优化)
-- [ ] T3.9 AI 新建: 思路输入 → 调 /custom → 展示生成代码(语法高亮) → 保存
-- [ ] T3.10 复制微调: 选策略 → 复制 → 代码/参数编辑 → 保存副本
-- [ ] T3.11 AI 优化: 选自定义 → 调 /ai-optimize → 展示建议(差异高亮) → 确认覆盖/另存 → 一键回测 → 多轮迭代
-- [ ] T3.12 一键导出 PTrade 代码(复用现有导出) + 一键回测
-- [ ] T3.13 前端一致性: 新 class 写 CSS + 零硬编码色
+### 3.1 路径 A — 基于现有策略微调 (信号层 + AI 交易层)
+- [ ] T3A.1 POST /api/strategies/{sid}/copy-variant (复制母本 → 新 variant sid)
+- [ ] T3A.2 参数配置界面: 复用 schema 表单, 支持 variant 策略编辑参数
+- [ ] T3A.3 生成新持仓矩阵: 复用 run-once, variant 用自身参数生成独立矩阵文件
+- [ ] T3A.4 POST /api/strategies/{sid}/ai-trade-code: 输入持仓矩阵(抽样优选topN) → LLM 生成 PTrade 交易代码(get_history+order_target按矩阵调仓) + 风控(止损/止盈/最大回撤/仓位) → _ALLOWED_APIS 校验 → 返回代码
+- [ ] T3A.5 后端单测: copy-variant/ai-trade-code 代码结构/风控片段/无key降级
+- [ ] T3A.6 前端: 微调流程向导(复制 → 改参数 → 生成持仓 → AI交易码 → 导出/回测)
+
+### 3.2 路径 B — 全新策略 (PTrade 兼容 + AI 代写)
+- [ ] T3B.1 POST /api/strategies/custom (AI 代写: prompt → LLM 生成完整代码 → 校验 → 存 code)
+- [ ] T3B.2 POST /api/strategies/{sid}/ai-optimize (LLM 分析代码+回测 → 改进代码建议; 无key降级)
+- [ ] T3B.3 **PTrade 兼容回测执行层**: 解析自定义代码(initialize/handle_data/get_history/order_target) → 逐日执行 → 持仓矩阵; 不支持的 API 明确报错
+- [ ] T3B.4 backtest_engine 识别 custom 策略(STRATEGY_CONFIG 扩展)
+- [ ] T3B.5 后端单测: custom 保存/校验(非_ALLOWED_APIS拒绝)/ai-optimize/执行层回测/无key降级
+- [ ] T3B.6 前端: 3 tab(AI 新建/复制微调/AI 优化) + 代码编辑区(语法高亮/校验提示)
+- [ ] T3B.7 前端: 一键回测 + 一键导出 PTrade(复用现有导出) + AI 优化差异高亮 + 确认应用
 
 ### 验收
-- [ ] AI 代写: 输入思路 → PTrade 代码生成 → 校验通过 → 保存 → 系统回测 → 导出可用
-- [ ] 复制微调/AI 优化迭代多轮收敛
-- [ ] 自定义策略出现在策略列表可纳管/运行
+- [ ] 路径A: 复制 → 改参数 → 新持仓矩阵 → AI 交易码(含风控) → 导出 PTrade 可用
+- [ ] 路径B: 描述思路 → AI 代写完整代码 → 本地回测 + 导出 PTrade 回测 → AI 迭代多轮
 
 ## I4: 美林时钟历史周期视图 (P0, 前后端)
 
@@ -66,7 +70,7 @@
 ### 任务拆解
 - [ ] T5.1 全量测试 + 覆盖率 + ruff + 前端一致性全绿
 - [ ] T5.2 版本号 3.21.0 → 3.22.0 (main_new.py)
-- [ ] T5.3 ops 同步 + 重启 + HTTP 冒烟(滚动/用量/策略编写/AI代写/美林)
+- [ ] T5.3 ops 同步 + 重启 + HTTP 冒烟(滚动/用量/策略创作路径A+B/美林)
 - [ ] T5.4 pre-push 门禁 + push GitHub
 
 ### 验收
