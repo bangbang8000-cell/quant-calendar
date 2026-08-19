@@ -163,8 +163,17 @@ class BaseStrategy(ABC):
         validated = self.validate_params(params)
         # 代码格式转换: 研究端 .SH/.SZ → PTrade .SS/.SZ (硬约束 §5.5)
         for k, v in list(validated.items()):
-            if isinstance(v, str) and (v.upper().endswith(".SH") or v.upper().endswith(".SZ")):
+            if not isinstance(v, str):
+                continue
+            if "," not in v and (v.upper().endswith(".SH") or v.upper().endswith(".SZ")):
+                # 单个代码: 直接转换
                 validated[k] = convert_code_format(v)
+            elif ".SH" in v.upper() or ".SZ" in v.upper():
+                # 逗号分隔的多代码串(如 universe_codes): 逐段转换
+                validated[k] = ",".join(
+                    convert_code_format(seg.strip()) if (".SH" in seg.upper() or ".SZ" in seg.upper())
+                    else seg.strip()
+                    for seg in v.split(","))
         code = render_ptrade_code(self.ptrade_template, validated)
         errors = validate_ptrade_code(code)
         if errors:

@@ -90,3 +90,29 @@ def test_api_strategy_ptrade_code(authed_client):
     assert "def initialize(context):" in code
     assert "def handle_data(context, data):" in code
     assert "000300.SS" in code.replace("000300.SH", "000300.SS") or "000300.SS" in code
+
+# ---------- P2: PT 策略生成三要素(选股/择时/风控) API ----------
+
+def test_api_schema_exposes_timing_risk_params(authed_client):
+    """schema 端点必须暴露选股范围/择时/风控三要素参数"""
+    r = authed_client.get('/api/strategies/multi_factor/schema')
+    assert r.status_code == 200
+    keys = {f['key'] for f in r.json()}
+    for k in ('universe_source', 'universe_codes', 'index_code',
+              'timing_enabled', 'timing_index', 'timing_ma_window',
+              'stop_loss_pct', 'take_profit_pct', 'max_drawdown_pct'):
+        assert k in keys, f'schema 缺三要素参数 {k}'
+
+
+def test_api_ptrade_code_contains_timing_risk_index(authed_client):
+    """ptrade-code 端点生成代码必须含择时/风控/指数成分函数"""
+    r = authed_client.get(
+        '/api/strategies/multi_factor/ptrade-code?top_n=10'
+        '&universe_source=index&index_code=000300.SH'
+        '&timing_enabled=true&stop_loss_pct=0.1&take_profit_pct=0.2')
+    assert r.status_code == 200
+    code = r.json().get('code', '')
+    assert 'market_timing' in code
+    assert 'risk_controls' in code
+    assert 'get_index_stocks' in code
+    assert '000300.SS' in code  # 指数代码已转 PTrade 格式

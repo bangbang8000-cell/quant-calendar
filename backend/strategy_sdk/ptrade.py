@@ -19,6 +19,7 @@ _ALLOWED_APIS = {
     "set_universe", "set_benchmark", "set_slippage", "set_commission",
     "order", "order_target", "order_value", "order_target_value", "order_market",
     "get_history", "get_current_data", "get_fundamentals",
+    "get_index_stocks", "is_st",
     "g", "log", "context", "data", "datetime", "timedelta",
 }
 # PTrade 常见非法 import(网络/文件/系统操作)
@@ -75,7 +76,9 @@ def validate_ptrade_code(code: str) -> List[str]:
                 called.add(node.func.attr)
     custom = funcs | {"print", "len", "range", "str", "int", "float", "abs",
                       "min", "max", "sum", "sorted", "enumerate", "zip", "dict",
-                      "list", "tuple", "set", "type", "isinstance", "round"}
+                      "list", "tuple", "set", "type", "isinstance", "round",
+                      "current", "items", "keys", "split", "strip", "info",
+                      "log", "round", "sum", "format"}
     for name in sorted(called - custom):
         if name not in _ALLOWED_APIS and not name.startswith("_"):
             errors.append(f"未知/不允许的 API: {name}")

@@ -173,3 +173,69 @@ def test_ptrade_validator_rejects_bad_import():
     bad = "import os\nimport requests\ndef initialize(context):\n    pass\n"
     errors = validate_ptrade_code(bad)
     assert any("import" in e.lower() for e in errors)
+
+# ---------- P2: PT 策略生成三要素(选股/择时/风控) ----------
+
+def test_param_specs_include_universe_timing_risk():
+    """参数体系必须含: 选股范围(自定义/指数)、择时开关+均线周期、止盈止损、回撤止损"""
+    from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
+    keys = {p.key for p in MultiFactorStrategy.param_specs}
+    assert 'universe_source' in keys      # 选股范围来源: 自定义列表 / 指数成分
+    assert 'universe_codes' in keys       # 自定义股票池
+    assert 'index_code' in keys           # 指数成分基准
+    assert 'timing_enabled' in keys       # 择时开关
+    assert 'timing_ma_window' in keys     # 择时均线周期
+    assert 'timing_index' in keys         # 择时基准指数
+    assert 'stop_loss_pct' in keys        # 单票止损
+    assert 'take_profit_pct' in keys      # 单票止盈
+    assert 'max_drawdown_pct' in keys     # 账户最大回撤止损
+
+
+def test_ptrade_code_contains_timing_risk_universe_functions():
+    """PTrade 生成代码必须含: 市场择时、止盈止损风控、指数成分选股函数"""
+    from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
+    code = MultiFactorStrategy().to_ptrade_code({
+        'top_n': 20, 'benchmark': '000300.SH',
+        'universe_source': 'index', 'index_code': '000300.SH',
+        'timing_enabled': True, 'timing_ma_window': 20,
+        'stop_loss_pct': 0.08, 'take_profit_pct': 0.15,
+        'max_drawdown_pct': 0.20,
+    })
+    # 择时: 市场状态判断(指数收盘 vs 均线)
+    assert 'market_timing' in code
+    assert 'timing_ma_window' in code
+    # 风控: 止盈止损函数 + 参数
+    assert 'risk_controls' in code
+    assert 'stop_loss_pct' in code
+    assert 'take_profit_pct' in code
+    assert 'max_drawdown_pct' in code
+    # 选股: 指数成分取数
+    assert 'get_index_stocks' in code
+    # 代码仍可 AST 解析
+    import ast
+    ast.parse(code)
+
+
+def test_ptrade_code_universe_custom_codes():
+    """自定义股票池参数必须出现在生成代码中"""
+    from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
+    code = MultiFactorStrategy().to_ptrade_code({
+        'top_n': 10,
+        'universe_source': 'universe',
+        'universe_codes': '600000.SH,600519.SH,000001.SZ',
+    })
+    # .SH 转 .SS, 自定义池出现在代码中
+    assert '600000.SS' in code
+    assert '600519.SS' in code
+    assert '000001.SZ' in code
+
+
+def test_schema_exposes_timing_risk_defaults():
+    """参数声明默认值必须合理: 止盈止损/回撤/择时均线/选股范围"""
+    from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
+    p = {f.key: f for f in MultiFactorStrategy.param_specs}
+    assert p['stop_loss_pct'].default == 0.08
+    assert p['take_profit_pct'].default == 0.15
+    assert p['max_drawdown_pct'].default == 0.20
+    assert p['timing_ma_window'].default == 20
+    assert p['universe_source'].default == 'universe'
