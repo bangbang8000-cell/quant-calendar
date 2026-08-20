@@ -287,11 +287,19 @@
                                                             <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
                                                             <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
                                                             <div class="tl-tip" v-if="tlHoverKey === (ci + '-' + ri + '-' + si)">
-                                                                <div class="tl-tip-title">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</div>
-                                                                <div class="tl-tip-meta" v-if="st.start">{{ st.start.slice(0,10) }} → {{ st.end ? st.end.slice(0,10) : '至今' }}</div>
-                                                                <div class="tl-tip-meta" v-if="st.duration_months">持续约 {{ Math.round(st.duration_months) }} 个月</div>
-                                                                <div class="tl-tip-trigger" v-if="st.trigger">{{ st.trigger }}</div>
-                                                                <div class="tl-tip-desc" v-if="getTimelineStageDesc(st.stage)">{{ getTimelineStageDesc(st.stage) }}</div>
+                                                                <div class="tl-tip-head">
+                                                                    <span class="tl-tip-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
+                                                                    <span class="tl-tip-title">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
+                                                                    <span class="tl-tip-current" v-if="st.is_current">当前</span>
+                                                                </div>
+                                                                <div class="tl-tip-meta">
+                                                                    <span v-if="tlTipYears(st)">{{ tlTipYears(st) }}</span>
+                                                                    <template v-if="st.duration_months"><span class="tl-tip-sep">·</span><span>约 {{ Math.round(st.duration_months) }} 个月</span></template>
+                                                                    <template v-if="st.is_current && merrillData?.timing?.duration_days != null">
+                                                                        <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
+                                                                    </template>
+                                                                </div>
+                                                                <div class="tl-tip-brief" v-if="tlTipBrief(st)">{{ tlTipBrief(st) }}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -646,6 +654,18 @@
         const y2 = last.end ? String(last.end).slice(0, 4) : (last.start ? String(last.start).slice(0, 4) : '');
         return (y1 || y2) ? (y1 ? y1 + '–' + y2 : y2) : '';
       }
+      // V4.0.6: tooltip 精简 — 年份短格式 (如 2009–2011; 无 end 用 start 或至今)
+      function tlTipYears(st) {
+        const y1 = st.start ? String(st.start).slice(0, 4) : '';
+        const y2 = st.end ? String(st.end).slice(0, 4) : (y1 ? '至今' : '');
+        return y1 ? (y2 ? y1 + '–' + y2 : y1) : '';
+      }
+      // V4.0.6: tooltip 精简 — 一句话: 当前阶段显示阶段特征(贴合当下), 历史阶段显示触发原因(贴合那轮)
+      function tlTipBrief(st) {
+        const desc = getTimelineStageDesc(st.stage);
+        if (st.is_current) return desc || st.trigger || '';
+        return st.trigger || desc || '';
+      }
       // V4.0.5-D: 甘特式连续时间条段样式 — 按时长比例 flex-basis + 阶段色填充
       function tlGanttStyle(st, stages, gi) {
         const cfg = _tlCfg()[st.stage] || {};
@@ -751,7 +771,7 @@
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
-        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle,
+        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief,
         tlHoverKey, setTlHover, clearTlHover,
         merrillTimeline, timelineLoading, showTimelineStage };
     },

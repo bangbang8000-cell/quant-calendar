@@ -357,16 +357,16 @@
 
 /* V4.0.3: 阶段 hover 玻璃浮层 — 紧凑跟随 chip, 不再跨全宽覆盖周期图 */
 @keyframes tl-tip-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+/* V4.0.6: tooltip 单独重设 — 紧凑卡片: 色点+标题+当前徽标 / 单行 meta / 两行简述 */
 .tl-tip {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  min-width: 200px;
-  max-width: 320px;
+  min-width: 170px;
+  max-width: 270px;
   width: max-content;
-  max-width: 320px;
-  padding: 9px 12px;
+  padding: 8px 11px;
   border-radius: 10px;
   background: var(--glass-bg, rgba(255,255,255,0.88));
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
@@ -375,7 +375,7 @@
   box-shadow: var(--glass-shadow, 0 8px 32px rgba(0,0,0,0.10));
   color: var(--text-primary);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.55;
   text-align: left;
   white-space: normal;
   z-index: 40;
@@ -391,10 +391,36 @@
   border: 6px solid transparent;
   border-top-color: var(--glass-border, rgba(255,255,255,0.35));
 }
-.tl-tip-title { font-weight: var(--font-semibold, 600); font-size: 13px; margin-bottom: 2px; }
-.tl-tip-meta { color: var(--text-secondary); }
-.tl-tip-trigger { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border-light, #e9ecef); color: var(--text-secondary); }
-.tl-tip-desc { margin-top: 4px; }
+.tl-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.tl-tip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tl-tip-title { font-weight: var(--font-semibold, 600); font-size: 13px; }
+.tl-tip-current {
+  font-size: 10px;
+  font-weight: var(--font-semibold, 600);
+  padding: 0 5px;
+  line-height: 16px;
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+.tl-tip-meta { color: var(--text-secondary); font-size: 11.5px; }
+.tl-tip-sep { margin: 0 4px; opacity: 0.6; }
+.tl-tip-brief {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border-light, #e9ecef);
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* V4.0.5-E: 响应式 — 窄屏时间轴横向滚动 (不压缩阶段块) */
 @media (max-width: 768px) {
