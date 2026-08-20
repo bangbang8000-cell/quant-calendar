@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 465, f"qcState 唯一键数异常: {len(set(keys))} (期望 465; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages; V4.0 需求2 +2: toggleVendorKeyReveal/toggleDatasourceKeyReveal)"
+    assert len(set(keys)) == 471, f"qcState 唯一键数异常: {len(set(keys))} (期望 471; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages; V4.0 需求2 +2: toggleVendorKeyReveal/toggleDatasourceKeyReveal; V4.2 ops域注入 +6: reviewTriggering/triggerMarketReview/factCheck/factCheckRunning/loadFactCheck/triggerFactCheck)"
 
 
 def test_watch_currentpage_single():
@@ -1431,6 +1431,25 @@ def test_i18n_preferences_language_key():
         "language 应注册到 PREFERENCE_VALUES"
     ucfg = _read_backend("api/v1/user_config.py")
     assert '"language"' in ucfg, "后端 user_config 应支持 language 偏好键（重启保持）"
+
+
+# ─── V4.2 (FR-4.2.2): 三向注入护栏 — 域导出 ⊆ qcState ⊇ 模板引用 ──────────
+
+def test_ops_domain_functions_injected():
+    """V4.2 (FR-4.2.2): ops 域关键函数必须注入 qcState(修复 V4.0.8 漏注入 6 键, 防回归)"""
+    qc_keys = set(_extract_qcstate_keys(_read("js/app-logic.js")))
+    required = ["reviewTriggering", "triggerMarketReview",
+                "factCheck", "factCheckRunning", "loadFactCheck", "triggerFactCheck"]
+    missing = [k for k in required if k not in qc_keys]
+    assert not missing, f"ops 域关键键未注入 qcState: {missing}"
+
+
+def test_watch_ctx_includes_loadfactcheck():
+    """V4.2 (FR-4.2.2): watch ctx 传参与解构必须含 loadFactCheck(防用量页 ReferenceError 复发)"""
+    app = _read("js/app-logic.js")
+    watch_src = _read("js/app-logic/watch.js")
+    assert "loadFactCheck" in app, "app-logic watch.register ctx 应传入 loadFactCheck"
+    assert "loadFactCheck" in watch_src, "watch.js register 应解构 loadFactCheck"
 
 
 
