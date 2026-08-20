@@ -8,7 +8,7 @@ from typing import List
 
 import pandas as pd
 
-from strategy_sdk.base import COMMON_TRADING_PARAMS, BaseStrategy, ParamSpec, StrategyContext
+from strategy_sdk.base import COMMON_TRADING_PARAMS, BaseStrategy, ParamSpec, StrategyContext, FactorSpec
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,11 @@ class SectorRotationStrategy(BaseStrategy):
         ParamSpec(key="stock_per_sector", label="每行业选股数", type="int", default=4, min=1, max=20, step=1, ptrade_var="stock_per_sector"),
         ParamSpec(key="momentum_window", label="动量回看窗口", type="int", default=60, min=10, max=250, step=10, ptrade_var="momentum_window"),
     ] + list(COMMON_TRADING_PARAMS)
+
+    # V4.0 M2-2: 因子研究支持 — 行业轮动核心因子(动量), IC/分层端点可研究
+    factor_specs: List[FactorSpec] = [
+        FactorSpec('mom60', 'technical', ['close'], {'lookback': 60, 'direction': 'high'}),
+    ]
 
     def generate_signals(self, ctx: StrategyContext) -> pd.DataFrame:
         """行业轮动: 按行业动量打分 → TopK 行业 → 行业内动量 TopN → 等权持仓

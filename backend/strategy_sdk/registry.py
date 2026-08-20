@@ -49,6 +49,12 @@ class StrategyRegistry:
                 "version": s.version,
                 "description": s.description,
                 "schema": s.params_schema(),
+                # V4.0 M2-3: 暴露因子声明, 前端因子下拉不再硬编码
+                "factor_specs": [
+                    {"name": f.name, "category": f.category, "inputs": list(f.inputs),
+                     "params": dict(f.params)}
+                    for f in getattr(s, "factor_specs", []) or []
+                ],
             }
             for s in self._strategies.values()
         ]
