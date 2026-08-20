@@ -70,6 +70,12 @@ async def lifespan(app: FastAPI):
     from scheduler import scheduler
     await scheduler.start()
     logger.info("⏰ 定时任务调度器已启动")
+    # V4.0 M4-4: 插件机制 — 启动时加载 backend/plugins/ (失败不阻塞)
+    try:
+        from plugins import load_plugins
+        load_plugins({"app": app})
+    except Exception as e:
+        logger.warning("插件加载异常(不影响主程序): %s", e)
     logger.info("🚀 量化选股日历服务启动完成")
     yield
     await scheduler.stop()

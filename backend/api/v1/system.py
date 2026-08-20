@@ -113,23 +113,26 @@ async def system_monitor(user: dict = Depends(get_current_active_user)):
     """系统资源监控 (admin)"""
     if user.get("role") != "admin":
         return {"success": False, "message": "仅管理员可查看系统监控"}
+    # V4.0 bugfix: _get_cpu_mem 只调一次(内含 0.2s CPU 采样, 原调 4 次阻塞事件循环) + 线程化
+    import asyncio
+    cm = await asyncio.to_thread(_get_cpu_mem)
+    disk = await asyncio.to_thread(_get_disk)
     result = {
         "success": True,
         "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "uptime": None,
-        "mem_percent": _get_cpu_mem()["mem_percent"],
-        "mem_used_mb": _get_cpu_mem()["mem_used_mb"],
-        "mem_total_mb": _get_cpu_mem()["mem_total_mb"],
-        "cpu_percent": _get_cpu_mem()["cpu_percent"],
-        **_get_disk(),
+        "mem_percent": cm["mem_percent"],
+        "mem_used_mb": cm["mem_used_mb"],
+        "mem_total_mb": cm["mem_total_mb"],
+        "cpu_percent": cm["cpu_percent"],
+        **disk,
         "metrics": get_metrics(),
     }
-    # 进程 uptime
+    # V4.0 bugfix: uptime 用 /proc/uptime(系统运行秒数), 原 parts[21]=starttime 无意义
     try:
-        with open('/proc/self/stat') as f:
-            parts = f.read().split()
-        ticks = int(parts[21]) / 100  # 时钟周期
-        result["uptime"] = round(ticks / 3600, 1)  # 小时
+        with open('/proc/uptime') as f:
+            secs = float(f.read().split()[0])
+        result["uptime"] = round(secs / 3600, 1)  # 小时
     except Exception:
         logger.warning("[warn] 操作异常 (v3.4.0-T8)")
         pass

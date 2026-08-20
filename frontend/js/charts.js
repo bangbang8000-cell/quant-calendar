@@ -79,7 +79,10 @@
       data = downsampleSeries(data, KLINE_MAX_RENDER_POINTS);
     }
 
-    const dates = data.map(d => d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
+    // V4.0 bugfix: 兼容 YYYYMMDD 与 YYYY-MM-DD 两种日期格式(akshare 源返回带横线)
+    const dates = data.map(d => (typeof d[0] === 'string' && d[0].indexOf('-') >= 0)
+      ? d[0]
+      : d[0].slice(0, 4) + '-' + d[0].slice(4, 6) + '-' + d[0].slice(6, 8));
     const colors = getThemeColors();
     // v3.15 (15.4): MA 均线色随主题重绘 — 渲染时读令牌, 硬编码兜底显式标注
     /* qc-allow-hardcode: ECharts canvas 无法解析 CSS 变量, 此处为显式运行时兜底字面量 */

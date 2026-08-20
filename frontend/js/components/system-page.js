@@ -742,7 +742,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="usage-ai-empty" v-else>暂无数据源调用记录</div>
+                            <div class="usage-ai-empty" v-else>暂无数据源调用记录（服务刚重启时为空，随调用自动累计）</div>
                         </div>
                         <!-- v3.17.5: 数据健康度 (自策略总览移入) — v3.17.6 (bugfix): 移出数据源延迟网格, 独立成块 -->
                         <div class="section-block-top">
@@ -829,7 +829,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录</div>
+                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录（服务刚重启时为空，随定时任务自动填充）</div>
                         </div>
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
                         <!-- v3.17.12: 备份与磁盘 -->

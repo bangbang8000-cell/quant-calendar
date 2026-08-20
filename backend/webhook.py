@@ -7,8 +7,11 @@ Webhook 订阅与投递 (FR-3.17.15 / 开放 API v2)
 - dispatch(event, payload, poster=None) 纯函数可测: 注入 poster 即可 mock 投递,
   真实投递默认用标准库 urllib (POST JSON, 超时/失败仅 logging, 不崩溃)
 """
+import hashlib
+import hmac
 import json
 import logging
+import secrets
 import urllib.request
 from datetime import datetime
 
@@ -35,6 +38,21 @@ CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_enabled
 """
 
 
+def _ensure_secret_column() -> None:
+    """V4.0 M4: 为既有库补 secret 列(HMAC 签名密钥) — 幂等 ALTER"""
+    try:
+        with db._db_lock:
+            conn = db.get_conn()
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(webhook_subscriptions)")]
+            if "secret" not in cols:
+                conn.execute(
+                    "ALTER TABLE webhook_subscriptions ADD COLUMN secret TEXT NOT NULL DEFAULT ''")
+                conn.commit()
+            conn.close()
+    except Exception as e:
+        logger.warning("webhook secret 列迁移失败: %s", e)
+
+
 def _ensure_table() -> None:
     """幂等建表 (生产由 db.migrate 建; 测试/旧库兜底)"""
     try:
@@ -43,20 +61,24 @@ def _ensure_table() -> None:
             conn.executescript(_WEBHOOK_SCHEMA)
             conn.commit()
             conn.close()
+        _ensure_secret_column()
     except Exception as e:
         logger.warning("webhook 建表失败: %s", e)
 
 
-def add_subscription(url: str, events: list, enabled: bool = True) -> int:
-    """订阅事件, 返回订阅 id"""
+def add_subscription(url: str, events: list, enabled: bool = True, secret: str = None) -> int:
+    """订阅事件, 返回订阅 id. V4.0 M4: 自动生成 HMAC 签名密钥(secret)"""
     _ensure_table()
     events = [e for e in (events or []) if e in WEBHOOK_EVENTS]
+    secret = (secret or "").strip() or secrets.token_hex(16)
     with db._db_lock:
         conn = db.get_conn()
         cur = conn.execute(
-            "INSERT INTO webhook_subscriptions (url, events, enabled, created_at) VALUES (?,?,?,?)",
+            "INSERT INTO webhook_subscriptions (url, events, enabled, secret, created_at) "
+            "VALUES (?,?,?,?,?)",
             (url.strip(), json.dumps(events, ensure_ascii=False),
-             1 if enabled else 0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+             1 if enabled else 0, secret,
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -72,7 +94,7 @@ def list_subscriptions() -> list:
         with db._db_lock:
             conn = db.get_conn()
             rows = conn.execute(
-                "SELECT id, url, events, enabled, created_at "
+                "SELECT id, url, events, enabled, secret, created_at "
                 "FROM webhook_subscriptions ORDER BY id DESC"
             ).fetchall()
             conn.close()
@@ -128,15 +150,24 @@ def set_subscription_enabled(sub_id: int, enabled: bool) -> bool:
         return False
 
 
-def _post_json(url: str, payload: dict, timeout: float = WEBHOOK_TIMEOUT) -> bool:
-    """真实投递: 标准库 urllib POST JSON 到 url; 失败/超时返回 False (不抛)"""
+def sign_webhook_payload(secret: str, body: bytes) -> str:
+    """V4.0 M4: HMAC-SHA256 签名 → 'sha256=<hex>' (标准签名头)"""
+    if not secret:
+        return ""
+    digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    return "sha256=" + digest
+
+
+def _post_json(url: str, payload: dict, timeout: float = WEBHOOK_TIMEOUT,
+               secret: str = "") -> bool:
+    """真实投递: 标准库 urllib POST JSON 到 url; 带 HMAC 签名头; 失败/超时返回 False (不抛)"""
     try:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            url, data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
+        headers = {"Content-Type": "application/json"}
+        sig = sign_webhook_payload(secret, data)
+        if sig:
+            headers["X-Signature"] = sig
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status < 400
     except Exception as e:
@@ -166,7 +197,15 @@ def dispatch(event: str, payload: dict, poster=None) -> dict:
     delivered = []
     for r in rows:
         try:
-            success = post(r["url"], {"event": event, "payload": payload})
+            success = post(r["url"], {"event": event, "payload": payload},
+                           secret=r.get("secret") or "")
+        except TypeError:
+            # 兼容旧 poster(url, payload) 签名; fallback 调用同样捕获异常
+            try:
+                success = post(r["url"], {"event": event, "payload": payload})
+            except Exception as e:
+                logger.warning("Webhook 投递异常 %s: %s", r["url"], e)
+                success = False
         except Exception as e:
             logger.warning("Webhook 投递异常 %s: %s", r["url"], e)
             success = False

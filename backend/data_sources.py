@@ -1009,8 +1009,10 @@ class DataSourceManager:
                 return None
         kline_data = []
         for _, row in df.iterrows():
+            # V4.0 bugfix: 统一日期为 YYYYMMDD — akshare 源返回 YYYY-MM-DD, 前端按 YYYYMMDD 切片致 ops K线日期错乱
+            _d = str(row['trade_date']).replace('-', '')
             kline_data.append([
-                str(row['trade_date']),
+                _d,
                 _safe(row['open']),
                 _safe(row['close']),
                 _safe(row['low']),
