@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from ai_evaluator import ai_evaluator
-from auth import get_admin_user, get_current_active_user
+from auth import get_admin_user, get_current_active_user, get_non_guest_user
+from security_utils import validate_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/ai", tags=["AI 评估"])
 
 
 @router.post("/evaluate")
-async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_current_active_user)):
+async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_non_guest_user)):
     """AI 评估单只股票"""
     try:
         stock_code = req.get("stock_code", "")
@@ -33,7 +34,7 @@ async def ai_evaluate_stock(req: Dict[str, str], user: Dict = Depends(get_curren
 
 
 @router.post("/batch-evaluate")
-async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
+async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_non_guest_user)):
     """批量 AI 评估股票 (一次性; 保留兼容 scheduler/旧客户端)"""
     try:
         stock_codes = req.get("stock_codes", [])
@@ -44,7 +45,7 @@ async def ai_batch_evaluate(req: Dict[str, List[str]], user: Dict = Depends(get_
 
 
 @router.post("/batch-evaluate/stream")
-async def ai_batch_evaluate_stream(req: Dict[str, List[str]], user: Dict = Depends(get_current_active_user)):
+async def ai_batch_evaluate_stream(req: Dict[str, List[str]], user: Dict = Depends(get_non_guest_user)):
     """批量 AI 评估 — SSE 流式 (v3.15: 逐只完成后实时推送, 修复前端进度 0→N 瞬跳)"""
     stock_codes = req.get("stock_codes", [])
 
@@ -56,7 +57,7 @@ async def ai_batch_evaluate_stream(req: Dict[str, List[str]], user: Dict = Depen
 
 
 @router.post("/evaluate-index")
-async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_current_active_user)):
+async def ai_evaluate_index(req: Dict[str, Any], _: Dict = Depends(get_non_guest_user)):
     """AI 评估指数
 
     Args:
@@ -119,7 +120,7 @@ async def get_ai_track(window: Optional[int] = None, user: Dict = Depends(get_cu
 
 
 @router.post("/fact-check/audit")
-async def run_fact_check_audit(user: Dict = Depends(get_current_active_user)):
+async def run_fact_check_audit(user: Dict = Depends(get_non_guest_user)):
     """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》"""
     from fact_check import run_daily_audit, save_audit_report
     try:
@@ -169,7 +170,7 @@ async def batch_delete_ai_history(req: Dict[str, List[str]], user: Dict = Depend
 
 
 @router.get("/auto-config")
-async def get_auto_evaluate_config():
+async def get_auto_evaluate_config(_: Dict = Depends(get_current_active_user)):
     """获取自动评估配置（无需登录）"""
     try:
         config = ai_evaluator.get_auto_config()
@@ -179,7 +180,7 @@ async def get_auto_evaluate_config():
 
 
 @router.post("/auto-config")
-async def save_auto_evaluate_config(config: Dict[str, Any]):
+async def save_auto_evaluate_config(config: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """保存自动评估配置"""
     try:
         ai_evaluator.save_auto_config(config)
@@ -238,7 +239,7 @@ def _coerce_timeout(req: Dict[str, Any]):
 
 
 @router.get("/models")
-async def get_models():
+async def get_models(_: Dict = Depends(get_current_active_user)):
     """获取厂商模型配置 (v3.14: {"vendors":[...]}, 无需登录; V4.0 api_key 掩码展示)"""
     try:
         from secret_utils import mask_secret
@@ -252,7 +253,7 @@ async def get_models():
 
 
 @router.post("/models")
-async def save_models(req: Dict[str, Any]):
+async def save_models(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """保存厂商模型配置 ({"vendors":[...]}, 数组顺序 = 全局优先级)"""
     try:
         models = ai_evaluator.update_models(req)
@@ -262,11 +263,13 @@ async def save_models(req: Dict[str, Any]):
 
 
 @router.post("/models/test")
-async def test_vendor_model(req: Dict[str, Any]):
+async def test_vendor_model(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """探测厂商下指定模型连接 (body 传参, 模型名可含 /; 未保存厂商支持内联 base_url/api_key)"""
     try:
         vendor_key = req.get("vendor_key", "")
         model_name = req.get("model", "")
+        if req.get("base_url"):
+            validate_base_url(req.get("base_url"))
         result = ai_evaluator.test_vendor_model(
             vendor_key, model_name,
             base_url=req.get("base_url"), api_key=req.get("api_key"), timeout=_coerce_timeout(req),
@@ -277,10 +280,12 @@ async def test_vendor_model(req: Dict[str, Any]):
 
 
 @router.post("/models/list")
-async def list_vendor_models(req: Dict[str, Any]):
+async def list_vendor_models(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """调 {base_url}/models 拉取厂商可用模型名列表 (未保存厂商支持内联 base_url/api_key)"""
     try:
         vendor_key = req.get("vendor_key", "")
+        if req.get("base_url"):
+            validate_base_url(req.get("base_url"))
         result = ai_evaluator.list_vendor_models(
             vendor_key,
             base_url=req.get("base_url"), api_key=req.get("api_key"), timeout=_coerce_timeout(req),
@@ -291,7 +296,7 @@ async def list_vendor_models(req: Dict[str, Any]):
 
 
 @router.get("/catalog")
-async def get_vendor_catalog():
+async def get_vendor_catalog(_: Dict = Depends(get_current_active_user)):
     """预置厂商目录 (唯一事实源, 新增厂商下拉 + 模型名建议)"""
     try:
         catalog = ai_evaluator.get_catalog()

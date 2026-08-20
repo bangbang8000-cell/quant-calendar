@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_current_user, get_non_guest_user
 from paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -279,7 +279,7 @@ async def _call_llm(system_prompt: str, user_prompt: str) -> str:
 # ── API Endpoints ──
 
 @router.post("")
-async def chat(request: Request, body: ChatRequest, user: Optional[dict] = Depends(get_current_user)):
+async def chat(request: Request, body: ChatRequest, user: dict = Depends(get_non_guest_user)):
     """AI 对话 — 主端点 (v3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文;
     v3.17.13: 按当前用户隔离读写)"""
     return await _run_chat(body, _resolve_username(user))
@@ -352,7 +352,7 @@ async def _run_chat(body: ChatRequest, username: str) -> dict:
 
 
 @router.post("/quick")
-async def quick_chat(body: QuickChatRequest, user: Optional[dict] = Depends(get_current_user)):
+async def quick_chat(body: QuickChatRequest, user: dict = Depends(get_non_guest_user)):
     """快捷提问 — 预设分析模式 (v3.17.13: 按当前用户)"""
     mode_messages = {
         "trend": "帮我做一下技术趋势分析",
@@ -439,7 +439,7 @@ async def delete_history(session_id: str, user: Optional[dict] = Depends(get_cur
 
 
 @router.post("/stream")
-async def chat_stream(body: ChatRequest, user: Optional[dict] = Depends(get_current_user)):
+async def chat_stream(body: ChatRequest, user: dict = Depends(get_non_guest_user)):
     """流式 AI 对话 — SSE (非阻塞, FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文;
     v3.17.13: 按当前用户隔离读写)"""
     from ai_evaluator import ai_evaluator

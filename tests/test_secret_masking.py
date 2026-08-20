@@ -187,20 +187,37 @@ class TestRevealSecret:
         r = asyncio.run(system_router.reveal_secret({"password": "admin123", "target": "nope"}, {"role": "admin"}))
         assert r["success"] is False
 
-    def test_reveal_datasource_token(self):
+    def test_reveal_denied_without_explicit_config(self, monkeypatch):
+        """V4.1: 未显式配置 KEY_VIEW_PASSWORD 时一律拒绝查看(默认 admin123 视为未配置)"""
+        monkeypatch.delenv("KEY_VIEW_PASSWORD", raising=False)
+        from config import settings
+        monkeypatch.setattr(settings, "KEY_VIEW_PASSWORD", "admin123")
         m = self._manager()
         m.config.setdefault("sources", {})
         m.config["sources"]["tushare"] = {"token": "tushare-real-token-123", "enabled": True}
         r = asyncio.run(system_router.reveal_secret({"password": "admin123", "target": "tushare"}, {"role": "admin"}))
+        assert r["success"] is False
+
+    def test_reveal_datasource_token(self, monkeypatch):
+        monkeypatch.setenv("KEY_VIEW_PASSWORD", "test-view-pw")
+        from config import settings
+        monkeypatch.setattr(settings, "KEY_VIEW_PASSWORD", "test-view-pw")
+        m = self._manager()
+        m.config.setdefault("sources", {})
+        m.config["sources"]["tushare"] = {"token": "tushare-real-token-123", "enabled": True}
+        r = asyncio.run(system_router.reveal_secret({"password": "test-view-pw", "target": "tushare"}, {"role": "admin"}))
         assert r["success"] is True
         assert r["secret"] == "tushare-real-token-123"
 
-    def test_reveal_ai_key(self, isolated_evaluator):
+    def test_reveal_ai_key(self, monkeypatch, isolated_evaluator):
+        monkeypatch.setenv("KEY_VIEW_PASSWORD", "test-view-pw")
+        from config import settings
+        monkeypatch.setattr(settings, "KEY_VIEW_PASSWORD", "test-view-pw")
         isolated_evaluator.update_models({"vendors": [{
             "vendor_key": "test-vendor", "name": "测试", "kind": "自定义",
             "base_url": "https://x/v1", "api_key": "ai-real-key-9876543210", "models": [],
         }]})
-        r = asyncio.run(system_router.reveal_secret({"password": "admin123", "target": "ai:test-vendor"}, {"role": "admin"}))
+        r = asyncio.run(system_router.reveal_secret({"password": "test-view-pw", "target": "ai:test-vendor"}, {"role": "admin"}))
         assert r["success"] is True
         assert r["secret"] == "ai-real-key-9876543210"
 

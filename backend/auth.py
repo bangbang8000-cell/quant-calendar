@@ -4,6 +4,7 @@
 JWT 认证模块
 提供 API 接口保护和用户身份验证
 """
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from fastapi import Depends, HTTPException, status
@@ -25,12 +26,21 @@ class Token(BaseModel):
     username: str
     role: str
     expires_at: float
+    must_change_password: bool = False  # V4.1: 默认口令登录, 需强制改密
 
 
 class TokenData(BaseModel):
     """Token 数据模型"""
     username: Optional[str] = None
     role: Optional[str] = None
+
+
+def _token_version_for(username) -> int:
+    """读取用户当前令牌版本号 (V4.1: 改密/降权后递增, 旧令牌失效)"""
+    if not username:
+        return 1
+    user = user_manager.get_user(username)
+    return (user or {}).get("token_version", 1)
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
@@ -49,7 +59,15 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({"exp": expire})
+    now = datetime.utcnow()
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "jti": uuid.uuid4().hex,
+        "iss": "quant-calendar",
+        "aud": "quant-calendar-api",
+        "ver": _token_version_for(data.get("sub")),
+    })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -63,7 +81,10 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Opt
         return None
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM],
+                                audience="quant-calendar-api")
+        if payload.get("iss") != "quant-calendar" or payload.get("aud") != "quant-calendar-api":
+            return None  # V4.1: 缺 iss/aud 视为旧令牌, 强制重新登录
         username: str = payload.get("sub")
         if username is None:
             return None
@@ -73,6 +94,9 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Opt
 
     user = user_manager.get_user(token_data.username)
     if user is None:
+        return None
+    # V4.1: 令牌版本号校验 — 改密/降权后旧令牌立即失效
+    if user.get("token_version", 1) != payload.get("ver", 0):
         return None
 
     return user
@@ -153,5 +177,6 @@ def login_user(username: str, password: str) -> Optional[Token]:
         token_type="bearer",
         username=username,
         role=user.get("role", "user"),
-        expires_at=expires_at
+        expires_at=expires_at,
+        must_change_password=user_manager.is_default_password(username),
     )

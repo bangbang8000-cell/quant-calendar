@@ -103,6 +103,10 @@
             loadHealthMetrics().catch(() => {});
             await loadConsensusData();
             ElementPlus.ElMessage.success('登录成功');
+            // V4.1 (FR-4.1.9): 默认口令登录 → 强制改密提示
+            if (data.data && data.data.must_change_password) {
+              ElementPlus.ElMessage.warning('检测到默认口令，请立即在「系统」页修改管理员密码');
+            }
             // v3.2.0-T22: 首次使用引导 (所有角色首次登录显示)
             maybeShowTour();
             // v2.2: 检查是否需要初始化向导

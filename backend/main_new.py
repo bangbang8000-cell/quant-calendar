@@ -9,8 +9,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from paths import FRONTEND_DIR, INDEX_HTML_FILE, MANIFEST_JSON_FILE, SW_JS_FILE
+from auth import get_admin_user
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -67,6 +68,15 @@ async def lifespan(app: FastAPI):
             logger.info("✅ 数据库 schema 已重建")
     else:
         logger.info("✅ 数据库 schema 校验通过")
+    # V4.1 (FR-4.1.9): 启动自检 — 默认口令告警 (强烈建议立即轮换)
+    try:
+        from user_manager import user_manager as _um
+        if _um.is_default_password("admin"):
+            logger.warning("⚠️ 管理员密码仍为默认口令 (admin/admin123)! 请立即登录后在系统配置中修改密码。")
+        if _um.is_default_password("guest"):
+            logger.warning("⚠️ 访客账户仍为默认口令 (guest/guest)! 建议修改或保持禁用。")
+    except Exception:
+        pass
     from scheduler import scheduler
     await scheduler.start()
     logger.info("⏰ 定时任务调度器已启动")
@@ -85,7 +95,7 @@ async def lifespan(app: FastAPI):
 # v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破; 3.17.5: 数据源延迟趋势+数据健康度移入用量统计
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
-APP_VERSION = "4.0.0"
+APP_VERSION = "4.1.0"
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404
@@ -102,6 +112,18 @@ app = FastAPI(
 
 # v3.3.0-T13: 统一错误码体系
 register_error_handlers(app)
+
+# V4.1 (FR-4.1.11): 5xx 不回显内部 detail — 统一收敛, 防止内部异常路径泄露
+from fastapi import HTTPException as _HTTPException
+from fastapi.responses import JSONResponse as _JSONResponse
+
+@app.exception_handler(_HTTPException)
+async def _converge_http_exception(request, exc: _HTTPException):
+    """覆写 5xx HTTPException: 内部 detail 不回显; 其余(4xx)保持默认语义"""
+    if exc.status_code >= 500:
+        return _JSONResponse(status_code=exc.status_code, content={"detail": "服务器内部错误"})
+    return _JSONResponse(status_code=exc.status_code, content={"detail": exc.detail},
+                         headers=getattr(exc, "headers", None))
 
 # CORS 安全配置
 app.add_middleware(
@@ -259,8 +281,8 @@ async def health_check():
 
 
 @app.get("/metrics")
-async def prometheus_metrics():
-    """FR-3.17.12: Prometheus 指标导出 (text/plain, 供 Prometheus 抓取, 无鉴权)"""
+async def prometheus_metrics(_: dict = Depends(get_admin_user)):
+    """FR-3.17.12: Prometheus 指标导出 (text/plain, V4.1: 仅管理员)"""
     from fastapi.responses import PlainTextResponse
     from metrics import render_metrics
     return PlainTextResponse(render_metrics(), media_type="text/plain; version=0.0.4; charset=utf-8")

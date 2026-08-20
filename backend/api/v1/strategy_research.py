@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from auth import get_current_active_user
+from auth import get_non_guest_user
 from strategy_db import StrategyBusyError, append_run, finish_run, get_run, list_runs
 from strategy_sdk.base import StrategyContext
 import uuid
@@ -29,7 +29,7 @@ router = APIRouter(prefix='/strategies', tags=['策略研究'])
 
 
 @router.get('')
-async def list_strategies(_: Dict = Depends(get_current_active_user)):
+async def list_strategies(_: Dict = Depends(get_non_guest_user)):
     """策略列表(内置注册表)"""
     return registry.list()
 
@@ -37,14 +37,14 @@ async def list_strategies(_: Dict = Depends(get_current_active_user)):
 # ─── v3.21 (P0-6): 策略纳管中心 ────────────────────
 
 @router.get('/governance')
-async def governance_get(_: Dict = Depends(get_current_active_user)):
+async def governance_get(_: Dict = Depends(get_non_guest_user)):
     """纳管状态(4 内置策略)"""
     import strategy_governance as gov
     return {"data": {"strategies": gov.get_state()}}
 
 
 @router.put('/governance')
-async def governance_put(body: Dict, _: Dict = Depends(get_current_active_user)):
+async def governance_put(body: Dict, _: Dict = Depends(get_non_guest_user)):
     """更新纳管状态 {strategies: {sid: {enabled, schedule}}}"""
     import strategy_governance as gov
     new_state = gov.save_state(body.get('strategies') or {})
@@ -53,7 +53,7 @@ async def governance_put(body: Dict, _: Dict = Depends(get_current_active_user))
 
 @router.post('/{sid}/run-once')
 async def governance_run_once(sid: str, body: Dict = None,
-                              _: Dict = Depends(get_current_active_user)):
+                              _: Dict = Depends(get_non_guest_user)):
     """run-once: 运行策略生成持仓文件(可指定 as_of)"""
     import strategy_governance as gov
     from strategy_sdk.registry import StrategyNotFoundError
@@ -67,7 +67,7 @@ async def governance_run_once(sid: str, body: Dict = None,
 
 
 @router.get('/{sid}/holdings')
-async def governance_holdings(sid: str, _: Dict = Depends(get_current_active_user)):
+async def governance_holdings(sid: str, _: Dict = Depends(get_non_guest_user)):
     """列出该策略最近持仓文件"""
     import strategy_governance as gov
     return {"data": {"sid": sid, "holdings": gov.list_holdings(sid)}}
@@ -76,7 +76,7 @@ async def governance_holdings(sid: str, _: Dict = Depends(get_current_active_use
 # ─── v3.21 (P0-3): 策略参数方案 profiles ────────────
 
 @router.get('/{sid}/profiles')
-async def list_profiles_api(sid: str, _: Dict = Depends(get_current_active_user)):
+async def list_profiles_api(sid: str, _: Dict = Depends(get_non_guest_user)):
     """列出策略已保存的参数方案"""
     try:
         registry.get(sid)
@@ -87,7 +87,7 @@ async def list_profiles_api(sid: str, _: Dict = Depends(get_current_active_user)
 
 
 @router.post('/{sid}/profiles')
-async def save_profile_api(sid: str, body: Dict, _: Dict = Depends(get_current_active_user)):
+async def save_profile_api(sid: str, body: Dict, _: Dict = Depends(get_non_guest_user)):
     """保存参数方案 {name, params}"""
     try:
         registry.get(sid)
@@ -104,7 +104,7 @@ async def save_profile_api(sid: str, body: Dict, _: Dict = Depends(get_current_a
 
 @router.delete('/{sid}/profiles/{profile_id}')
 async def delete_profile_api(sid: str, profile_id: str,
-                             _: Dict = Depends(get_current_active_user)):
+                             _: Dict = Depends(get_non_guest_user)):
     """删除参数方案"""
     from strategy_db import delete_profile
     if not delete_profile(sid, profile_id):
@@ -113,7 +113,7 @@ async def delete_profile_api(sid: str, profile_id: str,
 
 
 @router.get('/{sid}/schema')
-async def get_strategy_schema(sid: str, _: Dict = Depends(get_current_active_user)):
+async def get_strategy_schema(sid: str, _: Dict = Depends(get_non_guest_user)):
     """参数表单 schema(前端零构建渲染契约)"""
     try:
         return registry.get(sid).params_schema()
@@ -123,7 +123,7 @@ async def get_strategy_schema(sid: str, _: Dict = Depends(get_current_active_use
 
 @router.put('/{sid}')
 async def update_strategy(sid: str, body: Dict[str, Any],
-                          _: Dict = Depends(get_current_active_user)):
+                          _: Dict = Depends(get_non_guest_user)):
     """更新策略参数覆盖/启停 — V4.0 母本制度: 内置 4 策略不可直接修改, 只能复制"""
     import strategy_governance as _gov
     if sid in _gov.BUILTIN_SIDS:
@@ -154,7 +154,7 @@ async def update_strategy(sid: str, body: Dict[str, Any],
 
 @router.post('/{sid}/run')
 async def run_strategy(sid: str, body: Dict[str, Any],
-                       _: Dict = Depends(get_current_active_user)):
+                       _: Dict = Depends(get_non_guest_user)):
     """手工运行(互斥) —— 当前为同步骨架: 生成信号 + 落库"""
     try:
         st = registry.get(sid)
@@ -199,7 +199,7 @@ async def run_strategy(sid: str, body: Dict[str, Any],
 
 @router.post('/{sid}/backtest')
 async def backtest_strategy(sid: str, body: Dict[str, Any],
-                            _: Dict = Depends(get_current_active_user)):
+                            _: Dict = Depends(get_non_guest_user)):
     """回测: SDK 信号生成持仓矩阵 → 回测器(复用 backtest.py 绩效口径)"""
     try:
         st = registry.get(sid)
@@ -241,7 +241,7 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
 
 @router.post('/{sid}/sweep')
 async def strategy_param_sweep(sid: str, body: Dict[str, Any],
-                               _: Dict = Depends(get_current_active_user)):
+                               _: Dict = Depends(get_non_guest_user)):
     """参数网格扫描 (V4.0 M2-1 策略实验室): {param_grid: {key: [候选值]}, start_date,
     end_date, metric, max_combos} → 按 metric 降序的绩效表"""
     try:
@@ -271,14 +271,14 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
 
 @router.get('/{sid}/runs')
 async def strategy_runs(sid: str, limit: int = 50,
-                        _: Dict = Depends(get_current_active_user)):
+                        _: Dict = Depends(get_non_guest_user)):
     """运行历史"""
     return list_runs(sid, limit=limit)
 
 
 @router.get('/{sid}/runs/{rid}')
 async def strategy_run_detail(sid: str, rid: str,
-                              _: Dict = Depends(get_current_active_user)):
+                              _: Dict = Depends(get_non_guest_user)):
     """单次运行详情"""
     r = get_run(rid)
     if not r or r['strategy_id'] != sid:
@@ -298,7 +298,7 @@ async def strategy_ptrade_code(sid: str, top_n: Optional[int] = None,
                                stop_loss_pct: Optional[float] = None,
                                take_profit_pct: Optional[float] = None,
                                max_drawdown_pct: Optional[float] = None,
-                               _: Dict = Depends(get_current_active_user)):
+                               _: Dict = Depends(get_non_guest_user)):
     """导出 PTrade 可直接运行的策略代码(模板+参数填充+静态校验)
     P2: 三要素参数(选股范围/择时/风控)均可通过 query 透传"""
     try:
@@ -328,7 +328,7 @@ async def strategy_ptrade_code(sid: str, top_n: Optional[int] = None,
 
 @router.post('/{sid}/clone')
 async def clone_strategy_api(sid: str, body: Dict = None,
-                             _: Dict = Depends(get_current_active_user)):
+                             _: Dict = Depends(get_non_guest_user)):
     """复制内置策略为 variant(独立 sid + 参数覆盖 + 母本信号层)"""
     import strategy_variant as sv
     from strategy_sdk.registry import StrategyNotFoundError
@@ -340,13 +340,13 @@ async def clone_strategy_api(sid: str, body: Dict = None,
     return {"data": result}
 
 @router.get('/variants')
-async def list_variants_api(_: Dict = Depends(get_current_active_user)):
+async def list_variants_api(_: Dict = Depends(get_non_guest_user)):
     """列出全部 variant 策略"""
     import strategy_variant as sv
     return {"data": {"variants": sv.list_variants()}}
 
 @router.get('/{sid}/selection-spec')
-async def get_selection_spec_api(sid: str, _: Dict = Depends(get_current_active_user)):
+async def get_selection_spec_api(sid: str, _: Dict = Depends(get_non_guest_user)):
     """读取 SelectionSpec(可微调选股协议)"""
     import strategy_variant as sv
     return {"data": {"sid": sid, "spec": sv.get_selection_spec(sid),
@@ -354,7 +354,7 @@ async def get_selection_spec_api(sid: str, _: Dict = Depends(get_current_active_
 
 @router.put('/{sid}/selection-spec')
 async def put_selection_spec_api(sid: str, body: Dict,
-                                 _: Dict = Depends(get_current_active_user)):
+                                 _: Dict = Depends(get_non_guest_user)):
     """保存 SelectionSpec"""
     import strategy_variant as sv
     spec = sv.save_selection_spec(sid, body.get("spec") or {})
@@ -362,7 +362,7 @@ async def put_selection_spec_api(sid: str, body: Dict,
 
 @router.post('/{sid}/ai-trade-code')
 async def ai_trade_code_api(sid: str, body: Dict = None,
-                            _: Dict = Depends(get_current_active_user)):
+                            _: Dict = Depends(get_non_guest_user)):
     """AI 交易码: 读持仓矩阵 + SelectionSpec -> LLM 生成 PTrade 交易码(含风控)
     硬约束: 交易标的必须 ⊆ 持仓矩阵内股票(否则 400)"""
     import strategy_variant as sv
@@ -379,7 +379,7 @@ async def ai_trade_code_api(sid: str, body: Dict = None,
 
 @router.post('/factors/ic')
 async def factor_ic_research(body: Dict[str, Any],
-                             _: Dict = Depends(get_current_active_user)):
+                             _: Dict = Depends(get_non_guest_user)):
     """单因子 IC 研究: 因子值 vs 次日收益 的横截面 Rank IC 评价"""
     sid = body.get('sid', 'multi_factor')
     factor_key = body.get('factor_key', 'mom20')
@@ -418,7 +418,7 @@ async def factor_ic_research(body: Dict[str, Any],
 
 @router.post('/factors/layer')
 async def factor_layer_research(body: Dict[str, Any],
-                                _: Dict = Depends(get_current_active_user)):
+                                _: Dict = Depends(get_non_guest_user)):
     """因子分层回测: 按因子值分 n 层, 观察分层收益单调性"""
     sid = body.get('sid', 'multi_factor')
     factor_key = body.get('factor_key', 'mom20')
@@ -506,13 +506,13 @@ def _resolve_portal(universe: Optional[list] = None, seed: int = 2026):
 # ==================== v3.22 (I3B): 全新 PTrade 策略 (AI 代写 + 本地回测 + AI 优化) ====================
 
 @router.get('/custom')
-async def api_custom_list(current_user: Any = Depends(get_current_active_user)):
+async def api_custom_list(current_user: Any = Depends(get_non_guest_user)):
     """列出全部自定义策略 (type=custom)"""
     return {'data': {'customs': list_custom()}}
 
 
 @router.post('/custom')
-async def api_custom_create(payload: dict, current_user: Any = Depends(get_current_active_user)):
+async def api_custom_create(payload: dict, current_user: Any = Depends(get_non_guest_user)):
     """AI 代写全新策略: prompt -> LLM -> 校验 -> 存 strategy_defs(type=custom)"""
     name = (payload.get('name') or '').strip() or '自定义策略'
     prompt = payload.get('prompt') or ''
@@ -528,7 +528,7 @@ async def api_custom_create(payload: dict, current_user: Any = Depends(get_curre
 
 
 @router.get('/custom/{sid}/code')
-async def api_custom_code(sid: str, current_user: Any = Depends(get_current_active_user)):
+async def api_custom_code(sid: str, current_user: Any = Depends(get_non_guest_user)):
     """读取自定义策略代码"""
     d = get_def(sid)
     if not d or d.get('type') != 'custom':
@@ -538,7 +538,7 @@ async def api_custom_code(sid: str, current_user: Any = Depends(get_current_acti
 
 @router.post('/custom/{sid}/backtest')
 async def api_custom_backtest(sid: str, payload: Optional[dict] = Body(default=None),
-                              current_user: Any = Depends(get_current_active_user)):
+                              current_user: Any = Depends(get_non_guest_user)):
     """本地回测自定义策略 (轻量 PTrade 兼容执行层)"""
     payload = payload or {}
     try:
@@ -557,7 +557,7 @@ async def api_custom_backtest(sid: str, payload: Optional[dict] = Body(default=N
 
 @router.post('/custom/{sid}/ai-optimize')
 async def api_custom_optimize(sid: str, payload: Optional[dict] = Body(default=None),
-                              current_user: Any = Depends(get_current_active_user)):
+                              current_user: Any = Depends(get_non_guest_user)):
     """AI 优化: 分析代码+回测 -> 改进代码"""
     payload = payload or {}
     try:

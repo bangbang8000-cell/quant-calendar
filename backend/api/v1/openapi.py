@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from auth import get_admin_user
+from secret_utils import mask_secret
 import api_keys
 import webhook as webhook_module
 from rate_limit import SimpleMemoryBackend
@@ -123,18 +124,22 @@ async def openapi_watchlist(_key: dict = Depends(_require_api_key)):
 
 
 @router.get("/evaluations", tags=["开放 API"],
-            summary="评估记录", description="最近 N 条 AI 评估记录（默认 admin 用户，可用 user 参数切换）。")
-async def openapi_evaluations(limit: int = 10, user: str = "admin",
+            summary="评估记录", description="最近 N 条 AI 评估记录（read_admin Key 可指定 user；read Key 无法枚举他人）。")
+async def openapi_evaluations(limit: int = 10, user: Optional[str] = None,
                               _key: dict = Depends(_require_api_key)):
-    """评估记录: ?limit=N&user=xxx, 最近 N 条"""
+    """评估记录: ?limit=N&user=xxx — V4.1 IDOR 修复: 仅 read_admin 可指定 user"""
     limit = max(1, min(int(limit or 10), 100))
+    role = (_key or {}).get("role") or "read"
+    if user and role != "read_admin":
+        raise HTTPException(status_code=403, detail="仅 read_admin 权限可指定 user")
+    target = user or "admin"
     try:
         from ai_evaluator import ai_evaluator
-        history = ai_evaluator.get_history(user or "admin", limit=limit)
-        return _degraded(history, limit=limit, user=user or "admin")
+        history = ai_evaluator.get_history(target, limit=limit)
+        return _degraded(history, limit=limit, user=target)
     except Exception as e:
         logger.warning("openapi /evaluations 失败: %s", e)
-        return _degraded([], limit=limit, user=user or "admin")
+        return _degraded([], limit=limit, user=target)
 
 
 @router.get("/health", tags=["开放 API"],
@@ -252,14 +257,18 @@ async def create_webhook(req: WebhookCreate, user: dict = Depends(get_admin_user
     return {"success": True, "data": {"id": sub_id, "url": url,
                                       "events": [e for e in (req.events or []) if e in webhook_module.WEBHOOK_EVENTS],
                                       "enabled": req.enabled,
-                                      "secret": sub.get("secret", "")}}
+                                      "secret": mask_secret(sub.get("secret", ""))}}
 
 
 @router.get("/webhooks", tags=["开放 API 管理"],
             summary="列出 Webhook 订阅", description="列出全部 Webhook 订阅。")
 async def list_webhooks(user: dict = Depends(get_admin_user)):
-    """列出订阅"""
-    return {"success": True, "data": webhook_module.list_subscriptions()}
+    """列出订阅 (V4.1: secret 掩码返回)"""
+    subs = webhook_module.list_subscriptions()
+    for s_ in subs:
+        if isinstance(s_, dict) and s_.get("secret"):
+            s_["secret"] = mask_secret(s_["secret"])
+    return {"success": True, "data": subs}
 
 
 @router.delete("/webhooks/{sub_id}", tags=["开放 API 管理"],

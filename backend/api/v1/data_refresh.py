@@ -3,8 +3,10 @@
 """
 数据刷新 API 路由 — 手动刷新、定时刷新配置、文件监听配置
 """
-from fastapi import APIRouter
+import asyncio
+from fastapi import APIRouter, Depends
 from typing import Dict, Any
+from auth import get_admin_user
 
 from data_parser import parser
 from views_aggregator import views_aggregator
@@ -12,22 +14,25 @@ from data_refresh_config import get_config, save_config, update_refresh_status
 
 router = APIRouter(prefix="/data-refresh", tags=["数据刷新"])
 
+# V4.1 (FR-4.1.4): 拉取任务互斥锁 — 防并发重复拉取/重载
+_pull_lock = asyncio.Lock()
+
 
 @router.get("/config")
-async def get_refresh_config():
+async def get_refresh_config(_: Dict = Depends(get_admin_user)):
     """获取刷新配置"""
     return get_config()
 
 
 @router.post("/config")
-async def set_refresh_config(data: Dict[str, Any]):
+async def set_refresh_config(data: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """更新刷新配置"""
     config = save_config(data)
     return {"success": True, "config": config}
 
 
 @router.post("/reload")
-async def trigger_reload():
+async def trigger_reload(_: Dict = Depends(get_admin_user)):
     """手动触发数据重新加载"""
     try:
         parser_stats = parser.reload()
@@ -48,12 +53,19 @@ async def trigger_reload():
 
 
 @router.post("/pull")
-async def trigger_pull(data: Dict[str, Any] = None):
-    """手动触发 Tushare 日线拉取 (FR-3.12.1)
+async def trigger_pull(data: Dict[str, Any] = None, _: Dict = Depends(get_admin_user)):
+    """手动触发 Tushare 日线拉取 (FR-3.12.1 / V4.1 并发互斥)
 
     可选 body: {"stock_pool": ["000001.SZ", ...], "date": "YYYY-MM-DD", "financial": true}
     """
     data = data or {}
+    if _pull_lock.locked():
+        return {"success": False, "error": "已有拉取任务进行中，请稍后再试"}
+    async with _pull_lock:
+        return await _do_pull(data)
+
+
+async def _do_pull(data: Dict[str, Any]):
     try:
         from data_pipeline import run_daily_pull, run_financial_pull
         import asyncio
@@ -83,7 +95,7 @@ async def trigger_pull(data: Dict[str, Any] = None):
 
 
 @router.get("/financial")
-async def get_financial_snapshot(code: str = None):
+async def get_financial_snapshot(code: str = None, _: Dict = Depends(get_admin_user)):
     """读取财务快照 (FR-3.12.1 / task 12.2)
 
     不带 code: 返回全部; 带 code: 返回单只财务指标

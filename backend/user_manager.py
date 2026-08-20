@@ -93,7 +93,8 @@ class UserManager:
                     "theme": "tech-blue",
                     "enabled": True,
                     "locked": True,
-                    "created_at": "2026-05-15"
+                    "created_at": "2026-05-15",
+                    "token_version": 1
                 }
                 self._save_users()
         else:
@@ -104,7 +105,8 @@ class UserManager:
                     "password": self._hash_password("admin"),
                     "role": "admin",
                     "theme": "tech-blue",
-                    "created_at": "2026-01-01"
+                    "created_at": "2026-01-01",
+                    "token_version": 1
                 }
             }
             # v1.7.5: 自动创建访客账户
@@ -160,6 +162,7 @@ class UserManager:
         if username in self.users:
             user = self.users[username].copy()
             del user["password"]
+            user.setdefault("token_version", 1)  # V4.1: 旧数据兼容
             return user
         return None
 
@@ -172,6 +175,13 @@ class UserManager:
             users.append(user)
         return users
 
+    def is_default_password(self, username: str) -> bool:
+        """V4.1: 是否仍为默认/弱口令 (admin / admin123), 用于强制改密"""
+        for guess in ("admin", "admin123"):
+            if self.verify_password(username, guess):
+                return True
+        return False
+
     def add_user(self, username: str, password: str, role: str = "user", theme: str = "tech-blue", group: str = None) -> bool:
         """添加用户"""
         if username in self.users:
@@ -183,7 +193,8 @@ class UserManager:
             "password": self._hash_password(password),
             "role": role,
             "theme": theme,
-            "created_at": "2026-05-15"
+            "created_at": "2026-05-15",
+            "token_version": 1
         }
         # group 字段：默认与 role 同名
         if group:
@@ -204,6 +215,9 @@ class UserManager:
             self.users[username]["password"] = self._hash_password(password)
         if role:
             self.users[username]["role"] = role
+        if password or role:
+            # V4.1: 改密/降权后使旧令牌失效 (令牌版本号递增)
+            self.users[username]["token_version"] = self.users[username].get("token_version", 1) + 1
         if theme:
             self.users[username]["theme"] = theme
         if group:

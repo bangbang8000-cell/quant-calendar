@@ -14,9 +14,22 @@ import time
 from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException, Request
-from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
+
+
+def get_client_ip(request) -> str:
+    """V4.1 (FR-4.1.10): 解析客户端真实 IP
+
+    部署经 cloudflared 反代, 请求经代理链到达; 优先取 X-Forwarded-For 首个地址,
+    空则回退 socket 对端。避免所有用户被合并为代理 IP 导致限流失效。
+    """
+    xff = request.headers.get("x-forwarded-for", "") or ""
+    if xff:
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    return request.client.host if request.client else "unknown"
 
 
 # ─── 限流后端接口 (可插拔) ────────────────────────────────────────
@@ -142,9 +155,9 @@ simple_limiter = SimpleLimiter()
 async def rate_limit_middleware(request: Request, call_next):
     """速率限制中间件
 
-    限制每个 IP 每分钟最多 600 次请求
+    限制每个 IP 每分钟最多 600 次请求 (V4.1: 经代理链解析真实 IP)
     """
-    client_ip = get_remote_address(request)
+    client_ip = get_client_ip(request)
 
     if not simple_limiter.check_rate_limit(client_ip):
         logger.warning(f"请求频率超限: {client_ip}")
@@ -181,3 +194,29 @@ def check_login_rate_limit(client_ip: str) -> bool:
     if not allowed:
         logger.warning(f"登录尝试超限: {client_ip}")
     return allowed
+
+
+# V4.1 (FR-4.1.10): 账号级失败锁定 — 15 分钟内连续 5 次失败锁定
+ACCOUNT_FAIL_LIMIT = 5
+ACCOUNT_FAIL_WINDOW = 900  # 15 分钟
+_account_fail = SimpleMemoryBackend()
+
+
+def is_account_locked(username: str) -> bool:
+    """账号是否因连续失败被临时锁定 (15 分钟窗口内失败次数达上限)"""
+    if not username:
+        return False
+    remaining = _account_fail.get_remaining(username, ACCOUNT_FAIL_LIMIT, ACCOUNT_FAIL_WINDOW)
+    return remaining <= 0
+
+
+def record_login_fail(username: str):
+    """记录一次登录失败 (计数一次)"""
+    if username:
+        _account_fail.check(username, ACCOUNT_FAIL_LIMIT, ACCOUNT_FAIL_WINDOW)
+
+
+def reset_login_fail(username: str):
+    """登录成功后清零失败计数"""
+    if username:
+        _account_fail.reset(username)

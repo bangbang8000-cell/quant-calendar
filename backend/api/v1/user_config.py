@@ -10,6 +10,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from auth import get_current_active_user, get_admin_user
+from secret_utils import mask_secret
 from paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -169,10 +170,27 @@ def init_user_config(username: str):
 
 # ===== API 路由 =====
 
+
+def _mask_sensitive(obj, _depth=0):
+    """V4.1: 递归掩码配置敏感字段(apiKey/token/secret/webhook_url), 防明文下发"""
+    if _depth > 6:
+        return obj
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if k.lower() in ("apikey", "token", "secret", "webhook_url", "api_key", "access_key") and isinstance(v, str) and v:
+                out[k] = mask_secret(v)
+            else:
+                out[k] = _mask_sensitive(v, _depth + 1)
+        return out
+    if isinstance(obj, list):
+        return [_mask_sensitive(x, _depth + 1) for x in obj]
+    return obj
+
 @router.get("/config")
 async def get_my_config(user: dict = Depends(get_current_active_user)):
     """获取当前用户的完整配置（base + 覆盖）"""
-    config = load_user_config(user["username"])
+    config = _mask_sensitive(load_user_config(user["username"]))
     return {"success": True, "config": config, "username": user["username"]}
 
 

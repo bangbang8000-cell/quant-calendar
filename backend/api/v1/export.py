@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from auth import get_current_active_user
+from auth import get_non_guest_user
 
 router = APIRouter(prefix="/data", tags=["数据导出导入"])
 
@@ -69,7 +69,7 @@ def _collect_user_data(username: str) -> dict:
 
 
 @router.get("/export")
-async def export_data(user: dict = Depends(get_current_active_user)):
+async def export_data(user: dict = Depends(get_non_guest_user)):
     """导出当前用户数据 (JSON)"""
     username = user.get("username", "default")
     data = _collect_user_data(username)
@@ -77,7 +77,7 @@ async def export_data(user: dict = Depends(get_current_active_user)):
 
 
 @router.post("/import")
-async def import_data(req: ImportRequest, user: dict = Depends(get_current_active_user)):
+async def import_data(req: ImportRequest, user: dict = Depends(get_non_guest_user)):
     """导入用户数据 (自选/聊天/评估历史)"""
     username = user.get("username", "default")
     d = req.data
@@ -131,7 +131,7 @@ async def import_data(req: ImportRequest, user: dict = Depends(get_current_activ
 @router.get("/export/csv")
 async def export_csv(
     type: str = Query("strategies", description="导出类型: strategies|stocks|evaluation"),
-    user: dict = Depends(get_current_active_user)
+    user: dict = Depends(get_non_guest_user)
 ):
     """导出股票/策略数据为 CSV"""
     output = io.StringIO()
@@ -199,7 +199,7 @@ async def export_csv(
 
 @router.get("/export/excel")
 async def export_excel(
-    user: dict = Depends(get_current_active_user)
+    user: dict = Depends(get_non_guest_user)
 ):
     """导出完整数据集为 Excel (.xlsx)"""
     try:

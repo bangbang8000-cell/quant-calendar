@@ -199,11 +199,20 @@ def test_reset_clears_state():
 # ─── /metrics 端点 ─────────────────────────────────────────
 
 def test_metrics_endpoint_returns_200():
-    """GET /metrics 返回 200, text/plain, 且含指标"""
+    """GET /metrics 返回 200 (V4.1: 需 admin token), text/plain, 且含指标"""
     from fastapi.testclient import TestClient
     from main_new import app
+    from auth import create_access_token
     client = TestClient(app)
+    client.headers.update({"Authorization": "Bearer " + create_access_token({"sub": "admin", "role": "admin"})})
     r = client.get("/metrics")
     assert r.status_code == 200, f"/metrics 状态码异常: {r.status_code}"
     assert "text/plain" in r.headers.get("content-type", ""), "应为 text/plain"
     assert "quant_requests_total" in r.text, "响应应含指标文本"
+
+def test_metrics_rejects_anonymous():
+    """V4.1: 匿名访问 /metrics 应 401"""
+    from fastapi.testclient import TestClient
+    from main_new import app
+    client = TestClient(app)
+    assert client.get("/metrics").status_code == 401

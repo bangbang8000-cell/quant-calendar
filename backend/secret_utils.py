@@ -29,8 +29,11 @@ def is_masked_form(submitted, stored) -> bool:
 
 
 def verify_key_view_password(password) -> bool:
-    """常量时间比较查看密码; 空密码一律拒绝"""
+    """常量时间比较查看密码; 空密码一律拒绝; V4.1: 未显式配置 KEY_VIEW_PASSWORD 时一律拒绝查看"""
+    import os
     from config import settings
     if not password:
         return False
+    if os.environ.get("KEY_VIEW_PASSWORD") is None and settings.KEY_VIEW_PASSWORD == "admin123":
+        return False  # 默认口令未覆盖 → 拒绝查看完整密钥
     return hmac.compare_digest(str(password), settings.KEY_VIEW_PASSWORD)

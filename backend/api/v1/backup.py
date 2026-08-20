@@ -10,7 +10,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_active_user
+from auth import get_non_guest_user
 from db import backup_db, list_backups, restore_backup
 
 router = APIRouter(prefix="/backup", tags=["备份"])
@@ -21,14 +21,14 @@ class RestoreRequest(BaseModel):
 
 
 @router.get("/list")
-async def backup_list(user: dict = Depends(get_current_active_user)):
+async def backup_list(user: dict = Depends(get_non_guest_user)):
     """备份列表 (任意登录用户可看)"""
     backups = list_backups()
     return {"success": True, "backups": backups}
 
 
 @router.post("/create")
-async def backup_create(user: dict = Depends(get_current_active_user)):
+async def backup_create(user: dict = Depends(get_non_guest_user)):
     """手动创建备份"""
     name = backup_db()
     if not name:
@@ -37,7 +37,7 @@ async def backup_create(user: dict = Depends(get_current_active_user)):
 
 
 @router.post("/restore")
-async def backup_restore(req: RestoreRequest, user: dict = Depends(get_current_active_user)):
+async def backup_restore(req: RestoreRequest, user: dict = Depends(get_non_guest_user)):
     """从备份恢复 (仅 admin)"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="仅管理员可执行恢复操作")
