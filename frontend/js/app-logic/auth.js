@@ -6,7 +6,7 @@
   window.__quantAppLogic = window.__quantAppLogic || {};
   window.__quantAppLogic.auth = {
     create: function (ctx) {
-      const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadHealthMetrics,
+      const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached, loadHealthMetrics,
               loadConsensusData, applyTheme, maybeShowTour } = ctx;
 
       // ===== 登录状态 =====
@@ -98,10 +98,12 @@
             applyTheme(data.user.theme || 'tech-blue');
             await loadUserConfig();
             await loadDates();
-            await loadDashboardData();
-            // v3.11 (FR-3.11.7): 登录后刷新数据源健康卡（登录早于页面切换 watch，需显式加载）
-            loadHealthMetrics().catch(() => {});
-            await loadConsensusData();
+            // V4.5 (FR-4.5.2): 并行加载(即时反馈) + loadDashboardCached(缓存防重复)
+            await Promise.all([
+              loadDashboardCached(),
+              loadConsensusData(),
+              loadHealthMetrics().catch(() => {}),
+            ]);
             ElementPlus.ElMessage.success('登录成功');
             // V4.1 (FR-4.1.9): 默认口令登录 → 强制改密提示
             if (data.data && data.data.must_change_password) {
