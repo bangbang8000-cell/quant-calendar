@@ -20,7 +20,7 @@
   }
   .sidebar .nav-item {
     justify-content: center;
-    padding: 14px 0;
+    padding: 12px 0;
   }
   .sidebar .nav-icon {
     display: inline-flex !important;
@@ -167,7 +167,7 @@
     background: var(--bg-card);
     border-top: 1px solid var(--border-light);
     z-index: 1000;
-    padding: 6px 0;
+    padding: 8px 0;
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     backdrop-filter: blur(10px);
   }
@@ -191,7 +191,7 @@
     background: transparent;
   }
   .mobile-nav-icon { font-size: 20px; line-height: 1; }
-  .mobile-nav-label { font-size: 10px; margin-top: 2px; }
+  .mobile-nav-label { font-size: 10px; margin-top: 4px; }
   /* v3.8.13: 股票详情移动端 */
   .kline-dialog {
     width: 95% !important;
@@ -266,12 +266,12 @@
   }
   .watchlist-search-item {
     min-height: 48px;
-    padding: 10px 12px;
+    padding: 8px 12px;
   }
   /* 列表卡片化：日历股票池 / 策略共识榜行 */
   .consensus-item {
     border-radius: 14px;
-    padding: 14px;
+    padding: 12px;
     box-shadow: var(--shadow-sm);
   }
 }
@@ -335,7 +335,7 @@
     max-height: calc(100vh - 20px);
     display: flex;
     flex-direction: column;
-    margin: 10px auto !important;
+    margin: 8px auto !important;
   }
   .el-dialog .el-dialog__header,
   .el-dialog .el-dialog__footer {
@@ -409,8 +409,8 @@
   display: none;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
   font-size: var(--font-sm);
   color: var(--text-secondary);
 }
