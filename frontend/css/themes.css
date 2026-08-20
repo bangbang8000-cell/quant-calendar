@@ -750,7 +750,7 @@
             border-radius: var(--r-xl);
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-md);  /* V4.6 (FR-4.6.5): 轻阴影, 专业感 */
         }
         .card-title {
             font-size: var(--font-md);
