@@ -6,12 +6,19 @@
 """
 import json
 import os
+import sys
 import time
 import logging
 import threading
 import pandas as pd
 from datetime import datetime
 from paths import DATA_DIR
+
+# V4.0 删除条件①: sxsc-tushare 从仓库 libs/ 加载 (家目录只读无法 editable 重装;
+# sys.path 优先于 site-packages .pth, 保证任意启动方式都不再 import /home/evergreen/量化程序/sxsc-tushare)
+_LIBS_SXSC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'libs', 'sxsc_tushare'))
+if os.path.isdir(_LIBS_SXSC_DIR) and _LIBS_SXSC_DIR not in sys.path:
+    sys.path.insert(0, _LIBS_SXSC_DIR)
 
 # v3.20.1 (网络修复): 清掉失效的系统代理环境变量, 强制直连外网。
 # 本机历史遗留 http_proxy=127.0.0.1:7892 指向不存在的代理端口, requests 默认读取导致数据源全挂。
