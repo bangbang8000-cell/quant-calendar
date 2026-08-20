@@ -389,8 +389,9 @@ def test_keyboard_reach_extended():
             assert m in src, f"{rel} 缺少 {m}"
     # watchlist / ai-chat 为逻辑域模块，其模板面（ai-page / stock-detail）已在
     # test_keyboard_reach_in_components 覆盖，此处仅验证两者仍被前端加载引用
-    idx = _read("index.html")
-    assert "js/watchlist.js" in idx and "js/ai-chat.js" in idx, "watchlist/ai-chat 应加载"
+    # V4.3 (方案A): 业务 JS 改由 src/main.js 顺序打包, 不再逐个列于 index.html
+    main = _read("src/main.js")
+    assert "js/watchlist.js" in main and "js/ai-chat.js" in main, "watchlist/ai-chat 应在构建入口 main.js 中加载"
 
 
 def test_virtual_list_infrastructure():
@@ -403,10 +404,11 @@ def test_virtual_list_infrastructure():
 
 
 def test_history_record_script_loaded():
-    """FR-3.16.8 (16.10): history-record.js 已注册到入口 HTML"""
-    idx = _read("index.html")
-    assert "components/history-record.js" in idx, "index.html 应加载 history-record.js"
-    assert idx.index("history-record.js") < idx.index("app-logic.js"), \
+    """FR-3.16.8 (16.10): history-record.js 已注册到入口 HTML
+    V4.3 (方案A): 业务 JS 打包至 src/main.js, 顺序校验改在构建入口"""
+    main = _read("src/main.js")
+    assert "components/history-record.js" in main, "main.js 应加载 history-record.js"
+    assert main.index("history-record.js") < main.index("app-logic.js"), \
         "history-record.js 应早于 app-logic.js 加载"
 
 
@@ -553,9 +555,9 @@ def test_backtest_workbench_endpoint_invoked():
     page = _read("js/components/strategies-page.js")
     assert "回测工作台" in page, "策略总览应含'回测工作台'入口"
     assert "currentSubPage === 'backtest'" in page, "应支持 backtest 子页"
-    idx = _read("index.html")
-    assert "js/backtest.js" in idx, "index.html 应加载 backtest.js"
-    assert idx.index("backtest.js") < idx.index("app-logic.js"), "backtest.js 应早于 app-logic.js 加载"
+    main = _read("src/main.js")
+    assert "js/backtest.js" in main, "构建入口 main.js 应加载 backtest.js (V4.3 方案A)"
+    assert main.index("backtest.js") < main.index("app-logic.js"), "backtest.js 应早于 app-logic.js 加载"
 
 
 def test_backtest_workbench_no_inline_style():
@@ -1019,14 +1021,17 @@ def test_manifest_fields_complete():
 def test_index_all_external_scripts_deferred():
     """FR-3.17.9: index.html 全部外链 <script src> 均带 defer（并行下载、按序执行，首屏不被阻塞）；
     非首屏大组件同样以 defer 在首屏清单注册（避免挂载后注册触发 KeepAlive 重建错误）"""
+    # V4.3 (方案A): 业务 JS 由 src/main.js 经 Vite 打包为单一 chunk (defer 语义天然满足)
     idx = _read("index.html")
     src_tags = re.findall(r'<script[^>]*src="([^"]+)"[^>]*>', idx)
-    assert len(src_tags) >= 50, f"脚本数量异常: {len(src_tags)}"
     for m in re.finditer(r'<script[^>]*src="[^"]+"[^>]*>', idx):
         tag = m.group(0)
-        assert "defer" in tag, f"脚本未加 defer: {tag}"
-    assert "components/dialogs/stock-detail.js" in idx, "对话框组件应在首屏清单 (defer)"
-    assert "components/ai-page.js" in idx, "页面组件应在首屏清单 (defer)"
+        assert "defer" in tag or 'type="module"' in tag, f"脚本未加 defer/module: {tag}"
+    assert len(src_tags) >= 4, f"脚本数量异常: {len(src_tags)}"
+    assert "/src/main.js" in idx, "应引用构建入口 main.js (V4.3)"
+    main = _read("src/main.js")
+    assert "components/dialogs/stock-detail.js" in main, "对话框组件应在构建入口 (V4.3)"
+    assert "components/ai-page.js" in main, "页面组件应在构建入口 (V4.3)"
 
 
 def test_index_echarts_lazy_loaded():
@@ -1168,12 +1173,12 @@ def test_recent_viewed_localstorage_key():
 
 def test_new_personalization_modules_registered():
     """FR-3.17.10: 新模块（i18n/pinyin/preferences/recent）已注册到入口 HTML 且早于 app-logic"""
-    idx = _read("index.html")
+    main = _read("src/main.js")
     for mod in ("i18n.js", "pinyin.js", "preferences.js", "recent.js"):
-        assert mod in idx, f"index.html 应加载 {mod}"
-        assert idx.index(mod) < idx.index("app-logic.js"), f"{mod} 应早于 app-logic.js 加载"
+        assert mod in main, f"构建入口 main.js 应加载 {mod}"
+        assert main.index(mod) < main.index("app-logic.js"), f"{mod} 应早于 app-logic.js 加载"
     # preferences 早于 app-logic（启动 setup 同步读偏好）
-    assert idx.index("preferences.js") < idx.index("app-logic.js")
+    assert main.index("preferences.js") < main.index("app-logic.js")
 
 
 def test_pinyin_module_pure_functions():
@@ -1414,11 +1419,11 @@ def test_i18n_default_locale_zh_cn():
     assert "DEFAULT_LOCALE = 'zh-CN'" in i18n, "i18n.js 默认语言应为 zh-CN"
     app = _read("js/app-logic.js")
     assert "'zh-CN'" in app, "app-logic locale 恢复默认应为 zh-CN"
-    # 语言包注册入口在 index.html 早于 app-logic 装配
-    idx = _read("index.html")
-    assert "locales/zh-CN.js" in idx and "locales/en.js" in idx, \
-        "index.html 应加载 zh-CN/en 语言包"
-    assert idx.index("locales/zh-CN.js") < idx.index("app-logic.js"), \
+    # 语言包注册入口在构建入口 main.js 早于 app-logic 装配 (V4.3 方案A)
+    main = _read("src/main.js")
+    assert "locales/zh-CN.js" in main and "locales/en.js" in main, \
+        "构建入口 main.js 应加载 zh-CN/en 语言包"
+    assert main.index("locales/zh-CN.js") < main.index("app-logic.js"), \
         "语言包应早于 app-logic.js 加载"
 
 

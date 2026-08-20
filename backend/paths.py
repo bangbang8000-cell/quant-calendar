@@ -38,7 +38,12 @@ AUTO_EVALUATE_CONFIG_FILE = os.path.join(DATA_DIR, "auto_evaluate_config.json")
 GROUPS_FILE = os.path.join(DATA_DIR, "groups.json")
 
 # 前端文件
-INDEX_HTML_FILE = os.path.join(FRONTEND_DIR, "index.html")
+# V4.3 (方案A): 构建产物目录 — 存在则优先 serve dist(打包后 index.html + assets), 否则回退源码
+DIST_DIR = os.path.join(FRONTEND_DIR, "dist")
+if os.path.isdir(DIST_DIR) and os.path.isfile(os.path.join(DIST_DIR, "index.html")):
+    INDEX_HTML_FILE = os.path.join(DIST_DIR, "index.html")
+else:
+    INDEX_HTML_FILE = os.path.join(FRONTEND_DIR, "index.html")
 MANIFEST_JSON_FILE = os.path.join(FRONTEND_DIR, "manifest.json")
 SW_JS_FILE = os.path.join(FRONTEND_DIR, "sw.js")
 

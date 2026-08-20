@@ -210,6 +210,11 @@ setup_rate_limiter(app)
 
 # 挂载静态文件
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+# V4.3 (方案A): 构建产物 assets (dist/assets → /assets)
+import os as _os
+_DIST_ASSETS = _os.path.join(FRONTEND_DIR, "dist", "assets")
+if _os.path.isdir(_DIST_ASSETS):
+    app.mount("/assets", StaticFiles(directory=_DIST_ASSETS), name="assets")
 
 # 注册 API v1 路由
 app.include_router(api_router)

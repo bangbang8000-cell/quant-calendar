@@ -371,9 +371,9 @@ def test_frontend_portfolio_page_entry():
 
 def test_frontend_portfolio_loaded_in_html():
     """FR-3.17.5: index.html 应加载 portfolio.js 且早于 app-logic.js"""
-    idx = _read_frontend('index.html')
-    assert 'js/portfolio.js' in idx, "index.html 应加载 portfolio.js"
-    assert idx.index('portfolio.js') < idx.index('app-logic.js'), "portfolio.js 应早于 app-logic.js 加载"
+    main = _read_frontend('src/main.js')
+    assert 'js/portfolio.js' in main, "构建入口 main.js 应加载 portfolio.js (V4.3 方案A)"
+    assert main.index('portfolio.js') < main.index('app-logic.js'), "portfolio.js 应早于 app-logic.js 加载"
 
 
 def test_frontend_portfolio_css_classes():
