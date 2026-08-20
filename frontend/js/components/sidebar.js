@@ -50,7 +50,12 @@
       } catch (e) {}
       if (!state) return {};
 
-      const navigate = (menu) => {
+      const navigate = async (menu) => {
+        // V4.3-S3: 切页前懒加载目标页组件(系统/策略/AI/研究), 首屏无需携带
+        if (window.__quantGoPage) {
+          await window.__quantGoPage(menu.key, menu.subPages[0] || '');
+          return;
+        }
         state.currentPage.value = menu.key;
         state.currentSubPage.value = menu.subPages[0] || '';
       };

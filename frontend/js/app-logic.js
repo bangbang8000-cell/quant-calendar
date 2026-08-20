@@ -769,6 +769,18 @@ const allMenuDefs = [
                 });
                 const { runOnMounted } = __lifecycle;
 
+                // ===== V4.3-S3: 全局切页 — 先懒加载目标页组件再切换 (sidebar/快捷键/内部跳转共用) =====
+                window.__quantGoPage = async (page, sub) => {
+                    try {
+                        const l = window.__lazyLoaders && window.__lazyLoaders[page];
+                        if (l) await l();
+                    } catch (e) {
+                        console.warn('[lazy] 页面组件加载失败', page, e);
+                    }
+                    currentPage.value = page;
+                    if (sub) currentSubPage.value = sub;
+                };
+
                 // ===== 监听页面切换（护栏: 页面切换 watch 全仓唯一）=====
                 // v1.11: 策略总览定时刷新（每5分钟）
                 let strategyPollTimer;

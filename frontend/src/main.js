@@ -24,11 +24,7 @@ import '../js/merrill.js'
 import '../js/echarts-theme.js'
 import '../js/components/sidebar.js'
 import '../js/components/global-header.js'
-import '../js/components/system-page.js'
-import '../js/components/strategies-page.js'
 import '../js/components/calendar-page.js'
-import '../js/components/ai-page.js'
-import '../js/components/research-page.js'
 import '../js/virtual-list-core.js'
 import '../js/components/virtual-list.js'
 import '../js/mobile-gestures.js'
@@ -58,3 +54,12 @@ import '../js/app-logic/auth.js'
 import '../js/app-logic/watch.js'
 import '../js/app-logic/lifecycle.js'
 import '../js/app-logic.js'
+
+// V4.3-S3 (方案A): 页面组件懒加载 — 切换对应页面前由 __quantGoPage 动态 import
+// 4 大页面组件(system/strategies/ai/research)合计 ~300KB raw, 延迟到进入页面时加载
+window.__lazyLoaders = {
+  system: () => import('../js/components/system-page.js'),
+  strategies: () => import('../js/components/strategies-page.js'),
+  ai: () => import('../js/components/ai-page.js'),
+  research: () => import('../js/components/research-page.js'),
+};
