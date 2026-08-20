@@ -639,7 +639,8 @@
         const half = Math.ceil(n / 2);
         return [stages.slice(0, half), stages.slice(half).reverse()];
       }
-      // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 深字 (替代原高饱和色块)
+      // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 固定深字
+      // V4.0.4: color 固定深灰而非 var(--text-primary) — dark 主题下 --text-primary 变浅色(#e6f1ff), 浅底浅字不可读
       function tlChipStyle(stage) {
         const s = _tlCfg()[stage] || {};
         const color = s.color || 'var(--color-primary)';
@@ -647,7 +648,7 @@
         return {
           background: bg,
           borderColor: color,
-          color: 'var(--text-primary)',
+          color: '#1f2937',
           boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)'
         };
       }
