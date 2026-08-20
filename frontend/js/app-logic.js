@@ -803,6 +803,11 @@ const allMenuDefs = [
                 let strategyPollTimer;
                 watch(currentPage, async (page) => {
                     hapticFeedback('light');
+                    // V4.5 (FR-4.5.6): 页面 title 随切换更新(体验小项)
+                    try {
+                        const menu = allMenuDefs.find(function (m) { return m.key === page; });
+                        document.title = (menu ? menu.name + ' - ' : '') + '量化日历';
+                    } catch (e) {}
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
                     // v3.16 (16.8): 离开日历页时取消在途池信号请求
