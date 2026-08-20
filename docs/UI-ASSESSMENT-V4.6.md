@@ -66,6 +66,22 @@
 - **数据**: 1 处重阴影(0 4px 16px rgba(0,0,0,0.5))非令牌
 - **影响**: 个别元素阴影过重
 
+#### P1-9 配色主题质量 (中)
+- **数据**: 7 主题(tech-blue/rose-red/vibrant-orange/classic-white/red/gold/dark-pro)
+- **发现**:
+  - classic-white/red/gold 三主题块**缺 --bg-page 定义**(继承共享, 需确认对齐)
+  - vibrant-orange/classic-gold 主色 #b8922a(金黄) 在浅背景上**对比度可能不足**(大按钮文字需 ≥3:1)
+  - rose-red 主色 #E63946 与 --color-danger #C62828 **色相接近** — 主色按钮与"跌/危险"语义色易混淆(A股红=跌)
+- **影响**: 主色可读性/语义清晰度风险
+
+#### P2-10 emoji 图标体系 (低-中)
+- **数据**: 28/57 文件含 emoji, 总量大(system-page 107 个); TOP: 📈34/🤖32/📋20/📊19/🔄18/⚠15/🔬15
+- **发现**:
+  - **emoji 作为导航/菜单/按钮图标** — 跨平台渲染差异, 专业金融工具宜 SVG 图标体系
+  - **变体选择符残留 62 次** ('️' 类) — emoji 渲染不一致
+  - **语义重复**: 📈(策略) vs 📊(AI 评估) 混淆; ⚙️(系统) 与 🔧 并存
+- **影响**: 图标风格不统一, 专业感不足, 导航辨识度低
+
 ---
 
 ## 三、专业优化建议 (对齐 ui-visual-design)
@@ -94,7 +110,19 @@
 - system-page 卡片密度优化: 分组/增加 gap/减少嵌套
 - 页面视觉焦点强化: 每页一个主视觉区域
 
-### 6. 视觉复核 (收尾)
+### 6. 配色主题优化
+- 主色对比度门禁: 每主题主色 vs 背景 ≥3:1(大按钮文字) — 金黄主色需验证/微调
+- 主色-语义色冲突检测: 主色与 danger/warning 色相分离(rose-red 需处理)
+- classic 系列 bg-page 补齐对齐
+- 主色阶梯统一: 每主题 primary 默认/hover/active 完整
+
+### 7. emoji 图标优化
+- 导航/菜单/核心按钮 emoji → SVG 图标体系(侧栏/头部/主菜单)
+- 内容区 emoji 统一风格 + 清理变体选择符残留(62 处)
+- 语义收敛: 重复/混淆 emoji 合并(📈 vs 📊, ⚙️ vs 🔧)
+- 尺寸一致: 图标区统一 font-size/line-height
+
+### 8. 视觉复核 (收尾)
 - 双主题截图对比(优化前后)
 - 冒烟 0 pageerror + 全量回归
 
@@ -110,8 +138,10 @@
 | 6.4 | 圆角/阴影收敛 + !important 清理 | P1 | tokens.css/themes.css/layout.css | 令牌门禁 + !important 降 30% | 2h |
 | 6.5 | 组件与留白优化: 卡片密度/视觉焦点 | P2 | system-page/strategies-page | 截图对比 + 冒烟 | 3h |
 | 6.6 | 视觉复核 + 发布 v4.6.0 | — | 版本文件/screenshots | 双主题截图 + 0 pageerror + 全量回归 | 1h |
+| 6.7 | 配色主题优化: 主色对比度门禁 + 语义色分离 + classic bg 补齐 | P1 | themes.css/tokens.css/test_contrast | 主色对比度门禁 + 色相分离门禁 | 3h |
+| 6.8 | emoji 图标优化: 导航 SVG 化 + 语义收敛 + 变体清理 | P1 | index.html/sidebar/header/组件 | 无变体残留门禁 + 菜单 SVG 化 | 3h |
 
-**总计**: 6 任务 / 约 14h / 2-3 天
+**总计**: 8 任务 / 约 20h / 3-4 天
 
 **执行纪律**: TDD(先门禁测试再改) + 每次改后 vite build + 重启 + 冒烟 + 小步提交, 全量回归全绿后发布。
 
