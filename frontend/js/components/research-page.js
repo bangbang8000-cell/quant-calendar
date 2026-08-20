@@ -58,7 +58,7 @@
                                             <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
-                                        <el-button size="small" type="primary" @click="saveProfile">💾 保存方案</el-button>
+                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
                                         <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@
                                     <el-input class="w-200" size="small" v-model="specCapText" placeholder="如 50,2000 (留空不限)" />
                                 </div>
                             </div>
-                            <el-button size="small" type="primary" @click="saveVariantSpec">💾 保存 SelectionSpec</el-button>
+                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving">💾 保存 SelectionSpec</el-button>
                         </div>
                         <!-- v3.22 (I3A): 第3步 AI 交易码 -->
                         <div v-if="variantSelected" class="strategy-params">
@@ -1259,6 +1259,7 @@
         strategies, strategiesLoading, strategiesError,
         activeStrategyId, activeStrategy, paramValues,
         strategyRunning, ptradeCode, strategyRuns,
+        savingProfile, variantSaving,
         loadStrategies, onStrategyChange, runActiveStrategy,
         exportActivePtradeCode, copyPtradeCode,
         profiles, profileSelect, profileName,

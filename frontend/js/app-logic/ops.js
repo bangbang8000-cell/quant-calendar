@@ -51,7 +51,9 @@
       }
 
       // ===== 保存飞书配置 =====
+      const feishuSaving = Vue.ref(false);
       async function saveFeishuConfig() {
+        feishuSaving.value = true;
         try {
           const res = await fetch('/api/feishu/config', {
             method: 'POST',
@@ -60,7 +62,7 @@
           });
           const result = await res.json();
           // 保存结果在UI展示
-        } catch (e) { ElementPlus.ElMessage.error('保存失败'); }
+        } catch (e) { ElementPlus.ElMessage.error('保存失败'); } finally { feishuSaving.value = false; }
       }
 
       // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评估页并聚焦问股
@@ -272,7 +274,7 @@
       }
 
       return {
-        feishuConfig, feishuTestStatus, feishuTestMessage,
+        feishuConfig, feishuTestStatus, feishuTestMessage, feishuSaving,
         testFeishuWebhook, saveFeishuConfig,
         aiFabHidden, openAiFab,
         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,

@@ -196,7 +196,7 @@
                                 <el-input class="max-w-460" v-model="feishuConfig.webhook_url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."/>
                             </el-form-item>
                             <el-form-item>
-                                <el-button type="primary" size="small" @click="saveFeishuConfig">💾 保存配置</el-button>
+                                <el-button type="primary" size="small" @click="saveFeishuConfig" :loading="feishuSaving">💾 保存配置</el-button>
                                 <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'">🧪 测试发送</el-button>
                                 <span class="ml-10-sm" v-if="feishuTestMessage" :style="{color: feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'var(--el-success)' : 'var(--el-danger)'}">{{ feishuTestMessage }}</span>
                             </el-form-item>
