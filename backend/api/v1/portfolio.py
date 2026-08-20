@@ -74,8 +74,8 @@ def _position_view(p: dict) -> dict:
     view = {
         'stock_code': p['stock_code'],
         'stock_name': p['stock_name'] or p['stock_code'],
-        'cost_price': round(p['cost_price'] or 0, 4),
-        'quantity': round(p['quantity'] or 0, 4),
+        'cost_price': round(p['cost_price'] or 0, 2),
+        'quantity': round(p['quantity'] or 0, 2),
         'created_at': p['created_at'],
         'updated_at': p['updated_at'],
         'close': None, 'pct_chg': None,

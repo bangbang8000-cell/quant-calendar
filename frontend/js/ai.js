@@ -43,9 +43,62 @@ const aiModelsError = ref('');
 const testingAllModels = ref(false);
 const savingAiModels = ref(false);
 
+// V4.0 需求2: 密钥部分掩码 (与后端 secret_utils.mask_secret 同规则)
+function _maskSecret(s) {
+    if (!s) return '';
+    const str = String(s);
+    const n = str.length;
+    if (n <= 4) return str[0] + '*'.repeat(n - 1);
+    const head = n <= 8 ? 2 : 4;
+    return str.slice(0, head) + '*'.repeat(n - head - head) + str.slice(-head);
+}
+
+// V4.0 需求2: 查看完整密钥 — 先弹密码框, 验密通过后经 /api/system/reveal-secret 取完整值
+async function _revealSecret(target) {
+    let password;
+    try {
+        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认 admin123，可在 .env 的 KEY_VIEW_PASSWORD 修改）', '查看完整密钥', {
+            inputType: 'password',
+            inputPattern: /^.+$/,
+            inputErrorMessage: '密码不能为空',
+            confirmButtonText: '查看',
+            cancelButtonText: '取消',
+        });
+        password = r.value;
+    } catch (e) {
+        return null; // 用户取消
+    }
+    try {
+        const res = await fetch('/api/system/reveal-secret', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, target }),
+        });
+        const data = await res.json();
+        if (data.success) return data.secret;
+        ElementPlus.ElMessage.error(data.message || '查看失败');
+    } catch (e) {
+        ElementPlus.ElMessage.error('查看失败: ' + e.message);
+    }
+    return null;
+}
+
+async function toggleVendorKeyReveal(v) {
+    if (v._revealed) {
+        // 已展示 → 收起并重新掩码（保留用户编辑后的值）
+        v._revealed = false;
+        v._masked = _maskSecret(v.api_key);
+        return;
+    }
+    const full = await _revealSecret('ai:' + v.vendor_key);
+    if (full === null) return;
+    v.api_key = full;
+    v._revealed = true;
+}
+
 function _stripVendorClientFlags(v) {
     // 剔除前端临时标志，只提交后端 schema 字段
-    const { _fetching, _testing, ...clean } = v;
+    const { _fetching, _testing, _revealed, _masked, ...clean } = v;
     clean.models = (v.models || []).map(m => {
         const { _testing: _t, testResult, ...mc } = m;
         return mc;
@@ -71,6 +124,8 @@ async function loadAiVendors() {
                 ...v,
                 _fetching: false,
                 _testing: false,
+                _revealed: false,
+                _masked: v.api_key || '',
                 models: (v.models || []).map(m => ({ ...m, _testing: false, testResult: undefined })),
             }));
             aiModelsError.value = '';
@@ -197,6 +252,8 @@ function addVendorFromCatalog(vendorKey) {
         models: (catalogVendor.models || []).map(name => ({ name, enabled: false, locked: false, max_tokens: 4096, _testing: false, testResult: undefined })),
         _fetching: false,
         _testing: false,
+        _revealed: false,
+        _masked: '',
     });
     ElementPlus.ElMessage.success(`已添加厂商「${catalogVendor.name}」，配置 API Key 后保存生效`);
 }
@@ -215,6 +272,8 @@ function addCustomVendor() {
         models: [],
         _fetching: false,
         _testing: false,
+        _revealed: false,
+        _masked: '',
     });
     ElementPlus.ElMessage.success('已添加自定义厂商');
 }
@@ -437,7 +496,7 @@ function updateChecklist(result) {
         loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
         testVendorModel, testAllVendorModels, fetchVendorModels,
         addVendorFromCatalog, addCustomVendor, addVendorModel,
-        removeVendorModel, removeVendor, autoEvaluateConfig,
+        removeVendorModel, removeVendor, toggleVendorKeyReveal, autoEvaluateConfig,
         aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
         aiConfig, selectedPreset, providerInfo, aiPresets,

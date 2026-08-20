@@ -141,7 +141,7 @@ def _error_rate() -> float:
         errors = sum(c for s, c in _statuses.items() if int(s) >= 500)
     if not total:
         return 0.0
-    return round(errors / total * 100, 1)
+    return round(errors / total * 100, 2)
 
 
 def _request_metrics() -> str:

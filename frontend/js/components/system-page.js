@@ -248,7 +248,13 @@
                                 </el-form-item>
                                 <el-form-item label="套餐档位"><el-input class="w-220" v-model="v.tier" :disabled="v.locked" placeholder="CodingPlan: Lite/Pro"/></el-form-item>
                                 <el-form-item label="Base URL"><el-input v-model="v.base_url" placeholder="https://.../v1"/></el-form-item>
-                                <el-form-item label="API Key"><el-input v-model="v.api_key" type="password" show-password placeholder="厂商级密钥，卡内模型共用"/></el-form-item>
+                                <el-form-item label="API Key">
+                                    <el-input :model-value="v._revealed ? v.api_key : v._masked" @update:model-value="val => { v.api_key = val; if (!v._revealed) v._masked = val; }" placeholder="厂商级密钥，卡内模型共用">
+                                        <template #suffix>
+                                            <span style="cursor:pointer;user-select:none" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)">{{ v._revealed ? '🙈' : '👁️' }}</span>
+                                        </template>
+                                    </el-input>
+                                </el-form-item>
                                 <el-form-item label="超时(秒)"><el-input-number v-model="v.timeout" :min="10" :max="300" size="small"/></el-form-item>
                                 <el-form-item label="模型列表">
                                     <div class="w-100">
@@ -303,7 +309,11 @@
                         </div>
                         <el-form label-width="80px">
                             <el-form-item label="API Token">
-                                <el-input v-model="datasourceConfig.sxsc_tushare.token" type="password" placeholder="输入 sxsc-tushare Token" show-password @change="saveDatasourceConfig" />
+                                <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" @update:model-value="val => { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig">
+                                    <template #suffix>
+                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')">{{ datasourceConfig.sxsc_tushare._revealed ? '🙈' : '👁️' }}</span>
+                                    </template>
+                                </el-input>
                             </el-form-item>
                             <el-form-item label="超时 (秒)">
                                 <el-input-number v-model="datasourceConfig.sxsc_tushare.timeout" :min="5" :max="120" @change="saveDatasourceConfig" />
@@ -327,7 +337,11 @@
                         </div>
                         <el-form label-width="80px">
                             <el-form-item label="API Token">
-                                <el-input v-model="datasourceConfig.tushare.token" type="password" placeholder="输入 Tushare Token" show-password @change="saveDatasourceConfig" />
+                                <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" @update:model-value="val => { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig">
+                                    <template #suffix>
+                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')">{{ datasourceConfig.tushare._revealed ? '🙈' : '👁️' }}</span>
+                                    </template>
+                                </el-input>
                             </el-form-item>
                             <el-form-item label="Endpoint">
                                 <el-input v-model="datasourceConfig.tushare.endpoint" placeholder="http://api.tushare.pro" @change="saveDatasourceConfig" />
@@ -701,7 +715,7 @@
                                     </div>
                                     <div class="usage-ai-stat">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱️</span><span class="usage-ai-stat-label">运行时长</span></div>
-                                        <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(2) + 'h' : '--' }}</div>
                                     </div>
                                     <div class="usage-ai-stat">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">📡</span><span class="usage-ai-stat-label">平均延迟</span></div>

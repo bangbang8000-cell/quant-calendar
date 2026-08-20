@@ -179,7 +179,7 @@ def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20) -> Di
         "passed": total_passed,
         "failed": total_checked - total_passed,
         "unverified": unverified,
-        "pass_rate": round(total_passed / total_checked * 100, 1) if total_checked else None,
+        "pass_rate": round(total_passed / total_checked * 100, 2) if total_checked else None,
         "failures": failures[:50],
     }
 

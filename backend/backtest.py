@@ -301,7 +301,7 @@ class BacktestEngine:
                 equity_curve.append({
                     "date": date,
                     "equity": round(capital, 2),
-                    "return": round(portfolio_return * 100, 3),
+                    "return": round(portfolio_return * 100, 2),
                     "stocks": list(today_stocks)
                 })
 

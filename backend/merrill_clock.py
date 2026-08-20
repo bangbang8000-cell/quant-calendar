@@ -772,7 +772,7 @@ class MerrillClock:
             duration_days = (today - start_time).days
             stats = STAGES[stage]['historical_stats']
             avg_days = stats['avg_duration_months'] * 30
-            progress_pct = min(100, round(duration_days / avg_days * 100, 1))
+            progress_pct = min(100, round(duration_days / avg_days * 100, 2))
 
             if progress_pct >= 95 and boundary_proximity < 0.3:
                 forced_stage = stats['next_stage']
@@ -834,7 +834,7 @@ class MerrillClock:
                 start_time = datetime.fromisoformat(self.history['current_stage_start'])
                 duration_days = (today - start_time).days
                 transition['duration_days'] = duration_days
-                transition['duration_months'] = round(duration_days / 30, 1)
+                transition['duration_months'] = round(duration_days / 30, 2)
 
             self.history['transitions'].insert(0, transition)
             if len(self.history['transitions']) > 20:
@@ -866,7 +866,7 @@ class MerrillClock:
             predicted_duration_mid = avg_months * 30
             predicted_duration_high = (avg_months + std_months) * 30
 
-            progress_percent = min(100, round(duration_days / predicted_duration_mid * 100, 1))
+            progress_percent = min(100, round(duration_days / predicted_duration_mid * 100, 2))
 
             # 阶段成熟度
             if progress_percent < 33:
@@ -886,7 +886,7 @@ class MerrillClock:
                 'current_stage_start': self.history['current_stage_start'],
                 'current_stage_start_date': start_time.strftime('%Y-%m-%d'),
                 'duration_days': duration_days,
-                'duration_months': round(duration_days / 30, 1),
+                'duration_months': round(duration_days / 30, 2),
                 'avg_duration_months': avg_months,
                 'std_duration_months': std_months,
                 'progress_percent': progress_percent,
@@ -971,7 +971,7 @@ class MerrillClock:
             if self.history.get('current_stage_start'):
                 start = datetime.fromisoformat(self.history['current_stage_start'])
                 days = (now - start).days
-                months = round(days / 30.44, 1)
+                months = round(days / 30.44, 2)
                 info['_current_timing'] = {
                     'current_stage_start_date': start.strftime('%Y-%m-%d'),
                     'duration_days': days,

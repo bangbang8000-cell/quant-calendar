@@ -326,6 +326,61 @@ async function loadTushareConfig() {
         }
     } catch (e) { console.warn('loadTushareConfig failed:', e); }
 }
+// V4.0 需求2: 密钥部分掩码 (与后端 secret_utils.mask_secret 同规则)
+function _maskSecret(s) {
+    if (!s) return '';
+    const str = String(s);
+    const n = str.length;
+    if (n <= 4) return str[0] + '*'.repeat(n - 1);
+    const head = n <= 8 ? 2 : 4;
+    return str.slice(0, head) + '*'.repeat(n - head - head) + str.slice(-head);
+}
+
+// V4.0 需求2: 查看完整密钥 — 密码框验证后经 /api/system/reveal-secret 取完整值
+async function _revealSecret(target) {
+    let password;
+    try {
+        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认 admin123，可在 .env 的 KEY_VIEW_PASSWORD 修改）', '查看完整密钥', {
+            inputType: 'password',
+            inputPattern: /^.+$/,
+            inputErrorMessage: '密码不能为空',
+            confirmButtonText: '查看',
+            cancelButtonText: '取消',
+        });
+        password = r.value;
+    } catch (e) {
+        return null; // 用户取消
+    }
+    try {
+        const res = await fetch('/api/system/reveal-secret', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, target }),
+        });
+        const data = await res.json();
+        if (data.success) return data.secret;
+        ElementPlus.ElMessage.error(data.message || '查看失败');
+    } catch (e) {
+        ElementPlus.ElMessage.error('查看失败: ' + e.message);
+    }
+    return null;
+}
+
+async function toggleDatasourceKeyReveal(source) {
+    const ds = datasourceConfig.value[source];
+    if (!ds) return;
+    if (ds._revealed) {
+        // 已展示 → 收起并重新掩码（保留用户编辑后的值）
+        ds._revealed = false;
+        ds._masked = _maskSecret(ds.token);
+        return;
+    }
+    const full = await _revealSecret(source);
+    if (full === null) return;
+    ds.token = full;
+    ds._revealed = true;
+}
+
 // v1.8.0: 多数据源配置
 async function loadDatasourceConfig() {
     try {
@@ -333,9 +388,15 @@ async function loadDatasourceConfig() {
         const data = await res.json();
         if (data.success && data.config && data.config.sources) {
             const srcs = data.config.sources;
+            const decorate = (key) => {
+                const merged = { ...datasourceConfig.value[key], ...(srcs[key] || {}) };
+                merged._revealed = false;
+                merged._masked = merged.token || '';
+                return merged;
+            };
             datasourceConfig.value = {
-                sxsc_tushare: { ...datasourceConfig.value.sxsc_tushare, ...(srcs.sxsc_tushare || {}) },
-                tushare: { ...datasourceConfig.value.tushare, ...(srcs.tushare || {}) },
+                sxsc_tushare: decorate('sxsc_tushare'),
+                tushare: decorate('tushare'),
                 akshare: { ...datasourceConfig.value.akshare, ...(srcs.akshare || {}) }
             };
         }
@@ -353,10 +414,16 @@ async function loadDatasourceConfig() {
 }
 async function saveDatasourceConfig() {
     try {
+        // 剔除前端掩码展示标志 (_revealed/_masked), 只提交后端 schema 字段
+        const cleanSources = {};
+        for (const [k, v] of Object.entries(datasourceConfig.value)) {
+            const { _revealed, _masked, ...rest } = v;
+            cleanSources[k] = rest;
+        }
         await fetch('/api/market/datasource/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sources: datasourceConfig.value })
+            body: JSON.stringify({ sources: cleanSources })
         });
         globalConfigDirty.value = true;
     } catch (e) { console.warn('saveDatasourceConfig failed:', e); }
@@ -472,7 +539,7 @@ async function loadDashboardData() {
         rateLimitConfig, rateLimitDirty, rateLimitSaving, loadRateLimit, saveRateLimit,
         saveAiConfig, testAiApi, exportConfig, importConfig,
         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
-        syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource,
+        syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData,
       };
     }

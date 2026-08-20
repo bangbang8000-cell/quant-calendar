@@ -105,7 +105,7 @@ def _window_agg(hits: List[Optional[bool]]) -> Dict:
         total += 1
         if h:
             hit += 1
-    rate = round(hit / total * 100, 1) if total else None
+    rate = round(hit / total * 100, 2) if total else None
     return {"hit": hit, "total": total, "rate": rate}
 
 

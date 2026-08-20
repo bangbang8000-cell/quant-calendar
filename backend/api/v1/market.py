@@ -115,30 +115,36 @@ async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
 # v1.8.0: 多数据源配置 API
 @router.get('/datasource/config')
 async def get_datasource_config(_: Dict = Depends(get_admin_user)):
-    """获取所有数据源配置（含 config.py 同步的 token）"""
+    """获取所有数据源配置（token 掩码展示; 完整值经 /api/system/reveal-secret 验密获取）"""
     from data_sources import data_source_manager
     from config import settings
+    from secret_utils import mask_secret
     config = data_source_manager.get_config()
     # 回填 config.py 中的 token（若 datasource_config.json 中为空）
     if config.get('sources', {}).get('tushare', {}).get('token', '') == '':
         config['sources']['tushare']['token'] = settings.TUSHARE_TOKEN or ''
     if config.get('sources', {}).get('sxsc_tushare', {}).get('token', '') == '':
         config['sources']['sxsc_tushare']['token'] = settings.SXSC_TUSHARE_TOKEN or ''
+    # V4.0 需求2: 掩码展示 (首尾露真实字符, 中间打 *)
+    for src_name in ('tushare', 'sxsc_tushare'):
+        token = config.get('sources', {}).get(src_name, {}).get('token', '') or ''
+        config['sources'][src_name]['token'] = mask_secret(token)
     return {"success": True, "config": config}
 
 
 @router.post('/datasource/config')
 async def save_datasource_config(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
-    """保存数据源配置（空token保留原值）"""
+    """保存数据源配置（空 token 或掩码形式保留原值, 避免掩码覆盖真实 key）"""
     from data_sources import data_source_manager
+    from secret_utils import is_masked_form
     try:
-        # 保留已有 token：如果提交的 token 为空，使用现有值
         sources = req.get('sources', {})
         existing = data_source_manager.config.get('sources', {})
         for src_name in ['sxsc_tushare', 'tushare']:
             src_cfg = sources.get(src_name, {})
-            if src_cfg.get('token', '') == '' and src_name in existing:
-                src_cfg['token'] = existing[src_name].get('token', '')
+            existing_token = existing[src_name].get('token', '') if src_name in existing else ''
+            if src_cfg.get('token', '') == '' or is_masked_form(src_cfg.get('token', ''), existing_token):
+                src_cfg['token'] = existing_token
         data_source_manager.save_config(req)
         return {"success": True, "message": "数据源配置已保存"}
     except Exception as e:

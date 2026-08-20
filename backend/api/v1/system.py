@@ -11,9 +11,11 @@ import time
 from collections import deque
 from datetime import datetime
 
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends
 
-from auth import get_current_active_user
+from auth import get_admin_user, get_current_active_user
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ def get_metrics() -> dict:
         result = {
             "requests": n,
             "avg_ms": round(sum(times) / n, 1),
-            "p95_ms": round(p95, 1),
+            "p95_ms": round(p95, 2),
             "error_rate": round(errors / n * 100, 2),
         }
     # v3.10 (FR-3.10.3): 数据源健康指标（成功率/延迟/degraded 标记）
@@ -69,7 +71,7 @@ def _get_cpu_mem() -> dict:
         used_kb = total_kb - avail_kb
         result["mem_total_mb"] = round(total_kb / 1024)
         result["mem_used_mb"] = round(used_kb / 1024)
-        result["mem_percent"] = round(used_kb / total_kb * 100, 1) if total_kb else None
+        result["mem_percent"] = round(used_kb / total_kb * 100, 2) if total_kb else None
         # CPU (两次采样)
         def _cpu_times():
             with open('/proc/stat') as f:
@@ -101,7 +103,7 @@ def _get_disk() -> dict:
         result["total_gb"] = round(total / (1024 ** 3), 1)
         result["used_gb"] = round(used / (1024 ** 3), 1)
         result["free_gb"] = round(free / (1024 ** 3), 1)
-        result["percent"] = round(used / total * 100, 1) if total else None
+        result["percent"] = round(used / total * 100, 2) if total else None
     except Exception:
         logger.warning("[warn] 操作异常 (v3.4.0-T8)")
         pass
@@ -132,7 +134,7 @@ async def system_monitor(user: dict = Depends(get_current_active_user)):
     try:
         with open('/proc/uptime') as f:
             secs = float(f.read().split()[0])
-        result["uptime"] = round(secs / 3600, 1)  # 小时
+        result["uptime"] = round(secs / 3600, 2)  # 小时
     except Exception:
         logger.warning("[warn] 操作异常 (v3.4.0-T8)")
         pass
@@ -209,3 +211,36 @@ async def trigger_market_review(user: dict = Depends(get_current_active_user)):
         "reason": outcome.get("reason", ""),
         "report": outcome.get("report"),
     }
+
+
+@router.post("/reveal-secret")
+async def reveal_secret(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
+    """V4.0 需求2: 查看密钥完整值 (需验证密码, settings.KEY_VIEW_PASSWORD 默认 admin123)
+
+    target: "sxsc_tushare" | "tushare" | "ai:<vendor_key>"
+    默认 GET 接口只返回掩码; 本端点验密后返回完整值 (仅本次响应, 不落库/不落日志)。
+    """
+    from secret_utils import verify_key_view_password
+    password = str(req.get("password", ""))
+    target = str(req.get("target", ""))
+    if not verify_key_view_password(password):
+        logger.warning("密钥查看密码校验失败: target=%s", target)
+        return {"success": False, "message": "查看密码错误"}
+    # 数据源 token (含 config.py 回填, 与 GET /datasource/config 一致)
+    if target in ("sxsc_tushare", "tushare"):
+        from config import settings
+        from data_sources import data_source_manager
+        cfg = data_source_manager.get_config()
+        token = cfg.get("sources", {}).get(target, {}).get("token", "") or ""
+        if not token:
+            token = getattr(settings, "SXSC_TUSHARE_TOKEN" if target == "sxsc_tushare" else "TUSHARE_TOKEN", "") or ""
+        return {"success": True, "secret": token}
+    # AI 厂商级 api_key
+    if target.startswith("ai:"):
+        vendor_key = target[3:]
+        from ai_evaluator import ai_evaluator
+        for v in ai_evaluator.get_vendors():
+            if v.vendor_key == vendor_key:
+                return {"success": True, "secret": v.api_key}
+        return {"success": False, "message": "未找到该厂商"}
+    return {"success": False, "message": "未知的目标类型"}

@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 463, f"qcState 唯一键数异常: {len(set(keys))} (期望 463; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages)"
+    assert len(set(keys)) == 465, f"qcState 唯一键数异常: {len(set(keys))} (期望 465; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages; V4.0 需求2 +2: toggleVendorKeyReveal/toggleDatasourceKeyReveal)"
 
 
 def test_watch_currentpage_single():

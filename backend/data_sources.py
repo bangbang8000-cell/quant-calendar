@@ -124,8 +124,8 @@ def record_call(source, success, elapsed_ms, rate_limited=False):
             s['last_failure'] = datetime.now().isoformat()
             if not rate_limited:
                 s['consecutive_failures'] += 1
-        s['success_rate'] = round(s['successes'] / s['calls'] * 100, 1)
-        s['avg_latency_ms'] = round(s['total_latency_ms'] / s['calls'], 1)
+        s['success_rate'] = round(s['successes'] / s['calls'] * 100, 2)
+        s['avg_latency_ms'] = round(s['total_latency_ms'] / s['calls'], 2)
         s['degraded'] = s['consecutive_failures'] >= DEGRADE_THRESHOLD
     # 路由联动 (独立锁, 避免与健康锁重入)
     if success:

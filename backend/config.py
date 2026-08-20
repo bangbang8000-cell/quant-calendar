@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # v3.17.15 (FR-3.17.15): 开放 API — Swagger 文档开关 (默认开启; 关则 /docs /redoc /openapi.json 404)
     OPENAPI_ENABLED: bool = True
 
+    # V4.0 (需求2): 查看完整密钥需验证的密码 (默认 admin123, 可用 .env 的 KEY_VIEW_PASSWORD 覆盖)
+    KEY_VIEW_PASSWORD: str = "admin123"
+
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
 

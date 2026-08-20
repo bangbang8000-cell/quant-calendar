@@ -73,15 +73,21 @@ class TestModelsRoutes:
         assert ds["models"][0]["locked"] is True
 
     def test_post_models_plaintext_key_roundtrip(self, isolated_evaluator):
-        """明文 api_key 原样存并读回"""
+        """明文 api_key 保存; GET 返回掩码 (V4.0 需求2: 完整值仅经 reveal-secret 验密获取)"""
         data = ai_router.ai_evaluator.get_models()
         vendors = data["vendors"]
         vendors[0]["api_key"] = "sk-plain-456"
         r = asyncio.run(ai_router.save_models({"vendors": vendors}))
         assert r["success"] is True
+        # POST 响应回显客户端提交值 (明文)
         assert r["data"]["vendors"][0]["api_key"] == "sk-plain-456"
+        # GET 一律掩码展示
         r2 = asyncio.run(ai_router.get_models())
-        assert r2["data"]["vendors"][0]["api_key"] == "sk-plain-456"
+        assert "sk-plain-456" not in r2["data"]["vendors"][0]["api_key"]
+        assert "*" in r2["data"]["vendors"][0]["api_key"]
+        # 内部存储仍为明文 (消费点可用)
+        stored = {v.vendor_key: v.api_key for v in isolated_evaluator.get_vendors()}
+        assert stored[vendors[0]["vendor_key"]] == "sk-plain-456"
 
     def test_unknown_vendor_key_saved(self, isolated_evaluator):
         """新增自定义厂商 (vendor_key 不在目录) 可保存"""

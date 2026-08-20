@@ -140,7 +140,7 @@ class TestComputeStats:
     def test_overall_agg(self):
         """总体聚合：None（中性/不可达）不计入分母"""
         stats = compute_stats(self._records())["overall"]
-        assert stats["n5"] == {"hit": 2, "total": 3, "rate": 66.7}
+        assert stats["n5"] == {"hit": 2, "total": 3, "rate": 66.67}
         assert stats["n10"] == {"hit": 2, "total": 2, "rate": 100.0}
         assert stats["n20"] == {"hit": 1, "total": 2, "rate": 50.0}
 

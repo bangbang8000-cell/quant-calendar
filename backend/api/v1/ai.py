@@ -239,9 +239,13 @@ def _coerce_timeout(req: Dict[str, Any]):
 
 @router.get("/models")
 async def get_models():
-    """获取厂商模型配置 (v3.14: {"vendors":[...]}, 无需登录)"""
+    """获取厂商模型配置 (v3.14: {"vendors":[...]}, 无需登录; V4.0 api_key 掩码展示)"""
     try:
+        from secret_utils import mask_secret
         models = ai_evaluator.get_models()
+        for v in models.get("vendors", []):
+            if v.get("api_key"):
+                v["api_key"] = mask_secret(v["api_key"])
         return {"success": True, "data": models}
     except Exception as e:
         return {"success": False, "message": str(e)}

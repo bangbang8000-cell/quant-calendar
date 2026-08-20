@@ -94,7 +94,7 @@ def test_daily_audit_pass_rate():
     assert audit["sampled"] == 3
     assert audit["checked"] == 3
     assert audit["passed"] == 2 and audit["failed"] == 1
-    assert audit["pass_rate"] == pytest.approx(round(2 / 3 * 100, 1))
+    assert audit["pass_rate"] == pytest.approx(round(2 / 3 * 100, 2))
     assert audit["failures"], "应有失败明细"
 
 
