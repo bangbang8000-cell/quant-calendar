@@ -496,6 +496,8 @@
                 </div>`,
     setup() {
       const state = inject('qcState');
+      const savingProfile = Vue.ref(false);
+      const variantSaving = Vue.ref(false);
       if (!state) return {};
 
       // ===== v3.17.2 (FR-3.17.2): AI 每日市场复盘 — 列表 + 详情 =====
@@ -755,6 +757,7 @@
       }
 
       async function saveProfile() {
+        savingProfile.value = true;
         const name = (profileName.value || '').trim();
         if (!name) { window._core && window._core.showToast('请输入方案名称'); return; }
         try {
@@ -1106,6 +1109,7 @@
       }
 
       async function saveVariantSpec() {
+        variantSaving.value = true;
         if (!variantSelected.value || !variantSpec.value) return;
         try {
           variantSpec.value.industry_scope = specIndustryText.value ? specIndustryText.value.split(/[,，]/).map(function(s){ return s.trim(); }).filter(Boolean) : [];
