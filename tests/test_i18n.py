@@ -120,7 +120,7 @@ def test_zh_matches_original():
     assert zh["detail.factorTitle"] == "多因子体检"
     assert zh["ai.evalHitRate"] == "评估命中率"
     assert zh["research.marketReview"] == "市场复盘"
-    assert zh["system.title"] == "🖥️ 系统状态"
+    assert zh["system.title"] == "🖥 系统状态"
 
 
 def test_default_locale_zh_cn():
@@ -204,7 +204,7 @@ def test_node_t_basic_zh():
     assert locale == "zh-CN", f"默认 locale 应为 zh-CN, got {locale}"
     assert nav == "量化日历"
     assert empty == "暂无数据"
-    assert sys_title == "🖥️ 系统状态"
+    assert sys_title == "🖥 系统状态"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node 不可用")
