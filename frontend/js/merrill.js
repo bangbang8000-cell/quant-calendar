@@ -229,14 +229,16 @@
       }
     }
 
-    // v3.22-I4: 加载历史周期时间轴(最近4轮)
+    // v3.22-I4 + V4.0.1: 加载历史周期时间轴(最近4轮)
     async function loadMerrillTimeline() {
       timelineLoading.value = true;
       try {
         const res = await fetch('/api/market/merrill-clock/timeline');
         const data = await res.json();
         if (data.success && data.data) {
-          merrillTimeline.value = data.data;
+          // V4.0.1: API 返回最新在前, 展示改为历史(第1轮)在上 → 反转
+          const cycles = Array.isArray(data.data.cycles) ? data.data.cycles.slice().reverse() : [];
+          merrillTimeline.value = { cycles };
         }
       } catch (e) {
         console.warn('获取美林时钟时间轴失败');

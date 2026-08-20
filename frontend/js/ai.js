@@ -57,7 +57,7 @@ function _maskSecret(s) {
 async function _revealSecret(target) {
     let password;
     try {
-        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认 admin123，可在 .env 的 KEY_VIEW_PASSWORD 修改）', '查看完整密钥', {
+        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认密码见项目 README「密钥查看」说明）', '查看完整密钥', {
             inputType: 'password',
             inputPattern: /^.+$/,
             inputErrorMessage: '密码不能为空',

@@ -251,7 +251,7 @@
                                 <el-form-item label="API Key">
                                     <el-input :model-value="v._revealed ? v.api_key : v._masked" @update:model-value="val => { v.api_key = val; if (!v._revealed) v._masked = val; }" placeholder="厂商级密钥，卡内模型共用">
                                         <template #suffix>
-                                            <span style="cursor:pointer;user-select:none" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)">{{ v._revealed ? '🙈' : '👁️' }}</span>
+                                            <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="viewIcon(v._revealed)"></span>
                                         </template>
                                     </el-input>
                                 </el-form-item>
@@ -311,7 +311,7 @@
                             <el-form-item label="API Token">
                                 <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" @update:model-value="val => { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')">{{ datasourceConfig.sxsc_tushare._revealed ? '🙈' : '👁️' }}</span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')" v-html="viewIcon(datasourceConfig.sxsc_tushare._revealed)"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>
@@ -339,7 +339,7 @@
                             <el-form-item label="API Token">
                                 <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" @update:model-value="val => { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')">{{ datasourceConfig.tushare._revealed ? '🙈' : '👁️' }}</span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')" v-html="viewIcon(datasourceConfig.tushare._revealed)"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>
@@ -1262,12 +1262,18 @@
         if (typeof state.loadAnalytics === 'function') state.loadAnalytics();
       }
 
+      // V4.0.1: 密钥查看/收起 — 线性 feather eye / eye-off SVG (替代 emoji 👁️/🙈)
+      const VIEW_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const VIEW_OFF_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      function viewIcon(revealed) { return revealed ? VIEW_OFF_ICON : VIEW_ICON; }
+
       return {
         ...state,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
         aiTotal, aiDayPeak,
         setAnalyticsDays,
+        viewIcon,
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,

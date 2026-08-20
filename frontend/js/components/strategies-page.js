@@ -258,29 +258,51 @@
                             💡 点击阶段卡片查看详细分析和投资建议
                         </div>
 
-                        <!-- v3.22-I4: 历史周期时间轴(最近4轮) -->
+                        <!-- v3.22-I4 + V4.0.1: 历史周期时间轴(最近4轮, 历史在上/最新在下, 蛇形连线, hover介绍) -->
                         <div class="merrill-timeline-block">
                             <div class="merrill-timeline-head">
                                 <span>🕰️ 历史周期时间轴</span>
-                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 点击阶段查看详情</span>
+                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
                                 <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
                             </div>
                             <div class="merrill-timeline" v-if="merrillTimeline?.cycles?.length">
-                                <div class="merrill-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
-                                    <div class="merrill-cycle-label">{{ cycle.label }}</div>
-                                    <div class="merrill-cycle-track">
-                                        <div v-for="(st, si) in cycle.stages" :key="si"
-                                             class="merrill-stage-chip"
-                                             :class="{ 'is-current': st.is_current }"
-                                             :style="{background: getTimelineStageColor(st.stage), borderColor: st.is_current ? 'var(--color-primary)' : 'transparent'}"
-                                             @click.prevent="showTimelineStage(st.stage)"
-                                             :title="(st.name || getTimelineStageName(st.stage) || st.stage) + ' · ' + (st.start ? st.start.slice(0,10) : '起点') + ' → ' + (st.end ? st.end.slice(0,10) : '至今')">
-                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
-                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}</span>
-                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                <div class="tl-spine">
+                                    <div class="tl-spine-arrow tl-top">▲ 历史</div>
+                                    <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
+                                        <div class="tl-cycle-node"></div>
+                                        <div class="tl-cycle-body">
+                                            <div class="tl-cycle-label">{{ cycle.label }}</div>
+                                            <div class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 120 : 60) + 'px'}">
+                                                <template v-for="(row, ri) in timelineRows(cycle.stages)" :key="ri">
+                                                    <div class="tl-stage-row" :class="ri === 0 ? 'tl-row-top' : 'tl-row-bottom'">
+                                                        <div v-for="(st, si) in row" :key="si"
+                                                             class="merrill-stage-chip"
+                                                             :class="{ 'is-current': st.is_current }"
+                                                             :style="tlChipStyle(st.stage)"
+                                                             @click.prevent="showTimelineStage(st.stage)"
+                                                             @mouseenter="setTimelineHover(st, cycle.label)"
+                                                             @mouseleave="clearTimelineHover()">
+                                                            <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
+                                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
+                                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
+                                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlViewBox(cycle.stages.length)" preserveAspectRatio="none" aria-hidden="true">
+                                                    <path :d="tlPath(cycle.stages.length)" class="tl-line" />
+                                                </svg>
+                                            </div>
+                                            <div class="tl-tooltip" v-if="hoverStage && hoverStage.cycle === cycle.label">
+                                                <div class="tl-tooltip-title">{{ hoverStage.st.name || getTimelineStageName(hoverStage.st.stage) || hoverStage.st.stage }}</div>
+                                                <div class="tl-tooltip-date" v-if="hoverStage.st.start">{{ hoverStage.st.start.slice(0,10) }} → {{ hoverStage.st.end ? hoverStage.st.end.slice(0,10) : '至今' }}</div>
+                                                <div class="tl-tooltip-duration" v-if="hoverStage.st.duration_months">持续约 {{ Math.round(hoverStage.st.duration_months) }} 个月</div>
+                                                <div class="tl-tooltip-trigger" v-if="hoverStage.st.trigger">{{ hoverStage.st.trigger }}</div>
+                                                <div class="tl-tooltip-desc" v-if="getTimelineStageDesc(hoverStage.st.stage)">{{ getTimelineStageDesc(hoverStage.st.stage) }}</div>
+                                            </div>
                                         </div>
-                                        <div class="merrill-stage-arrow" v-if="si < cycle.stages.length - 1">→</div>
                                     </div>
+                                    <div class="tl-spine-arrow tl-bottom">▼ 最新</div>
                                 </div>
                             </div>
                             <div class="merrill-timeline-empty" v-else-if="!timelineLoading">暂无历史周期数据</div>
@@ -602,7 +624,67 @@
         return (cfg[stage] && cfg[stage].name) || '';
       }
 
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, getTimelineStageColor, getTimelineStageName, merrillTimeline, timelineLoading, showTimelineStage };
+      // ─── V4.0.1: 时间轴重设计 — 历史在上/最新在下 · 蛇形折行连线 · hover 介绍 ───
+      function _tlCfg() {
+        const raw = state.merrillStagesConfig;
+        return (raw && raw.value) ? raw.value : (raw || {});
+      }
+      function getTimelineStageDesc(stage) {
+        return (_tlCfg()[stage] && _tlCfg()[stage].description) || '';
+      }
+      // 蛇形折行: n<=4 单行; n>=5 两行(行2 从右往左, 右端短连接)
+      function timelineRows(stages) {
+        const n = stages.length;
+        if (n <= 4) return [stages];
+        const half = Math.ceil(n / 2);
+        return [stages.slice(0, half), stages.slice(half).reverse()];
+      }
+      function tlViewBox(n) {
+        return n > 4 ? '0 0 100 120' : '0 0 100 60';
+      }
+      // 连接线: 行1 中心 y=30, 行2 中心 y=90; chip 中心按等宽均匀分布
+      function tlPath(n) {
+        if (n <= 1) return '';
+        if (n <= 4) {
+          return 'M 2 30 L 98 30';
+        }
+        const half = Math.ceil(n / 2);
+        const k = n - half;
+        // 行1 末 chip 中心 x
+        const xEnd1 = ((half - 1 + 0.5) / half) * 100;
+        // 行2 首(第 half+1 个)在右端中心 x
+        const xStart2 = ((k - 1 + 0.5) / k) * 100;
+        // 行2 内连线 (从右向左)
+        let d = 'M 2 30 L ' + xEnd1.toFixed(2) + ' 30';
+        // 行1→行2 拐弯: 下行 + 若 xStart2 与 xEnd1 不齐则横移
+        d += ' L ' + xEnd1.toFixed(2) + ' 90';
+        if (Math.abs(xStart2 - xEnd1) > 1) d += ' L ' + xStart2.toFixed(2) + ' 90';
+        // 行2 内: 从 xStart2 向左到最左 chip 中心
+        const xEnd2 = ((0 + 0.5) / k) * 100;
+        d += ' L ' + xEnd2.toFixed(2) + ' 90';
+        return d;
+      }
+      // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 深字 (替代原高饱和色块)
+      function tlChipStyle(stage) {
+        const s = _tlCfg()[stage] || {};
+        const color = s.color || 'var(--color-primary)';
+        const bg = s.bg_color || 'var(--bg-card)';
+        return {
+          background: bg,
+          borderColor: color,
+          color: 'var(--text-primary)',
+          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)'
+        };
+      }
+      // hover 悬浮介绍
+      const hoverStage = Vue.ref(null);
+      function setTimelineHover(st, cycle) { hoverStage.value = { st, cycle }; }
+      function clearTimelineHover() { hoverStage.value = null; }
+
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
+        getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
+        timelineRows, tlViewBox, tlPath, tlChipStyle, hoverStage, setTimelineHover, clearTimelineHover,
+        merrillTimeline, timelineLoading, showTimelineStage };
     },
   };
 })();

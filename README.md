@@ -222,6 +222,16 @@ pip install -r requirements.lock
 
 cp ../.env.example .env
 # 编辑 .env，填入 TUSHARE_TOKEN=***
+
+### 密钥查看（系统页 API Key / Token 完整值）
+
+系统页（设置 → 数据源 / AI）中的大模型 API Key 与 tushare/sxsc Token 默认以掩码形式展示（只显示首尾几位，中间为星号）。如需查看完整值，点击输入框右侧的查看图标，输入查看密码即可。
+
+| 项 | 说明 |
+|----|------|
+| 查看密码 | 默认 admin123，可通过 .env 的 KEY_VIEW_PASSWORD 修改 |
+| 掩码规则 | 长度大于8：首4尾4；长度4-8：首2尾2；长度不超过4：首1位加星号 |
+| 权限 | 仅管理员（admin 角色）可执行查看操作 |
 python main_new.py --port 8000
 ```
 
