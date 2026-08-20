@@ -28,7 +28,7 @@
                @click="navigate(menu)" tabindex="0" role="button"
                :aria-label="menu.name" :aria-current="currentPage === menu.key ? 'page' : null"
                @keydown.enter.prevent="navigate(menu)" @keydown.space.prevent="navigate(menu)">
-            <span class="nav-icon" v-html="sanitizeHtml(menu.icon)"></span>
+            <span class="nav-icon" v-html="sanitizeHtml(menuIcon(menu))"></span>
             <span>{{ menu.name }}</span>
           </div>
         </div>
@@ -49,6 +49,15 @@
         }
       } catch (e) {}
       if (!state) return {};
+      // V4.6 (FR-4.6.7): 导航 SVG 线性图标(替代 emoji, 专业一致)
+      const MENU_ICONS = {
+        strategies: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7h-6"/></svg>',
+        calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+        ai: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+        research: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+        system: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+      };
+      const menuIcon = (menu) => (MENU_ICONS[menu.key] || menu.icon);
 
       const navigate = async (menu) => {
         // V4.3-S3: 切页前懒加载目标页组件(系统/策略/AI/研究), 首屏无需携带
@@ -72,6 +81,7 @@
         navigate,
         toggle,
         sanitizeHtml: state.sanitizeHtml,
+        menuIcon,
         keyClick: state.keyClick,
         t: state.t,
       };

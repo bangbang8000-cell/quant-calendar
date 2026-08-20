@@ -141,14 +141,14 @@
                                         <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
-                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠️ 疑似过拟合</span>
+                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠ 疑似过拟合</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
-                        <div class="card-title">⚙️ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
+                        <div class="card-title">⚙ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">母本策略</span>

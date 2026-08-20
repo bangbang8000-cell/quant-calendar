@@ -214,7 +214,7 @@
                                 </template>
                             </el-dropdown>
                         </div>
-                        <div class="text-center-danger-pad16" v-if="aiModelsError">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
+                        <div class="text-center-danger-pad16" v-if="aiModelsError">⚠ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
                         <div v-for="(v,vi) in aiVendors" :key="v.vendor_key" class="card mb-12">
@@ -226,7 +226,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -254,7 +254,7 @@
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
                                             <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
                                             <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
-                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑</el-button>
                                         </div>
                                         <div class="flex-gap-8-mt8">
                                             <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
@@ -370,7 +370,7 @@
                     <!-- feature 子页: 功能开关与配置 -->
                     <div v-else-if="currentSubPage === 'feature'">
                         <div class="card">
-                        <div class="card-title">🎛️ 策略筛选</div>
+                        <div class="card-title">🎛 策略筛选</div>
                         <div class="mb-12">
                             <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
                                 <el-checkbox class="mb-6" v-for="s in strategyFilterOptions" :key="s" :label="s" border>
@@ -388,9 +388,9 @@
                         <div class="info-banner-plain">
                             <div class="mb-6-medium">🔍 预览匹配股票数</div>
                             <div class="flex-wrap-gap-12">
-                                <span>☀️ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
+                                <span>☀ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
                                 <span>📅 周视图: <strong>{{ strategyPreviewCount.week ?? '-' }}</strong></span>
-                                <span>🗓️ 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
+                                <span>🗓 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
                                 <span>📆 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
                         </div>
@@ -413,7 +413,7 @@
                     </div>
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card mt-4">
-                        <div class="card-title">⏱️ 美林时钟</div>
+                        <div class="card-title">⏱ 美林时钟</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
                                 上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong>
@@ -620,7 +620,7 @@
                             </div>
                             <div class="flex-gap-6-shrink0">
                                 <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
-                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
+                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙ 菜单</el-button>
                                 <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                             </div>
                         </div>
@@ -682,14 +682,14 @@
                         <div class="usage-card-grid">
                         <!-- 卡1: 资源监控 -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🖥️ 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
+                            <div class="usage-card-title">🖥 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
                             <div class="usage-ai-panel">
                                 <div class="usage-ai-panel-title">实时指标
                                     <span class="usage-ai-panel-meta">CPU/内存/磁盘</span>
                                 </div>
                                 <div class="usage-ai-summary">
                                     <div class="usage-ai-stat usage-ai-stat-meter">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙️</span><span class="usage-ai-stat-label">CPU</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙</span><span class="usage-ai-stat-label">CPU</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
@@ -704,7 +704,7 @@
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱️</span><span class="usage-ai-stat-label">运行时长</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱</span><span class="usage-ai-stat-label">运行时长</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(2) + 'h' : '--' }}</div>
                                     </div>
                                     <div class="usage-ai-stat">
@@ -712,7 +712,7 @@
                                         <div class="usage-ai-stat-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<small>ms</small></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠️</span><span class="usage-ai-stat-label">错误率</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠</span><span class="usage-ai-stat-label">错误率</span></div>
                                         <div class="usage-ai-stat-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                     </div>
                                 </div>
@@ -773,7 +773,7 @@
 
                         <!-- 卡3: 运维状态 (AI护栏 + 调度 + 备份合并) -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🛡️ 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
+                            <div class="usage-card-title">🛡 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
                             <div class="section-block-top">
                             <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
                             <div class="section-title-base flex-between">
@@ -1071,7 +1071,7 @@
                             </div>
                         </div>
                         <div class="card border-left-warning">
-                            <div class="card-title">⚠️ 风险提示</div>
+                            <div class="card-title">⚠ 风险提示</div>
                             <div class="about-body-text">
                                 <p class="m-0-0-8"><strong class="color-text-primary">本系统仅供学习研究，不构成任何投资建议。</strong></p>
                                 <p class="m-0-0-8">• 选股结果基于历史数据和量化模型，<strong>过往表现不代表未来收益</strong></p>
