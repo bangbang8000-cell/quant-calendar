@@ -450,7 +450,8 @@ const allMenuDefs = [
                         console.error('[kline] 加载失败:', stockDetail.value && stockDetail.value.stock, period, e);
                         if (stockDetailTab.value === 'kline') {
                             stockKlineLoaded.value = false;  // 复位, 保持"加载K线"按钮可点
-                            ElementPlus.ElMessage.error('K线加载失败');
+                            // V4.2 (FR-4.2.6): 失败态显示原因, 支持重试
+                            ElementPlus.ElMessage.error('K线加载失败: ' + (e && e.message ? e.message : '数据源不可达，请重试'));
                         }
                         return false;
                     } finally {
@@ -550,6 +551,8 @@ const allMenuDefs = [
                         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                         sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                         healthDetail, loadHealthDetail,
+                        reviewTriggering, triggerMarketReview,
+                        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
                         backups, backupCreating, loadBackups, createBackup, restoreBackup,
                         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
                         feedbackText, feedbackSubmitting, submitFeedback } = __ops;
@@ -571,7 +574,10 @@ const allMenuDefs = [
                         handleGlobalKeydown } = __keys;
 
                 // ===== 详情弹窗（护栏片段保留: 先弹窗后拉数据, 加载态）=====
+                // V4.2 (FR-4.2.5): 连开竞态保护 — 请求序列号, 旧慢响应不覆盖新选中
+                let _stockDetailSeq = 0;
                 async function showStockDetail(stockCode) {
+                    const seq = ++_stockDetailSeq;
                     rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
                     // v3.17.10 (FR-3.17.10): 记录最近查看（先记代码，数据返回后补名称）
                     if (window.__quantModules && window.__quantModules.recent) {
@@ -591,6 +597,7 @@ const allMenuDefs = [
                     nextTick(() => animateScoreEntrance());
                     try {
                         const res = await fetch(`/api/calendar/stock/${stockCode}?date=${selectedDate.value}`);
+                        if (seq !== _stockDetailSeq) return;  // V4.2: 旧响应丢弃
                         stockDetail.value = await res.json();
                         // v3.17.10 (FR-3.17.10): 数据返回后补全最近查看名称
                         if (stockDetail.value && stockDetail.value.name
@@ -598,10 +605,11 @@ const allMenuDefs = [
                             window.__quantModules.recent.recordViewed(stockCode, stockDetail.value.name);
                         }
                     } catch (e) {
+                        if (seq !== _stockDetailSeq) return;
                         ElementPlus.ElMessage.error('加载失败');
                         stockDetail.value = { stock: stockCode, name: '', total_days: 0 };
                     } finally {
-                        stockDetailLoading.value = false;
+                        if (seq === _stockDetailSeq) stockDetailLoading.value = false;
                     }
                     // 数据就绪后加载K线
                     setTimeout(async () => {
@@ -739,7 +747,7 @@ const allMenuDefs = [
                     fetchMerrillClock, fetchMarketData,
                     loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
                     loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-                    loadHealthDetail, loadHealthMetrics, loadAiUsage,
+                    loadHealthDetail, loadHealthMetrics, loadAiUsage, loadFactCheck,
                     loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
                     loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
                     stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
@@ -871,6 +879,8 @@ const allMenuDefs = [
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
                     sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                     healthDetail, loadHealthDetail,
+                    reviewTriggering, triggerMarketReview,
+                    factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
                     strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,

@@ -14,7 +14,7 @@
               fetchMerrillClock, fetchMarketData,
               loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
               loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-              loadHealthDetail, loadHealthMetrics, loadAiUsage,
+              loadHealthDetail, loadHealthMetrics, loadAiUsage, loadFactCheck,
               loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
               loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
               stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,

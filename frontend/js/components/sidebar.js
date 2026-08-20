@@ -41,6 +41,13 @@
     setup() {
       // 从主应用 inject 共享状态
       const state = inject('qcState');
+      // V4.2 (FR-4.2.7): 折叠状态持久化恢复
+      try {
+        const saved = localStorage.getItem('quant_sidebar_collapsed');
+        if (saved !== null && state.sidebarCollapsed) {
+          state.sidebarCollapsed.value = saved === '1';
+        }
+      } catch (e) {}
       if (!state) return {};
 
       const navigate = (menu) => {
@@ -49,6 +56,8 @@
       };
       const toggle = () => {
         state.sidebarCollapsed.value = !state.sidebarCollapsed.value;
+        // V4.2 (FR-4.2.7): 折叠状态持久化
+        try { localStorage.setItem('quant_sidebar_collapsed', state.sidebarCollapsed.value ? '1' : '0'); } catch (e) {}
       };
 
       return {

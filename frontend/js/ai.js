@@ -427,10 +427,13 @@ function cancelPoolSignals() {
 }
 
 // 加载最近一次 AI 评估（供 showStockDetail 弹窗使用）
+let _lastEvalSeq = 0;  // V4.2 (FR-4.2.5): 连开竞态保护
 async function loadLastEvaluation(stockCode) {
+    const seq = ++_lastEvalSeq;
     try {
         const res = await fetch(`/api/ai/history/last/${encodeURIComponent(stockCode)}`);
         const data = await res.json();
+        if (seq !== _lastEvalSeq) return;  // V4.2: 旧响应丢弃
         if (data.success && data.data) {
             aiResult.value = data.data;
             lastEvalTime.value = data.data.evaluate_time;

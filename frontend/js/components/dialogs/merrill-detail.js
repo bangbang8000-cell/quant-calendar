@@ -203,11 +203,11 @@
                             <div class="stat-label">历史平均持续时间</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.stock_avg_return * 100).toFixed(2) }}%</div>
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.stock_avg_return != null ? (merrillDetailData.historical_stats.stock_avg_return * 100).toFixed(2) : '—' }}%</div>
                             <div class="stat-label">股票平均年化收益</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.bond_avg_return * 100).toFixed(2) }}%</div>
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.bond_avg_return != null ? (merrillDetailData.historical_stats.bond_avg_return * 100).toFixed(2) : '—' }}%</div>
                             <div class="stat-label">债券平均年化收益</div>
                         </div>
                         <div class="stat-item">

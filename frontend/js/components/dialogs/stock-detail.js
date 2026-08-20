@@ -234,18 +234,18 @@
                             <div class="ai-eval-grid grid-3col-gap12">
                                 <div class="factor-card-success">
                                     <div class="factor-title-success">▸ 优势</div>
-                                    <div class="detail-text-primary" v-for="s in aiResult.result.analysis.strengths" :key="s">• {{ s }}</div>
-                                    <div class="muted-sm" v-if="!aiResult.result.analysis.strengths.length">-</div>
+                                    <div class="detail-text-primary" v-for="s in (aiResult?.result?.analysis?.strengths || [])" :key="s">• {{ s }}</div>
+                                    <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.strengths || []).length">-</div>
                                 </div>
                                 <div class="factor-card-gold">
                                     <div class="factor-title-gold">⚠️ 风险</div>
-                                    <div class="detail-text-primary" v-for="w in aiResult.result.analysis.weaknesses" :key="w">• {{ w }}</div>
-                                    <div class="muted-sm" v-if="!aiResult.result.analysis.weaknesses.length">-</div>
+                                    <div class="detail-text-primary" v-for="w in (aiResult?.result?.analysis?.weaknesses || [])" :key="w">• {{ w }}</div>
+                                    <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.weaknesses || []).length">-</div>
                                 </div>
                                 <div class="factor-card-info">
                                     <div class="factor-title-info">💡 建议</div>
-                                    <div class="detail-text-primary" v-for="s in aiResult.result.analysis.suggestions" :key="s">• {{ s }}</div>
-                                    <div class="muted-sm" v-if="!aiResult.result.analysis.suggestions.length">-</div>
+                                    <div class="detail-text-primary" v-for="s in (aiResult?.result?.analysis?.suggestions || [])" :key="s">• {{ s }}</div>
+                                    <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.suggestions || []).length">-</div>
                                 </div>
                             </div>
                             <!-- 信号归因条 -->

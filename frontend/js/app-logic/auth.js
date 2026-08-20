@@ -162,7 +162,12 @@
           type: 'warning'
         }).then(() => {
           currentUser.value = null;
+          // V4.2 (FR-4.2.7): 登出双清凭证 + 断开 WS
           localStorage.removeItem('quant_user');
+          localStorage.removeItem('quant_token');
+          try {
+            if (window.__quantWs && window.__quantWs.close) window.__quantWs.close();
+          } catch (e) {}
         }).catch(() => {});
       }
 

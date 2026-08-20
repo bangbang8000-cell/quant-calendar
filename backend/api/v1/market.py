@@ -106,7 +106,8 @@ async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
         period: 周期: daily=日线, weekly=周线, monthly=月线
         limit: 返回条数
     """
-    data = get_kline_data(ts_code, period, limit)
+    import asyncio
+    data = await asyncio.to_thread(get_kline_data, ts_code, period, limit)
     if data:
         return {"success": True, "data": data, "period": period}
     return {"success": False, "message": "获取K线数据失败"}
