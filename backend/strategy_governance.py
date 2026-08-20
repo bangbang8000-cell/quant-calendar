@@ -31,6 +31,8 @@ def _default_state() -> dict:
     return {
         sid: {"enabled": True, "schedule": DEFAULT_SCHEDULE,
               "universe": "default",  # v3.21: default=策略自带池 | all=全市场5530
+              # V4.0 M3: 完全体闭环 — 内置策略引擎持仓默认进入日历展示
+              "show_in_calendar": True,
               "last_run": None, "last_holdings": None}
         for sid in BUILTIN_SIDS
     }
@@ -62,6 +64,7 @@ def save_state(state: dict) -> dict:
             "enabled": bool(s.get("enabled", True)),
             "schedule": str(s.get("schedule") or DEFAULT_SCHEDULE)[:5],
             "universe": "all" if s.get("universe") == "all" else "default",
+            "show_in_calendar": bool(s.get("show_in_calendar", True)),
             "last_run": s.get("last_run"),
             "last_holdings": s.get("last_holdings"),
         }

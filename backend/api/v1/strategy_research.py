@@ -135,12 +135,21 @@ async def update_strategy(sid: str, body: Dict[str, Any],
         raise HTTPException(status_code=404, detail=f'策略 {sid} 不存在')
     params = body.get('params') or {}
     validated = st.validate_params(params)
+    # V4.0 M3: 派生策略 show_in_calendar(默认 False, 研究不污染日历), 存 params 保留键
+    show = body.get('show_in_calendar')
+    if show is not None:
+        validated['__show_in_calendar__'] = bool(show)
+    elif '__show_in_calendar__' in params:
+        validated['__show_in_calendar__'] = bool(params['__show_in_calendar__'])
+    else:
+        validated.setdefault('__show_in_calendar__', False)
     from strategy_db import upsert_def
     upsert_def(sid, {
         'name': st.name, 'version': st.version, 'type': st.id,
         'params': validated, 'enabled': body.get('enabled', True),
     })
-    return {'id': sid, 'params': validated, 'enabled': body.get('enabled', True)}
+    return {'id': sid, 'params': validated, 'enabled': body.get('enabled', True),
+            'show_in_calendar': validated.get('__show_in_calendar__', False)}
 
 
 @router.post('/{sid}/run')

@@ -35,6 +35,8 @@
                                 <div class="strategy-param-row">
                                     <span class="strategy-param-label">纳管</span>
                                     <el-switch v-model="govEnabled" @change="updateGov" />
+                                    <span class="strategy-param-label">进日历</span>
+                                    <el-switch v-model="govShowCalendar" @change="updateGov" />
                                     <el-select class="w-110" size="small" v-model="govSchedule" @change="updateGov">
                                         <el-option v-for="t in ['20:00','21:00','22:00','08:00']" :key="t" :label="t" :value="t" />
                                     </el-select>
@@ -692,6 +694,7 @@
       const profileSelect = ref('');
       const profileName = ref('');
       const govEnabled = ref(true);        // v3.21 (P0-6): 纳管状态
+      const govShowCalendar = ref(true);    // V4.0 M3: 完全体闭环 — 引擎持仓是否进日历展示
       const govSchedule = ref('20:00');
       const govUniverse = ref('default');  // v3.21: default=内置池 | all=全市场5530
       const govRunning = ref(false);
@@ -798,6 +801,7 @@
           govEnabled.value = cur.enabled !== false;
           govSchedule.value = cur.schedule || '20:00';
           govUniverse.value = cur.universe === 'all' ? 'all' : 'default';
+          govShowCalendar.value = cur.show_in_calendar !== false;
           lastHoldings.value = cur.last_holdings || '';
         } catch (e) {
           console.error('[research] 纳管状态加载失败:', e);
@@ -811,7 +815,7 @@
             body: JSON.stringify({
               strategies: (function () {
                 const o = {};
-                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value, universe: govUniverse.value };
+                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value, universe: govUniverse.value, show_in_calendar: govShowCalendar.value };
                 return o;
               })(),
             }),
@@ -1261,6 +1265,7 @@
         loadProfiles, saveProfile, applyProfile, deleteProfile,
         govEnabled, govSchedule, govUniverse, govRunning, lastHoldings,
         loadGov, updateGov, runOnceActive, openLastHoldings, cloneStrategy,
+        govShowCalendar,
         factorKey, factorIcLoading, factorLayerLoading,
         factorIcReport, factorLayerResult, factorOptions,
         runFactorIc, runFactorLayer,
