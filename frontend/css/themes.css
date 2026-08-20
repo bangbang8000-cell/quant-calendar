@@ -129,7 +129,7 @@
         }
         /* 🟡 活力金 - 轻奢质感 */
         [data-theme="vibrant-orange"] {
-            --primary-color: #b8922a;
+            --primary-color: #a07a20;
             --primary-rgb: 184, 146, 42;
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%);
@@ -179,6 +179,7 @@
         /* ⚪ 经典白 - 纯净白底+蓝色点缀 */
         [data-theme="classic-white"] {
             --primary-color: #2563eb;
+            --bg-page: #ffffff;
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -202,6 +203,7 @@
         /* ⚪ 经典红 — 白底+红色点缀 */
         [data-theme="classic-red"] {
             --primary-color: #dc2626;
+            --bg-page: #fafafa;
             --primary-rgb: 220, 38, 38;
             --secondary-color: #f87171;
             --gradient: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
@@ -224,7 +226,8 @@
         }
         /* ⚪ 经典金 — 白底+金色点缀 */
         [data-theme="classic-gold"] {
-            --primary-color: #b8922a;
+            --primary-color: #a07a20;
+            --bg-page: #fdfaf3;
             --primary-rgb: 184, 146, 42;
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #fdfaf3 0%, #fef9ed 100%);
