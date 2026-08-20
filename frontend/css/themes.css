@@ -304,6 +304,9 @@
             --bg-input: #233554; --bg-hover: #233554;
             --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #15153a;
             --border-light: #1e2a4a; --border-base: #233554; --border-heavy: #3a4a6a;
+            /* V4.4 (FR-4.4.1): dark 覆盖补全令牌 */
+            --border-color: #374151; --surface: #111827; --bg-code: #0f172a;
+            --bg-tertiary: #1f2937; --primary-color-dark: #3b82f6;
             /* V4.0.2 毛玻璃深色浮层 */
             --glass-bg: rgba(26, 26, 62, 0.72);
             --glass-border: rgba(255, 255, 255, 0.10);

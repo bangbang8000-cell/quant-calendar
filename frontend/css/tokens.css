@@ -31,6 +31,13 @@
   /* V4.1: 全局边框强调色与 chip 固定深字(原 layout.css 内联 fallback 提为令牌, 满足令牌纪律门禁) */
   --border-strong: #d9dee8;
   --text-on-chip:  #1f2937;
+  /* V4.4 (FR-4.4.1): 补全被使用但未定义的令牌(默认亮色值, dark 由 themes.css 覆盖) */
+  --border-color: #d9dee8;        /* 通用边框色(layout 使用) */
+  --surface: #ffffff;              /* 表面色(代码块等) */
+  --bg-code: #f6f8fa;              /* 代码块背景 */
+  --bg-tertiary: #f1f5f9;          /* 三级背景(kbd/标签) */
+  --primary-color-dark: #2563eb;   /* 主色深(渐变端点) */
+  --radius-2: 10px;                /* 中等圆角(卡片) */
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
