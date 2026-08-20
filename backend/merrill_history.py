@@ -184,6 +184,7 @@ CYCLE_META = [
         "label": "第4轮",
         "start": "2024-09",
         "end": "至今",
+        "lead_start": "2022-10",  # 起点阶段(衰退)开始: 地产危机
         "description": "政策大转向驱动的新一轮复苏周期，房地产救市+财政加力+货币宽松三管齐下",
         "dominant_stage": "recovery",
         "total_months": None,  # 进行中
@@ -192,6 +193,7 @@ CYCLE_META = [
         "label": "第3轮",
         "start": "2020-03",
         "end": "2024-09",
+        "lead_start": "2020-01",  # 起点阶段(衰退)开始: 疫情冲击
         "description": "疫情冲击→强力刺激→俄乌战争→地产危机，经历完整四阶段转换",
         "dominant_stage": "recession",
         "total_months": 54,
@@ -200,6 +202,7 @@ CYCLE_META = [
         "label": "第2轮",
         "start": "2013-01",
         "end": "2020-01",
+        "lead_start": "2012-08",  # 起点阶段(衰退)开始: 四万亿后遗症
         "description": "新常态下的慢复苏，供给侧改革推动结构转型，贸易战带来外部冲击",
         "dominant_stage": "recovery",
         "total_months": 84,
@@ -208,11 +211,20 @@ CYCLE_META = [
         "label": "第1轮",
         "start": "2009-01",
         "end": "2013-01",
+        "lead_start": "2008-11",  # 起点阶段(衰退)开始: 全球金融危机
         "description": "全球金融危机后的强力反弹，四万亿刺激带来高增长但也埋下产能过剩隐患",
         "dominant_stage": "recovery",
         "total_months": 48,
     },
 ]
+
+# ===== 每轮起点阶段的触发原因 (V4.0.7 补全 build_timeline 的起点 trigger 缺口) =====
+START_STAGE_TRIGGERS = {
+    "第4轮": "地产深度调整 + 居民资产负债表收缩 + 地方债务风险（2022-2024 衰退）",
+    "第3轮": "新冠疫情冲击（2020Q1 GDP -6.8%）→ 全国停摆 + 需求骤降",
+    "第2轮": "四万亿后遗症显现 + 欧债危机深化 + 国内产能过剩",
+    "第1轮": "美国次贷危机引爆全球金融危机（2008Q4 GDP骤降）→ 出口断崖 + 股市暴跌",
+}
 
 # ===== v3.22-I4: 历史周期时间轴 =====
 
@@ -255,6 +267,7 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
             'duration_months': t.get('duration_months') or 0,
             'trigger': t.get('trigger') or '',
             'from_stage': t.get('from_stage') or '',
+            'from_name': t.get('from_name') or '',
             'to_stage': t.get('to_stage') or '',
             'is_current': False,
         })
@@ -277,14 +290,24 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
         if stages and stages[0].get('from_stage'):
             first = stages[0]
             if first['stage'] != first['from_stage']:
+                # V4.0.7 补全: 起点阶段不再空 start/trigger/时长 — 从 CYCLE_META.lead_start + START_STAGE_TRIGGERS 填充
+                meta = next((m for m in CYCLE_META if m.get('label') == label), {})
+                lead = meta.get('lead_start') or ''
+                dur = None
+                if lead and first['start']:
+                    d1 = _parse_date(lead)
+                    d2 = _parse_date(first['start'])
+                    if d1 and d2:
+                        dur = round((d2[0] * 12 + d2[1]) - (d1[0] * 12 + d1[1]), 1)
                 stages.insert(0, {
                     'stage': first['from_stage'],
                     'name': first.get('from_name', ''),
-                    'start': '',
+                    'start': lead,
                     'end': first['start'][:10],
-                    'duration_months': None,
-                    'trigger': '',
+                    'duration_months': dur,
+                    'trigger': START_STAGE_TRIGGERS.get(label, ''),
                     'from_stage': '',
+                    'from_name': '',
                     'to_stage': first['from_stage'],
                     'is_current': False,
                 })
