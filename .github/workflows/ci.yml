@@ -56,6 +56,14 @@ jobs:
           EOF
       - name: Lint
         run: ruff check backend/ --select=E,F,W --ignore=E501
+      - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5)
+        run: |
+          TAG=${GITHUB_REF_NAME#v}
+          V=$(grep -oP "APP_VERSION = \\K[0-9.]+(?=")" backend/main_new.py || true)
+          if [ -z "$V" ]; then echo "未找到 APP_VERSION"; exit 1; fi
+          if [ "$TAG" != "$V" ]; then echo "tag=$TAG 与 APP_VERSION=$V 不一致"; exit 1; fi
+          echo "版本一致: $V"
+
       - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
         run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"
       - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
