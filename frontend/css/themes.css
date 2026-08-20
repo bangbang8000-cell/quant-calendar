@@ -246,42 +246,20 @@
             --btn-primary-text-color: #b8922a;
         }
         /* ⚪ 经典主题：共享 active 状态 (使用各主题的 --gradient-brand) */
-        [data-theme="classic-white"] .nav-item.active,
-        [data-theme="classic-red"] .nav-item.active,
-        [data-theme="classic-gold"] .nav-item.active,
-        [data-theme="classic-white"] .status-tab.active,
-        [data-theme="classic-red"] .status-tab.active,
-        [data-theme="classic-gold"] .status-tab.active,
-        [data-theme="classic-white"] .consensus-badge,
-        [data-theme="classic-red"] .consensus-badge,
-        [data-theme="classic-gold"] .consensus-badge,
-        [data-theme="classic-white"] .stat-icon,
-        [data-theme="classic-red"] .stat-icon,
-        [data-theme="classic-gold"] .stat-icon,
-        [data-theme="classic-white"] .user-avatar,
-        [data-theme="classic-red"] .user-avatar,
-        [data-theme="classic-gold"] .user-avatar,
-        [data-theme="classic-white"] .user-menu-avatar,
-        [data-theme="classic-red"] .user-menu-avatar,
-        [data-theme="classic-gold"] .user-menu-avatar,
-        [data-theme="classic-white"] .login-icon,
-        [data-theme="classic-red"] .login-icon,
-        [data-theme="classic-gold"] .login-icon,
-        [data-theme="classic-white"] .detail-header,
-        [data-theme="classic-red"] .detail-header,
-        [data-theme="classic-gold"] .detail-header,
-        [data-theme="classic-white"] .hold-days,
-        [data-theme="classic-red"] .hold-days,
-        [data-theme="classic-gold"] .hold-days,
-        [data-theme="classic-white"] .kline-tab.active,
-        [data-theme="classic-red"] .kline-tab.active,
-        [data-theme="classic-gold"] .kline-tab.active {
+        [data-theme^="classic"] .nav-item.active,
+        [data-theme^="classic"] .status-tab.active,
+        [data-theme^="classic"] .consensus-badge,
+        [data-theme^="classic"] .stat-icon,
+        [data-theme^="classic"] .user-avatar,
+        [data-theme^="classic"] .user-menu-avatar,
+        [data-theme^="classic"] .login-icon,
+        [data-theme^="classic"] .detail-header,
+        [data-theme^="classic"] .hold-days,
+        [data-theme^="classic"] .kline-tab.active {
             background: var(--gradient-brand) !important;
             color: white !important;
         }
-        [data-theme="classic-white"] .sub-nav-tab.active,
-        [data-theme="classic-red"] .sub-nav-tab.active,
-        [data-theme="classic-gold"] .sub-nav-tab.active {
+        [data-theme^="classic"] .sub-nav-tab.active {
             background: var(--gradient-brand) !important;
             color: white !important;
             box-shadow: var(--shadow-md) !important;
