@@ -10,6 +10,10 @@ __pycache__/
 *.egg
 dist/
 build/
+# V4.3 (方案A): 前端构建产物入库 (Docker/ops 无需 Node 构建) - 仅 frontend/dist 例外
+!frontend/dist/
+!frontend/dist/**
+node_modules/
 
 # Virtual environments
 venv/
