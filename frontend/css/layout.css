@@ -255,7 +255,8 @@
   gap: 8px;
 }
 .tl-row-top { top: 0; }
-.tl-row-bottom { top: 60px; flex-direction: row-reverse; justify-content: space-between; }
+/* V4.0.3: 行2 用普通 row + DOM 反向(reverse) → 视觉从左到右为时间倒序, 行1末在右上/行2首在右下短竖线连接 */
+.tl-row-bottom { top: 60px; }
 
 /* 阶段 chip: 浅色底 + 阶段色细描边 + 深字 (替代原高饱和色块) */
 .merrill-stage-chip {
@@ -318,30 +319,46 @@
   stroke-linejoin: round;
 }
 
-/* hover 悬浮介绍 */
-.tl-tooltip {
+/* V4.0.3: 阶段 hover 玻璃浮层 — 紧凑跟随 chip, 不再跨全宽覆盖周期图 */
+@keyframes tl-tip-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.tl-tip {
   position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  margin-top: 2px;
-  background: var(--bg-tooltip, #ffffff);
-  border: 1px solid var(--border-strong, #d9dee8);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 200px;
+  max-width: 320px;
+  width: max-content;
+  max-width: 320px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--glass-bg, rgba(255,255,255,0.88));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
+  backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.35));
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0,0,0,0.10));
   color: var(--text-primary);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  z-index: 20;
-  animation: tl-fade 0.15s ease-out;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+  white-space: normal;
+  z-index: 40;
+  animation: tl-tip-in 0.15s ease-out;
   pointer-events: none;
 }
-@keyframes tl-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
-.tl-tooltip-title { font-weight: var(--font-semibold, 600); margin-bottom: 4px; }
-.tl-tooltip-date { color: var(--text-secondary); }
-.tl-tooltip-duration { color: var(--text-secondary); margin-top: 2px; }
-.tl-tooltip-trigger { margin-top: 6px; color: var(--text-secondary); }
-.tl-tooltip-desc { margin-top: 4px; }
+.tl-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--glass-border, rgba(255,255,255,0.35));
+}
+.tl-tip-title { font-weight: var(--font-semibold, 600); font-size: 13px; margin-bottom: 2px; }
+.tl-tip-meta { color: var(--text-secondary); }
+.tl-tip-trigger { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border-light, #e9ecef); color: var(--text-secondary); }
+.tl-tip-desc { margin-top: 4px; }
 
 /* ─── v3.22-I2: 用量统计卡片化 (4卡片网格) ─── */
 .usage-card-grid {
@@ -405,7 +422,7 @@
 .el-date-range-picker,
 .el-notification,
 .el-tooltip__popper,
-.tl-tooltip {
+.tl-tip {
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
   backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
 }
@@ -426,8 +443,8 @@
 /* el-message / el-notification 保留类型色(成功/警告/错误), 仅加模糊不覆盖背景 */
 .el-message,
 .el-notification { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-/* 时间轴 hover 浮层: 半透明 + 模糊 */
-.tl-tooltip {
-  background: var(--glass-bg, rgba(255,255,255,0.85)) !important;
+/* 时间轴 hover 浮层: 半透明 + 模糊 (V4.0.3 起用 .tl-tip) */
+.tl-tip {
+  background: var(--glass-bg, rgba(255,255,255,0.88)) !important;
   border-color: var(--glass-border, rgba(255,255,255,0.35)) !important;
 }

@@ -280,25 +280,25 @@
                                                              :class="{ 'is-current': st.is_current }"
                                                              :style="tlChipStyle(st.stage)"
                                                              @click.prevent="showTimelineStage(st.stage)"
-                                                             @mouseenter="setTimelineHover(st, cycle.label)"
-                                                             @mouseleave="clearTimelineHover()">
+                                                             @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
+                                                             @mouseleave="clearTlHover()">
                                                             <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
                                                             <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
                                                             <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
                                                             <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                                            <div class="tl-tip" v-if="tlHoverKey === (ci + '-' + ri + '-' + si)">
+                                                                <div class="tl-tip-title">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</div>
+                                                                <div class="tl-tip-meta" v-if="st.start">{{ st.start.slice(0,10) }} → {{ st.end ? st.end.slice(0,10) : '至今' }}</div>
+                                                                <div class="tl-tip-meta" v-if="st.duration_months">持续约 {{ Math.round(st.duration_months) }} 个月</div>
+                                                                <div class="tl-tip-trigger" v-if="st.trigger">{{ st.trigger }}</div>
+                                                                <div class="tl-tip-desc" v-if="getTimelineStageDesc(st.stage)">{{ getTimelineStageDesc(st.stage) }}</div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </template>
-                                                <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlViewBox(cycle.stages.length)" preserveAspectRatio="none" aria-hidden="true">
-                                                    <path :d="tlPath(cycle.stages.length)" class="tl-line" />
+                                                <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlPathFor(ci).vb" preserveAspectRatio="none" aria-hidden="true">
+                                                    <path :d="tlPathFor(ci).d" class="tl-line" />
                                                 </svg>
-                                            </div>
-                                            <div class="tl-tooltip" v-if="hoverStage && hoverStage.cycle === cycle.label">
-                                                <div class="tl-tooltip-title">{{ hoverStage.st.name || getTimelineStageName(hoverStage.st.stage) || hoverStage.st.stage }}</div>
-                                                <div class="tl-tooltip-date" v-if="hoverStage.st.start">{{ hoverStage.st.start.slice(0,10) }} → {{ hoverStage.st.end ? hoverStage.st.end.slice(0,10) : '至今' }}</div>
-                                                <div class="tl-tooltip-duration" v-if="hoverStage.st.duration_months">持续约 {{ Math.round(hoverStage.st.duration_months) }} 个月</div>
-                                                <div class="tl-tooltip-trigger" v-if="hoverStage.st.trigger">{{ hoverStage.st.trigger }}</div>
-                                                <div class="tl-tooltip-desc" v-if="getTimelineStageDesc(hoverStage.st.stage)">{{ getTimelineStageDesc(hoverStage.st.stage) }}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -632,37 +632,12 @@
       function getTimelineStageDesc(stage) {
         return (_tlCfg()[stage] && _tlCfg()[stage].description) || '';
       }
-      // 蛇形折行: n<=4 单行; n>=5 两行(行2 从右往左, 右端短连接)
+      // 蛇形折行: n<=4 单行; n>=5 两行(行2 DOM 反向, 普通 row → 视觉从左到右为时间倒序, 右端短连接)
       function timelineRows(stages) {
         const n = stages.length;
         if (n <= 4) return [stages];
         const half = Math.ceil(n / 2);
         return [stages.slice(0, half), stages.slice(half).reverse()];
-      }
-      function tlViewBox(n) {
-        return n > 4 ? '0 0 100 120' : '0 0 100 60';
-      }
-      // 连接线: 行1 中心 y=30, 行2 中心 y=90; chip 中心按等宽均匀分布
-      function tlPath(n) {
-        if (n <= 1) return '';
-        if (n <= 4) {
-          return 'M 2 30 L 98 30';
-        }
-        const half = Math.ceil(n / 2);
-        const k = n - half;
-        // 行1 末 chip 中心 x
-        const xEnd1 = ((half - 1 + 0.5) / half) * 100;
-        // 行2 首(第 half+1 个)在右端中心 x
-        const xStart2 = ((k - 1 + 0.5) / k) * 100;
-        // 行2 内连线 (从右向左)
-        let d = 'M 2 30 L ' + xEnd1.toFixed(2) + ' 30';
-        // 行1→行2 拐弯: 下行 + 若 xStart2 与 xEnd1 不齐则横移
-        d += ' L ' + xEnd1.toFixed(2) + ' 90';
-        if (Math.abs(xStart2 - xEnd1) > 1) d += ' L ' + xStart2.toFixed(2) + ' 90';
-        // 行2 内: 从 xStart2 向左到最左 chip 中心
-        const xEnd2 = ((0 + 0.5) / k) * 100;
-        d += ' L ' + xEnd2.toFixed(2) + ' 90';
-        return d;
       }
       // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 深字 (替代原高饱和色块)
       function tlChipStyle(stage) {
@@ -676,14 +651,78 @@
           boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)'
         };
       }
-      // hover 悬浮介绍
-      const hoverStage = Vue.ref(null);
-      function setTimelineHover(st, cycle) { hoverStage.value = { st, cycle }; }
-      function clearTimelineHover() { hoverStage.value = null; }
+
+      // ─── V4.0.3: 测量式精确连线 + chip 内嵌玻璃 hover 浮层 ───
+      // 连线基于每个 chip 的真实 DOM 坐标生成, 真正"接上"各阶段, 而非等分估算
+      // 用 querySelectorAll 直接测量(不依赖函数 ref, 兼容运行时编译模板)
+      const tlPaths = Vue.reactive({});     // ci -> {d, vb}
+      const tlHoverKey = Vue.ref(null);
+      let _tlResizeHandler = null;
+      let _tlRebuildTimer = null;
+      let _tlObserver = null;
+
+      // 测量每轮 chip 真实中心点 → 生成精确连接线 (行1 左→右, 跨行竖下, 行2 右→左)
+      function buildTlPaths() {
+        try {
+          const cycles = document.querySelectorAll('.merrill-timeline .tl-cycle');
+          cycles.forEach((c, ci) => {
+            const rows = c.querySelector('.tl-stage-rows');
+            const topRow = c.querySelector('.tl-row-top');
+            const botRow = c.querySelector('.tl-row-bottom');
+            const chipsTop = topRow ? Array.from(topRow.querySelectorAll('.merrill-stage-chip')) : [];
+            const chipsBot = botRow ? Array.from(botRow.querySelectorAll('.merrill-stage-chip')).reverse() : [];
+            const chips = chipsTop.concat(chipsBot);  // 时间正序: 行1 左→右, 行2 右→左
+            if (!rows || chips.length < 2) { tlPaths[ci] = { d: '', vb: '0 0 1 1' }; return; }
+            const rowRect = rows.getBoundingClientRect();
+            const W = Math.max(1, rowRect.width);
+            const H = Math.max(1, rowRect.height);
+            const half = chipsTop.length;
+            const pts = chips.map(el => {
+              const r = el.getBoundingClientRect();
+              return { x: r.left + r.width / 2 - rowRect.left, y: r.top + r.height / 2 - rowRect.top };
+            });
+            let d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+            for (let i = 1; i < pts.length; i++) {
+              const prev = pts[i - 1], cur = pts[i];
+              if (i === half) {
+                d += ' L ' + prev.x.toFixed(1) + ' ' + cur.y.toFixed(1);  // 行1 末竖下到行2
+                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);   // 横接到行2 首(最右)
+              } else {
+                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);
+              }
+            }
+            tlPaths[ci] = { d, vb: '0 0 ' + W.toFixed(1) + ' ' + H.toFixed(1) };
+          });
+        } catch (e) { console.error('[tl] buildTlPaths error', e); }
+      }
+      function tlPathFor(ci) { return tlPaths[ci] || { d: '', vb: '0 0 1 1' }; }
+
+      function setTlHover(key) { tlHoverKey.value = key; }
+      function clearTlHover() { tlHoverKey.value = null; }
+
+      function scheduleTlRebuild(delay) {
+        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
+        _tlRebuildTimer = setTimeout(() => { _tlRebuildTimer = null; Vue.nextTick(buildTlPaths); }, delay || 120);
+      }
+      Vue.onMounted(() => {
+        scheduleTlRebuild(0);
+        scheduleTlRebuild(800);   // 数据可能后到: 兜底重测
+        _tlResizeHandler = () => scheduleTlRebuild(150);
+        window.addEventListener('resize', _tlResizeHandler);
+        // DOM 变化(时间轴数据渲染/布局变化) → debounce 重测, 不依赖 Vue watch 时序
+        _tlObserver = new MutationObserver(() => scheduleTlRebuild(120));
+        _tlObserver.observe(document.body || document.documentElement, { childList: true, subtree: true });
+      });
+      Vue.onBeforeUnmount(() => {
+        if (_tlResizeHandler) window.removeEventListener('resize', _tlResizeHandler);
+        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
+        if (_tlObserver) { _tlObserver.disconnect(); _tlObserver = null; }
+      });
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
-        timelineRows, tlViewBox, tlPath, tlChipStyle, hoverStage, setTimelineHover, clearTimelineHover,
+        timelineRows, tlChipStyle, tlPathFor,
+        tlHoverKey, setTlHover, clearTlHover,
         merrillTimeline, timelineLoading, showTimelineStage };
     },
   };
