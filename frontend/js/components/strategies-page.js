@@ -702,7 +702,7 @@
         return [stages.slice(0, half), stages.slice(half).reverse()];
       }
       // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 固定深字
-      // V4.0.4: color 固定深灰而非 var(--text-primary) — dark 主题下 --text-primary 变浅色(#e6f1ff), 浅底浅字不可读
+      // V4.0.4+V4.1: color 固定深字令牌 var(--text-on-chip)(tokens.css 定义, 深浅主题一致) — dark 下不随 --text-primary 变浅
       function tlChipStyle(stage) {
         const s = _tlCfg()[stage] || {};
         const color = s.color || 'var(--color-primary)';
@@ -710,8 +710,8 @@
         return {
           background: bg,
           borderColor: color,
-          color: '#1f2937',
-          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)'
+          color: 'var(--text-on-chip)',
+          boxShadow: 'inset 0 0 0 1px rgba(var(--primary-rgb, 37 99 235), 0.06)'
         };
       }
 

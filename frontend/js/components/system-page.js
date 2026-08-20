@@ -251,7 +251,7 @@
                                 <el-form-item label="API Key">
                                     <el-input :model-value="v._revealed ? v.api_key : v._masked" @update:model-value="val => { v.api_key = val; if (!v._revealed) v._masked = val; }" placeholder="厂商级密钥，卡内模型共用">
                                         <template #suffix>
-                                            <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="viewIcon(v._revealed)"></span>
+                                            <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="sanitizeHtml(viewIcon(v._revealed)"></span>
                                         </template>
                                     </el-input>
                                 </el-form-item>
@@ -311,7 +311,7 @@
                             <el-form-item label="API Token">
                                 <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" @update:model-value="val => { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')" v-html="viewIcon(datasourceConfig.sxsc_tushare._revealed)"></span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.sxsc_tushare._revealed)"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>
@@ -339,7 +339,7 @@
                             <el-form-item label="API Token">
                                 <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" @update:model-value="val => { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')" v-html="viewIcon(datasourceConfig.tushare._revealed)"></span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.tushare._revealed)"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>

@@ -27,6 +27,10 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* V4.1: 全局边框强调色与 chip 固定深字(原 layout.css 内联 fallback 提为令牌, 满足令牌纪律门禁) */
+  --border-strong: #d9dee8;
+  --text-on-chip:  #1f2937;
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
