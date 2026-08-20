@@ -1,75 +1,151 @@
 # 量化选股日历 V4.1-V4.5 优化打磨 测试计划（TEST-PLAN）
 
-> 状态：六维度审计完成 | 日期：2026-08-21 | 基线：28372e2（V4.0.9）
-> 配套：PRD-v4.1-4.5-优化打磨.md | DEV-PLAN-v4.1-4.5-优化打磨.md
+- **文档版本**：v1.0（完整版）
+- **状态**：已评审（六维度审计完成）| 日期：2026-08-21
+- **产品基线**：master 30168eb（V4.0.9）| **配套**：PRD-v4.1-4.5-优化打磨.md | DEV-PLAN-v4.1-4.5-优化打磨.md
+- **更新规则**：每版本完成后更新出口记录。
 
-## 1. 测试策略总纲
-- TDD 四步每任务（先写失败测试 → 实现 → 全绿）
-- 前端冒烟 0 pageerror 为金标准（登录 admin/admin → 逐页走查 → console 无 error）
-- 每版本：全量 pytest 全绿 + 门禁测试 + tag + 双端部署后浏览器复验
-- **新增三类门禁守护测试**纳入 CI：安全鉴权覆盖 / 令牌完整性 / 三向注入一致性
+---
 
-## 2. V4.1 安全测试
-| # | 测试 | 断言 | 文件 |
-|---|---|---|---|
-| T-1.1 | 敏感端点无鉴权 → 401 | 遍历匿名端点清单 POST/GET 均 401 | tests/test_no_unauthed_sensitive.py（新门禁） |
-| T-1.2 | setup 加固 | 已初始化后匿名 complete 401；密码<8 拒绝 | tests/test_setup_wizard.py |
-| T-1.3 | base_url 白名单 | 内网/非 https/未知域名拒绝；预置厂商放行 | tests/test_ai_ssrf.py |
-| T-1.4 | data-refresh 鉴权 | 匿名 401；并发拉取互斥 | tests/test_data_refresh_auth.py |
-| T-1.5 | guest 门禁 | guest 调付费 AI/备份/导出 → 403 | tests/test_guest_gate.py |
-| T-1.6 | openapi IDOR | 普通 Key 指定他人 user → 403/脱敏 | tests/test_openapi_idor.py |
-| T-1.7 | JWT 会话 | 降权/改密后旧 token 立即失效 | tests/test_jwt_session.py |
-| T-1.8 | 口令策略 | 默认口令启动告警；KEY_VIEW_PASSWORD 未配置拒绝查看 | tests/test_password_policy.py |
-| T-1.9 | 限流实化 | 代理链 IP 解析；账号级锁定退避 | tests/test_rate_limit_abuse.py |
-| T-1.10 | 泄露收敛 | feedback/metrics/500/webhook secret/user config 脱敏断言 | tests/test_info_leak.py |
-| T-1.11 | 审计补全 | 改密/用户管理/配置变更有审计记录 | tests/test_audit_coverage.py |
+## 1. 测试目标与范围
 
-## 3. V4.2 逻辑测试
-| # | 测试 | 断言 | 文件 |
-|---|---|---|---|
-| T-2.1 | 三向注入一致性 | 域导出 ⊆ qcState ⊇ 模板引用（集合断言，替换数量断言） | tests/test_frontend_consistency.py 升级 |
-| T-2.2 | WS 握手 | 带 token 升级成功；匿名 401/403 | tests/test_market_ws.py |
-| T-2.3 | 异步边界 | 慢源下 health/其他 API 不排队超时 | tests/test_async_blocks.py |
-| T-2.4 | 竞态保护 | 连开两股返回正确匹配 | tests/test_stock_detail_race.py |
-| T-2.5 | 空态健壮 | 缺字段不渲染 NaN%/不抛错 | tests/test_frontend_consistency.py 扩展 |
-| T-2.6 | 凭证纪律 | 登出后无 token 残留 | tests/test_auth_logout.py |
+- **目标**：验证 V4.1-V4.5 六维度优化打磨（安全/美观/适用/逻辑/操作/效率）达到 PRD 验收标准，且无功能回归。
+- **范围**：后端 API（鉴权/SSRF/性能）、前端 SPA（注入/竞态/令牌/对比度/交互）、部署（双端/WS/版本）。
+- **不做**：新业务功能测试（4.1-4.5 无新功能）；视觉像素级断言暂以源码/对比度/几何替代（视觉后端不可用）。
 
-## 4. V4.3 效率测试
-| # | 测试 | 断言 | 文件 |
-|---|---|---|---|
-| T-3.1 | 年视图延迟 | /api/view/year 热/冷均 <100ms（超时断言） | tests/test_view_year_perf.py |
-| T-3.2 | reload 异步 | reload 请求即时返回；数据双缓冲原子替换 | tests/test_reload_async.py |
-| T-3.3 | 冷 merrill 预热 | 每日首访不阻塞（预热任务/异步） | tests/test_merrill_prewarm.py |
-| T-3.4 | 请求去重 | 同会话 view/day 不重复；未登录少发业务请求 | tests/e2e/test_request_dedup.py |
-| T-3.5 | 轮询可见性 | document.hidden 时暂停轮询 | tests/e2e/test_poll_visibility.py |
-| T-3.6 | 静态体积 | 首屏脚本数 ≤12；CSS gzip 后 <100KB（基线对比） | tests/e2e/test_bundle_size.py |
+## 2. 测试策略
 
-## 5. V4.4 体验测试
-| # | 测试 | 断言 | 文件 |
-|---|---|---|---|
-| T-4.1 | 令牌完整性门禁 | 全前端 var(--x) 引用均有定义 | tests/test_tokens_defined.py（新门禁） |
-| T-4.2 | dark 令牌层 | dark-pro 无未定义令牌；!important 数下降 | tests/test_tokens_no_hardcode.py 扩展 |
-| T-4.3 | 对比度 | 关键对 WCAG 达标（抽样断言） | tests/test_contrast_wcag.py |
-| T-4.4 | 主题收敛 | 7 主题渲染无回归（逐主题冒烟） | tests/e2e/test_themes_smoke.py |
-| T-4.5 | 空态崩溃 | research-page 未选策略不抛错；全页空态 | tests/test_frontend_consistency.py 扩展 |
+### 2.1 测试层级
+| 层级 | 工具 | 覆盖 |
+|---|---|---|
+| 单元 | pytest（python3） | 后端逻辑/鉴权/工具函数 |
+| 集成 | pytest + FastAPI TestClient | API 端点/权限/性能断言 |
+| 前端一致性 | pytest 静态扫描 | 令牌/v-html/注入/类定义 |
+| e2e | Playwright（Chrome） | 登录/逐页走查/交互/0 pageerror |
+| 性能 | curl/Playwright CDP | API 延迟/首屏请求/体积 |
+| 安全 | pytest 攻击用例 | 未授权/SSRF/注入/越权/暴力 |
 
-## 6. V4.5 便捷与收尾测试
-| # | 测试 | 断言 | 文件 |
-|---|---|---|---|
-| T-5.1 | 入口可达 | 美林时钟独立入口可达；配置就近 | tests/e2e/test_nav_flow.py |
-| T-5.2 | 交互即时 | 慢接口弹窗立即响应（异步填充） | tests/e2e/test_interaction_feedback.py |
-| T-5.3 | 按钮反馈 | 关键按钮点击均有响应 | tests/e2e/test_button_feedback.py |
-| T-5.4 | 版本一致性 | tag 与 APP_VERSION 一致（CI gate） | tests/test_version_gate.py |
-| T-5.5 | 文档同步 | 三文档状态列与实现一致 | tests/test_docs_consistency.py |
+### 2.2 门禁与守护测试（新增，入 CI）
+1. **安全鉴权门禁**：test_no_unauthed_sensitive.py —— 匿名端点清单遍历断言 401/403。
+2. **令牌完整性门禁**：test_tokens_defined.py —— 全前端 var(--x) 引用均有定义。
+3. **三向注入门禁**：test_frontend_consistency.py 升级 —— 域导出 ⊆ qcState ⊇ 模板引用集合断言。
+4. **对比度门禁**：test_contrast_wcag.py —— 关键对 WCAG 达标抽样。
+5. **版本门禁**：test_version_gate.py —— tag 与 APP_VERSION 一致（CI）。
 
-## 7. 每版本出口（E2E）
-- 全量 pytest 全绿（含门禁）
-- 前端冒烟 0 pageerror（双主题）
-- CI success（tag 触发）
-- 双端健康 + 浏览器复验（登录/时间轴/日历/系统页）
-- 每版本发布后：安全 P0 端点实测 401（V4.1）；年视图 <100ms（V4.3）
+## 3. 测试环境
 
-## 8. 测试环境与限制
-- 本机 python3（pytest）+ Playwright Chrome（executable_path=/home/evergreen/.agent-browser/browsers/chrome-150.0.7871.46/chrome）
-- 视觉后端不可用期间：视觉断言用 computed-style/getBoundingClientRect/对比度计算替代；截图存档待补审
-- ops:8000 复跑 #WS（V4.2）与 #注入（V4.2）核查
+- 本机：python3（pytest）/ Playwright（chrome executable=/home/evergreen/.agent-browser/browsers/chrome-150.0.7871.46/chrome）
+- 双环境：dev:8001 / ops:8000（admin/admin，登录后 Escape×2 关弹窗）
+- CI：push tag v* 触发（ci.yml）；本机跑 CI 同款命令验证门禁
+- 数据：三源（sxsc-tushare→tushare→akshare）；qresult 静态 + 引擎 holdings
+
+## 4. 详细测试用例
+
+### 4.1 V4.1 安全（TC-S-*）
+| # | 前置 | 步骤 | 预期 | 优先级 |
+|---|---|------|------|:--:|
+| TC-S1 | 匿名会话 | 遍历敏感端点（setup/complete、data-refresh/*、ai/models/test|list、auto-config、feedback、metrics）无 token 请求 | 401/403 | P0 |
+| TC-S2 | 已初始化 | 匿名 POST /setup/complete 改 admin 密码 | 401 | P0 |
+| TC-S3 | 未初始化 | 设弱密码（<8） | 拒绝并提示强度 | P0 |
+| TC-S4 | admin | /api/ai/models/test base_url=内网 IP / http / 未知域名 | 拒绝 | P0 |
+| TC-S5 | admin | base_url=预置厂商 https | 放行 | P0 |
+| TC-S6 | 匿名 | POST /data-refresh/pull | 401；并发拉取互斥 | P0 |
+| TC-S7 | guest | 调付费 AI 评估/批量/聊天/备份创建/导出/策略研究 | 403 | P0 |
+| TC-S8 | read Key | /api/openapi/evaluations?user=<他人> | 403 或脱敏 | P1 |
+| TC-S9 | admin | 降权后旧 token 调 admin 端点 | 立即失效（回查 DB） | P1 |
+| TC-S10 | admin | 改密后旧 token | 失效（令牌版本号） | P1 |
+| TC-S11 | 默认口令 | 启动自检 | 告警/拦截；KEY_VIEW_PASSWORD 未配置拒绝查看 | P1 |
+| TC-S12 | 暴力 | 连续失败登录 >N | 账号锁定 + 退避 | P1 |
+| TC-S13 | 匿名 | /api/feedback、/metrics | 401 或脱敏；500 不回显 detail | P1 |
+| TC-S14 | admin | 改密/用户管理/配置变更 | audit_log 有记录 | P1 |
+
+### 4.2 V4.2 逻辑（TC-L-*）
+| # | 前置 | 步骤 | 预期 | 优先级 |
+|---|---|------|------|:--:|
+| TC-L1 | 登录 | 系统页点「立即抽查」 | 有网络请求 + 反馈（不再静默） | P0 |
+| TC-L2 | 登录 | 系统页点「立即生成复盘」 | 有网络请求 + 反馈 | P0 |
+| TC-L3 | 登录 | 进用量统计页 | 无 ReferenceError；30s 自动刷新启动 | P0 |
+| TC-L4 | 登录 | 三向一致性测试跑 | 域导出 ⊆ qcState ⊇ 模板引用 全绿 | P0 |
+| TC-L5 | 部署 | 带 token 连 WS /api/market/ws/quotes | 升级成功（101） | P0 |
+| TC-L6 | 慢源 | 拉 K线/个股详情同时请求 health | health <1s（不排队） | P1 |
+| TC-L7 | 登录 | 快速连开 A→B 两只股票详情 | B 数据不被 A 慢响应覆盖 | P1 |
+| TC-L8 | 登录 | K线失败 | 显示原因 + 重试按钮可用 | P1 |
+| TC-L9 | 登录 | 登出 | quant_user/quant_token 双清 + WS 断开 | P1 |
+| TC-L10 | 登录 | 折叠侧栏后刷新 | 折叠状态保留 | P1 |
+| TC-L11 | 登录 | 打开缺历史字段的 merrill 详情 | 无 NaN% | P1 |
+
+### 4.3 V4.3 效率（TC-P-*）
+| # | 前置 | 步骤 | 预期 | 优先级 |
+|---|---|------|------|:--:|
+| TC-P1 | 登录 | /api/view/year（热/冷）计时 | <100ms（基线 16-21s） | P0 |
+| TC-P2 | 登录 | POST /data-refresh/reload 计时 + 并发请求 | 立即返回（异步）；其他 API 不排队 | P0 |
+| TC-P3 | 首次 | 冷 /api/market/merrill-clock（预热后） | <1s（基线 13s） | P0 |
+| TC-P4 | 新会话 | 首屏脚本数/请求数 | 脚本 ≤12；总请求 -50% | P1 |
+| TC-P5 | 新会话未登录 | 观察首屏请求 | 无业务请求/无必 401 | P1 |
+| TC-P6 | 登录 | 进系统页请求数 | ≤4（基线 ~12） | P1 |
+| TC-P7 | 登录 | 切后台标签 | 轮询暂停（visibilitychange） | P1 |
+| TC-P8 | 登录 | dashboard/monitor | TTL 生效（300s）；monitor ~5ms | P1 |
+
+### 4.4 V4.4 体验（TC-U-*）
+| # | 前置 | 步骤 | 预期 | 优先级 |
+|---|---|------|------|:--:|
+| TC-U1 | — | 令牌完整性测试 | 0 未定义令牌 | P0 |
+| TC-U2 | 登录 | 回测结果卡/代码框/错误条/标签 chip 样式 | 正常渲染（非透明/无边框） | P0 |
+| TC-U3 | 登录 | dark-pro 主题切"当前"徽标/placeholder/阶段名 | 对比度 ≥3:1（断言） | P0 |
+| TC-U4 | 登录 | 研究页未选策略 | 不崩溃（空态正常） | P0 |
+| TC-U5 | 登录 | 7 主题逐一切换 | 0 pageerror；无样式失效 | P1 |
+| TC-U6 | 移动 | 375px 打开 | 可缩放（WCAG 1.4.4） | P1 |
+| TC-U7 | — | theme-color | 与品牌主色一致 | P2 |
+
+### 4.5 V4.5 便捷（TC-F-*）
+| # | 前置 | 步骤 | 预期 | 优先级 |
+|---|---|------|------|:--:|
+| TC-F1 | 登录 | 从导航直达美林时钟 | 一二级入口可达 | P1 |
+| TC-F2 | 登录 | 在美林时钟页调刷新间隔/重评估 | 配置就近可用 | P1 |
+| TC-F3 | 登录 | 慢接口触发 viewAiResult/watchlistEvaluate | 立即弹窗 + 异步填充 | P1 |
+| TC-F4 | 登录 | 抽查关键按钮点击 | 均有反馈（加载/禁用/结果） | P1 |
+| TC-F5 | CI | 版本门禁 | tag 与 APP_VERSION 一致 | P1 |
+| TC-F6 | — | 三文档状态列 | 与实现同步 | P1 |
+
+## 5. 回归策略
+- 每版本发布前跑**全量 pytest**（tests/ -m "not e2e"）+ 前端冒烟 0 pageerror（双主题）+ 核心流程（登录/日历/时间轴/系统页）。
+- 门禁测试（安全/令牌/注入/对比度/版本）作为 CI 前置，任一失败阻断发布。
+- 回归关注点：V4.1 鉴权重构后所有业务端点可用；V4.3 性能优化后功能不变；V4.4 令牌化后样式不变。
+
+## 6. 缺陷管理
+| 等级 | 定义 | 处理 |
+|---|---|---|
+| P0 | 阻断发布/账户接管/功能不可用 | 立即修复，本版本内 |
+| P1 | 主要功能缺陷/安全漏洞 | 本版本内修复 |
+| P2 | 次要体验问题 | 本版本或顺延 |
+| P3 | 低影响打磨 | 记录，顺延 |
+
+缺陷流程：记录（审计/走查）→ 优先级 → 修复（TDD）→ 复验 → 关闭。每版本缺陷清单在发布说明中汇总。
+
+## 7. 性能基准与验收阈值（V4.3 出口）
+| 指标 | 阈值 |
+|---|---|
+| /api/view/year | <100ms |
+| 冷 merrill | <1s |
+| reload 感知 | 异步（请求即时返回） |
+| 首屏脚本 | ≤12 |
+| 系统页请求 | ≤4 |
+| 全站 P95 | <50ms（无重活时） |
+
+## 8. 发布验收清单（每版本 E2E）
+- [ ] 全量 pytest 全绿（含门禁）
+- [ ] 前端冒烟 0 pageerror（双主题）
+- [ ] CI success（tag 触发）
+- [ ] 双端 /api/health = 当前版本
+- [ ] 浏览器复验核心流程（登录/日历/时间轴/系统页）
+- [ ] V4.1 附加：P0 端点匿名实测 401；密码已轮换
+- [ ] V4.3 附加：性能阈值实测达标
+- [ ] 三文档状态列更新 + SKILL 快照更新
+
+## 9. 测试报告与退出标准
+- 每版本输出：测试结果汇总（通过/失败/门禁）+ 缺陷清单 + 性能实测值。
+- 退出标准：全部 P0/P1 关闭，P2 无阻塞项，门禁全绿，性能达标，用户确认发布。
+
+## 10. 测试限制说明
+- 视觉后端不可用：像素级断言待视觉工具恢复后补做；当前以对比度计算 + 几何断言 + 截图存档为准。
+- ops:8000 需复跑：WS 握手（V4.2）、注入断点复活（V4.2）、P0 端点 401（V4.1）。
