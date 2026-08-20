@@ -127,35 +127,11 @@
                 <!-- v3.6.0-T3: 全局 Header + 面包屑 (组件化) -->
                 <qc-global-header></qc-global-header>
 
-                <!-- 页面0: 策略总览 -->
+                <!-- V4.3-S3: 页面组件动态渲染 — pageComp 映射 currentPage -> 组件名 -->
+                <!-- 懒加载组件(chunk)注册后, :is 每次渲染重新 resolveComponent 即命中 -->
                 <Transition name="fade-slide" mode="out-in">
                 <KeepAlive>
-                <!-- v3.6.0-T5: 策略总览页 (组件化) -->
-                <qc-strategies-page></qc-strategies-page>
-                </Transition>
-
-                <!-- 页面1: 量化日历 -->
-                <Transition name="fade-slide" mode="out-in">
-                <!-- v3.6.0-T6: 量化日历页 (组件化) -->
-                <qc-calendar-page></qc-calendar-page>
-                </Transition>
-
-                <!-- 页面2: AI评估 -->
-                <Transition name="fade-slide" mode="out-in">
-                <!-- v3.6.0-T7: AI评估页 (组件化) -->
-                <qc-ai-page></qc-ai-page>
-                </Transition>
-
-                <!-- 页面3: 策略研究 -->
-                <Transition name="fade-slide" mode="out-in">
-                <!-- v3.6.0-T8: 策略研究页 (组件化) -->
-                <qc-research-page></qc-research-page>
-                </Transition>
-
-                <!-- 页面4: 系统配置 -->
-                <Transition name="fade-slide" mode="out-in">
-                <!-- v3.6.0-T4: 系统配置页 (组件化) -->
-                <qc-system-page></qc-system-page>
+                <component :is="pageComp"></component>
                 </KeepAlive>
                 </Transition>
             </div>
@@ -283,6 +259,8 @@
             });
         }
         app.mount('#app');
+        // V4.3-S3: 暴露 app 实例 — 懒加载页面组件需在 chunk 加载后补注册 app.component
+        window.__quantApp = app;
 
         // v3.17.9 (FR-3.17.9): 挂载完成立即移除启动骨架屏（首屏主区域随后由各页状态面板骨架接管）
         const bootEl = document.getElementById('qc-boot');

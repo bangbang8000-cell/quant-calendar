@@ -285,6 +285,13 @@ const allMenuDefs = [
                     const menu = allMenuDefs.find(m => m.key === currentPage.value);
                     return menu ? menu.name : currentPage.value;
                 });
+
+                // V4.3-S3: 动态页面组件名映射 — currentPage -> qc-xxx-page
+                // <component :is> 每次渲染重新解析组件名, 懒加载 chunk 注册后即可命中
+                const pageComp = computed(() => {
+                    const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', system: 'qc-system-page' };
+                    return _map[currentPage.value] || '';
+                });
                 const showUserMenu = ref(false);
                 const dashboardData = ref({});
                 // v3.11 (FR-3.11.7): 数据源健康指标（/api/system/metrics data_sources）
@@ -777,6 +784,16 @@ const allMenuDefs = [
                     } catch (e) {
                         console.warn('[lazy] 页面组件加载失败', page, e);
                     }
+                    // V4.3-S3: 懒加载 chunk 仅写入 __quantComponents — 补注册到 Vue app
+                    // (mount 时遍历一次未含懒加载组件, 不注册则主模板 resolveComponent 失败整页空白)
+                    if (window.__quantApp && window.__quantComponents) {
+                        Object.values(window.__quantComponents).forEach((comp) => {
+                            if (comp && comp.name && !comp.__quantRegistered) {
+                                window.__quantApp.component(comp.name, comp);
+                                comp.__quantRegistered = true;
+                            }
+                        });
+                    }
                     currentPage.value = page;
                     if (sub) currentSubPage.value = sub;
                 };
@@ -875,7 +892,7 @@ const allMenuDefs = [
 
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
-                    currentPage, currentSubPage, sidebarCollapsed, menus,
+                    currentPage, pageComp, currentSubPage, sidebarCollapsed, menus,
                     fmtNum, sanitizeHtml, keyClick, isOnline,
                     currentUser, iconSystem, allMenuDefs,
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
