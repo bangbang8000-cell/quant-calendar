@@ -299,7 +299,8 @@
                                                                         <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
                                                                     </template>
                                                                 </div>
-                                                                <div class="tl-tip-brief" v-if="tlTipBrief(st)">{{ tlTipBrief(st) }}</div>
+                                                                <div class="tl-tip-brief" v-if="st.is_current && tlCurrentBrief()">{{ tlCurrentBrief() }}</div>
+                                                                <div class="tl-tip-brief" v-else-if="!st.is_current && tlTipBrief(st)">{{ tlTipBrief(st) }}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -660,11 +661,23 @@
         const y2 = st.end ? String(st.end).slice(0, 4) : (y1 ? '至今' : '');
         return y1 ? (y2 ? y1 + '–' + y2 : y1) : '';
       }
-      // V4.0.6: tooltip 精简 — 一句话: 当前阶段显示阶段特征(贴合当下), 历史阶段显示触发原因(贴合那轮)
+      // V4.0.8: tooltip 内容重写 — 历史阶段显示「本周期·本阶段」凝练要点(essence), 与四方格子通用描述不同; 无 essence 回落触发原因
       function tlTipBrief(st) {
-        const desc = getTimelineStageDesc(st.stage);
-        if (st.is_current) return desc || st.trigger || '';
-        return st.trigger || desc || '';
+        return st.essence || st.trigger || getTimelineStageDesc(st.stage) || '';
+      }
+      // V4.0.8: 当前阶段 tooltip — 本周期实时核心指标(替代四方格子通用描述), 按当前阶段选最相关指标
+      function tlCurrentBrief() {
+        const ind = merrill.value.indicators || {};
+        const stage = merrill.value.stage || '';
+        const map = {
+          recovery: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['M2', ind.m2_growth]],
+          overheat: [['PPI', ind.ppi], ['CPI', ind.cpi], ['PMI', ind.pmi]],
+          stagflation: [['CPI', ind.cpi], ['PPI', ind.ppi], ['GDP', ind.gdp_growth]],
+          recession: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['CPI', ind.cpi]],
+        };
+        const picks = (map[stage] || map.recession).filter(p => p[1] != null && p[1] !== 0);
+        if (!picks.length) return '';
+        return '实时 · ' + picks.map(p => p[0] + ' ' + p[1] + '%').join(' ｜ ');
       }
       // V4.0.5-D: 甘特式连续时间条段样式 — 按时长比例 flex-basis + 阶段色填充
       function tlGanttStyle(st, stages, gi) {
@@ -771,7 +784,7 @@
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
-        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief,
+        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,
         merrillTimeline, timelineLoading, showTimelineStage };
     },

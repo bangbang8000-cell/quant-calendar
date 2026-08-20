@@ -18,6 +18,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 20.4,
         "cycle_label": "第4轮",
         "trigger": "央行降准降息组合拳 + 房地产救市政策 + 财政加力",
+        "essence": "政策大转向 + 降准降息 + 财政加力，信心修复期",
         "key_indicators": {"gdp_growth": 4.7, "cpi": 0.3, "pmi": 49.1}
     },
     # ─── 第3轮：2023-01 → 2024-09 衰退（地产通缩）───
@@ -31,6 +32,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 10.2,
         "cycle_label": "第3轮",
         "trigger": "疫情封控解除后需求恢复不及预期 + 地产销售持续下滑",
+        "essence": "地产销售下滑 + 需求疲弱，通缩隐忧",
         "key_indicators": {"gdp_growth": 3.0, "cpi": 1.8, "pmi": 48.0}
     },
     # 第3轮：2022-03 → 2023-01 滞胀
@@ -44,6 +46,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 7.5,
         "cycle_label": "第3轮",
         "trigger": "俄乌战争爆发 + 上海疫情封控 + 美联储加息周期",
+        "essence": "俄乌推高成本 + 封控扰动经济",
         "key_indicators": {"gdp_growth": 4.8, "cpi": 1.5, "ppi": 8.8}
     },
     # 第3轮：2021-07 → 2022-03 过热
@@ -57,6 +60,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 15.8,
         "cycle_label": "第3轮",
         "trigger": "全球大放水滞后效应 + PPI飙升至13.5% + 大宗商品超级周期",
+        "essence": "全球大放水 + PPI 13.5%，商品超级周期",
         "key_indicators": {"gdp_growth": 7.9, "cpi": 1.1, "ppi": 9.0}
     },
     # 第3轮：2020-03 → 2021-07 复苏
@@ -70,6 +74,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 1.6,
         "cycle_label": "第3轮",
         "trigger": "新冠疫情冲击（GDP单季-6.8%）→ 央行紧急降息+特别国债",
+        "essence": "疫情冲击后 V 型修复，特别国债稳增长",
         "key_indicators": {"gdp_growth": -6.8, "cpi": 4.3, "pmi": 35.7}
     },
     # ─── 第2轮：2019-06 → 2020-01 复苏 ───
@@ -83,6 +88,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 16.3,
         "cycle_label": "第2轮",
         "trigger": "中美贸易战缓和 + LPR改革降息 + 逆周期调节加码",
+        "essence": "贸易战缓和 + LPR 改革降息，逆周期加码",
         "key_indicators": {"gdp_growth": 6.2, "cpi": 2.7, "pmi": 49.4}
     },
     # 第2轮：2018-02 → 2019-06 衰退
@@ -96,6 +102,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 6.0,
         "cycle_label": "第2轮",
         "trigger": "金融去杠杆 + 中美贸易战开打 + 民企违约潮",
+        "essence": "金融去杠杆 + 贸易战开打，民企违约潮",
         "key_indicators": {"gdp_growth": 6.8, "cpi": 1.5, "ppi": 6.9}
     },
     # 第2轮：2016-08 → 2018-02 过热
@@ -109,6 +116,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 44.3,
         "cycle_label": "第2轮",
         "trigger": "供给侧改革 + 房地产去库存 + PPI由负转正加速上行",
+        "essence": "供给侧改革 + 去库存，PPI 由负转正",
         "key_indicators": {"gdp_growth": 6.7, "cpi": 1.3, "ppi": -0.8}
     },
     # 第2轮：2013-01 → 2016-08 复苏
@@ -122,6 +130,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 5.5,
         "cycle_label": "第2轮",
         "trigger": "十八大后稳增长政策 + 降息降准 + 棚改货币化启动",
+        "essence": "稳增长 + 降息降准，棚改货币化启动",
         "key_indicators": {"gdp_growth": 7.7, "cpi": 2.0, "pmi": 50.4}
     },
     # ─── 第1轮：2012-08 → 2013-01 衰退 ───
@@ -135,6 +144,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 12.6,
         "cycle_label": "第1轮",
         "trigger": "欧债危机深化 + 国内产能过剩 + 出口大幅下滑",
+        "essence": "欧债危机深化 + 产能过剩，出口下滑",
         "key_indicators": {"gdp_growth": 7.6, "cpi": 1.8, "pmi": 49.2}
     },
     # 第1轮：2011-07 → 2012-08 滞胀
@@ -148,6 +158,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 5.6,
         "cycle_label": "第1轮",
         "trigger": "四万亿后遗症显现 + CPI破6.5% + 央行密集加息",
+        "essence": "四万亿后遗症 + CPI 破 6.5%，加息周期",
         "key_indicators": {"gdp_growth": 9.5, "cpi": 6.5, "pmi": 50.7}
     },
     # 第1轮：2010-02 → 2011-07 过热
@@ -161,6 +172,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 12.6,
         "cycle_label": "第1轮",
         "trigger": "四万亿全面生效 + GDP反弹至10.6% + 通胀快速攀升",
+        "essence": "四万亿全面生效，GDP 破 10% 通胀起",
         "key_indicators": {"gdp_growth": 10.6, "cpi": 1.5, "pmi": 55.8}
     },
     # 第1轮：2009-01 → 2010-02 复苏
@@ -174,6 +186,7 @@ HISTORICAL_TRANSITIONS = [
         "duration_months": 3.6,
         "cycle_label": "第1轮",
         "trigger": "全球金融危机冲击（GDP跌至6.4%）→ 四万亿刺激 + 十大产业振兴",
+        "essence": "四万亿 + 产业振兴，强力反弹",
         "key_indicators": {"gdp_growth": 6.4, "cpi": 1.0, "pmi": 45.3}
     },
 ]
@@ -218,12 +231,12 @@ CYCLE_META = [
     },
 ]
 
-# ===== 每轮起点阶段的触发原因 (V4.0.7 补全 build_timeline 的起点 trigger 缺口) =====
+# ===== 每轮起点阶段的触发原因 (V4.0.7 补全 build_timeline 的起点 trigger 缺口; V4.0.8 精炼为本周期凝练要点) =====
 START_STAGE_TRIGGERS = {
-    "第4轮": "地产深度调整 + 居民资产负债表收缩 + 地方债务风险（2022-2024 衰退）",
-    "第3轮": "新冠疫情冲击（2020Q1 GDP -6.8%）→ 全国停摆 + 需求骤降",
-    "第2轮": "四万亿后遗症显现 + 欧债危机深化 + 国内产能过剩",
-    "第1轮": "美国次贷危机引爆全球金融危机（2008Q4 GDP骤降）→ 出口断崖 + 股市暴跌",
+    "第4轮": "地产深度调整，资产负债表收缩期",
+    "第3轮": "疫情冲击，全国停摆需求骤降",
+    "第2轮": "四万亿后遗症 + 欧债深化",
+    "第1轮": "次贷危机引爆，出口断崖",
 }
 
 # ===== v3.22-I4: 历史周期时间轴 =====
@@ -266,6 +279,7 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
             'start': start,
             'duration_months': t.get('duration_months') or 0,
             'trigger': t.get('trigger') or '',
+            'essence': t.get('essence') or '',  # V4.0.8: 本周期本阶段凝练要点
             'from_stage': t.get('from_stage') or '',
             'from_name': t.get('from_name') or '',
             'to_stage': t.get('to_stage') or '',
@@ -306,6 +320,7 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
                     'end': first['start'][:10],
                     'duration_months': dur,
                     'trigger': START_STAGE_TRIGGERS.get(label, ''),
+                    'essence': START_STAGE_TRIGGERS.get(label, ''),  # V4.0.8: 起点阶段本周期要点
                     'from_stage': '',
                     'from_name': '',
                     'to_stage': first['from_stage'],
