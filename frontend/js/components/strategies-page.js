@@ -186,6 +186,29 @@
                             <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
+                            <!-- V4.5 (FR-4.5.1): 配置就近 -->
+                            <el-button size="small" type="primary" plain @click="merrillConfigOpen = !merrillConfigOpen">
+                                ⚙️ {{ merrillConfigOpen ? '收起配置' : '配置' }}
+                            </el-button>
+                        </div>
+                        <div class="card mt-4" v-if="merrillConfigOpen">
+                            <div class="card-title">⏱️ 美林时钟配置</div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong></span>
+                                <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">🔄 手动重评估</el-button>
+                            </div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">自动刷新</span>
+                                <el-switch v-model="merrillClockConfig.autoRefresh" @change="saveMerrillClockConfig" size="small" />
+                            </div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">刷新间隔(分钟)</span>
+                                <el-select class="w-100px" v-model="merrillClockConfig.refreshInterval" @change="saveMerrillClockConfig" size="small" :disabled="!merrillClockConfig.autoRefresh">
+                                    <el-option :value="10" label="10" />
+                                    <el-option :value="30" label="30" />
+                                    <el-option :value="60" label="60" />
+                                </el-select>
+                            </div>
                         </div>
 
                         <!-- 四阶段网格 -->
@@ -528,6 +551,7 @@
     `,
     setup() {
       const state = inject('qcState');
+      const merrillConfigOpen = Vue.ref(false);  // V4.5 (FR-4.5.1): 内联配置展开
       if (!state) return {};
       const { computed } = Vue;
 
@@ -782,7 +806,7 @@
         if (_tlObserver) { _tlObserver.disconnect(); _tlObserver = null; }
       });
 
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
         timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,

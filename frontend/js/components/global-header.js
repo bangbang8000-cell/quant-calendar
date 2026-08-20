@@ -86,9 +86,12 @@
       const state = inject('qcState');
       if (!state) return {};
       const showUserMenu = ref(false);
+      // V4.5 (FR-4.5.1): 美林时钟全局快捷入口
+      const goMerrill = () => { if (window.__quantGoPage) window.__quantGoPage('strategies', 'merrill'); };
 
       return {
         menus: state.menus,
+        goMerrill,
         currentPage: state.currentPage,
         currentSubPage: state.currentSubPage,
         currentUser: state.currentUser,
