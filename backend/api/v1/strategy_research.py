@@ -124,7 +124,11 @@ async def get_strategy_schema(sid: str, _: Dict = Depends(get_current_active_use
 @router.put('/{sid}')
 async def update_strategy(sid: str, body: Dict[str, Any],
                           _: Dict = Depends(get_current_active_user)):
-    """更新策略参数覆盖/启停"""
+    """更新策略参数覆盖/启停 — V4.0 母本制度: 内置 4 策略不可直接修改, 只能复制"""
+    import strategy_governance as _gov
+    if sid in _gov.BUILTIN_SIDS:
+        raise HTTPException(status_code=400,
+                            detail='内置策略为不可变母本, 不能直接修改; 请先复制为新策略再调整参数/代码')
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
@@ -156,7 +160,7 @@ async def run_strategy(sid: str, body: Dict[str, Any],
     try:
         # 数据门户: 真实三源优先, 不可达降级模拟
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, _ = _resolve_portal(universe=universe)
+        portal, is_real = _resolve_portal(universe=universe)
         # v3.21: 评估日支持前端传入 as_of(YYYY-MM-DD), 默认取最近交易日(数据中心最后一个交易日)
         as_of = body.get('as_of') or body.get('run_date')
         if not as_of:
@@ -175,7 +179,9 @@ async def run_strategy(sid: str, body: Dict[str, Any],
             'symbols': list(holdings.columns) if holdings is not None and len(holdings.columns) else [],
         }
         finish_run(rid, 'success', summary=summary)
-        return {'id': rid, 'status': 'success', 'summary': summary}
+        # V4.0 M1-2: 数据不可达时透出 data_degraded, 不再静默返回模拟数据
+        return {'id': rid, 'status': 'success', 'data_degraded': not is_real,
+                'summary': summary}
     except Exception as e:
         logger.exception('策略 %s 运行失败', sid)
         finish_run(rid, 'failed', error=str(e))
@@ -194,7 +200,7 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
     try:
         from strategy_sdk.backtest import backtest_holdings
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, _ = _resolve_portal(universe=universe)
+        portal, is_real = _resolve_portal(universe=universe)
         end = body.get('end_date') or '2026-08-18'
         start = body.get('start_date') or '2024-01-01'
         ctx = StrategyContext(portal=portal, params=params, as_of=end)
@@ -216,7 +222,9 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
             commission_rate=body.get('commission_rate', 0.0003),
             slippage=body.get('slippage', 0.001),
         )
-        return {'strategy_id': sid, 'params': params, 'result': result}
+        # V4.0 M1-2: 数据不可达时透出 data_degraded
+        return {'strategy_id': sid, 'params': params, 'data_degraded': not is_real,
+                'result': result}
     except Exception as e:
         logger.exception('策略 %s 回测失败', sid)
         raise HTTPException(status_code=500, detail=f'回测失败: {e}')

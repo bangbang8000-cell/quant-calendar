@@ -203,7 +203,8 @@ const allMenuDefs = [
                     backtestRunning.value = true;
                     backtestResult.value = null;
                     try {
-                        const res = await fetch('/api/backtest/' + backtestStrategy.value, {
+                        // V4.0 M1-4: 统一走策略 SDK 回测引擎(防前视/样本内外/过拟合), 旧 /api/backtest 退役
+                        const res = await fetch('/api/strategies/' + backtestStrategy.value + '/backtest', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(params),
@@ -213,17 +214,21 @@ const allMenuDefs = [
                             throw new Error(err.detail || '回测失败');
                         }
                         const data = await res.json();
-                        if (!data.success) throw new Error(data.message || '回测失败');
-                        // 归一化 summary 字段
-                        const s = data.summary || {};
+                        const r = data.result || {};
+                        if (!r.success) throw new Error(r.message || '回测失败');
+                        if (data.data_degraded) ElementPlus.ElMessage.warning('数据不可达, 结果基于降级数据');
+                        // 归一化 SDK 回测字段(比率×100 为百分比)
                         backtestResult.value = {
-                            total_return_pct: (s.total_return_pct ?? s.total_return ?? 0).toFixed(2),
-                            annual_return_pct: (s.annual_return_pct ?? s.annual_return ?? 0).toFixed(2),
-                            max_drawdown_pct: (s.max_drawdown_pct ?? s.max_drawdown ?? 0).toFixed(2),
-                            sharpe_ratio: (s.sharpe_ratio ?? 0).toFixed(2),
-                            message: data.message || '',
+                            total_return_pct: ((r.total_return ?? 0) * 100).toFixed(2),
+                            annual_return_pct: ((r.annual_return ?? 0) * 100).toFixed(2),
+                            max_drawdown_pct: ((r.max_drawdown ?? 0) * 100).toFixed(2),
+                            sharpe_ratio: (r.sharpe_ratio ?? 0).toFixed(2),
+                            win_rate: ((r.win_rate ?? 0) * 100).toFixed(2),
+                            out_sample: r.outsample_total_return === undefined ? '' : ((r.outsample_total_return ?? 0) * 100).toFixed(2),
+                            overfit_warning: r.overfit_warning || false,
+                            message: r.message || '',
                         };
-                        renderBacktestChart(data.equity_curve);
+                        renderBacktestChart(r.equity_curve);
                         ElementPlus.ElMessage.success('回测完成');
                     } catch (e) {
                         ElementPlus.ElMessage.error(e.message || '回测失败');

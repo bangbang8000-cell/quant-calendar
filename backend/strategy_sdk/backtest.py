@@ -84,6 +84,13 @@ def backtest_holdings(holdings: pd.DataFrame,
                                 lambda pct: metrics["annual_return"] * (1 + pct))
     overfit = overfitting_assessment(in_metrics, out_metrics, sens)
 
+    # 净值曲线(累计净值, 供前端图表) — V4.0 M1-4 回测统一
+    equity_curve = []
+    _acc = 1.0
+    for _r in net_returns:
+        _acc *= (1.0 + _r)
+        equity_curve.append(round(_acc, 6))
+
     return {
         "success": True,
         "total_return": metrics["total_return"],
@@ -92,6 +99,7 @@ def backtest_holdings(holdings: pd.DataFrame,
         "volatility": metrics["volatility"],
         "sharpe_ratio": metrics["sharpe_ratio"],
         "win_rate": metrics["win_rate"],
+        "equity_curve": equity_curve,
         "total_days": len(net_returns),
         "insample_total_return": in_metrics["total_return"],
         "outsample_total_return": out_metrics["total_return"],

@@ -18,7 +18,9 @@ class StubSource:
 
     def get_kline_data(self, ts_code, period='daily', limit=60):
         self.calls.append(('kline', ts_code))
-        dates = ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"]
+        # 含序列起点(06-01)之前的日期, 供无未来函数测试
+        dates = ["2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02",
+                 "2026-06-03", "2026-06-04"]
         data = []
         base = 10.0
         for i, d in enumerate(dates):
@@ -30,9 +32,21 @@ class StubSource:
         self.calls.append(('basic', ts_code))
         return [{"trade_date": "2026-06-04", "pe": 15.0, "pb": 2.0, "circ_mv": 3.0e6}]
 
+    def get_daily_basic_series(self, ts_code, limit=20):
+        """历史序列(旧→新, 含 circ_mv) — V4.0 M1-2 序列合并"""
+        self.calls.append(('basic_series', ts_code))
+        return [
+            {"trade_date": "2026-06-01", "pe": 14.0, "pb": 1.9, "circ_mv": 2.9e6},
+            {"trade_date": "2026-06-02", "pe": 14.5, "pb": 1.95, "circ_mv": 2.95e6},
+            {"trade_date": "2026-06-03", "pe": 15.0, "pb": 2.0, "circ_mv": 3.0e6},
+        ]
+
     def get_moneyflow(self, ts_code, limit=10):
         self.calls.append(('moneyflow', ts_code))
-        return [{"trade_date": "2026-06-04", "main_net_inflow": 5.0e6}]
+        return [
+            {"trade_date": "2026-06-02", "main_net_inflow": 4.0e6},
+            {"trade_date": "2026-06-03", "main_net_inflow": 5.0e6},
+        ]
 
     def get_financial_data(self, ts_code):
         return []
@@ -103,6 +117,28 @@ def test_get_panel_empty_on_source_failure():
     panel = portal.get_panel(["close"], start="2026-06-01", end="2026-06-04",
                              universe=["000001.SZ"])
     assert panel is None or panel.empty
+
+
+def test_series_merge_no_lookahead():
+    """V4.0 M1-2: 估值/资金流历史序列按日合并, 无未来函数 — 序列起点之前的面板日期为 NaN"""
+    from strategy_sdk.data_portal import RealDataPortal
+    src = StubSource()
+    portal = RealDataPortal(source=src)
+    # 序列起点 2026-06-01; 面板延伸到 05-28(序列之前) → 05-28 应为 NaN(非未来值)
+    panel = portal.get_panel(["pe", "main_net_inflow"], start="2026-05-28", end="2026-06-04",
+                             universe=["000001.SZ"])
+    panel = panel.sort_index()
+    pe_by_date = panel["pe"].groupby(level=0).first()
+    flow_by_date = panel["main_net_inflow"].groupby(level=0).first()
+    assert str(pe_by_date.index[0])[:10] == "2026-05-28"
+    assert pd.isna(pe_by_date.loc["2026-05-28"]), "序列起点之前不应有估值(未来信息泄漏)"
+    assert pd.isna(pe_by_date.loc["2026-05-29"]), "序列起点之前不应有估值(未来信息泄漏)"
+    # 序列起点后按日取值/向前填充
+    assert abs(pe_by_date.loc["2026-06-01"] - 14.0) < 1e-6, "2026-06-01 应为序列当日值"
+    assert abs(pe_by_date.loc["2026-06-04"] - 15.0) < 1e-6, "2026-06-04 应为序列末值向前填充"
+    assert abs(flow_by_date.loc["2026-06-02"] - 4.0e6) < 1e-6, "2026-06-02 应为资金流当日值"
+    assert abs(flow_by_date.loc["2026-06-03"] - 5.0e6) < 1e-6, "2026-06-03 应为资金流当日值"
+    assert pd.isna(flow_by_date.loc["2026-06-01"]), "资金流起点之前应为 NaN"
 
 
 def test_float_mv_mapped_from_circ_mv():

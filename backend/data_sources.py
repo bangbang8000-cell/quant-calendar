@@ -702,10 +702,10 @@ class DataSourceManager:
             try:
                 if src_name == 'sxsc_tushare':
                     df = api.query('daily_basic', ts_code=ts_code, limit=limit,
-                                   fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                   fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
                 else:
                     df = api.daily_basic(ts_code=ts_code, limit=limit,
-                                         fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                         fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             except Exception:
                 return []
             if df is None or len(df) == 0:
@@ -937,7 +937,7 @@ class DataSourceManager:
             if not api:
                 return None
             df = api.query('daily_basic', ts_code=ts_code, limit=limit,
-                           fields='trade_date,pe,pb,turnover_rate,total_mv')
+                           fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             if df is None or len(df) == 0:
                 return None
             return df.iloc[0].to_dict()
@@ -947,7 +947,7 @@ class DataSourceManager:
             if not pro:
                 return None
             df = pro.daily_basic(ts_code=ts_code, limit=limit,
-                                 fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                 fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             if df is None or len(df) == 0:
                 return None
             return df.iloc[0].to_dict()
