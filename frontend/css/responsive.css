@@ -184,7 +184,7 @@
     min-height: 48px;
     cursor: pointer;
     color: var(--text-tertiary);
-    transition: color 0.2s;
+    transition: color 0.2s ease-out;
   }
   .mobile-nav-item.active {
     color: var(--primary-color);
@@ -376,7 +376,7 @@
     align-items: center;
     flex: 1;
     min-width: 0;
-    transition: transform 0.25s ease;
+    transition: transform 0.2s ease;
   }
   .watchlist-item.swipe-reveal .swipe-reveal-actions {
     position: absolute;
@@ -390,7 +390,7 @@
     background: var(--bg-card-header);
     border-left: 1px solid var(--border-light);
     transform: translateX(100%);
-    transition: transform 0.25s ease;
+    transition: transform 0.2s ease;
   }
   .watchlist-item.swipe-reveal.swipe-open .swipe-reveal-main {
     transform: translateX(-88px);

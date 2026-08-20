@@ -603,7 +603,7 @@
             background: var(--gradient);
             color: var(--text-primary);
             min-height: 100vh;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         /* ===== 桌面端布局: 左侧导航 + 右侧内容 */
@@ -666,7 +666,7 @@
             border-radius: 10px;
             margin-bottom: 4px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
             color: var(--text-secondary);
             font-size: var(--font-base);
             font-weight: var(--font-medium);
@@ -816,7 +816,7 @@
             color: var(--text-secondary);
             cursor: pointer;
             border-bottom: 3px solid transparent;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
         }
         .mobile-nav-label {
             font-size: var(--font-xs);
@@ -850,7 +850,7 @@
             margin-bottom: 8px;
             background: var(--bg-card-header);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1216,7 +1216,7 @@
             font-size: var(--font-base);
             font-weight: var(--font-medium);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
             color: var(--text-secondary);
         }
         .view-btn.active {
@@ -1240,7 +1240,7 @@
             cursor: pointer;
             background: var(--bg-hover);
             color: var(--text-secondary);
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
             white-space: nowrap;
         }
         .status-tab .count {
@@ -1309,7 +1309,7 @@
             text-align: center;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
         }
         .theme-item.active {
             border-color: var(--primary-color);
@@ -1347,7 +1347,7 @@
             align-items: center;
             gap: 16px;
             box-shadow: var(--shadow-lg);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .stat-card:hover {
             transform: translateY(-2px);
@@ -1454,7 +1454,7 @@
             height: 100%;
             background: var(--gradient);
             border-radius: 4px;
-            transition: width 0.8s ease;
+            transition: width 0.2s ease;
         }
         .time-bar-info {
             font-size: var(--font-xs);
@@ -1593,7 +1593,7 @@
             height: 100%;
             background: var(--gradient);
             border-radius: 4px;
-            transition: width 0.5s ease;
+            transition: width 0.2s ease;
         }
 
         /* 共识度排行 */
@@ -1749,7 +1749,7 @@
             padding: 8px 8px;
             cursor: pointer;
             border-radius: 4px;
-            transition: background 0.15s;
+            transition: background 0.2s ease-out;
         }
         .watchlist-search-item:hover { background: var(--bg-hover); }
         .watchlist-add-hint { color: var(--primary-color); font-size: var(--font-sm); }
@@ -1768,7 +1768,7 @@
             padding: 8px 8px;
             border-bottom: 1px solid var(--border-light);
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.2s ease-out;
             border-radius: 6px;
         }
         .watchlist-item:hover { background: var(--bg-hover); }
@@ -1784,7 +1784,7 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
         }
         .watchlist-item-selected .watchlist-checkbox {
             background: var(--primary-color);
@@ -1925,7 +1925,7 @@
             justify-content: center;
             font-weight: bold;
             color: var(--white);
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
         }
         .checkbox-inner.checked {
             background: var(--primary-color);
@@ -2063,7 +2063,7 @@
         .stock-group-expand {
             color: var(--text-tertiary);
             font-size: var(--font-md);
-            transition: transform 0.2s;
+            transition: transform 0.2s ease-out;
         }
         .stock-group-expand.rotated {
             transform: rotate(180deg);
@@ -2077,7 +2077,7 @@
             gap: 8px;
             padding: 12px 0;
             border-bottom: 1px solid var(--border-light);
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
         }
         .group-record-item:last-child {
             border-bottom: none;
@@ -2164,7 +2164,7 @@
     
     /* ===== 市场行情卡片 ===== */
     .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-    .market-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+    .market-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 16px; transition: all 0.2s ease; }
     .market-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-up) 15%, transparent); }
     .market-card.up { border-left: 4px solid var(--primary-color); }
     .market-card.down { border-left: 4px solid var(--color-down); }
@@ -2238,7 +2238,7 @@
         border-radius: 12px;
         padding: 12px 10px;
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: all 0.2s ease;
         text-align: center;
     }
     .merrill-stage-card:hover {
@@ -2286,7 +2286,7 @@
         border-radius: 4px; overflow: hidden;
     }
     .merrill-progress-bar {
-        height: 100%; border-radius: 4px; transition: width 0.5s ease;
+        height: 100%; border-radius: 4px; transition: width 0.2s ease;
     }
     .merrill-progress-footer {
         display: flex; justify-content: space-between;
@@ -2312,7 +2312,7 @@
         border-radius: 5px; overflow: hidden;
     }
     .merrill-dim-bar {
-        height: 100%; border-radius: 5px; transition: width 0.5s ease;
+        height: 100%; border-radius: 5px; transition: width 0.2s ease;
     }
     .merrill-dim-score {
         width: 35px; text-align: right; font-weight: var(--font-medium);
@@ -2601,7 +2601,7 @@ text {
 .ai-eval-btn {
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     min-height: 42px;
 }
 
@@ -2659,7 +2659,7 @@ text {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-size: var(--font-xs);
 }
 /* v3.15 (15.3): 阶段文案 + 实时已用秒数 */
@@ -2724,7 +2724,7 @@ text {
     width: 36px;
     height: 3px;
     background: var(--border-base);
-    transition: background 0.4s ease;
+    transition: background 0.2s ease;
 }
 .ai-stage-line.done {
     background: var(--color-success);
@@ -2918,7 +2918,7 @@ text {
     background: var(--bg-card);
     border-radius: 12px;
     border: 1px solid var(--border-light);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .status-item:hover {
@@ -3332,7 +3332,7 @@ text {
     padding: 16px;
     margin-bottom: 12px;
     border: 1px solid var(--border-base);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .user-card-enhanced:hover {
@@ -3637,7 +3637,7 @@ text {
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease-out;
     color: var(--text-secondary);
     font-size: var(--font-base);
     font-weight: var(--font-medium);
@@ -3663,7 +3663,7 @@ text {
     cursor: pointer;
     padding: 4px 12px;
     border-radius: 10px;
-    transition: background 0.2s;
+    transition: background 0.2s ease-out;
     flex-shrink: 0;
 }
 .user-menu-wrapper:hover {
@@ -3706,7 +3706,7 @@ text {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.15s;
+    transition: background 0.2s ease-out;
 }
 .user-menu-item:hover {
     background: rgba(var(--primary-rgb), 0.08);
@@ -3824,13 +3824,13 @@ text {
     background: var(--bg-card); border: 1px solid var(--border-light);
     box-shadow: var(--shadow-sm);
     cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 101;
-    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    transition: background 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 .sidebar-collapse-btn::before {
     content: ''; width: 5px; height: 5px; border-radius: 50%;
     background: var(--text-tertiary);
     box-shadow: 0 10px 0 var(--text-tertiary), 0 -10px 0 var(--text-tertiary);
-    transition: background 0.2s, box-shadow 0.2s;
+    transition: background 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 .sidebar-collapse-btn:hover {
     background: var(--primary-color); border-color: var(--primary-color);
@@ -3864,7 +3864,7 @@ text {
 .shortcut-desc { color: var(--text-secondary); font-size: var(--font-sm); }
 /* v3.2.0-T22: 首次引导 */
 .tour-dialog .el-dialog__header { display: none; }
-.tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); display: inline-block; transition: background 0.2s, transform 0.2s; }
+.tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); display: inline-block; transition: background 0.2s ease-out, transform 0.2s ease-out; }
 .tour-dot.active { background: var(--primary-color); transform: scale(1.2); }
 /* v3.2.0-T13: 浮动 AI 按钮 */
 .ai-fab {
@@ -3873,7 +3873,7 @@ text {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark, var(--primary-color)));
     box-shadow: var(--shadow-md); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 .ai-fab:hover { transform: scale(1.08); box-shadow: var(--shadow-lg); }
 .ai-fab-icon { font-size: 26px; line-height: 1; }
@@ -4503,7 +4503,7 @@ text {
 .grid-auto-fit-240 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .group-border-card { border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 8px; }
 .group-title-click { flex:1; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.group-toggle-arrow { color: var(--text-tertiary); transition: transform 0.2s; }
+.group-toggle-arrow { color: var(--text-tertiary); transition: transform 0.2s ease-out; }
 .h-calc-240 { height: calc(100vh - 240px); }
 .h-calc-250 { height: calc(100vh - 250px); }
 .h-calc-260 { height: calc(100vh - 260px); }
@@ -4537,7 +4537,7 @@ text {
 .menu-item-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .menu-item-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-hover); cursor: pointer; user-select: none; gap: 8px; }
 .menu-sub-row { padding: 8px 14px 10px 40px; display: flex; gap: 8px; flex-wrap: wrap; }
-.merrill-dim-fill { height: 100%; border-radius: 7px; transition: width 0.5s; }
+.merrill-dim-fill { height: 100%; border-radius: 7px; transition: width 0.2s ease-out; }
 .merrill-dim-row { padding: 8px 12px; margin-bottom: 8px; border-radius: 8px; background: var(--bg-card-header); border-left: 3px solid; }
 .merrill-dim-track { flex: 1; height: 14px; background: var(--border-light); border-radius: 7px; overflow: hidden; }
 .merrill-dim-value { width: 40px; text-align: right; font-weight: var(--font-medium); }
@@ -4582,11 +4582,11 @@ text {
 .panel-card { background:var(--bg-card-header);border-radius:10px;padding:16px;margin-bottom:16px; }
 .panel-title { font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom: 8px; }
 .panel-title-mb8 { font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px; }
-.progress-fill-4 { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.progress-fill-4 { height: 100%; border-radius: 4px; transition: width 0.2s ease-out; }
 .progress-track-6 { height:6px;background:var(--border-light);border-radius:3px;overflow:hidden; }
 .progress-track-8 { width: 100%; height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden; }
 .rec-card { background: var(--bg-card-header); border-radius: 10px; padding: 12px; }
-.recent-card { flex:0 0 220px;background:var(--bg-card-header);border-radius:10px;padding: 12px;cursor:pointer;border:1px solid var(--border-light);transition:all 0.2s; }
+.recent-card { flex:0 0 220px;background:var(--bg-card-header);border-radius:10px;padding: 12px;cursor:pointer;border:1px solid var(--border-light);transition:all 0.2s ease-out; }
 .records-indent { padding: 4px 0 4px 34px; }
 .records-indent-sm { padding: 4px 0 4px 12px; }
 .result-box { font-size: var(--font-base); margin-bottom: 8px; padding: 8px 12px; background: var(--el-fill-color-light); border-radius: 6px; }
@@ -4613,7 +4613,7 @@ text {
 .sys-health-row:first-of-type { border-top: 0; }
 .sys-health-meta { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .meter-bar { height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; margin-top: 8px; }
-.meter-fill { height: 100%; border-radius: 999px; background: var(--color-primary); transition: width .3s ease; }
+.meter-fill { height: 100%; border-radius: 999px; background: var(--color-primary); transition: width 0.2s ease; }
 .chip-warning { background: var(--badge-warning-bg); color: var(--el-warning); padding: 4px 10px; border-radius: 12px; font-size: var(--font-sm); }
 .chip-danger { background: var(--badge-danger-bg); color: var(--el-danger); padding: 4px 10px; border-radius: 12px; font-size: var(--font-sm); }
 .rank-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
@@ -4690,7 +4690,7 @@ text {
 /* ===== 系统状态/资源监控/数据源健康 视觉统一 (v3.18.3) ===== */
 /* 系统状态概览卡: 左侧渐变强调条 + 悬停微动效 */
 .status-item { position: relative; overflow: hidden; }
-.status-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); opacity: 0; transition: opacity .25s ease; }
+.status-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); opacity: 0; transition: opacity 0.2s ease; }
 .status-item:hover::before { opacity: 1; }
 .status-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border-base); }
 .status-icon { background: var(--bg-card-header); transition: background .2s ease; }
@@ -4727,7 +4727,7 @@ text {
 .stat-card-primary { cursor:pointer; border-left: 3px solid var(--color-primary); }
 .stat-card-success { cursor:pointer; border-left: 3px solid var(--el-success); }
 .stat-card-warning { cursor:pointer; border-left: 3px solid var(--el-warning); }
-.stat-fill-5 { height: 100%; border-radius: 5px; transition: width 0.5s; }
+.stat-fill-5 { height: 100%; border-radius: 5px; transition: width 0.2s ease-out; }
 .stat-icon-gold { background: var(--badge-gold-bg); color: var(--color-gold); }
 .stat-icon-info { background: var(--badge-info-bg); color: var(--color-primary); }
 .stat-icon-info-hover { background: var(--bg-hover); color: var(--el-info); }
@@ -4834,7 +4834,7 @@ text {
 .text-xs-tertiary-mt8 { font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 8px; }
 .text-xs-tertiary-nowrap { font-size:var(--font-xs);color:var(--text-tertiary);white-space:nowrap; }
 .theme-color-ai { background: linear-gradient(135deg, var(--color-ai), var(--color-ai)); }
-.transition-08 { transition:all 0.8s ease; }
+.transition-08 { transition:all 0.2s ease; }
 .trend-chart-box { width:100%;height:200px;margin-bottom:8px;border:1px solid var(--border-light);border-radius:8px; }
 .version-badge { font-size: var(--font-lg); font-weight: var(--font-semibold); background: var(--gradient-brand); color: white; padding: 4px 16px; border-radius: 12px; }
 .vlist-h-calc { height: calc(100vh - 320px); min-height: 200px; }

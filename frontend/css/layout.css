@@ -286,7 +286,7 @@
   font-size: 12px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: box-shadow 0.15s, transform 0.15s, opacity 0.15s;
+  transition: box-shadow 0.2s ease-out, transform 0.2s ease-out, opacity 0.2s ease-out;
   white-space: nowrap;
   max-width: 100%;
   overflow: hidden;
