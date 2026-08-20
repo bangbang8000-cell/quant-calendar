@@ -73,6 +73,11 @@ def test_lock_matches_in_no_drift():
     env = {k: v for k, v in os.environ.items() if not k.lower().endswith('proxy')}
     env['no_proxy'] = '*'
     env['NO_PROXY'] = '*'
+    # 只读根文件系统/容器环境: uv 默认缓存 ~/.cache/uv 不可写会直接失败 → 重定向到可写临时目录
+    default_cache = os.path.join(os.path.expanduser('~'), '.cache', 'uv')
+    if os.path.exists(default_cache) and not os.access(default_cache, os.W_OK):
+        import tempfile
+        env.setdefault('UV_CACHE_DIR', tempfile.mkdtemp(prefix='qc-uv-cache-'))
     subprocess.run(['uv', 'pip', 'compile', '--universal', '--python-version', '3.11',
                     '-q', '-o', out, os.path.join(BASE, 'requirements.in')],
                    check=True, capture_output=True, env=env)

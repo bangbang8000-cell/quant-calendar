@@ -25,7 +25,7 @@ fi
 # ② 运行数据扫描 (仅针对待提交文件路径)
 echo "── 扫描运行数据文件..."
 STAGED=$(cd "$REPO_DIR" && git diff --cached --name-only 2>/dev/null; git diff --name-only 2>/dev/null)
-BAD=$(echo "$STAGED" | grep -E "(^|/)data/|(^|/)qresult/|holdings/|(^|/)\.env$|(^|/)\.env\.|\.db$|\.log$|(^|/)datasource_config\.json$|strategy_governance\.json$" | head -20)
+BAD=$(echo "$STAGED" | grep -E "(^|/)data/|(^|/)qresult/|holdings/|(^|/)\.env$|(^|/)\.env\.local$|(^|/)\.env\.production$|\.db$|\.log$|(^|/)datasource_config\.json$|strategy_governance\.json$" | grep -vE "\.env\.(example|template)$" | head -20)
 if [ -n "$BAD" ]; then
     echo "❌ 待提交含运行数据/密钥文件:"
     echo "$BAD"

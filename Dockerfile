@@ -1,5 +1,5 @@
 # 量化选股日历 Docker 镜像
-# 构建: cd <仓库目录> && docker build -t quant-calendar:2.1.2 .
+# 构建: cd <仓库目录> && docker build -t quant-calendar:3.22.1 .
 # 不包含任何 Token/密钥，所有配置通过 Web UI 在容器启动后设置
 
 FROM python:3.11-slim
