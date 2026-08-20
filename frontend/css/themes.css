@@ -304,6 +304,10 @@
             --bg-input: #233554; --bg-hover: #233554;
             --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #15153a;
             --border-light: #1e2a4a; --border-base: #233554; --border-heavy: #3a4a6a;
+            /* V4.0.2 毛玻璃深色浮层 */
+            --glass-bg: rgba(26, 26, 62, 0.72);
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.4);
             --gradient-brand: linear-gradient(135deg, #64ffda 0%, #5e6ad2 100%);
             --badge-success-bg: #0a2e1a; --badge-success-text: #64ffda;
@@ -348,8 +352,8 @@
         }
         /* 🌙 暗色专业版 - Element Plus 组件暗黑覆盖 */
         [data-theme="dark-pro"] .el-dialog {
-            background: #1a1a3e !important;
-            border: 1px solid #233554 !important;
+            background: var(--glass-bg, rgba(26,26,62,0.72)) !important;
+            border: 1px solid var(--glass-border, rgba(255,255,255,0.10)) !important;
         }
         [data-theme="dark-pro"] .el-dialog__header {
             border-bottom: 1px solid #233554 !important;
@@ -374,7 +378,7 @@
             background-color: #15153a !important;
         }
         [data-theme="dark-pro"] .el-dropdown-menu {
-            background-color: #1a1a3e !important; border-color: #233554 !important;
+            background-color: var(--glass-bg, rgba(26,26,62,0.72)) !important; border-color: var(--glass-border, rgba(255,255,255,0.10)) !important;
         }
         [data-theme="dark-pro"] .el-dropdown-menu__item {
             color: #8892b0 !important;
@@ -390,7 +394,7 @@
             background-color: #64ffda !important; color: #0f0f23 !important;
         }
         [data-theme="dark-pro"] .el-message-box {
-            background-color: #1a1a3e !important; border-color: #233554 !important;
+            background-color: var(--glass-bg, rgba(26,26,62,0.72)) !important; border-color: var(--glass-border, rgba(255,255,255,0.10)) !important;
         }
         [data-theme="dark-pro"] .el-message-box__title { color: #e6f1ff !important; }
         [data-theme="dark-pro"] .el-message-box__message { color: #8892b0 !important; }
@@ -407,8 +411,8 @@
         [data-theme="dark-pro"] .el-picker-panel,
         [data-theme="dark-pro"] .el-date-picker,
         [data-theme="dark-pro"] .el-date-range-picker {
-            background-color: #1a1a3e !important;
-            border-color: #233554 !important;
+            background-color: var(--glass-bg, rgba(26,26,62,0.72)) !important;
+            border-color: var(--glass-border, rgba(255,255,255,0.10)) !important;
         }
         [data-theme="dark-pro"] .el-picker-panel__icon-btn,
         [data-theme="dark-pro"] .el-date-table th,
@@ -429,8 +433,8 @@
         }
         /* select 下拉面板 */
         [data-theme="dark-pro"] .el-select-dropdown {
-            background-color: #1a1a3e !important;
-            border-color: #233554 !important;
+            background-color: var(--glass-bg, rgba(26,26,62,0.72)) !important;
+            border-color: var(--glass-border, rgba(255,255,255,0.10)) !important;
         }
         [data-theme="dark-pro"] .el-select-dropdown__item {
             color: #8892b0 !important;

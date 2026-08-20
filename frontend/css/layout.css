@@ -393,3 +393,41 @@
 .w-full { width: 100%; }
 .custom-bt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-4); margin-top: var(--sp-4); }
 .custom-bt-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-2); padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-1); }
+
+/* ─── V4.0.2 毛玻璃 Glassmorphism — 浮层类 (方案A: dialog/message-box/dropdown/select/picker/notification/tooltip) ───
+   backdrop-filter 需背景半透明才透出底层; 深色覆盖在 themes.css dark-pro 中设置 --glass-bg/--glass-border */
+.el-dialog,
+.el-message-box,
+.el-dropdown-menu,
+.el-select-dropdown,
+.el-picker-panel,
+.el-date-picker,
+.el-date-range-picker,
+.el-notification,
+.el-tooltip__popper,
+.tl-tooltip {
+  -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
+  backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
+}
+.el-dialog,
+.el-message-box {
+  background: var(--glass-bg, rgba(255,255,255,0.72)) !important;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.35)) !important;
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0,0,0,0.10)) !important;
+}
+.el-dropdown-menu,
+.el-select-dropdown,
+.el-picker-panel,
+.el-date-picker,
+.el-date-range-picker {
+  background: var(--glass-bg, rgba(255,255,255,0.72)) !important;
+  border-color: var(--glass-border, rgba(255,255,255,0.35)) !important;
+}
+/* el-message / el-notification 保留类型色(成功/警告/错误), 仅加模糊不覆盖背景 */
+.el-message,
+.el-notification { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+/* 时间轴 hover 浮层: 半透明 + 模糊 */
+.tl-tooltip {
+  background: var(--glass-bg, rgba(255,255,255,0.85)) !important;
+  border-color: var(--glass-border, rgba(255,255,255,0.35)) !important;
+}
