@@ -3,7 +3,7 @@
   const { ref } = Vue;
 
   const ICON_MAPS = {
-    emoji:  { strategies:'📈', calendar:'🗓️', ai:'🤖', research:'🔬', system:'⚙️' },
+    emoji:  { strategies:'📈', calendar:'🗓', ai:'🤖', research:'🔬', system:'⚙' },
     ink:    { strategies:'策', calendar:'历', ai:'智', research:'研', system:'设' },
     edge:   {
       strategies:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="7"/><line x1="16" y1="20" x2="16" y2="3"/></svg>',

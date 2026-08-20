@@ -20,7 +20,7 @@
   const assetNames = {
     stock: '📈 股票',
     bond: '📜 债券',
-    commodity: '🛢️ 大宗商品',
+    commodity: '🛢 大宗商品',
     cash: '💰 现金'
   };
 

@@ -466,7 +466,7 @@ async function updateEvalComparison(stockCode, currentResult) {
     } catch(e) { console.warn('[refreshStrategyData] autoPoll failed:', e); }
 }
 
-// 操作检查清单：根据评估维度生成 ✅⚠️❌
+// 操作检查清单：根据评估维度生成 ✅⚠❌
 function updateChecklist(result) {
     const dims = result.result?.dimensions || {};
     const items = [];

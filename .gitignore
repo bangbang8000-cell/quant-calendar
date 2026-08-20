@@ -83,3 +83,6 @@ htmlcov/
 # 仅入库基线 baseline/ (参考截图)
 tests/e2e/screenshots/current/
 tests/e2e/reports/
+
+# V4.6: 归档文档(旧版本) 本地保留, 不同步 GitHub
+docs/archive/

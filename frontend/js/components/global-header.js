@@ -61,7 +61,7 @@
             <span class="info-chip-xs" v-if="currentUser?.role === 'guest'">访客</span>
             <span class="text-xs-tertiary">▼</span>
             <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop role="menu">
-              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">⚙️ 重新运行初始化向导</div>
+              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">⚙ 重新运行初始化向导</div>
               <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" tabindex="0" role="menuitem" @click="showUserMenu = false; showChangePassword = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🔑 修改密码</div>
               <div class="user-menu-divider"></div>
               <div class="user-menu-section-title">🎨 切换主题</div>

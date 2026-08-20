@@ -9,7 +9,7 @@
   window.__quantComponents.ShortcutHelpDialog = {
     name: 'qc-shortcut-help-dialog',
     template: `
-        <el-dialog v-model="shortcutHelpVisible" title="⌨️ 键盘快捷键" width="420px">
+        <el-dialog v-model="shortcutHelpVisible" title="⌨ 键盘快捷键" width="420px">
             <div class="shortcut-list">
                 <div class="shortcut-row" v-for="s in shortcutHelpItems" :key="s.keys">
                     <span class="shortcut-keys"><kbd>{{ s.keys }}</kbd></span>

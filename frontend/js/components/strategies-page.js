@@ -181,18 +181,18 @@
                     <div class="card overflow-hidden">
                         <div class="flex-between-mb16">
                             <div class="strategy-title-bar">
-                                ⏱️ 美林时钟 · 经济周期
+                                ⏱ 美林时钟 · 经济周期
                             </div>
                             <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
                             <!-- V4.5 (FR-4.5.1): 配置就近 -->
                             <el-button size="small" type="primary" plain @click="merrillConfigOpen = !merrillConfigOpen">
-                                ⚙️ {{ merrillConfigOpen ? '收起配置' : '配置' }}
+                                ⚙ {{ merrillConfigOpen ? '收起配置' : '配置' }}
                             </el-button>
                         </div>
                         <div class="card mt-4" v-if="merrillConfigOpen">
-                            <div class="card-title">⏱️ 美林时钟配置</div>
+                            <div class="card-title">⏱ 美林时钟配置</div>
                             <div class="flex-between-mb12">
                                 <span class="text-base-secondary">上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong></span>
                                 <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">🔄 手动重评估</el-button>
@@ -284,7 +284,7 @@
                         <!-- v3.22-I4 + V4.0.1: 历史周期时间轴(最近4轮, 历史在上/最新在下, 蛇形连线, hover介绍) -->
                         <div class="merrill-timeline-block">
                             <div class="merrill-timeline-head">
-                                <span>🕰️ 历史周期时间轴</span>
+                                <span>🕰 历史周期时间轴</span>
                                 <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
                                 <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
                             </div>
@@ -608,7 +608,7 @@
         }
         for (const s of health.value.filter(x => x.degraded)) {
           items.push({
-            icon: '⚠️', level: 'warn',
+            icon: '⚠', level: 'warn',
             text: `数据源 ${healthName(s.name)} degraded（连续失败）`,
             action: () => { if (window.__quantGoPage) window.__quantGoPage('system', ''); else { state.currentPage.value = 'system'; } },
           });

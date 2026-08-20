@@ -17,7 +17,7 @@
                                 {{ t('ai.batchEval') }}
                             </el-button>
                             <el-button size="small" @click="showAutoEvaluateSettings = true">
-                                <span class="mr-4">⚙️</span>{{ t('ai.autoEval') }}
+                                <span class="mr-4">⚙</span>{{ t('ai.autoEval') }}
                             </el-button>
                         </div>
 
@@ -254,7 +254,7 @@
                                     <el-button size="small" @click="selectAllHistory">{{ selectedHistoryIds.length === aiHistory.length ? '取消全选' : '全选' }}</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="batchReevaluateHistory">🔄 再次评估</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" type="success" @click="batchAddToWatchlist">⭐ 加入自选</el-button>
-                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="danger" @click="deleteSelectedHistory">🗑️ 批量删除</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="danger" @click="deleteSelectedHistory">🗑 批量删除</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="clearSelection">取消选择</el-button>
                                 </div>
                             </div>
@@ -398,7 +398,7 @@
                                 </div>
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllChatSessions">{{ selectedChatIds.length === allChatSessionsFlat.length ? '取消全选' : '全选' }}</el-button>
-                                    <el-button v-if="selectedChatIds.length > 0" size="small" type="danger" @click="deleteSelectedChatSessions">🗑️ 批量删除</el-button>
+                                    <el-button v-if="selectedChatIds.length > 0" size="small" type="danger" @click="deleteSelectedChatSessions">🗑 批量删除</el-button>
                                     <el-button v-if="selectedChatIds.length > 0" size="small" @click="selectedChatIds = []">取消选择</el-button>
                                 </div>
                             </div>
@@ -531,10 +531,10 @@
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllWatchlist">{{ selectedWatchlistCodes.length === watchlist.length ? '取消全选' : '全选' }}</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="primary" @click="batchEvaluateSelected" :disabled="aiLoading">📊 评估选中</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist">🗑️ 移除选中</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist">🗑 移除选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" @click="clearWatchlistSelection">取消选择</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="primary" @click="batchEvaluateWatchlist" :disabled="aiLoading">📊 批量评估</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="danger" @click="clearWatchlist">🗑️ 清空自选</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="danger" @click="clearWatchlist">🗑 清空自选</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length === 0" size="small" @click="preloadWatchlistKline" :loading="preloadingKline">🔄 预加载K线</el-button>
                                 </div>
                             </div>
@@ -610,11 +610,11 @@
                                         <div class="watchlist-actions">
                                             <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
                                             <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
-                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑️</el-button>
+                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑</el-button>
                                         </div>
                                         </div>
                                         <div class="swipe-reveal-actions">
-                                            <el-button size="small" type="danger" @click.stop="removeFromWatchlist(stock.code)">🗑️ 删除</el-button>
+                                            <el-button size="small" type="danger" @click.stop="removeFromWatchlist(stock.code)">🗑 删除</el-button>
                                         </div>
                                     </div>
                                     </template>
