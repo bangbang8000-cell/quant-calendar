@@ -37,28 +37,35 @@
 <details open>
 <summary><b>策略总览</b> — 今日一屏、共识榜、股票池、入池/出池统计</summary>
 <p align="center">
-  <img src="assets/screenshots/策略总览.jpg" alt="策略总览" width="90%">
+  <img src="assets/screenshots/策略总览.png" alt="策略总览" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>量化日历</b> — 日/周/月/年视图，内置 K 线</summary>
 <p align="center">
-  <img src="assets/screenshots/量化日历.jpg" alt="量化日历" width="90%">
+  <img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>AI 评估</b> — 多模型串行评估，历史追溯</summary>
 <p align="center">
-  <img src="assets/screenshots/评估历史.jpg" alt="AI评估" width="90%">
+  <img src="assets/screenshots/评估历史.png" alt="AI评估" width="90%">
 </p>
 </details>
 
 <details>
 <summary><b>系统配置</b> — 数据源管理、飞书推送、AI 模型配置</summary>
 <p align="center">
-  <img src="assets/screenshots/系统配置.jpg" alt="系统配置" width="90%">
+  <img src="assets/screenshots/系统配置.png" alt="系统配置" width="90%">
+</p>
+</details>
+
+<details>
+<summary><b>深色主题</b> — dark-pro 专业终端风格（美林时钟视图）</summary>
+<p align="center">
+  <img src="assets/screenshots/美林-dark.png" alt="深色主题" width="90%">
 </p>
 </details>
 
@@ -141,7 +148,7 @@
 quant-calendar/
 ├── README.md
 ├── DEPLOYMENT.md                ← 部署指南（dev/ops 分离/同步/更新）
-├── docs/                        ← 需求与计划（PRD-v3.17、DEV-TEST-PLAN-v3.17 等）
+├── docs/                        ← 当前文档（PRD/DEV-PLAN/TEST-PLAN v4.1-4.5、UI-ASSESSMENT-V4.6；旧版本归档于 docs/archive/ 本地保留）
 ├── backend/                     ← FastAPI 后端 (Python)
 │   ├── main_new.py              ← 主入口（APP_VERSION 单一来源）
 │   ├── merrill_clock.py         ← 美林时钟引擎（五维度评分+周期判断）
@@ -251,6 +258,12 @@ python main_new.py --port 8000
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
+| v4.6.0 | 2026-08 | 美术打磨：间距 4px 网格系统化 / 动效统一 / 排版令牌化 / 圆角阴影收敛 / 配色主题优化(主色对比度门禁) / 导航图标系统回归(emoji-edge-crystal 可切换) / 1011 测试全绿 |
+| v4.5.0 | 2026-08 | 便捷收尾：美林时钟全局快捷入口 + 配置就近 / 登录并行加载 / 按钮反馈 / ai_models.py 拆分 / CI 版本 gate / 流程脚本化 |
+| v4.4.0 | 2026-08 | 体验筑基：令牌体系补全门禁 / dark 令牌层 / WCAG 对比度 / 主题收敛 / 可访问性(WCAG 1.4.4) |
+| v4.3.0 | 2026-08 | 首屏分包：Vite 构建层 / 页面懒加载(首屏 577→367KB) / dist 入库 |
+| v4.2.0 | 2026-08 | 逻辑通畅：ops 域注入复活 / WS 依赖 / 竞态保护 / 侧栏持久化 |
+| v4.1.0 | 2026-08 | 安全加固：敏感端点 deny-by-default / SSRF / JWT 会话 / 口令策略 / 限流实化 |
 |------|------|------|
 | v3.17.3 | 2026-08 | 定版 + 系统配置页 UI 优化 + 功能配置按「模块大类-模块小类」两级重组 + SVG 图标修复 + 美林时钟弹窗闪动修复 + 侧边栏手柄优化 + i18n 国际化 + 开放 API v2 + 719 测试全绿 |
 | v3.17.2 | 2026-08 | 移动端一等公民 + PWA 离线 + 首屏 +42% + 个性化/拼音搜索 + WS 盘中实时报价 |
