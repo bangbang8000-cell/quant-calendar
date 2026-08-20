@@ -190,8 +190,8 @@
     color: var(--primary-color);
     background: transparent;
   }
-  .mobile-nav-icon { font-size: 20px; line-height: 1; }
-  .mobile-nav-label { font-size: 10px; margin-top: 4px; }
+  .mobile-nav-icon { font-size: var(--font-lg); line-height: 1; }
+  .mobile-nav-label { font-size: var(--font-xs); margin-top: 4px; }
   /* v3.8.13: 股票详情移动端 */
   .kline-dialog {
     width: 95% !important;

@@ -174,11 +174,11 @@
   margin-bottom: 12px;
 }
 .merrill-timeline-sub {
-  font-size: 12px;
+  font-size: var(--font-sm);
   font-weight: normal;
   color: var(--text-secondary);
 }
-.merrill-timeline-empty { color: var(--text-tertiary); font-size: 12px; padding: 8px 0; text-align: center; }
+.merrill-timeline-empty { color: var(--text-tertiary); font-size: var(--font-sm); padding: 8px 0; text-align: center; }
 
 /* 纵向主干: 历史(上) → 最新(下) */
 .tl-spine {
@@ -197,7 +197,7 @@
   border-radius: 2px;
 }
 .tl-spine-arrow {
-  font-size: 11px;
+  font-size: var(--font-xs);
   color: var(--text-tertiary);
   padding: 4px 0 6px;
 }
@@ -248,7 +248,7 @@
 }
 .tl-cycle-body { flex: 1; min-width: 0; position: relative; }
 .tl-cycle-label {
-  font-size: 12px;
+  font-size: var(--font-sm);
   font-weight: var(--font-semibold, 600);
   color: var(--text-secondary);
   margin-bottom: 8px;
@@ -283,7 +283,7 @@
   padding: 4px 10px;
   border-radius: 8px;
   border: 1px solid transparent;
-  font-size: 12px;
+  font-size: var(--font-sm);
   color: var(--text-primary);
   cursor: pointer;
   transition: box-shadow 0.2s ease-out, transform 0.2s ease-out, opacity 0.2s ease-out;
@@ -309,9 +309,9 @@
   flex-shrink: 0;
 }
 .merrill-stage-chip-name { font-weight: var(--font-semibold, 600); }
-.merrill-stage-chip-date { font-size: 11px; opacity: 0.85; }
+.merrill-stage-chip-date { font-size: var(--font-xs); opacity: 0.85; }
 .merrill-stage-chip-current {
-  font-size: 10px;
+  font-size: var(--font-xs);
   padding: 4px 5px;
   border-radius: 4px;
   background: var(--color-primary);
@@ -355,7 +355,7 @@
 }
 .tl-gantt-seg { height: 100%; min-width: 6px; }
 /* V4.1: 令牌纪律补类定义(utility-class 门禁) — 轮次年份 + 密钥眼睛开关 */
-.tl-cycle-years { font-size: 11px; color: var(--text-tertiary); font-weight: 400; }
+.tl-cycle-years { font-size: var(--font-xs); color: var(--text-tertiary); font-weight: 400; }
 .key-reveal-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; }
 
 /* V4.0.3: 阶段 hover 玻璃浮层 — 紧凑跟随 chip, 不再跨全宽覆盖周期图 */
@@ -377,7 +377,7 @@
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: var(--font-sm);
   line-height: 1.55;
   text-align: left;
   white-space: normal;
@@ -401,9 +401,9 @@
   margin-bottom: 4px;
 }
 .tl-tip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.tl-tip-title { font-weight: var(--font-semibold, 600); font-size: 13px; }
+.tl-tip-title { font-weight: var(--font-semibold, 600); font-size: var(--font-sm); }
 .tl-tip-current {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: var(--font-semibold, 600);
   padding: 0 5px;
   line-height: 16px;
@@ -412,7 +412,7 @@
   color: var(--white);
   flex-shrink: 0;
 }
-.tl-tip-meta { color: var(--text-secondary); font-size: 11.5px; }
+.tl-tip-meta { color: var(--text-secondary); font-size: var(--font-xs); }
 .tl-tip-sep { margin: 0 4px; opacity: 0.6; }
 .tl-tip-brief {
   margin-top: 8px;

@@ -1825,7 +1825,7 @@
             padding: 40px 20px;
             color: var(--text-tertiary);
         }
-        .watchlist-empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .watchlist-empty-icon { font-size: var(--font-3xl); margin-bottom: 12px; }
         .watchlist-empty-title { font-size: var(--font-md); color: var(--text-secondary); }
         .watchlist-empty-hint { font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 4px; }
         /* v3.17.7 实时化 (FR-3.17.7): 自选实时报价区 */
@@ -2250,7 +2250,7 @@
         transform: translateY(-1px);
         box-shadow: var(--shadow-md);
     }
-    .merrill-stage-icon { font-size: 24px; margin-bottom: 4px; }
+    .merrill-stage-icon { font-size: var(--font-xl); margin-bottom: 4px; }
     .merrill-stage-name { font-size: var(--font-base); font-weight: var(--font-semibold); margin-bottom: 4px; }
     .merrill-stage-desc { font-size: var(--font-xs); color: var(--text-tertiary); }
     
@@ -3848,7 +3848,7 @@ text {
 .sidebar.collapsed .user-info span,
 .sidebar.collapsed .sidebar-footer .user-info { display: none; }
 /* 折叠时只隐藏菜单文字，保留图标 */
-.sidebar.collapsed .nav-item .nav-icon { display: inline-flex !important; align-items: center; justify-content: center; margin-right: 0; font-size: 20px; width: 24px; height: 24px; flex-shrink: 0; }
+.sidebar.collapsed .nav-item .nav-icon { display: inline-flex !important; align-items: center; justify-content: center; margin-right: 0; font-size: var(--font-lg); width: 24px; height: 24px; flex-shrink: 0; }
 .sidebar.collapsed .nav-item .nav-icon svg { width: 20px; height: 20px; }
 .sidebar.collapsed .nav-item > span:not(.nav-icon) { display: none !important; }
 .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; gap: 0; }
@@ -3876,7 +3876,7 @@ text {
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 .ai-fab:hover { transform: scale(1.08); box-shadow: var(--shadow-lg); }
-.ai-fab-icon { font-size: 26px; line-height: 1; }
+.ai-fab-icon { font-size: var(--font-2xl); line-height: 1; }
 @media (max-width: 768px) { .ai-fab { bottom: 88px; right: 16px; } }
 .sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 .sidebar.collapsed .user-avatar { margin: 0 auto; }
@@ -3984,7 +3984,7 @@ text {
 .today-health-age { color: var(--text-secondary); font-size: var(--font-xs); }
 .today-health-age.is-stale { color: var(--color-warning); font-weight: var(--font-medium); }
 .today-health-badge {
-    padding: 4px 6px; border-radius: 8px; font-size: 10px; font-weight: var(--font-semibold);
+    padding: 4px 6px; border-radius: 8px; font-size: var(--font-xs); font-weight: var(--font-semibold);
     background: var(--badge-danger-bg); color: var(--badge-danger-text);
 }
 .today-health-badge.is-stale {
@@ -4202,7 +4202,7 @@ text {
 .eval-track-state { padding: 20px 0; text-align: center; color: var(--text-tertiary); font-size: var(--font-sm); }
 .eval-track-overall { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .eval-track-stat { background: var(--bg-card-header); border-radius: 10px; padding: 12px; text-align: center; }
-.eval-track-stat-value { font-size: 24px; font-weight: var(--font-bold); color: var(--primary-color); line-height: 1.2; }
+.eval-track-stat-value { font-size: var(--font-xl); font-weight: var(--font-bold); color: var(--primary-color); line-height: 1.2; }
 .eval-track-stat-label { font-size: var(--font-xs); color: var(--text-secondary); margin-top: 8px; }
 .eval-track-note { margin-top: 12px; font-size: var(--font-xs); color: var(--text-tertiary); line-height: 1.6; }
 .eval-track-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px; }
@@ -4403,10 +4403,10 @@ text {
 .dim-label { font-size:var(--font-sm);color:var(--text-secondary);width:76px;flex-shrink:0;text-align:right; }
 .dim-track { flex:1;height:12px;background:var(--border-light);border-radius:6px;overflow:hidden; }
 .dim-value { font-size:var(--font-sm);font-weight:var(--font-bold);width:28px;text-align:center; }
-.empty-state-icon { font-size: 64px; margin-bottom: 20px; }
-.empty-state-icon-md { font-size:64px;margin-bottom:16px; }
-.empty-state-icon-sm { font-size: 48px; margin-bottom: 12px; }
-.empty-state-icon-xs { font-size: 44px; margin-bottom: 12px; }
+.empty-state-icon { font-size: var(--font-hero); margin-bottom: 20px; }
+.empty-state-icon-md { font-size: var(--font-hero);margin-bottom:16px; }
+.empty-state-icon-sm { font-size: var(--font-3xl); margin-bottom: 12px; }
+.empty-state-icon-xs { font-size: var(--font-icon); margin-bottom: 12px; }
 .factor-card-gold { background:var(--badge-gold-bg);border:1px solid var(--badge-gold-bg);padding:16px 14px;border-radius:10px; }
 .factor-card-info { background:var(--badge-info-bg);border:1px solid var(--badge-info-bg);padding:16px 14px;border-radius:10px; }
 .factor-card-success { background:var(--badge-success-bg);border:1px solid var(--badge-success-bg);padding:16px 14px;border-radius:10px; }
@@ -4630,7 +4630,7 @@ text {
 .mini-bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 74px; padding: 4px 0 0; overflow: hidden; }
 .mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
 .mini-bar { width: 100%; max-width: 14px; border-radius: 2px 2px 0 0; background: var(--color-primary); opacity: 0.85; min-height: 1px; }
-.mini-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
+.mini-bar-label { font-size: var(--font-2xs); color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
 /* ===== V4.0 M2: 策略实验室 — 参数扫描结果表 ===== */
 .sweep-research { margin-top: 4px; }
 .sweep-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px; border-radius: 8px; }
@@ -4685,7 +4685,7 @@ text {
 .usage-ai-bar { width: 100%; max-width: 12px; border-radius: 3px 3px 0 0; background: var(--color-primary); opacity: 0.5; min-height: 1px; transition: opacity .2s ease, transform .2s ease; }
 .usage-ai-bar-col:hover .usage-ai-bar { opacity: 0.9; transform: scaleY(1.03); transform-origin: bottom; }
 .usage-ai-bar-today { opacity: 1; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
-.usage-ai-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
+.usage-ai-bar-label { font-size: var(--font-2xs); color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
 @media (max-width: 1100px) { .usage-ai-grid { grid-template-columns: 1fr; } }
 /* ===== 系统状态/资源监控/数据源健康 视觉统一 (v3.18.3) ===== */
 /* 系统状态概览卡: 左侧渐变强调条 + 悬停微动效 */
@@ -4742,8 +4742,8 @@ text {
 .strategy-title-bar { font-size: var(--font-md); font-weight: var(--font-bold); color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
 .tag-chip { font-size: var(--font-xs); background: var(--bg-tertiary); padding: 4px 8px; border-radius: 10px; color: var(--text-secondary); }
 .tech-item { background: var(--bg-page); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
-.text-10-tertiary { font-size:10px;color:var(--text-tertiary); }
-.text-10-tertiary-nowrap { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+.text-10-tertiary { font-size: var(--font-xs);color:var(--text-tertiary); }
+.text-10-tertiary-nowrap { font-size: var(--font-xs); color: var(--text-tertiary); white-space: nowrap; }
 .text-3xl-mb12 { font-size: var(--font-3xl); margin-bottom: 12px; }
 .text-3xl-mb8 { font-size: var(--font-3xl); margin-bottom: 8px; }
 .text-base-medium { font-size: var(--font-base); font-weight: var(--font-medium); }

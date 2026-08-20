@@ -37,7 +37,7 @@
                     <div class="section-title">📍 当前周期实时进度</div>
                     <div class="grid-4col-gap12">
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
+                            <div class="stat-value num-tabular">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
                             <div class="stat-label">周期起始日</div>
                         </div>
                         <div class="stat-item">

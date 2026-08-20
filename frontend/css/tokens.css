@@ -13,7 +13,8 @@
   --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
 
   /* ─── Typography: Font Size (Major Third 1.25) ─── */
-  --font-xs: 11px;   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
+  --font-xs: 11px;
+  --font-2xs: 9px;   --font-icon: 44px;   --font-hero: 64px;  /* V4.6 排版补全 */   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
   --font-lg: 18px;   --font-xl: 22px;   --font-2xl: 26px;   --font-3xl: 36px;
 
   /* ─── Typography: Font Weight ─── */
@@ -94,3 +95,7 @@
 
 /* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
 [v-cloak] { display: none !important; }
+
+
+/* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */
+.num-tabular { font-variant-numeric: tabular-nums; }
