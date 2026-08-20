@@ -185,6 +185,7 @@
   position: relative;
   padding-left: 26px;
 }
+/* V4.0.5-A: 主干竖线改主色渐变 (历史→最新 主色递减) */
 .tl-spine::before {
   content: '';
   position: absolute;
@@ -192,7 +193,7 @@
   top: 18px;
   bottom: 18px;
   width: 2px;
-  background: var(--border-strong, #d9dee8);
+  background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary) 60%, rgba(150,150,170,0.35) 100%);
   border-radius: 2px;
 }
 .tl-spine-arrow {
@@ -223,16 +224,27 @@
   border-left: 2px solid var(--border-strong, #d9dee8);
   border-radius: 0 0 0 4px;
 }
+/* V4.0.5-A: 周期节点 = 外圈(主色描边) + 内发光圆点 */
 .tl-cycle-node {
   position: absolute;
-  left: -26px;
-  top: 12px;
-  width: 12px;
-  height: 12px;
+  left: -27px;
+  top: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-card-header);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tl-cycle-node-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--bg-card-header), 0 0 0 4px var(--color-primary);
-  z-index: 1;
+  box-shadow: 0 0 6px var(--color-primary);
 }
 .tl-cycle-body { flex: 1; min-width: 0; position: relative; }
 .tl-cycle-label {
@@ -285,8 +297,9 @@
   transform: translateY(-1px);
   z-index: 5;
 }
+/* V4.0.5-B: 当前阶段加主色外发光 (!important 盖过 tlChipStyle 内联 inset) */
 .merrill-stage-chip.is-current {
-  box-shadow: 0 0 0 2px var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 12px rgba(var(--primary-rgb, 37 99 235), 0.45) !important;
   font-weight: var(--font-semibold, 600);
 }
 .tl-dot {
@@ -322,6 +335,25 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* V4.0.5-C: hover 某阶段时其所在轮连线点亮 */
+.tl-line.is-active {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  opacity: 0.9;
+}
+
+/* V4.0.5-D: 甘特式连续时间条 — 按时长比例分段着色 */
+.tl-gantt {
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-card-header);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+.tl-gantt-seg { height: 100%; min-width: 6px; }
 
 /* V4.0.3: 阶段 hover 玻璃浮层 — 紧凑跟随 chip, 不再跨全宽覆盖周期图 */
 @keyframes tl-tip-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
@@ -363,6 +395,14 @@
 .tl-tip-meta { color: var(--text-secondary); }
 .tl-tip-trigger { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border-light, #e9ecef); color: var(--text-secondary); }
 .tl-tip-desc { margin-top: 4px; }
+
+/* V4.0.5-E: 响应式 — 窄屏时间轴横向滚动 (不压缩阶段块) */
+@media (max-width: 768px) {
+  .merrill-timeline { overflow-x: auto; }
+  .tl-spine { min-width: 640px; }
+  .tl-cycle { padding: 12px 0 22px; margin-bottom: 26px; }
+  .tl-cycle-node { left: -24px; }
+}
 
 /* ─── v3.22-I2: 用量统计卡片化 (4卡片网格) ─── */
 .usage-card-grid {

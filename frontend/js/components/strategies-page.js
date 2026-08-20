@@ -269,9 +269,9 @@
                                 <div class="tl-spine">
                                     <div class="tl-spine-arrow tl-top">▲ 历史</div>
                                     <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
-                                        <div class="tl-cycle-node"></div>
+                                        <div class="tl-cycle-node"><span class="tl-cycle-node-dot"></span></div>
                                         <div class="tl-cycle-body">
-                                            <div class="tl-cycle-label">{{ cycle.label }}</div>
+                                            <div class="tl-cycle-label">{{ cycle.label }}<span class="tl-cycle-years" v-if="tlCycleYears(cycle)"> · {{ tlCycleYears(cycle) }}</span></div>
                                             <div class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 120 : 60) + 'px'}">
                                                 <template v-for="(row, ri) in timelineRows(cycle.stages)" :key="ri">
                                                     <div class="tl-stage-row" :class="ri === 0 ? 'tl-row-top' : 'tl-row-bottom'">
@@ -297,8 +297,12 @@
                                                     </div>
                                                 </template>
                                                 <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlPathFor(ci).vb" preserveAspectRatio="none" aria-hidden="true">
-                                                    <path :d="tlPathFor(ci).d" class="tl-line" />
+                                                    <path :d="tlPathFor(ci).d" class="tl-line" :class="{ 'is-active': tlHoverKey && String(tlHoverKey).indexOf(ci + '-') === 0 }" />
                                                 </svg>
+                                            </div>
+                                            <!-- V4.0.5-D: 甘特式连续时间条 (按时长比例分段着色, 展示各阶段时间占比) -->
+                                            <div class="tl-gantt" v-if="cycle.stages.length > 1">
+                                                <div v-for="(st, gi) in cycle.stages" :key="gi" class="tl-gantt-seg" :style="tlGanttStyle(st, cycle.stages, gi)"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -604,8 +608,9 @@
       // v3.22-I4: 美林时间轴 (显式解包 ref)
       const merrillTimeline = computed(() => state.merrillTimeline?.value || state.merrillTimeline || { cycles: [] });
       const timelineLoading = computed(() => state.timelineLoading?.value || false);
+      // V4.0.5: 修复时间轴点击无弹窗 — qcState 未注入 showTimelineStage, 改用同源的 showStageDetail(阶段详情弹窗)
       function showTimelineStage(stage) {
-        if (state.showTimelineStage) state.showTimelineStage(stage);
+        if (state.showStageDetail) state.showStageDetail(stage);
       }
 
       // v3.22-I4: 美林时间轴阶段取色
@@ -631,6 +636,30 @@
       }
       function getTimelineStageDesc(stage) {
         return (_tlCfg()[stage] && _tlCfg()[stage].description) || '';
+      }
+      // V4.0.5-A: 轮次年份范围 (首阶段 start → 末阶段 end 取年)
+      function tlCycleYears(cycle) {
+        const stages = cycle && cycle.stages ? cycle.stages : [];
+        if (!stages.length) return '';
+        const y1 = stages[0] && stages[0].start ? String(stages[0].start).slice(0, 4) : '';
+        const last = stages[stages.length - 1] || {};
+        const y2 = last.end ? String(last.end).slice(0, 4) : (last.start ? String(last.start).slice(0, 4) : '');
+        return (y1 || y2) ? (y1 ? y1 + '–' + y2 : y2) : '';
+      }
+      // V4.0.5-D: 甘特式连续时间条段样式 — 按时长比例 flex-basis + 阶段色填充
+      function tlGanttStyle(st, stages, gi) {
+        const cfg = _tlCfg()[st.stage] || {};
+        const color = cfg.color || 'var(--color-primary)';
+        const arr = stages || [];
+        const durs = arr.map(s => s.duration_months || 0);
+        const total = durs.reduce((a, b) => a + b, 0);
+        const basis = total > 0 ? (durs[gi] / total) * 100 : 100 / Math.max(1, arr.length);
+        const isFirst = gi === 0, isLast = gi === arr.length - 1;
+        return {
+          flex: '0 0 ' + basis + '%',
+          background: color,
+          borderRadius: isFirst ? '6px 0 0 6px' : (isLast ? '0 6px 6px 0' : '0')
+        };
       }
       // 蛇形折行: n<=4 单行; n>=5 两行(行2 DOM 反向, 普通 row → 视觉从左到右为时间倒序, 右端短连接)
       function timelineRows(stages) {
@@ -722,7 +751,7 @@
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
-        timelineRows, tlChipStyle, tlPathFor,
+        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle,
         tlHoverKey, setTlHover, clearTlHover,
         merrillTimeline, timelineLoading, showTimelineStage };
     },
