@@ -1096,7 +1096,7 @@
       async function loadVariantSpec(sid) {
         try {
           const res = await fetch("/api/strategies/" + sid + "/selection-spec", { headers: _authHeaders() }).then(function (r) { return r.json(); });
-          if (res && res.data) {
+          if (res && res.data && res.data.spec) {
             variantSpec.value = Object.assign({}, res.data.spec);
             specFields.value = res.data.fields;
             specIndustryText.value = (res.data.spec.industry_scope || []).join(",");
