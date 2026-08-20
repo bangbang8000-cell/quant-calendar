@@ -37,6 +37,7 @@
   --bg-code: #f6f8fa;              /* 代码块背景 */
   --bg-tertiary: #f1f5f9;          /* 三级背景(kbd/标签) */
   --primary-color-dark: #2563eb;   /* 主色深(渐变端点) */
+  --text-disabled: #9ca3af;        /* 禁用态文本(EP 覆盖) */
   --radius-2: 10px;                /* 中等圆角(卡片) */
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
