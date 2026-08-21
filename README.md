@@ -62,13 +62,6 @@
 </p>
 </details>
 
-<details>
-<summary><b>深色主题</b> — dark-pro 专业终端风格（美林时钟视图）</summary>
-<p align="center">
-  <img src="assets/screenshots/美林-dark.png" alt="深色主题" width="90%">
-</p>
-</details>
-
 ---
 
 ## 功能
