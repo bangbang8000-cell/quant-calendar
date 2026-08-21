@@ -229,7 +229,7 @@ cp ../.env.example .env
 
 | 项 | 说明 |
 |----|------|
-| 查看密码 | 默认 admin123，可通过 .env 的 KEY_VIEW_PASSWORD 修改 |
+| 查看密码 | 默认 admin123；**V4.1+ 需在 .env 显式配置 KEY_VIEW_PASSWORD 才能查看**（未配置时默认口令拒绝），可用 `KEY_VIEW_PASSWORD=admin123` 或自定义强口令 |
 | 掩码规则 | 长度大于8：首4尾4；长度4-8：首2尾2；长度不超过4：首1位加星号 |
 | 权限 | 仅管理员（admin 角色）可执行查看操作 |
 python main_new.py --port 8000
@@ -245,6 +245,31 @@ python main_new.py --port 8000
 | `guest` | `guest` | 访客 | 只读查看 |
 
 首次登录后请修改 admin 密码。
+
+---
+
+## 注意事项
+
+### 1. Tushare 数据源 Token 必须配置真实值
+
+Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系统配置 → 数据源** 中填入有效 Token 后点击「测试」。
+
+- 若提示 **"数据源 tushare 未初始化"**：多为 Token 未配置或配置为空，请到数据源页填写。
+- 若提示 **"您的token不对"**：Token 无效或过期，请核对 Tushare Pro 后台的 Token。
+- 三源热备（sxsc-tushare → tushare → akshare），tushare 失败会自动降级 akshare（部分数据可能延迟）。
+
+### 2. 密钥查看密码（V4.1+ 需显式配置）
+
+系统页的 API Key / Token 以掩码展示，查看完整值需输入查看密码（系统页 → 数据源/AI → 眼睛图标）。
+
+- **V4.1 起安全策略**：未在 `.env` 显式配置 `KEY_VIEW_PASSWORD` 时，默认口令 `admin123` 会被**拒绝查看**（防默认口令泄露密钥）。
+- **如需用默认口令查看**：在 `.env` 加入 `KEY_VIEW_PASSWORD=admin123` 后重启。
+- **更安全做法**：配置自定义强口令 `KEY_VIEW_PASSWORD=你的强口令`。
+
+### 3. 其他
+
+- 默认登录账号 `admin/admin`（源码安装）或初始化向导设置；首次登录请修改密码。
+- 前端为 Vite 构建产物（`frontend/dist/` 已入库），直接部署无需 Node；修改前端源码需 `npm run build` 后重启。
 
 ---
 
