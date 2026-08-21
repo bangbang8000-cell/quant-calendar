@@ -239,13 +239,16 @@ def _coerce_timeout(req: Dict[str, Any]):
 
 
 @router.get("/models")
-async def get_models(_: Dict = Depends(get_current_active_user)):
-    """获取厂商模型配置 (v3.14: {"vendors":[...]}, 无需登录; V4.0 api_key 掩码展示)"""
+async def get_models(full: bool = False, user: Dict = Depends(get_current_active_user)):
+    """获取厂商模型配置 (v3.14; V4.0 api_key 掩码展示)
+    V4.6: full=true 返回完整 api_key(编辑锁解锁用), 仅管理员"""
     try:
         from secret_utils import mask_secret
+        if full and user.get("role") != "admin":
+            return {"success": False, "message": "仅管理员可查看完整密钥"}
         models = ai_evaluator.get_models()
         for v in models.get("vendors", []):
-            if v.get("api_key"):
+            if v.get("api_key") and not full:
                 v["api_key"] = mask_secret(v["api_key"])
         return {"success": True, "data": models}
     except Exception as e:

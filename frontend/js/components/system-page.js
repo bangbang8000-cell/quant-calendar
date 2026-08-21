@@ -236,7 +236,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -249,9 +249,10 @@
                                 <el-form-item label="套餐档位"><el-input class="w-220" v-model="v.tier" :disabled="v.locked" placeholder="CodingPlan: Lite/Pro"/></el-form-item>
                                 <el-form-item label="Base URL"><el-input v-model="v.base_url" placeholder="https://.../v1"/></el-form-item>
                                 <el-form-item label="API Key">
-                                    <el-input :model-value="v._revealed ? v.api_key : v._masked" @update:model-value="val => { v.api_key = val; if (!v._revealed) v._masked = val; }" placeholder="厂商级密钥，卡内模型共用">
+                                    <el-input :model-value="v._editing ? v.api_key : v._masked" :disabled="!v._editing" @update:model-value="val => { if (v._editing) { v.api_key = val; } else { v._masked = val; } }" placeholder="厂商级密钥，卡内模型共用">
                                         <template #suffix>
-                                            <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="sanitizeHtml(viewIcon(v._revealed))"></span>
+                                            <el-button size="small" :type="v._editing ? 'warning' : 'primary'" plain @click="toggleVendorEdit(v)" style="margin-left:4px">🔓 {{ v._editing ? '锁定' : '编辑密钥' }}</el-button>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="sanitizeHtml(viewIcon(v._revealed))"></span>
                                         </template>
                                     </el-input>
                                 </el-form-item>

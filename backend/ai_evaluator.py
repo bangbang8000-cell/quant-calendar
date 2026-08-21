@@ -390,7 +390,7 @@ class AIEvaluator:
             if v.vendor_key in existing:
                 v.locked = existing[v.vendor_key].locked
                 # V4.0 需求2: 掩码/空值提交 → 保留既有 api_key（前端未点眼睛查看时发回的是掩码）
-                if is_masked_form(v.api_key, existing[v.vendor_key].api_key):
+                if is_masked_form(v.api_key, existing[v.vendor_key].api_key) or not v.api_key:
                     v.api_key = existing[v.vendor_key].api_key
             # 模型级 locked 保留（按 name；新厂商无既有状态则用客户端值）
             existing_vendor = existing.get(v.vendor_key)

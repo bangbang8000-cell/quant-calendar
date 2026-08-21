@@ -678,7 +678,7 @@ const allMenuDefs = [
                         loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels,
                         testVendorModel, testAllVendorModels, fetchVendorModels,
                         addVendorFromCatalog, addCustomVendor, addVendorModel,
-                        removeVendorModel, removeVendor, toggleVendorKeyReveal, autoEvaluateConfig,
+                        removeVendorModel, removeVendor, toggleVendorKeyReveal, toggleVendorEdit, autoEvaluateConfig,
                         // v3.11: AI 评估配置（原 app-logic 前段并入本域）
                         aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
                         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
@@ -1001,7 +1001,7 @@ const allMenuDefs = [
                     loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
                     testVendorModel, testAllVendorModels, fetchVendorModels,
                     addVendorFromCatalog, addCustomVendor, addVendorModel,
-                    removeVendorModel, removeVendor, toggleVendorKeyReveal,
+                    removeVendorModel, removeVendor, toggleVendorKeyReveal, toggleVendorEdit,
                     checkTushareConnection,
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
