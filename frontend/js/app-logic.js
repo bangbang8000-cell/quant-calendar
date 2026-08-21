@@ -739,6 +739,7 @@ const allMenuDefs = [
                 const __auth = window.__quantAppLogic.auth.create({
                     currentUser, loadUserConfig, loadDates, loadDashboardData,
                     loadHealthMetrics, loadConsensusData, applyTheme, maybeShowTour,
+                    loadAiVendors,  // V4.6: 登录成功即加载 AI 厂商(修复自动评估子页厂商卡不显示)
                 });
                 const { loginForm, logining, guestLogining,
                         showChangePassword, changePasswordForm, changingPassword,
@@ -755,7 +756,7 @@ const allMenuDefs = [
                     loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
                     loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
                     loadHealthDetail, loadHealthMetrics, loadAiUsage, loadFactCheck,
-                    loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
+                    loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig, loadAiVendors,
                     loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
                     stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
                     currentKlinePeriod,

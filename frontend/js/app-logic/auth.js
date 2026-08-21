@@ -7,7 +7,7 @@
   window.__quantAppLogic.auth = {
     create: function (ctx) {
       const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached, loadHealthMetrics,
-              loadConsensusData, applyTheme, maybeShowTour } = ctx;
+              loadConsensusData, applyTheme, maybeShowTour, loadAiVendors } = ctx;
 
       // ===== 登录状态 =====
       const loginForm = ref({ username: '', password: '' });
@@ -96,6 +96,8 @@
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
             applyTheme(data.user.theme || 'tech-blue');
+            // V4.6 修复: 登录成功立即加载 AI 厂商(提前发出, 避免与系统配置页请求排队导致延迟)
+            if (typeof loadAiVendors === 'function') loadAiVendors();
             await loadUserConfig();
             await loadDates();
             // V4.5 (FR-4.5.2): 并行加载(即时反馈) + loadDashboardCached(缓存防重复)

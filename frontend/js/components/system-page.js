@@ -1101,6 +1101,10 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
+      // V4.6 修复: 进入「自动评估」子页强制加载 AI 厂商卡(与刷新按钮同源, 规避 watch 时序/401 残留)
+      Vue.watch(() => state.currentSubPage && state.currentSubPage.value, (sub) => {
+        if (sub === 'autoeval' && state.loadAiVendors) state.loadAiVendors();
+      });
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);

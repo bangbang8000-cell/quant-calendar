@@ -15,7 +15,7 @@
               loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
               loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
               loadHealthDetail, loadHealthMetrics, loadAiUsage, loadFactCheck,
-              loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
+              loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig, loadAiVendors,
               loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
               stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
               currentKlinePeriod,
@@ -86,7 +86,7 @@
         if (page === 'system' && currentUser.value?.role === 'admin') {
           if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
           if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage(); loadFactCheck(); }
-          if (sub === 'autoeval') loadAutoEvaluateConfig();
+          if (sub === 'autoeval') { loadAutoEvaluateConfig(); loadAiVendors(); }  // V4.6: 进入自动评估强制加载厂商卡
           if (sub === 'datasource') loadDatasourceConfig();
           if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); loadBackups(); }
           if (sub === 'user') { loadAllGroups(); loadUsers(); }
