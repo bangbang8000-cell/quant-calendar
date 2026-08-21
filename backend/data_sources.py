@@ -465,8 +465,9 @@ class DataSourceManager:
                         logger.debug("数据源回退尝试")
                         pass
                 if token:
-                    ts.set_token(token)
-                    self._clients['tushare'] = ts.pro_api()
+                    # V4.6 修复: 直接传 token 给 pro_api, 跳过 ts.set_token 写 ~/tk.csv
+                    # (沙箱家目录只读导致 set_token 写文件失败 -> tushare 未初始化)
+                    self._clients['tushare'] = ts.pro_api(token)
                     logger.info("✅ tushare 初始化成功")
             except Exception as e:
                 logger.warning(f"⚠️ tushare 初始化失败: {e}")
