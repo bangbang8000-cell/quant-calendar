@@ -214,7 +214,7 @@
                                 </template>
                             </el-dropdown>
                         </div>
-                        <div class="text-center-danger-pad16" v-if="aiModelsError">⚠ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
+                        <div class="text-center-danger-pad16" v-if="aiModelsError">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
                         <div v-for="(v,vi) in aiVendors" :key="v.vendor_key" class="card mb-12">
@@ -226,7 +226,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑 删除厂商</el-button>
+                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -254,7 +254,7 @@
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
                                             <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
                                             <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
-                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
                                         </div>
                                         <div class="flex-gap-8-mt8">
                                             <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
@@ -370,7 +370,7 @@
                     <!-- feature 子页: 功能开关与配置 -->
                     <div v-else-if="currentSubPage === 'feature'">
                         <div class="card">
-                        <div class="card-title">🎛 策略筛选</div>
+                        <div class="card-title">🎛️ 策略筛选</div>
                         <div class="mb-12">
                             <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
                                 <el-checkbox class="mb-6" v-for="s in strategyFilterOptions" :key="s" :label="s" border>
@@ -388,9 +388,9 @@
                         <div class="info-banner-plain">
                             <div class="mb-6-medium">🔍 预览匹配股票数</div>
                             <div class="flex-wrap-gap-12">
-                                <span>☀ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
+                                <span>☀️ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
                                 <span>📅 周视图: <strong>{{ strategyPreviewCount.week ?? '-' }}</strong></span>
-                                <span>🗓 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
+                                <span>🗓️ 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
                                 <span>📆 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
                         </div>
@@ -413,7 +413,7 @@
                     </div>
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card mt-4">
-                        <div class="card-title">⏱ 美林时钟</div>
+                        <div class="card-title">⏱️ 美林时钟</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
                                 上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong>
@@ -620,7 +620,7 @@
                             </div>
                             <div class="flex-gap-6-shrink0">
                                 <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
-                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙ 菜单</el-button>
+                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
                                 <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                             </div>
                         </div>
@@ -682,14 +682,14 @@
                         <div class="usage-card-grid">
                         <!-- 卡1: 资源监控 -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🖥 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
+                            <div class="usage-card-title">🖥️ 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
                             <div class="usage-ai-panel">
                                 <div class="usage-ai-panel-title">实时指标
                                     <span class="usage-ai-panel-meta">CPU/内存/磁盘</span>
                                 </div>
                                 <div class="usage-ai-summary">
                                     <div class="usage-ai-stat usage-ai-stat-meter">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙</span><span class="usage-ai-stat-label">CPU</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙️</span><span class="usage-ai-stat-label">CPU</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
@@ -704,7 +704,7 @@
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱</span><span class="usage-ai-stat-label">运行时长</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱️</span><span class="usage-ai-stat-label">运行时长</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(2) + 'h' : '--' }}</div>
                                     </div>
                                     <div class="usage-ai-stat">
@@ -712,7 +712,7 @@
                                         <div class="usage-ai-stat-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<small>ms</small></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠</span><span class="usage-ai-stat-label">错误率</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠️</span><span class="usage-ai-stat-label">错误率</span></div>
                                         <div class="usage-ai-stat-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                     </div>
                                 </div>
@@ -773,7 +773,7 @@
 
                         <!-- 卡3: 运维状态 (AI护栏 + 调度 + 备份合并) -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🛡 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
+                            <div class="usage-card-title">🛡️ 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
                             <div class="section-block-top">
                             <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
                             <div class="section-title-base flex-between">
@@ -972,23 +972,22 @@
                             <div class="about-body-text">
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p class="m-0"><strong class="color-text-primary">核心功能：</strong></p>
-                                <!-- V4.6: 核心功能多行排版(图标+名称+描述, 双列网格) -->
-                                <div class="about-feature-grid">
-                                    <div class="about-feature"><span class="about-feature-icon">🔄</span><div class="about-feature-body"><div class="about-feature-name">美林时钟</div><div class="about-feature-desc">GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">📈</span><div class="about-feature-body"><div class="about-feature-name">多策略选股</div><div class="about-feature-desc">多因子/行业轮动/资金流/指数增强，共识榜交叉验证</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🤖</span><div class="about-feature-body"><div class="about-feature-name">AI 每日复盘</div><div class="about-feature-desc">收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🔍</span><div class="about-feature-body"><div class="about-feature-name">多因子体检</div><div class="about-feature-desc">估值/基本面/资金面/情绪面/技术面，个股五维体检</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">📊</span><div class="about-feature-body"><div class="about-feature-name">回测工作台</div><div class="about-feature-desc">单/多策略回测对比，收益/回撤/夏普/净值可视化</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🎯</span><div class="about-feature-body"><div class="about-feature-name">评估胜率追踪</div><div class="about-feature-desc">评估命中率统计，决策复盘</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">💼</span><div class="about-feature-body"><div class="about-feature-name">模拟组合</div><div class="about-feature-desc">持仓/买卖调仓/实时盈亏/收益曲线</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">⚡</span><div class="about-feature-body"><div class="about-feature-name">异动扫描</div><div class="about-feature-desc">涨停/跌停/放量/连板，自选/持仓事件提醒</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">💬</span><div class="about-feature-body"><div class="about-feature-name">AI 问股</div><div class="about-feature-desc">多轮上下文 + 多股对比 + 事实数据护栏</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">📱</span><div class="about-feature-body"><div class="about-feature-name">移动端 & PWA</div><div class="about-feature-desc">375px 优化、离线可读、手势操作</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🔌</span><div class="about-feature-body"><div class="about-feature-name">开放 API</div><div class="about-feature-desc">API Key 接入只读行情/日历/评估，Webhook 事件订阅</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🌐</span><div class="about-feature-body"><div class="about-feature-name">国际化</div><div class="about-feature-desc">中/英双语切换</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">📡</span><div class="about-feature-body"><div class="about-feature-name">飞书推送</div><div class="about-feature-desc">定时推送每日选股报告</div></div></div>
-                                    <div class="about-feature"><span class="about-feature-icon">🗄️</span><div class="about-feature-body"><div class="about-feature-name">数据源</div><div class="about-feature-desc">Tushare Pro / sxsc / akshare 三源热备</div></div></div>
-                                </div>
+                                <ul class="about-ul">
+                                    <li><strong class="about-item-name">美林时钟</strong> — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯</li>
+                                    <li><strong class="about-item-name">多策略选股</strong> — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证</li>
+                                    <li><strong class="about-item-name">AI 每日复盘</strong> — 收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪</li>
+                                    <li><strong class="about-item-name">多因子体检</strong> — 估值/基本面/资金面/情绪面/技术面，个股五维体检</li>
+                                    <li><strong class="about-item-name">回测工作台</strong> — 单/多策略回测对比，收益/回撤/夏普/净值可视化</li>
+                                    <li><strong class="about-item-name">评估胜率追踪</strong> — 评估命中率统计，决策复盘</li>
+                                    <li><strong class="about-item-name">模拟组合</strong> — 持仓/买卖调仓/实时盈亏/收益曲线</li>
+                                    <li><strong class="about-item-name">异动扫描</strong> — 涨停/跌停/放量/连板，自选/持仓事件提醒</li>
+                                    <li><strong class="about-item-name">AI 问股</strong> — 多轮上下文 + 多股对比 + 事实数据护栏</li>
+                                    <li><strong class="about-item-name">移动端 & PWA</strong> — 375px 优化、离线可读、手势操作</li>
+                                    <li><strong class="about-item-name">开放 API</strong> — API Key 接入只读行情/日历/评估，Webhook 事件订阅</li>
+                                    <li><strong class="about-item-name">国际化</strong> — 中/英双语切换</li>
+                                    <li><strong class="about-item-name">飞书推送</strong> — 定时推送每日选股报告</li>
+                                    <li><strong class="about-item-name">数据源</strong> — Tushare Pro / sxsc / akshare 三源热备</li>
+                                </ul>
                             </div>
                         </div>
                         <div class="card">
@@ -1072,7 +1071,7 @@
                             </div>
                         </div>
                         <div class="card border-left-warning">
-                            <div class="card-title">⚠ 风险提示</div>
+                            <div class="card-title">⚠️ 风险提示</div>
                             <div class="about-body-text">
                                 <p class="m-0-0-8"><strong class="color-text-primary">本系统仅供学习研究，不构成任何投资建议。</strong></p>
                                 <p class="m-0-0-8">• 选股结果基于历史数据和量化模型，<strong>过往表现不代表未来收益</strong></p>
@@ -1088,4 +1087,4 @@
                         </div>
                     </div>
                     </div>
-    `,setup(){const t=k("qcState");if(!t)return{};const h=Vue.ref([]),c=Vue.ref(""),b=Vue.ref("read"),i=Vue.ref(""),r=Vue.ref(!1),d=()=>window.__quantModules&&window.__quantModules.core||{},n=Vue.ref([]),o=Vue.ref(!1);async function x(){o.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:d().authHeaders?d().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});n.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),n.value=[]}finally{o.value=!1}}const w=Vue.computed(()=>(t&&t.analyticsRank&&t.analyticsRank.value||[]).reduce((a,s)=>Math.max(a,s.views||0),0)||1),v=()=>d().OPENAPI_ROUTE_BASE||"/api/openapi";async function u(){r.value=!0;try{const e=await d().apiFetch(v()+"/keys");h.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{r.value=!1}}async function _(){try{const e=await d().apiFetch(v()+"/keys",{method:"POST",body:JSON.stringify({name:c.value||"未命名",role:b.value||"read",expire_days:365})});e&&e.success?(i.value=e.api_key||"",c.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await u()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function C(){if(i.value)try{await navigator.clipboard.writeText(i.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function A(e){try{const a=await d().apiFetch(v()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),i.value&&e.prefix&&i.value.includes(e.prefix)&&(i.value=""),await u()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const M={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function z(e){return M[e]||e}const R=computed(()=>{var e;return(((e=t.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:z(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function P(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function D(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const l=t.aiUsage||Vue.ref({}),p=Vue.computed(()=>{const e=l.value&&l.value.by_model||{};return Object.entries(e).map(([a,s])=>({name:a,count:s})).sort((a,s)=>s.count-a.count)}),S=Vue.computed(()=>p.value.reduce((e,a)=>Math.max(e,a.count),0)||1),I=Vue.computed(()=>p.value.reduce((e,a)=>e+a.count,0)||1),E=Vue.computed(()=>m.value.reduce((e,a)=>Math.max(e,a.count),0)||0),m=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},a=[],s=new Date;for(let g=29;g>=0;g--){const f=new Date(s.getFullYear(),s.getMonth(),s.getDate()-g),y=f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0")+"-"+String(f.getDate()).padStart(2,"0");a.push({day:y,count:e[y]||0})}return a}),T=Vue.computed(()=>m.value.reduce((e,a)=>Math.max(e,a.count),0)||1),V=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},a=new Date,s=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[s]||0}),F=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},a=Object.keys(e).filter(s=>(e[s]||0)>0);return a.length?a[a.length-1]:""});function K(e){t.analyticsDays&&(t.analyticsDays.value=e),typeof t.loadAnalytics=="function"&&t.loadAnalytics()}const L='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',O='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function U(e){return e?O:L}return{...t,analyticsMaxViews:w,aiModelRank:p,aiModelMax:S,aiDayTrend:m,aiDayMax:T,todayAiCalls:V,lastAiCallDay:F,aiTotal:I,aiDayPeak:E,setAnalyticsDays:K,viewIcon:U,openApiKeys:h,openApiKeyName:c,openApiKeyRole:b,newOpenApiKey:i,openApiLoading:r,loadOpenApiKeys:u,generateOpenApiKey:_,copyOpenApiKey:C,revokeOpenApiKey:A,healthRows:R,healthClass:P,fmtAge:D,auditLogs:n,auditLoading:o,loadAuditLogs:x}}}})();
+    `,setup(){const t=k("qcState");if(!t)return{};const f=Vue.ref([]),d=Vue.ref(""),y=Vue.ref("read"),i=Vue.ref(""),n=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},r=Vue.ref([]),o=Vue.ref(!1);async function x(){o.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()});r.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),r.value=[]}finally{o.value=!1}}const w=Vue.computed(()=>(t&&t.analyticsRank&&t.analyticsRank.value||[]).reduce((s,a)=>Math.max(s,a.views||0),0)||1),v=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function u(){n.value=!0;try{const e=await c().apiFetch(v()+"/keys");f.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{n.value=!1}}async function _(){try{const e=await c().apiFetch(v()+"/keys",{method:"POST",body:JSON.stringify({name:d.value||"未命名",role:y.value||"read",expire_days:365})});e&&e.success?(i.value=e.api_key||"",d.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await u()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function C(){if(i.value)try{await navigator.clipboard.writeText(i.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function A(e){try{const s=await c().apiFetch(v()+"/keys/"+e.id,{method:"DELETE"});s&&s.success?(ElementPlus.ElMessage.success("Key 已吊销"),i.value&&e.prefix&&i.value.includes(e.prefix)&&(i.value=""),await u()):ElementPlus.ElMessage.error(s&&(s.detail||s.message)||"吊销失败")}catch(s){ElementPlus.ElMessage.error("吊销失败: "+(s.message||""))}}const M={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function z(e){return M[e]||e}const R=computed(()=>{var e;return(((e=t.healthMetrics)==null?void 0:e.value)||[]).map(s=>({name:z(s.name),source:s.name,success_rate:s.success_rate,avg_latency_ms:s.avg_latency_ms,calls:s.calls||0,degraded:!!s.degraded,data_age_hours:s.data_age_hours!=null?s.data_age_hours:null,stale:!!s.stale,last_fetch:s.last_fetch||s.last_success||null}))});function P(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function D(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const l=t.aiUsage||Vue.ref({}),m=Vue.computed(()=>{const e=l.value&&l.value.by_model||{};return Object.entries(e).map(([s,a])=>({name:s,count:a})).sort((s,a)=>a.count-s.count)}),S=Vue.computed(()=>m.value.reduce((e,s)=>Math.max(e,s.count),0)||1),I=Vue.computed(()=>m.value.reduce((e,s)=>e+s.count,0)||1),E=Vue.computed(()=>p.value.reduce((e,s)=>Math.max(e,s.count),0)||0),p=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=[],a=new Date;for(let g=29;g>=0;g--){const h=new Date(a.getFullYear(),a.getMonth(),a.getDate()-g),b=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");s.push({day:b,count:e[b]||0})}return s}),T=Vue.computed(()=>p.value.reduce((e,s)=>Math.max(e,s.count),0)||1),V=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=new Date,a=s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0");return e[a]||0}),F=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=Object.keys(e).filter(a=>(e[a]||0)>0);return s.length?s[s.length-1]:""});function K(e){t.analyticsDays&&(t.analyticsDays.value=e),typeof t.loadAnalytics=="function"&&t.loadAnalytics()}const L='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',O='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function U(e){return e?O:L}return{...t,analyticsMaxViews:w,aiModelRank:m,aiModelMax:S,aiDayTrend:p,aiDayMax:T,todayAiCalls:V,lastAiCallDay:F,aiTotal:I,aiDayPeak:E,setAnalyticsDays:K,viewIcon:U,openApiKeys:f,openApiKeyName:d,openApiKeyRole:y,newOpenApiKey:i,openApiLoading:n,loadOpenApiKeys:u,generateOpenApiKey:_,copyOpenApiKey:C,revokeOpenApiKey:A,healthRows:R,healthClass:P,fmtAge:D,auditLogs:r,auditLoading:o,loadAuditLogs:x}}}})();

@@ -983,20 +983,20 @@
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p class="m-0"><strong class="color-text-primary">核心功能：</strong></p>
                                 <ul class="about-ul">
-                                    <li><div class="about-item-name">美林时钟</div><div class="about-item-desc">GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯</div></li>
-                                    <li><div class="about-item-name">多策略选股</div><div class="about-item-desc">多因子/行业轮动/资金流/指数增强，共识榜交叉验证</div></li>
-                                    <li><div class="about-item-name">AI 每日复盘</div><div class="about-item-desc">收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪</div></li>
-                                    <li><div class="about-item-name">多因子体检</div><div class="about-item-desc">估值/基本面/资金面/情绪面/技术面，个股五维体检</div></li>
-                                    <li><div class="about-item-name">回测工作台</div><div class="about-item-desc">单/多策略回测对比，收益/回撤/夏普/净值可视化</div></li>
-                                    <li><div class="about-item-name">评估胜率追踪</div><div class="about-item-desc">评估命中率统计，决策复盘</div></li>
-                                    <li><div class="about-item-name">模拟组合</div><div class="about-item-desc">持仓/买卖调仓/实时盈亏/收益曲线</div></li>
-                                    <li><div class="about-item-name">异动扫描</div><div class="about-item-desc">涨停/跌停/放量/连板，自选/持仓事件提醒</div></li>
-                                    <li><div class="about-item-name">AI 问股</div><div class="about-item-desc">多轮上下文 + 多股对比 + 事实数据护栏</div></li>
-                                    <li><div class="about-item-name">移动端 & PWA</div><div class="about-item-desc">375px 优化、离线可读、手势操作</div></li>
-                                    <li><div class="about-item-name">开放 API</div><div class="about-item-desc">API Key 接入只读行情/日历/评估，Webhook 事件订阅</div></li>
-                                    <li><div class="about-item-name">国际化</div><div class="about-item-desc">中/英双语切换</div></li>
-                                    <li><div class="about-item-name">飞书推送</div><div class="about-item-desc">定时推送每日选股报告</div></li>
-                                    <li><div class="about-item-name">数据源</div><div class="about-item-desc">Tushare Pro / sxsc / akshare 三源热备</div></li>
+                                    <li><strong class="about-item-name">美林时钟</strong> — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯</li>
+                                    <li><strong class="about-item-name">多策略选股</strong> — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证</li>
+                                    <li><strong class="about-item-name">AI 每日复盘</strong> — 收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪</li>
+                                    <li><strong class="about-item-name">多因子体检</strong> — 估值/基本面/资金面/情绪面/技术面，个股五维体检</li>
+                                    <li><strong class="about-item-name">回测工作台</strong> — 单/多策略回测对比，收益/回撤/夏普/净值可视化</li>
+                                    <li><strong class="about-item-name">评估胜率追踪</strong> — 评估命中率统计，决策复盘</li>
+                                    <li><strong class="about-item-name">模拟组合</strong> — 持仓/买卖调仓/实时盈亏/收益曲线</li>
+                                    <li><strong class="about-item-name">异动扫描</strong> — 涨停/跌停/放量/连板，自选/持仓事件提醒</li>
+                                    <li><strong class="about-item-name">AI 问股</strong> — 多轮上下文 + 多股对比 + 事实数据护栏</li>
+                                    <li><strong class="about-item-name">移动端 & PWA</strong> — 375px 优化、离线可读、手势操作</li>
+                                    <li><strong class="about-item-name">开放 API</strong> — API Key 接入只读行情/日历/评估，Webhook 事件订阅</li>
+                                    <li><strong class="about-item-name">国际化</strong> — 中/英双语切换</li>
+                                    <li><strong class="about-item-name">飞书推送</strong> — 定时推送每日选股报告</li>
+                                    <li><strong class="about-item-name">数据源</strong> — Tushare Pro / sxsc / akshare 三源热备</li>
                                 </ul>
                             </div>
                         </div>
