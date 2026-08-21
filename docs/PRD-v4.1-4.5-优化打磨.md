@@ -34,6 +34,16 @@
 | AI | 批量评估 SSE / 智能评估 UI / 厂商化模型管理（密钥掩码 + 密码查看）/ AI 事实护栏 / 复盘 |
 | 工程 | 数值 2 位小数 / CI（tag 触发）/ Docker 镜像发布 ghcr.io / 测试 978 用例 / 双端运维 |
 
+### 2.4 增量能力（V4.1-V4.6 已全部落地）
+| 版本 | 落地能力 |
+|---|---|
+| V4.1 安全加固 | 12 敏感端点 deny-by-default / SSRF 封堵 / guest 门禁 / IDOR 修复 / JWT 会话(jti/iat/iss/aud/ver+令牌版本) / 口令策略(must_change_password+启动自检) / 限流实化(XFF+账号锁定 15min/5次) / 泄露收敛(secret 掩码+5xx) / 审计补全 |
+| V4.2 逻辑通畅 | ops 域 6 键注入复活 / 三向注入护栏 / WS 实时报价(websockets<14) / 同步调用 to_thread / 详情弹窗竞态 / K线失败原因 / 登出双清 / 侧栏持久化 |
+| V4.3 首屏分包 | Vite 构建层(零构建→构建管线) / 页面懒加载(首屏 577→367KB, gzip 140→102KB) / dist 产物入库(Docker 免 Node) / CSP nonce 兼容 |
+| V4.4 体验筑基 | 令牌体系补全门禁(test_tokens_defined) / dark 令牌层(90 处硬编码令牌化+去 105 !important) / WCAG 对比度门禁 / 主题收敛([data-theme^=classic]) / 可访问性(WCAG 1.4.4) |
+| V4.5 便捷收尾 | 美林时钟全局快捷+配置就近 / 登录并行加载+缓存防重 / 按钮 loading 反馈 / ai_models.py 拆分 / CI 版本 gate(tag↔APP_VERSION) / scripts 流程脚本化 / 页面 title 动态 |
+| V4.6 美术打磨 | 间距 4px 网格系统化(358 处) / 动效统一(0.2s ease-out) / 排版令牌化+tabular-nums / 圆角阴影收敛+!important-30% / 配色主色对比度门禁 / 导航图标系统(emoji-edge-crystal) / 关于页多行排版 / README 金色配图 |
+
 ## 3. 背景与目标
 
 ### 3.1 背景
@@ -73,9 +83,9 @@ V4.0 完成"策略研发与运行平台"能力拼图并发布（tag v4.0.0），
 
 ## 5. 范围
 
-### 5.1 本期范围（In Scope）
-- 安全加固（V4.1）、逻辑通畅修复（V4.2）、效率优化（V4.3）、体验筑基（V4.4）、操作便捷与工程收尾（V4.5）。
-- 配套门禁测试、性能基准、文档回写、流程脚本化。
+### 5.1 本期范围（In Scope）— ✅ 全部完成
+- 安全加固（V4.1）✅、逻辑通畅修复（V4.2）✅、效率优化/首屏分包方案A（V4.3）✅、体验筑基（V4.4）✅、操作便捷与工程收尾（V4.5）✅、美术打磨（V4.6，UI 评估后追加）✅。
+- 配套门禁测试（test_tokens_defined/contrast/spacing/transition/typography/theme-contrast 等）、文档回写、流程脚本化（scripts/build.sh+push.sh）。
 
 ### 5.2 明确不做（Out of Scope）
 - 多用户私有策略（沿用 V4.0 用户决策顺延）
@@ -83,8 +93,8 @@ V4.0 完成"策略研发与运行平台"能力拼图并发布（tag v4.0.0），
 - qdata 历史归档
 - 全新业务功能（4.1-4.5 以优化打磨为唯一主线）
 
-### 5.3 待定（Open）
-- V4.3.3 首屏分包是否引入构建层（打破零构建）——需用户决策（备选 import map + 动态 import 保零构建）。
+### 5.3 待定（Open）— 已决策
+- ~~V4.3.3 首屏分包是否引入构建层~~ → **已决策采用方案 A（Vite 构建层）**，V4.3.0 已落地（dist 入库、懒加载分包、CSP 兼容）。
 
 ## 6. 功能需求（FR，按版本）
 
