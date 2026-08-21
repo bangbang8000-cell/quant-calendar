@@ -4367,7 +4367,7 @@ text {
 /* V4.6: 核心功能单行紧凑列表(名称加粗 + 描述, 无图标) */
 .about-ul { list-style: none; padding-left: 0; margin: 8px 0 0; }
 .about-ul li { padding: 3px 0; font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5; }
-.about-ul li strong { font-weight: var(--font-semibold); color: var(--text-primary); }
+.about-ul li strong, .about-item-name { font-weight: var(--font-semibold); color: var(--text-primary); }
 
 }
 .align-self-start { align-self:flex-start; }
