@@ -42,13 +42,13 @@ DEFAULT_CONFIG = {
         "sxsc_tushare": {
             "enabled": True,
             "token": "",  # v1.8: 从 .env SXSC_TUSHARE_TOKEN 读取
-            "timeout": 30
+            "timeout": 5  # V4.6: 连接超时缩短(30->5s)
         },
         "tushare": {
             "enabled": True,
             "token": "",
             "endpoint": "http://api.tushare.pro",
-            "timeout": 30
+            "timeout": 5  # V4.6: 连接超时缩短(30->5s)
         },
         "akshare": {
             "enabled": True
@@ -442,7 +442,7 @@ class DataSourceManager:
                     except Exception:
                         logger.debug("数据源回退尝试")
                         pass
-                timeout = sxsc.get('timeout', 30)
+                timeout = sxsc.get('timeout', 5)
                 if token:
                     self._clients['sxsc_tushare'] = get_api(token, timeout=timeout, env='prd')
                     logger.info("✅ sxsc-tushare 初始化成功")

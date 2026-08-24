@@ -131,6 +131,9 @@ class DataParser:
                     if not row or not row[0]:
                         continue
                     date = row[0].strip()
+                    # V4.6: 引擎持仓日期 20260824 -> 2026-08-24(与 qresult 格式一致, 否则日视图不可选)
+                    if len(date) == 8 and date.isdigit():
+                        date = date[:4] + '-' + date[4:6] + '-' + date[6:8]
                     stocks = set()
                     for idx, value in enumerate(row[1:]):
                         if idx < len(headers) and value and float(value) > 0:
@@ -182,6 +185,13 @@ class DataParser:
                         continue
                 logger.info('🔗 引擎持仓 overlay: %s (%s)', stem, date_dir)
                 self._merge_overlay_file(sid, os.path.join(dpath, fn))
+        # V4.6: 引擎持仓日期合并进 date_list(此前只进 holdings_data, 导致日视图 8 月日期不可选)
+        engine_dates = set()
+        for _s, m in self.holdings_data.items():
+            for d in m:
+                engine_dates.add(d)
+        if engine_dates:
+            self.date_list = sorted(set(self.date_list) | engine_dates)
 
     def reload(self) -> dict:
         """重新加载所有策略数据（原子替换，失败不回滚旧数据）"""

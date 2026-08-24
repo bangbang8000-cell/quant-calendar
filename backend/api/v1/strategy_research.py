@@ -175,7 +175,9 @@ async def run_strategy(sid: str, body: Dict[str, Any],
         if not as_of:
             from data_sources import data_source_manager
             try:
-                latest = data_source_manager.get_index_daily('000300.SH', None)
+                # V4.6: 同步数据源调用迁 to_thread, 防 sxsc 超时阻塞事件循环
+                import asyncio
+                latest = await asyncio.to_thread(data_source_manager.get_index_daily, '000300.SH', None)
                 as_of = str(latest.get('trade_date') or '')[:4] + '-' + str(latest.get('trade_date') or '')[4:6] + '-' + str(latest.get('trade_date') or '')[6:8]
             except Exception:
                 as_of = None
