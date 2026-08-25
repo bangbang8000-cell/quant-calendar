@@ -54,12 +54,24 @@ def get_state() -> dict:
 
 
 def save_state(state: dict) -> dict:
-    """持久化纳管状态"""
+    """持久化纳管状态
+
+    V4.7.1 (修复): 部分更新时缺失 sid 合并现有 json 状态, 避免 universe 等字段被重置回 default。
+    此前 PUT /strategies/governance 只传 1 个 sid 时, 其余 3 个 sid 用空字典 → universe 归 default。
+    """
     os.makedirs(DATA_DIR, exist_ok=True)
+    # 读取现有状态, 供部分更新补缺
+    existing = {}
+    try:
+        if os.path.exists(GOV_FILE):
+            with open(GOV_FILE, "r", encoding="utf-8") as f:
+                existing = json.load(f) or {}
+    except Exception:
+        logger.warning("读取纳管状态失败(保存时), 以空态继续")
     # 仅保留内置策略 + 合法字段, 防止注入
     clean = {}
     for sid in BUILTIN_SIDS:
-        s = (state or {}).get(sid) or {}
+        s = (state or {}).get(sid) or existing.get(sid) or {}
         clean[sid] = {
             "enabled": bool(s.get("enabled", True)),
             "schedule": str(s.get("schedule") or DEFAULT_SCHEDULE)[:5],
