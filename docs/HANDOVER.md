@@ -1,7 +1,7 @@
 # 量化选股日历 — 交接文档 (HANDOVER)
 
-> 最后更新: 2026-08-25 (V4.7.0)
-> 当前状态: **v4.7.0 已发布**, 三端一致(GitHub=群辉=ops), 全量测试 1023 用例全绿
+> 最后更新: 2026-08-25 (V4.7.1)
+> 当前状态: **v4.7.1 已发布**, 三端一致(GitHub=群辉=ops), 全量测试 1028 用例全绿
 
 ---
 
@@ -68,6 +68,18 @@
 - 年视图: 8.7s → 0.27s, 310KB → 78KB, 400 只上限
 - 数据: holdings 08-25 目录 4 策略 5557 列 × 42 天 (2026-06-26 ~ 08-24); qresult 同步至 09-07
 - 08-25 日视图为 0 属正常: 最新行情到 08-24 (tushare 数据源)
+
+### 4.2 V4.7.1 并发安全 (2026-08-25)
+
+| 模块 | 变更 | 收益 |
+|---|---|---|
+| scheduler.strategy_run_task | run_strategy_once → asyncio.to_thread | 引擎全市场 4-8min 不再阻塞事件循环 (HTTP/WS/其他任务不受影响) |
+| strategy_research.run-once API | gov.run_once → asyncio.to_thread | 手动触发同样不阻塞 |
+| _write_holdings_matrix | 临时文件 + os.replace 原子重命名 | data_parser/file_watch 不会读到半截 CSV; .tmp 被 .csv 过滤天然排除 |
+| save_state | 部分更新缺失 sid 合并现有 json | PUT 单策略不再把其余 universe 重置回 default |
+| tests | +5 (原子写/并发读无半截/to_thread/部分更新) | 1028 用例全绿 |
+
+**验证**: run-once 期间 health 2.7ms 响应 (不阻塞); 原子写并发读 10 轮无截断。
 
 ## 5. 关键技术要点
 
