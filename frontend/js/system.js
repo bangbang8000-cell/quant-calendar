@@ -381,6 +381,32 @@ async function toggleDatasourceKeyReveal(source) {
     ds._revealed = true;
 }
 
+// V4.7.2 编辑锁(对齐 AI 厂商卡): 未解锁时输入框禁用, 防止掩码被编辑后当真值保存
+async function toggleDatasourceEdit(source) {
+    const ds = datasourceConfig.value[source];
+    if (!ds) return;
+    if (ds._editing) {
+        // 锁定: 重新掩码, 未解锁不提交 token(后端保留原值)
+        ds._editing = false;
+        ds._revealed = false;
+        if (ds.token) ds._masked = _maskSecret(ds.token);
+        return;
+    }
+    ds._editing = true;
+    try {
+        const full = await _revealSecret(source);
+        if (full === null) {
+            ds._editing = false;
+            return;
+        }
+        ds.token = full;
+        ds._revealed = true;
+    } catch (e) {
+        ds._editing = false;
+        ElementPlus.ElMessage.error('解锁失败: ' + e.message);
+    }
+}
+
 // v1.8.0: 多数据源配置
 async function loadDatasourceConfig() {
     try {
@@ -390,8 +416,11 @@ async function loadDatasourceConfig() {
             const srcs = data.config.sources;
             const decorate = (key) => {
                 const merged = { ...datasourceConfig.value[key], ...(srcs[key] || {}) };
+                // V4.7.2: 未解锁编辑时 token 置空(不保留后端掩码), _masked 仅用于展示掩码
+                merged._editing = false;
                 merged._revealed = false;
                 merged._masked = merged.token || '';
+                merged.token = '';
                 return merged;
             };
             datasourceConfig.value = {
@@ -417,7 +446,9 @@ async function saveDatasourceConfig() {
         // 剔除前端掩码展示标志 (_revealed/_masked), 只提交后端 schema 字段
         const cleanSources = {};
         for (const [k, v] of Object.entries(datasourceConfig.value)) {
-            const { _revealed, _masked, ...rest } = v;
+            const { _revealed, _masked, _editing, ...rest } = v;
+            // V4.7.2 编辑锁: 未解锁编辑的源不提交 token(后端保留原值, 防掩码覆盖真实 key)
+            if (!_editing && k !== 'akshare') rest.token = '';
             cleanSources[k] = rest;
         }
         await fetch('/api/market/datasource/config', {
@@ -540,6 +571,7 @@ async function loadDashboardData() {
         saveAiConfig, testAiApi, exportConfig, importConfig,
         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+        toggleDatasourceEdit,
         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData,
       };
     }

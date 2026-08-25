@@ -22,9 +22,20 @@ def mask_secret(secret) -> str:
 
 
 def is_masked_form(submitted, stored) -> bool:
-    """提交值与存储值的掩码形式一致 → 视为未修改 (含两边皆空的场景)"""
+    """提交值与存储值的掩码形式一致 → 视为未修改 (含两边皆空的场景)
+
+    V4.7.2 加固: 增加长度一致性校验。掩码不改变长度, 若 submitted 含 '*' 但
+    长度与 stored 不等(用户编辑过掩码/粘贴了残缺掩码), 一律不视为掩码形式 —
+    防止"改过的掩码"被当成真实 key 写入配置。
+    """
     if stored == "":
         return submitted == ""
+    if not isinstance(submitted, str) or not isinstance(stored, str):
+        return False
+    if '*' not in submitted:
+        return False
+    if len(submitted) != len(stored):
+        return False  # 掩码不改变长度
     return submitted == mask_secret(stored)
 
 

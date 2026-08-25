@@ -144,8 +144,13 @@ async def save_datasource_config(req: Dict[str, Any], _: Dict = Depends(get_admi
         for src_name in ['sxsc_tushare', 'tushare']:
             src_cfg = sources.get(src_name, {})
             existing_token = existing[src_name].get('token', '') if src_name in existing else ''
-            if src_cfg.get('token', '') == '' or is_masked_form(src_cfg.get('token', ''), existing_token):
+            submitted_token = src_cfg.get('token', '') or ''
+            # V4.7.2 兜底: token 为 56 位十六进制, 绝不含 '*'; 含 '*' 且非掩码形式一律拒绝写入
+            if submitted_token == '' or is_masked_form(submitted_token, existing_token):
                 src_cfg['token'] = existing_token
+            elif '*' in submitted_token:
+                return {"success": False,
+                        "message": f"{src_name} Token 含掩码字符(*), 请点击 🔓 编辑解锁后输入完整 Token 再保存"}
         data_source_manager.save_config(req)
         return {"success": True, "message": "数据源配置已保存"}
     except Exception as e:

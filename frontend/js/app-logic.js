@@ -733,6 +733,7 @@ const allMenuDefs = [
                         saveAiConfig, testAiApi, exportConfig, importConfig,
                         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
                         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+                        toggleDatasourceEdit,
                         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData } = __systemDomain;
 
                 // ===== v3.17.11.1: 登录/登出/密码/初始化向导域 (js/app-logic/auth.js) =====
@@ -1005,7 +1006,7 @@ const allMenuDefs = [
                     checkTushareConnection,
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
-                    loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+                    loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal, toggleDatasourceEdit,
                     strategyFilter, strategyFilterOptions, strategyFilterCounts, strategyPreviewCount, saveStrategyFilter,
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,
