@@ -8,6 +8,7 @@
 - PTrade 代码导出
 - 因子研究: 单因子 IC 评价 / 分层回测
 """
+import asyncio
 import logging
 from typing import Any, Dict, Optional
 
@@ -58,7 +59,8 @@ async def governance_run_once(sid: str, body: Dict = None,
     import strategy_governance as gov
     from strategy_sdk.registry import StrategyNotFoundError
     try:
-        result = gov.run_once(sid, as_of=(body or {}).get('as_of'))
+        # V4.7.1 (并发安全): 全市场模式 run-once 60-120s/策略, 移入后台线程防阻塞事件循环
+        result = await asyncio.to_thread(gov.run_once, sid, (body or {}).get('as_of'))
     except StrategyNotFoundError:
         raise HTTPException(404, f'策略不存在或非纳管: {sid}')
     except RuntimeError as e:

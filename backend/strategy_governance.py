@@ -143,17 +143,24 @@ def _holdings_matrix_rows(holdings, universe) -> list:
 
 
 def _write_holdings_matrix(holdings, sid, out_dir: str, universe=None) -> str:
-    """写持仓文件 (qresult 完全一致矩阵: 行=日期, 列=股票代码, 值=1持有)"""
+    """写持仓文件 (qresult 完全一致矩阵: 行=日期, 列=股票代码, 值=1持有)
+
+    V4.7.1 (并发安全): 原子写入 — 先写同目录临时文件, 再 os.replace 原子重命名。
+    避免 data_parser/file_watch 在生成期间读到半截 CSV (截断行/脏数据)。
+    """
     os.makedirs(out_dir, exist_ok=True)
     name = _display_name(sid)
     path = os.path.join(out_dir, name + "持仓.csv")
+    tmp_path = path + ".tmp"
     rows, cols = _holdings_matrix_rows(holdings, universe or [])
     if not rows:
         raise ValueError("持仓矩阵为空")
-    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+    # 先写临时文件 (同目录 → 同文件系统, os.replace 原子)
+    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         for r in rows:
             w.writerow(r)
+    os.replace(tmp_path, path)  # 原子替换: 读者要么看到旧完整文件, 要么看到新完整文件
     return path
 
 

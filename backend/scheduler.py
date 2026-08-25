@@ -422,7 +422,8 @@ class Scheduler:
                 last_date = today
                 logger.info("⏰ 策略定期运行: %s", today)
                 try:
-                    run_strategy_once()
+                    # V4.7.1 (并发安全): 引擎取数/因子计算同步阻塞事件循环(全市场每策略 60-120s) → 移入后台线程
+                    await asyncio.to_thread(run_strategy_once)
                     self._record_task_run("strategy_run", True, f"策略持仓已生成 {today}")
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
