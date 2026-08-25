@@ -938,6 +938,78 @@ class DataSourceManager:
         # akshare 无统一逐日主力净流入接口，降级
         return None
 
+    # ==================== V4.7: 按交易日全市场批量取数 (引擎 universe 扩大后逐股取数太慢/限流) ====================
+
+    def get_trade_dates(self, start_date: str, end_date: str):
+        """交易日历: 返回 [YYYYMMDD, ...] 开市日 (tushare trade_cal, 单次调用)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return []
+        try:
+            df = pro.trade_cal(exchange='SSE', start_date=start_date.replace('-', ''),
+                               end_date=end_date.replace('-', ''), is_open='1')
+            if df is None or len(df) == 0:
+                return []
+            return sorted(df['cal_date'].astype(str).tolist())
+        except Exception as e:
+            logger.warning('get_trade_dates(%s~%s) 失败: %s', start_date, end_date, e)
+            return []
+
+    def get_market_daily_batch(self, trade_date: str):
+        """按交易日一次拉全市场日线 (tushare daily(trade_date=...) → 全市场 5500+ 只)
+
+        返回 DataFrame(ts_code, trade_date, open, high, low, close, volume, amount) 或 None。
+        单次调用替代逐股 5500 次请求 — 引擎全市场 universe 的核心提速。
+        """
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.daily(trade_date=trade_date)
+            if df is None or len(df) == 0:
+                return None
+            df = df.rename(columns={'vol': 'volume'})
+            return df
+        except Exception as e:
+            logger.warning('get_market_daily_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
+
+    def get_market_daily_basic_batch(self, trade_date: str):
+        """按交易日一次拉全市场基本面 (tushare daily_basic(trade_date=...) → pe/pb/turnover)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.daily_basic(trade_date=trade_date,
+                                 fields='ts_code,trade_date,pe,pb,turnover_rate,total_mv,circ_mv,float_mv')
+            if df is None or len(df) == 0:
+                return None
+            return df
+        except Exception as e:
+            logger.warning('get_market_daily_basic_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
+
+    def get_market_moneyflow_batch(self, trade_date: str):
+        """按交易日一次拉全市场资金流 (tushare moneyflow(trade_date=...) → net_mf_amount)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.moneyflow(trade_date=trade_date,
+                               fields='ts_code,trade_date,net_mf_amount,buy_lg_amount,sell_lg_amount')
+            if df is None or len(df) == 0:
+                return None
+            return df
+        except Exception as e:
+            logger.warning('get_market_moneyflow_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
+
     def _fetch_daily_basic(self, src_name, ts_code, limit):
         """各数据源获取基本面数据"""
         if src_name == 'sxsc_tushare':

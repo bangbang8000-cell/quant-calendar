@@ -30,7 +30,7 @@ def _default_state() -> dict:
     """4 内置策略默认纳管状态"""
     return {
         sid: {"enabled": True, "schedule": DEFAULT_SCHEDULE,
-              "universe": "default",  # v3.21: default=策略自带池 | all=全市场5530
+              "universe": "all",  # V4.7: 默认全市场5530(批量取数已提速); default=策略自带池8只(开发占位)
               # V4.0 M3: 完全体闭环 — 内置策略引擎持仓默认进入日历展示
               "show_in_calendar": True,
               "last_run": None, "last_holdings": None}
