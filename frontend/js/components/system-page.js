@@ -674,14 +674,11 @@
                     </div>
                     <!-- v3.17.5 (FR-3.17.5): 用量统计 — 资源监控/调度任务/备份磁盘/页面热度 (自系统状态移入) -->
                     <div v-else-if="currentSubPage === 'usage'">
-                        <!-- v3.22-I2: 用量统计卡片化 — 4卡片网格 -->
-                        <div class="usage-card-grid">
-                        <!-- 卡1: 资源监控 -->
-                        <div class="usage-card">
-                            <div class="usage-card-title">🖥️ 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
+                        <!-- v3.4.0-T4: 系统监控面板 -->
+                        <div class="section-block-top">
                             <div class="usage-ai-panel">
-                                <div class="usage-ai-panel-title">实时指标
-                                    <span class="usage-ai-panel-meta">CPU/内存/磁盘</span>
+                                <div class="usage-ai-panel-title">资源监控
+                                    <span class="usage-ai-panel-meta">服务器实时资源</span>
                                 </div>
                                 <div class="usage-ai-summary">
                                     <div class="usage-ai-stat usage-ai-stat-meter">
@@ -714,10 +711,9 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 卡2: 数据源健康 (含数据健康度) -->
-                        <div class="usage-card">
-                            <div class="usage-card-title">📊 数据源健康<span class="usage-card-title-sub">三源成功率/延迟</span></div>
-                            <div class="section-block-top">
+                        <!-- v3.18.3 (UI 统一): 数据源健康 — 强调面板 + 状态徽标 + 明细行 -->
+                        <div class="section-block-top">
+                            <div class="section-title-base">📊 数据源健康</div>
                             <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
                                 <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
                                     <div class="usage-src-head">
@@ -765,13 +761,9 @@
                                 </div>
                             </div>
                         </div>
-                        </div><!-- /数据源健康卡 -->
 
-                        <!-- 卡3: 运维状态 (AI护栏 + 调度 + 备份合并) -->
-                        <div class="usage-card">
-                            <div class="usage-card-title">🛡️ 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
-                            <div class="section-block-top">
-                            <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
+                        <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
+                        <div class="section-block-top">
                             <div class="section-title-base flex-between">
                                 <span>🔍 AI 事实护栏审计</span>
                                 <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
@@ -858,15 +850,14 @@
                                 </div>
                             </div>
                         </div>
-                        </div><!-- /运维状态卡 -->
-
-                        <!-- 卡4: AI 用量 -->
-                        <div class="usage-card">
-                            <div class="usage-card-title">🤖 AI 用量<span class="usage-card-title-sub">30s 自动刷新</span></div>
-                            <div class="section-block-top">
+                        <!-- v3.18.2 (UI 优化): AI 用量 — 实时指示 + 强调汇总卡 + 模型分布(占比) + 近30天趋势(今日高亮) -->
+                        <div class="section-block-top">
                             <div class="section-title-base flex-between">
-                                <span>用量汇总</span>
-                                <el-button size="small" @click="loadAiUsage">刷新</el-button>
+                                <span>🤖 AI 用量</span>
+                                <div class="flex-gap-4 usage-ai-actions">
+                                    <span class="usage-ai-live"><span class="usage-ai-dot"></span>30s 自动刷新</span>
+                                    <el-button size="small" @click="loadAiUsage">刷新</el-button>
+                                </div>
                             </div>
                             <div class="usage-ai-panel">
                                 <div class="usage-ai-panel-title">AI 用量汇总
@@ -916,15 +907,11 @@
                                 </div>
                             </div>
                         </div>
-                        </div><!-- /AI用量卡 -->
-                        </div><!-- /usage-card-grid -->
-
-                        <!-- 额外全宽卡: 页面热度 -->
-                        <div class="usage-card-extra usage-card">
-                            <div class="usage-card-title">🔥 页面热度<span class="usage-card-title-sub">近 {{ analyticsDays }} 天</span></div>
-                            <div class="section-block-top">
+                        <!-- v3.4.0-T7: 页面热度排行 -->
+                        <!-- v3.17.6: top5→top10 + 天数切换 7/14/30 -->
+                        <div class="section-block-top">
                             <div class="section-title-base flex-between">
-                                <span>排行</span>
+                                <span>🔥 页面热度 (近 {{ analyticsDays }} 天)</span>
                                 <div class="flex-gap-4">
                                     <el-button size="small" :type="analyticsDays === 7 ? 'primary' : ''" @click="setAnalyticsDays(7)">近7天</el-button>
                                     <el-button size="small" :type="analyticsDays === 14 ? 'primary' : ''" @click="setAnalyticsDays(14)">近14天</el-button>
@@ -943,7 +930,6 @@
                                 <div class="usage-ai-empty" v-else>暂无访问数据</div>
                             </div>
                         </div>
-                        </div><!-- /页面热度卡 -->
                     </div>
 
                     <div v-else-if="currentSubPage === 'about'">
