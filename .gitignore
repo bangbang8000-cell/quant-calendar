@@ -1,0 +1,70 @@
+# ==========================================
+# 量化选股日历 - Git 忽略规则
+# ==========================================
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Environment files (secrets)
+.env
+*.env.local
+*.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# User data (generated at runtime)
+quant-calendar-ops/data/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Archives & releases
+*.tar.gz
+*.zip
+quant-calendar-ops/releases/
+quant-calendar-ops/versions/
+
+# Backup files
+*.backup*
+*.bak
+*.original*
+*_bak*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dev scripts (local only)
+quant-calendar-ops/dev.sh
+quant-calendar-ops/dev.bat
+quant-calendar-ops/start.sh
+quant-calendar-ops/start.bat
+quant-calendar-ops/release.sh
+
+# Dev plans
+.hermes/
+PLAN.md
+
+# Pytest cache
+.pytest_cache/
+
+# qresult CSV source (tracked via Git LFS or direct, decide per release)

@@ -1,0 +1,166 @@
+/* ===== animations.css v3.0 ===== */
+/* Page transitions, skeleton screens, toast, micro-interactions */
+
+/* ─── Page Transitions ─── */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-base);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* ─── Skeleton Screen ─── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border-light) 25%,
+    var(--bg-hover) 50%,
+    var(--border-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+.skeleton-text {
+  height: 14px;
+  margin-bottom: var(--sp-2);
+}
+.skeleton-text:last-child { width: 60%; }
+.skeleton-title {
+  height: 20px;
+  width: 40%;
+  margin-bottom: var(--sp-4);
+}
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--card-radius);
+}
+.skeleton-chart {
+  height: 300px;
+  border-radius: var(--card-radius);
+}
+.skeleton-circle {
+  border-radius: 50%;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Toast ─── */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-md);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medium);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 200px;
+  max-width: 400px;
+  animation: toast-in var(--transition-base) ease forwards;
+}
+.toast.leaving {
+  animation: toast-out var(--transition-fast) ease forwards;
+}
+.toast-success { background: var(--color-success); }
+.toast-warning { background: var(--color-warning); }
+.toast-danger { background: var(--color-danger); }
+.toast-info { background: var(--color-info); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(40px); }
+}
+
+/* ─── Micro-interactions ─── */
+.hover-lift {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.hover-scale {
+  transition: transform var(--transition-fast);
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+.hover-glow {
+  transition: box-shadow var(--transition-fast);
+}
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(0,0,0,0.15);
+}
+
+/* ─── Pulse (for live indicators) ─── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ─── Spin ─── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Slide Up ─── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-up {
+  animation: slide-up var(--transition-base) ease forwards;
+}
