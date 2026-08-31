@@ -37,6 +37,7 @@
     'sub.backtest-history': '回测记录',
     'sub.market-review': '市场复盘',
     'sub.scan': '异动扫描',
+    'sub.custom-write': '全新策略',
     'sub.status': '系统状态',
     'sub.autoeval': '自动评估',
     'sub.datasource': '数据源',
@@ -57,7 +58,7 @@
     'login.password': '密码',
     'login.submit': '登 录',
     'login.guest': '访客登录',
-    'login.footer': '🚀 量化选股 · 智能决策 · 让数据说话',
+    'login.footer': '量化选股 · 智能决策 · 让数据说话',
     // 通用
     'common.loading': '加载中...',
     'common.dataUnavailable': '数据不可达',

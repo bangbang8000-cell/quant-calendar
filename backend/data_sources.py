@@ -702,10 +702,10 @@ class DataSourceManager:
             try:
                 if src_name == 'sxsc_tushare':
                     df = api.query('daily_basic', ts_code=ts_code, limit=limit,
-                                   fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                   fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
                 else:
                     df = api.daily_basic(ts_code=ts_code, limit=limit,
-                                         fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                         fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             except Exception:
                 return []
             if df is None or len(df) == 0:
@@ -937,7 +937,7 @@ class DataSourceManager:
             if not api:
                 return None
             df = api.query('daily_basic', ts_code=ts_code, limit=limit,
-                           fields='trade_date,pe,pb,turnover_rate,total_mv')
+                           fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             if df is None or len(df) == 0:
                 return None
             return df.iloc[0].to_dict()
@@ -947,7 +947,7 @@ class DataSourceManager:
             if not pro:
                 return None
             df = pro.daily_basic(ts_code=ts_code, limit=limit,
-                                 fields='trade_date,pe,pb,turnover_rate,total_mv')
+                                 fields='trade_date,pe,pb,turnover_rate,total_mv,circ_mv')
             if df is None or len(df) == 0:
                 return None
             return df.iloc[0].to_dict()
@@ -999,15 +999,23 @@ class DataSourceManager:
         df['ma60'] = df['close'].rolling(window=60).mean()
         df['vol_ma5'] = df['vol'].rolling(window=5).mean()
 
+        # v3.22-kline-fix: 主字段 NaN/Inf → None — 数据源缺行/异常值若直接 float() 会产出 NaN,
+        #   FastAPI JSON 序列化报 "Out of range float values are not JSON compliant" → K线加载失败(ops 实测)
+        def _safe(v):
+            try:
+                f = float(v)
+                return f if (f == f and f not in (float('inf'), float('-inf'))) else None
+            except (TypeError, ValueError):
+                return None
         kline_data = []
         for _, row in df.iterrows():
             kline_data.append([
                 str(row['trade_date']),
-                float(row['open']),
-                float(row['close']),
-                float(row['low']),
-                float(row['high']),
-                float(row['vol']),
+                _safe(row['open']),
+                _safe(row['close']),
+                _safe(row['low']),
+                _safe(row['high']),
+                _safe(row['vol']),
                 float(row['ma5']) if pd.notna(row.get('ma5')) else None,
                 float(row['ma10']) if pd.notna(row.get('ma10')) else None,
                 float(row['ma20']) if pd.notna(row.get('ma20')) else None,

@@ -89,9 +89,27 @@ class RealDataPortal:
         panel = panel[fields] if all(f in panel.columns for f in fields) else panel
         return panel
 
+    def _calc_limit(self, start, end, default=250, cap=2000):
+        """按请求日期区间估算所需 K 线/序列条数(留 1.5x 缓冲), 上限 cap — V4.0 M1-2 去 120 硬编码"""
+        import datetime as _dt
+        try:
+            s = (start or '').replace('-', '')
+            e = (end or '').replace('-', '') or _dt.datetime.now().strftime('%Y%m%d')
+            if s and e and len(s) == 8 and len(e) == 8 and s <= e:
+                days = (_dt.datetime.strptime(e, '%Y%m%d') - _dt.datetime.strptime(s, '%Y%m%d')).days
+                return max(default, min(int(days * 1.5) + 20, cap))
+        except Exception:
+            pass
+        return default
+
     def _stock_panel(self, code, start, end, kline_fields, basic_fields, flow_fields):
-        """单只股票: K线(日频) + 估值/资金流(单点前向填充) → 面板切片"""
-        kline = self._fetch_kline(code, start, end)
+        """单只股票: K线(日频) + 估值/资金流(历史序列按日合并, 前向填充不越界 → 无未来函数)
+
+        V4.0 M1-2: 估值/资金流不再用"最新快照前向填充全区间"(未来信息),
+        改用历史序列按面板日期 reindex+ffill — 每个日期只用 <= 当日的数据。
+        """
+        limit = self._calc_limit(start, end)
+        kline = self._fetch_kline(code, start, end, limit)
         if kline is None or kline.empty:
             return None
         idx = pd.MultiIndex.from_arrays([kline['date'].values, [code] * len(kline)],
@@ -100,21 +118,41 @@ class RealDataPortal:
         for f in kline_fields:
             if f in kline.columns:
                 out[f] = kline[f].values
-        # 估值/资金流: 单点数据前向填充到整个区间(日频近似)
-        basic = self._fetch_basic(code) if basic_fields else {}
-        flow = self._fetch_flow(code) if flow_fields else {}
-        for f in basic_fields:
-            out[f] = basic.get(f, float('nan'))
-        for f in flow_fields:
-            out[f] = flow.get(f, float('nan'))
+        # 估值/资金流: 历史序列按面板日期合并(只向前填充, 无未来函数)
+        basic_rows = self._fetch_basic_series(code, limit) if basic_fields else []
+        flow_rows = self._fetch_flow_series(code, limit) if flow_fields else []
+        panel_dates = [str(d).replace('-', '') for d in kline['date']]
+
+        def _merge_series(rows, fields):
+            df = pd.DataFrame(rows)
+            if df.empty:
+                return {f: [float('nan')] * len(panel_dates) for f in fields}
+            df['_d'] = df['trade_date'].astype(str).str.replace('-', '', regex=False)
+            df = df.drop_duplicates('_d').set_index('_d').sort_index()
+            vals = {}
+            for f in fields:
+                if f not in df.columns:
+                    vals[f] = [float('nan')] * len(panel_dates)
+                    continue
+                vals[f] = df[f].reindex(panel_dates).ffill().values.tolist()
+            return vals
+
+        merged = {}
+        merged.update(_merge_series(basic_rows, basic_fields))
+        merged.update(_merge_series(flow_rows, flow_fields))
+        # v3.21 (P0-8) 延续: float_mv = circ_mv 别名(供换手因子), 序列版同样生效
+        if 'float_mv' in basic_fields and 'circ_mv' in merged and 'circ_mv' not in merged.get('float_mv', []):
+            merged['float_mv'] = merged['circ_mv']
+        for f in basic_fields + flow_fields:
+            out[f] = merged.get(f, [float('nan')] * len(panel_dates))
         return out
 
     # ---- 各数据源方法(带失败兜底) ----
 
-    def _fetch_kline(self, code, start, end):
-        """K线: 返回 {date: [...], close: [...]} 或 None"""
+    def _fetch_kline(self, code, start, end, limit=250):
+        """K线: 返回 {date: [...], close: [...]} 或 None (limit 按请求区间参数化)"""
         try:
-            res = self.source.get_kline_data(code, period='daily', limit=120)
+            res = self.source.get_kline_data(code, period='daily', limit=limit)
             data = (res or {}).get('data') or []
             if not data:
                 return None
@@ -137,41 +175,34 @@ class RealDataPortal:
             logger.warning('K线取数失败 %s: %s', code, e)
             return None
 
-    def _fetch_basic(self, code) -> Dict:
-        """估值快照(最新一条) → {pe, pb, ...} (兼容 dict/list 返回)"""
+    def _fetch_basic_series(self, code, limit=20) -> List[Dict]:
+        """基本面历史序列(旧→新, {trade_date, pe, pb, ...}) — V4.0 M1-2 去快照前向填充"""
         try:
-            raw = self.source.get_daily_basic(code, limit=1)
-            if isinstance(raw, dict):
-                row = raw
-            elif isinstance(raw, list) and raw and isinstance(raw[-1], dict):
-                row = raw[-1]
-            else:
-                return {}
-            out = {k: v for k, v in row.items() if k in ('pe', 'pb', 'ps', 'dv_ratio', 'total_mv', 'circ_mv')}
-            # v3.21 (P0-8): float_mv(流通市值) = circ_mv 别名, 供换手因子(volume/float_mv)
-            if 'float_mv' not in out and 'circ_mv' in out:
-                out['float_mv'] = out['circ_mv']
-            return out
+            rows = self.source.get_daily_basic_series(code, limit=limit) or []
+            return [r for r in rows if isinstance(r, dict)]
         except Exception as e:
-            logger.warning('估值取数失败 %s: %s', code, e)
-            return {}
+            logger.warning('估值序列取数失败 %s: %s', code, e)
+            return []
 
-    def _fetch_flow(self, code) -> Dict:
-        """资金流快照(最新一天主力净流入), 兼容字段名 main_net_inflow/net_mf_amount/net_amount"""
+    def _fetch_flow_series(self, code, limit=10) -> List[Dict]:
+        """资金流历史序列(旧→新, {trade_date, main_net_inflow}) — V4.0 M1-2 去快照前向填充"""
         try:
-            rows = self.source.get_moneyflow(code, limit=3)
+            rows = self.source.get_moneyflow(code, limit=limit)
             if isinstance(rows, dict):
                 rows = [rows]
-            rows = rows or []
-            if not isinstance(rows, list) or not rows:
-                return {}
-            row = rows[-1] if isinstance(rows[-1], dict) else rows[0]
-            val = row.get('main_net_inflow')
-            if val is None:
-                val = row.get('net_mf_amount')
-            if val is None:
-                val = row.get('net_amount')
-            return {'main_net_inflow': val}
+            out = []
+            for r in (rows or []):
+                if not isinstance(r, dict):
+                    continue
+                val = r.get('main_net_inflow')
+                if val is None:
+                    val = r.get('net_mf_amount')
+                if val is None:
+                    val = r.get('net_amount')
+                row = dict(r)
+                row['main_net_inflow'] = val
+                out.append(row)
+            return out
         except Exception as e:
-            logger.warning('资金流取数失败 %s: %s', code, e)
-            return {}
+            logger.warning('资金流序列取数失败 %s: %s', code, e)
+            return []

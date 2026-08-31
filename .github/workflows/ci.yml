@@ -1,14 +1,10 @@
 name: CI
 
+# V4.0 精简: CI 只在里程碑版本(tag v*)或手动触发(workflow_dispatch)时运行, 不再随每次 push 触发
 on:
   push:
-    branches: [master]
-    paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - 'DEPLOYMENT.md'
-      - 'reports/**'
-      - '.github/workflows/**'
+    tags:
+      - 'v*'          # 里程碑版本: tag v4.0.0 等 → 跑 CI + Docker 发布
   pull_request:
     branches: [master]
     paths-ignore:
@@ -16,6 +12,7 @@ on:
       - 'README.md'
       - 'DEPLOYMENT.md'
       - 'reports/**'
+  workflow_dispatch:  # 手动触发: 我单独要求时在 Actions 页 Run workflow
 
 jobs:
   lint-and-test:
@@ -61,7 +58,7 @@ jobs:
         run: ruff check backend/ --select=E,F,W --ignore=E501
       - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
         run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"
-      - name: 核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)
+      - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
         run: |
           python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"

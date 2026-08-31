@@ -101,6 +101,8 @@
 /* ─── Spacing Utilities ─── */
 .mt-2 { margin-top: var(--sp-2); }
 .mt-4 { margin-top: var(--sp-4); }
+.mt-8 { margin-top: var(--sp-8); }
+
 .mb-2 { margin-bottom: var(--sp-2); }
 .mb-4 { margin-bottom: var(--sp-4); }
 .gap-2 { gap: var(--sp-2); }
@@ -203,14 +205,15 @@
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 12px;
-  color: var(--white);
+  /* v3.22-timeline-fix: 阶段底色为浅色(绿/橙/粉/蓝), 白字看不清 → 改深字 */
+  color: var(--merrill-chip-text);
   cursor: pointer;
   transition: opacity 0.15s, transform 0.15s;
 }
 .merrill-stage-chip:hover { opacity: 0.85; transform: translateY(-1px); }
 .merrill-stage-chip.is-current { box-shadow: 0 0 0 2px var(--color-primary); }
 .merrill-stage-chip-name { font-weight: var(--font-semibold, 600); }
-.merrill-stage-chip-date { font-size: 11px; opacity: 0.85; }
+.merrill-stage-chip-date { font-size: 11px; opacity: 0.9; }
 .merrill-stage-chip-current {
   font-size: 10px;
   padding: 1px 5px;
@@ -225,3 +228,54 @@
   flex-direction: column;
   gap: 8px;
 }
+
+/* ─── v3.22-I2: 用量统计卡片化 (4卡片网格) ─── */
+.usage-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.usage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-base);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+}
+.usage-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-md);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+.usage-card-title-sub {
+  font-size: var(--font-xs);
+  font-weight: var(--font-normal);
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+.usage-card .section-block-top {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.usage-card .usage-ai-panel,
+.usage-card .usage-src-grid,
+.usage-card .sys-health-grid {
+  margin-top: 0;
+}
+.usage-card-grid + .usage-card-extra {
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .usage-card-grid { grid-template-columns: 1fr; }
+}
+.w-full { width: 100%; }
+.custom-bt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-4); margin-top: var(--sp-4); }
+.custom-bt-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-2); padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-1); }

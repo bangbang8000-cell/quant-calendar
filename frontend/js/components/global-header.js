@@ -8,7 +8,7 @@
   window.__quantComponents.GlobalHeader = {
     name: 'qc-global-header',
     template: `
-      <div>
+      <div class="global-header-root">
         <div class="global-header">
           <div class="sub-nav-wrapper">
             <template v-for="menu in menus" :key="menu.key">

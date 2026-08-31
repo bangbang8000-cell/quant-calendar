@@ -11,9 +11,10 @@ def test_prepush_gate_script_exists():
 
 
 def test_prepush_gate_passes_on_clean_repo():
-    """干净仓库(无 token/无运行数据) → 退出 0"""
+    """干净仓库(无 token/无运行数据) → 退出 0 (cwd 基于测试文件定位, CI 可移植)"""
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     r = subprocess.run(["bash", "scripts/pre-push-gate.sh"],
-                       cwd="/home/evergreen/dsh-workspace/quant-calendar-dev",
+                       cwd=repo,
                        capture_output=True, text=True, timeout=30)
     assert r.returncode == 0, r.stdout + r.stderr
 

@@ -25,6 +25,16 @@
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             /* 渐变品牌色 */
             --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            /* v3.22-logo: K线折线日历 logo 品牌渐变 (与 manifest theme-color #667eea 一致) */
+            /* v3.22-logo: 三柱三色(蓝黄红, 语义固定) + 背景固定白底(2026-08-20: 统一白底, 不再随主题黑白) */
+            --logo-blue: #2563eb;
+            --logo-yellow: #eab308;
+            --logo-red: #dc2626;
+            --logo-bg: #ffffff;
+            --logo-border: var(--primary-color);
+            --logo-white: #ffffff;
+            /* v3.22-timeline-fix: 历史周期时间轴 chip 文字色 — 阶段底色为浅色, 深字才清晰 */
+            --merrill-chip-text: #1f2937;
             /* 主题色 */
             --primary-color: #2563eb;
             /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义
@@ -635,6 +645,10 @@
             padding: 0 20px 20px 20px;
             border-bottom: 1px solid var(--border-light);
             margin-bottom: 10px;
+            /* v3.22-logo: logo 与标题文字同一行 */
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .sidebar-logo h2 {
             font-size: var(--font-md);
@@ -642,8 +656,17 @@
             color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
+        /* v3.22-logo: K线折线日历 logo (方案B) — 侧边栏品牌图标 */
+        .sidebar-logo-img {
+            flex-shrink: 0;
+            display: block;
+        }
+        .sidebar-logo h2 .sidebar-logo-img { margin-right: 8px; }
         .sidebar-nav {
             flex: 1;
             padding: 0 12px;
@@ -708,7 +731,8 @@
             max-width: min(1400px, calc(100% - 220px));
             height: calc(100vh - 40px);
             overflow-y: auto;
-            overflow-x: hidden;
+            /* v3.22-sticky: overflow-x 用 clip 而非 hidden — hidden 会破坏子元素 position:sticky(二级菜单跟随滚动), clip 不创建滚动上下文 */
+            overflow-x: clip;
         }
         .main-content::-webkit-scrollbar {
             width: 8px;
@@ -826,9 +850,10 @@
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
         .empty-state { text-align: center; padding: 40px; color: var(--text-tertiary); }
         .search-box { margin-bottom: 16px; }
+        /* v3.22-scroll: 双滚动条修复(方案A) — 去掉外层滚动, 虚拟列表(qc-virtual-list 自带 overflow-y:auto)
+           成为唯一列表滚动容器, 页面滚动(main-content)与列表内滚动互不嵌套 */
         .stock-list {
-            max-height: 500px;
-            overflow-y: auto;
+            width: 100%;
         }
         .stock-list::-webkit-scrollbar { width: 4px; }
         .stock-list::-webkit-scrollbar-thumb { background: var(--border-base); border-radius: 2px; }
@@ -3589,15 +3614,19 @@ text {
 }
 
 /* ===== v1.5.0: 全局 Header ===== */
-.global-header {
+/* v3.22-sticky: 二级菜单(global-header)滚动固定 — sticky 移到组件根(.global-header-root),
+   使它在 main-content 滚动容器内固定; .global-header 自身不再 sticky */
+.global-header-root {
     position: sticky;
     top: 0;
     z-index: 100;
+    margin-bottom: 20px;
+}
+.global-header {
     background: var(--bg-sidebar);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 0 24px;
-    margin-bottom: 20px;
     box-shadow: var(--shadow-lg);
     display: flex;
     justify-content: space-between;
@@ -3826,6 +3855,8 @@ text {
 }
 .sidebar-collapse-btn:active { transform: translateY(-50%) scale(0.94); }
 .sidebar.collapsed { width: 56px; }
+.sidebar.collapsed .sidebar-logo { padding: 0 15px 20px 15px; display: flex; justify-content: center; }
+.sidebar.collapsed .sidebar-logo-img { margin: 0; }
 .sidebar.collapsed .sidebar-logo h2,
 .sidebar.collapsed .user-info span,
 .sidebar.collapsed .sidebar-footer .user-info { display: none; }
@@ -4317,6 +4348,29 @@ text {
 /* =====
 
 /* ===== v3.17.9 内联样式迁移工具类 (由 _tmp_migrate_map.py 生成, 值与原内联样式 1:1) ===== */
+/* v3.22-logo: 关于页品牌展示 (logo + 标题同行) */
+.about-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+}
+.about-logo-img { flex-shrink: 0; display: block; }
+.about-logo-text { min-width: 0; }
+.about-logo-title {
+    font-size: var(--font-lg);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+.about-logo-sub {
+    font-size: var(--font-sm);
+    color: var(--text-tertiary);
+    line-height: 1.4;
+    margin-top: 2px;
+}
 .about-body-text { color: var(--text-secondary); line-height: 1.8; font-size: var(--font-md); }
 .about-ul { margin: 6px 0 0 0; padding-left: 20px; }
 .align-self-start { align-self:flex-start; }

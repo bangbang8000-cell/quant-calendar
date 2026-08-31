@@ -113,7 +113,7 @@ const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
                     { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
-                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'backtest', 'backtest-history'] },
+                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
@@ -203,7 +203,8 @@ const allMenuDefs = [
                     backtestRunning.value = true;
                     backtestResult.value = null;
                     try {
-                        const res = await fetch('/api/backtest/' + backtestStrategy.value, {
+                        // V4.0 M1-4: 统一走策略 SDK 回测引擎(防前视/样本内外/过拟合), 旧 /api/backtest 退役
+                        const res = await fetch('/api/strategies/' + backtestStrategy.value + '/backtest', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(params),
@@ -213,17 +214,21 @@ const allMenuDefs = [
                             throw new Error(err.detail || '回测失败');
                         }
                         const data = await res.json();
-                        if (!data.success) throw new Error(data.message || '回测失败');
-                        // 归一化 summary 字段
-                        const s = data.summary || {};
+                        const r = data.result || {};
+                        if (!r.success) throw new Error(r.message || '回测失败');
+                        if (data.data_degraded) ElementPlus.ElMessage.warning('数据不可达, 结果基于降级数据');
+                        // 归一化 SDK 回测字段(比率×100 为百分比)
                         backtestResult.value = {
-                            total_return_pct: (s.total_return_pct ?? s.total_return ?? 0).toFixed(2),
-                            annual_return_pct: (s.annual_return_pct ?? s.annual_return ?? 0).toFixed(2),
-                            max_drawdown_pct: (s.max_drawdown_pct ?? s.max_drawdown ?? 0).toFixed(2),
-                            sharpe_ratio: (s.sharpe_ratio ?? 0).toFixed(2),
-                            message: data.message || '',
+                            total_return_pct: ((r.total_return ?? 0) * 100).toFixed(2),
+                            annual_return_pct: ((r.annual_return ?? 0) * 100).toFixed(2),
+                            max_drawdown_pct: ((r.max_drawdown ?? 0) * 100).toFixed(2),
+                            sharpe_ratio: (r.sharpe_ratio ?? 0).toFixed(2),
+                            win_rate: ((r.win_rate ?? 0) * 100).toFixed(2),
+                            out_sample: r.outsample_total_return === undefined ? '' : ((r.outsample_total_return ?? 0) * 100).toFixed(2),
+                            overfit_warning: r.overfit_warning || false,
+                            message: r.message || '',
                         };
-                        renderBacktestChart(data.equity_curve);
+                        renderBacktestChart(r.equity_curve);
                         ElementPlus.ElMessage.success('回测完成');
                     } catch (e) {
                         ElementPlus.ElMessage.error(e.message || '回测失败');
@@ -320,7 +325,7 @@ const allMenuDefs = [
                     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
-                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
+                    'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
                 };
 
@@ -859,7 +864,7 @@ const allMenuDefs = [
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, handleLogout,
 
-                    marketData, merrillData, merrillTimeline, timelineLoading, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,

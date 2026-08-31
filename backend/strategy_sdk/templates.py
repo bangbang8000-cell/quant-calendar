@@ -128,15 +128,67 @@ def rebalance(context, data):
         for stock in list(context.portfolio.positions.keys()):
             order_target_value(stock, 0)
         return
-    # 2) 选股
+    # 2) 因子打分选股(动量 z + 估值 z, 与研究端 multi_factor 五维合成同方向: 高分优先)
+    picks = score_universe(context, data, g.top_n)
+    if not picks:
+        picks = get_universe_candidates(context, data)  # 打分空时回退选股范围
+    if not picks:
+        return
+    set_universe(picks)
+    # 3) 等权目标(择时降仓时按比例缩)
+    target = position_scale * (1.0 / len(picks))
+    for stock in picks:
+        order_target_value(stock, context.portfolio.total_value * target)
+
+def score_universe(context, data, n):
+    """因子打分: 动量(近60日涨幅) z + 估值(pe倒数, get_fundamentals 不可用纯动量) z 合成 → TopN
+       PTrade 侧因子为研究端五维因子的动量/估值子集(数据以 PTrade 端为准)"""
     universe = get_universe_candidates(context, data)
     if not universe:
-        return
-    set_universe(universe)
-    # 3) 等权目标(择时降仓时按比例缩)
-    target = position_scale * (1.0 / len(universe))
+        return []
+    mom_scores = {}
+    val_scores = {}
     for stock in universe:
-        order_target_value(stock, context.portfolio.total_value * target)
+        try:
+            hist = get_history(61, '1d', 'close', stock, skip_paused=True)
+            closes = list(hist.columns[0]) if hist is not None and len(hist) > 0 else []
+            if len(closes) >= 2:
+                mom_scores[stock] = closes[-1] / closes[0] - 1.0
+        except Exception:
+            pass
+        try:
+            fund = get_fundamentals(table='valuation', columns=['pe_ttm'],
+                                    codes=[stock], date=context.blotter.current_date)
+            pe = None
+            if fund is not None and len(fund) > 0:
+                try:
+                    pe = float(fund.iloc[0]['pe_ttm']) if hasattr(fund, 'iloc') else float(list(fund)[0][-1])
+                except Exception:
+                    pe = None
+            if pe is not None and pe > 0 and pe == pe:
+                val_scores[stock] = 1.0 / pe
+        except Exception:
+            pass
+    zm = _z_scores(mom_scores)
+    zv = _z_scores(val_scores)
+    combined = {}
+    for s in universe:
+        if s in zm:
+            combined[s] = zm[s] + zv.get(s, 0.0)
+    if not combined:
+        return []
+    return sorted(combined.keys(), key=lambda s: combined[s], reverse=True)[:n]
+
+def _z_scores(values):
+    """横截面 z 分数(纯 Python)"""
+    vals = [v for v in values if v is not None]
+    if len(vals) < 2:
+        return {}
+    m = sum(vals) / len(vals)
+    sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5
+    if sd == 0 or sd != sd:
+        return {s: 0.0 for s in values}
+    return {s: (v - m) / sd for s, v in values.items()}
 '''
 
 SECTOR_ROTATION_TPL = '''# -*- coding: utf-8 -*-
@@ -187,11 +239,58 @@ def rebalance(context, data):
     for stock in picks:
         order_target_value(stock, context.portfolio.total_value * target)
 
+def _industry(code):
+    """行业粗分(与策略研究端 sector_rotation 一致): 银行/消费金融/科技成长/大盘蓝筹"""
+    if code.startswith(('601398', '601939', '601288', '600000', '600036', '600016', '601166')):
+        return '银行'
+    if code.startswith(('600519', '600887', '601888', '600809', '603288', '600009', '601318')):
+        return '消费/金融'
+    if code.startswith(('000', '002', '300', '301')):
+        return '科技成长'
+    return '大盘蓝筹'
+
+def _recent_close(stock):
+    """最近收盘价(数据不足返回 None)"""
+    try:
+        hist = get_history(1, '1d', 'close', stock, skip_paused=True)
+        if hist is None or len(hist) == 0:
+            return None
+        closes = list(hist.columns[0])
+        if not closes:
+            return None
+        v = closes[-1]
+        return v if v == v else None
+    except Exception:
+        return None
+
 def score_sectors(context, data):
-    return []
+    """行业动量打分: 每行业平均收盘价(横截面代理, 与研究端语义一致) → 按动量降序"""
+    universe = get_universe_candidates(context, data)
+    ind_vals = {}
+    for stock in universe:
+        v = _recent_close(stock)
+        if v is None:
+            continue
+        ind = _industry(stock)
+        ind_vals.setdefault(ind, []).append(v)
+    scores = {}
+    for ind, vals in ind_vals.items():
+        if vals:
+            scores[ind] = sum(vals) / len(vals)
+    return sorted(scores.keys(), key=lambda i: scores[i], reverse=True)
 
 def pick_in_sector(context, data, sector, n):
-    return []
+    """行业内按收盘价(动量代理)取 TopN"""
+    universe = get_universe_candidates(context, data)
+    priced = []
+    for stock in universe:
+        if _industry(stock) != sector:
+            continue
+        v = _recent_close(stock)
+        if v is not None:
+            priced.append((stock, v))
+    priced.sort(key=lambda kv: kv[1], reverse=True)
+    return [s for s, _ in priced[:n]]
 
 # ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
 def risk_controls(context, data):
@@ -279,6 +378,8 @@ def initialize(context):
     g.stop_loss_pct = {stop_loss_pct}
     g.take_profit_pct = {take_profit_pct}
     g.max_drawdown_pct = {max_drawdown_pct}
+    g.top_n = {top_n}
+    g.momentum_window = 60  # 与研究端 index_enhance 动量回看一致
     g.peak_value = context.portfolio.portfolio_value
     run_daily(rebalance, time="09:35")
     run_daily(risk_controls, time="14:50")
@@ -294,7 +395,7 @@ def rebalance(context, data):
         for stock in list(context.portfolio.positions.keys()):
             order_target_value(stock, 0)
         return
-    # 2) 基准成分内因子增强打分 → 行业/市值中性约束
+    # 2) 基准成分内因子增强打分 → 行业中性约束
     universe = enhanced_universe(context, data, {industry_neutral})
     if not universe:
         universe = get_universe_candidates(context, data)  # 打分空时回退选股范围
@@ -305,9 +406,75 @@ def rebalance(context, data):
     for stock in universe:
         order_target_value(stock, context.portfolio.total_value * target)
 
+def _industry(code):
+    """行业粗分(与研究端 index_enhance 一致): finance/consumer/tech/other"""
+    if code.startswith(('600000', '601', '600036', '600016', '601398')):
+        return 'finance'
+    if code.startswith(('60', '6018')):
+        return 'consumer'
+    if code.startswith(('00', '30', '300')):
+        return 'tech'
+    return 'other'
+
+def _z_scores(values):
+    """横截面 z 分数(纯 Python, 与研究端语义一致)"""
+    vals = [v for v in values if v is not None]
+    if len(vals) < 2:
+        return {}
+    m = sum(vals) / len(vals)
+    sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5
+    if sd == 0 or sd != sd:
+        return {s: 0.0 for s in values}
+    return {s: (v - m) / sd for s, v in values.items()}
+
 def enhanced_universe(context, data, industry_neutral):
-    """指数增强选股: 基准成分 + 因子打分 + 中性化(模板骨架)"""
-    return []
+    """指数增强选股: 动量(近60日涨幅) + 估值(pe倒数, get_fundamentals 不可用时纯动量) z 合成 → 行业中性 TopN"""
+    universe = get_universe_candidates(context, data)
+    if not universe:
+        return []
+    mom_scores = {}
+    val_scores = {}
+    for stock in universe:
+        try:
+            hist = get_history(g.momentum_window + 1, '1d', 'close', stock, skip_paused=True)
+            closes = list(hist.columns[0]) if hist is not None and len(hist) > 0 else []
+            if len(closes) >= 2:
+                mom_scores[stock] = closes[-1] / closes[0] - 1.0
+        except Exception:
+            pass
+        try:
+            fund = get_fundamentals(table='valuation', columns=['pe_ttm'],
+                                    codes=[stock], date=context.blotter.current_date)
+            pe = None
+            if fund is not None and len(fund) > 0:
+                try:
+                    pe = float(fund.iloc[0]['pe_ttm']) if hasattr(fund, 'iloc') else float(list(fund)[0][-1])
+                except Exception:
+                    pe = None
+            if pe is not None and pe > 0 and pe == pe:
+                val_scores[stock] = 1.0 / pe
+        except Exception:
+            pass
+    zm = _z_scores(mom_scores)
+    zv = _z_scores(val_scores)
+    combined = {}
+    for s in universe:
+        if s in zm:
+            combined[s] = zm[s] + zv.get(s, 0.0)
+    if not combined:
+        return []
+    if industry_neutral:
+        by_ind = {}
+        for s in combined:
+            by_ind.setdefault(_industry(s), []).append(s)
+        per = max(1, g.top_n // max(len(by_ind), 1))
+        picks = []
+        for members in by_ind.values():
+            members.sort(key=lambda s: combined[s], reverse=True)
+            picks.extend(members[:per])
+    else:
+        picks = sorted(combined.keys(), key=lambda s: combined[s], reverse=True)
+    return picks[:max(g.top_n, 5)]
 
 # ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
 def risk_controls(context, data):
@@ -421,9 +588,38 @@ def rebalance(context, data):
     for stock in universe:
         order_target_value(stock, context.portfolio.total_value * target)
 
+def _recent_amounts(stock, window):
+    """近 window 日成交额序列(数据不足返回 None)"""
+    try:
+        hist = get_history(window + 1, '1d', 'amount', stock, skip_paused=True)
+        if hist is None or len(hist) == 0:
+            return None
+        closes = list(hist.columns[0])
+        if len(closes) < 2:
+            return None
+        return closes
+    except Exception:
+        return None
+
 def capital_flow_picks(context, data, window, threshold, n):
-    """资金流选股: 主力/北向净流入因子(模板骨架)"""
-    return []
+    """资金流选股: 放量资金流代理(最近成交额 / 前 window 日均) >= threshold → 按比值 TopN
+       PTrade 无标准主力净流入字段, 以成交额激增代理与研究端资金流语义对齐"""
+    universe = get_universe_candidates(context, data)
+    ratio = {}
+    for stock in universe:
+        amounts = _recent_amounts(stock, window)
+        if amounts is None or len(amounts) < 2:
+            continue
+        base = sum(amounts[:-1]) / (len(amounts) - 1)
+        cur = amounts[-1]
+        if base <= 0 or cur != cur or base != base:
+            continue
+        ratio[stock] = cur / base
+    filtered = {s: r for s, r in ratio.items() if r >= threshold}
+    if not filtered:
+        return []  # 与研究端一致: 全部低于阈值 → 无持仓(由 rebalance 回退选股范围)
+    ordered = sorted(filtered.keys(), key=lambda s: filtered[s], reverse=True)
+    return ordered[:n]
 
 # ============ 风控: 止盈止损 + 账户回撤止损 (三要素) ============
 def risk_controls(context, data):

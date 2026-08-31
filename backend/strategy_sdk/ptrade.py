@@ -78,7 +78,12 @@ def validate_ptrade_code(code: str) -> List[str]:
                       "min", "max", "sum", "sorted", "enumerate", "zip", "dict",
                       "list", "tuple", "set", "type", "isinstance", "round",
                       "current", "items", "keys", "split", "strip", "info",
-                      "log", "round", "sum", "format", "extend", "append", "copy"}
+                      "log", "round", "sum", "format", "extend", "append", "copy",
+                      "hasattr", "getattr", "setattr", "repr", "reversed", "bool",
+                      "callable", "lower", "upper", "join", "replace", "remove",
+                      "pop", "insert", "index", "sort", "startswith", "endswith",
+                      "find", "get", "update", "add", "difference", "intersection",
+                      "setdefault", "values", "pop", "clear", "fromkeys"}
     for name in sorted(called - custom):
         if name not in _ALLOWED_APIS and not name.startswith("_"):
             errors.append(f"未知/不允许的 API: {name}")
@@ -87,17 +92,12 @@ def validate_ptrade_code(code: str) -> List[str]:
 
 
 def render_ptrade_code(template: str, params: Dict[str, Any]) -> str:
-    """模板 + 参数填充(简单 str.format 风格, 模板内用 {param_key} 占位)"""
+    """模板 + 参数填充: 按 {param_key} 精确替换(不用 str.format, 模板可含字典/集合字面量花括号)"""
     from strategy_sdk.templates import TEMPLATES
     tpl = TEMPLATES.get(template)
     if not tpl:
         raise ValueError(f"未找到 PTrade 模板: {template}")
-    # 只填充参数, 模板中未定义的占位符保持原样
-    try:
-        return tpl.format(**params)
-    except KeyError:
-        # 兜底: 逐 key 替换, 不因未知占位符失败
-        out = tpl
-        for k, v in params.items():
-            out = out.replace("{" + k + "}", str(v))
-        return out
+    out = tpl
+    for k, v in params.items():
+        out = out.replace("{" + k + "}", str(v))
+    return out

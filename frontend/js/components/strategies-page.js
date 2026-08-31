@@ -274,8 +274,8 @@
                                              :class="{ 'is-current': st.is_current }"
                                              :style="{background: getTimelineStageColor(st.stage), borderColor: st.is_current ? 'var(--color-primary)' : 'transparent'}"
                                              @click.prevent="showTimelineStage(st.stage)"
-                                             :title="(st.name || st.stage) + ' · ' + (st.start ? st.start.slice(0,10) : '起点') + ' → ' + (st.end ? st.end.slice(0,10) : '至今')">
-                                            <span class="merrill-stage-chip-name">{{ st.name || st.stage }}</span>
+                                             :title="(st.name || getTimelineStageName(st.stage) || st.stage) + ' · ' + (st.start ? st.start.slice(0,10) : '起点') + ' → ' + (st.end ? st.end.slice(0,10) : '至今')">
+                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
                                             <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}</span>
                                             <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
                                         </div>
@@ -588,12 +588,21 @@
 
       // v3.22-I4: 美林时间轴阶段取色
       function getTimelineStageColor(stage) {
-        const cfg = state.merrillStagesConfig?.value || {};
+        // v3.22-timeline-fix: setupState 已解包 ref — 兼容 .value 与直接对象两种形态
+        const raw = state.merrillStagesConfig;
+        const cfg = (raw && raw.value) ? raw.value : (raw || {});
         const s = cfg[stage] || {};
-        return s.color || s.bg_color || 'var(--border-strong)';
+        // v3.22-timeline-fix: fallback 用主题主色 — 原 'var(--border-strong)' 未定义 → 透明底+白字看不清
+        return s.color || s.bg_color || 'var(--color-primary)';
+      }
+      // v3.22-timeline-fix: 阶段中文名兜底 — API timeline 部分 stage 的 name 为空, 用 stages 配置补名
+      function getTimelineStageName(stage) {
+        const raw = state.merrillStagesConfig;
+        const cfg = (raw && raw.value) ? raw.value : (raw || {});
+        return (cfg[stage] && cfg[stage].name) || '';
       }
 
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, getTimelineStageColor, merrillTimeline, timelineLoading, showTimelineStage };
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, getTimelineStageColor, getTimelineStageName, merrillTimeline, timelineLoading, showTimelineStage };
     },
   };
 })();

@@ -37,6 +37,7 @@
     'sub.backtest-history': 'Backtest History',
     'sub.market-review': 'Market Review',
     'sub.scan': 'Anomaly Scan',
+    'sub.custom-write': 'New Strategy',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',
@@ -57,7 +58,7 @@
     'login.password': 'Password',
     'login.submit': 'Log In',
     'login.guest': 'Guest Login',
-    'login.footer': '🚀 Quant stock picking · Smart decisions · Let data speak',
+    'login.footer': 'Quant stock picking · Smart decisions · Let data speak',
     // 通用
     'common.loading': 'Loading...',
     'common.dataUnavailable': 'Data unavailable',
