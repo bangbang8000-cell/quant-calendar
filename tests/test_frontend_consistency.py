@@ -1462,4 +1462,19 @@ def test_watch_ctx_includes_loadfactcheck():
     assert "loadFactCheck" in watch_src, "watch.js register 应解构 loadFactCheck"
 
 
+def test_watchlist_open_ai_result_per_stock():
+    """V4.9.x (bugfix): 自选打开个股弹窗须重置 aiResult 并加载本股最近评估 —
+    防"评估结果串股"(AI tab 显示最近评估过的其他股票结果, showStockKline 曾漏这两步)"""
+    wl = _read("js/watchlist.js")
+    seg = wl[wl.index("async function showStockKline"):wl.index("async function watchlistEvaluate")]
+    assert "aiResult.value = null" in seg, "showStockKline 应重置 aiResult(防串股)"
+    assert "loadLastEvaluation(code)" in seg, "showStockKline 应加载本股最近评估"
+    # watchlist.create 依赖链: 解构 + app-logic 传参都必须含 loadLastEvaluation
+    deps_src = wl[wl.index("create(deps)"):wl.index("} = deps;", wl.index("create(deps)"))]
+    assert "loadLastEvaluation" in deps_src, "watchlist 域应解构 loadLastEvaluation"
+    app = _read("js/app-logic.js")
+    create_call = app[app.index("watchlist.create({"):app.index("})", app.index("watchlist.create({"))]
+    assert "loadLastEvaluation" in create_call, "watchlist.create 依赖应传入 loadLastEvaluation"
+
+
 

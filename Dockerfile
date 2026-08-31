@@ -29,8 +29,8 @@ COPY tests/ ./tests/
 COPY docs/ ./docs/
 COPY libs/ ./libs/
 
-# 复制策略数据（内置一份，可被 volume 覆盖）
-COPY qresult/ /data/qresult/
+# 策略数据目录（V4.8.2 起 qresult 不再入库，由 volume 挂载/应用生成；空目录保证 QUANT_DATA_DIR 存在）
+RUN mkdir -p /data/qresult && chown -R appuser:appuser /data
 
 # 安装本地包（非 PyPI 发布）
 RUN pip install --no-cache-dir ./libs/sxsc_tushare/ --break-system-packages

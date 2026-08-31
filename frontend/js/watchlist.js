@@ -16,7 +16,7 @@
       const { ref, computed, watch } = Vue;
       const { currentUser, selectedDate, stockDetail, stockDetailTab, stockDetailVisible, stockDetailLoading,
                stockKlineLoaded, viewCache, animateScoreEntrance, loadStockKline, refreshStockScore, disposeStockKline,
-               aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, autoEvaluateConfig, autoEvaluateScope,
+               aiHistory, aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, aiResult, loadLastEvaluation, autoEvaluateConfig, autoEvaluateScope,
                batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses,
                batchResults, batchEvalErrors, expandedDates, expandedStocks, savingConfig, selectedHistoryIds,
                selectedWatchlistCodes, showAutoEvaluateSettings, showBatchEvaluate } = deps;
@@ -566,6 +566,10 @@ async function showStockKline(code, name) {
     // v3.16 (bugfix): 强制切到 K线 tab + 销毁旧图表实例 — 否则上次停留在 AI/问股 tab 时
     // 打开自选个股，#stockKlineChart 不存在 → loadStockKline 抛错 → 不加载K线
     stockDetailTab.value = 'kline';
+    // V4.9.x (bugfix): 打开个股必须重置 AI 评估状态 — 否则 aiResult 残留上一只
+    // 股票的评估结果, AI tab 会串股显示"最近某只股票的评估"
+    aiResult.value = null;
+    aiEvalError.value = '';
     disposeStockKline('stockKlineChart');
     stockDetail.value = null;
     stockDetailLoading.value = true;
@@ -583,6 +587,8 @@ async function showStockKline(code, name) {
     await nextTick();
     await loadStockKline('daily');
     refreshStockScore();
+    // V4.9.x (bugfix): 异步加载本股最近评估 (与 showStockDetail 一致), 评估过则展示本股结果
+    loadLastEvaluation(code);
 }
 const preloadingKline = ref(false);
 async function preloadWatchlistKline() {
