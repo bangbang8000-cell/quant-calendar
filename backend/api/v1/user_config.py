@@ -73,6 +73,7 @@ def _load_base_config() -> dict:
                 elif saved:
                     config[key] = saved
             except Exception:
+                logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
                 pass
 
     return config

@@ -23,6 +23,9 @@ from .chat import router as chat_router
 from .feedback import router as feedback_router
 from .backup import router as backup_router
 from .export import router as export_router
+from .audit import router as audit_router
+from .system import router as system_router
+from .analytics import router as analytics_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -46,5 +49,8 @@ api_router.include_router(chat_router)
 api_router.include_router(feedback_router)
 api_router.include_router(backup_router)
 api_router.include_router(export_router)
+api_router.include_router(audit_router)
+api_router.include_router(system_router)
+api_router.include_router(analytics_router)
 
 __all__ = ["api_router"]

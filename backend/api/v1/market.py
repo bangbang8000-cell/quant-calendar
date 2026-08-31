@@ -177,6 +177,7 @@ async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_u
         from market_data import market_data
         market_data.update_tushare_token(settings.TUSHARE_TOKEN)
     except Exception as e:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
     
     return {

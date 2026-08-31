@@ -760,6 +760,7 @@ class AIEvaluator:
                 if prev_score > 0 and abs(total_score - prev_score) > 20:
                     calibrations.append(f"评分波动较大: 上次{prev_score}→本次{total_score} (差{abs(total_score-prev_score)})")
         except Exception:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
             pass
 
         if calibrations:

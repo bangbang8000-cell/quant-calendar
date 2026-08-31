@@ -34,6 +34,7 @@ def _load_watchlist(username: str) -> list:
                     "added_at": r['added_at'],
                 } for r in rows]
     except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
     path = _get_watchlist_path(username)
     if os.path.exists(path):
@@ -41,6 +42,7 @@ def _load_watchlist(username: str) -> list:
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f).get("stocks", [])
         except Exception:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
             pass
     return []
 
@@ -62,6 +64,7 @@ def _save_watchlist(username: str, stocks: list):
                 code = item.get('code') if isinstance(item, dict) else item
                 db.watchlist_set(username, code)
     except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
 
 
@@ -142,6 +145,7 @@ async def search_stocks(q: str = "", user: dict = Depends(get_current_active_use
             if len(results) >= 20:
                 break
     except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
     
     return {"success": True, "results": results}

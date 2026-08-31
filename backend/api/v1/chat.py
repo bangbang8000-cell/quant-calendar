@@ -73,6 +73,7 @@ def _load_history() -> list:
                     })
                 return sessions
     except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
     if os.path.exists(HISTORY_FILE):
         try:
@@ -80,6 +81,7 @@ def _load_history() -> list:
                 data = json.load(f)
                 return data.get("sessions", [])
         except Exception:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
             pass
     return []
 
@@ -98,6 +100,7 @@ def _save_history(sessions: list):
                 for m in s.get('messages', []):
                     db.chat_append('default', s.get('stock_code', ''), m.get('role', 'user'), m.get('content', ''))
     except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
 
 
@@ -351,6 +354,7 @@ async def chat_stream(body: ChatRequest):
                             full_reply += delta
                             yield f"data: {json.dumps({'token': delta})}\n\n"
                     except Exception:
+                        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
                         pass
 
             # Save to history

@@ -1301,7 +1301,51 @@
                                     <div class="status-value" style="color: var(--primary-color);">{{ currentPoolSize }} 只</div>
                                 </div>
                             </div>
-</div>
+                        </div>
+
+                        <!-- v3.4.0-T4: 系统监控面板 -->
+                        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-light);">
+                            <div style="font-weight: var(--font-semibold); margin-bottom: 10px; font-size: var(--font-base);">📊 资源监控</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">CPU</div>
+                                    <div class="status-value" style="color: var(--primary-color);">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                </div>
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">内存</div>
+                                    <div class="status-value" style="color: var(--primary-color);">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                </div>
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">磁盘</div>
+                                    <div class="status-value" style="color: var(--primary-color);">{{ sysMonitor.percent ?? '--' }}%</div>
+                                </div>
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">运行时长</div>
+                                    <div class="status-value" style="color: var(--primary-color);">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(1) + 'h' : '--' }}</div>
+                                </div>
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">平均延迟</div>
+                                    <div class="status-value" style="color: var(--primary-color);">{{ sysMonitor.metrics?.avg_ms ?? '--' }}ms</div>
+                                </div>
+                                <div class="status-item" style="background: var(--bg-card-header); border-radius: 8px; padding: 10px;">
+                                    <div class="status-label">错误率</div>
+                                    <div class="status-value" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? '#f56c6c' : 'var(--primary-color)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- v3.4.0-T7: 页面热度排行 -->
+                        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-light);">
+                            <div style="font-weight: var(--font-semibold); margin-bottom: 10px; font-size: var(--font-base);">🔥 页面热度 (近 {{ analyticsDays }} 天)</div>
+                            <div v-if="analyticsRank.length" style="display: flex; flex-direction: column; gap: 6px;">
+                                <div v-for="(r, i) in analyticsRank.slice(0, 5)" :key="r.page" style="display: flex; align-items: center; gap: 10px; font-size: var(--font-base);">
+                                    <span style="width: 20px; color: var(--text-tertiary);">{{ i + 1 }}</span>
+                                    <span style="flex: 1;">{{ r.page }}</span>
+                                    <span style="color: var(--text-secondary);">{{ r.views }} 次</span>
+                                </div>
+                            </div>
+                            <div v-else style="color: var(--text-tertiary); font-size: var(--font-sm);">暂无访问数据</div>
+                        </div>
 
                     <!-- 访问限速配置 -->
                     <div class="card" style="margin-top: 24px;">
@@ -3323,6 +3367,28 @@ const allMenuDefs = [
                         const input = document.querySelector('input[placeholder*="输入问题"]');
                         if (input) input.focus();
                     });
+                }
+                // v3.4.0-T4/T7: 系统监控 + 页面热度
+                const sysMonitor = ref({});
+                const analyticsRank = ref([]);
+                const analyticsDays = ref(7);
+                async function loadSysMonitor() {
+                    try {
+                        const res = await fetch('/api/system/monitor', {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) sysMonitor.value = data;
+                    } catch (e) {}
+                }
+                async function loadAnalytics() {
+                    try {
+                        const res = await fetch(`/api/analytics/rank?days=${analyticsDays.value}`, {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('quant_token')}` }
+                        });
+                        const data = await res.json();
+                        if (data.success) analyticsRank.value = data.rank || [];
+                    } catch (e) {}
                 }
                 // v3.3.0-T8: 数据备份与恢复
                 const backups = ref([]);
@@ -6372,6 +6438,14 @@ const allMenuDefs = [
                 watch(currentPage, async (page) => {
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
+                    // v3.4.0-T7: 匿名页面热度上报
+                    try {
+                        fetch('/api/analytics/page', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ page })
+                        }).catch(() => {});
+                    } catch (e) {}
                     // v1.11: 清除旧轮询定时器
                     if (strategyPollTimer) { clearInterval(strategyPollTimer); strategyPollTimer = null; }
                     if (page === 'strategies') {
@@ -6585,7 +6659,7 @@ const allMenuDefs = [
                     }
                     // 系统配子页切换
                     if (page === 'system' && currentUser.value?.role === 'admin') {
-                        if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
+                        if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); loadSysMonitor(); loadAnalytics(); }
                         if (sub === 'autoeval') loadAutoEvaluateConfig();
                         if (sub === 'datasource') loadDatasourceConfig();
                         if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); loadBackups(); }
@@ -6615,6 +6689,7 @@ const allMenuDefs = [
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
+                    sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,

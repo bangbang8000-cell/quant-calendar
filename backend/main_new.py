@@ -21,10 +21,25 @@ from config import settings
 from rate_limit import setup_rate_limiter
 from api.v1.router import api_router
 
-# 配置日志
+# 配置日志 (v3.4.0-T6: 按日轮转 + 保留 30 天)
+import os
+from logging.handlers import TimedRotatingFileHandler
+
+LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        TimedRotatingFileHandler(
+            os.path.join(LOG_DIR, "app.log"),
+            when="midnight",
+            backupCount=30,
+            encoding="utf-8",
+        ),
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -78,7 +93,28 @@ logger.info(f"✅ CORS 配置已加载，允许的源: {settings.cors_origin_lis
 # v1.10: 安全响应头中间件
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
+    # v3.4.0-T3: 结构化请求日志 (trace_id + 耗时)
+    import time
+    import uuid
+    trace_id = request.headers.get("X-Trace-ID") or uuid.uuid4().hex[:12]
+    start = time.time()
     response = await call_next(request)
+    elapsed_ms = (time.time() - start) * 1000
+    # v3.4.0-T4: 记录请求指标
+    try:
+        from api.v1.system import record_request
+        record_request(response.status_code, elapsed_ms)
+    except Exception:
+        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
+        pass
+    # 排除静态资源和健康检查噪音
+    path = request.url.path
+    if not path.startswith("/static/") and path != "/api/health":
+        logger.info(
+            f"[req] trace={trace_id} method={request.method} path={path} "
+            f"status={response.status_code} time={elapsed_ms:.0f}ms ip={request.client.host if request.client else '-'}"
+        )
+    response.headers["X-Trace-ID"] = trace_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
