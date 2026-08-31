@@ -59,27 +59,41 @@ class TestAIEvaluatorInit:
             assert m.enabled is True
 
 
-class TestKeyEncryption:
-    """API key encryption roundtrip"""
+class TestKeyStorage:
+    """API Key 明文存储 (v3.6.0 取消加密, 兼容历史 Fernet 密文迁移)"""
 
-    def test_encrypt_decrypt_roundtrip(self):
-        """Encryption should be transparent to callers"""
+    def test_plaintext_stored_as_is(self):
+        """明文 key 原样保存并读回 (取消加密后)"""
         from crypto_utils import encrypt_value, decrypt_value
-        original = "sk-test-key-12345"
+        # crypto_utils 仍保留(兼容迁移), 但模型存储不再调用
+        original = "«redacted:sk-…»"
         encrypted = encrypt_value(original)
         decrypted = decrypt_value(encrypted)
         assert decrypted == original
 
     def test_empty_key_passthrough(self):
-        """Empty key should pass through unchanged"""
+        """空 key 原样透传"""
         from crypto_utils import encrypt_value, decrypt_value
         assert encrypt_value("") == ""
         assert decrypt_value("") == ""
 
     def test_plaintext_backward_compat(self):
-        """Plaintext keys survive decryption attempt"""
+        """明文 key 经 decrypt_value 原样返回 (向后兼容)"""
         from crypto_utils import decrypt_value
         assert decrypt_value("plain-key") == "plain-key"
+
+    def test_save_load_plaintext_roundtrip(self):
+        """_save_models/_load_models 明文 roundtrip (取消加密后)"""
+        evaluator = AIEvaluator()
+        models = evaluator.get_models()
+        if not models:
+            return
+        # 设置明文 key 保存
+        m = models[0]
+        m['api_key'] = 'test-plain-key-123'
+        evaluator.update_models(models)
+        loaded = evaluator.get_models()
+        assert loaded[0]['api_key'] == 'test-plain-key-123'
 
 
 class TestAIModelManagement:
