@@ -1,8 +1,8 @@
 # Docker
+# 注意: Dockerfile 与 docker-entrypoint.sh 会被构建过程直接读取/COPY，不能排除
 Dockerfile
 .dockerignore
 docker-compose.yml
-docker-entrypoint.sh
 
 # Python
 __pycache__/
@@ -30,9 +30,6 @@ env/
 
 # Data (volume 挂载)
 data/
-
-# Qresult (通过 Dockerfile COPY 内置，这里排除避免重复)
-../qresult/
 
 # Git
 .git/

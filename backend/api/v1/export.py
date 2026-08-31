@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-数据全量导出/导入 (v3.3.0-T12 / FR-3.3.7)
-- GET  /api/export  → 导出用户数据 JSON (自选/评估历史/聊天/配置)
-- POST /api/import  → 导入恢复
+数据导出 (v3.9.13: 增强 PDF/Excel)
+- GET  /api/export       → 导出用户数据 JSON
+- GET  /api/export/csv   → 导出股票/策略数据 CSV
+- GET  /api/export/excel → 导出完整数据集 Excel
+- POST /api/import        → 导入恢复
 """
 import json
 import os
+import io
+import csv
 from typing import Any, Dict
+from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from auth import get_current_active_user
@@ -118,3 +124,148 @@ async def import_data(req: ImportRequest, user: dict = Depends(get_current_activ
         return {"success": False, "message": f"评估历史导入失败: {e}"}
 
     return {"success": True, "message": "导入完成", "imported": imported}
+
+
+# ─── v3.9.13: CSV / Excel 导出 ─────────────────────────────────
+
+@router.get("/export/csv")
+async def export_csv(
+    type: str = Query("strategies", description="导出类型: strategies|stocks|evaluation"),
+    user: dict = Depends(get_current_active_user)
+):
+    """导出股票/策略数据为 CSV"""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    writer.writerow(["# 量化选股日历 数据导出", f"导出时间: {now}"])
+
+    if type == "strategies":
+        writer.writerow([])
+        writer.writerow(["策略名称", "持仓股票", "日期"])
+        try:
+            from data_parser import parser as dp
+            dates = dp.get_available_dates()
+            if dates:
+                latest = dates[-1]
+                holdings = dp.get_holdings_by_date(latest)
+                for sid, data in holdings.items():
+                    stocks = data.get("stocks", [])
+                    codes = ",".join([s.get("code", s) if isinstance(s, dict) else str(s) for s in stocks])
+                    writer.writerow([data.get("strategy_name", sid), codes, latest])
+        except Exception as e:
+            writer.writerow([f"加载失败: {e}", "", ""])
+
+    elif type == "stocks":
+        writer.writerow([])
+        writer.writerow(["股票代码", "股票名称", "来源"])
+        try:
+            from stock_info import StockInfoManager
+            manager = StockInfoManager()
+            info = manager.get_all() or {}
+            for code, name in sorted(info.items()):
+                writer.writerow([code, name, "stock_info"])
+        except Exception as e:
+            writer.writerow([f"加载失败: {e}", "", ""])
+
+    elif type == "evaluation":
+        writer.writerow([])
+        writer.writerow(["股票代码", "股票名称", "总分", "等级", "评估时间", "模型"])
+        try:
+            from ai_evaluator import ai_evaluator
+            username = user.get("username", "default")
+            history = ai_evaluator.get_history(username, limit=200)
+            for r in history:
+                res = r.get("result", {})
+                writer.writerow([
+                    r.get("stock_code", ""),
+                    r.get("stock_name", ""),
+                    res.get("total_score", ""),
+                    res.get("level", ""),
+                    r.get("evaluate_time", ""),
+                    r.get("model_provider", "")
+                ])
+        except Exception as e:
+            writer.writerow([f"加载失败: {e}", "", "", "", "", ""])
+
+    output.seek(0)
+    # UTF-8 BOM for Excel compatibility
+    return Response(
+        content="\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=quant_{type}_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
+
+
+@router.get("/export/excel")
+async def export_excel(
+    user: dict = Depends(get_current_active_user)
+):
+    """导出完整数据集为 Excel (.xlsx)"""
+    try:
+        import pandas as pd
+    except ImportError:
+        # 回退到 CSV 格式
+        return await export_csv(type="strategies", user=user)
+
+    try:
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            # Sheet 1: 策略持仓
+            try:
+                from data_parser import parser as dp
+                dates = dp.get_available_dates()
+                if dates:
+                    latest = dates[-1]
+                    holdings = dp.get_holdings_by_date(latest)
+                    rows = []
+                    for sid, data in holdings.items():
+                        stocks = data.get("stocks", [])
+                        codes = ",".join([s.get("code", s) if isinstance(s, dict) else str(s) for s in stocks])
+                        rows.append({"策略名称": data.get("strategy_name", sid), "持仓股票": codes, "日期": latest})
+                    if rows:
+                        pd.DataFrame(rows).to_excel(writer, sheet_name="策略持仓", index=False)
+            except Exception:
+                pass
+
+            # Sheet 2: 股票信息
+            try:
+                from stock_info import StockInfoManager
+                manager = StockInfoManager()
+                info = manager.get_all() or {}
+                rows = [{"股票代码": k, "股票名称": v} for k, v in sorted(info.items())]
+                if rows:
+                    pd.DataFrame(rows).to_excel(writer, sheet_name="股票信息", index=False)
+            except Exception:
+                pass
+
+            # Sheet 3: AI 评估历史
+            try:
+                from ai_evaluator import ai_evaluator
+                username = user.get("username", "default")
+                history = ai_evaluator.get_history(username, limit=500)
+                rows = []
+                for r in history:
+                    res = r.get("result", {})
+                    rows.append({
+                        "股票代码": r.get("stock_code", ""),
+                        "股票名称": r.get("stock_name", ""),
+                        "总分": res.get("total_score", ""),
+                        "等级": res.get("level", ""),
+                        "评估时间": r.get("evaluate_time", ""),
+                        "模型": r.get("model_provider", "")
+                    })
+                if rows:
+                    pd.DataFrame(rows).to_excel(writer, sheet_name="AI评估历史", index=False)
+            except Exception:
+                pass
+
+        buffer.seek(0)
+        return Response(
+            content=buffer.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=quant_full_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+        )
+    except Exception as e:
+        # 回退
+        return {"success": False, "message": f"Excel 导出失败，请使用 CSV: {str(e)}"}

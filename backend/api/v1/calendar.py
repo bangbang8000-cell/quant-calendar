@@ -3,12 +3,12 @@
 """
 策略日历 API 路由
 """
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, Optional
 
 from data_parser import parser, STRATEGY_CONFIG
 from stock_info import stock_manager
-from views_aggregator import views_aggregator
+from data_sources import data_source_manager
 
 router = APIRouter(prefix="/calendar", tags=["策略日历"])
 
@@ -61,21 +61,36 @@ async def get_consensus(date: str, top_n: int = 50):
     }
 
 
+# v3.7.11: 入池信号解读
+@router.post("/pool-signal")
+async def get_pool_signal(data: Dict[str, Any]):
+    """生成入池/出池 AI 简短语解读"""
+    stock_code = data.get("stock_code", "")
+    stock_name = data.get("stock_name", "")
+    event_type = data.get("event_type", "enter")  # enter / exit
+    market_snapshot = data.get("market_snapshot", None)
+    if not stock_code:
+        raise HTTPException(status_code=400, detail="stock_code 必填")
+    from ai_evaluator import ai_evaluator
+    signal = ai_evaluator.generate_pool_signal(stock_code, stock_name, event_type, market_snapshot)
+    return {"success": True, "stock_code": stock_code, "signal": signal}
+
+
 @router.get("/stock/{stock_code}")
 async def get_stock_history(stock_code: str, date: Optional[str] = None):
     """获取单只股票的持仓历史 + 行情数据 + 评分"""
     history = parser.get_stock_history(stock_code)
-    
+
     # 如果指定了日期，获取当日行情和评分
     if date:
         daily_data = stock_manager.get_daily_data(stock_code, date)
         ma_data = stock_manager.get_ma_data(stock_code, date, days=30)
         score_data = stock_manager.calculate_score(daily_data, ma_data)
-        
+
         history["daily_data"] = daily_data
         history["ma_data"] = ma_data
         history["score_data"] = score_data
-    
+
     return history
 
 
@@ -91,26 +106,48 @@ async def get_stock_score(stock_code: str, date: Optional[str] = None):
     return {"success": True, "score_data": score_data, "date": date}
 
 
+@router.get("/stock/{stock_code}/factors")
+async def get_stock_factors(stock_code: str, date: Optional[str] = None):
+    """个股多因子体检面板 (v3.17 / FR-3.17.3) — 估值/基本面/资金面/情绪面/技术面
+    数据源不可达时优雅降级为"无数据"占位，不抛错"""
+    from factor_engine import build_factor_panel
+
+    class _StockInfoAdapter:
+        """从 K 线数据抽取收盘价序列（旧→新）供技术因子"""
+        def get_close_series(self, code, n=60):
+            try:
+                k = data_source_manager.get_kline_data(code, period='daily', limit=n)
+                rows = k.get('data') if isinstance(k, dict) else k
+                closes = [r.get('close') for r in (rows or []) if r and r.get('close') is not None]
+                return [float(c) for c in closes]
+            except Exception:
+                return []
+
+    panel = build_factor_panel(stock_code, data_source=data_source_manager,
+                               stock_info=_StockInfoAdapter(), today=date)
+    return {"success": True, **panel}
+
+
 @router.get("/{date}/compare")
 async def compare_strategies(date: str):
     """多策略对比分析"""
     holdings = parser.get_holdings_by_date(date)
-    
+
     # 计算各种交集并集
     stock_sets = {s: set(data["stocks"]) for s, data in holdings.items()}
     strategies = list(stock_sets.keys())
-    
+
     result = {
         "date": date,
         "holdings": holdings,
         "comparison": {}
     }
-    
+
     if len(strategies) >= 2:
         # 全量交集
         all_intersection = set.intersection(*stock_sets.values())
         result["comparison"]["all_intersection"] = sorted(list(all_intersection))
-        
+
         # 两两对比
         for i, s1 in enumerate(strategies):
             for s2 in strategies[i+1:]:
@@ -127,5 +164,5 @@ async def compare_strategies(date: str):
                     "union": sorted(list(set1 | set2)),
                     "union_count": len(set1 | set2)
                 }
-    
+
     return result

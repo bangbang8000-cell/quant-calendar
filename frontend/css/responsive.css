@@ -70,7 +70,7 @@
     margin-left: 0;
     max-width: 100%;
     padding: var(--sp-3);
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
   .page-header {
     padding: var(--sp-4);
@@ -78,7 +78,7 @@
     border-radius: var(--r-lg);
   }
   .page-title {
-    font-size: var(--fs-md);
+    font-size: var(--font-md);
   }
   .card {
     padding: var(--sp-4);
@@ -86,7 +86,7 @@
     border-radius: var(--r-lg);
   }
   .card-title {
-    font-size: var(--fs-base);
+    font-size: var(--font-base);
   }
   .card-grid,
   .card-grid-2,
@@ -98,7 +98,7 @@
     margin-bottom: 0;
   }
   .stat-card .stat-value {
-    font-size: var(--fs-xl);
+    font-size: var(--font-xl);
   }
   .el-dialog {
     width: 96% !important;
@@ -118,7 +118,7 @@
     align-items: flex-start;
   }
   .detail-header h3 {
-    font-size: var(--fs-lg);
+    font-size: var(--font-lg);
   }
   .login-box {
     max-width: 100%;
@@ -126,13 +126,13 @@
     padding: var(--sp-5);
   }
   .login-title {
-    font-size: var(--fs-lg);
+    font-size: var(--font-lg);
     margin-bottom: var(--sp-5);
   }
   .login-icon {
     width: 60px;
     height: 60px;
-    font-size: var(--fs-xl);
+    font-size: var(--font-xl);
   }
   .global-header {
     flex-direction: column;
@@ -160,6 +160,47 @@
   }
   .mobile-nav {
     display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-light);
+    z-index: 1000;
+    padding: 6px 0;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    backdrop-filter: blur(10px);
+  }
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    min-height: 48px;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    transition: color 0.2s;
+  }
+  .mobile-nav-item.active {
+    color: var(--primary-color);
+    background: transparent;
+  }
+  .mobile-nav-icon { font-size: 20px; line-height: 1; }
+  .mobile-nav-label { font-size: 10px; margin-top: 2px; }
+  /* v3.8.13: 股票详情移动端 */
+  .kline-dialog {
+    width: 95% !important;
+  }
+  .kline-dialog .el-dialog__body {
+    padding: 12px;
+  }
+  .ai-eval-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
   .toast-container {
     top: auto;
@@ -183,13 +224,207 @@
   .stat-card .stat-icon {
     width: 32px;
     height: 32px;
-    font-size: var(--fs-md);
+    font-size: var(--font-md);
   }
   .stat-card .stat-value {
-    font-size: var(--fs-lg);
+    font-size: var(--font-lg);
   }
   .el-button {
     padding: 8px 12px;
-    font-size: var(--fs-sm);
+    font-size: var(--font-sm);
   }
+}
+
+/* ═══ v3.11 (FR-3.11.5) 移动端专项: 列表卡片化 + 触控目标 ≥44px + 防溢出 ═══ */
+
+@media (max-width: 768px) {
+  /* 触控目标 ≥44px：按钮/输入框统一加高（无 is-circle 用法，安全） */
+  .el-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .el-input__inner {
+    min-height: 44px;
+  }
+  /* 日历页状态筛选 Tab（原 ~33px → 44px） */
+  .status-tab {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 日历页上一/下一交易日导航按钮 */
+  .cal-nav .el-button {
+    min-height: 44px;
+  }
+  /* 自选列表行：加高触控目标（原 ~40px → ≥52px） */
+  .watchlist-item {
+    min-height: 52px;
+    padding: 12px 10px;
+  }
+  .watchlist-search-item {
+    min-height: 48px;
+    padding: 10px 12px;
+  }
+  /* 列表卡片化：日历股票池 / 策略共识榜行 */
+  .consensus-item {
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  /* 高频页 375px 防溢出：状态 Tab 横向滚动 */
+  .status-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .status-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .status-tab {
+    flex: none;
+    min-width: 88px;
+  }
+  /* 日历导航按钮行：换行防溢出 */
+  .cal-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+/* v3.11 (FR-3.11.7) 今日一屏 — 平板/移动端降级 */
+@media (max-width: 1024px) {
+  .today-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .today-hero-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .today-focus-item {
+    white-space: normal;
+    word-break: break-word;
+  }
+  .today-health-item {
+    flex-wrap: wrap;
+  }
+}
+
+/* ═══ v3.17.8 (FR-3.17.8) 移动端一等公民: 弹窗内部滚动 + 溢出守卫 + 手势样式 ═══ */
+
+/* 溢出守卫: 移动端禁止横向溢出（表格/长行/卡片白边一律裁掉，375px 不出现横向滚动条） */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  .main-content {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  /* 弹窗: 高度封顶 + 内部滚动（header/footer 固定，body 滚动），375px 不再整窗超出视口 */
+  .el-dialog {
+    max-height: calc(100vh - 20px);
+    display: flex;
+    flex-direction: column;
+    margin: 10px auto !important;
+  }
+  .el-dialog .el-dialog__header,
+  .el-dialog .el-dialog__footer {
+    flex-shrink: 0;
+  }
+  .el-dialog .el-dialog__body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  /* 表单行在窄屏不横向溢出：弹性换行兜底 */
+  .el-form-item,
+  .flex-gap-8,
+  .flex-gap-12,
+  .flex-gap-6-mb16-wrap,
+  .flex-gap-24-mb20-wrap {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+
+/* 左滑露出操作面板（自选列表核心落地）— 桌面保留内联操作按钮
+   基础态: 桌面 wrapper 用 display:contents 不改变原有 flex 行；操作面板隐藏 */
+.swipe-reveal-main {
+  display: contents;
+}
+.swipe-reveal-actions {
+  display: none;
+}
+@media (max-width: 768px) {
+  .watchlist-item.swipe-reveal {
+    position: relative;
+    overflow: hidden;
+  }
+  .watchlist-item.swipe-reveal .swipe-reveal-main {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    transition: transform 0.25s ease;
+  }
+  .watchlist-item.swipe-reveal .swipe-reveal-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card-header);
+    border-left: 1px solid var(--border-light);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+  .watchlist-item.swipe-reveal.swipe-open .swipe-reveal-main {
+    transform: translateX(-88px);
+  }
+  .watchlist-item.swipe-reveal.swipe-open .swipe-reveal-actions {
+    transform: translateX(0);
+  }
+  /* 移动端隐藏内联三键，删除操作改由左滑面板提供（评估/K线均可点击行进详情） */
+  .watchlist-item.swipe-reveal .watchlist-actions {
+    display: none;
+  }
+}
+
+/* 下拉刷新指示器（日历页） */
+.pull-refresh-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+.pull-refresh-indicator.is-active {
+  display: flex;
+}
+.pull-refresh-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-heavy);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: qc-spin 0.8s linear infinite;
+}
+@keyframes qc-spin {
+  to { transform: rotate(360deg); }
 }

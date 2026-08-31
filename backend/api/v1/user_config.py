@@ -32,7 +32,9 @@ BASE_CONFIG_DEFAULTS = {
     "ai": {"provider": "deepseek", "apiKey": "", "endpoint": "https://api.deepseek.com/v1", "model": "deepseek-chat"},
     "rate_limit": {"api_limit": 600},
     "auto_evaluate": {"enabled": False, "schedule_type": "daily", "schedule_time": "09:00", "push_to_feishu": True},
-    "theme": "tech-blue"
+    "theme": "tech-blue",
+    # v3.17 (FR-3.17.2/3.17.7): 策略研究菜单默认开启（市场复盘/异动扫描 P0 功能可达）
+    "research_menu_enabled": True
 }
 
 
@@ -184,6 +186,93 @@ async def save_my_config(req: dict, user: dict = Depends(get_current_active_user
     if success:
         return {"success": True, "message": "配置已保存", "username": user["username"]}
     raise HTTPException(status_code=500, detail="保存配置失败")
+
+
+# ===== v3.17.10 (FR-3.17.10): 个性化偏好 =====
+# 偏好键：default_view(默认视图) / theme(亮/暗/跟随系统) / chart_period(图表周期) / language(界面语言)
+# 统一存后端 user_config（登录用户）的顶层 preferences 子对象；游客由前端降级 localStorage。
+PREFERENCE_DEFAULTS = {
+    "default_view": "strategies",
+    "theme": "system",
+    "chart_period": "daily",
+    "language": "zh-CN",
+}
+PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
+# 各偏好键合法取值（后端仅做键校验，值合法性由前端偏好模块约束）
+PREFERENCE_ALLOWED_VALUES = {
+    "default_view": {"strategies", "calendar", "ai", "research", "system"},
+    "theme": {"light", "dark", "system"},
+    "chart_period": {"daily", "weekly", "monthly"},
+    "language": {"zh-CN", "en"},
+}
+
+
+def _get_user_preferences_path(username: str) -> str:
+    """偏好独立存储文件：data/users/{username}/preferences.json
+    （与 config.json 解耦，避免 saveAllConfig 的 diff 覆盖写抹掉偏好）"""
+    return os.path.join(BASE_USERS_DIR, username, "preferences.json")
+
+
+def get_user_preferences(username: str) -> dict:
+    """读取指定用户的个性化偏好（仅用户自身文件 + 默认值，不继承 admin base 配置）"""
+    prefs = dict(PREFERENCE_DEFAULTS)
+    prefs_path = _get_user_preferences_path(username)
+    if os.path.exists(prefs_path):
+        try:
+            with open(prefs_path, 'r', encoding='utf-8') as f:
+                saved = json.load(f)
+            saved = saved or {}
+            for k in PREFERENCE_KEYS:
+                if k in saved and saved[k] is not None:
+                    prefs[k] = saved[k]
+        except Exception as e:
+            logger.warning(f"读取用户 {username} 偏好失败: {e}")
+    return prefs
+
+
+def save_user_preferences(username: str, prefs: dict) -> bool:
+    """保存指定用户的个性化偏好（写入独立 preferences.json，重启保持）"""
+    prefs_path = _get_user_preferences_path(username)
+    saved = get_user_preferences(username)
+    for k in PREFERENCE_KEYS:
+        if k in prefs:
+            saved[k] = prefs[k]
+    user_dir = os.path.join(BASE_USERS_DIR, username)
+    os.makedirs(user_dir, exist_ok=True)
+    try:
+        with open(prefs_path, 'w', encoding='utf-8') as f:
+            json.dump(saved, f, ensure_ascii=False, indent=2)
+        logger.info(f"用户 {username} 偏好已保存")
+        return True
+    except Exception as e:
+        logger.warning(f"保存用户 {username} 偏好失败: {e}")
+        return False
+
+
+@router.get("/preferences")
+async def get_my_preferences(user: dict = Depends(get_current_active_user)):
+    """获取当前用户的个性化偏好（登录用户；游客由前端降级 localStorage）"""
+    prefs = get_user_preferences(user["username"])
+    return {"success": True, "preferences": prefs, "username": user["username"]}
+
+
+@router.post("/preferences")
+async def save_my_preferences(req: dict, user: dict = Depends(get_current_active_user)):
+    """保存当前用户的个性化偏好（仅接受 default_view/theme/chart_period 三键，非法键拒绝）"""
+    req_prefs = req.get("preferences") or {}
+    if not isinstance(req_prefs, dict) or not req_prefs:
+        raise HTTPException(status_code=400, detail="偏好数据不能为空")
+    invalid = [k for k in req_prefs if k not in PREFERENCE_KEYS]
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"非法偏好键: {invalid}")
+    ok = save_user_preferences(user["username"], req_prefs)
+    if not ok:
+        raise HTTPException(status_code=500, detail="保存偏好失败")
+    return {
+        "success": True,
+        "preferences": get_user_preferences(user["username"]),
+        "username": user["username"],
+    }
 
 
 @router.get("/config/base")

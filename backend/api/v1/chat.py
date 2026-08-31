@@ -19,10 +19,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from auth import get_current_user
 from paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,27 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai/chat", tags=["ai-chat"])
 
 HISTORY_FILE = os.path.join(DATA_DIR, "chat_history.json")
+
+
+def _resolve_stock_name(code: str) -> str:
+    """stock_manager 解析股票名, 裸代码(无后缀)时补 .SZ/.SH (v3.15: 问股历史缺名兜底)"""
+    code = (code or "").strip()
+    if not code:
+        return code
+    try:
+        from stock_info import stock_manager
+        n = stock_manager.get_name(code)
+        if n and n != code:
+            return n
+        if "." not in code:
+            for suffix in (".SZ", ".SH"):
+                cand = code + suffix
+                n = stock_manager.get_name(cand)
+                if n and n != cand:
+                    return n
+    except Exception:
+        logger.warning("操作异常 (v3.4.0-T8)")
+    return code
 
 
 # ── Models ──
@@ -46,12 +68,19 @@ class QuickChatRequest(BaseModel):
 
 # ── History Helpers ──
 
-def _load_history() -> list:
-    """加载聊天历史 (v3.3.0: 优先 SQLite, 回退 JSON)"""
+def _resolve_username(user) -> str:
+    """从依赖注入的 user dict 解析当前用户名 (v3.17.13: 未登录/直接调用回退 default)"""
+    if isinstance(user, dict):
+        return user.get("username") or "default"
+    return "default"
+
+
+def _load_history(username: str = 'default') -> list:
+    """加载指定用户的聊天历史 (v3.17.13: 按用户隔离; SQLite 为主, JSON 仅 default 兼容读取)"""
     try:
         import db
         if db.schema_ok():
-            rows = db.chat_all()
+            rows = db.chat_all(username)
             if rows:
                 # 按 stock_code 聚合 (保持时间顺序)
                 sessions = []
@@ -59,9 +88,14 @@ def _load_history() -> list:
                 for r in rows:
                     code = r['stock_code'] or ''
                     if code not in by_code:
+                        # v3.15: 读 SQLite stock_name 列, 空则用 stock_manager 兜底
+                        sname = (r.get('stock_name') or '').strip()
+                        if not sname or sname == code:
+                            sname = _resolve_stock_name(code)
                         by_code[code] = {
                             "id": r['id'],
                             "stock_code": code,
+                            "stock_name": sname,
                             "created_at": r['created_at'],
                             "messages": []
                         }
@@ -73,35 +107,131 @@ def _load_history() -> list:
                     })
                 return sessions
     except Exception:
-        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-        pass
-    if os.path.exists(HISTORY_FILE):
+        logger.warning("操作异常 (v3.4.0-T8)")
+    # 兼容读取: 仅 default 读取历史 JSON 存档 (存量共享只读归档, 已不再写入)
+    if username == 'default' and os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 return data.get("sessions", [])
         except Exception:
-            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-            pass
+            logger.warning("操作异常 (v3.4.0-T8)")
     return []
 
 
-def _save_history(sessions: list):
-    """保存聊天历史 (v3.3.0: JSON + SQLite 双写)"""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-        json.dump({"sessions": sessions}, f, ensure_ascii=False, indent=2)
-    # SQLite 同步 (尽力而为)
+def _save_history(sessions: list, username: str = 'default'):
+    """保存聊天历史 (v3.17.13: SQLite 为主, 按用户写入; JSON 不再双写, 仅保留兼容读取)"""
     try:
         import db
         if db.schema_ok():
-            db.chat_clear('default')
+            db.chat_clear(username)
             for s in sessions:
+                code = s.get('stock_code', '') or ''
+                sname = (s.get('stock_name') or '').strip()
+                if not sname or sname == code:
+                    sname = _resolve_stock_name(code)
                 for m in s.get('messages', []):
-                    db.chat_append('default', s.get('stock_code', ''), m.get('role', 'user'), m.get('content', ''))
+                    db.chat_append(username, code, m.get('role', 'user'), m.get('content', ''), sname)
     except Exception:
-        logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-        pass
+        logger.warning("操作异常 (v3.4.0-T8)")
+
+
+# ── v3.17.1 (FR-3.17.1): 智能投顾助手 helpers ─────────────────
+
+def _load_session_messages(stock_code: str, limit_rounds: int = 6, username: str = 'default') -> list:
+    """读取该股票会话的历史消息（旧→新），供多轮追问使用 (A. 多轮上下文; v3.17.13: 按用户)"""
+    if not stock_code:
+        return []
+    try:
+        sessions = _load_history(username)
+    except Exception:
+        return []
+    msgs = []
+    for s in sessions:
+        if s.get("stock_code") == stock_code:
+            for m in s.get("messages", []):
+                msgs.append({
+                    "role": m.get("role", "user"),
+                    "content": m.get("content", ""),
+                    "time": m.get("time", ""),
+                })
+    msgs.sort(key=lambda x: x.get("time") or "")
+    return msgs[-(limit_rounds * 2):]
+
+
+def _resolve_chat_intent(message: str, current_stock: str = None):
+    """解析意图/主代码/名称 — 返回 (intent, stock_code, stock_name)"""
+    from stock_scope import parse_stock_intent
+    from stock_info import stock_manager
+    intent = parse_stock_intent(message, current_stock)
+    code = intent.get("stock_code") or current_stock or ""
+    name = intent.get("stock_name") or (stock_manager.get_name(code) if code else "")
+    return intent, code, name
+
+
+def _build_chat_prompts(message: str, stock_code: str, stock_name: str, username: str = 'default'):
+    """统一组装 system/user prompt — FR-3.17.1 智能投顾助手
+
+    - A. 多轮上下文：注入同一股票会话前几轮结论 (v3.17.13: 按当前用户)
+    - B. 多股票对比：>=2 代码 → 对比数据卡 + 对比 system prompt
+    - C. 事实护栏：注入数据卡 + FACT_GUARD_RULE（禁止编造数字）
+
+    返回 (system_prompt, user_prompt, tool_data_extra)
+    """
+    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
+    from prompt_facts import parse_compare_request, build_compare_table, build_stock_fact_card, build_conversation_context
+    from prompts.ask_stock import (
+        build_ask_stock_system_prompt, build_compare_system_prompt,
+        build_ask_stock_user_prompt, FACT_GUARD_RULE,
+    )
+    from stock_info import stock_manager
+
+    trend = get_trend_analysis(stock_code) if stock_code else {}
+    consensus = get_consensus_snapshot(stock_code) if stock_code else {}
+    market = get_market_context()
+
+    # A. 多轮上下文：同一股票会话前几轮结论 (精简最近 6 轮, 按当前用户)
+    conv = build_conversation_context(_load_session_messages(stock_code, username=username)) if stock_code else ""
+
+    # B. 多股对比检测：主代码 + 消息中解析出的全部代码
+    cmp_codes = [stock_code] if stock_code else []
+    pc = parse_compare_request(message, stock_code)
+    for c in pc.get("codes", []):
+        if c not in cmp_codes:
+            cmp_codes.append(c)
+    is_compare = len(cmp_codes) >= 2
+
+    extra = {
+        "is_compare": is_compare,
+        "compare_codes": cmp_codes if is_compare else [],
+        "trend_available": "error" not in trend,
+        "consensus_available": "error" not in consensus,
+        "market_available": "error" not in market,
+    }
+
+    if is_compare:
+        compare_data = build_compare_table(cmp_codes)
+        primary_name = stock_manager.get_name(cmp_codes[0]) if cmp_codes else stock_name
+        system_prompt = build_compare_system_prompt()
+        user_prompt = build_ask_stock_user_prompt(
+            cmp_codes[0], primary_name, message, trend, consensus, market,
+            fact_instruction=FACT_GUARD_RULE,
+            conversation_context=conv,
+            compare_data=compare_data,
+        )
+        extra["compare_available"] = bool(compare_data and compare_data.get("available"))
+    else:
+        fact_card = build_stock_fact_card(stock_code) if stock_code else {}
+        system_prompt = build_ask_stock_system_prompt()
+        user_prompt = build_ask_stock_user_prompt(
+            stock_code, stock_name, message, trend, consensus, market,
+            fact_card=fact_card,
+            fact_instruction=FACT_GUARD_RULE,
+            conversation_context=conv,
+        )
+        extra["fact_available"] = bool(fact_card and fact_card.get("source") != "unavailable")
+
+    return system_prompt, user_prompt, extra
 
 
 # ── LLM Call (async, non-blocking) ──
@@ -149,31 +279,22 @@ async def _call_llm(system_prompt: str, user_prompt: str) -> str:
 # ── API Endpoints ──
 
 @router.post("")
-async def chat(request: Request, body: ChatRequest):
-    """AI 对话 — 主端点"""
-    from stock_scope import parse_stock_intent
-    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
-    from stock_info import stock_manager
-    from prompts.ask_stock import build_ask_stock_system_prompt, build_ask_stock_user_prompt
+async def chat(request: Request, body: ChatRequest, user: Optional[dict] = Depends(get_current_user)):
+    """AI 对话 — 主端点 (v3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文;
+    v3.17.13: 按当前用户隔离读写)"""
+    return await _run_chat(body, _resolve_username(user))
 
-    # 1. 解析意图
-    intent = parse_stock_intent(body.message, body.stock_code)
-    stock_code = intent.get("stock_code") or body.stock_code or ""
+
+async def _run_chat(body: ChatRequest, username: str) -> dict:
+    """AI 对话 — 内部实现 (v3.17.13: 按用户读写, 供 chat/quick 复用)"""
+    intent, stock_code, stock_name = _resolve_chat_intent(body.message, body.stock_code)
     if not stock_code:
         return {"reply": "请提供股票代码或名称，例如：\n- 分析茅台\n- 600519 趋势怎么看\n- 比亚迪怎么样", "intent": intent}
 
-    stock_name = intent.get("stock_name") or stock_manager.get_name(stock_code)
-
-    # 2. 收集数据
-    trend = get_trend_analysis(stock_code)
-    consensus = get_consensus_snapshot(stock_code)
-    market = get_market_context()
-
-    # v3.5.0-T4: RAG 上下文增强 — 注入历史评估结果 + 自选状态
+    # v3.5.0-T4: RAG 上下文增强 — 注入当前用户历史评估结果 + 自选状态 (v3.17.13: 按用户)
     rag_context = ""
     try:
         from ai_evaluator import ai_evaluator
-        username = "default"
         hist = ai_evaluator._load_history_for(username)
         if hist:
             # 找该股票最近一次评估
@@ -191,7 +312,7 @@ async def chat(request: Request, body: ChatRequest):
     # 自选状态
     try:
         import db
-        wl = db.watchlist_get("default")
+        wl = db.watchlist_get(username)
         if any(r["stock_code"] == stock_code for r in wl):
             rag_context += "\n[该股票在当前用户自选列表中]\n"
     except Exception:
@@ -199,18 +320,14 @@ async def chat(request: Request, body: ChatRequest):
     if rag_context:
         body.message = body.message + "\n\n[参考上下文]" + rag_context
 
-    # 3. 构建 Prompt
-    system_prompt = build_ask_stock_system_prompt()
-    user_prompt = build_ask_stock_user_prompt(
-        stock_code, stock_name, body.message,
-        trend, consensus, market,
-    )
+    # 3. 构建 Prompt (FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文)
+    system_prompt, user_prompt, tool_data = _build_chat_prompts(body.message, stock_code, stock_name, username=username)
 
     # 4. LLM 调用
     reply = await _call_llm(system_prompt, user_prompt)
 
-    # 5. 保存历史
-    sessions = _load_history()
+    # 5. 保存历史 (按用户)
+    sessions = _load_history(username)
     session = {
         "id": str(uuid.uuid4())[:8],
         "stock_code": stock_code,
@@ -224,23 +341,19 @@ async def chat(request: Request, body: ChatRequest):
     sessions.insert(0, session)
     if len(sessions) > 50:  # Keep last 50
         sessions = sessions[:50]
-    _save_history(sessions)
+    _save_history(sessions, username)
 
     return {
         "reply": reply,
         "session_id": session["id"],
         "intent": intent,
-        "tool_data": {
-            "trend_available": "error" not in trend,
-            "consensus_available": "error" not in consensus,
-            "market_available": "error" not in market,
-        },
+        "tool_data": tool_data,
     }
 
 
 @router.post("/quick")
-async def quick_chat(body: QuickChatRequest):
-    """快捷提问 — 预设分析模式"""
+async def quick_chat(body: QuickChatRequest, user: Optional[dict] = Depends(get_current_user)):
+    """快捷提问 — 预设分析模式 (v3.17.13: 按当前用户)"""
     mode_messages = {
         "trend": "帮我做一下技术趋势分析",
         "fundamental": "帮我看看基本面情况",
@@ -249,26 +362,33 @@ async def quick_chat(body: QuickChatRequest):
     msg = mode_messages.get(body.mode, mode_messages["comprehensive"])
 
     req = ChatRequest(stock_code=body.stock_code, message=msg)
-    return await chat(Request, req)
+    return await _run_chat(req, _resolve_username(user))
 
 
 @router.get("/history")
-async def get_history(view: str = "date"):
-    """获取问股历史列表 — 支持 date/month/stock 分组视图"""
-    sessions = _load_history()
-    items = [
-        {
+async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
+                      user: Optional[dict] = Depends(get_current_user)):
+    """获取问股历史列表 — 支持 date/month/stock 分组视图 (v3.17.13: 按当前用户;
+    v3.17.9 FR-3.17.9: 支持 limit/offset 分页, 先切片会话再分组)"""
+    sessions = _load_history(_resolve_username(user))
+    sessions = sessions[offset:offset + limit]
+    items = []
+    for s in sessions:
+        code = s.get("stock_code", "") or ""
+        # v3.15: 兜底解析股票名 (旧 JSON 记录可能缺 stock_name)
+        sname = (s.get("stock_name") or "").strip()
+        if not sname or sname == code:
+            sname = _resolve_stock_name(code)
+        items.append({
             "id": s["id"],
-            "stock_code": s.get("stock_code", ""),
-            "stock_name": s.get("stock_name", ""),
+            "stock_code": code,
+            "stock_name": sname,
             "first_msg": s["messages"][0]["content"][:50] if s.get("messages") else "",
             "msg_count": len(s.get("messages", [])),
             "created_at": s.get("created_at", ""),
             "date": s.get("created_at", "")[:10],
             "month": s.get("created_at", "")[:7],
-        }
-        for s in sessions
-    ]
+        })
 
     if view == "month":
         grouped = {}
@@ -299,9 +419,9 @@ async def get_history(view: str = "date"):
 
 
 @router.get("/history/{session_id}")
-async def get_history_detail(session_id: str):
-    """获取单条对话详情"""
-    sessions = _load_history()
+async def get_history_detail(session_id: str, user: Optional[dict] = Depends(get_current_user)):
+    """获取单条对话详情 (v3.17.13: 按当前用户)"""
+    sessions = _load_history(_resolve_username(user))
     for s in sessions:
         if s["id"] == session_id:
             return {"id": s["id"], "messages": s.get("messages", [])}
@@ -309,33 +429,29 @@ async def get_history_detail(session_id: str):
 
 
 @router.delete("/history/{session_id}")
-async def delete_history(session_id: str):
-    """删除单条对话"""
-    sessions = _load_history()
+async def delete_history(session_id: str, user: Optional[dict] = Depends(get_current_user)):
+    """删除单条对话 (v3.17.13: 按当前用户)"""
+    username = _resolve_username(user)
+    sessions = _load_history(username)
     sessions = [s for s in sessions if s["id"] != session_id]
-    _save_history(sessions)
+    _save_history(sessions, username)
     return {"ok": True}
 
 
 @router.post("/stream")
-async def chat_stream(body: ChatRequest):
-    """流式 AI 对话 — SSE (非阻塞)"""
-    from stock_scope import parse_stock_intent
-    from agent_tools import get_trend_analysis, get_consensus_snapshot, get_market_context
-    from stock_info import stock_manager
-    from prompts.ask_stock import build_ask_stock_system_prompt, build_ask_stock_user_prompt
+async def chat_stream(body: ChatRequest, user: Optional[dict] = Depends(get_current_user)):
+    """流式 AI 对话 — SSE (非阻塞, FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文;
+    v3.17.13: 按当前用户隔离读写)"""
     from ai_evaluator import ai_evaluator
 
-    intent = parse_stock_intent(body.message, body.stock_code)
-    stock_code = intent.get("stock_code") or body.stock_code or ""
-    stock_name = intent.get("stock_name") or stock_manager.get_name(stock_code)
+    username = _resolve_username(user)
+    _intent, stock_code, stock_name = _resolve_chat_intent(body.message, body.stock_code)
+    if not stock_code:
+        async def err_gen():
+            yield "data: {\"error\": \"请提供股票代码或名称\"}\n\n"
+        return StreamingResponse(err_gen(), media_type="text/event-stream")
 
-    trend = get_trend_analysis(stock_code)
-    consensus = get_consensus_snapshot(stock_code)
-    market = get_market_context()
-
-    system_prompt = build_ask_stock_system_prompt()
-    user_prompt = build_ask_stock_user_prompt(stock_code, stock_name, body.message, trend, consensus, market)
+    system_prompt, user_prompt, _tool_data = _build_chat_prompts(body.message, stock_code, stock_name, username=username)
 
     models = ai_evaluator.get_enabled_models()
     if not models:
@@ -387,8 +503,8 @@ async def chat_stream(body: ChatRequest):
                         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
                         pass
 
-            # Save to history
-            sessions = _load_history()
+            # Save to history (v3.17.13: 按当前用户)
+            sessions = _load_history(username)
             session = {
                 "id": str(uuid.uuid4())[:8],
                 "stock_code": stock_code,
@@ -402,7 +518,7 @@ async def chat_stream(body: ChatRequest):
             sessions.insert(0, session)
             if len(sessions) > 50:
                 sessions = sessions[:50]
-            _save_history(sessions)
+            _save_history(sessions, username)
 
             yield f"data: {json.dumps({'done': True, 'session_id': session['id']})}\n\n"
 

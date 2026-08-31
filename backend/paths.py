@@ -5,8 +5,11 @@
 基于当前文件位置自动计算项目根目录，确保在任何工作目录下都能正确运行
 """
 
+import logging
 import os
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # 项目根目录（当前文件所在目录的上一级）
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,7 +45,7 @@ SW_JS_FILE = os.path.join(FRONTEND_DIR, "sw.js")
 # 外部数据目录（策略 CSV 文件位置）
 # 优先级：环境变量 > .env 配置 > 默认值 ../qresult
 DEFAULT_QUANT_DIR = os.environ.get(
-    "QUANT_DATA_DIR", 
+    "QUANT_DATA_DIR",
     os.path.join(os.path.dirname(BASE_DIR), "qresult")
 )
 # 如果是相对路径，相对于项目根目录解析
@@ -59,10 +62,11 @@ def ensure_dirs():
 
 
 if __name__ == "__main__":
-    print("项目根目录:", BASE_DIR)
-    print("后端目录:", BACKEND_DIR)
-    print("前端目录:", FRONTEND_DIR)
-    print("数据目录:", DATA_DIR)
-    print("外部数据目录:", EXTERNAL_DATA_DIR)
+    logging.basicConfig(level=logging.INFO)
+    logger.info("项目根目录: %s", BASE_DIR)
+    logger.info("后端目录: %s", BACKEND_DIR)
+    logger.info("前端目录: %s", FRONTEND_DIR)
+    logger.info("数据目录: %s", DATA_DIR)
+    logger.info("外部数据目录: %s", EXTERNAL_DATA_DIR)
     ensure_dirs()
-    print("目录检查完成")
+    logger.info("目录检查完成")

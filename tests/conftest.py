@@ -1,5 +1,7 @@
 """pytest configuration — fixtures and mocks"""
-import sys, os, tempfile, json
+import sys
+import os
+import tempfile
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
@@ -22,17 +24,47 @@ def patch_users_file():
 def patch_data_dir():
     """Use temp dir for all data files during tests"""
     import paths
+    import db
     old_data = paths.DATA_DIR
-    paths.DATA_DIR = tempfile.mkdtemp()
-    old_config = paths.AI_CONFIG_FILE
-    paths.AI_CONFIG_FILE = os.path.join(paths.DATA_DIR, 'ai_config.json')
-    old_history = paths.AI_EVALUATION_HISTORY_FILE
-    paths.AI_EVALUATION_HISTORY_FILE = os.path.join(paths.DATA_DIR, 'ai_evaluation_history.json')
-    old_models = os.path.join(paths.DATA_DIR, 'ai_models.json')
+    tmp = tempfile.mkdtemp(prefix='qc-test-data-')
+    paths.DATA_DIR = tmp
+
+    # v3.18 (FR-3.18.12): 统一重定向全部数据文件常量 (此前仅 users/db/ai_config,
+    # 其余常量在 import 时捕获真实 DATA_DIR 导致写真实 data/ 污染)
+    _DATA_FILE_KEYS = (
+        'USERS_FILE', 'STOCK_INFO_FILE', 'MERRILL_CACHE_FILE', 'MERRILL_HISTORY_FILE',
+        'MERRILL_SNAPSHOT_FILE', 'MARKET_CACHE_FILE', 'CONSENSUS_DATA_FILE',
+        'AI_CONFIG_FILE', 'AI_EVALUATION_HISTORY_FILE', 'AUTO_EVALUATE_CONFIG_FILE',
+        'GROUPS_FILE',
+    )
+    _saved = {}
+    for _key in _DATA_FILE_KEYS:
+        _old = getattr(paths, _key, None)
+        _saved[_key] = _old
+        if _old:
+            setattr(paths, _key, os.path.join(tmp, os.path.basename(_old)))
+    # 关键修复: db 模块在导入时即捕获 DATA_DIR/DB_FILE (db.py:18),
+    # 若不重定向, 测试会读写真实 data/app.db 造成跨测试/跨会话污染
+    old_db_data_dir = db.DATA_DIR
+    old_db_file = db.DB_FILE
+    db.DATA_DIR = tmp
+    db.DB_FILE = os.path.join(tmp, 'app.db')
+    # v3.21: strategy_db 同源隔离 (strategy.db 含参数方案/运行记录)
+    import strategy_db as _sdb
+    _old_sdb_dir = getattr(_sdb, 'DATA_DIR', None)
+    _old_sdb_file = getattr(_sdb, 'DB_FILE', None)
+    _sdb.DATA_DIR = tmp
+    _sdb.DB_FILE = os.path.join(tmp, 'strategy.db')
     yield
     paths.DATA_DIR = old_data
-    paths.AI_CONFIG_FILE = old_config
-    paths.AI_EVALUATION_HISTORY_FILE = old_history
+    for _key, _val in _saved.items():
+        setattr(paths, _key, _val)
+    db.DATA_DIR = old_db_data_dir
+    db.DB_FILE = old_db_file
+    if _old_sdb_dir is not None:
+        _sdb.DATA_DIR = _old_sdb_dir
+    if _old_sdb_file is not None:
+        _sdb.DB_FILE = _old_sdb_file
 
 
 @pytest.fixture

@@ -5,6 +5,7 @@
 数据文件: data/users/{username}/watchlist.json
 """
 import json
+import logging
 import os
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
@@ -30,7 +31,8 @@ def _load_watchlist(username: str) -> list:
             if rows:
                 return [{
                     "code": r['stock_code'],
-                    "name": r['stock_code'],
+                    # v3.14.2: 使用 DB 存的股票名, 缺失时才回退代码 (旧数据 name='')
+                    "name": (r.get('name') or '').strip() or r['stock_code'],
                     "added_at": r['added_at'],
                 } for r in rows]
     except Exception:
@@ -48,12 +50,7 @@ def _load_watchlist(username: str) -> list:
 
 
 def _save_watchlist(username: str, stocks: list):
-    """保存自选股 (v3.3.0: JSON + SQLite 双写)"""
-    user_dir = os.path.join(BASE_USERS_DIR, username)
-    os.makedirs(user_dir, exist_ok=True)
-    with open(_get_watchlist_path(username), 'w', encoding='utf-8') as f:
-        json.dump({"stocks": stocks, "updated_at": datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
-    # SQLite 同步 (尽力而为)
+    """保存自选股 (v3.17.13: SQLite 为主, JSON 不再双写; JSON 仅保留兼容读取)"""
     try:
         import db
         if db.schema_ok():
@@ -62,10 +59,10 @@ def _save_watchlist(username: str, stocks: list):
             for item in stocks:
                 # stocks 元素可能是 dict {code,name,added_at} 或纯字符串
                 code = item.get('code') if isinstance(item, dict) else item
-                db.watchlist_set(username, code)
+                name = item.get('name', '') if isinstance(item, dict) else ''
+                db.watchlist_set(username, code, name or code)
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-        pass
 
 
 @router.get("")
@@ -82,13 +79,21 @@ async def add_to_watchlist(req: dict, user: dict = Depends(get_current_active_us
     name = req.get("name", "").strip()
     if not code:
         raise HTTPException(status_code=400, detail="股票代码不能为空")
-    
+
     stocks = _load_watchlist(user["username"])
     # 去重
     existing = [s for s in stocks if s["code"] == code]
     if existing:
         return {"success": True, "message": "已在自选中", "existed": True}
-    
+
+    # v3.14.2: 未传名字时经 stock_manager 解析中文名
+    if not name or name == code:
+        try:
+            from stock_info import stock_manager
+            name = stock_manager.get_name(code)
+        except Exception:
+            name = name or code
+
     stocks.append({"code": code, "name": name, "added_at": datetime.now().isoformat()})
     _save_watchlist(user["username"], stocks)
     return {"success": True, "message": "已加入自选", "count": len(stocks)}
@@ -108,8 +113,16 @@ async def remove_from_watchlist(code: str, user: dict = Depends(get_current_acti
 @router.delete("")
 async def clear_watchlist(user: dict = Depends(get_current_active_user)):
     """清空自选"""
+    stocks = _load_watchlist(user["username"])
+    cnt = len(stocks)
     _save_watchlist(user["username"], [])
-    return {"success": True, "message": "自选已清空"}
+    # v3.21 (P0-5): 高危操作审计
+    try:
+        from audit_log import log
+        log("clear_watchlist", user["username"], {"count": cnt})
+    except Exception:
+        pass
+    return {"success": True, "message": "自选已清空", "count": cnt}
 
 
 @router.get("/check/{code}")
@@ -126,7 +139,7 @@ async def search_stocks(q: str = "", user: dict = Depends(get_current_active_use
     """搜索股票（代码或名称模糊匹配）"""
     if len(q) < 1:
         return {"success": True, "results": []}
-    
+
     results = []
     try:
         from views_aggregator import views_aggregator
@@ -147,7 +160,7 @@ async def search_stocks(q: str = "", user: dict = Depends(get_current_active_use
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
-    
+
     return {"success": True, "results": results}
 
 
@@ -161,26 +174,26 @@ async def preload_watchlist_kline(
     limit: int = 60
 ):
     """预加载自选股K线数据到缓存
-    
+
     遍历用户自选股列表，逐只调用 get_kline_data 填充 MarketData 缓存。
     预加载后点击「📈 K线」按钮即可即时展示，无需等待 API 调用。
-    
+
     Args:
         period: K线周期 (daily/weekly/monthly)
         limit: 数据条数
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     stocks = _load_watchlist(user["username"])
     if not stocks:
         return {"success": True, "message": "自选股为空，无需预加载", "loaded": 0, "failed": 0, "total": 0}
-    
+
     from market_data import get_kline_data
-    
+
     loaded = []
     failed = []
-    
+
     for stock in stocks:
         code = stock["code"]
         try:
@@ -192,7 +205,7 @@ async def preload_watchlist_kline(
         except Exception as e:
             logger.warning(f"预加载K线失败 {code}: {e}")
             failed.append({"code": code, "name": stock.get("name", ""), "reason": str(e)[:100]})
-    
+
     return {
         "success": True,
         "message": f"预加载完成: {len(loaded)}/{len(stocks)} 成功",

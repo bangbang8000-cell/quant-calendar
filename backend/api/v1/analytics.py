@@ -7,14 +7,17 @@
 存储: data/page_analytics.json (按日期+页面聚合)
 """
 import json
+import logging
 import os
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from auth import get_current_active_user
 from paths import DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analytics", tags=["页面热度"])
 
@@ -45,7 +48,7 @@ def _save():
         with open(ANALYTICS_FILE, 'w', encoding='utf-8') as f:
             json.dump(_aggregate, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"[analytics] 保存失败: {e}")
+        logger.warning(f"[analytics] 保存失败: {e}")
 
 
 @router.post("/page")

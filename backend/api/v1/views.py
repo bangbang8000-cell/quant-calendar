@@ -7,7 +7,6 @@ import csv
 import io
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from typing import Optional
 
 from views_aggregator import views_aggregator
 
@@ -43,7 +42,7 @@ async def get_view_data(
 ):
     """
     获取多视图数据
-    
+
     Args:
         view_type: day/week/month/year (日/周/月/年视图)
         date: 日期 YYYY-MM-DD
@@ -61,7 +60,7 @@ async def get_view_data(
             result = views_aggregator.get_year_view(date)
         else:
             raise HTTPException(status_code=400, detail="不支持的视图类型")
-        
+
         # 给所有股票添加状态字段
         if "stocks" in result:
             for s in result["stocks"]:
@@ -69,7 +68,7 @@ async def get_view_data(
             if status != "all":
                 result["stocks"] = [s for s in result["stocks"] if s["status"] == status]
                 result["filtered_count"] = len(result["stocks"])
-        
+
         # CSV 导出
         if format == "csv":
             csv_stream = _stocks_to_csv(result.get("stocks", []), view_type, date)
@@ -79,7 +78,7 @@ async def get_view_data(
                 media_type="text/csv; charset=utf-8-sig",
                 headers={"Content-Disposition": f'attachment; filename="{filename}"'}
             )
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

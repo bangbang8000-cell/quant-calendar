@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-策略回测 API 路由
+策略回测 API 路由 (v3.9.10: 归因看板端点)
 """
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from backtest import backtest_engine
 from auth import get_current_active_user
@@ -20,7 +20,7 @@ async def run_strategy_backtest(
 ):
     """
     运行单策略回测
-    
+
     Args:
         strategy_id: 策略ID
         params: 回测参数
@@ -39,13 +39,14 @@ async def run_strategy_backtest(
             commission_rate=params.get("commission_rate", 0.0003),
             slippage=params.get("slippage", 0.001)
         )
-        
+
         summary = backtest_engine.get_backtest_summary(result)
         return {
             "success": result.success,
             "summary": summary,
             "equity_curve": result.equity_curve,
             "monthly_returns": result.monthly_returns,
+            "trade_history": result.trade_history,
             "message": result.message
         }
     except Exception as e:
@@ -59,7 +60,7 @@ async def run_multi_strategy_backtest(
 ):
     """
     运行多策略组合回测
-    
+
     Args:
         params: 回测参数
             - strategy_ids: 策略ID列表
@@ -79,51 +80,73 @@ async def run_multi_strategy_backtest(
         raise HTTPException(status_code=500, detail=f"多策略回测失败: {e}")
 
 
-@router.get("/metrics/{strategy_id}")
-async def get_backtest_metrics(
+# ─── v3.9.10: 策略归因看板 ─────────────────────────────────────
+
+@router.get("/attribution/{strategy_id}")
+async def get_strategy_attribution(
     strategy_id: str,
     _: Dict = Depends(get_current_active_user)
 ):
-    """获取策略回测核心指标（简化版）"""
+    """
+    策略归因分析 — 收益拆解 + 月度热力图数据
+
+    Returns:
+        - monthly_returns: 各月收益 (用于热力图)
+        - equity_curve: 净值曲线
+        - risk_metrics: 风险指标汇总
+        - trade_analysis: 交易统计分析
+    """
     try:
-        result = backtest_engine.run_backtest(strategy_id)
+        import numpy as np
+
+        # 运行回测获取数据
+        result = backtest_engine.run_backtest(strategy_id=strategy_id)
         if not result.success:
             return {"success": False, "message": result.message}
-        
-        return {
-            "success": True,
-            "data": backtest_engine.get_backtest_summary(result)
+
+        # 归因分析
+        monthly = result.monthly_returns
+        equity = result.equity_curve
+
+        # 月度热力图数据: [{year, month, return}]
+        heatmap_data = []
+        for k, v in sorted(monthly.items()):
+            parts = k.split('-')
+            heatmap_data.append({
+                "year": int(parts[0]),
+                "month": int(parts[1]) if len(parts) > 1 else 0,
+                "return": round(v * 100, 2)
+            })
+
+        # 净值曲线摘要 (按季度采样)
+        equity_sampled = equity[::max(1, len(equity) // 60)]
+
+        # 交易分析
+        trades = result.trade_history or []
+        win_trades = [t for t in trades if t.get("return", 0) > 0]
+        lose_trades = [t for t in trades if t.get("return", 0) <= 0]
+
+        trade_analysis = {
+            "total": len(trades),
+            "wins": len(win_trades),
+            "losses": len(lose_trades),
+            "win_rate": round(result.win_rate * 100, 1),
+            "profit_loss_ratio": round(result.profit_loss_ratio, 2) if result.profit_loss_ratio else 0,
+            "avg_win_return": round(np.mean([t.get("return", 0) for t in win_trades]) * 100, 2) if win_trades else 0,
+            "avg_loss_return": round(np.mean([t.get("return", 0) for t in lose_trades]) * 100, 2) if lose_trades else 0,
+            "turnover_rate": round(result.turnover_rate * 100, 1) if result.turnover_rate else 0,
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取回测指标失败: {e}")
 
-
-@router.get("/compare")
-async def compare_strategies(
-    strategy_ids: str,
-    _: Dict = Depends(get_current_active_user)
-):
-    """
-    多策略对比分析
-    
-    Args:
-        strategy_ids: 策略ID, 逗号分隔 (如 "strategy1,strategy2")
-    """
-    try:
-        ids = [s.strip() for s in strategy_ids.split(",")]
-        results = {}
-        
-        for sid in ids:
-            result = backtest_engine.run_backtest(sid)
-            if result.success:
-                results[sid] = backtest_engine.get_backtest_summary(result)
-        
         return {
             "success": True,
             "data": {
-                "strategies": results,
-                "compared_count": len(results)
+                "strategy_id": strategy_id,
+                "period": f"{result.start_date} ~ {result.end_date}",
+                "summary": backtest_engine.get_backtest_summary(result),
+                "heatmap_data": heatmap_data,
+                "equity_sampled": equity_sampled,
+                "trade_analysis": trade_analysis,
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"策略对比失败: {e}")
+        raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")

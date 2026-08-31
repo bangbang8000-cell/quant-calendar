@@ -12,12 +12,13 @@ import hashlib
 import re
 import os
 import time
+import asyncio
 import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, asdict, field
+from ai_indicators import calc_rsi as _calc_rsi, calc_macd as _calc_macd
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,10 @@ class ModelProvider:
     timeout: int = 60                # 超时秒数
     max_tokens: int = 4096           # 最大 token
     locked: bool = False             # 预置模型锁定，不可删除
-    
+
     def to_dict(self) -> Dict:
         return asdict(self)
-    
+
     @classmethod
     def from_dict(cls, d: Dict) -> "ModelProvider":
         return cls(
@@ -55,80 +56,208 @@ class ModelProvider:
             locked=d.get("locked", False),
         )
 
-# 默认模型列表（预配字节CodingPlan + DeepSeek，其余为模板）
-DEFAULT_MODELS = [
-    ModelProvider(
-        id="ark-code-latest",
-        provider="字节Coding Plan",
-        model="ark-code-latest",
-        base_url="https://ark.cn-beijing.volces.com/api/coding/v3",
-        api_key="",  # 通过前端 AI模型配置页面填写你的 Key
-        enabled=True, priority=0,
-    ),
-    ModelProvider(
-        id="deepseek-v4-pro",
-        provider="DeepSeek",
-        model="deepseek-v4-pro",
-        base_url="https://api.deepseek.com/v1",
-        api_key="",  # 通过前端 AI模型配置页面填写你的 Key
-        enabled=True, priority=1,
-    ),
-    ModelProvider(
-        id="deepseek-chat",
-        provider="DeepSeek",
-        model="deepseek-chat",
-        base_url="https://api.deepseek.com/v1",
-        api_key="",
-        enabled=False, priority=2,
-    ),
-    ModelProvider(
-        id="deepseek-reasoner",
-        provider="DeepSeek R1",
-        model="deepseek-reasoner",
-        base_url="https://api.deepseek.com/v1",
-        api_key="",
-        enabled=False, priority=3,
-    ),
-    ModelProvider(
-        id="gpt-4o",
-        provider="OpenAI",
-        model="gpt-4o",
-        base_url="https://api.openai.com/v1",
-        api_key="",
-        enabled=False, priority=4,
-    ),
-    ModelProvider(
-        id="claude-sonnet-4",
-        provider="Anthropic",
-        model="claude-sonnet-4-20250514",
-        base_url="https://api.anthropic.com/v1",
-        api_key="",
-        enabled=False, priority=5,
-    ),
-    ModelProvider(
-        id="qwen-plus",
-        provider="通义千问",
-        model="qwen-plus",
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        api_key="",
-        enabled=False, priority=6,
-    ),
-    ModelProvider(
-        id="glm-4",
-        provider="智谱GLM",
-        model="glm-4",
-        base_url="https://open.bigmodel.cn/api/paas/v4",
-        api_key="",
-        enabled=False, priority=7,
-    ),
-    ModelProvider(
-        id="moonshot-v1",
-        provider="Moonshot",
-        model="moonshot-v1-8k",
-        base_url="https://api.moonshot.cn/v1",
-        api_key="",
-        enabled=False, priority=8,
-    ),
+
+@dataclass
+class VendorModel:
+    """厂商卡片下的单个模型 (v3.14 厂商化重构)"""
+    name: str                        # 模型名（可含 "/"，如 Qwen/Qwen3.5-72B-Instruct）
+    enabled: bool = True             # 是否启用（参与全局评估链）
+    locked: bool = False             # 目录预置模型，前端禁删
+    max_tokens: int = 4096           # 消费点仍读 model.max_tokens
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d) -> "VendorModel":
+        if isinstance(d, str):  # 兼容纯模型名字符串
+            return cls(name=d)
+        return cls(
+            name=d.get("name", ""),
+            enabled=d.get("enabled", True),
+            locked=d.get("locked", False),
+            max_tokens=d.get("max_tokens", 4096),
+        )
+
+
+@dataclass
+class VendorConfig:
+    """模型厂商配置卡 (v3.14: 厂商为主配置粒度, 卡内配 API 后管理多个模型名)"""
+    vendor_key: str                  # 稳定 slug，如 "deepseek" / "bytedance-coding" / "custom-..."
+    name: str                        # 显示名，如 "DeepSeek"
+    kind: str                        # "国内" | "国外" | "CodingPlan" | "自定义"
+    base_url: str                    # API 端点
+    api_key: str = ""                # API Key（厂商级，卡内所有模型共用）
+    timeout: int = 60                # 超时秒数（厂商级）
+    tier: str = ""                   # 套餐信息（CodingPlan: Lite/Pro，展示用）
+    website: str = ""                # 官网/控制台链接
+    locked: bool = False             # 目录预置厂商，禁删
+    models: List[VendorModel] = field(default_factory=list)   # 卡内模型列表（数组顺序 = 全局优先级）
+
+    def to_dict(self) -> Dict:
+        d = asdict(self)
+        d["models"] = [m.to_dict() for m in self.models]
+        return d
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "VendorConfig":
+        return cls(
+            vendor_key=d.get("vendor_key", ""),
+            name=d.get("name", ""),
+            kind=d.get("kind", "自定义"),
+            base_url=d.get("base_url", ""),
+            api_key=d.get("api_key", ""),
+            timeout=d.get("timeout", 60),
+            tier=d.get("tier", ""),
+            website=d.get("website", ""),
+            locked=d.get("locked", False),
+            models=[VendorModel.from_dict(m) for m in d.get("models", [])],
+        )
+
+# v3.14: 预置厂商目录（国内优先 + CodingPlan 套餐 + 国外辅助）。
+# 唯一事实源: 经 GET /api/ai/catalog 供前端「新增厂商」下拉与模型名建议。
+# 不含 api_key（密钥只存 data/ai_models.json）；locked=True 的卡片禁删。
+# 模型名以 2026-08 当前命名为准；deepseek-chat/reasoner 已于 2026-07-24 弃用。
+VENDOR_CATALOG = [
+    # ── 国内 ──────────────────────────────────────────────
+    {
+        "vendor_key": "deepseek",
+        "name": "DeepSeek",
+        "kind": "国内",
+        "base_url": "https://api.deepseek.com/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://platform.deepseek.com",
+        "locked": True,
+        "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
+    },
+    {
+        "vendor_key": "qwen",
+        "name": "通义千问",
+        "kind": "国内",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://help.aliyun.com/zh/dashscope",
+        "locked": True,
+        "models": ["qwen-plus", "qwen3.7-plus", "qwen3.7-max", "qwen3-coder-plus"],
+    },
+    {
+        "vendor_key": "zhipu",
+        "name": "智谱GLM",
+        "kind": "国内",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://open.bigmodel.cn",
+        "locked": True,
+        "models": ["glm-5.1", "glm-5-turbo", "glm-4.7-flash"],
+    },
+    {
+        "vendor_key": "moonshot",
+        "name": "Kimi",
+        "kind": "国内",
+        "base_url": "https://api.moonshot.cn/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://platform.moonshot.cn",
+        "locked": True,
+        "models": ["kimi-k2.6", "kimi-k2.7-code"],
+    },
+    {
+        "vendor_key": "doubao-ark",
+        "name": "豆包(火山方舟)",
+        "kind": "国内",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://console.volcengine.com/ark",
+        "locked": True,
+        "models": ["doubao-seed-2.0-lite", "doubao-seed-1.8"],
+    },
+    {
+        "vendor_key": "ernie",
+        "name": "百度千帆",
+        "kind": "国内",
+        "base_url": "https://qianfan.baidubce.com/v2",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://console.bce.baidu.com/qianfan",
+        "locked": True,
+        "models": ["ernie-4.5-turbo-128k", "ernie-5.0"],
+    },
+    {
+        "vendor_key": "siliconflow",
+        "name": "硅基流动",
+        "kind": "国内",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://siliconflow.cn",
+        "locked": True,
+        "models": ["deepseek-ai/DeepSeek-V4", "Qwen/Qwen3.5-72B-Instruct"],
+    },
+    # ── CodingPlan 套餐（独立卡片, 含套餐档位与聚合模型）────
+    {
+        "vendor_key": "bytedance-coding",
+        "name": "字节CodingPlan",
+        "kind": "CodingPlan",
+        "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
+        "tier": "Lite/Pro",
+        "tier_options": ["Lite", "Pro"],
+        "website": "https://console.volcengine.com/ark",
+        "locked": True,
+        # 注: ark-code-latest 为 Auto 自动匹配; 勿用 /api/v3 在线推理(不消耗套餐额度)
+        "models": ["ark-code-latest", "deepseek-v3.2", "glm-4.7", "kimi-k2.5"],
+    },
+    {
+        "vendor_key": "qianfan-coding",
+        "name": "百度千帆CodingPlan",
+        "kind": "CodingPlan",
+        "base_url": "https://qianfan.baidubce.com/v2/coding",
+        "tier": "Lite/Pro",
+        "tier_options": ["Lite", "Pro"],
+        "website": "https://console.bce.baidu.com/qianfan",
+        "locked": True,
+        # qianfan-code-latest 自动路由; key 需以 bce-v3/ 开头
+        "models": ["qianfan-code-latest", "deepseek-v3.2", "kimi-k2.5", "glm-5"],
+    },
+    {
+        "vendor_key": "zhipu-coding",
+        "name": "智谱CodingPlan",
+        "kind": "CodingPlan",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "tier": "Lite/Pro",
+        "tier_options": ["Lite", "Pro"],
+        "website": "https://open.bigmodel.cn",
+        "locked": True,
+        # 端点实现时核对: 国内 open.bigmodel.cn / 国际 z.ai 的 /api/coding/paas/v4
+        "models": ["glm-coding-latest", "glm-5.1"],
+    },
+    # ── 国外（辅助, OpenAI 兼容）──────────────────────────
+    {
+        "vendor_key": "openai",
+        "name": "OpenAI",
+        "kind": "国外",
+        "base_url": "https://api.openai.com/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://platform.openai.com",
+        "locked": True,
+        "models": ["gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.6-luna"],
+    },
+    {
+        "vendor_key": "openrouter",
+        "name": "OpenRouter (Claude/Gemini)",
+        "kind": "国外",
+        "base_url": "https://openrouter.ai/api/v1",
+        "tier": "",
+        "tier_options": [],
+        "website": "https://openrouter.ai",
+        "locked": True,
+        # Claude/Gemini 原生非 OpenAI 兼容, 统一经 OpenRouter 以兼容协议接入
+        "models": ["anthropic/claude-sonnet-5", "anthropic/claude-opus-5", "google/gemini-3.6-flash"],
+    },
 ]
 
 # 技术指标计算用常量
@@ -136,10 +265,6 @@ RSI_PERIOD = 14
 MACD_FAST = 12
 MACD_SLOW = 26
 MACD_SIGNAL = 9
-
-# v3.5.0-T7: 技术指标已拆分到 ai_indicators 模块 (接口/行为不变)
-from ai_indicators import _ema, _ma, calc_rsi as _calc_rsi, calc_macd as _calc_macd
-
 
 class AIEvaluator:
     def __init__(self, config_file: str = None):
@@ -308,7 +433,6 @@ class AIEvaluator:
                 cache = json.load(f)
             # 清理30天前的记录
             today = datetime.now().strftime('%Y-%m-%d')
-            cutoff = None
             for key in list(cache.keys()):
                 parts = key.rsplit('_', 1)
                 if len(parts) == 2 and parts[1] < today:
@@ -341,89 +465,246 @@ class AIEvaluator:
             json.dump(self.config, f, ensure_ascii=False, indent=2)
         return True
 
-    # ─── 模型管理 ───────────────────────────────────────────────
+    # ─── 模型管理 (v3.14 厂商化) ─────────────────────────────────
 
-    def _load_models(self) -> List[ModelProvider]:
-        """加载模型配置列表（API Key 明文存储, v3.6.0 起取消加密; 兼容历史 Fernet 密文）"""
-        from crypto_utils import decrypt_value
+    def _seed_default_vendors(self) -> List[VendorConfig]:
+        """首次加载：从 VENDOR_CATALOG 生成默认厂商。
+        默认启用链 = 字节CodingPlan/ark-code-latest + DeepSeek/deepseek-v4-pro（两厂商各一模型）。
+        """
+        SEED_ENABLED = {"bytedance-coding": "ark-code-latest", "deepseek": "deepseek-v4-pro"}
+        vendors = []
+        for entry in VENDOR_CATALOG:
+            models = [
+                VendorModel(name=m, enabled=(SEED_ENABLED.get(entry["vendor_key"]) == m), locked=False, max_tokens=4096)
+                for m in entry["models"]
+            ]
+            vendors.append(VendorConfig(
+                vendor_key=entry["vendor_key"],
+                name=entry["name"],
+                kind=entry["kind"],
+                base_url=entry["base_url"],
+                api_key="",
+                timeout=60,
+                tier=entry.get("tier", ""),
+                website=entry.get("website", ""),
+                locked=entry.get("locked", False),
+                models=models,
+            ))
+        return vendors
+
+    def _load_models(self) -> List[VendorConfig]:
+        """加载厂商模型配置 (v3.14: {"version":2,"vendors":[...]}；兼容 legacy v1 平铺格式自动迁移)"""
+        if self._models_cache is not None:
+            return self._models_cache
         try:
             with open(self._models_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                models = []
-                for m in data.get("models", []):
-                    provider = ModelProvider.from_dict(m)
-                    # 兼容历史密文: Fernet 密文以 gAAAA 开头, 尝试解密; 失败则置空(需重新填写)
-                    if provider.api_key and provider.api_key.startswith("gAAAA"):
-                        decrypted = decrypt_value(provider.api_key)
-                        if decrypted.startswith("gAAAA"):
-                            logger.warning(f"模型 {provider.id} 的 API Key 无法解密 (FERNET_KEY 不匹配), 已置空, 请重新填写")
-                            provider.api_key = ""
-                        else:
-                            provider.api_key = decrypted
-                    models.append(provider)
-                if models:
-                    return models
+            if data.get("version") == 2 or "vendors" in data:
+                vendors = [VendorConfig.from_dict(v) for v in data.get("vendors", [])]
+                if vendors:
+                    self._models_cache = vendors
+                    return vendors
+            if "models" in data:
+                # legacy v1 平铺格式 → 一次性迁移到 v2（幂等: 迁移成功即写 version:2）
+                legacy = [ModelProvider.from_dict(m) for m in data.get("models", [])]
+                vendors = self._migrate_v1_to_v2(legacy)
+                self._save_models(vendors)
+                return vendors
         except (FileNotFoundError, json.JSONDecodeError):
             pass
-        # 首次加载：写入默认配置
-        self._save_models(DEFAULT_MODELS)
-        return list(DEFAULT_MODELS)
+        # 首次加载/文件损坏：写入默认厂商
+        vendors = self._seed_default_vendors()
+        self._save_models(vendors)
+        return vendors
 
-    def _save_models(self, models: List[ModelProvider]):
-        """保存模型配置列表（API Key 明文存储, v3.6.0 起取消加密）"""
+    def _save_models(self, vendors: List[VendorConfig]):
+        """保存厂商模型配置 (v3.14: version 2 格式)"""
         os.makedirs(os.path.dirname(self._models_file), exist_ok=True)
-        model_dicts = [m.to_dict() for m in models]
-        data = {"models": model_dicts, "updated_at": datetime.now().isoformat()}
+        data = {
+            "version": 2,
+            "vendors": [v.to_dict() for v in vendors],
+            "updated_at": datetime.now().isoformat(),
+        }
         with open(self._models_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        self._models_cache = models
+        self._models_cache = vendors
 
-    def get_models(self) -> List[Dict]:
-        """获取所有模型配置（返回排序后的启用列表在前）"""
-        models = self._load_models()
-        # 按 priority 排序
-        models.sort(key=lambda m: m.priority)
-        return [m.to_dict() for m in models]
+    @staticmethod
+    def _normalize_name(s: str) -> str:
+        """目录名归一化：去所有空白 + 小写（兼容 legacy provider 名如「字节Coding Plan」）"""
+        return re.sub(r'\s+', '', s or '').lower()
 
-    def update_models(self, models_data: List[Dict]) -> List[Dict]:
-        """批量更新模型配置（保留已有模型的 locked 状态）"""
-        # 加载现有模型，获取 locked 状态
-        existing = {m.id: m.locked for m in self._load_models()}
-        models = [ModelProvider.from_dict(m) for m in models_data]
-        # 重新分配 priority 为列表顺序
-        for i, m in enumerate(models):
-            m.priority = i
-            # 保留已有模型的 locked 状态
-            if m.id in existing:
-                m.locked = existing[m.id]
-        self._save_models(models)
-        return [m.to_dict() for m in models]
+    @staticmethod
+    def _match_catalog(name: str, base_url: str) -> Optional[Dict]:
+        """目录匹配：先按去空白名，再按 base_url 唯一命中（避免共享端点误配）"""
+        norm = AIEvaluator._normalize_name(name)
+        for c in VENDOR_CATALOG:
+            if AIEvaluator._normalize_name(c["name"]) == norm:
+                return c
+        matches = [c for c in VENDOR_CATALOG if c["base_url"] == base_url]
+        return matches[0] if len(matches) == 1 else None
+
+    @staticmethod
+    def _vendor_key_for_provider(name: str, base_url: str) -> str:
+        """provider 名 → 厂商 key：命中目录用目录 key，否则生成 slug"""
+        entry = AIEvaluator._match_catalog(name, base_url)
+        if entry:
+            return entry["vendor_key"]
+        base = name or base_url or "custom"
+        slug = re.sub(r'[^\w-]+', '-', base.strip()).strip('-').lower()
+        return slug or 'custom'
+
+    def _migrate_v1_to_v2(self, legacy: List[ModelProvider]) -> List[VendorConfig]:
+        """legacy v1 平铺模型 → v2 厂商结构（按 provider 分组, 保留启用/优先级/api_key/locked）"""
+        from crypto_utils import decrypt_value
+        # 先解密 legacy Fernet 密文（同原 v1 逻辑: gAAAA 前缀, 解密失败置空）
+        for m in legacy:
+            if m.api_key and m.api_key.startswith("gAAAA"):
+                decrypted = decrypt_value(m.api_key)
+                if decrypted.startswith("gAAAA"):
+                    logger.warning(f"模型 {m.id} 的 API Key 无法解密 (FERNET_KEY 不匹配), 已置空, 请重新填写")
+                    m.api_key = ""
+                else:
+                    m.api_key = decrypted
+        # 按 provider 名分组（空则回退 base_url），组内按 legacy priority 升序
+        groups = {}
+        for m in sorted(legacy, key=lambda x: x.priority):
+            key = m.provider or m.base_url or "自定义"
+            groups.setdefault(key, []).append(m)
+        # 组间按组内最小 priority 升序 → 完整保留原全局链顺序
+        vendors = []
+        used_keys = set()  # 防目录 key 碰撞: 同名共享 base_url 的独立 provider 不得复占同一 key
+        for key, ms in sorted(groups.items(), key=lambda kv: min(x.priority for x in kv[1])):
+            # 目录匹配: 名(去空白)优先, base_url 唯一命中兜底; 用户已有模型名一律原样保留（风险#6）
+            entry = self._match_catalog(key, ms[0].base_url)
+            # 名匹配(或 base_url 命中且 key 未被占用)才算"真是该目录厂商"; 碰撞则视为独立自定义厂商
+            name_match = entry is not None and any(
+                self._normalize_name(c["name"]) == self._normalize_name(key) for c in VENDOR_CATALOG
+            )
+            adopt_catalog = entry is not None and (name_match or entry["vendor_key"] not in used_keys)
+            if adopt_catalog:
+                desired = entry["vendor_key"]
+            else:
+                # 纯 name slug（不复用 _vendor_key_for_provider, 避免再次命中 base_url 撞回已占 key）
+                base = key or ms[0].base_url or "custom"
+                desired = re.sub(r'[^\w-]+', '-', base.strip()).strip('-').lower() or 'custom'
+            vk = desired
+            if vk in used_keys:  # slug 同样可能碰撞（如 "DeepSeek-R1" 与 "DeepSeek R1"）→ 追加序号
+                n = 2
+                while f"{vk}-{n}" in used_keys:
+                    n += 1
+                vk = f"{vk}-{n}"
+            used_keys.add(vk)
+            models = [
+                VendorModel(name=x.model, enabled=x.enabled, locked=x.locked, max_tokens=x.max_tokens)
+                for x in ms
+            ]
+            vendors.append(VendorConfig(
+                vendor_key=vk,
+                name=key,
+                kind=entry["kind"] if adopt_catalog else "自定义",
+                base_url=ms[0].base_url,
+                api_key=ms[0].api_key,
+                timeout=ms[0].timeout,
+                tier=entry.get("tier", "") if adopt_catalog else "",
+                website=entry.get("website", "") if adopt_catalog else "",
+                locked=entry.get("locked", False) if adopt_catalog else False,
+                models=models,
+            ))
+        return vendors
+
+    def get_models(self) -> Dict:
+        """获取厂商模型配置 (v3.14: {"vendors":[...]})"""
+        vendors = self._load_models()
+        return {"vendors": [v.to_dict() for v in vendors]}
+
+    def update_models(self, payload: Dict) -> Dict:
+        """批量保存厂商配置（保留厂商/模型两级 locked；api_key 原样透传）"""
+        vendors_data = payload.get("vendors", []) if isinstance(payload, dict) else []
+        existing = {v.vendor_key: v for v in self._load_models()}
+        vendors = []
+        for vd in vendors_data:
+            v = VendorConfig.from_dict(vd)
+            # 厂商级 locked 保留
+            if v.vendor_key in existing:
+                v.locked = existing[v.vendor_key].locked
+            # 模型级 locked 保留（按 name；新厂商无既有状态则用客户端值）
+            existing_vendor = existing.get(v.vendor_key)
+            existing_models = {m.name: m.locked for m in existing_vendor.models} if existing_vendor else {}
+            for m in v.models:
+                if m.name in existing_models:
+                    m.locked = existing_models[m.name]
+            vendors.append(v)
+        self._save_models(vendors)
+        return {"vendors": [v.to_dict() for v in vendors]}
+
+    def get_vendors(self) -> List[VendorConfig]:
+        """获取厂商配置列表（内部）"""
+        return self._load_models()
 
     def get_enabled_models(self) -> List[ModelProvider]:
-        """获取所有已启用的模型（按优先级排序）"""
-        models = self._load_models()
-        enabled = [m for m in models if m.enabled]
-        enabled.sort(key=lambda m: m.priority)
-        return enabled
+        """获取所有已启用的模型（消费点兼容 shim, 签名不变）
+        评估链 = 厂商列表顺序 → 厂商内模型列表顺序；只取 enabled，扁平化为 ModelProvider。
+        """
+        vendors = self._load_models()
+        resolved = []
+        for v in vendors:
+            for m in v.models:
+                if m.enabled:
+                    resolved.append(self._resolve_provider(v, m))
+        return resolved
 
-    def test_model_connection(self, model_id: str) -> Dict:
-        """探测单个模型连接"""
-        models = self._load_models()
-        model = next((m for m in models if m.id == model_id), None)
-        if not model:
-            return {"success": False, "message": f"模型 {model_id} 不存在"}
-        if not model.api_key:
+    def _resolve_provider(self, v: VendorConfig, m: VendorModel) -> ModelProvider:
+        """厂商+模型 → 扁平 ModelProvider（消费点只用 .base_url/.api_key/.model/.max_tokens）"""
+        return ModelProvider(
+            id=m.name,               # 用量统计键（按模型名聚合）
+            provider=v.name,
+            model=m.name,
+            base_url=v.base_url,
+            api_key=v.api_key,
+            enabled=True,
+            priority=0,
+            timeout=v.timeout,
+            max_tokens=m.max_tokens,
+            locked=m.locked,
+        )
+
+    def _resolve_vendor(self, vendor_key: str, base_url: str = None, api_key: str = None, timeout: int = None) -> VendorConfig:
+        """按 vendor_key 取厂商；未保存的新厂商可经 base_url/api_key/timeout 内联覆盖（探测/拉取模型列表前无需先保存）"""
+        vendor = next((v for v in self._load_models() if v.vendor_key == vendor_key), None)
+        if base_url:
+            if vendor is None:
+                vendor = VendorConfig(vendor_key=vendor_key, name=vendor_key, kind="自定义", base_url=base_url)
+            else:
+                vendor.base_url = base_url
+        if api_key is not None and vendor is not None:
+            vendor.api_key = api_key
+        if timeout is not None and vendor is not None:
+            vendor.timeout = timeout
+        return vendor
+
+    def test_vendor_model(self, vendor_key: str, model_name: str, base_url: str = None, api_key: str = None, timeout: int = None) -> Dict:
+        """探测厂商下指定模型连接（v3.14: body 传参, 模型名可含 /; 未保存厂商支持内联 base_url/api_key）"""
+        vendor = self._resolve_vendor(vendor_key, base_url, api_key, timeout)
+        if not vendor:
+            return {"success": False, "message": f"厂商 {vendor_key} 不存在"}
+        # 内联覆盖（未保存新厂商）时模型名尚未落盘, 跳过归属校验, 直接按名探测
+        if not base_url:
+            model = next((m for m in vendor.models if m.name == model_name), None)
+            if not model:
+                return {"success": False, "message": f"模型 {model_name} 不在厂商 {vendor.name} 下"}
+        if not vendor.api_key:
             return {"success": False, "message": "未配置 API Key"}
-        
+
         start = time.time()
         try:
-            endpoint = model.base_url.rstrip("/") + "/chat/completions"
+            endpoint = vendor.base_url.rstrip("/") + "/chat/completions"
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {model.api_key}"
+                "Authorization": f"Bearer {vendor.api_key}"
             }
             payload = {
-                "model": model.model,
+                "model": model_name,
                 "messages": [{"role": "user", "content": "ping"}],
                 "max_tokens": 5,
             }
@@ -431,12 +712,125 @@ class AIEvaluator:
             latency = round((time.time() - start) * 1000)
             if resp.status_code == 200:
                 return {"success": True, "message": f"连接正常 ({latency}ms)", "latency_ms": latency}
-            else:
-                return {"success": False, "message": f"HTTP {resp.status_code}: {resp.text[:200]}", "latency_ms": latency}
+            return {"success": False, "message": f"HTTP {resp.status_code}: {resp.text[:200]}", "latency_ms": latency}
         except requests.Timeout:
             return {"success": False, "message": "连接超时 (15s)", "latency_ms": 15000}
         except Exception as e:
             return {"success": False, "message": str(e)[:200], "latency_ms": round((time.time() - start) * 1000)}
+
+    def test_model_connection(self, model_id: str) -> Dict:
+        """兼容别名：按模型名定位厂商+模型后探测（旧路由 /models/test/{id} 已删除）"""
+        vendors = self._load_models()
+        for v in vendors:
+            for m in v.models:
+                if m.name == model_id:
+                    return self.test_vendor_model(v.vendor_key, m.name)
+        return {"success": False, "message": f"模型 {model_id} 不存在"}
+
+    def list_vendor_models(self, vendor_key: str, base_url: str = None, api_key: str = None, timeout: int = None) -> Dict:
+        """调 {base_url}/models 获取厂商可用模型名列表（OpenAI 兼容, 供前端「获取模型列表」）"""
+        vendor = self._resolve_vendor(vendor_key, base_url, api_key, timeout)
+        if not vendor:
+            return {"success": False, "message": f"厂商 {vendor_key} 不存在"}
+        if not vendor.api_key:
+            return {"success": False, "message": "未配置 API Key"}
+        try:
+            endpoint = vendor.base_url.rstrip("/") + "/models"
+            headers = {"Authorization": f"Bearer {vendor.api_key}"}
+            resp = requests.get(endpoint, headers=headers, timeout=min(vendor.timeout, 30))
+            if resp.status_code != 200:
+                return {"success": False, "message": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+            body = resp.json()
+            raw = body.get("data", []) if isinstance(body, dict) else body
+            if not isinstance(raw, list):
+                return {"success": False, "message": "响应格式异常 (缺少 data 列表)"}
+            names = []
+            for item in raw:
+                if isinstance(item, dict) and item.get("id"):
+                    names.append(item["id"])
+                elif isinstance(item, str):
+                    names.append(item)
+            names = sorted(set(names))
+            if not names:
+                return {"success": False, "message": "未获取到模型（返回空列表）"}
+            return {"success": True, "models": names}
+        except requests.Timeout:
+            return {"success": False, "message": "请求超时"}
+        except Exception as e:
+            return {"success": False, "message": str(e)[:200]}
+
+    def get_catalog(self) -> Dict:
+        """预置厂商目录（唯一事实源, 供前端「新增厂商」下拉 + 模型名建议）"""
+        return {"vendors": VENDOR_CATALOG}
+
+    # ─── v3.7.11: 入池信号解读 ──────────────────────────────────
+
+    def generate_pool_signal(self, stock_code: str, stock_name: str, event_type: str, market_snapshot: Dict = None) -> str:
+        """生成入池/出池简短语解读（≤20字）"""
+        models = self.get_enabled_models()
+        if not models:
+            return ''  # 无可用模型时跳过
+        model = models[0]  # 使用最高优先级模型
+
+        event_label = '入池' if event_type == 'enter' else '出池'
+        snapshot_text = ''
+        if market_snapshot:
+            snapshot_text = f'\n行情快照: 收盘{market_snapshot.get("close","?")}, 涨跌{market_snapshot.get("pct_chg","?")}%'
+
+        prompt = f'用一句话（≤20字）解释{stock_name}({stock_code}){event_label}的原因：{snapshot_text}'
+        try:
+            endpoint = model.base_url.rstrip("/") + "/chat/completions"
+            resp = requests.post(endpoint, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {model.api_key}"
+            }, json={
+                "model": model.model,
+                "messages": [
+                    {"role": "system", "content": "你是量化分析师，只用一句话（≤20字）简要解释股票入池或出池的原因。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 80,
+            }, timeout=15)
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+            return content.strip()[:30]
+        except Exception as e:
+            logger.warning(f"生成入池信号失败 ({stock_code}): {e}")
+            return ''
+
+    def generate_review(self, prompt: str, system_prompt: str = None, max_tokens: int = 1024) -> str:
+        """生成市场复盘解读正文 (FR-3.17.2) — 遍历启用模型, 首个非空内容即返回
+
+        复用 OpenAI 兼容 /chat/completions 调用; 全部失败返回空串 (调用方自行兜底)。
+        """
+        models = self.get_enabled_models()
+        if not models:
+            logger.warning("生成市场复盘: 无可用模型")
+            return ''
+        system_prompt = system_prompt or "你是专业的A股市场复盘分析师，严格基于给定数据解读，不编造任何数字。"
+        for model in models:
+            try:
+                endpoint = model.base_url.rstrip("/") + "/chat/completions"
+                resp = requests.post(endpoint, headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {model.api_key}"
+                }, json={
+                    "model": model.model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": max_tokens,
+                }, timeout=model.timeout)
+                resp.raise_for_status()
+                content = (resp.json()["choices"][0]["message"]["content"] or "").strip()
+                if content:
+                    return content
+            except Exception as e:
+                logger.warning(f"生成市场复盘失败 ({model.id}): {e}")
+        return ''
 
     def _load_history(self) -> List:
         """加载评估历史（已废弃，保留向后兼容）"""
@@ -488,7 +882,6 @@ class AIEvaluator:
                 volumes = [r[5] for r in kline if r[5] is not None]
                 highs = [r[4] for r in kline if r[4] is not None]
                 lows = [r[3] for r in kline if r[3] is not None]
-                dates = [r[0] for r in kline]
 
                 # 最近一日
                 latest = kline[-1]
@@ -611,20 +1004,66 @@ class AIEvaluator:
 
     # ─── 评估入口 ───────────────────────────────────────────────
 
-    def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
+    @staticmethod
+    def _resolve_stock_name(stock_code: str, stock_name: str = "") -> str:
+        """解析股票中文名 — 传入名缺失或 == 代码时, 用 stock_manager 解析 (v3.14.2)
+
+        修复"评估历史只有代码没名字": 批量/自选只传代码时也能落真实名称。
+        裸代码(无 .SZ/.SH 后缀)时尝试补后缀解析 (旧历史数据常见)。
+        """
+        if stock_name and stock_name.strip() and stock_name.strip() != stock_code:
+            return stock_name.strip()
+        try:
+            from stock_info import stock_manager
+            resolved = stock_manager.get_name(stock_code)
+            if resolved and resolved != stock_code:
+                return resolved
+            if "." not in stock_code:
+                for suffix in (".SZ", ".SH"):
+                    cand = stock_code + suffix
+                    resolved = stock_manager.get_name(cand)
+                    if resolved and resolved != cand:
+                        return resolved
+        except Exception:
+            logger.debug(f"stock_manager 解析 {stock_code} 名称失败", exc_info=True)
+        return stock_name or stock_code
+
+    async def evaluate_stock(self, stock_code: str, stock_name: str, stock_data: Dict = None, username: str = 'default', strategy: str = 'default') -> Dict:
         """
         评估单只股票 — 串行遍历启用模型，成功即返回；全部失败报错
-        
+        异步版本：不阻塞事件循环，run_in_executor 处理同步 I/O
+
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
+        loop = asyncio.get_event_loop()
+        # v3.14.2: 名称兜底 — 传入空/代码时解析真实中文名 (自选/批量常见)
+        stock_name = self._resolve_stock_name(stock_code, stock_name)
+
         # 1) 获取真实数据 (v3.3.0: 支持外部传入 stock_data 跳过数据获取, 便于测试)
-        market_data = stock_data if stock_data is not None else self._fetch_stock_data(stock_code)
+        if stock_data is not None:
+            market_data = stock_data
+        else:
+            market_data = await loop.run_in_executor(None, self._fetch_stock_data, stock_code)
 
         # v3.5.0-T6: 同题缓存 — 同日同策略直接返回缓存结果 (省 LLM 调用)
+        # v3.14fix: 缓存命中统一返回 record 形状 (与全新评估一致), 修复前端读 result.result 落空
         cached = self._get_cached(stock_code, strategy)
         if cached:
+            cached = dict(cached)
             cached["from_cache"] = True
-            return cached
+            return {
+                "id": hashlib.md5(f"{stock_code}{strategy}cached".encode()).hexdigest()[:12],
+                "stock_code": stock_code,
+                "stock_name": stock_name,
+                "evaluate_time": datetime.now().isoformat(),
+                "result": cached,
+                "model_used": None,
+                "model_provider": cached.get("provider", ""),
+                "llm_latency_ms": 0,
+                "llm_raw_response": None,
+                "market_data_snapshot": None,
+                "from_cache": True,
+            }
 
         # 2) 遍历启用模型，按优先级尝试
         enabled_models = self.get_enabled_models()
@@ -653,7 +1092,9 @@ class AIEvaluator:
             for model in enabled_models:
                 try:
                     t0 = time.time()
-                    result, raw_response = self._call_llm(model, stock_code, stock_name, market_data, strategy)
+                    result, raw_response = await loop.run_in_executor(
+                        None, self._call_llm, model, stock_code, stock_name, market_data, strategy
+                    )
                     result = self._calibrate_decision(result, market_data, stock_code, username)
                     llm_latency_ms = round((time.time() - t0) * 1000)
                     model_used = model.id
@@ -715,16 +1156,27 @@ class AIEvaluator:
 
         return record
 
+    # ─── Prompt 模板 (v3.7.12) ──────────────────────────────────
+
+    def _load_prompt_template(self) -> str:
+        """加载评估 prompt 模板 (带缓存)"""
+        if not hasattr(self, '_prompt_template') or self._prompt_template is None:
+            import os as _os
+            template_path = _os.path.join(_os.path.dirname(__file__), 'prompts', 'evaluate_stock.txt')
+            with open(template_path, 'r', encoding='utf-8') as f:
+                self._prompt_template = f.read()
+        return self._prompt_template
+
     # ─── LLM 调用 ───────────────────────────────────────────────
 
     def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
         """
         调用指定模型进行评估，返回 (parsed_result, raw_response_text)
-        
+
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
         data_section = self._build_data_prompt(market_data)
-        
+
         # 策略特定的权重调整提示
         strategy_hints = {
             'default': '',
@@ -733,7 +1185,7 @@ class AIEvaluator:
             'short_term': '\n## 策略偏好：短线狙击\n- RSI和量比权重加倍\n- 重点关注量价关系和短期动能\n- 忽略长期趋势，关注1-3日内的买卖点',
         }
         strategy_hint = strategy_hints.get(strategy, '')
-        
+
         # 市场阶段感知
         now = datetime.now()
         hour = now.hour
@@ -746,25 +1198,16 @@ class AIEvaluator:
             phase_note = '\n## 市场阶段：盘中交易\n- 基于实时数据评估\n- 可给出立即行动/等待确认建议\n- 关注盘中量价变化'
         else:
             phase_note = '\n## 市场阶段：盘后\n- 复盘今日走势\n- 给出明日交易计划\n- 关注收盘形态和量能'
-        
-        prompt = f"""量化评估 {stock_name}({stock_code})，严格基于下方数据：{strategy_hint}{phase_note}
 
-{data_section}
-
-## 输出要求（JSON）
-1. 9维度评分(0-100)，加权计算 total_score
-2. level: 强烈推荐/推荐/谨慎推荐/中性/观望
-3. level_color: #67c23a/#85ce61/#e6a23c/#909399/#f56c6c
-4. analysis: strengths/weaknesses/suggestions 各1-3条，每条≤12字
-5. detailed_report: ≤100字凝练综述
-6. sniper_points: 根据支撑/压力位给出 {{ideal_buy, stop_loss, take_profit}} 三个具体价格
-7. position_advice: 分持仓建议 {{no_position, has_position}} 各≤25字
-8. signal_attribution: 各因素贡献度 {{technical(0-100), fundamentals(0-100), market_sentiment(0-100), strongest_bullish, strongest_bearish}}
-9. data_quality_note: 感知数据时效性的一句话（如有缓存数据请注明）
-
-权重：趋势15% 均线10% 成交量15% 动能风险10% 量价关系12% 中期趋势10% 指标共振12% 稳定性8% 位置8%
-
-严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85}}}},"analysis":{{{{"strengths":["量价配合好"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"],"sniper_points":{{{{"ideal_buy":"32.50","stop_loss":"30.80","take_profit":"36.00"}}}},"position_advice":{{{{"no_position":"32.50附近建仓3成","has_position":"持有止损上移32元"}}}}}}}},"signal_attribution":{{{{"technical":60,"fundamentals":25,"market_sentiment":15,"strongest_bullish":"均线多头排列","strongest_bearish":"成交量萎缩"}}}},"data_quality_note":"K线为实时数据","detailed_report":"80字综述"}}}}"""
+        # v3.7.12: 从模板文件加载 prompt
+        template = self._load_prompt_template()
+        prompt = template.format(
+            stock_name=stock_name,
+            stock_code=stock_code,
+            strategy_hint=strategy_hint,
+            phase_note=phase_note,
+            data_section=data_section,
+        )
 
         endpoint = model.base_url.rstrip("/") + "/chat/completions"
         headers = {
@@ -784,8 +1227,25 @@ class AIEvaluator:
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=model.timeout)
         resp.raise_for_status()
         result = resp.json()
-        content = result["choices"][0]["message"]["content"]
+        message = result["choices"][0]["message"]
+        content = message.get("content") or ""
         raw_response = content
+
+        # v3.14.2: 推理型模型 (deepseek-v4-flash/pro 等) 的最终答案可能不在 content 而在 reasoning_content,
+        # 且 max_tokens 偏小时 content 常为空 → 从 reasoning_content 提取 JSON 兜底
+        if not content.strip():
+            reasoning = message.get("reasoning_content") or ""
+            raw_response = reasoning
+            json_match = re.search(r'\{.*\}', reasoning, re.DOTALL)
+            if json_match:
+                try:
+                    llm_result = json.loads(json_match.group())
+                    if "provider" not in llm_result:
+                        llm_result["provider"] = model.provider
+                    return llm_result, raw_response
+                except json.JSONDecodeError:
+                    pass
+            raise ValueError(f"LLM 返回无法解析为 JSON: {reasoning[:200]}")
 
         # 解析 JSON 响应
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
@@ -882,17 +1342,17 @@ class AIEvaluator:
         lines = ["## 真实行情数据"]
 
         if data.get("latest"):
-            l = data["latest"]
+            latest_data = data["latest"]
             lines.append("### 最近交易日")
-            lines.append(f"- 日期：{l.get('date', 'N/A')}")
-            lines.append(f"- 开盘：{l.get('open')}  收盘：{l.get('close')}  最高：{l.get('high')}  最低：{l.get('low')}")
-            lines.append(f"- 成交量：{l.get('volume', 0):,} 手")
-            if l.get("pct_chg") is not None:
-                lines.append(f"- 涨跌幅：{l['pct_chg']}%")
-            lines.append(f"- MA5：{l.get('ma5', 'N/A')}  MA10：{l.get('ma10', 'N/A')}  MA20：{l.get('ma20', 'N/A')}")
+            lines.append(f"- 日期：{latest_data.get('date', 'N/A')}")
+            lines.append(f"- 开盘：{latest_data.get('open')}  收盘：{latest_data.get('close')}  最高：{latest_data.get('high')}  最低：{latest_data.get('low')}")
+            lines.append(f"- 成交量：{latest_data.get('volume', 0):,} 手")
+            if latest_data.get("pct_chg") is not None:
+                lines.append(f"- 涨跌幅：{latest_data['pct_chg']}%")
+            lines.append(f"- MA5：{latest_data.get('ma5', 'N/A')}  MA10：{latest_data.get('ma10', 'N/A')}  MA20：{latest_data.get('ma20', 'N/A')}")
 
         if data.get("pct_5d") is not None:
-            lines.append(f"\n### 阶段涨跌幅")
+            lines.append("\n### 阶段涨跌幅")
             lines.append(f"- 近5日：{data['pct_5d']}%")
             if data.get("pct_20d") is not None:
                 lines.append(f"- 近20日：{data['pct_20d']}%")
@@ -907,19 +1367,19 @@ class AIEvaluator:
                 lines.append(f"- 60日价格位置：{position}%（区间 {min60}-{max60}）")
 
         if data.get("ma_alignment"):
-            lines.append(f"\n### 均线排列")
+            lines.append("\n### 均线排列")
             lines.append(f"- 形态：{data['ma_alignment']}")
 
         if data.get("volume_analysis"):
             v = data["volume_analysis"]
-            lines.append(f"\n### 成交量分析")
+            lines.append("\n### 成交量分析")
             lines.append(f"- 最新量：{v.get('latest_vol', 0):,} 手")
             lines.append(f"- 5日均量：{v.get('avg_5d', 0):,} 手")
             lines.append(f"- 20日均量：{v.get('avg_20d', 0):,} 手")
             lines.append(f"- 量比（vs20日均）：{v.get('vol_ratio', 1.0)}")
 
         if data.get("rsi") is not None:
-            lines.append(f"\n### 技术指标")
+            lines.append("\n### 技术指标")
             lines.append(f"- RSI(14)：{data['rsi']}")
             if data.get("macd"):
                 m = data["macd"]
@@ -927,7 +1387,7 @@ class AIEvaluator:
 
         if data.get("fundamentals"):
             f = data["fundamentals"]
-            lines.append(f"\n### 基本面")
+            lines.append("\n### 基本面")
             if f.get("pe"):
                 lines.append(f"- PE（市盈率）：{f['pe']:.2f}")
             if f.get("pb"):
@@ -942,7 +1402,7 @@ class AIEvaluator:
                     lines.append(f"- 总市值：{mv/1e8:.2f} 亿")
 
         if data.get("kline_summary"):
-            lines.append(f"\n### 近5日K线摘要")
+            lines.append("\n### 近5日K线摘要")
             lines.append("日期       开盘     收盘     最高     最低     成交量     涨幅")
             for k in data["kline_summary"]:
                 lines.append(
@@ -972,7 +1432,7 @@ class AIEvaluator:
         if data.get("rsi") is not None:
             quality_notes.append("技术指标：已计算")
         if quality_notes:
-            lines.append(f"\n### 📊 数据质量\n" + "\n".join(f"- {n}" for n in quality_notes))
+            lines.append("\n### 📊 数据质量\n" + "\n".join(f"- {n}" for n in quality_notes))
             if not data.get("has_kline") or not data.get("has_fundamentals"):
                 lines.append("- ⚠️ 部分数据缺失，请适度降低置信度")
 
@@ -1002,7 +1462,7 @@ class AIEvaluator:
         # ── 趋势强度 ──
         trend_score = 50  # 基准中性
         if has_data:
-            l = market_data.get("latest", {})
+            latest_data = market_data.get("latest", {})
             pct_5d = market_data.get("pct_5d", 0)
             pct_20d = market_data.get("pct_20d", 0)
             ma = market_data.get("ma_alignment", "")
@@ -1040,11 +1500,10 @@ class AIEvaluator:
         ma_score = 50
         if has_data:
             ma = market_data.get("ma_alignment", "")
-            l = market_data.get("latest", {})
-            close = l.get("close", 0)
-            ma5 = l.get("ma5")
-            ma10 = l.get("ma10")
-            ma20 = l.get("ma20")
+            latest_data = market_data.get("latest", {})
+            close = latest_data.get("close", 0)
+            ma5 = latest_data.get("ma5")
+            ma20 = latest_data.get("ma20")
 
             if ma == "多头排列":
                 ma_score = 85
@@ -1117,10 +1576,10 @@ class AIEvaluator:
                 vola_score = 45
 
             # 近期振幅
-            l = market_data.get("latest", {})
-            high = l.get("high", 0)
-            low = l.get("low", 0)
-            close = l.get("close", 1)
+            latest_data = market_data.get("latest", {})
+            high = latest_data.get("high", 0)
+            low = latest_data.get("low", 0)
+            close = latest_data.get("close", 1)
             if high and low and close and close > 0:
                 amplitude = (high - low) / close * 100
                 if amplitude > 7:
@@ -1377,19 +1836,19 @@ class AIEvaluator:
 
         # ── 构建 HTML 分析 ──
         parts = []
-        l = market_data.get("latest", {})
+        latest_data = market_data.get("latest", {})
 
         # 行情速览
         parts.append("<div style='margin-bottom:16px;'>")
         parts.append("<h4 style='margin:0 0 8px 0;'>📊 行情速览</h4>")
         parts.append("<table style='width:100%;font-size:13px;border-collapse:collapse;'>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>最新价</td><td style='padding:4px 8px;font-weight:600;'>{l.get('close', '-')}</td>")
-        pct = pct_chg if pct_chg is not None else l.get('pct_chg')
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>最新价</td><td style='padding:4px 8px;font-weight:600;'>{latest_data.get('close', '-')}</td>")
+        pct = pct_chg if pct_chg is not None else latest_data.get('pct_chg')
         color = '#E63946' if (pct or 0) >= 0 else '#457B9D'
         sign = '+' if (pct or 0) >= 0 else ''
         parts.append(f"<td style='padding:4px 8px;font-weight:600;color:{color};'>{sign}{pct or '-'}%</td></tr>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MA5 / MA10 / MA20</td><td colspan='2' style='padding:4px 8px;'>{l.get('ma5','-')} / {l.get('ma10','-')} / {l.get('ma20','-')}</td></tr>")
-        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>成交量</td><td colspan='2' style='padding:4px 8px;'>{l.get('volume',0):,} 手</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>MA5 / MA10 / MA20</td><td colspan='2' style='padding:4px 8px;'>{latest_data.get('ma5','-')} / {latest_data.get('ma10','-')} / {latest_data.get('ma20','-')}</td></tr>")
+        parts.append(f"<tr><td style='padding:4px 8px;color:#666;'>成交量</td><td colspan='2' style='padding:4px 8px;'>{latest_data.get('volume',0):,} 手</td></tr>")
         parts.append("</table></div>")
 
         # 技术指标
@@ -1439,7 +1898,6 @@ class AIEvaluator:
         analysis = builtin.get("analysis", {})
         strengths = analysis.get("strengths", [])
         weaknesses = analysis.get("weaknesses", [])
-        suggestions = analysis.get("suggestions", [])
 
         if strengths:
             parts.append("<div style='margin-bottom:12px;'>")
@@ -1486,30 +1944,105 @@ class AIEvaluator:
 
     # ─── 批量评估 ───────────────────────────────────────────────
 
-    def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
-        """批量并行评估"""
-        results = []
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {}
-            for code in stock_codes:
-                name = (stock_info_map or {}).get(code, code)
-                futures[executor.submit(self.evaluate_stock, code, name, None, username)] = code
-            
-            for future in as_completed(futures):
-                code = futures[future]
+    async def batch_evaluate(self, stock_codes: List[str], stock_info_map: Dict = None, max_workers: int = 5, username: str = 'default') -> List[Dict]:
+        """批量并行评估 — 异步版，使用 asyncio.gather 替代 ThreadPoolExecutor
+        v3.14fix: 统一返回 {stock_code, success, result, ...} 形状 — 前端批量弹窗依赖
+        r.success / r.stock_code / r.result (缓存命中/全新评估/失败三态一致)"""
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def _evaluate_one(code: str) -> Dict:
+            async with semaphore:
                 try:
-                    result = future.result()
+                    # v3.14.2: 名称兜底 — stock_info_map 缺失/无名字时经 stock_manager 解析
+                    name = self._resolve_stock_name(code, (stock_info_map or {}).get(code, ""))
+                    rec = await self.evaluate_stock(code, name, None, username)
+                    rec = rec if isinstance(rec, dict) else {}
+                    result = rec.get("result", {})
+                    success = result.get("level") not in ("评估失败", "无可用模型")
+                    return {
+                        "stock_code": rec.get("stock_code", code),
+                        "success": success,
+                        "result": result,
+                        "model_used": rec.get("model_used"),
+                        "model_provider": rec.get("model_provider"),
+                        "llm_latency_ms": rec.get("llm_latency_ms"),
+                        "from_cache": bool(rec.get("from_cache")),
+                    }
                 except Exception as e:
-                    result = {"stock_code": code, "success": False, "error": str(e)}
-                results.append(result)
-        return results
+                    logger.warning(f"批量评估 {code} 失败: {e}")
+                    return {"stock_code": code, "success": False, "error": str(e)}
+
+        tasks = [_evaluate_one(code) for code in stock_codes]
+        return await asyncio.gather(*tasks)
+
+    async def batch_evaluate_stream(self, stock_codes: List[str], stock_info_map: Dict = None,
+                                    max_workers: int = 5, username: str = 'default'):
+        """批量并行评估 — SSE 流式 (v3.15: 逐只完成后 yield 事件, 修复前端进度 0→N 瞬跳)
+
+        事件形状:
+          {"type": "start", "total": n}
+          {"type": "item", "stock_code", "stock_name", "success", "result",
+           "model_used", "model_provider", "llm_latency_ms", "from_cache", "error"?}
+          {"type": "done", "success": n, "fail": m, "total": n}
+        """
+        codes = [c for c in (stock_codes or []) if c]
+        total = len(codes)
+        if total == 0:
+            yield {"type": "done", "total": 0, "success": 0, "fail": 0}
+            return
+        yield {"type": "start", "total": total}
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def _run_one(code: str):
+            async with semaphore:
+                try:
+                    # v3.14.2: 名称兜底 — stock_info_map 缺失/无名字时经 stock_manager 解析
+                    name = self._resolve_stock_name(code, (stock_info_map or {}).get(code, ""))
+                    rec = await self.evaluate_stock(code, name, None, username)
+                    rec = rec if isinstance(rec, dict) else {}
+                    result = rec.get("result", {})
+                    success = result.get("level") not in ("评估失败", "无可用模型")
+                    return (code, {
+                        "stock_code": rec.get("stock_code", code),
+                        "stock_name": name or code,
+                        "success": success,
+                        "result": result,
+                        "model_used": rec.get("model_used"),
+                        "model_provider": rec.get("model_provider"),
+                        "llm_latency_ms": rec.get("llm_latency_ms"),
+                        "from_cache": bool(rec.get("from_cache")),
+                    })
+                except Exception as e:
+                    logger.warning(f"批量评估 {code} 失败: {e}")
+                    return (code, {"stock_code": code, "stock_name": code, "success": False, "error": str(e)})
+
+        tasks = [asyncio.create_task(_run_one(code)) for code in codes]
+        success = fail = 0
+        try:
+            for task in asyncio.as_completed(tasks):
+                code, item = await task
+                if item.get("success"):
+                    success += 1
+                else:
+                    fail += 1
+                yield {"type": "item", **item}
+        finally:
+            # 客户端断开 (GeneratorExit) 时取消未完成任务, 避免后台泄漏
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+        yield {"type": "done", "total": total, "success": success, "fail": fail}
 
     # ─── 历史管理 ───────────────────────────────────────────────
 
-    def get_history(self, username: str = 'default', limit: int = 50) -> List[Dict]:
-        """获取评估历史"""
+    def get_history(self, username: str = 'default', limit: int = 50, offset: int = 0) -> List[Dict]:
+        """获取评估历史 (v3.17.9 FR-3.17.9: 支持 limit/offset 分页; offset 默认 0 兼容旧调用)"""
         history = self._load_history_for(username)
-        return history[:limit]
+        return history[offset:offset + limit]
+
+    def count_history(self, username: str = 'default') -> int:
+        """评估历史总数 (分页 total 用)"""
+        return len(self._load_history_for(username))
     def delete_history(self, username: str, record_id: str) -> bool:
         """删除单条评估记录"""
         history = self._load_history_for(username)
@@ -1559,17 +2092,17 @@ class AIEvaluator:
                 return {"success": False, "message": f"API连接测试失败: {str(e)}"}
         return {"success": False, "message": "请先配置API Key"}
 
-    # ─── 自动评股配置 ───────────────────────────────────────────
+    # ─── 自动评估配置 ───────────────────────────────────────────
 
     def get_auto_config(self) -> Dict:
-        """获取自动评股配置"""
+        """获取自动评估配置"""
         from paths import AUTO_EVALUATE_CONFIG_FILE
         auto_config_file = AUTO_EVALUATE_CONFIG_FILE
         try:
             with open(auto_config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
-            logger.exception("加载自动评股配置失败")
+            logger.exception("加载自动评估配置失败")
             return {
                 "enabled": False,
                 "schedule_type": "daily",
@@ -1580,7 +2113,7 @@ class AIEvaluator:
             }
 
     def save_auto_config(self, config: Dict) -> bool:
-        """保存自动评股配置"""
+        """保存自动评估配置"""
         from paths import AUTO_EVALUATE_CONFIG_FILE
         auto_config_file = AUTO_EVALUATE_CONFIG_FILE
         try:
@@ -1588,7 +2121,7 @@ class AIEvaluator:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             return True
         except Exception:
-            logger.exception("保存自动评股配置失败")
+            logger.exception("保存自动评估配置失败")
             return False
 
 

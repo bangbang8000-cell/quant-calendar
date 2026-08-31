@@ -7,9 +7,9 @@
 """
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from data_parser import parser, STRATEGY_CONFIG
+from data_parser import parser
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,66 @@ def generate_daily_report(date_str: str = None) -> dict:
     return {"success": True, "path": fpath, "content": content, "stats": {"date": date_str, "strategies": len(holdings), "stocks": total_stocks}}
 
 
+# ==================== 周报附胜率追踪 (FR-3.18.5 / T3) ====================
+
+
+def _winrate_week_stats(samples, start_date, end_date):
+    """过滤周区间内评估样本并计算命中率汇总 (FR-3.18.5)。
+
+    返回 (week_samples, stats); stats 结构同 eval_track.compute_stats
+    ({overall: {n5/n10/n20: {hit,total,rate}}, by_model, by_level})。
+    """
+    import eval_track
+    week_samples = [
+        s for s in samples
+        if s.get("evaluate_date") and start_date <= s["evaluate_date"] <= end_date
+    ]
+    stats = eval_track.compute_stats(week_samples) if week_samples else {}
+    return week_samples, stats
+
+
+def build_winrate_section(samples, start_date, end_date):
+    """生成周报「本周 AI 评估命中率」小节 (FR-3.18.5)。
+
+    - 未满窗口 (rate=None, 样本不足/全中性) 标注「评估中」
+    - 含免责声明「历史命中率不代表未来收益」
+    - 返回 (markdown lines, {evaluations})
+    """
+    import eval_track
+    week_samples, stats = _winrate_week_stats(samples, start_date, end_date)
+    lines = ["\n## 本周 AI 评估命中率\n"]
+    if not week_samples:
+        lines.append("_本周暂无 AI 评估记录_\n")
+        return lines, {"evaluations": 0}
+
+    lines.append(f"- 本周评估数: **{len(week_samples)}** 条")
+    lines.append("\n| 窗口 | 命中 / 样本 | 命中率 |")
+    lines.append("|------|-----------|--------|")
+    for w in eval_track.TRACK_WINDOWS:
+        agg = stats.get("overall", {}).get(w, {})
+        rate_txt = f"{agg.get('rate')}%" if agg.get("rate") is not None else "评估中"
+        lines.append(f"| {eval_track.WINDOW_DAYS[w]}日 | {agg.get('hit', 0)} / {agg.get('total', 0)} | {rate_txt} |")
+
+    by_model = stats.get("by_model", {})
+    if by_model:
+        lines.append("\n**分模型命中率 (5日)**:")
+        for m, st in sorted(by_model.items()):
+            agg = st.get("n5", {})
+            rate_txt = f"{agg.get('rate')}%" if agg.get("rate") is not None else "评估中"
+            lines.append(f"- {m}: {agg.get('hit', 0)}/{agg.get('total', 0)} ({rate_txt})")
+
+    by_level = stats.get("by_level", {})
+    if by_level:
+        lines.append("\n**分评级命中率 (5日)**:")
+        for lv, st in sorted(by_level.items()):
+            agg = st.get("n5", {})
+            rate_txt = f"{agg.get('rate')}%" if agg.get("rate") is not None else "评估中"
+            lines.append(f"- {lv}: {agg.get('hit', 0)}/{agg.get('total', 0)} ({rate_txt})")
+
+    lines.append(f"\n> {eval_track.DISCLAIMER}")
+    return lines, {"evaluations": len(week_samples)}
+
+
 def generate_weekly_report(end_date: str = None) -> dict:
     """生成 AI 周报 — 组合表现 + 归因 + 下周展望"""
     _ensure_report_dir()
@@ -118,10 +178,20 @@ def generate_weekly_report(end_date: str = None) -> dict:
     for s in strategy_stats.values():
         all_codes.update(s["codes"])
     lines.extend([
-        f"\n## 二、归因分析\n",
+        "\n## 二、归因分析\n",
         f"- 本周共 **{len(all_codes)}** 只股票入选策略池",
         f"- 覆盖策略: **{len(strategy_stats)}** 个",
     ])
+
+    # FR-3.18.5: 本周 AI 评估命中率 (复用 eval_track; 数据获取失败优雅降级)
+    try:
+        from eval_track import get_track_summary
+        summary = get_track_summary(username='default')
+        wr_lines, _ = build_winrate_section(summary.get("samples", []), start_date, end_date)
+        lines.extend(wr_lines)
+    except Exception as e:
+        logger.warning(f"周报胜率小节生成失败 (降级): {e}")
+        lines.append("\n## 本周 AI 评估命中率\n\n_胜率统计暂不可用_\n")
 
     # AI 下周展望 (复用 ai_evaluator, 失败则静态)
     try:
@@ -147,7 +217,7 @@ def generate_weekly_report(end_date: str = None) -> dict:
                 lines.append(f"\n## 三、AI 下周展望\n\n{outlook}")
     except Exception as e:
         logger.warning(f"AI 周报展望失败 (使用静态内容): {e}")
-        lines.append(f"\n## 三、下周展望\n\n- 关注本周入选股票池的持续性\n- 留意策略共识度变化")
+        lines.append("\n## 三、下周展望\n\n- 关注本周入选股票池的持续性\n- 留意策略共识度变化")
 
     content = "\n".join(lines)
     fname = f"weekly_report_{end_date}.md"

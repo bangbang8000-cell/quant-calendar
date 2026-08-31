@@ -4,9 +4,12 @@
 全局搜索 API (v1.10)
 支持按股票代码/名称模糊搜索
 """
+import logging
+
 from fastapi import APIRouter, Query
-from typing import Optional
 from functools import lru_cache
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/search", tags=["搜索"])
 
@@ -24,7 +27,7 @@ def _pinyin_initials(name: str) -> str:
 @router.get("")
 async def search(q: str = Query(default="", min_length=1, description="搜索关键词")):
     """全局搜索：股票代码/名称模糊匹配
-    
+
     Returns:
         results: [{code, name, source}] 最多20条
     """
@@ -50,7 +53,7 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
                 if len(results) >= 20:
                     break
     except Exception:
-        print("[warn] 操作异常 (v3.4.0-T8)")
+        logger.warning("[warn] 操作异常 (v3.4.0-T8)")
         pass
 
     # 2. 如果结果不足20条，从 consensus 数据补充
@@ -75,7 +78,7 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
                 if len(results) >= 20:
                     break
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
 
     return {

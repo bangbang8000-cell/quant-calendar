@@ -3,64 +3,136 @@
 """
 API 速率限制模块
 防止恶意请求和 DDoS 攻击
+
+v3.17.13 (FR-3.17.13): 限流后端接口抽象
+- `RateLimiterBackend` 接口: check(key, limit, window) -> (allowed, remaining)
+- 默认单机内存实现 `SimpleMemoryBackend`
+- 预留 Redis 后端 (实现可选, 经配置 RATE_LIMIT_BACKEND / REDIS_URL 指定, 未实现时回退内存)
 """
-import time
-from typing import Dict, Tuple
-from fastapi import HTTPException, Request
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 import logging
+import time
+from typing import Dict, Optional, Tuple
+
+from fastapi import HTTPException, Request
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
-# 内存存储的简单限流器（不依赖 Redis）
-class SimpleLimiter:
-    """简单内存限流器（无需 Redis）"""
-    
+
+# ─── 限流后端接口 (可插拔) ────────────────────────────────────────
+
+class RateLimiterBackend:
+    """限流后端接口 — 实现必须支持 check(key, limit, window)
+
+    check(key, limit, window) -> (allowed: bool, remaining: int)
+      - key: 限流键 (如客户端 IP / 用户名)
+      - limit: 窗口内最大请求数
+      - window: 窗口长度 (秒); 窗口重置后 remaining 回到 limit
+      - allowed=True 表示放行且已计入本次请求; remaining 为本次计数后的剩余额度
+    """
+
+    def check(self, key: str, limit: int, window: int) -> Tuple[bool, int]:
+        """检查并计数一次请求"""
+        raise NotImplementedError
+
+
+class SimpleMemoryBackend(RateLimiterBackend):
+    """单机内存实现 (默认; 无需 Redis) — key -> (count, window_start)"""
+
     def __init__(self):
-        self.requests: Dict[str, Tuple[int, float]] = {}  # ip -> (count, timestamp)
+        self._records: Dict[str, Tuple[int, float]] = {}
+
+    def check(self, key: str, limit: int, window: int) -> Tuple[bool, int]:
+        now = time.time()
+        record = self._records.get(key)
+        # 无记录或窗口已过期 → 新窗口, 首次计数
+        if record is None or now - record[1] >= window:
+            self._records[key] = (1, now)
+            return (True, max(0, limit - 1))
+        count, start = record
+        if count >= limit:
+            return (False, 0)
+        self._records[key] = (count + 1, start)
+        return (True, max(0, limit - count - 1))
+
+    def get_remaining(self, key: str, limit: int, window: int) -> int:
+        """只读剩余额度 (不计数, 供响应头展示)"""
+        record = self._records.get(key)
+        if record is None:
+            return limit
+        count, start = record
+        if time.time() - start >= window:
+            return limit
+        return max(0, limit - count)
+
+    def reset(self, key: str = None):
+        """重置限流记录 (测试/运维用; key 为空则全清)"""
+        if key is None:
+            self._records.clear()
+        else:
+            self._records.pop(key, None)
+
+
+def get_limiter_backend() -> RateLimiterBackend:
+    """按配置返回限流后端 (v3.17.13: 默认 memory; RATE_LIMIT_BACKEND 指定可扩展)
+
+    - RATE_LIMIT_BACKEND=memory (默认) → SimpleMemoryBackend
+    - RATE_LIMIT_BACKEND=redis → 预留 Redis 后端 (未实现, 回退内存并告警; REDIS_URL 供该后端连接)
+    """
+    backend_type = "memory"
+    try:
+        from config import settings
+        configured = (getattr(settings, "RATE_LIMIT_BACKEND", "") or "memory").strip().lower()
+        if configured in ("redis", "redis://"):
+            backend_type = "redis"
+    except Exception:
+        pass
+    if backend_type == "redis":
+        logger.warning("[rate_limit] Redis 后端尚未实现 (预留接口), 回退单机内存后端")
+    return SimpleMemoryBackend()
+
+
+# 全局限流后端实例 (可被测试替换, 验证可插拔)
+_rate_limiter_backend: Optional[RateLimiterBackend] = None
+
+
+def _global_backend() -> RateLimiterBackend:
+    """全局限流后端 (惰性创建, 供 SimpleLimiter 与登录限流共用)"""
+    global _rate_limiter_backend
+    if _rate_limiter_backend is None:
+        _rate_limiter_backend = get_limiter_backend()
+    return _rate_limiter_backend
+
+
+# 内存存储的简单限流器（不依赖 Redis）— 基于 RateLimiterBackend 抽象
+class SimpleLimiter:
+    """简单限流器 (v3.17.13: 基于 RateLimiterBackend, 默认 SimpleMemoryBackend)
+    保持向后兼容接口: check_rate_limit / get_remaining / limit_per_minute
+    """
+
+    def __init__(self, backend: RateLimiterBackend = None):
+        self.backend: RateLimiterBackend = backend or _global_backend()
         self.limit_per_minute = 600  # 每分钟 600 次请求
-    
+        self.window_seconds = 60
+
     def check_rate_limit(self, client_ip: str) -> bool:
         """检查是否超过速率限制
-        
+
         Args:
             client_ip: 客户端 IP 地址
-            
+
         Returns:
             True: 允许请求, False: 超过限制
         """
-        now = time.time()
-        minute_ago = now - 60
-        
-        # 清理过期的记录
-        expired_ips = [ip for ip, (_, ts) in self.requests.items() if ts < minute_ago]
-        for ip in expired_ips:
-            del self.requests[ip]
-        
-        # 检查当前 IP
-        if client_ip in self.requests:
-            count, timestamp = self.requests[client_ip]
-            if timestamp >= minute_ago:
-                # 在同一分钟内
-                if count >= self.limit_per_minute:
-                    return False
-                self.requests[client_ip] = (count + 1, timestamp)
-            else:
-                # 新的一分钟
-                self.requests[client_ip] = (1, now)
-        else:
-            self.requests[client_ip] = (1, now)
-        
-        return True
-    
+        allowed, _ = self.backend.check(client_ip, self.limit_per_minute, self.window_seconds)
+        return allowed
+
     def get_remaining(self, client_ip: str) -> int:
         """获取剩余请求次数"""
-        if client_ip in self.requests:
-            count, _ = self.requests[client_ip]
-            return max(0, self.limit_per_minute - count)
-        return self.limit_per_minute
+        if hasattr(self.backend, "get_remaining"):
+            return self.backend.get_remaining(client_ip, self.limit_per_minute, self.window_seconds)
+        _allowed, remaining = self.backend.check(client_ip, self.limit_per_minute, self.window_seconds)
+        return remaining
 
 
 # 全局限流器实例
@@ -69,24 +141,24 @@ simple_limiter = SimpleLimiter()
 
 async def rate_limit_middleware(request: Request, call_next):
     """速率限制中间件
-    
-    限制每个 IP 每分钟最多 60 次请求
+
+    限制每个 IP 每分钟最多 600 次请求
     """
     client_ip = get_remote_address(request)
-    
+
     if not simple_limiter.check_rate_limit(client_ip):
-        logger.warning(f"⚠️ 请求频率超限: {client_ip}")
+        logger.warning(f"请求频率超限: {client_ip}")
         raise HTTPException(
             status_code=429,
-                        detail="请求过于频繁，请稍后再试（每分钟最多600次请求）"
+            detail="请求过于频繁，请稍后再试（每分钟最多600次请求）"
         )
-    
+
     response = await call_next(request)
-    
+
     # 添加限流相关响应头
     response.headers["X-RateLimit-Limit"] = str(simple_limiter.limit_per_minute)
     response.headers["X-RateLimit-Remaining"] = str(simple_limiter.get_remaining(client_ip))
-    
+
     return response
 
 
@@ -94,30 +166,18 @@ def setup_rate_limiter(app):
     """在 FastAPI 应用中配置速率限制"""
     # 添加中间件
     app.middleware("http")(rate_limit_middleware)
-    logger.info(f"✅ API 速率限制已启用 (每分钟600次请求/IP)")
+    logger.info("API 速率限制已启用 (每分钟600次请求/IP)")
     return app
 
 
-# 特定接口更严格的限制（例如登录接口）
+# 特定接口更严格的限制（例如登录接口）— 独立后端实例, 避免与通用中间件(600/IP)共享计数
 LOGIN_LIMIT_PER_MINUTE = 30  # 登录接口每分钟 30 次
-login_attempts: Dict[str, Tuple[int, float]] = {}
+_login_limiter = SimpleMemoryBackend()
 
 
 def check_login_rate_limit(client_ip: str) -> bool:
-    """登录接口更严格的速率限制"""
-    now = time.time()
-    minute_ago = now - 60
-    
-    if client_ip in login_attempts:
-        count, timestamp = login_attempts[client_ip]
-        if timestamp >= minute_ago:
-            if count >= LOGIN_LIMIT_PER_MINUTE:
-                logger.warning(f"⚠️ 登录尝试超限: {client_ip}")
-                return False
-            login_attempts[client_ip] = (count + 1, timestamp)
-        else:
-            login_attempts[client_ip] = (1, now)
-    else:
-        login_attempts[client_ip] = (1, now)
-    
-    return True
+    """登录接口更严格的速率限制 (独立计数, 30次/分/IP)"""
+    allowed, _ = _login_limiter.check(client_ip, LOGIN_LIMIT_PER_MINUTE, 60)
+    if not allowed:
+        logger.warning(f"登录尝试超限: {client_ip}")
+    return allowed

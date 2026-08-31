@@ -6,9 +6,12 @@
 """
 import json
 import os
+import time
 from datetime import datetime, timedelta
 import numpy as np
 import logging
+from paths import MERRILL_CACHE_FILE as CACHE_FILE, MERRILL_HISTORY_FILE as HISTORY_FILE, MERRILL_SNAPSHOT_FILE as SNAPSHOT_FILE
+from merrill_history import HISTORICAL_TRANSITIONS
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,11 @@ STAGES = {
         'color': '#81C784',
         'bg_color': '#E8F5E9',
         'icon': '🌱',
+        'strategy_mapping': {
+            'primary': ['动量策略', '质量策略', '成长股策略'],
+            'secondary': ['趋势跟踪', '行业轮动'],
+            'rationale': '经济复苏期企业盈利改善，动量因子和质量因子表现优异，成长股受益于估值扩张'
+        },
         'characteristics': {
             'gdp': 'GDP增速回升，环比改善',
             'corporate': '企业盈利触底回升，利润率改善',
@@ -61,6 +69,11 @@ STAGES = {
         'color': '#FFB74D',
         'bg_color': '#FFF3E0',
         'icon': '🔥',
+        'strategy_mapping': {
+            'primary': ['价值策略', '防御策略', '周期股策略'],
+            'secondary': ['红利策略', '商品CTA'],
+            'rationale': '过热期通胀上行侵蚀成长股估值，价值股和周期股更具防御性，大宗商品表现最佳'
+        },
         'characteristics': {
             'gdp': 'GDP增速仍处高位但边际放缓',
             'corporate': '企业盈利峰值，增速开始回落',
@@ -101,6 +114,11 @@ STAGES = {
         'color': '#F48FB1',
         'bg_color': '#FCE4EC',
         'icon': '⚠️',
+        'strategy_mapping': {
+            'primary': ['现金为王', '低波动策略', '必选消费'],
+            'secondary': ['贵金属', '短久期债券', '对冲策略'],
+            'rationale': '滞胀期现金为王，低波动策略抗跌性强，必选消费和贵金属具有防御价值'
+        },
         'characteristics': {
             'gdp': 'GDP增速明显回落，下行压力加大',
             'corporate': '企业盈利增速大幅下滑，甚至负增长',
@@ -141,6 +159,11 @@ STAGES = {
         'color': '#64B5F6',
         'bg_color': '#E3F2FD',
         'icon': '❄️',
+        'strategy_mapping': {
+            'primary': ['债券策略', '红利策略', '逆周期布局'],
+            'secondary': ['高股息', '利率债', '政策受益板块'],
+            'rationale': '衰退期债券为王，红利策略提供稳定现金流，左侧布局优质资产等待复苏'
+        },
         'characteristics': {
             'gdp': 'GDP增速创阶段新低，甚至负增长',
             'corporate': '企业亏损面扩大，盈利底部徘徊',
@@ -185,13 +208,10 @@ SCORING_WEIGHTS = {
     'external': 0.05     # 外部环境维度
 }
 
-from paths import MERRILL_CACHE_FILE as CACHE_FILE, MERRILL_HISTORY_FILE as HISTORY_FILE, MERRILL_SNAPSHOT_FILE as SNAPSHOT_FILE
-from merrill_history import HISTORICAL_TRANSITIONS, CYCLE_META
-
 
 def _normalize_score(raw, center, scale, invert=False):
     """将原始指标归一化到约[-2, 2]范围的Z-score
-    
+
     Args:
         raw: 原始值
         center: 中性值/均值
@@ -204,7 +224,7 @@ def _normalize_score(raw, center, scale, invert=False):
 
 class MerrillClock:
     """美林时钟分析类 v2.0"""
-    
+
     def __init__(self):
         self.cache = self._load_file(CACHE_FILE, {})
         self.history = self._load_file(HISTORY_FILE, {
@@ -212,13 +232,13 @@ class MerrillClock:
             'current_stage': None,
             'transitions': []
         })
-        
+
         # v3.1: 载入结构化历史周期数据（如果transitions为空）
         if not self.history.get('transitions'):
             self.history['transitions'] = list(HISTORICAL_TRANSITIONS)
             self._save_history()
             logger.info(f"美林时钟: 已载入{len(HISTORICAL_TRANSITIONS)}条历史周期转换记录")
-        
+
         # 如果首次运行（current_stage_start 为空），设置合理的默认值
         # 2024-09-24: 央行宣布降准降息政策组合拳，标志本轮复苏周期起点
         if not self.history.get('current_stage_start'):
@@ -227,7 +247,7 @@ class MerrillClock:
             self.history['current_stage_start'] = default_start
             self._save_history()
             logger.info(f"美林时钟初始化: 设置默认复苏起点 {default_start}")
-    
+
     def _load_file(self, filepath, default):
         if os.path.exists(filepath):
             try:
@@ -236,12 +256,12 @@ class MerrillClock:
             except Exception as e:
                 logger.warning(f"加载文件失败 {filepath}: {e}")
         return default
-    
+
     def _save_cache(self):
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.cache, f, ensure_ascii=False, indent=2)
-    
+
     def _save_history(self):
         os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
@@ -270,17 +290,28 @@ class MerrillClock:
                 json.dump(snapshots, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"保存快照失败: {e}")
-    
+
     def _fetch_real_macro_data(self):
         """v3.0: 从 AKShare 获取真实宏观数据，失败返回 None"""
+        import concurrent.futures
+
+        def _call_with_timeout(fn, timeout=15):
+            """在独立线程中调用，超时则返回 None"""
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(fn)
+                try:
+                    return future.result(timeout=timeout)
+                except (concurrent.futures.TimeoutError, Exception):
+                    return None
+
         try:
             import akshare as ak
-            
+
             result = {}
-            
+
             # === PMI（制造业采购经理指数） ===
             try:
-                pmi_df = ak.macro_china_pmi()
+                pmi_df = _call_with_timeout(ak.macro_china_pmi, timeout=15)
                 if pmi_df is not None and len(pmi_df) > 0:
                     latest = pmi_df.iloc[-1]
                     pmi_val = float(latest.get('制造业', 0))
@@ -291,28 +322,28 @@ class MerrillClock:
                         result['pmi_non_manufacturing'] = non_pmi_val
             except Exception as e:
                 logger.warning(f"AKShare PMI 获取失败: {e}")
-            
+
             # === CPI ===
             try:
-                cpi_df = ak.macro_china_cpi_yearly()
+                cpi_df = _call_with_timeout(ak.macro_china_cpi_yearly, timeout=15)
                 if cpi_df is not None and len(cpi_df) > 0:
                     latest = cpi_df.iloc[-1]
                     result['cpi'] = float(latest.get('全国', 0))
             except Exception as e:
                 logger.warning(f"AKShare CPI 获取失败: {e}")
-            
+
             # === PPI ===
             try:
-                ppi_df = ak.macro_china_ppi_yearly()
+                ppi_df = _call_with_timeout(ak.macro_china_ppi_yearly, timeout=15)
                 if ppi_df is not None and len(ppi_df) > 0:
                     latest = ppi_df.iloc[-1]
                     result['ppi'] = float(latest.get('全国', 0))
             except Exception as e:
                 logger.warning(f"AKShare PPI 获取失败: {e}")
-            
+
             # === M2 货币供应量 ===
             try:
-                m2_df = ak.macro_china_money_supply()
+                m2_df = _call_with_timeout(ak.macro_china_money_supply, timeout=15)
                 if m2_df is not None and len(m2_df) > 0:
                     latest = m2_df.iloc[-1]
                     m2_yoy = float(latest.get('M2同比', latest.get('M2', 0)))
@@ -320,28 +351,28 @@ class MerrillClock:
                         result['m2_growth'] = m2_yoy
             except Exception as e:
                 logger.warning(f"AKShare M2 获取失败: {e}")
-            
+
             # === GDP ===
             try:
-                gdp_df = ak.macro_china_gdp()
+                gdp_df = _call_with_timeout(ak.macro_china_gdp, timeout=15)
                 if gdp_df is not None and len(gdp_df) > 0:
                     latest = gdp_df.iloc[-1]
                     result['gdp_growth'] = float(latest.get('国内生产总值同比增长', 0))
             except Exception as e:
                 logger.warning(f"AKShare GDP 获取失败: {e}")
-            
+
             # === 工业增加值 ===
             try:
-                ind_df = ak.macro_china_industrial_production()
+                ind_df = _call_with_timeout(ak.macro_china_industrial_production, timeout=15)
                 if ind_df is not None and len(ind_df) > 0:
                     latest = ind_df.iloc[-1]
                     result['industrial_added'] = float(latest.get('工业增加值同比增长', 0))
             except Exception as e:
                 logger.warning(f"AKShare 工业增加值 获取失败: {e}")
-            
+
             # === 贸易差额（出口/进口） ===
             try:
-                trade_df = ak.macro_china_trade_balance()
+                trade_df = _call_with_timeout(ak.macro_china_trade_balance, timeout=15)
                 if trade_df is not None and len(trade_df) > 0:
                     latest = trade_df.iloc[-1]
                     exports = float(latest.get('出口', latest.get('出口金额', 0)))
@@ -358,25 +389,25 @@ class MerrillClock:
                                 result['imports_growth'] = round((imports - prev_imports) / prev_imports * 100, 1)
             except Exception as e:
                 logger.warning(f"AKShare 贸易数据 获取失败: {e}")
-            
+
             # === 社会融资规模 ===
             try:
-                sf_df = ak.macro_china_shrzgm()
+                sf_df = _call_with_timeout(ak.macro_china_shrzgm, timeout=15)
                 if sf_df is not None and len(sf_df) > 0:
                     latest = sf_df.iloc[-1]
                     result['social_financing'] = float(latest.get('社会融资规模存量同比增长', 0))
             except Exception as e:
                 logger.warning(f"AKShare 社融 获取失败: {e}")
-            
+
             # === 城镇调查失业率 ===
             try:
-                unemp_df = ak.macro_china_urban_unemployment()
+                unemp_df = _call_with_timeout(ak.macro_china_urban_unemployment, timeout=15)
                 if unemp_df is not None and len(unemp_df) > 0:
                     latest = unemp_df.iloc[-1]
                     result['surveyed_unemployment'] = float(latest.get('城镇调查失业率', 0))
             except Exception as e:
                 logger.warning(f"AKShare 失业率 获取失败: {e}")
-            
+
             if result:
                 result['_data_source'] = 'AKShare实时数据'
                 result['_data_note'] = '数据来源于国家统计局/央行公开数据，通过AKShare获取'
@@ -385,60 +416,64 @@ class MerrillClock:
             else:
                 logger.warning("AKShare 未获取到任何有效数据")
                 return None
-                
+
         except ImportError:
             logger.warning("AKShare 未安装，使用默认数据")
             return None
         except Exception as e:
             logger.error(f"AKShare 宏观数据获取异常: {e}")
             return None
-    
+
     def get_economic_indicators(self):
         """获取经济指标（多维度采集）"""
         today = datetime.now()
-        
+
         cache_key = f"indicators_{today.strftime('%Y%m%d')}"
         if cache_key in self.cache:
             cache_time = datetime.fromisoformat(self.cache[cache_key]['fetch_time'])
             if (today - cache_time).total_seconds() < 86400:
                 return self.cache[cache_key]['data']
-        
+
         indicators = {
             'date': today.strftime('%Y-%m-%d'),
             'update_time': today.isoformat(),
-            
+
             # === 增长维度 ===
             'pmi': 50.8,              # 官方制造业PMI
             'pmi_non_manufacturing': 51.2,  # 非制造业PMI
             'gdp_growth': 5.3,        # GDP同比增速(%)
             'industrial_added': 5.1,  # 工业增加值同比(%)
             'fixed_investment': 4.8,  # 固定资产投资同比(%)
-            
+
             # === 通胀维度 ===
             'cpi': 0.8,               # CPI同比(%)
             'cpi_core': 0.6,          # 核心CPI同比(%)
             'ppi': 0.3,               # PPI同比(%)
-            
+
             # === 流动性维度 ===
             'm2_growth': 9.8,         # M2同比(%)
             'social_financing': 10.2, # 社融存量同比(%)
             'lpr_1y': 3.10,           # 1年期LPR(%)
             'lpr_5y': 3.60,           # 5年期LPR(%)
-            
+
             # === 就业维度 ===
             'surveyed_unemployment': 5.2,  # 城镇调查失业率(%)
-            
+
             # === 外部环境维度 ===
             'exports_growth': 2.5,    # 出口同比(%)
             'imports_growth': 1.8,    # 进口同比(%)
             'usd_cny': 6.85,          # 美元/人民币汇率
-            
+
             '_data_source': '国家统计局/央行公开数据（2026年Q1-Q2估计值）',
             '_data_note': '标注为估计值的数据为基于公开信息与模型推算，非官方精确值'
         }
-        
+
         # === v3.0: 优先从 AKShare 获取真实数据 ===
+        _t0 = time.monotonic()
         real_data = self._fetch_real_macro_data()
+        # v3.10 (FR-3.10.3): 记录 akshare 健康指标（成功=返回非空数据，失败=空/异常降级）
+        from data_sources import record_call
+        record_call('akshare', bool(real_data), (time.monotonic() - _t0) * 1000)
         if real_data:
             # 合并真实数据（保留默认值中 AKShare 未覆盖的字段）
             indicators.update(real_data)
@@ -447,14 +482,14 @@ class MerrillClock:
             # === v2.1: 应用指标时间漂移（模拟真实经济数据缓慢变化） ===
             indicators = self._apply_indicator_drift(indicators)
             logger.info("美林时钟: 使用默认数据+时间漂移")
-        
+
         self.cache[cache_key] = {'fetch_time': today.isoformat(), 'data': indicators}
         self._save_cache()
         return indicators
-    
+
     def _apply_indicator_drift(self, indicators):
         """v2.1: 对硬编码指标施加时间漂移，模拟真实经济数据的缓慢变化
-        
+
         复苏期典型特征：CPI 缓慢回升（从通缩走向温和通胀），
         PPI 回升较快（上游先回暖），PMI 在扩张区间波动。
         漂移基准日：2024-09-24（本轮复苏起点）
@@ -462,7 +497,7 @@ class MerrillClock:
         today = datetime.now()
         base_date = datetime(2024, 9, 24)
         months_elapsed = max(0, (today - base_date).days / 30.0)
-        
+
         # 复苏→过热方向漂移率（每月变化量）
         drift = {
             'cpi':          0.05,   # CPI 每月微升 0.05pp
@@ -474,17 +509,17 @@ class MerrillClock:
             'm2_growth':    -0.03,  # M2 增速逐步回落（宽松退坡）
             'social_financing': -0.02,
         }
-        
+
         for key, rate in drift.items():
             if key in indicators:
                 original = indicators[key]
                 indicators[key] = round(original + rate * months_elapsed, 2)
-        
+
         return indicators
-    
+
     def _compute_dimension_scores(self, indicators):
         """多维度评分计算（返回各维度得分和综合判断）
-        
+
         维度说明:
         - growth: 经济增长水平 (正值=高于趋势, 负值=低于趋势)
         - inflation: 通胀压力 (正值=通胀偏高, 负值=通胀偏低)
@@ -493,7 +528,7 @@ class MerrillClock:
         - external: 外部环境 (正值=有利, 负值=不利)
         """
         dims = {}
-        
+
         # === 增长维度 ===
         pmi_z = _normalize_score(indicators['pmi'], 50, 3)
         gdp_z = _normalize_score(indicators['gdp_growth'], 5.0, 1.5)
@@ -508,7 +543,7 @@ class MerrillClock:
                 'industrial': {'value': indicators['industrial_added'], 'z_score': round(ind_z, 2)}
             }
         }
-        
+
         # === 通胀维度 ===
         cpi_z = _normalize_score(indicators['cpi'], 1.5, 1.0)
         ppi_z = _normalize_score(indicators['ppi'], 1.0, 2.0)
@@ -521,7 +556,7 @@ class MerrillClock:
                 'ppi': {'value': indicators['ppi'], 'z_score': round(ppi_z, 2)}
             }
         }
-        
+
         # === 流动性维度 ===
         m2_z = _normalize_score(indicators['m2_growth'], 8.5, 2)
         sf_z = _normalize_score(indicators['social_financing'], 10, 2)
@@ -537,7 +572,7 @@ class MerrillClock:
                 'lpr_1y': {'value': indicators['lpr_1y'], 'z_score': round(lpr_z, 2)}
             }
         }
-        
+
         # === 就业维度 ===
         unemp_z = _normalize_score(indicators['surveyed_unemployment'], 5.0, 1.0, invert=True)
         dims['employment'] = {
@@ -547,7 +582,7 @@ class MerrillClock:
                 'surveyed_unemployment': {'value': indicators['surveyed_unemployment'], 'z_score': round(unemp_z, 2)}
             }
         }
-        
+
         # === 外部环境维度 ===
         exp_z = _normalize_score(indicators['exports_growth'], 5, 5)
         imp_z = _normalize_score(indicators['imports_growth'], 3, 5)
@@ -560,12 +595,12 @@ class MerrillClock:
                 'imports_growth': {'value': indicators['imports_growth'], 'z_score': round(imp_z, 2)}
             }
         }
-        
+
         return dims
-    
+
     def _determine_stage_from_scores(self, dims):
         """从维度得分确定美林时钟阶段
-        
+
         美林时钟核心逻辑:
         - 复苏: growth↑ + inflation↓
         - 过热: growth↑ + inflation↑
@@ -574,11 +609,11 @@ class MerrillClock:
         """
         g = dims['growth']['score']
         inf = dims['inflation']['score']
-        
+
         # 阈值：0表示趋势中性线
         high_growth = g >= 0
         high_inflation = inf >= 0
-        
+
         if high_growth and not high_inflation:
             stage = 'recovery'
         elif high_growth and high_inflation:
@@ -587,33 +622,33 @@ class MerrillClock:
             stage = 'stagflation'
         else:
             stage = 'recession'
-        
+
         # 离象限中心的距离（信心度）
         distance = np.sqrt(g**2 + inf**2)
-        
+
         # 边界接近度（距离最近的象限边界的距离）
         boundary_proximity = min(abs(g), abs(inf))
-        
+
         return stage, distance, boundary_proximity
-    
+
     def _compute_next_stage_prediction(self, dims, current_stage):
         """预测下一阶段及转移概率
-        
+
         基于当前各维度得分距离边界的距离来估计转移概率
         """
         stats = STAGES[current_stage]['historical_stats']
         next_stage = stats['next_stage']
         transition_signals = stats['transition_signals']
-        
+
         g = dims['growth']['score']
         inf = dims['inflation']['score']
-        
+
         # 判断关键的转移方向
         # 复苏→过热: inflation上升穿过0线
-        # 过热→滞胀: growth下降穿过0线  
+        # 过热→滞胀: growth下降穿过0线
         # 滞胀→衰退: inflation下降穿过0线
         # 衰退→复苏: growth上升穿过0线
-        
+
         if current_stage == 'recovery':
             # 关键是通胀是否在上升
             boundary = inf  # inf>0则进入过热区, inf<0在复苏区
@@ -628,9 +663,9 @@ class MerrillClock:
         else:  # recession
             boundary = g  # g>0则进入复苏区
             prob = max(0, min(1, (g + 1.5) / 3.0))
-        
+
         prob = round(prob, 2)
-        
+
         return {
             'next_stage': next_stage,
             'next_stage_name': STAGES[next_stage]['name'],
@@ -638,11 +673,11 @@ class MerrillClock:
             'transition_signals': transition_signals,
             'boundary_distance': round(boundary, 2)  # >0表示已穿过边界
         }
-    
+
     def _compute_early_warnings(self, dims, current_stage, boundary_proximity):
         """计算早期预警信号"""
         warnings = []
-        
+
         # 接近象限边界
         if boundary_proximity < 0.3:
             next_info = self._compute_next_stage_prediction(dims, current_stage)
@@ -651,7 +686,7 @@ class MerrillClock:
                 'severity': 'info',
                 'message': f'接近{STAGES[current_stage]["name"]}→{next_info["next_stage_name"]}边界（距离{boundary_proximity:.2f}）'
             })
-        
+
         # 流动性收紧预警
         if dims['liquidity']['score'] < -1.0:
             warnings.append({
@@ -659,7 +694,7 @@ class MerrillClock:
                 'severity': 'warning',
                 'message': '流动性显著收紧，可能加速经济下行'
             })
-        
+
         # 通胀超预期预警
         if dims['inflation']['score'] > 1.5:
             warnings.append({
@@ -667,7 +702,7 @@ class MerrillClock:
                 'severity': 'danger',
                 'message': '通胀压力显著上升，密切关注政策转向信号'
             })
-        
+
         # 外部环境恶化
         if dims['external']['score'] < -1.0:
             warnings.append({
@@ -675,35 +710,35 @@ class MerrillClock:
                 'severity': 'warning',
                 'message': '外部环境恶化，出口和汇率承压'
             })
-        
+
         return warnings
-    
+
     def set_stage_start(self, date_str: str, stage: str = None) -> dict:
         """手动设置当前阶段的开始日期
-        
+
         Args:
             date_str: ISO日期字符串，如 '2024-09-24' 或 '2024-09-24T00:00:00'
             stage: 可选，同时设置当前阶段（recovery/overheat/stagflation/recession）
         """
         parsed = datetime.fromisoformat(date_str)
-        
+
         if stage:
             if stage not in STAGES:
                 return {'error': f'无效阶段: {stage}，可选: {list(STAGES.keys())}'}
             self.history['current_stage'] = stage
-        
+
         self.history['current_stage_start'] = parsed.isoformat()
         self._save_history()
-        
+
         logger.info(f"美林时钟阶段开始日期已更新: stage={self.history['current_stage']}, start={self.history['current_stage_start']}")
         return {
             'current_stage': self.history.get('current_stage'),
             'current_stage_start': self.history['current_stage_start']
         }
-    
+
     def seed_history(self, transitions: list):
         """预置历史阶段转移记录
-        
+
         Args:
             transitions: [{from_stage, to_stage, transition_date, from_name, to_name}, ...]
         """
@@ -712,63 +747,37 @@ class MerrillClock:
             self.history['current_stage'] = transitions[0].get('to_stage')
         self._save_history()
         logger.info(f"美林时钟历史记录已预置: {len(transitions)}条转移记录")
-    
+
     def determine_stage(self, indicators=None):
         """判断当前经济周期阶段（v2.0 多维度版）"""
         if indicators is None:
             indicators = self.get_economic_indicators()
-        
+
         today = datetime.now()
-        
+
         # === 1. 多维度评分 ===
         dims = self._compute_dimension_scores(indicators)
-        
+
         # === 2. 阶段判定 ===
         stage, distance, boundary_proximity = self._determine_stage_from_scores(dims)
-        
-        # === 3. 信心度 ===
-        confidence_level = '高' if distance > 1.2 else ('中' if distance > 0.5 else '低')
-        
-        # === 4. 综合得分 ===
-        weighted_score = sum(
-            SCORING_WEIGHTS[k] * dims[k]['score'] 
-            for k in SCORING_WEIGHTS
-        )
-        
-        stage_info = STAGES[stage].copy()
-        stage_info['stage'] = stage
-        stage_info['indicators'] = indicators
-        
-        # 多维度评分详情
-        stage_info['dimension_scores'] = dims
-        stage_info['confidence'] = {
-            'level': confidence_level,
-            'distance_from_center': round(distance, 2),
-            'boundary_proximity': round(boundary_proximity, 2),
-            'weighted_score': round(weighted_score, 2)
-        }
-        
-        # === 5. 下一阶段预测 ===
-        stage_info['next_stage_prediction'] = self._compute_next_stage_prediction(dims, stage)
-        
-        # === 6. 早期预警 ===
-        stage_info['early_warnings'] = self._compute_early_warnings(dims, stage, boundary_proximity)
-        
+
         # === v2.1: 时间驱动阶段切换 ===
         # 当阶段已严重超期（progress ≥ 95%）且距离下一象限边界很近（< 0.3σ），
-        # 自动过渡到预测的下一阶段，避免时钟永久卡在当前阶段
-        time_driven = False
+        # 自动过渡到预测的下一阶段，避免时钟永久卡在当前阶段。
+        # 必须放在 stage_info 组装之前：否则 name/confidence/next_stage_prediction/
+        # early_warnings 仍引用切换前阶段，与 transition/timing 的切换后阶段矛盾。
+        switch_trigger = 'boundary'  # 本次切换的触发方式：默认边界/数据驱动
         if self.history.get('current_stage_start'):
             start_time = datetime.fromisoformat(self.history['current_stage_start'])
             duration_days = (today - start_time).days
             stats = STAGES[stage]['historical_stats']
             avg_days = stats['avg_duration_months'] * 30
             progress_pct = min(100, round(duration_days / avg_days * 100, 1))
-            
+
             if progress_pct >= 95 and boundary_proximity < 0.3:
                 forced_stage = stats['next_stage']
                 if forced_stage in STAGES:
-                    time_driven = True
+                    switch_trigger = 'time_driven'
                     logger.info(
                         f"⏰ 时间驱动切换: {stage} -> {forced_stage} "
                         f"(进度={progress_pct}%, 边界距离={boundary_proximity:.2f}, "
@@ -777,16 +786,47 @@ class MerrillClock:
                     stage = forced_stage
                     # 进入新阶段后边界距离重置（刚进入，在象限内部）
                     boundary_proximity = 0.5
-        
+
+        # === 3. 信心度 ===
+        confidence_level = '高' if distance > 1.2 else ('中' if distance > 0.5 else '低')
+
+        # === 4. 综合得分 ===
+        weighted_score = sum(
+            SCORING_WEIGHTS[k] * dims[k]['score']
+            for k in SCORING_WEIGHTS
+        )
+
+        stage_info = STAGES[stage].copy()
+        stage_info['stage'] = stage
+        stage_info['indicators'] = indicators
+
+        # 多维度评分详情
+        stage_info['dimension_scores'] = dims
+        stage_info['confidence'] = {
+            'level': confidence_level,
+            'distance_from_center': round(distance, 2),
+            'boundary_proximity': round(boundary_proximity, 2),
+            'weighted_score': round(weighted_score, 2)
+        }
+
+        # === 5. 下一阶段预测 ===
+        stage_info['next_stage_prediction'] = self._compute_next_stage_prediction(dims, stage)
+
+        # === 6. 早期预警 ===
+        stage_info['early_warnings'] = self._compute_early_warnings(dims, stage, boundary_proximity)
+
         # === 7. 周期时间跟踪 ===
         previous_stage = self.history.get('current_stage')
-        
+
         if previous_stage != stage:
             transition = {
                 'from_stage': previous_stage,
                 'to_stage': stage,
                 'from_name': STAGES.get(previous_stage, {}).get('name') if previous_stage else None,
                 'to_name': STAGES[stage]['name'],
+                'trigger': switch_trigger,
+                'reason': '时间驱动切换（阶段严重超期且临近象限边界）' if switch_trigger == 'time_driven'
+                          else '边界/数据驱动切换',
                 'transition_time': today.isoformat(),
                 'transition_date': today.strftime('%Y-%m-%d')
             }
@@ -795,39 +835,39 @@ class MerrillClock:
                 duration_days = (today - start_time).days
                 transition['duration_days'] = duration_days
                 transition['duration_months'] = round(duration_days / 30, 1)
-            
+
             self.history['transitions'].insert(0, transition)
             if len(self.history['transitions']) > 20:
                 self.history['transitions'] = self.history['transitions'][:20]
-            
+
             self.history['current_stage'] = stage
             self.history['current_stage_start'] = today.isoformat()
             self._save_history()
             logger.info(f"美林时钟阶段切换: {previous_stage} -> {stage}")
-        
+
         elif not self.history.get('current_stage_start'):
             # 如果初始化后 start 仍为空（极端情况），设置默认值
             default_start = datetime(2024, 9, 24).isoformat()
             self.history['current_stage'] = stage
             self.history['current_stage_start'] = default_start
             self._save_history()
-        
+
         # === 8. 精确时间信息 ===
         if self.history.get('current_stage_start'):
             start_time = datetime.fromisoformat(self.history['current_stage_start'])
             duration_days = (today - start_time).days
             stats = STAGES[stage]['historical_stats']
-            
+
             avg_months = stats['avg_duration_months']
             std_months = stats.get('std_duration_months', avg_months * 0.3)
-            
+
             # 预测结束日期（使用均值±标准差）
             predicted_duration_low = max(1, (avg_months - std_months) * 30)
             predicted_duration_mid = avg_months * 30
             predicted_duration_high = (avg_months + std_months) * 30
-            
+
             progress_percent = min(100, round(duration_days / predicted_duration_mid * 100, 1))
-            
+
             # 阶段成熟度
             if progress_percent < 33:
                 maturity = '早期'
@@ -835,13 +875,13 @@ class MerrillClock:
                 maturity = '中期'
             else:
                 maturity = '后期'
-            
+
             predicted_end_low = start_time + timedelta(days=predicted_duration_low)
             predicted_end_mid = start_time + timedelta(days=predicted_duration_mid)
             predicted_end_high = start_time + timedelta(days=predicted_duration_high)
-            
+
             days_remaining = max(0, int(predicted_duration_mid - duration_days))
-            
+
             stage_info['timing'] = {
                 'current_stage_start': self.history['current_stage_start'],
                 'current_stage_start_date': start_time.strftime('%Y-%m-%d'),
@@ -858,17 +898,17 @@ class MerrillClock:
                     'optimistic': predicted_end_low.strftime('%Y-%m-%d')    # 较早
                 }
             }
-        
+
         stage_info['recent_transitions'] = self.history.get('transitions', [])[:5]
-        
+
         # v1.8: 保存快照到历史记录
         self._save_snapshot(stage_info)
-        
+
         return stage_info
-    
+
     def reevaluate(self, force=False):
         """强制重评估（忽略缓存，直接重新计算）
-        
+
         供定时任务和手动触发使用
         """
         if force:
@@ -878,23 +918,23 @@ class MerrillClock:
             if cache_key in self.cache:
                 del self.cache[cache_key]
             self._save_cache()
-        
+
         return self.determine_stage()
-    
+
     def get_stage_detail(self, stage_name):
         """获取指定阶段的详细信息，包含真实历史周期数据"""
         if stage_name not in STAGES:
             return None
-        
+
         info = STAGES[stage_name].copy()
-        
+
         stage_growth = 'high' if stage_name in ['recovery', 'overheat'] else 'low'
         stage_inflation = 'high' if stage_name in ['overheat', 'stagflation'] else 'low'
         info['criteria'] = {
             'growth': '经济增长' + ('上行' if stage_growth == 'high' else '下行'),
             'inflation': '通胀水平' + ('上行' if stage_inflation == 'high' else '下行')
         }
-        
+
         case_studies = {
             'recovery': [
                 '2024年9月-2026年6月：政策大转向（降准降息组合拳），最强复苏周期（约21个月）',
@@ -917,14 +957,14 @@ class MerrillClock:
             ]
         }
         info['case_studies'] = case_studies.get(stage_name, [])
-        
+
         # ─── ★ 从历史记录构建真实的上一个周期数据 ───
         transitions = self.history.get('transitions', [])
         current_stage = self.history.get('current_stage', '')
-        
+
         # 判断是否当前活跃阶段
         info['_is_current'] = (stage_name == current_stage)
-        
+
         if info['_is_current']:
             # 当前活跃阶段：计算实时 timing 数据
             now = datetime.now()
@@ -963,14 +1003,14 @@ class MerrillClock:
                         'key_indicators': t.get('key_indicators', {}),
                         'note': t.get('from_name', '') + '→' + t.get('to_name', '')
                     })
-            
+
             if history_list:
                 info['_history'] = history_list
                 # 最近一次 = _lastPeriod（兼容旧UI）
                 info['_lastPeriod'] = history_list[0]
             else:
                 info['_lastPeriod'] = {'start': '—', 'end': '—', 'duration': '—', 'note': '暂无历史记录'}
-        
+
         return info
 
 
@@ -980,4 +1020,4 @@ merrill_clock = MerrillClock()
 
 if __name__ == '__main__':
     stage_info = merrill_clock.determine_stage()
-    print(json.dumps(stage_info, ensure_ascii=False, indent=2))
+    logger.info(json.dumps(stage_info, ensure_ascii=False, indent=2))

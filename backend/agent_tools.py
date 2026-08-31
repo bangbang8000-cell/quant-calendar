@@ -156,3 +156,32 @@ def get_market_context() -> dict:
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+# ─── v3.17.1 (FR-3.17.1): 智能投顾助手 数据卡工具 ─────────────────
+
+def get_fact_card(stock_code: str, date: str = None) -> dict:
+    """获取个股「数据卡」（C. 事实护栏）— 估值/技术/资金/风险 数值全部来自本地数据源。
+
+    数据不可达时字段 value=None 且 source=unavailable（prompt 侧写「数据暂不可用」）。
+    """
+    try:
+        from prompt_facts import build_stock_fact_card
+        return build_stock_fact_card(stock_code, date=date)
+    except Exception as e:
+        logger.warning(f"get_fact_card({stock_code}) failed: {e}")
+        return {"code": stock_code, "source": "unavailable", "error": str(e)}
+
+
+def get_compare_table(codes: list, date: str = None) -> dict:
+    """获取多股对比数据卡（B. 多股票对比）— 结构化对比表。
+
+    codes: 股票代码列表（>=2）。单只/异常时优雅降级，available=False。
+    """
+    try:
+        from prompt_facts import build_compare_table
+        return build_compare_table(list(codes or []), date=date)
+    except Exception as e:
+        logger.warning(f"get_compare_table({codes}) failed: {e}")
+        return {"codes": list(codes or []), "rows": [], "header": [], "available": False,
+                "error": str(e)}

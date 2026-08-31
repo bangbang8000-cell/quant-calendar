@@ -36,10 +36,24 @@
     };
   }
 
+  // v3.15 (15.4): 主题切换 → 已挂载 ECharts 实例重绘注册表
+  // 每个图表创建处 registerChart(fn), fn 用缓存数据按当前主题重建 option。
+  const _refreshers = [];
+  function registerChart(refresher) {
+    if (typeof refresher === 'function') _refreshers.push(refresher);
+  }
+  function refreshAllCharts() {
+    _refreshers.slice().forEach(function (fn) {
+      try { fn(); } catch (e) { /* 忽略已销毁实例 */ }
+    });
+  }
+
   // 暴露给 index.html: 获取当前主题 + 注册主题切换回调
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.echartsTheme = {
     getEChartsTheme,
-    init() { return { getEChartsTheme }; },
+    registerChart,
+    refreshAllCharts,
+    init() { return { getEChartsTheme, registerChart, refreshAllCharts }; },
   };
 })();

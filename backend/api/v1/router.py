@@ -6,6 +6,7 @@ API v1 路由汇总
 from fastapi import APIRouter
 
 from .market import router as market_router
+from .market_ws import router as market_ws_router
 from .auth import router as auth_router
 from .calendar import router as calendar_router
 from .views import router as views_router
@@ -26,12 +27,16 @@ from .export import router as export_router
 from .audit import router as audit_router
 from .system import router as system_router
 from .analytics import router as analytics_router
+from .portfolio import router as portfolio_router
+from .openapi import router as openapi_router
+from .strategy_research import router as strategy_research_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
 
 # 注册各模块路由
 api_router.include_router(market_router)
+api_router.include_router(market_ws_router)
 api_router.include_router(auth_router)
 api_router.include_router(calendar_router)
 api_router.include_router(views_router)
@@ -52,5 +57,9 @@ api_router.include_router(export_router)
 api_router.include_router(audit_router)
 api_router.include_router(system_router)
 api_router.include_router(analytics_router)
+api_router.include_router(portfolio_router)
+# v3.17.15 (FR-3.17.15): 开放 API v2 (公开只读 + Key/Webhook 管理)
+api_router.include_router(openapi_router)
+api_router.include_router(strategy_research_router)
 
 __all__ = ["api_router"]

@@ -7,7 +7,19 @@ AI 问股 Prompt 模板 — 融合 TradingAgents + DSA + 自有数据
 - TradingAgents: 5分析师系统提示词 (基本面/情绪/新闻/技术/社交媒体)
 - DSA: StockTrendAnalyzer 技术分析维度 + 策略库视角
 - 自有: 美林时钟 + 策略共识 + 持仓数据
+
+v3.17.1 (FR-3.17.1): 智能投顾助手
+- A. 多轮上下文：build_ask_stock_user_prompt 新增 conversation_context 参数
+- B. 多股票对比：build_compare_system_prompt 输出对比表格
+- C. 事实护栏：FACT_GUARD_RULE + 数据卡注入（fact_card / compare_data）
 """
+
+# 事实护栏规则 (C)：禁止编造行情/估值/财务数字，仅可用数据卡中的值
+FACT_GUARD_RULE = """## 事实护栏（强制）
+- 回答中出现的任何行情、估值、财务等数字，只允许引用上方「数据卡」中给出的数值与数据日期；
+- 数据卡中标注「数据暂不可用」的字段，正文对应处必须同样写「数据暂不可用」，不得猜测、不得用其他来源的数字替代；
+- 未提供数据卡的维度（如行业排名、机构预测），若无法从已给数据推导，明确标注「数据暂不可用」或说明缺乏数据；
+- 明确标注"仅供参考，不构成投资建议"。"""
 
 
 def build_ask_stock_system_prompt() -> str:
@@ -75,6 +87,42 @@ def build_ask_stock_system_prompt() -> str:
 """
 
 
+def build_compare_system_prompt() -> str:
+    """构建多股对比 System Prompt (FR-3.17.1 B. 多股票对比)"""
+    return """你是量化选股日历的专业 AI 投顾助手，擅长多只股票的横向对比分析。
+
+## 对比输出格式要求
+当用户要求对比多只股票时，请严格按以下 Markdown 结构输出（股票数量与「多股对比数据卡」一致）：
+
+```markdown
+## 对比总览
+| 维度 | {股票1}({代码1}) | {股票2}({代码2}) |
+|------|----------------|----------------|
+| 估值 (PE/PB) | ... | ... |
+| 技术 (涨跌幅/RSI) | ... | ... |
+| 资金 (近5日主力净流入) | ... | ... |
+| 风险 (波动率/回撤) | ... | ... |
+
+### 逐项点评
+- **估值**：...（哪只更便宜/贵，数字仅引用「多股对比数据卡」）
+- **技术**：...
+- **资金**：...
+- **风险**：...
+
+### 综合结论
+- 相对占优标的：...
+- 各自适合的场景：...
+- 风险提示与"仅供参考，不构成投资建议"
+```
+
+## 重要规则
+- 对比表格中所有数字必须来自提供的「多股对比数据卡」，不得自行编造；
+- 数据卡中标注「数据暂不可用」的格子，对比表中同样写「数据暂不可用」；
+- 不预测具体涨跌幅度，不给出具体买卖时机；
+- 用中文回复，专业但平实的语言。
+"""
+
+
 def build_ask_stock_user_prompt(
     stock_code: str,
     stock_name: str,
@@ -83,8 +131,19 @@ def build_ask_stock_user_prompt(
     consensus_data: dict,
     market_data: dict,
     fundamental_data: dict = None,
+    fact_card: dict = None,
+    fact_instruction: str = None,
+    conversation_context: str = None,
+    compare_data: dict = None,
 ) -> str:
-    """构建用户消息 Prompt (注入结构化数据)"""
+    """构建用户消息 Prompt (注入结构化数据)
+
+    v3.17.1 新增：
+    - fact_card: 个股数据卡（C. 事实护栏）
+    - compare_data: 多股对比数据卡（B. 多股票对比）
+    - fact_instruction: 事实护栏规则文本
+    - conversation_context: 多轮追问上下文（A. 多轮对话）
+    """
 
     parts = []
 
@@ -132,6 +191,24 @@ def build_ask_stock_user_prompt(
     # 基本面 (可选)
     if fundamental_data and "error" not in fundamental_data:
         parts.append(f"\n## 基本面\n- 行业: {fundamental_data.get('industry', 'N/A')}")
+
+    # 多轮上下文 (FR-3.17.1 A)：同一会话前几轮结论，支持追问
+    if conversation_context:
+        parts.append("\n## 追问上下文\n" + conversation_context)
+
+    # 多股对比数据卡 (FR-3.17.1 B)：多代码对比请求时注入
+    if compare_data:
+        from prompt_facts import build_compare_table_markdown
+        parts.append("\n" + build_compare_table_markdown(compare_data))
+
+    # 个股数据卡 (FR-3.17.1 C)：单股请求注入数据卡，数值以此为准
+    if fact_card and not compare_data:
+        from prompt_facts import build_fact_card_markdown
+        parts.append("\n" + build_fact_card_markdown(fact_card))
+
+    # 事实护栏规则（强制）
+    if fact_instruction:
+        parts.append("\n---\n" + fact_instruction)
 
     parts.append("\n---\n请根据以上数据，按要求的格式给出综合分析。")
 

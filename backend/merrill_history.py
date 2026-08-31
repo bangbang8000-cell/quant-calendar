@@ -213,3 +213,91 @@ CYCLE_META = [
         "total_months": 48,
     },
 ]
+
+# ===== v3.22-I4: 历史周期时间轴 =====
+
+def _parse_date(s):
+    """解析日期字符串为 (y, m) 元组, 失败返回 None"""
+    import re
+    m = re.match(r'(\d{4})[-/](\d{1,2})', str(s or ''))
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)))
+
+
+def build_timeline(transitions, current_stage='', current_stage_start='', max_cycles=4):
+    """将阶段转换记录聚合为周期时间轴(最近 max_cycles 轮).
+
+    Args:
+        transitions: 转换记录列表(含 from_stage/to_stage/transition_date/cycle_label/
+                     duration_months/trigger/from_name/to_name)
+        current_stage: 当前阶段(英文 key, 如 recovery)
+        current_stage_start: 当前阶段开始时间
+        max_cycles: 返回的最大轮数, 默认 4
+
+    Returns:
+        {"cycles": [{"label": str, "stages": [
+            {"stage": str, "name": str, "start": str, "end": str,
+             "duration_months": float, "trigger": str, "is_current": bool,
+             "from_stage": str, "to_stage": str}
+        ]}]}
+    """
+    cycles = {}
+    # 按轮分组 + 每条转换生成一个"到达阶段"
+    for t in transitions:
+        label = t.get('cycle_label') or '未知轮'
+        start = t.get('transition_date') or ''
+        stage = t.get('to_stage') or ''
+        cycles.setdefault(label, []).append({
+            'stage': stage,
+            'name': t.get('to_name') or '',
+            'start': start,
+            'duration_months': t.get('duration_months') or 0,
+            'trigger': t.get('trigger') or '',
+            'from_stage': t.get('from_stage') or '',
+            'to_stage': t.get('to_stage') or '',
+            'is_current': False,
+        })
+
+    # 当前阶段补全到最近一轮
+    if current_stage:
+        cur = {'stage': current_stage, 'name': '', 'start': str(current_stage_start or '')[:10],
+               'end': '', 'duration_months': None, 'trigger': '',
+               'from_stage': '', 'to_stage': current_stage, 'is_current': True}
+        if cycles:
+            first_label = sorted(cycles.keys(), reverse=True)[0]
+            cycles[first_label].append(cur)
+        else:
+            cycles['当前'] = [cur]
+
+    # 每轮 stages 按 start 日期升序 + 开头补起点阶段(第一条的 from_stage)
+    for label in cycles:
+        stages = cycles[label]
+        stages.sort(key=lambda s: _parse_date(s['start']) or (0, 0))
+        if stages and stages[0].get('from_stage'):
+            first = stages[0]
+            if first['stage'] != first['from_stage']:
+                stages.insert(0, {
+                    'stage': first['from_stage'],
+                    'name': first.get('from_name', ''),
+                    'start': '',
+                    'end': first['start'][:10],
+                    'duration_months': None,
+                    'trigger': '',
+                    'from_stage': '',
+                    'to_stage': first['from_stage'],
+                    'is_current': False,
+                })
+
+    # 构造结果(轮次降序, 取最近 max_cycles 轮)
+    ordered = sorted(cycles.keys(), key=lambda k: _parse_date(cycles[k][0]['start']) or (0, 0), reverse=True)
+    result = []
+    for label in ordered[:max_cycles]:
+        stages = cycles[label]
+        for i, s in enumerate(stages):
+            if i + 1 < len(stages):
+                s['end'] = stages[i + 1]['start'][:10]
+            else:
+                s['end'] = ''
+        result.append({'label': label, 'stages': stages})
+    return {'cycles': result}

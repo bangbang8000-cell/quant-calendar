@@ -4,13 +4,12 @@
 市场行情数据模块
 获取中国各交易市场指数数据
 """
-import pandas as pd
 import numpy as np
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import logging
-from config import settings
+from paths import MARKET_CACHE_FILE as CACHE_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +47,6 @@ INDEX_CONFIG = {
     }
 }
 
-# 数据缓存文件
-from paths import MARKET_CACHE_FILE as CACHE_FILE
-
 # 中国股市交易时间
 TRADING_START = (9, 30)   # 09:30
 TRADING_MID = (11, 30)   # 11:30
@@ -70,17 +66,17 @@ def is_trading_hours(now=None):
     """判断是否在交易时间内"""
     if now is None:
         now = datetime.now()
-    
+
     if not is_trading_day(now):
         return False
-    
+
     current_time = (now.hour, now.minute)
-    
+
     # 早盘: 9:30 - 11:30
     morning_trading = TRADING_START <= current_time <= TRADING_MID
     # 午盘: 13:00 - 15:00
     afternoon_trading = TRADING_RESTART <= current_time <= TRADING_END
-    
+
     return morning_trading or afternoon_trading
 
 
@@ -88,7 +84,7 @@ def get_cache_duration(now=None):
     """获取缓存有效期（秒）"""
     if now is None:
         now = datetime.now()
-    
+
     # 非交易日：缓存到下一个交易日9:25
     if not is_trading_day(now):
         # 找下一个交易日
@@ -98,7 +94,7 @@ def get_cache_duration(now=None):
         next_trading_925 = next_trading.replace(hour=9, minute=25, second=0, microsecond=0)
         delta = next_trading_925 - now
         return int(delta.total_seconds())
-    
+
     # 交易日，但非交易时间
     if not is_trading_hours(now):
         current_time = (now.hour, now.minute)
@@ -113,14 +109,14 @@ def get_cache_duration(now=None):
             target = next_day.replace(hour=9, minute=25, second=0, microsecond=0)
         delta = target - now
         return int(delta.total_seconds())
-    
+
     # 交易时间内：每10分钟更新一次
     return 600  # 10分钟 = 600秒
 
 
 class MarketData:
     """市场行情数据获取类"""
-    
+
     def __init__(self):
         self.cache = self._load_cache()
         # 使用统一数据源管理器
@@ -130,7 +126,7 @@ class MarketData:
         self.tushare_available = 'tushare' in data_source_manager._clients
         self.pro = data_source_manager._clients.get('tushare', None)
         logger.info(f"✅ MarketData 初始化完成，数据源: {list(data_source_manager._clients.keys())}")
-    
+
     def update_tushare_token(self, token: str):
         """动态更新 Tushare Token"""
         if token and token != getattr(self, 'tushare_token', ''):
@@ -152,7 +148,7 @@ class MarketData:
     def test_datasource_connection(self, source_name: str = 'tushare') -> dict:
         """测试指定数据源连接"""
         return self.ds_manager.test_connection(source_name)
-    
+
     def _load_cache(self):
         """加载缓存"""
         if os.path.exists(CACHE_FILE):
@@ -163,26 +159,27 @@ class MarketData:
                 logger.exception("获取K线数据异常")
                 pass
         return {}
-    
+
     def _save_cache(self):
         """保存缓存"""
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.cache, f, ensure_ascii=False, indent=2)
-    
+            # v3.15.1: default=str 兜底 — 任何未被规范化的 date/datetime 不阻塞落盘
+            json.dump(self.cache, f, ensure_ascii=False, indent=2, default=str)
+
     def _is_cache_valid(self, cache_key):
         """检查缓存是否有效"""
         if cache_key not in self.cache:
             return False
-        
+
         cache_data = self.cache[cache_key]
         cache_time = datetime.fromisoformat(cache_data['fetch_time'])
         now = datetime.now()
-        
-        # 根据时间段计算有效期
-        cache_duration = get_cache_duration(cache_time)
+
+        # v3.7: 传入 now 而非 cache_time 用于 TTL 计算
+        cache_duration = get_cache_duration(now)
         return (now - cache_time).total_seconds() < cache_duration
-    
+
     def get_index_daily(self, ts_code, trade_date=None):
         """获取指数日线数据"""
         cache_key = f"index_{ts_code}_{trade_date or 'latest'}"
@@ -194,6 +191,10 @@ class MarketData:
         # 使用统一数据源管理器
         result = self.ds_manager.get_index_daily(ts_code, trade_date)
         if result:
+            # v3.15.1: 实时源 trade_date 可能为 datetime.date (tushare/akshare) —
+            # 归一化字符串, 否则写缓存 (json.dump) 与 API 响应序列化双双 500
+            if isinstance(result.get('trade_date'), (datetime, date)):
+                result['trade_date'] = result['trade_date'].strftime('%Y%m%d')
             # 存入缓存
             self.cache[cache_key] = {
                 'fetch_time': datetime.now().isoformat(),
@@ -204,9 +205,11 @@ class MarketData:
 
         # 所有数据源都失败，使用模拟数据
         return self._get_mock_data(ts_code)
-    
+
     def _get_mock_data(self, ts_code):
         """生成模拟数据（API不可用时）"""
+        # 固定随机种子，同一天返回相同结果
+        np.random.seed(int(datetime.now().strftime('%Y%m%d')) + hash(ts_code) % 100000)
         # 基础点位映射
         base_points = {
             '000001.SH': 4135,
@@ -237,13 +240,13 @@ class MarketData:
             'data_source': 'mock',
             'mock_reason': '所有数据源(sxsc-tushare/tushare/akshare)均不可用'
         }
-    
+
     def get_market_overview(self, date=None):
         """获取市场概览数据"""
         now = datetime.now()
         is_trading = is_trading_day(now)
         in_trading_hours = is_trading_hours(now)
-        
+
         overview = {
             'date': now.strftime('%Y-%m-%d %H:%M:%S'),
             'update_time': now.isoformat(),
@@ -252,7 +255,7 @@ class MarketData:
             'cache_duration': get_cache_duration(),
             'indices': []
         }
-        
+
         for idx_key, config in INDEX_CONFIG.items():
             index_data = self.get_index_daily(config['code'], date)
             overview['indices'].append({
@@ -270,7 +273,7 @@ class MarketData:
                 'mock_reason': index_data.get('mock_reason', ''),
                 'trade_date': index_data.get('trade_date', '')
             })
-        
+
         # 计算整体市场情绪
         chg_list = [idx['pct_chg'] for idx in overview['indices']]
         avg_chg = np.mean(chg_list)
@@ -286,13 +289,13 @@ class MarketData:
         else:
             sentiment = 'bear'
             sentiment_text = '普跌行情'
-        
+
         overview['market_sentiment'] = {
             'type': sentiment,
             'text': sentiment_text,
             'avg_pct_chg': round(float(avg_chg), 2)
         }
-        
+
         return overview
 
 
@@ -303,11 +306,10 @@ market_data = MarketData()
 if __name__ == '__main__':
     # 测试
     overview = market_data.get_market_overview()
-    print(json.dumps(overview, ensure_ascii=False, indent=2))
+    logger.info(json.dumps(overview, ensure_ascii=False, indent=2))
 
 
 # ===== K线数据获取 =====
-from data_sources import _is_index_code  # 统一使用 data_sources 版本
 
 
 def get_kline_data(ts_code, period='daily', limit=60):

@@ -8,12 +8,15 @@ SQLite 接入层 (v3.3.0-T1)
 - WAL 模式提升并发
 """
 import json
+import logging
 import os
 import sqlite3
 import threading
 from datetime import datetime, timedelta
 
 from paths import DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 DB_FILE = os.path.join(DATA_DIR, "app.db")
 
@@ -29,16 +32,22 @@ CREATE TABLE IF NOT EXISTS chat_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
     stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_chat_history_username_stock
+    ON chat_history(username, stock_code, id);
 CREATE TABLE IF NOT EXISTS watchlist (
     username TEXT NOT NULL,
     stock_code TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
     added_at TEXT NOT NULL,
     PRIMARY KEY (username, stock_code)
 );
+CREATE INDEX IF NOT EXISTS idx_watchlist_username_added
+    ON watchlist(username, added_at);
 CREATE TABLE IF NOT EXISTS groups (
     group_id TEXT PRIMARY KEY,
     data TEXT NOT NULL
@@ -48,6 +57,67 @@ CREATE TABLE IF NOT EXISTS meta (
     value TEXT NOT NULL
 );
 """
+
+# v3.17.8 (FR-3.17.5): 组合/模拟持仓 — 持仓 + 调仓记录 (per-user 隔离)
+PORTFOLIO_SCHEMA = """
+CREATE TABLE IF NOT EXISTS portfolio_positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
+    cost_price REAL NOT NULL DEFAULT 0,
+    quantity REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_portfolio_positions_user
+    ON portfolio_positions(username, stock_code);
+CREATE TABLE IF NOT EXISTS portfolio_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL DEFAULT '',
+    action TEXT NOT NULL,
+    price REAL NOT NULL DEFAULT 0,
+    quantity REAL NOT NULL DEFAULT 0,
+    trade_date TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_portfolio_trades_user_time
+    ON portfolio_trades(username, id);
+"""
+
+SCHEMA += PORTFOLIO_SCHEMA
+
+# v3.17.15 (FR-3.17.15): 开放 API v2 — API Key + Webhook 订阅
+# 只存 key 的 sha256 哈希, 不落明文; events 存 JSON 数组字符串
+OPENAPI_SCHEMA = """
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    prefix TEXT NOT NULL DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'read',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    expires_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_prefix
+    ON api_keys(prefix);
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT NOT NULL,
+    events TEXT NOT NULL DEFAULT '[]',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_enabled
+    ON webhook_subscriptions(enabled);
+"""
+
+SCHEMA += OPENAPI_SCHEMA
 
 
 def get_conn() -> sqlite3.Connection:
@@ -71,27 +141,90 @@ def init_db() -> bool:
             conn.close()
         return True
     except Exception as e:
-        print(f"[db] 数据库初始化/校验失败: {e}")
+        logger.error(f"[db] 数据库初始化/校验失败: {e}")
         return False
 
 
 def schema_ok() -> bool:
     """启动 schema 校验 — 检查核心表是否存在且可查询"""
     try:
-        with _db_lock:
-            conn = get_conn()
-            tables = [r[0] for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-            conn.close()
-        required = {'users', 'chat_history', 'watchlist', 'groups', 'meta'}
+        conn = get_conn()
+        tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        conn.close()
+        required = {'users', 'chat_history', 'watchlist', 'groups', 'meta',
+                    'portfolio_positions', 'portfolio_trades'}
         missing = required - set(tables)
         if missing:
-            print(f"[db] schema 校验失败, 缺少表: {missing}")
+            logger.error(f"[db] schema 校验失败, 缺少表: {missing}")
             return False
         return True
     except Exception as e:
-        print(f"[db] schema 校验异常: {e}")
+        logger.error(f"[db] schema 校验异常: {e}")
         return False
+
+
+def migrate() -> None:
+    """DB schema 增量迁移 (v3.14.2: watchlist.name; v3.15: chat_history.stock_name;
+    v3.17.8: portfolio 表; v3.17.13: chat_history.username 旧库补列)"""
+    try:
+        with _db_lock:
+            conn = get_conn()
+            # v3.17.8 (FR-3.17.5): 组合/模拟持仓表 (幂等建表)
+            conn.executescript(PORTFOLIO_SCHEMA)
+            conn.commit()
+            logger.info("[db] migrate: portfolio_positions/portfolio_trades 表就绪")
+            # v3.17.15 (FR-3.17.15): 开放 API — api_keys/webhook_subscriptions 表 (幂等建表)
+            conn.executescript(OPENAPI_SCHEMA)
+            conn.commit()
+            logger.info("[db] migrate: api_keys/webhook_subscriptions 表就绪")
+            # v3.14.2: watchlist 增加 name 列
+            cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
+            if cols and 'name' not in cols:
+                conn.execute("ALTER TABLE watchlist ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+                conn.commit()
+                logger.info("[db] migrate: watchlist 增加 name 列")
+            # v3.15: chat_history 增加 stock_name 列 (问股历史缺股票名)
+            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+            if chat_cols and 'stock_name' not in chat_cols:
+                conn.execute("ALTER TABLE chat_history ADD COLUMN stock_name TEXT NOT NULL DEFAULT ''")
+                conn.commit()
+                logger.info("[db] migrate: chat_history 增加 stock_name 列")
+            # v3.17.13 (FR-3.17.13): chat_history 增加 username 列 (历史旧库补列, 幂等)
+            # 新库 SCHEMA 已含 username; 仅对旧库 (chat_history 建于按用户隔离前) 补列
+            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+            if chat_cols and 'username' not in chat_cols:
+                conn.execute("ALTER TABLE chat_history ADD COLUMN username TEXT NOT NULL DEFAULT 'default'")
+                conn.commit()
+                logger.info("[db] migrate: chat_history 增加 username 列")
+            conn.close()
+    except Exception as e:
+        logger.error(f"[db] migrate 失败: {e}")
+
+
+def migrate_chat_ownership(legacy_owner: str = 'default') -> int:
+    """一次性存量迁移 (FR-3.17.13): 历史上无主/共享的聊天记录归属到指定用户 (幂等可重复执行)
+
+    - 无 username / 空 username 的共享记录 → 归属 legacy_owner (默认 'default', 保留为只读归档)
+    - 已有 username 的记录保持不变 (含遗留的 'default' 记录)
+    - 重复执行返回 0, 不产生副作用
+    """
+    migrated = 0
+    try:
+        migrate()  # 确保 username 列存在 (旧库补列), 幂等
+        owner = legacy_owner or 'default'
+        with _db_lock:
+            conn = get_conn()
+            cur = conn.execute(
+                "UPDATE chat_history SET username=? WHERE username IS NULL OR username=''",
+                (owner,))
+            conn.commit()
+            migrated = cur.rowcount
+            conn.close()
+        logger.info(f"[db] migrate_chat_ownership: {migrated} 条无主聊天记录 → {owner}")
+    except Exception as e:
+        logger.error(f"[db] migrate_chat_ownership 失败: {e}")
+    return migrated
 
 
 # ─── 通用 KV 存取 (users/groups 存 JSON 串) ───────────────────────
@@ -111,17 +244,13 @@ def kv_set(table: str, key: str, value: dict):
 
 
 def kv_get(table: str, key: str) -> dict | None:
-    with _db_lock:
-        conn = get_conn()
-        col = 'username' if table == 'users' else 'group_id'
-        row = conn.execute(f"SELECT data FROM {table} WHERE {col} = ?", (key,)).fetchone()
-        conn.close()
-    if row is None:
+    conn = get_conn()
+    col = 'username' if table == 'users' else 'group_id'
+    row = conn.execute(f"SELECT data FROM {table} WHERE {col} = ?", (key,)).fetchone()
+    conn.close()
+    if not row:
         return None
-    try:
-        return json.loads(row['data'])
-    except Exception:
-        return None
+    return json.loads(row[0])
 
 
 def kv_all(table: str) -> dict:
@@ -136,7 +265,7 @@ def kv_all(table: str) -> dict:
         try:
             result[r[col]] = json.loads(r['data'])
         except Exception:
-            print("[warn] 操作异常 (v3.4.0-T8)")
+            logger.warning("操作异常 (v3.4.0-T8)")
             pass
     return result
 
@@ -152,13 +281,13 @@ def kv_delete(table: str, key: str):
 
 # ─── chat_history ─────────────────────────────────────────────
 
-def chat_append(username: str, stock_code: str, role: str, content: str) -> int:
-    """追加一条聊天记录, 返回 id"""
+def chat_append(username: str, stock_code: str, role: str, content: str, stock_name: str = '') -> int:
+    """追加一条聊天记录, 返回 id (v3.15: 存入股票中文名, 修复问股历史缺名)"""
     with _db_lock:
         conn = get_conn()
         cur = conn.execute(
-            "INSERT INTO chat_history (username, stock_code, role, content, created_at) VALUES (?,?,?,?,?)",
-            (username, stock_code, role, content, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            "INSERT INTO chat_history (username, stock_code, stock_name, role, content, created_at) VALUES (?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', role, content, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -200,26 +329,41 @@ def chat_all(username: str = None) -> list:
     return [dict(r) for r in rows]
 
 
+def chat_update_name(chat_id: int, stock_name: str) -> bool:
+    """回填单条聊天记录股票名 (v3.15 回填脚本用)"""
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "UPDATE chat_history SET stock_name=? WHERE id=?",
+            (stock_name or '', chat_id)
+        )
+        conn.commit()
+        ok = cur.rowcount > 0
+        conn.close()
+    return ok
+
+
 # ─── watchlist ────────────────────────────────────────────────
 
-def watchlist_set(username: str, stock_code: str, added_at: str = None):
+def watchlist_set(username: str, stock_code: str, name: str = '', added_at: str = None):
+    """写入自选 — v3.14.2: 存储股票中文名 (修复自选/历史缺名)"""
     added_at = added_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with _db_lock:
         conn = get_conn()
         conn.execute(
-            "INSERT OR REPLACE INTO watchlist (username, stock_code, added_at) VALUES (?,?,?)",
-            (username, stock_code, added_at)
+            "INSERT OR REPLACE INTO watchlist (username, stock_code, name, added_at) VALUES (?,?,?,?)",
+            (username, stock_code, name or '', added_at)
         )
         conn.commit()
         conn.close()
 
 
 def watchlist_get(username: str) -> list:
-    """返回 [{stock_code, added_at}]"""
+    """返回 [{stock_code, name, added_at}] (v3.14.2: 含股票名)"""
     with _db_lock:
         conn = get_conn()
         rows = conn.execute(
-            "SELECT stock_code, added_at FROM watchlist WHERE username=? ORDER BY added_at DESC",
+            "SELECT stock_code, name, added_at FROM watchlist WHERE username=? ORDER BY added_at DESC",
             (username,)
         ).fetchall()
         conn.close()
@@ -238,6 +382,141 @@ def watchlist_all() -> list:
     with _db_lock:
         conn = get_conn()
         rows = conn.execute("SELECT * FROM watchlist ORDER BY username, added_at").fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+# ─── portfolio (v3.17.8 / FR-3.17.5): 组合/模拟持仓 ──────────────
+
+def _portfolio_merge(conn, username: str, stock_code: str, stock_name: str,
+                     cost_price: float, quantity: float) -> None:
+    """内部: 同股累加 — 数量相加, 成本按加权平均 (供新增持仓/买入调仓共用)"""
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    row = conn.execute(
+        "SELECT id, cost_price, quantity FROM portfolio_positions WHERE username=? AND stock_code=?",
+        (username, stock_code)
+    ).fetchone()
+    if row:
+        old_qty = row['quantity'] or 0
+        old_cost = row['cost_price'] or 0
+        new_qty = old_qty + (quantity or 0)
+        new_cost = (old_qty * old_cost + (quantity or 0) * (cost_price or 0)) / new_qty if new_qty > 0 else (cost_price or 0)
+        conn.execute(
+            "UPDATE portfolio_positions SET stock_name=?, cost_price=?, quantity=?, updated_at=? WHERE id=?",
+            (stock_name or '', round(new_cost, 4), round(new_qty, 4), now, row['id'])
+        )
+    else:
+        conn.execute(
+            "INSERT INTO portfolio_positions (username, stock_code, stock_name, cost_price, quantity, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', round(cost_price or 0, 4), round(quantity or 0, 4), now, now)
+        )
+
+
+def portfolio_upsert_position(username: str, stock_code: str, stock_name: str = '',
+                              cost_price: float = 0, quantity: float = 0) -> None:
+    """新增/更新持仓: 同股累加, 加权平均成本"""
+    with _db_lock:
+        conn = get_conn()
+        _portfolio_merge(conn, username, stock_code, stock_name, cost_price, quantity)
+        conn.commit()
+        conn.close()
+
+
+def portfolio_get_positions(username: str) -> list:
+    """返回 [{id, stock_code, stock_name, cost_price, quantity, created_at, updated_at}]"""
+    with _db_lock:
+        conn = get_conn()
+        rows = conn.execute(
+            "SELECT id, stock_code, stock_name, cost_price, quantity, created_at, updated_at "
+            "FROM portfolio_positions WHERE username=? ORDER BY updated_at DESC",
+            (username,)
+        ).fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def portfolio_delete_position(username: str, stock_code: str) -> bool:
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "DELETE FROM portfolio_positions WHERE username=? AND stock_code=?",
+            (username, stock_code)
+        )
+        conn.commit()
+        ok = cur.rowcount > 0
+        conn.close()
+    return ok
+
+
+def portfolio_apply_trade(username: str, stock_code: str, stock_name: str,
+                          action: str, price: float, quantity: float) -> str:
+    """按调仓动作更新持仓:
+    - buy: 数量累加, 成本按成交价加权平均
+    - sell: 数量减少, 减至 ≤0 自动删除持仓
+    返回 'buy'|'sell'|'sold_out' (供记录调仓语义/提示)
+    """
+    action = (action or 'buy').lower()
+    with _db_lock:
+        conn = get_conn()
+        if action == 'sell':
+            row = conn.execute(
+                "SELECT id, quantity FROM portfolio_positions WHERE username=? AND stock_code=?",
+                (username, stock_code)
+            ).fetchone()
+            if not row:
+                conn.commit()
+                conn.close()
+                return 'sell'  # 无持仓仍记录调仓, 持仓不变化
+            new_qty = (row['quantity'] or 0) - (quantity or 0)
+            if new_qty <= 0:
+                conn.execute("DELETE FROM portfolio_positions WHERE id=?", (row['id'],))
+                conn.commit()
+                conn.close()
+                return 'sold_out'
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            conn.execute(
+                "UPDATE portfolio_positions SET quantity=?, updated_at=? WHERE id=?",
+                (round(new_qty, 4), now, row['id'])
+            )
+            conn.commit()
+            conn.close()
+            return 'sell'
+        # buy: 与新增持仓同语义 (以成交价加权累加)
+        _portfolio_merge(conn, username, stock_code, stock_name, price, quantity)
+        conn.commit()
+        conn.close()
+        return 'buy'
+
+
+def portfolio_add_trade(username: str, stock_code: str, stock_name: str = '', action: str = 'buy',
+                        price: float = 0, quantity: float = 0, trade_date: str = '',
+                        note: str = '') -> int:
+    """记录一条调仓流水, 返回 id"""
+    trade_date = (trade_date or '').strip() or datetime.now().strftime('%Y-%m-%d')
+    with _db_lock:
+        conn = get_conn()
+        cur = conn.execute(
+            "INSERT INTO portfolio_trades (username, stock_code, stock_name, action, price, quantity, trade_date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (username, stock_code, stock_name or '', action, round(price or 0, 4), round(quantity or 0, 4),
+             trade_date, note or '', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        conn.commit()
+        new_id = cur.lastrowid
+        conn.close()
+    return new_id
+
+
+def portfolio_list_trades(username: str, limit: int = 200) -> list:
+    """调仓记录按时间倒序 (created_at 同秒时按 id 倒序)"""
+    with _db_lock:
+        conn = get_conn()
+        rows = conn.execute(
+            "SELECT id, stock_code, stock_name, action, price, quantity, trade_date, note, created_at "
+            "FROM portfolio_trades WHERE username=? ORDER BY created_at DESC, id DESC LIMIT ?",
+            (username, limit)
+        ).fetchall()
         conn.close()
     return [dict(r) for r in rows]
 
@@ -275,11 +554,11 @@ def backup_db() -> str | None:
                         if t < cutoff:
                             os.remove(os.path.join(DATA_DIR, "backups", f))
                     except ValueError:
-                        print("[warn] 操作异常 (v3.4.0-T8)")
+                        logger.warning("操作异常 (v3.4.0-T8)")
                         pass
         return os.path.basename(backup_path)
     except Exception as e:
-        print(f"[db] 备份失败: {e}")
+        logger.error(f"[db] 备份失败: {e}")
         return None
 
 
@@ -324,7 +603,7 @@ def restore_backup(name: str) -> bool:
                     os.remove(p)
         return init_db()
     except Exception as e:
-        print(f"[db] 恢复失败: {e}")
+        logger.error(f"[db] 恢复失败: {e}")
         return False
 
 

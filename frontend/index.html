@@ -3,78 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <script>
-    // 自动清除 Service Worker（本地应用不需要 PWA）
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            for (const reg of regs) reg.unregister();
-        });
-        // 阻止后续 SW 注册
-        navigator.serviceWorker.register = function() { return Promise.reject(); };
-    }
-    </script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="量化日历">
+    <!-- theme-color meta 需字面量色值（浏览器不解析 CSS 变量），与 manifest 品牌色一致 -->
+    <meta name="theme-color" content="#667eea"><!-- qc-allow-hardcode -->
+    <link rel="manifest" href="/manifest.json">
     <title>🗓️ 量化日历</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="/static/lib/vue.global.prod.min.js"></script>
+    <!-- v3.17.9 (FR-3.17.9): 关键 CSS 提前于脚本加载（render-blocking 但并行下载，保证首屏样式先就绪）；
+         脚本全部 defer（并行下载、按序执行于 DOM 解析后），首屏 DOM + 启动骨架屏先渲染 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/vue.global.prod.min.js"></script>
     <link rel="stylesheet" href="/static/lib/element-plus.css">
-    <script src="/static/lib/element-plus.min.js"></script>
-    <script src="/static/lib/echarts.min.js"></script>
-    <script src="/static/lib/zh-cn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/tokens.css?v=3.0.0">
-    <link rel="stylesheet" href="/static/css/themes.css?v=3.0.0">
-    <link rel="stylesheet" href="/static/css/layout.css?v=3.0.0">
-    <link rel="stylesheet" href="/static/css/animations.css?v=3.0.0">
-    <link rel="stylesheet" href="/static/css/responsive.css?v=3.0.0">
+    <script nonce="{{NONCE}}" defer src="/static/lib/element-plus.min.js"></script>
+    <!-- v3.17.9 (FR-3.17.9): echarts 改为按需懒加载（非首屏，见 charts.js ensureEcharts），不再同步阻塞首屏 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/zh-cn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/tokens.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/themes.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/layout.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/animations.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/responsive.css?v={{APP_VERSION}}">
 
-    <!-- Module JS -->
-    <script src="/static/js/themes.js?v=2.5.2"></script>
-    <script src="/static/js/icons.js?v=2.5.2"></script>
-    <script src="/static/js/core.js"></script>
-    <script src="/static/js/charts.js?v=3.2.0"></script>
-    <script src="/static/js/calendar.js"></script>
-    <script src="/static/js/strategies.js"></script>
-    <script src="/static/js/ai.js"></script>
-    <script src="/static/js/system.js"></script>
-    <script src="/static/js/users.js"></script>
-    <script src="/static/js/merrill.js?v=3.2.0"></script>
-    <script src="/static/js/echarts-theme.js?v=3.2.0"></script>
-    <script src="/static/js/components/sidebar.js?v=3.6.0"></script>
-    <script src="/static/js/components/global-header.js?v=3.6.0"></script>
-    <script src="/static/js/components/system-page.js?v=3.6.0-t9b"></script>
-    <script src="/static/js/components/strategies-page.js?v=3.6.0-t5"></script>
-    <script src="/static/js/components/calendar-page.js?v=3.6.0-t6"></script>
-    <script src="/static/js/components/ai-page.js?v=3.6.0-t7"></script>
-    <script src="/static/js/components/research-page.js?v=3.6.0-t8"></script>
-    <script src="/static/js/app-logic.js?v=3.6.0-t8"></script>
+    <!-- Module JS (v3.17.9: 全部 defer, 按文档顺序执行, 依赖通过 window.__quantModules 全局保持) -->
+    <script nonce="{{NONCE}}" defer src="/static/js/themes.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.10 (FR-3.17.10): 个性化与搜索纯模块（拼音/偏好/最近查看/i18n，早于 app-logic 装配） -->
+    <!-- v3.17.14 (FR-3.17.14): 语言包 zh-CN/en（零构建原生对象，i18n.js 之后按序装配） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/i18n.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/locales/zh-CN.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/locales/en.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/pinyin.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/preferences.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/recent.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/icons.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/charts.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/ai.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/system.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/users.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/ai-chat.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/stock-pool.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/watchlist.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/portfolio.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.4 (FR-3.17.4): 回测工作台（先加载纯函数核心，再加载域模块） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/backtest-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/backtest.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/merrill.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/echarts-theme.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/sidebar.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/global-header.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/system-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/strategies-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/calendar-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/ai-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/research-page.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/virtual-list-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/virtual-list.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.8 (FR-3.17.8): 移动端手势核心（左滑露出/下拉刷新判定/长按复制，纯函数可测） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/mobile-gestures.js?v={{APP_VERSION}}"></script>
+    <!-- v3.11 (FR-3.11.5): 状态面板（四态核心纯数据 + 组件，先加载 core） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/state-panel-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/state-panel.js?v={{APP_VERSION}}"></script>
+    <!-- v3.11 (FR-3.11.1): 命令面板核心逻辑(纯函数) + 组件 -->
+    <script nonce="{{NONCE}}" defer src="/static/js/command-panel-core.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/command-panel.js?v={{APP_VERSION}}"></script>
+    <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/change-password.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/shortcut-help.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/tour.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/menu-config.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/add-group.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/add-user.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/batch-evaluate.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/auto-evaluate.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/index-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/setup-wizard.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/merrill-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/dialogs/stock-detail.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/components/history-record.js?v={{APP_VERSION}}"></script>
+    <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/data.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/market.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/ops.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/nav.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/keys.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/auth.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/watch.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic/lifecycle.js?v={{APP_VERSION}}"></script>
+    <script nonce="{{NONCE}}" defer src="/static/js/app-logic.js?v={{APP_VERSION}}"></script>
 <body>
-    <div id="app">
-        <!-- 登录页 -->
-        <div v-if="!currentUser" class="app-container" style="justify-content: center; align-items: center;">
+    <!-- v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（无内联样式），
+         defer 使 DOM 先于脚本渲染，此骨架屏在脚本下载/初始化期间展示，Vue 挂载后立即移除 -->
+    <div id="qc-boot" class="qc-boot-skeleton" aria-hidden="true">
+        <div class="qc-boot-skeleton-shell">
+            <div class="qc-boot-skeleton-sidebar">
+                <div class="qc-boot-skeleton-logo"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+            </div>
+            <div class="qc-boot-skeleton-body">
+                <div class="qc-boot-skeleton-header"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div id="app" v-cloak>
+        <!-- 登录页 (v3.16 / 16.9: 品牌化) -->
+        <div v-if="!currentUser" class="app-container login-screen">
             <div class="card login-box">
-                <div class="login-icon">📈</div>
-                <div class="login-title">量化日历</div>
+                <div class="login-brand">
+                    <div class="login-icon">📈</div>
+                    <div class="login-brand-text">
+                        <div class="login-title">{{ t('login.title') }}</div>
+                        <div class="login-subtitle">{{ t('login.subtitle') }}</div>
+                    </div>
+                </div>
+                <div class="login-desc">{{ t('login.desc') }}</div>
                 <el-form @submit.prevent="handleLogin">
                     <el-form-item>
-                        <el-input v-model="loginForm.username" placeholder="用户名" size="large" prefix-icon="User" @keyup.enter="handleLogin" />
+                        <el-input v-model="loginForm.username" :placeholder="t('login.username')" size="large" @keyup.enter="handleLogin">
+                            <template #prefix>
+                                <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </template>
+                        </el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" show-password @keyup.enter="handleLogin" />
+                        <el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" show-password @keyup.enter="handleLogin">
+                            <template #prefix>
+                                <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                            </template>
+                        </el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" size="large" style="width: 100%" @click="handleLogin" :loading="logining">
-                            登 录
+                        <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="logining">
+                            {{ t('login.submit') }}
                         </el-button>
                     </el-form-item>
                 </el-form>
-                <el-button type="primary" size="large" style="width: 100%; margin-top: 8px;"
-                    @click="handleGuestLogin" :loading="guestLogining">
-                    访客登录
+                <el-button type="primary" size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
+                    {{ t('login.guest') }}
                 </el-button>
+                <div class="login-footer">{{ t('login.footer') }}</div>
             </div>
         </div>
 
@@ -124,899 +205,45 @@
 
             <!-- 移动端底部导航 -->
             <div class="mobile-nav">
-                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="currentPage = menu.key; currentSubPage = menu.subPages[0] || ''">
-                    <div class="mobile-nav-icon" v-html="menu.icon"></div>
+                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="navigateTo(menu.key, menu.subPages[0] || '')" tabindex="0" role="button" :aria-label="menu.name" @keydown.enter.prevent="navigateTo(menu.key, menu.subPages[0] || '')" @keydown.space.prevent="navigateTo(menu.key, menu.subPages[0] || '')">
+                    <div class="mobile-nav-icon" v-html="sanitizeHtml(menu.icon)"></div>
                     <div class="mobile-nav-label">{{ menu.name }}</div>
                 </div>
             </div>
             </div>
+
+            <!-- v3.11 (FR-3.11.1): 智能命令面板 (Ctrl+K) -->
+            <qc-command-panel></qc-command-panel>
 </template>
 
-        <!-- 股票详情弹窗 -->
-        <el-dialog v-model="stockDetailVisible" title="📈 股票详情分析" width="800px" class="kline-dialog">
-            <div v-if="stockDetail">
-                <div class="detail-header">
-                    <div>
-                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ stockDetail.stock }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ stockDetail.name }}</span></h3>
-                        <div class="detail-subtitle">📅 策略持仓 {{ stockDetail.total_days }} 天</div>
-                    </div>
-                    <div class="score-badge" :class="{ pulse: scorePulse }">
-                        <div class="score-num-wrap">
-                            <div class="num">{{ stockDetail.score_data?.score || '-' }}</div>
-                            <span v-if="scoreDelta" class="score-delta" :class="scoreDelta.dir">
-                                {{ scoreDelta.value > 0 ? '+' : '' }}{{ scoreDelta.value }}
-                            </span>
-                        </div>
-                        <div class="label">{{ stockDetail.score_data?.level || '未评估' }}</div>
-                    </div>
-                </div>
-                <div class="detail-content">
-                    <!-- Tab 切换 -->
-                    <div style="display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;">
-                        <el-button size="small" :type="stockDetailTab === 'kline' ? 'primary' : ''" @click="stockDetailTab = 'kline'">
-                            📈 K线图表
-                        </el-button>
-                        <el-button size="small" :type="stockDetailTab === 'ai' ? 'primary' : ''" @click="stockDetailTab = 'ai'">
-                            🤖 评估结果
-                        </el-button>
-                        <el-button size="small" :type="stockDetailTab === 'chat' ? 'primary' : ''" @click="stockDetailTab = 'chat'">
-                            💬 AI 问股
-                        </el-button>
-                        <div style="flex: 1;"></div>
-                        <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
-                            💡 智能评股
-                        </el-button>
-                        <el-button size="small" @click="toggleWatchlist(stockDetail.stock, stockDetail.name)" :type="watchlistCodes.has(stockDetail.stock) ? 'success' : 'primary'">
-                            {{ watchlistCodes.has(stockDetail.stock) ? '★ 已自选' : '⭐ 加入自选' }}
-                        </el-button>
-                    </div>
-                    <!-- 按钮底部进度条 -->
-                    <div v-if="aiLoading" class="ai-progress-bar">
-                        <div class="ai-progress-fill"></div>
-                    </div>
-                    <!-- 阶段指示器 -->
-                    <div v-if="aiLoading" class="ai-stage-indicator">
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'fetching' || aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">📡</span>
-                        </div>
-                        <div class="ai-stage-line" :class="{ done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' }"></div>
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing', done: aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">📊</span>
-                        </div>
-                        <div class="ai-stage-line" :class="{ done: aiEvalStage === 'analyzing' }"></div>
-                        <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'analyzing' }">
-                            <span class="ai-stage-icon">🤖</span>
-                        </div>
-                    </div>
+        <!-- v3.11 (FR-3.11.2): 股票详情对话框 — 移至 components/dialogs/ -->
+        <qc-stock-detail-dialog></qc-stock-detail-dialog>
 
-                    <!-- Tab: K线图表 -->
-                    <div v-if="stockDetailTab === 'kline'">
-                    <div class="section-title"><span>📈</span> 今日行情与均线</div>
-                    <div class="grid-auto">
-                        <div class="stat-box">
-                            <div class="stat-label">收盘价</div>
-                            <div class="stat-value">{{ stockDetail.daily_data?.close.toFixed(2) }}</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">涨跌幅</div>
-                            <div class="stat-value" :style="{color: stockDetail.daily_data?.pct_chg >= 0 ? 'var(--el-danger)' : 'var(--el-success)'}">
-                                {{ stockDetail.daily_data?.pct_chg.toFixed(2) }}%
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">最高/最低</div>
-                            <div style="font-size: var(--font-md); font-weight: var(--font-semibold);">
-                                <span style="color: var(--color-danger);">{{ stockDetail.daily_data?.high.toFixed(2) }}</span>
-                                <span style="color: var(--text-tertiary); margin: 0 4px;">/</span>
-                                <span style="color: var(--primary-color);">{{ stockDetail.daily_data?.low.toFixed(2) }}</span>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">成交量</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ Math.round(stockDetail.daily_data?.vol / 10000).toLocaleString() }}万</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">换手率</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">振幅</div>
-                            <div class="stat-value" style="font-size: var(--font-md);">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">MA20偏离</div>
-                            <div class="stat-value" :style="{fontSize:'var(--font-md)',color:(stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close > stockDetail.ma_data.ma20) ? 'var(--el-danger)' : 'var(--el-success)'}">{{ (stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close) ? ((stockDetail.daily_data.close - stockDetail.ma_data.ma20) / stockDetail.ma_data.ma20 * 100).toFixed(2) + '%' : '--' }}</div>
-                        </div>
-                    </div>
+        <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
+        <!-- 注意：in-DOM 模板必须用成对标签（HTML 解析器不认自闭合自定义元素） -->
+        <qc-menu-config-dialog></qc-menu-config-dialog>
+        <qc-add-group-dialog></qc-add-group-dialog>
+        <qc-add-user-dialog></qc-add-user-dialog>
+        <qc-batch-evaluate-dialog></qc-batch-evaluate-dialog>
 
-                    <!-- K线图区域 -->
-                    <div class="section-title"><span>🕯️</span> K线图与均线</div>
-                    <div class="kline-container">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <div class="kline-tabs">
-                                <button 
-                                    v-for="tab in klinePeriods" 
-                                    :key="tab.value"
-                                    :class="['kline-tab', {active: currentKlinePeriod === tab.value}]"
-                                    @click="switchKlinePeriod(tab.value)"
-                                >
-                                    {{ tab.label }}
-                                </button>
-                            </div>
-                            <el-button v-if="!stockKlineLoaded" type="primary" size="small" @click="loadStockKline(currentKlinePeriod)" :loading="klineLoading">
-                                🕯️ 加载K线
-                            </el-button>
-                        </div>
-                        <div v-if="stockKlineLoaded" class="kline-chart" id="stockKlineChart"></div>
-                        <!-- 时间范围快捷按钮 -->
-                        <div v-if="stockKlineLoaded" style="display:flex;gap:4px;margin-top:8px;justify-content:center;">
-                            <el-button size="small" @click="zoomKlineRange(22)">近1月</el-button>
-                            <el-button size="small" @click="zoomKlineRange(66)">近3月</el-button>
-                            <el-button size="small" @click="zoomKlineRange(126)">近半年</el-button>
-                            <el-button size="small" @click="zoomKlineRange(0)">全部</el-button>
-                        </div>
-                        <div v-if="klineLoading" class="kline-loading">
-                            <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
-                        </div>
-                        <div v-if="!stockKlineLoaded && !klineLoading" class="kline-placeholder">
-                            <div style="color: var(--text-tertiary); font-size: var(--font-base);">点击加载K线查看</div>
-                        </div>
-                    </div>
+        <!-- v3.11 (FR-3.11.2): 指数详情对话框 — 移至 components/dialogs/ -->
+        <qc-index-detail-dialog></qc-index-detail-dialog>
 
-                    <div class="section-title"><span>📋</span> 策略持仓记录</div>
-                    <div v-for="h in stockDetail.history" :key="h.strategy" class="hold-item">
-                        <span class="hold-name">{{ h.strategy_name }}</span>
-                        <span class="hold-days">{{ h.hold_count }} 天</span>
-                    </div>
-                    </div>  <!-- close kline tab -->
-
-                    <!-- Tab: AI智能评估 -->
-                    <div v-if="stockDetailTab === 'ai'">
-                        <div v-if="aiResult" class="card" style="margin-bottom: 16px;">
-                            <div class="card-title" style="margin:0 0 16px 0;">🤖 AI 智能评估
-                                <el-tag size="small" type="info" style="margin-left:8px;">{{ aiResult.result.provider }}</el-tag>
-                                <span v-if="aiResult.llm_latency_ms" style="font-size:var(--font-xs);color:var(--text-tertiary);margin-left:8px;">{{ aiResult.llm_latency_ms }}ms</span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:24px;margin-bottom:20px;flex-wrap:wrap;">
-                                <div style="width:100px;height:100px;position:relative;flex-shrink:0;">
-                                    <svg viewBox="0 0 100 100" style="transform:rotate(-90deg);">
-                                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-light)" stroke-width="8"/>
-                                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" :stroke-dasharray="(aiResult.result.total_score/100)*264+' 264'" style="transition:all 0.8s ease;"/>
-                                    </svg>
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                                        <div style="font-size: var(--font-2xl);font-weight:800;line-height:1;color:var(--text-primary);">{{ aiResult.result.total_score }}</div>
-                                        <div style="font-size:var(--font-xs);color:var(--text-tertiary);">分</div>
-                                    </div>
-                                </div>
-                                <div style="flex:1;min-width:180px;">
-                                    <div style="font-size:var(--font-xl);font-weight:var(--font-bold);color:var(--text-primary);margin-bottom:8px;">{{ aiResult.result.level }}</div>
-                                    <div style="font-size:var(--font-md);color:var(--text-secondary);line-height:1.7;">{{ aiResult.result.detailed_report || '' }}</div>
-                                    <!-- 评估历史对比 -->
-                                    <div v-if="evalHistoryComparison" style="margin-top:8px;padding:6px 10px;background:var(--border-light);border-radius:6px;font-size:var(--font-xs);color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px;">
-                                        📈 上次{{ evalHistoryComparison.prevScore }}分 → 本次{{ evalHistoryComparison.currScore }}分
-                                        <span :style="{color:evalHistoryComparison.diff>0?'var(--el-success)':evalHistoryComparison.diff<0?'var(--el-danger)':'var(--text-tertiary)'}">
-                                            {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ Math.abs(evalHistoryComparison.diff) }}
-                                        </span>
-                                    </div>
-                                    <!-- 操作检查清单 -->
-                                    <div v-if="checklistItems.length" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px;">
-                                        <span v-for="c in checklistItems" :key="c.label" style="font-size:var(--font-xs);color:var(--text-secondary);">{{ c.icon }} {{ c.label }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="background:var(--bg-card-header);border-radius:10px;padding:16px;margin-bottom:16px;">
-                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:10px;">🔬 九维度评分</div>
-                                <div v-for="(score,name) in aiResult.result.dimensions" :key="name" style="display:flex;align-items:center;margin-bottom:6px;gap:10px;">
-                                    <span style="font-size:var(--font-sm);color:var(--text-secondary);width:76px;flex-shrink:0;text-align:right;">{{ name }}</span>
-                                    <div style="flex:1;height:12px;background:var(--border-light);border-radius:6px;overflow:hidden;">
-                                        <div :style="{width:score+'%',height:'100%',background:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)',borderRadius:'6px',transition:'width 0.5s'}"></div>
-                                    </div>
-                                    <span style="font-size:var(--font-sm);font-weight:var(--font-bold);width:28px;text-align:center;" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ score }}</span>
-                                </div>
-                            </div>
-                            <div class="ai-eval-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-                                <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-success);margin-bottom:10px;">▸ 优势</div>
-                                    <div v-for="s in aiResult.result.analysis.strengths" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
-                                    <div v-if="!aiResult.result.analysis.strengths.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
-                                </div>
-                                <div style="background:rgba(230,162,60,0.08);border:1px solid rgba(230,162,60,0.2);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--el-warning);margin-bottom:10px;">⚠️ 风险</div>
-                                    <div v-for="w in aiResult.result.analysis.weaknesses" :key="w" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ w }}</div>
-                                    <div v-if="!aiResult.result.analysis.weaknesses.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
-                                </div>
-                                <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:16px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--color-primary);margin-bottom:10px;">💡 建议</div>
-                                    <div v-for="s in aiResult.result.analysis.suggestions" :key="s" style="font-size:var(--font-md);color:var(--text-primary);padding:3px 0;line-height:1.5;">• {{ s }}</div>
-                                    <div v-if="!aiResult.result.analysis.suggestions.length" style="opacity:0.4;font-size:var(--font-sm);">-</div>
-                                </div>
-                            </div>
-                            <!-- 信号归因条 -->
-                            <div v-if="aiResult.result.signal_attribution" style="background:var(--bg-card-header);border-radius:10px;padding:14px 16px;margin-top:12px;">
-                                <div style="font-size:var(--font-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px;">📊 信号归因</div>
-                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <span v-if="aiResult.result.signal_attribution.technical" style="background:rgba(64,158,255,0.12);color:var(--color-primary);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">技术面 {{ aiResult.result.signal_attribution.technical }}%</span>
-                                    <span v-if="aiResult.result.signal_attribution.fundamentals" style="background:rgba(103,194,58,0.12);color:var(--el-success);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">基本面 {{ aiResult.result.signal_attribution.fundamentals }}%</span>
-                                    <span v-if="aiResult.result.signal_attribution.market_sentiment" style="background:rgba(230,162,60,0.12);color:var(--el-warning);padding:4px 10px;border-radius:12px;font-size:var(--font-sm);">市场情绪 {{ aiResult.result.signal_attribution.market_sentiment }}%</span>
-                                </div>
-                                <div v-if="aiResult.result.signal_attribution.strongest_bullish" style="margin-top:6px;font-size:var(--font-sm);color:var(--text-secondary);">
-                                    <span style="color: #4CAF50;">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
-                                    <span v-if="aiResult.result.signal_attribution.strongest_bearish" style="margin-left:12px;">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
-                                </div>
-                            </div>
-                            <!-- 狙击点卡片 -->
-                            <div v-if="aiResult.result.analysis?.sniper_points" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
-                                <div style="background:rgba(64,158,255,0.08);border:1px solid rgba(64,158,255,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🎯 理想买入</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--color-primary);">{{ aiResult.result.analysis.sniper_points.ideal_buy }}</div>
-                                </div>
-                                <div style="background:rgba(245,108,108,0.08);border:1px solid rgba(245,108,108,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🛑 止损</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-danger);">{{ aiResult.result.analysis.sniper_points.stop_loss }}</div>
-                                </div>
-                                <div style="background:rgba(103,194,58,0.08);border:1px solid rgba(103,194,58,0.2);padding:12px 10px;border-radius:10px;text-align:center;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">🏁 目标</div>
-                                    <div style="font-size:var(--font-lg);font-weight:var(--font-bold);color:var(--el-success);">{{ aiResult.result.analysis.sniper_points.take_profit }}</div>
-                                </div>
-                            </div>
-                            <!-- 仓位建议 -->
-                            <div v-if="aiResult.result.analysis?.position_advice" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;">
-                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">👤 空仓者</div>
-                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.no_position }}</div>
-                                </div>
-                                <div style="background:var(--bg-card-header);padding:12px 14px;border-radius:10px;">
-                                    <div style="font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px;">📦 持仓者</div>
-                                    <div style="font-size:var(--font-sm);color:var(--text-primary);">{{ aiResult.result.analysis.position_advice.has_position }}</div>
-                                </div>
-                            </div>
-                            <!-- 数据质量提示 -->
-                            <div v-if="aiResult.result.data_quality_note" style="margin-top:12px;padding:8px 12px;background:var(--border-light);border-radius:8px;font-size:var(--font-xs);color:var(--text-tertiary);text-align:center;">
-                                📋 {{ aiResult.result.data_quality_note }}
-                            </div>
-                        </div>
-                        <div v-else style="text-align: center; color: var(--text-tertiary); padding: 40px;">
-                            <div style="font-size: var(--font-3xl); margin-bottom: 12px;">🤖</div>
-                            <div v-if="aiResult">
-                                <div style="margin-bottom: 8px;">最近评估：{{ aiResult.result.level }}</div>
-                                <div style="font-size: var(--font-sm);">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
-                            </div>
-                            <div v-else>点击 AI 评估按钮获取分析结果</div>
-                        </div>
-                    </div>  <!-- close ai tab -->
-
-                    <!-- Tab: AI 问股对话 -->
-                    <div v-if="stockDetailTab === 'chat'">
-                        <div class="card" style="margin-bottom:12px;">
-                            <div class="card-title" style="margin:0 0 12px 0;">💬 AI 智能问股</div>
-                            <!-- Quick prompts -->
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-                                <el-button size="small" @click="askStockQuick('trend')">📈 趋势分析</el-button>
-                                <el-button size="small" @click="askStockQuick('fundamental')">📊 基本面</el-button>
-                                <el-button size="small" @click="askStockQuick('comprehensive')">🔬 综合分析</el-button>
-                            </div>
-                            <!-- Chat messages -->
-                            <div v-if="stockChatMessages.length > 0" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
-                                <div v-for="(msg, mi) in stockChatMessages" :key="mi" style="margin-bottom:10px;">
-                                    <div v-if="msg.role==='user'" style="text-align:right;">
-                                        <span style="display:inline-block;background:var(--primary-color);color:#fff;padding:6px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left;">{{ msg.content }}</span>
-                                    </div>
-                                    <div v-else style="display:flex;gap:6px;">
-                                        <span>🤖</span>
-                                        <div style="flex:1;font-size:var(--font-sm);line-height:1.5;max-height:200px;overflow-y:auto;" v-html="renderMarkdown(msg.content)"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Input -->
-                            <div style="display:flex;gap:8px;">
-                                <el-input v-model="stockChatInput" placeholder="输入问题，如：这股趋势怎么样" @keyup.enter="askStockSend" size="small" style="flex:1;" />
-                                <el-button type="primary" size="small" @click="askStockSend" :loading="stockChatLoading">发送</el-button>
-                            </div>
-                            <div v-if="stockChatError" style="color:var(--el-danger);font-size:var(--font-xs);margin-top:6px;">{{ stockChatError }}</div>
-                        </div>
-                    </div>  <!-- close chat tab -->
-                </div>
-            </div>
-        </el-dialog>
-
-        <!-- 菜单配置弹窗 -->
-        <el-dialog v-model="menuConfigDialog" :title="'⚙️ ' + (allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
-            <div style="padding: 15px 0;">
-                <el-form label-width="60px" size="small">
-                    <el-form-item label="组名">
-                        <el-input v-model="groupEditForm.name" placeholder="组名" />
-                    </el-form-item>
-                    <el-form-item label="描述">
-                        <el-input v-model="groupEditForm.description" placeholder="组功能描述" />
-                    </el-form-item>
-                </el-form>
-                <div style="margin-bottom: 8px; font-weight: 600; font-size: var(--font-sm);">菜单访问授权</div>
-                <div v-for="menu in allMenuDefs" :key="menu.key" style="margin-bottom: 6px; border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden;">
-                    <div @click="toggleSubPageSection(menu.key)" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-hover); cursor: pointer; user-select: none; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                            <el-switch v-model="groupEditForm.visible_menus[menu.key]" @change="onParentToggle(menu.key)" size="small" @click.stop />
-                            <span style="font-weight: 600; font-size: var(--font-sm); white-space: nowrap;">{{ menu.name }}</span>
-                            <span v-if="!groupEditForm.visible_menus[menu.key]" style="font-size: 10px; color: var(--text-tertiary); white-space: nowrap;">子项已关</span>
-                        </div>
-                        <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: '12px', flexShrink: 0}">▼</span>
-                    </div>
-                    <div v-if="subPageSectionExpanded[menu.key]" style="padding: 8px 14px 10px 40px; display: flex; gap: 8px; flex-wrap: wrap;"
-                        :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
-                        <el-switch v-for="sp in menu.subPages" :key="sp"
-                            v-model="groupEditForm.visible_sub_pages[menu.key + '.' + sp]"
-                            :active-text="subPageNames[sp] || sp"
-                            :disabled="!groupEditForm.visible_menus[menu.key]"
-                            size="small" />
-                    </div>
-                </div>
-            </div>
-            <template #footer>
-                <el-button @click="menuConfigDialog = false">取消</el-button>
-                <el-button type="primary" @click="saveMenuConfig" :loading="savingGroup">💾 保存</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- v1.9.2: 新建分组弹窗 -->
-        <el-dialog v-model="showAddGroup" title="+ 新建分组" width="400px">
-            <el-form label-width="80px" style="padding: 15px 0 25px 0;">
-                <el-form-item label="组ID">
-                    <el-input v-model="addGroupForm.group_id" placeholder="英文标识，如：analyst" />
-                </el-form-item>
-                <el-form-item label="组名">
-                    <el-input v-model="addGroupForm.name" placeholder="如：分析师组" />
-                </el-form-item>
-                <el-form-item label="描述">
-                    <el-input v-model="addGroupForm.description" placeholder="组功能描述" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showAddGroup = false">取消</el-button>
-                <el-button type="primary" @click="createGroup" :loading="savingGroup">创建</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- 添加/编辑用户弹窗 -->
-        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="400px">
-            <el-form label-width="80px" style="padding: 15px 0 25px 0;">
-                <el-form-item label="用户名">
-                    <el-input v-model="userForm.username" :disabled="!!editingUser" placeholder="输入用户名" />
-                </el-form-item>
-                <el-form-item label="密码">
-                    <el-input v-model="userForm.password" type="password" placeholder="留空则不修改" show-password />
-                </el-form-item>
-                <el-form-item label="角色">
-                    <el-select v-model="userForm.role" style="width: 100%;">
-                        <el-option label="管理员" value="admin" />
-                        <el-option label="普通用户" value="user" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="所属组">
-                    <el-select v-model="userForm.group" style="width: 100%;">
-                        <el-option v-for="(g, gid) in allGroups" :key="gid" :label="g.name" :value="gid" :disabled="userForm.username === 'admin' || userForm.username === 'guest'" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="默认主题">
-                    <el-select v-model="userForm.theme" style="width: 100%;">
-                        <el-option v-for="(theme, key) in themes" :key="key" :label="theme.name" :value="key" />
-                    </el-select>
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showAddUser = false">取消</el-button>
-                <el-button type="primary" @click="saveUser" :loading="savingUser">保存</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- 批量评估弹窗 -->
-        <el-dialog v-model="showBatchEvaluate" title="🤖 批量AI评估" width="95%" style="max-width:520px;">
-            <div style="padding: 15px 0 15px 0;">
-                <el-form label-width="100px" v-if="!batchRunning">
-                    <el-form-item label="股票列表">
-                        <el-input
-                            v-model="batchStocks"
-                            type="textarea"
-                            :rows="5"
-                            placeholder="输入股票代码，多个用换行或空格分隔&#10;例如：&#10;600000.SH&#10;000001.SZ"
-                        />
-                    </el-form-item>
-                </el-form>
-                <!-- 评估进度 -->
-                <div v-if="batchRunning" style="padding: 10px 0;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:var(--font-sm);color:var(--text-secondary);">
-                        <span>评估中 {{ batchCompleted }}/{{ batchTotal }}</span>
-                        <span v-if="batchCurrent" style="color:var(--color-primary);font-weight:var(--font-semibold);">{{ batchCurrent }}</span>
-                    </div>
-                    <div style="height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
-                        <div :style="{width:(batchTotal>0?batchCompleted/batchTotal*100:0)+'%',height:'100%',background:'var(--gradient-brand)',borderRadius:'3px',transition:'width 0.4s ease'}"></div>
-                    </div>
-                    <div style="margin-top:12px;max-height:240px;overflow-y:auto;">
-                        <div v-for="(status,code) in batchStatuses" :key="code" style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--font-sm);">
-                            <span v-if="status==='running'" style="color:var(--color-primary);">⏳</span>
-                            <span v-else-if="status==='success'" style="color:var(--el-success);">●</span>
-                            <span v-else-if="status==='error'" style="color:var(--el-danger);">✕</span>
-                            <span v-else style="color:var(--text-tertiary);">⏸</span>
-                            <span style="color:var(--text-primary);flex:1;">{{ code }}</span>
-                            <span v-if="status==='success' && batchResults[code] && batchResults[code].result" style="font-weight:var(--font-bold);font-size:var(--font-sm);" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ batchResults[code].result.total_score }}分</span>
-                        </div>
-                    </div>
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <el-button @click="showBatchEvaluate = false" :disabled="batchRunning">取消</el-button>
-                    <el-button type="primary" @click="doBatchEvaluate" :loading="batchRunning" :disabled="batchRunning">开始评估</el-button>
-                </div>
-            </div>
-        </el-dialog>
-
-        <!-- 指数详情弹窗 -->
-        <el-dialog v-model="indexDetailVisible" title="📈 指数详情分析" width="800px" class="kline-dialog">
-            <div v-if="indexDetail">
-                <!-- 头部信息 -->
-                <div class="detail-header">
-                    <div>
-                        <h3 style="font-size: var(--font-xl); margin: 0 0 4px 0; font-weight: var(--font-semibold);">{{ indexDetail.name }} <span style="font-size: var(--font-md); opacity: 0.85; font-weight: normal;">{{ indexDetail.code }}</span></h3>
-                        <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
-                    </div>
-                    <div class="detail-score">
-                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
-                        <div class="label">{{ indexDetail.pct_chg >= 0 ? '上涨' : '下跌' }}</div>
-                    </div>
-                </div>
-
-                <!-- 指数基本信息 -->
-                <div class="stats-grid" style="margin-top: 16px;">
-                    <div class="stat-box">
-                        <div class="stat-label">最新点位</div>
-                        <div class="stat-value">{{ Number(indexDetail.close).toFixed(2) }}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">涨跌额</div>
-                        <div class="stat-value" :style="{color: indexDetail.pct_chg >= 0 ? '#E63946' : '#457B9D'}">
-                            {{ indexDetail.change >= 0 ? '+' : '' }}{{ Number(indexDetail.change).toFixed(2) }}
-                        </div>
-                    </div>
-                    <div class="stat-box" v-if="indexDetail.vol">
-                        <div class="stat-label">成交量</div>
-                        <div class="stat-value">{{ Math.round(indexDetail.vol / 10000).toLocaleString() }}万</div>
-                    </div>
-                    <div class="stat-box" v-if="indexDetail.amount">
-                        <div class="stat-label">成交额</div>
-                        <div class="stat-value">{{ Math.round(indexDetail.amount / 10000).toLocaleString() }}亿</div>
-                    </div>
-                </div>
-
-                <!-- K线图区域 -->
-                <div class="section-title" style="margin-top: 20px;"><span>🕯️</span> K线图与均线</div>
-                <div class="kline-container">
-                    <div class="kline-tabs">
-                        <button 
-                            v-for="tab in klinePeriods" 
-                            :key="tab.value"
-                            :class="['kline-tab', {active: currentKlinePeriod === tab.value}]"
-                            @click="switchIndexKlinePeriod(tab.value)"
-                        >
-                            {{ tab.label }}
-                        </button>
-                    </div>
-                    <div class="kline-chart" id="indexKlineChart"></div>
-                    <div v-if="indexKlineLoading" class="kline-loading">
-                        <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
-                    </div>
-                </div>
-
-                <!-- AI评估结果 -->
-                <div v-if="indexAiResult" class="ai-result-box">
-                    <div class="section-title"><span>🤖</span> AI智能指数评估结果</div>
-                    <div class="ai-analysis" v-html="indexAiResult.analysis"></div>
-                    <div style="margin-top: 16px;">
-                        <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
-                            📌 {{ indexAiResult.suggestion || '暂无' }}
-                        </el-tag>
-                        <span style="margin-left: 12px; color: var(--text-secondary); font-size: var(--font-base);">信心指数: {{ indexAiResult.confidence || 75 }}%</span>
-                    </div>
-                </div>
-
-                <!-- 操作按钮 -->
-                <div style="margin-top: 20px; text-align: center;">
-                    <el-button type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading" style="width: 200px;">
-                        🔬 技术指标评估
-                    </el-button>
-                </div>
-            </div>
-        </el-dialog>
-
-        <!-- 自动评股设置弹窗 -->
-        <el-dialog v-model="showAutoEvaluateSettings" title="⚙️ 自动评股设置" width="520px">
-            <div style="padding: 15px 0 25px 0;">
-                <el-form label-width="120px">
-                    <el-form-item label="启用自动评股">
-                        <el-switch v-model="autoEvaluateConfig.enabled" active-text="已开启" inactive-text="已关闭" />
-                    </el-form-item>
-                    <template v-if="autoEvaluateConfig.enabled">
-                        <el-form-item label="执行周期">
-                            <el-select v-model="autoEvaluateConfig.schedule_type" style="width: 100%;">
-                                <el-option label="每个交易日执行" value="daily" />
-                                <el-option label="每周一执行" value="weekly" />
-                                <el-option label="每月1号执行" value="monthly" />
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="执行时间">
-                            <el-time-picker
-                                v-model="autoEvaluateConfig.schedule_time"
-                                format="HH:mm"
-                                value-format="HH:mm"
-                                placeholder="选择执行时间"
-                                style="width: 100%;"
-                            />
-                        </el-form-item>
-                        <el-form-item label="评估范围">
-                            <el-radio-group v-model="autoEvaluateScope">
-                                <el-radio label="watchlist">我的自选</el-radio>
-                                <el-radio label="new_entries">最新交易日新入池</el-radio>
-                            </el-radio-group>
-                        </el-form-item>
-                        <el-form-item label="结果推送">
-                            <el-switch v-model="autoEvaluateConfig.push_to_feishu" active-text="推送到飞书" inactive-text="不推送" />
-                            <div style="font-size: var(--font-sm); color: var(--text-tertiary); margin-top: 6px;">
-                                需要先在飞书推送配置中设置Webhook地址
-                            </div>
-                        </el-form-item>
-                    </template>
-                </el-form>
-            </div>
-            <template #footer>
-                <el-button @click="showAutoEvaluateSettings = false">取消</el-button>
-                <el-button type="primary" @click="saveAutoEvaluateConfig" :loading="savingConfig">
-                    💾 保存设置
-                </el-button>
-            </template>
-        </el-dialog>
+        <!-- v3.11 (FR-3.11.2): 自动评估设置对话框 — 移至 components/dialogs/ -->
+        <qc-auto-evaluate-dialog></qc-auto-evaluate-dialog>
 
         <!-- 美林时钟阶段详情弹窗 -->
-        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.icon || '🔬') + ' ' + (merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
-            <!-- 骨架屏加载 -->
-            <div v-if="!merrillDetailData.name" class="skeleton-loader">
-                <div class="skeleton-header"></div>
-                <div class="skeleton-grid">
-                    <div class="skeleton-item" v-for="i in 5" :key="i"></div>
-                </div>
-                <div class="skeleton-large"></div>
-            </div>
-            <!-- 完整内容 -->
-            <div v-else style="padding: 15px 0 25px 0;">
-                <!-- 阶段概览 -->
-                <div class="merrill-detail-header" :style="{backgroundColor: merrillDetailData.bg_color, borderLeftColor: merrillDetailData.color}">
-                    <div>
-                        <h3 style="margin: 0 0 8px 0; font-size: var(--font-lg);">{{ merrillDetailData.name }}</h3>
-                        <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-base);">{{ merrillDetailData.description }}</p>
-                    </div>
-                    <div class="stage-badge" :style="{backgroundColor: merrillDetailData.color}">
-                        {{ merrillDetailData.criteria?.growth }} / {{ merrillDetailData.criteria?.inflation }}
-                    </div>
-                </div>
-
-                <!-- ★ 当前周期状态：活跃阶段=实时进度，非活跃阶段=上一轮历史 -->
-                <!-- 活跃阶段：实时进度 -->
-                <div v-if="merrillDetailData._isCurrent && merrillDetailData._currentTiming" class="detail-section" style="margin-top: 4px;">
-                    <div class="section-title">📍 当前周期实时进度</div>
-                    <div style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;">
-                        <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
-                            <div class="stat-label">周期起始日</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._currentTiming.duration_days }}天</div>
-                            <div class="stat-label">已持续</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" :style="{color: merrillDetailData.color}">{{ merrillDetailData._currentTiming.maturity || '—' }}</div>
-                            <div class="stat-label">成熟度</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._currentTiming.predicted_end?.base || merrillDetailData._currentTiming.predicted_end || '—' }}</div>
-                            <div class="stat-label">预测结束日</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 12px; display: flex; gap: 18px; align-items: center; font-size: var(--font-base); flex-wrap: wrap;">
-                        <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
-                        <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ merrillDetailData._currentTiming.progress_percent }}%</b></span>
-                        <span v-if="merrillDetailData._nextPrediction?.next_stage" style="color: var(--el-warning); font-weight: var(--font-semibold);">
-                            ⚠️ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(0) || 0 }}%
-                        </span>
-                    </div>
-                    <!-- 过渡警告横幅 -->
-                    <div v-if="merrillDetailData._currentTiming.progress_percent > 80 && merrillDetailData._nextPrediction?.transition_probability > 0.15" 
-                         style="margin-top: 10px; padding: 10px 14px; background: linear-gradient(135deg, #FFF3E0, #FFEBEE); border-radius: 8px; border-left: 4px solid #FF9800; font-size: var(--font-base);">
-                        <b style="color: #E65100;">⚠️ 周期切换预警</b>
-                        <span style="color: var(--text-secondary); margin-left: 8px;">
-                            当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
-                            预测下一阶段为<b style="color: #FF9800;">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
-                            （概率 {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(0) || 0 }}%）
-                        </span>
-                    </div>
-                </div>
-
-                <!-- 非活跃阶段：历史轮次 -->
-                <div v-else-if="merrillDetailData._history && merrillDetailData._history.length > 0" class="detail-section" style="margin-top: 4px;">
-                    <div class="section-title">📅 历史轮次（共 {{ merrillDetailData._history.length }} 轮）</div>
-                    <!-- 最近一次：摘要卡片 -->
-                    <div v-if="merrillDetailData._lastPeriod" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 14px;">
-                        <div class="stat-item">
-                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.start || '—' }}</div>
-                            <div class="stat-label">开始</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.end || '—' }}</div>
-                            <div class="stat-label">结束</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="font-size: var(--font-base); font-weight: var(--font-semibold);">{{ merrillDetailData._lastPeriod.duration || '—' }}</div>
-                            <div class="stat-label">持续</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" :style="{color: merrillDetailData.color, fontSize: 'var(--font-base)'}">{{ merrillDetailData._lastPeriod.cycle_label || '—' }}</div>
-                            <div class="stat-label">周期</div>
-                        </div>
-                    </div>
-                    <!-- 全部历史轮次列表 -->
-                    <div v-for="(h, hIdx) in merrillDetailData._history" :key="hIdx" 
-                         style="padding: 10px 12px; margin-bottom: 8px; border-radius: 8px; background: var(--bg-card-header); border-left: 3px solid;"
-                         :style="{borderLeftColor: merrillDetailData.color}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-weight: var(--font-semibold); font-size: var(--font-base);">
-                                <span style="padding: 1px 6px; border-radius: 4px; font-size: var(--font-xs); margin-right: 6px; background: var(--el-fill-color-light);">{{ h.cycle_label || '—' }}</span>
-                                {{ h.start || '—' }} → {{ h.end || '—' }}
-                            </span>
-                            <span style="font-size: var(--font-sm); color: var(--text-secondary);">{{ h.duration || '—' }}</span>
-                        </div>
-                        <div style="font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5;">
-                            🔑 {{ h.trigger || '—' }}
-                        </div>
-                        <div v-if="h.key_indicators && Object.keys(h.key_indicators).length" style="margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; font-size: var(--font-xs); color: var(--text-tertiary);">
-                            <span v-if="h.key_indicators.gdp_growth">GDP {{ h.key_indicators.gdp_growth }}%</span>
-                            <span v-if="h.key_indicators.cpi">CPI {{ h.key_indicators.cpi }}%</span>
-                            <span v-if="h.key_indicators.pmi">PMI {{ h.key_indicators.pmi }}</span>
-                            <span v-if="h.key_indicators.ppi">PPI {{ h.key_indicators.ppi }}%</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- 无历史记录 -->
-                <div v-else-if="!merrillDetailData._isCurrent && !merrillDetailData._lastPeriod" class="detail-section" style="margin-top: 4px;">
-                    <div class="section-title">📅 历史轮次</div>
-                    <div style="text-align: center; color: var(--text-tertiary); padding: 20px 0;">暂无历史记录</div>
-                </div>
-
-                <!-- 经济特征 -->
-                <div class="detail-section">
-                    <div class="section-title">📊 经济特征</div>
-                    <div class="characteristics-grid">
-                        <div v-for="(value, key) in merrillDetailData.characteristics" :key="key" class="char-item">
-                            <div class="char-label">{{ getCharLabel(key) }}</div>
-                            <div class="char-value">{{ value }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- v2.0: 多维度评分详情 -->
-                <div v-if="merrillData.dimension_scores" class="detail-section">
-                    <div class="section-title">🎯 多维度评分详情</div>
-                    <div v-for="dim in dimensionScoreList" :key="dim.key" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: var(--font-base);">
-                        <span style="width: 50px; flex-shrink: 0; color: var(--text-secondary);">{{ dim.label }}</span>
-                        <div style="flex: 1; height: 14px; background: var(--border-light); border-radius: 7px; overflow: hidden;">
-                            <div :style="{width: dim.barWidth + '%', background: dim.barColor}" style="height: 100%; border-radius: 7px; transition: width 0.5s;"></div>
-                        </div>
-                        <span :style="{color: dim.scoreColor}" style="width: 40px; text-align: right; font-weight: var(--font-medium);">+{{ dim.scoreStr }}</span>
-                        <span :style="{color: dim.color}" style="font-weight: var(--font-medium); font-size: var(--font-sm);">{{ dim.level }}</span>
-                    </div>
-                    <div v-if="merrillData.early_warnings?.length" style="margin-top: 12px; padding: 10px 14px; background: var(--badge-warning-bg); border-radius: 8px; font-size: var(--font-sm);">
-                        <b style="color: #E53935;">⚠️ 早期预警：</b>
-                        <span v-for="(w, i) in merrillData.early_warnings" :key="i" style="display: inline-block; margin-right: 12px;">{{ w.type || w }}</span>
-                    </div>
-                </div>
-
-                <!-- 资产配置建议 -->
-                <div class="detail-section">
-                    <div class="section-title">💼 资产配置建议</div>
-                    <div class="allocation-grid">
-                        <div v-for="(info, asset) in merrillDetailData.allocation" :key="asset" class="allocation-item">
-                            <div class="allocation-header">
-                                <span class="asset-name">{{ getAssetName(asset) }}</span>
-                                <span class="asset-rank" :style="{backgroundColor: getRankColor(info.rank)}">排名 #{{ info.rank }}</span>
-                            </div>
-                            <div class="allocation-advice">{{ info.advice }}</div>
-                            <div class="allocation-return">预期收益：<span>{{ info.expected_return }}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 行业配置建议 -->
-                <div class="detail-section">
-                    <div class="section-title">🏭 行业配置建议</div>
-                    <div class="sector-list">
-                        <div v-for="(advice, index) in merrillDetailData.sector_advice" :key="index" class="sector-item">
-                            {{ advice }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 历史统计 -->
-                <div class="detail-section">
-                    <div class="section-title">📜 历史统计</div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData.historical_stats?.avg_duration_months }}个月</div>
-                            <div class="stat-label">历史平均持续时间</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.stock_avg_return * 100).toFixed(0) }}%</div>
-                            <div class="stat-label">股票平均年化收益</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.bond_avg_return * 100).toFixed(0) }}%</div>
-                            <div class="stat-label">债券平均年化收益</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData.historical_stats?.best_sector }}</div>
-                            <div class="stat-label">历史表现最佳板块</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 典型历史案例 -->
-                <div v-if="merrillDetailData.case_studies?.length" class="detail-section">
-                    <div class="section-title">📚 典型历史案例</div>
-                    <div class="case-list">
-                        <div v-for="(cs, index) in merrillDetailData.case_studies" :key="index" class="case-item">
-                            📌 {{ cs }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 风险提示 -->
-                <div class="detail-section risk-section">
-                    <div class="section-title">⚠️ 风险提示</div>
-                    <div class="risk-list">
-                        <div v-for="(risk, index) in merrillDetailData.risks" :key="index" class="risk-item">
-                            {{ risk }}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 底部金色装饰 -->
-                <div class="merrill-footer-decoration">
-                    <div class="gold-gradient-bar"></div>
-                    <div class="footer-hint">
-                        <span>美林时钟仅供参考，不构成投资建议</span>
-                    </div>
-                </div>
-            </div>
-            <!-- 骨架屏加载 -->
-            <div v-if="!merrillDetailData.name" class="skeleton-loader">
-                <div class="skeleton-header"></div>
-                <div class="skeleton-grid">
-                    <div class="skeleton-item" v-for="i in 5" :key="i"></div>
-                </div>
-                <div class="skeleton-large"></div>
-            </div>
-        </el-dialog>
+        <!-- v3.11 (FR-3.11.2): 美林时钟详情报告 — 移至 components/dialogs/ -->
+        <qc-merrill-detail-dialog></qc-merrill-detail-dialog>
 
         <!-- v1.5.0: 修改密码弹窗 -->
-        <!-- v2.2: 初始化向导 -->
-        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="500px" :close-on-click-modal="false" :show-close="false">
-            <div style="min-height: 280px;">
-                <!-- 步骤 1: 修改密码 -->
-                <div v-if="setupStep === 1">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🔐</div>
-                        <div style="font-weight: 600; font-size: var(--font-md);">管理员密码</div>
-                        <div style="color: #999; margin-top: 4px;">建议修改默认密码以保证安全</div>
-                    </div>
-                    <el-form :model="setupForm" label-position="top">
-                        <el-form-item label="新密码（留空则保持不变）">
-                            <el-input v-model="setupForm.newPassword" type="password" placeholder="至少4位，留空保持默认" show-password />
-                        </el-form-item>
-                    </el-form>
-                    <div style="text-align: center; margin-top: 12px;">
-                        <el-button type="primary" @click="setupStep = 2" size="large">下一步</el-button>
-                        <el-button @click="setupStep = 2" size="large" style="margin-left: 8px;">跳过</el-button>
-                    </div>
-                </div>
+        <!-- v3.11 (FR-3.11.2): 系统初始化向导 — 移至 components/dialogs/ -->
+        <qc-setup-wizard-dialog></qc-setup-wizard-dialog>
 
-                <!-- 步骤 2: AI 模型 -->
-                <div v-if="setupStep === 2">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">🤖</div>
-                        <div style="font-weight: 600; font-size: var(--font-md);">AI 大模型配置</div>
-                        <div style="color: #999; margin-top: 4px;">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
-                    </div>
-                    <el-form :model="setupForm" label-position="top">
-                        <el-form-item label="提供商">
-                            <el-select v-model="setupForm.aiProvider" style="width: 100%">
-                                <el-option label="DeepSeek" value="deepseek" />
-                                <el-option label="OpenAI" value="openai" />
-                                <el-option label="其他兼容接口" value="custom" />
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="API Key">
-                            <el-input v-model="setupForm.aiKey" placeholder="sk-..." show-password />
-                        </el-form-item>
-                        <el-form-item label="接口地址" v-if="setupForm.aiProvider === 'custom'">
-                            <el-input v-model="setupForm.aiEndpoint" placeholder="https://api.example.com/v1" />
-                        </el-form-item>
-                    </el-form>
-                    <div style="text-align: center; margin-top: 12px;">
-                        <el-button @click="setupStep = 1" size="large">上一步</el-button>
-                        <el-button type="primary" @click="setupStep = 3" size="large" style="margin-left: 8px;">下一步</el-button>
-                        <el-button @click="setupStep = 3" size="large" style="margin-left: 8px;">跳过</el-button>
-                    </div>
-                </div>
-
-                <!-- 步骤 3: Tushare -->
-                <div v-if="setupStep === 3">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: var(--font-3xl); margin-bottom: 8px;">📊</div>
-                        <div style="font-weight: 600; font-size: var(--font-md);">Tushare 数据源</div>
-                        <div style="color: #999; margin-top: 4px;">用于获取行情数据和股票信息</div>
-                    </div>
-                    <el-form :model="setupForm" label-position="top">
-                        <el-form-item label="Tushare Token">
-                            <el-input v-model="setupForm.tushareToken" placeholder="在 tushare.pro 注册获取" show-password />
-                        </el-form-item>
-                    </el-form>
-                    <div style="text-align: center; margin-top: 12px;">
-                        <el-button @click="setupStep = 2" size="large">上一步</el-button>
-                        <el-button type="success" @click="completeSetupWizard" size="large" style="margin-left: 8px;">完成初始化</el-button>
-                        <el-button @click="completeSetupWizard" size="large" style="margin-left: 8px;">跳过</el-button>
-                    </div>
-                </div>
-            </div>
-        </el-dialog>
-
-        <el-dialog v-model="showChangePassword" title="🔑 修改密码" width="420px" :close-on-click-modal="false">
-            <el-form :model="changePasswordForm" label-width="80px">
-                <el-form-item label="当前密码">
-                    <el-input v-model="changePasswordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password />
-                </el-form-item>
-                <el-form-item label="新密码">
-                    <el-input v-model="changePasswordForm.newPassword" type="password" placeholder="至少6位" show-password />
-                </el-form-item>
-                <el-form-item label="确认密码">
-                    <el-input v-model="changePasswordForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password @keyup.enter="doChangePassword" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showChangePassword = false">取消</el-button>
-                <el-button type="primary" @click="doChangePassword" :loading="changingPassword">确认修改</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- v3.2.0-T11: 快捷键帮助面板 -->
-        <el-dialog v-model="shortcutHelpVisible" title="⌨️ 键盘快捷键" width="420px">
-            <div class="shortcut-list">
-                <div class="shortcut-row" v-for="s in shortcutHelpItems" :key="s.keys">
-                    <span class="shortcut-keys"><kbd>{{ s.keys }}</kbd></span>
-                    <span class="shortcut-desc">{{ s.desc }}</span>
-                </div>
-            </div>
-        </el-dialog>
-
-        <!-- v3.2.0-T22: 首次使用引导 -->
-        <el-dialog v-model="tourVisible" title="" width="440px" :show-close="false" class="tour-dialog">
-            <div style="text-align: center; padding: 8px 0 4px 0;">
-                <div style="font-size: 48px; margin-bottom: 12px;">{{ tourSteps[tourStep].icon }}</div>
-                <div style="font-size: var(--font-lg); font-weight: var(--font-semibold); margin-bottom: 8px;">{{ tourSteps[tourStep].title }}</div>
-                <div style="color: var(--text-secondary); line-height: 1.7; font-size: var(--font-base);">{{ tourSteps[tourStep].desc }}</div>
-            </div>
-            <template #footer>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <el-button size="small" text @click="skipTour">跳过</el-button>
-                    <div style="display: flex; gap: 4px;">
-                        <span v-for="(s, i) in tourSteps" :key="i" class="tour-dot" :class="{active: i === tourStep}"></span>
-                    </div>
-                    <el-button v-if="tourStep < tourSteps.length - 1" size="small" type="primary" @click="tourStep++">下一步</el-button>
-                    <el-button v-else size="small" type="primary" @click="finishTour">开始使用</el-button>
-                </div>
-            </template>
-        </el-dialog>
+        <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
+        <qc-change-password-dialog></qc-change-password-dialog>
+        <qc-shortcut-help-dialog></qc-shortcut-help-dialog>
+        <qc-tour-dialog></qc-tour-dialog>
 
         <!-- v3.2.0-T13: 浮动 AI 按钮 -->
         <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
@@ -1026,35 +253,36 @@
     
 </div>
 
-    <script>
-    // Token 自动附加拦截器 - 修复 401 问题
-    (function() {
+    <!-- v3.17.9 (FR-3.17.9): 内联启动脚本全部延迟到 DOMContentLoaded 执行 —
+         defer 的模块脚本在 DOM 解析完成后、DOMContentLoaded 前按序执行，故此处可安全引用 window.__quantModules -->
+    <script nonce="{{NONCE}}">
+    // v3.17.11 (FR-3.17.11.3/4): 鉴权注入唯一实现收敛至 core.js withAuthHeaders
+    // 全局 fetch monkey-patch 保留（SSE 流式/文件下载/直接 fetch 均依赖其注入 Token），
+    // 但不再重复实现 Authorization 拼接 —— 仅委托 __quantModules.core.withAuthHeaders。
+    document.addEventListener('DOMContentLoaded', function () {
         const originalFetch = window.fetch;
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        const withAuthHeaders = (typeof core.withAuthHeaders === 'function')
+            ? core.withAuthHeaders
+            : function(url, options) { return options; };
         window.fetch = function(...args) {
             const url = args[0];
             const options = args[1] || {};
-            
-            // 只给 /api 请求加 Token
-            if (url.startsWith('/api/')) {
-                const token = localStorage.getItem('quant_token');
-                if (token) {
-                    options.headers = options.headers || {};
-                    options.headers['Authorization'] = 'Bearer ' + token;
-                }
-            }
-            
-            return originalFetch.apply(this, args);
+            const opts = withAuthHeaders(url, options);
+            return originalFetch.apply(this, [url, opts]);
         };
-    })();
+    });
 </script>
-    <script>
-        // ===== Vue 应用初始化 =====
-        console.log('[DEBUG] App init script starting');
-        const { createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue;
-        console.log('[DEBUG] Vue destructured, creating app');
+    <script nonce="{{NONCE}}">
+        // ===== Vue 应用初始化 (v3.17.9: 延迟到 DOMContentLoaded, 先于模块脚本执行完) =====
+        // 保持 Vue 解构为「顶层 var 全局词法绑定」: 各域模块(app-logic/market.js 等)裸引用
+        // ref/computed/watch/nextTick 依赖此声明 (原同步方案由顶层 const 提供, defer 后需显式声明)。
+        // 赋值延迟到 DOMContentLoaded (Vue 已加载), 域模块在 create 时调用, 时序安全。
+        var createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide;
+        document.addEventListener('DOMContentLoaded', function () {
+        ({ createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue);
         const app = createApp({
             setup() {
-                console.log('[DEBUG] setup() started');
                 // v3.6.0-T8: 逻辑已提取至 js/app-logic.js
                 const qcState = window.createAppLogic();
                 provide('qcState', qcState);
@@ -1088,18 +316,40 @@
                 document.removeEventListener('click', el.__clickOutside);
             }
         });
-        console.log('[DEBUG] About to mount app');
         // v3.6.0: 注册全局组件 (零构建, 用组件 name 属性保证 kebab-case 正确)
         if (window.__quantComponents) {
             Object.values(window.__quantComponents).forEach((comp) => {
                 if (comp && comp.name) {
                     app.component(comp.name, comp);
+                    comp.__quantRegistered = true;
                 }
             });
         }
         app.mount('#app');
-        console.log('[DEBUG] App mounted');
 
+        // v3.17.9 (FR-3.17.9): 挂载完成立即移除启动骨架屏（首屏主区域随后由各页状态面板骨架接管）
+        const bootEl = document.getElementById('qc-boot');
+        if (bootEl) bootEl.remove();
+        });
+
+    </script>
+    <script nonce="{{NONCE}}">
+        // v3.17.8 (FR-3.17.8): PWA Service Worker 注册 + 移动端手势装配
+        // - SW: cacheName 含 APP_VERSION（后端 /sw.js 注入），发布新版本即缓存爆破
+        // - 手势: 左滑露出操作 / 长按复制代码（委托式，仅移动端生效由 CSS/touch 天然限制）
+        document.addEventListener('DOMContentLoaded', function () {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                        console.warn('[sw] 注册失败:', err);
+                    });
+                });
+            }
+            if (window.__quantModules && window.__quantModules.gestures
+                && typeof window.__quantModules.gestures.initGestures === 'function') {
+                window.__quantModules.gestures.initGestures();
+            }
+        });
     </script>
 </body>
 </html>

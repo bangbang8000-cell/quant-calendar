@@ -10,17 +10,20 @@
     template: `
       <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-logo">
-          <h2>📊 量化选股日历</h2>
+          <h2>📊 {{ t('login.title') }}</h2>
         </div>
         <div class="sidebar-nav">
           <div v-for="menu in menus" :key="menu.key" class="nav-item" :class="{active: currentPage === menu.key}"
-               @click="navigate(menu)" tabindex="0" @keydown.enter="navigate(menu)">
-            <span class="nav-icon" v-html="menu.icon"></span>
+               @click="navigate(menu)" tabindex="0" role="button"
+               :aria-label="menu.name" :aria-current="currentPage === menu.key ? 'page' : null"
+               @keydown.enter.prevent="navigate(menu)" @keydown.space.prevent="navigate(menu)">
+            <span class="nav-icon" v-html="sanitizeHtml(menu.icon)"></span>
             <span>{{ menu.name }}</span>
           </div>
         </div>
-        <div class="sidebar-collapse-btn" @click="toggle" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'">
-          {{ sidebarCollapsed ? '▶' : '◀' }}
+        <div class="sidebar-collapse-btn" @click="toggle" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+             tabindex="0" role="button" :aria-expanded="!sidebarCollapsed" aria-label="折叠/展开侧边栏"
+             @keydown.enter.prevent="toggle" @keydown.space.prevent="toggle">
         </div>
       </div>
     `,
@@ -43,6 +46,9 @@
         sidebarCollapsed: state.sidebarCollapsed,
         navigate,
         toggle,
+        sanitizeHtml: state.sanitizeHtml,
+        keyClick: state.keyClick,
+        t: state.t,
       };
     },
   };

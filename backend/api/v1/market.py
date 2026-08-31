@@ -6,12 +6,11 @@
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
 import logging
-
-logger = logging.getLogger(__name__)
-
-from auth import get_admin_user
+from auth import get_admin_user, get_current_active_user
 from market_data import market_data, get_kline_data
 from merrill_clock import merrill_clock
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/market", tags=["市场行情"])
 
@@ -57,6 +56,34 @@ async def get_merrill_history():
         return {"success": False, "message": str(e)}
 
 
+@router.get("/merrill-clock/timeline")
+async def get_merrill_timeline():
+    """v3.22-I4: 美林时钟历史周期时间轴(最近4轮, 每轮阶段序列可点击看详情)
+    数据源 = 内置完整历史(13条/4轮) + 运行时新增转换(按 transition_date 去重) + 当前阶段补全"""
+    try:
+        import json
+        import os
+        from paths import MERRILL_HISTORY_FILE
+        from merrill_history import build_timeline, HISTORICAL_TRANSITIONS
+        transitions = list(HISTORICAL_TRANSITIONS)
+        data = {}
+        if os.path.exists(MERRILL_HISTORY_FILE):
+            with open(MERRILL_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        # 合并运行时新增(去重: 同日期+同 to_stage 视为同一条)
+        seen = {(t.get('transition_date'), t.get('to_stage')) for t in transitions}
+        for t in (data.get('transitions') or []):
+            key = (t.get('transition_date'), t.get('to_stage'))
+            if key not in seen:
+                transitions.append(t)
+                seen.add(key)
+        current_stage = data.get('current_stage') or ''
+        current_start = data.get('current_stage_start') or ''
+        return {"success": True, "data": build_timeline(transitions, current_stage, current_start)}
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
 @router.post("/merrill-clock/reevaluate")
 async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
     """强制重评估美林时钟（忽略缓存）"""
@@ -73,7 +100,7 @@ async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
 @router.get("/kline/{ts_code}")
 async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     """获取K线数据（支持股票和指数）
-    
+
     Args:
         ts_code: 股票/指数代码
         period: 周期: daily=日线, weekly=周线, monthly=月线
@@ -159,7 +186,7 @@ async def get_tushare_config(_: Dict = Depends(get_admin_user)):
 async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
     """保存 Tushare 配置"""
     from config import settings
-    
+
     if 'token' in req:
         # 如果提交的 token 以 *** 结尾，说明是掩码版本，保留原值
         submitted = req['token']
@@ -171,15 +198,15 @@ async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_u
         settings.TUSHARE_ENDPOINT = req['endpoint']
     if 'timeout' in req:
         settings.TUSHARE_TIMEOUT = req['timeout']
-    
+
     # 同步更新 market_data 的 token
     try:
         from market_data import market_data
         market_data.update_tushare_token(settings.TUSHARE_TOKEN)
-    except Exception as e:
+    except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
         pass
-    
+
     return {
         "success": True,
         "message": "配置已保存"
@@ -225,8 +252,209 @@ async def sync_tushare_data(_: Dict = Depends(get_admin_user)):
                 "success": False,
                 "message": "同步失败"
             }
-    except Exception as e:
+    except Exception:
         return {
             "success": False,
-            "message": f"同步异常"
+            "message": "同步异常"
         }
+
+
+# ─── v3.9.11: 行业热力图 ───────────────────────────────────────
+
+# 行业分类映射 (申万一级行业)
+INDUSTRY_KEYWORDS = {
+    "银行": ["银行", "金融", "保险"],
+    "食品饮料": ["食品", "饮料", "白酒", "乳业", "调味品"],
+    "医药生物": ["医药", "制药", "生物", "医疗", "药"],
+    "电子": ["电子", "半导体", "芯片", "集成电路"],
+    "计算机": ["计算机", "软件", "IT", "信息"],
+    "电力设备": ["电力", "电气", "新能源", "光伏", "风电", "锂电", "储能"],
+    "汽车": ["汽车", "整车", "新能源车", "零部件"],
+    "机械设备": ["机械", "设备", "制造", "机器人"],
+    "通信": ["通信", "5G", "光缆"],
+    "有色金属": ["有色", "黄金", "铜", "铝", "稀土", "矿产"],
+    "基础化工": ["化工", "化学", "石化", "材料"],
+    "房地产": ["地产", "房产", "物业"],
+    "建筑装饰": ["建筑", "装饰", "基建", "工程"],
+    "交通运输": ["交通", "运输", "物流", "港口", "航空", "机场"],
+    "国防军工": ["军工", "航天", "航空", "兵器"],
+    "传媒": ["传媒", "广告", "影视", "游戏", "出版"],
+    "农林牧渔": ["农业", "林业", "牧业", "渔业", "种业"],
+    "钢铁": ["钢铁", "钢材"],
+    "煤炭": ["煤炭", "煤"],
+    "石油石化": ["石油", "油气", "石化"],
+    "纺织服装": ["纺织", "服装", "服饰"],
+    "商贸零售": ["商业", "零售", "百货", "超市"],
+    "社会服务": ["旅游", "酒店", "餐饮", "教育"],
+    "公用事业": ["公用", "水务", "燃气", "环保"],
+    "家用电器": ["家电", "电器"],
+}
+
+def _classify_industry(stock_name: str) -> str:
+    """根据股票名称关键词归类到申万一级行业"""
+    for industry, keywords in INDUSTRY_KEYWORDS.items():
+        for kw in keywords:
+            if kw in stock_name:
+                return industry
+    return "其他"
+
+
+@router.get("/industry-heatmap")
+async def get_industry_heatmap():
+    """
+    行业热力图数据 — 各行业在当前策略池中的表现
+    """
+    try:
+        from data_parser import parser as dp
+
+        dates = dp.get_available_dates()
+        if not dates:
+            return {"success": False, "message": "无可用数据"}
+
+        latest = dates[-1]
+        holdings = dp.get_holdings_by_date(latest) or {}
+
+        # 按行业汇总
+        industry_stats: Dict[str, Dict] = {}
+
+        for sid, data in holdings.items():
+            stocks = data.get("stocks", [])
+            strategy_name = data.get("strategy_name", sid)
+
+            for s in stocks:
+                if isinstance(s, dict):
+                    code = s.get("code", "")
+                    name = s.get("name", code)
+                else:
+                    code = str(s)
+                    name = code
+
+                industry = _classify_industry(name)
+                if industry not in industry_stats:
+                    industry_stats[industry] = {
+                        "name": industry,
+                        "stock_count": 0,
+                        "strategy_count": 0,
+                        "stocks": [],
+                        "strategies": set(),
+                    }
+
+                stats = industry_stats[industry]
+                stats["stock_count"] += 1
+                stats["strategies"].add(strategy_name)
+                if len(stats["stocks"]) < 10:  # 最多保留10个示例
+                    stats["stocks"].append({"code": code, "name": name})
+
+        # 计算热力值 (基于股票数量)
+        result = []
+        for ind, stats in industry_stats.items():
+            result.append({
+                "name": stats["name"],
+                "value": stats["stock_count"],
+                "strategy_count": len(stats["strategies"]),
+                "stocks": stats["stocks"],
+            })
+
+        # 按股票数量降序排列
+        result.sort(key=lambda x: x["value"], reverse=True)
+
+        # 计算热力等级 (前25%为hot, 中50%为warm, 后25%为cool)
+        if result:
+            max_val = result[0]["value"]
+            min_val = result[-1]["value"]
+            val_range = max(max_val - min_val, 1)
+            for item in result:
+                normalized = (item["value"] - min_val) / val_range
+                if normalized >= 0.75:
+                    item["heat"] = "hot"
+                elif normalized >= 0.25:
+                    item["heat"] = "warm"
+                else:
+                    item["heat"] = "cool"
+
+        return {
+            "success": True,
+            "data": {
+                "date": latest,
+                "industries": result,
+                "total_stocks": sum(r["value"] for r in result),
+                "total_industries": len(result),
+            }
+        }
+    except Exception as e:
+        logger.error(f"行业热力图生成失败: {e}")
+        return {"success": False, "message": str(e)}
+
+
+# ─── v3.17.2: AI 每日市场复盘 (只读端点) ──────────────────────
+
+@router.get("/reviews")
+async def get_market_reviews(limit: int = 30):
+    """获取市场复盘报告列表 (按日期倒序)"""
+    from market_review import list_reviews
+    return {"success": True, "data": list_reviews(limit=limit)}
+
+
+@router.get("/review")
+async def get_market_review(date: Optional[str] = None):
+    """获取指定日期 (YYYY-MM-DD, 可省则取最近一份) 的市场复盘报告"""
+    from market_review import get_review
+    data = get_review(date=date)
+    if data is None:
+        return {"success": False, "message": "未找到市场复盘报告"}
+    return {"success": True, "data": data}
+
+
+@router.get("/factor-ic")
+async def factor_ic_report(user: dict = Depends(get_current_active_user)):
+    """FR-3.18.7: 因子有效性检验 IC/IR 报告 (数据不可达优雅降级为空)"""
+    from factor_ic import get_factor_ic_report
+    try:
+        return {"success": True, "data": get_factor_ic_report()}
+    except Exception as e:
+        logger.warning("因子 IC 报告失败 (降级): %s", e)
+        return {"success": False, "message": str(e), "data": {}}
+
+
+# ─── v3.17.7 (FR-3.17.7): 盘中增强 — 异动扫描 + 事件提醒（离线日线级） ──────
+
+@router.get("/scan")
+async def market_scan(date: Optional[str] = None, pool: str = "all",
+                      user: dict = Depends(get_current_active_user)):
+    """异动扫描（离线日线级）
+
+    Args:
+        date: 扫描日期 YYYY-MM-DD（可选；指定时异动以该日为准）
+        pool: all | strategies | watchlist（watchlist 需登录用户自选）
+    """
+    from scan_engine import run_scan, resolve_scan_pool
+    codes = resolve_scan_pool(pool, user.get("username") if user else None)
+    result = run_scan(date=date, pool=codes)
+    result['pool'] = pool
+    # v3.17.15 (FR-3.17.15): Webhook — anomaly_scan_done 事件 (扫描完成即触发, 失败仅日志)
+    try:
+        from webhook import dispatch as webhook_dispatch
+        webhook_dispatch("anomaly_scan_done", {
+            "date": result.get('date'),
+            "moves_count": len(result.get('moves') or []),
+            "pool": pool,
+        })
+    except Exception as we:
+        logger.warning("webhook anomaly_scan_done 投递失败 (忽略): %s", we)
+    return {"success": True, "data": result}
+
+
+@router.get("/events")
+async def market_events(scope: str = "watchlist",
+                        user: dict = Depends(get_current_active_user)):
+    """事件提醒（离线）— 自选/持仓关联事件（业绩预告/解禁/分红/龙虎榜/两融）
+
+    Args:
+        scope: watchlist | portfolio（按用户隔离）
+    """
+    from event_alert import build_events, get_alertable_codes
+    codes = get_alertable_codes(user.get("username"), scope=scope)
+    result = build_events([c['code'] for c in codes])
+    result['scope'] = scope
+    result['tracked_count'] = len(codes)
+    return {"success": True, "data": result}

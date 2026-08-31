@@ -5,7 +5,6 @@
   /* ─── Spacing Scale ─── */
   --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
   --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
-
   /* ─── Border Radius ─── */
   --r-sm: 6px;   --r-md: 8px;   --r-lg: 12px;  --r-xl: 16px;  --r-full: 9999px;
 
@@ -28,6 +27,7 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
   --transition-fast: 150ms ease;
@@ -38,8 +38,14 @@
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;
   --color-danger:  #C62828;  --color-info:    #1976d2;
-  --color-up:      #E63946;  --color-down:    #457B9D;
+  /* v3.16 (16.5): 行情涨跌语义 — 统一"红涨绿跌"，跌由原蓝(#457B9D)改绿 */
+  --color-up:      #E63946;  --color-down:    #2E7D32;
+  --color-rise:    var(--color-up);    /* 行情涨跌专用：涨=红 */
+  --color-fall:    var(--color-down);  /* 行情涨跌专用：跌=绿 */
   --color-neutral: #43a047;
+  /* v3.11 (FR-3.11.6): 补齐缺失语义色令牌 */
+  --color-ai:      #6366f1;  /* AI 品牌紫/靛蓝系（评估/模型徽标） */
+  --white:         #ffffff;  /* 强调色/渐变上的文字、白底 */
 
   /* ─── Badge / Label Colors ─── */
   --badge-success-bg:   #E8F5E9;  --badge-success-text: #2E7D32;
@@ -48,6 +54,9 @@
   --badge-info-bg:      #E3F2FD;  --badge-info-text:    #1976D2;
   --badge-gold-bg:      #FFF8E1;
   --color-gold:         #D4AF37;  --gold-light: #E8D5B7;  --gold-bg: #FFFDF5;
+
+  /* ─── 固定装饰色（不随主题的组件变体） ─── */
+  --avatar-dark-bg:     #1E293B;  --avatar-dark-text: #E2E8F0;
 
   /* ─── Element Plus Override Colors ─── */
   --el-success: #4CAF50;  --el-warning: #FF9800;
@@ -63,3 +72,6 @@
   --nav-item-height:         40px;
   --mobile-nav-height:       56px;
 }
+
+/* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
+[v-cloak] { display: none !important; }

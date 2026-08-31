@@ -3,6 +3,9 @@
 (function() {
   const { ref, computed, watch, onUnmounted } = Vue;
 
+  // v3.13: 运行时取 CSS 令牌 (ECharts 画布无法解析 var(), 令牌优先, 字面量兜底)
+  const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+
   // ─── 常量 ─────────────────────────────────
   const FULL_CYCLE_MONTHS = 72;
 
@@ -53,6 +56,9 @@
     const merrillStagesConfig = ref({});
     const showMerrillDetail = ref(false);
     const merrillDetailData = ref({});
+    // v3.22-I4: 历史周期时间轴
+    const merrillTimeline = ref({ cycles: [] });
+    const timelineLoading = ref(false);
     const merrillClockConfig = ref({ autoRefresh: true, refreshInterval: 300 });
     const merrillClockLastUpdated = ref('');
     const merrillReevalResult = ref('');
@@ -71,7 +77,7 @@
         const s = cfg[key] || {};
         return {
           key, name: s.name || key, icon: s.icon || '📊',
-          color: s.color || '#888', bg: s.bg_color || '#f5f5f5',
+          color: s.color || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
           textColor: s.color || '#333',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
         };
@@ -223,6 +229,27 @@
       }
     }
 
+    // v3.22-I4: 加载历史周期时间轴(最近4轮)
+    async function loadMerrillTimeline() {
+      timelineLoading.value = true;
+      try {
+        const res = await fetch('/api/market/merrill-clock/timeline');
+        const data = await res.json();
+        if (data.success && data.data) {
+          merrillTimeline.value = data.data;
+        }
+      } catch (e) {
+        console.warn('获取美林时钟时间轴失败');
+      } finally {
+        timelineLoading.value = false;
+      }
+    }
+
+    // v3.22-I4: 点击时间轴阶段 → 复用阶段详情弹窗
+    async function showTimelineStage(stage) {
+      await showStageDetail(stage);
+    }
+
     async function fetchMerrillClock() {
       try {
         const res = await fetch('/api/market/merrill-clock');
@@ -276,13 +303,7 @@
         merrillDetailData.value._dimensions = merrillData.value.dimension_scores;
       }
 
-      // 弹窗打开后强制刷新布局
-      setTimeout(() => {
-        document.body.style.display = 'none';
-        setTimeout(() => { document.body.style.display = ''; }, 10);
-      }, 100);
-
-      // 后台异步请求API更新
+      // 后台异步请求API更新（就地合并，避免整对象替换引发弹窗内容闪动）
       try {
         const res = await fetch('/api/market/merrill-clock/stage/' + stage);
         const data = await res.json();
@@ -305,7 +326,8 @@
             apiData._stage = merrillDetailData.value._stage;
           if (merrillDetailData.value._dimensions)
             apiData._dimensions = merrillDetailData.value._dimensions;
-          merrillDetailData.value = apiData;
+          // v3.17 UI修复: 就地合并（保留响应式引用，Vue 增量渲染，消除内容切换闪动）
+          Object.assign(merrillDetailData.value, apiData);
         }
       } catch (e) {
         console.warn('获取阶段详情失败:', e);
@@ -380,6 +402,9 @@
       merrillStagesConfig,
       showMerrillDetail,
       merrillDetailData,
+      // v3.22-I4: 历史周期时间轴
+      merrillTimeline,
+      timelineLoading,
       merrillClockConfig,
       merrillClockLastUpdated,
       merrillReevalResult,
@@ -407,6 +432,8 @@
       // API
       fetchMerrillStages,
       fetchMerrillClock,
+      loadMerrillTimeline,
+      showTimelineStage,
       showStageDetail,
       saveMerrillClockConfig,
       doMerrillReevaluate,

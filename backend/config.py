@@ -15,17 +15,17 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 class Settings(BaseSettings):
     """系统配置类"""
-    
+
     # 服务器配置
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
-    
+
     # JWT 认证配置
     SECRET_KEY: str = ""  # v1.8: 留空 → 自动生成，或从 .env 读取
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24小时
-    
+
     # Tushare API 配置
     # Tushare 数据源配置
     TUSHARE_TOKEN: str = ""
@@ -36,27 +36,33 @@ class Settings(BaseSettings):
     SXSC_TUSHARE_TOKEN: str = ""
     SXSC_TUSHARE_ENABLED: bool = True
     AKSHARE_ENABLED: bool = True
-    
+
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
-    
+
+    # v3.17.13 (FR-3.17.13): 限流后端类型 (memory|redis, 默认 memory; redis 预留未实现时回退内存)
+    RATE_LIMIT_BACKEND: str = "memory"
+
+    # v3.17.15 (FR-3.17.15): 开放 API — Swagger 文档开关 (默认开启; 关则 /docs /redoc /openapi.json 404)
+    OPENAPI_ENABLED: bool = True
+
     # CORS 配置
     CORS_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
-    
+
     # 飞书 Webhook 配置 (可选)
     FEISHU_WEBHOOK_URL: str = ""
-    
+
     # 加密密钥
     FERNET_KEY: str = ""
 
     # v2.1: 允许 .env 中的额外配置项（向后兼容）
     QUANT_DATA_DIR: str = "../qresult"
-    
+
     @property
     def cors_origin_list(self) -> List[str]:
         """解析 CORS 源列表"""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True

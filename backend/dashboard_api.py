@@ -3,11 +3,10 @@
 """
 策略总览Dashboard API
 """
-import json
 import time
-from collections import defaultdict, Counter
-from datetime import datetime
+from collections import defaultdict
 from data_parser import parser, STRATEGY_CONFIG
+from stock_info import stock_manager
 
 
 class DashboardAnalyzer:
@@ -15,19 +14,19 @@ class DashboardAnalyzer:
         self.strategies = list(STRATEGY_CONFIG.keys())
         self._cache = {}        # url → (timestamp, data)
         self._cache_ttl = 60    # seconds
-    
+
     @property
     def all_dates(self):
         """动态获取所有可用日期（实时从 parser 读取，非静态快照）"""
         return parser.get_available_dates()
-    
+
     def _get_from_cache(self, key: str):
         """简单的内存缓存"""
         entry = self._cache.get(key)
         if entry and (time.time() - entry[0]) < self._cache_ttl:
             return entry[1]
         return None
-    
+
     def _set_cache(self, key: str, data):
         self._cache[key] = (time.time(), data)
 
@@ -163,7 +162,7 @@ class DashboardAnalyzer:
         try:
             idx = self.all_dates.index(date)
         except ValueError:
-            return {"new_count": 0, "out_count": 0, "new_stocks": [], "out_stocks": [],
+            return {"new_count": 0, "out_count": 0, "new_stocks": [], "new_stock_names": {}, "out_stocks": [],
                     "weekly_new": 0, "weekly_out": 0,
                     "monthly_new": 0, "monthly_out": 0}
 
@@ -208,10 +207,14 @@ class DashboardAnalyzer:
             monthly_new = 0
             monthly_out = 0
 
+        # v3.15: 新入池股票名 (code→name), 修复今日重点仅显示代码
+        new_stock_names = {c: stock_manager.get_name(c) for c in new_stocks}
+
         return {
             "new_count": len(new_stocks),
             "out_count": len(out_stocks),
             "new_stocks": new_stocks[:10],
+            "new_stock_names": new_stock_names,
             "out_stocks": out_stocks[:10],
             "weekly_new": weekly_new,
             "weekly_out": weekly_out,
@@ -224,9 +227,6 @@ class DashboardAnalyzer:
         dates = self.all_dates
         if not dates:
             return {}
-
-        start_date = datetime.strptime(dates[0], '%Y-%m-%d')
-        end_date = datetime.strptime(dates[-1], '%Y-%m-%d')
 
         days_count = len(dates)
         months_count = len(set(d[:7] for d in dates))
