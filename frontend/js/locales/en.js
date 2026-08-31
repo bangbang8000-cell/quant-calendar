@@ -19,6 +19,8 @@
     'nav.system': 'System Settings',
     // 二级导航
     'sub.overview': 'Overview',
+    'sub.strategies.overview': 'Strategy Overview', 'sub.ai.overview': 'Eval Overview', 'sub.research.research-overview': 'Research Overview',
+    'sub.execution': 'Execution Dashboard',
     'sub.merrill': 'Merrill Clock',
     'sub.market': 'Market',
     'sub.consensus': 'Consensus Ranking',
@@ -31,6 +33,7 @@
     'sub.history': 'Eval History',
     'sub.chat_history': 'Chat History',
     'sub.portfolio': 'Portfolio',
+    'sub.research-overview': 'Research Overview',
     'sub.quant-research': 'Quant Research',
     'sub.strategy-write': 'Strategy Builder',
     'sub.backtest': 'Backtest',

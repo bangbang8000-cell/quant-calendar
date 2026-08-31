@@ -19,6 +19,8 @@
     'nav.system': '系统配置',
     // 二级导航（global-header 子页 tab；组件 subPageNames 保留作回退）
     'sub.overview': '概览',
+    'sub.strategies.overview': '策略概览', 'sub.ai.overview': '评估概览', 'sub.research.research-overview': '研究概览',
+    'sub.execution': '执行看板',
     'sub.merrill': '美林时钟',
     'sub.market': '市场行情',
     'sub.consensus': '策略共识榜',
@@ -31,6 +33,7 @@
     'sub.history': '评估历史',
     'sub.chat_history': '问股历史',
     'sub.portfolio': '组合持仓',
+    'sub.research-overview': '研究概览',
     'sub.quant-research': '量化研究',
     'sub.strategy-write': '策略编写',
     'sub.backtest': '策略回测',

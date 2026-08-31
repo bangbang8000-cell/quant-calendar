@@ -244,3 +244,30 @@ async def reveal_secret(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
                 return {"success": True, "secret": v.api_key}
         return {"success": False, "message": "未找到该厂商"}
     return {"success": False, "message": "未知的目标类型"}
+
+
+# ─── V4.9 (P1): 调度执行历史与聚合统计 ───
+
+@router.get("/execution-history")
+async def execution_history(
+    days: int = 7,
+    task: str = '',
+    status: str = '',
+    limit: int = 200,
+    user: dict = Depends(get_current_active_user),
+):
+    """V4.9 (P1): 调度任务执行历史 — 支持按天数/任务名/状态筛选"""
+    from scheduler import scheduler
+    history = scheduler.get_execution_history(days=days, task=task, status=status, limit=limit)
+    return {"success": True, "data": history, "count": len(history)}
+
+
+@router.get("/execution-summary")
+async def execution_summary(
+    days: int = 30,
+    user: dict = Depends(get_current_active_user),
+):
+    """V4.9 (P1): 调度任务聚合统计 — 各任务执行次数/成功率/每日趋势"""
+    from scheduler import scheduler
+    summary = scheduler.get_execution_summary(days=days)
+    return {"success": True, "data": summary}

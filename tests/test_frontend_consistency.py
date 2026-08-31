@@ -310,11 +310,12 @@ def test_chat_history_lazy_load():
 
 
 def test_research_page_placeholder():
-    """FR-3.16.6 (16.8): 研究页占位统一为 qc-state-panel + 功能未开启守卫"""
+    """FR-3.16.6 (16.8): 研究页占位统一为 qc-state-panel + 功能未开启守卫
+    V4.9: 回测记录子页已由占位升级为真实表格（loadBtHistory），占位守卫仍生效"""
     src = _read("js/components/research-page.js")
     assert "researchMenuEnabled" in src, "应守卫功能未开启状态"
     assert src.count("qc-state-panel") >= 4, "研究页占位应统一为 qc-state-panel"
-    assert "敬请期待" in src
+    assert "loadBtHistory" in src, "V4.9: 回测记录子页应为真实功能（不再占位）"
 
 
 # ─── v3.16 (16.9 / FR-3.16.7) 品牌化与模板收敛回归 ────────────────────────
@@ -561,12 +562,16 @@ def test_backtest_workbench_endpoint_invoked():
 
 
 def test_backtest_workbench_no_inline_style():
-    """FR-3.17.4: 回测工作台新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    """FR-3.17.4: 回测工作台新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）
+    V4.9: 切片收束到「代码终点」标记 — 后续新增的执行看板等子页不在本规则范围内（动态宽度/颜色
+    进度条与 overview/merrill 区一致走 :style）"""
     bt = _read("js/backtest.js")
     assert 'style="' not in bt, "backtest.js 不应含内联 style 属性"
     assert "style={" not in bt, "backtest.js 不应含绑定式内联 style"
     page = _read("js/components/strategies-page.js")
-    seg = page[page.index("v3.17.4 (FR-3.17.4): 回测工作台 代码起点"):]
+    start = page.index("v3.17.4 (FR-3.17.4): 回测工作台 代码起点")
+    end = page.index("v3.17.4 (FR-3.17.4): 回测工作台 代码终点")
+    seg = page[start:end]
     assert 'style="' not in seg, "回测工作台模板不应含内联 style 属性"
     assert "style={" not in seg, "回测工作台模板不应含绑定式内联 style"
 

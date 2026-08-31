@@ -18,7 +18,7 @@
                      @click="currentSubPage = sp" tabindex="0" role="tab"
                      :aria-selected="currentSubPage === sp"
                      @keydown.enter.prevent="currentSubPage = sp" @keydown.space.prevent="keyClick($event)">
-                  {{ t('sub.' + sp) || subPageNames[sp] || sp }}
+                  {{ subTabLabel(menu, sp) }}
                 </div>
               </template>
             </template>
@@ -116,6 +116,11 @@
         subPageNames: state.subPageNames,
         keyClick: state.keyClick,
         t: state.t,
+        subTabLabel: function (menu, sp) {
+            const qualified = 'sub.' + menu.key + '.' + sp;
+            const q = state.t(qualified);
+            return (q !== qualified) ? q : (state.t('sub.' + sp) || state.subPageNames[sp] || sp);
+        },
       };
     },
   };

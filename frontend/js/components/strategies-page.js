@@ -10,7 +10,7 @@
     name: 'qc-strategies-page',
     template: `
                 <div v-if="currentPage === 'strategies'" key="strategies">
-                                        <div v-if="currentSubPage === 'overview'">
+                    <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
                         <div class="page-title">{{ t('strategies.title') }}</div>
                         <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
@@ -302,7 +302,7 @@
                                                              class="merrill-stage-chip"
                                                              :class="{ 'is-current': st.is_current }"
                                                              :style="tlChipStyle(st.stage)"
-                                                             @click.prevent="showTimelineStage(st.stage)"
+                                                             @click.prevent="showTimelineStage(st.stage, $event)"
                                                              @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
                                                              @mouseleave="clearTlHover()">
                                                             <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
@@ -342,7 +342,7 @@
                                 </div>
                             </div>
                             <!-- V4.8 (R1): 时间轴小阶段点击紧凑弹窗 — 仅展示该阶段独有信息 -->
-                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" @click.self="closeTlClick">
+                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" :style="tlClickPosStyle" @click.self="closeTlClick">
                                 <div class="tl-click-card" role="dialog" aria-label="阶段详情">
                                     <button class="tl-click-close" @click="closeTlClick" aria-label="关闭">✕</button>
                                     <div class="tl-click-head">
@@ -580,7 +580,113 @@
                         </div>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码终点 -->
-                </div>
+                    <!-- V4.9 (P1): 执行看板子页 -->
+                    <div v-else-if="currentSubPage === 'execution'" class="card">
+                        <div class="card-title flex-between">
+                            <span>⚡ 策略执行看板</span>
+                            <div class="flex-c-gap-8">
+                                <el-button size="small" @click="loadExecutionData" :loading="execLoading">🔄 刷新</el-button>
+                                <el-select class="w-100" size="small" v-model="execDays" @change="loadExecutionData">
+                                    <el-option label="近1天" :value="1" />
+                                    <el-option label="近7天" :value="7" />
+                                    <el-option label="近30天" :value="30" />
+                                </el-select>
+                            </div>
+                        </div>
+
+                        <!-- 聚合统计卡片 -->
+                        <div v-if="execSummary" class="dashboard-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">📋</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ execSummary.total }}</div>
+                                    <div class="stat-label">总执行次数</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">✅</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ execSummary.success_count }}</div>
+                                    <div class="stat-label">成功次数</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📈</div>
+                                <div class="stat-content">
+                                    <div class="stat-value" :class="execSuccessClass">{{ execSummary.success_rate || 0 }}%</div>
+                                    <div class="stat-label">成功率</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📅</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ Object.keys(execSummary.daily_trend || {}).length }}</div>
+                                    <div class="stat-label">覆盖天数</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 各任务状态卡片 -->
+                        <div v-if="execSummary?.by_task" class="card mt-4">
+                            <div class="card-title">📊 各任务执行统计</div>
+                            <div class="strategy-item" v-for="(stats, taskName) in execSummary.by_task" :key="taskName">
+                                <div class="strategy-header">
+                                    <span class="strategy-name">{{ taskName }}</span>
+                                    <span class="strategy-count">
+                                        <span class="color-success">{{ stats.success }}</span>
+                                        <span class="text-tertiary">/</span>
+                                        <span class="color-danger">{{ stats.failed }}</span>
+                                        <span class="text-tertiary"> | {{ stats.total }} 次</span>
+                                    </span>
+                                </div>
+                                <div class="strategy-progress">
+                                    <div class="progress-bar" :style="{width: (stats.total > 0 ? (stats.success / stats.total * 100) : 0) + '%', background: (stats.total > 0 && stats.success / stats.total >= 0.8) ? 'var(--el-success)' : (stats.total > 0 && stats.success / stats.total >= 0.5) ? 'var(--el-warning)' : 'var(--el-danger)'}"></div>
+                                </div>
+                                <div class="flex-between">
+                                    <span class="text-xs-tertiary">最近: {{ stats.last_run || '—' }}</span>
+                                    <span class="text-xs" :class="stats.last_status === 'success' ? 'color-success' : 'color-danger'">{{ stats.last_status === 'success' ? '✓ 成功' : '✗ 失败' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 历史记录表 -->
+                        <div class="card mt-4">
+                            <div class="card-title flex-between">
+                                <span>📝 执行历史 <span class="text-sm-tertiary">(最近 {{ execDays }} 天)</span></span>
+                                <div class="flex-c-gap-8">
+                                    <el-select class="w-120" size="small" v-model="execTaskFilter" @change="loadExecutionData" clearable placeholder="全部任务">
+                                        <el-option v-for="t in execTaskOptions" :key="t" :label="t" :value="t" />
+                                    </el-select>
+                                    <el-select class="w-100" size="small" v-model="execStatusFilter" @change="loadExecutionData" clearable placeholder="全部状态">
+                                        <el-option label="成功" value="success" />
+                                        <el-option label="失败" value="failed" />
+                                    </el-select>
+                                </div>
+                            </div>
+                            <qc-state-panel v-if="execLoading" type="loading"></qc-state-panel>
+                            <qc-state-panel v-else-if="execError" type="error" title="加载失败" desc="请检查网络后重试" @retry="loadExecutionData"></qc-state-panel>
+                            <div v-else-if="!execHistory.length" class="empty-state">
+                                <div class="text-md-medium-primary">暂无执行记录</div>
+                                <div class="text-sm-tertiary-mt8">调度任务尚未运行，或所选时间段内无记录</div>
+                            </div>
+                            <div v-else class="table-container">
+                                <table class="bt-trades-table">
+                                    <thead>
+                                        <tr><th>时间</th><th>任务</th><th>状态</th><th>详情</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(r, i) in execHistory" :key="i">
+                                            <td class="text-sm-mono">{{ r.ts }}</td>
+                                            <td><span class="strategy-tag">{{ r.task }}</span></td>
+                                            <td><span :class="r.success ? 'status-current' : 'status-out'">{{ r.success ? '✓ 成功' : '✗ 失败' }}</span></td>
+                                            <td class="text-sm-tertiary" :title="r.detail">{{ (r.detail || '—').slice(0, 60) }}{{ (r.detail || '').length > 60 ? '…' : '' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
     `,
     setup() {
       const state = inject('qcState');
@@ -679,7 +785,50 @@
       //            不再跳转大而全的阶段详情弹窗 (showStageDetail 保留其他入口用)
       const tlClickStage = Vue.ref(null);   // 当前点击的阶段对象 (含 essence/highlight/key_indicators)
       const tlClickVisible = Vue.ref(false);
-      function showTimelineStage(stageKey) {
+      const tlClickPos = Vue.reactive({ top: 0, left: 0, right: null, bottom: null, maxWidth: 460 });
+      // V4.8.2-fix (用户反馈): 弹窗锚定被点击阶段 chip 的右侧合适位置
+      // 定位策略: 优先 chip 右侧垂直居中; 右侧空间不足时左侧; 上下空间不足时贴边
+      function computeTlClickPos(ev) {
+        const el = ev && ev.currentTarget;
+        const pop = document.querySelector('.tl-click-pop');
+        if (!el || !pop) return;
+        const cRect = el.getBoundingClientRect();
+        const popW = pop.offsetWidth || 340;
+        const popH = pop.offsetHeight || 220;
+        const pad = 10;
+        // 定位祖先: .merrill-timeline-block (relative), 弹窗 absolute 相对它
+        const cont = el.closest('.merrill-timeline-block');
+        const contRect = cont ? cont.getBoundingClientRect() : cRect;
+        const cLeft = cRect.left - contRect.left;   // chip 相对容器坐标
+        const cTop = cRect.top - contRect.top;
+        const cW = cRect.width, cH = cRect.height;
+        const contW = contRect.width, contH = contRect.height;
+        // 水平: 优先右侧, 空间不足放左侧
+        let left = null, right = null;
+        if (cLeft + cW + pad + popW <= contW) {
+          left = cLeft + cW + pad;
+        } else if (cLeft - pad - popW >= 0) {
+          left = cLeft - pad - popW;
+        } else {
+          left = Math.max(8, Math.min(cLeft, contW - popW - 8));
+        }
+        // 垂直: chip 中心对齐, 容器内贴边
+        const idealTop = cTop + cH / 2 - popH / 2;
+        const top = Math.max(8, Math.min(idealTop, contH - popH - 8));
+        tlClickPos.top = top;
+        tlClickPos.left = left;
+        tlClickPos.right = null;
+        tlClickPos.bottom = null;
+      }
+      // V4.8.2-fix: 弹窗位置样式 (relative 容器内 absolute 定位)
+      const tlClickPosStyle = Vue.computed(function () {
+        const st = {};
+        if (tlClickPos.top != null) st.top = tlClickPos.top + 'px';
+        if (tlClickPos.left != null) st.left = tlClickPos.left + 'px';
+        if (tlClickPos.right != null) st.right = tlClickPos.right + 'px';
+        return st;
+      });
+      function showTimelineStage(stageKey, ev) {
         // 从时间轴数据中找完整阶段对象 (含 V4.8 注入的独有信息)
         let found = null;
         const cycles = (merrillTimeline.value && merrillTimeline.value.cycles) || [];
@@ -696,6 +845,8 @@
         if (found) {
           tlClickStage.value = found;
           tlClickVisible.value = true;
+          // 锚定位置: 弹窗渲染后 nextTick 测量并定位
+          Vue.nextTick(function () { computeTlClickPos(ev); });
         }
       }
       function closeTlClick() {
@@ -866,12 +1017,62 @@
         if (_tlObserver) { _tlObserver.disconnect(); _tlObserver = null; }
       });
 
+      // ─── V4.9 (P1): 执行看板 ───
+      const execHistory = Vue.ref([]);
+      const execSummary = Vue.ref(null);
+      const execLoading = Vue.ref(false);
+      const execError = Vue.ref(false);
+      const execDays = Vue.ref(7);
+      const execTaskFilter = Vue.ref('');
+      const execStatusFilter = Vue.ref('');
+      const execTaskOptions = Vue.computed(() => {
+        const tasks = new Set();
+        (execHistory.value || []).forEach(function (r) { if (r.task) tasks.add(r.task); });
+        return Array.from(tasks).sort();
+      });
+      // V4.9 (P1): 成功率颜色走 CSS 类（仓库约定禁内联 style）
+      const execSuccessClass = Vue.computed(function () {
+        const rate = (execSummary.value && execSummary.value.success_rate) || 0;
+        return rate >= 80 ? 'color-success' : rate >= 50 ? 'color-warning' : 'color-danger';
+      });
+
+      async function loadExecutionData() {
+        execLoading.value = true;
+        execError.value = false;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const params = new URLSearchParams({ days: String(execDays.value) });
+          if (execTaskFilter.value) params.set('task', execTaskFilter.value);
+          if (execStatusFilter.value) params.set('status', execStatusFilter.value);
+          const [histRes, sumRes] = await Promise.all([
+            fetch('/api/system/execution-history?' + params.toString(), { headers }).then(function (r) { return r.json(); }),
+            fetch('/api/system/execution-summary?days=' + execDays.value, { headers }).then(function (r) { return r.json(); }),
+          ]);
+          execHistory.value = (histRes && histRes.data) || [];
+          execSummary.value = (sumRes && sumRes.data) || null;
+        } catch (e) {
+          console.error('[execution] 执行数据加载失败:', e);
+          execError.value = true;
+        } finally {
+          execLoading.value = false;
+        }
+      }
+
+      Vue.watch(function () { return state.currentSubPage && state.currentSubPage.value; }, function (sub) {
+        if (sub === 'execution') loadExecutionData();
+      });
+
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
         timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,
         tlClickStage, tlClickVisible, closeTlClick,
-        merrillTimeline, timelineLoading, showTimelineStage };
+        tlClickPosStyle,
+        merrillTimeline, timelineLoading, showTimelineStage,
+        execHistory, execSummary, execLoading, execError,
+        execDays, execTaskFilter, execStatusFilter, execTaskOptions, execSuccessClass,
+        loadExecutionData };
     },
   };
 })();

@@ -51,7 +51,7 @@
           </div>
         </div>
         <div class="history-actions">
-          <el-button size="small" type="danger" text @click.stop="remove">🗑</el-button>
+          <el-button size="small" type="warning" text @click.stop="remove">🗑</el-button>
         </div>
       </div>
     `,

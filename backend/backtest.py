@@ -4,6 +4,9 @@
 策略回测引擎
 支持多策略历史表现回溯、收益率计算、风险指标分析
 """
+import json
+import os
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import logging
@@ -577,3 +580,68 @@ if __name__ == "__main__":
         logger.info(f"   最大回撤: {summary['max_drawdown']}%")
         logger.info(f"   夏普比率: {summary['sharpe_ratio']}")
         logger.info(f"   胜率: {summary['win_rate']}%")
+
+
+# ─── V4.9 (P3): 回测历史持久化 ───
+
+BACKTEST_HISTORY_FILE = None  # 延迟初始化
+
+def _get_history_file():
+    global BACKTEST_HISTORY_FILE
+    if BACKTEST_HISTORY_FILE is None:
+        from paths import DATA_DIR
+        BACKTEST_HISTORY_FILE = os.path.join(DATA_DIR, "backtest_history.json")
+    return BACKTEST_HISTORY_FILE
+
+_HISTORY_MAX_BT = 1000  # 最多保留 1000 条
+
+def save_backtest_result(sid: str, summary: dict, params: dict = None):
+    """保存一次回测结果到历史文件"""
+    try:
+        record = {
+            'sid': sid,
+            'ts': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'summary': summary,
+            'params': params or {},
+        }
+        fpath = _get_history_file()
+        history = []
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, 'r', encoding='utf-8') as f:
+                    history = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                history = []
+        history.append(record)
+        if len(history) > _HISTORY_MAX_BT:
+            history = history[-_HISTORY_MAX_BT:]
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.warning("回测历史保存失败: %s", e)
+        return False
+
+
+def get_backtest_history(days: int = 30, sid: str = '', limit: int = 100) -> list:
+    """读取回测历史，支持按天/策略筛选"""
+    try:
+        fpath = _get_history_file()
+        if not os.path.exists(fpath):
+            return []
+        with open(fpath, 'r', encoding='utf-8') as f:
+            history = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+    if not isinstance(history, list):
+        return []
+    # 按时间倒序（最新在前）；同秒记录按写入顺序倒序（后写在前）
+    history = list(enumerate(history))
+    history.sort(key=lambda i_r: (i_r[1].get('ts', ''), i_r[0]), reverse=True)
+    history = [r for _, r in history]
+    if days > 0:
+        cutoff = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)).strftime('%Y-%m-%d')
+        history = [r for r in history if r.get('ts', '')[:10] >= cutoff]
+    if sid:
+        history = [r for r in history if r.get('sid', '') == sid]
+    return history[:limit]

@@ -4854,6 +4854,9 @@ text {
 .text-xs-secondary { font-size:var(--font-xs);color:var(--text-secondary); }
 .text-xs-tag-primary { display: inline-flex; align-items: center; padding: 4px 8px; color: var(--primary-color); font-size: var(--font-xs); cursor: pointer; }
 .text-xs-tag-tertiary { display: inline-flex; align-items: center; padding: 4px 8px; color: var(--text-tertiary); font-size: var(--font-xs); cursor: pointer; }
+.text-tertiary { color: var(--text-tertiary); }
+.text-xs { font-size: var(--font-xs); }
+.text-sm-mono { font-family: var(--font-mono, monospace); font-size: var(--font-sm); }
 .text-xs-tertiary { color:var(--text-tertiary);font-size:var(--font-xs); }
 .text-xs-tertiary-mb4 { font-size:var(--font-xs);color:var(--text-tertiary);margin-bottom:4px; }
 .text-xs-tertiary-mb8 { margin-bottom:8px;font-size:var(--font-xs);color:var(--text-tertiary); }

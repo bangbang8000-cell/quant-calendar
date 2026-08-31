@@ -14,6 +14,91 @@
                     <qc-state-panel v-if="!researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
+                    <!-- V4.9 (P2): 研究概览子页 -->
+                    <div v-if="currentSubPage === 'research-overview'" class="card">
+                        <div class="card-title">📊 策略研究概览</div>
+                        <!-- 快速入口网格 -->
+                        <div class="dashboard-grid">
+                            <div class="stat-card clickable" @click="currentSubPage = 'quant-research'">
+                                <div class="stat-icon">🔬</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ strategies.length }}</div>
+                                    <div class="stat-label">策略总数</div>
+                                </div>
+                            </div>
+                            <div class="stat-card clickable" @click="currentSubPage = 'strategy-write'">
+                                <div class="stat-icon">✏️</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ variants.length }}</div>
+                                    <div class="stat-label">微调策略</div>
+                                </div>
+                            </div>
+                            <div class="stat-card clickable" @click="currentSubPage = 'custom-write'">
+                                <div class="stat-icon">🚀</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ customs.length }}</div>
+                                    <div class="stat-label">自定义策略</div>
+                                </div>
+                            </div>
+                            <div class="stat-card clickable" @click="currentSubPage = 'market-review'">
+                                <div class="stat-icon">📋</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ marketReviews.length }}</div>
+                                    <div class="stat-label">市场复盘</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 快速入口列表 -->
+                        <div class="card-title mt-4">🔗 快捷入口</div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'quant-research'">
+                            <div class="consensus-badge">1</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">🔬 量化研究</div>
+                                <div class="consensus-name">策略注册表 · 参数方案 · 因子IC分析 · 参数扫描</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'strategy-write'">
+                            <div class="consensus-badge">2</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">✏️ 策略编写</div>
+                                <div class="consensus-name">复制母本 → SelectionSpec 微调 → AI 交易码生成</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'custom-write'">
+                            <div class="consensus-badge">3</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">🚀 全新策略</div>
+                                <div class="consensus-name">AI 代写 · 本地回测 · AI 优化</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'backtest'">
+                            <div class="consensus-badge">4</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">📊 回测工作台</div>
+                                <div class="consensus-name">单/多策略回测 · 净值曲线 · 年度收益</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'market-review'">
+                            <div class="consensus-badge">5</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">📋 市场复盘</div>
+                                <div class="consensus-name">AI 每日市场解读 · 三大指数 · 板块资金 · 情绪分析</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <div class="consensus-item clickable" @click="currentSubPage = 'scan'">
+                            <div class="consensus-badge">6</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">⚡ 异动扫描</div>
+                                <div class="consensus-name">涨停 · 跌停 · 放量 · 连板 · 事件提醒</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                    </div>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">{{ t('research.quantResearch') }}</div>
                         <!-- v3.19 (策略研究 P0): 策略注册表 → schema 表单 → 运行/回测/PTrade 导出 -->
@@ -59,7 +144,7 @@
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
                                         <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
-                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
+                                        <el-button v-if="profileSelect" size="small" type="warning" @click="deleteProfile">🗑 删除</el-button>
                                     </div>
                                 </div>
                                 <!-- schema 驱动参数表单 -->
@@ -243,7 +328,7 @@
                             </el-select>
                             <el-button size="small" @click="loadCustomCode" :disabled="!customSelected">📄 读取代码</el-button>
                             <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading">⚡ 本地回测</el-button>
-                            <el-button size="small" type="danger" @click="runCustomOptimize" :loading="customOptLoading">🧠 AI 优化</el-button>
+                            <el-button size="small" type="primary" @click="runCustomOptimize" :loading="customOptLoading">🧠 AI 优化</el-button>
                         </div>
                         <div v-if="customMsg" class="text-sm-primary mt-8">{{ customMsg }}</div>
                         <!-- 代码区 -->
@@ -306,8 +391,43 @@
                         <div v-else class="empty-state p-30-0">选择策略和日期范围后点击"运行回测"</div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
-                        <div class="card-title">{{ t('research.backtestHistory') }}</div>
-                        <qc-state-panel type="empty" icon="📝" title="敬请期待" desc="回测记录功能正在建设中，敬请关注"></qc-state-panel>
+                        <div class="card-title flex-between">
+                            <span>{{ t('research.backtestHistory') }}</span>
+                            <div class="flex-c-gap-8">
+                                <el-select class="w-100" size="small" v-model="btHistoryDays" @change="loadBtHistory">
+                                    <el-option label="近7天" :value="7" />
+                                    <el-option label="近30天" :value="30" />
+                                    <el-option label="近90天" :value="90" />
+                                </el-select>
+                                <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading">🔄 刷新</el-button>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="btHistoryError" type="error" title="加载失败" desc="请检查网络后重试" @retry="loadBtHistory"></qc-state-panel>
+                        <div v-else-if="!btHistory.length" class="empty-state">
+                            <div class="text-md-medium-primary">暂无回测记录</div>
+                            <div class="text-sm-tertiary-mt8">运行回测后，结果将自动记录在此</div>
+                        </div>
+                        <div v-else>
+                            <div v-for="r in btHistory" :key="r.ts + '-' + r.sid" class="card mb-12">
+                                <div class="flex-between-start-wrap">
+                                    <div>
+                                        <span class="strategy-name">{{ r.sid }}</span>
+                                        <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
+                                    </div>
+                                    <div class="flex-c-gap-8">
+                                        <span class="strategy-tag" v-if="r.summary">年化 {{ r.summary.annual_return }}%</span>
+                                        <span class="strategy-tag" v-if="r.summary">回撤 {{ r.summary.max_drawdown }}%</span>
+                                        <span class="strategy-tag" v-if="r.summary">夏普 {{ r.summary.sharpe_ratio }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="r.summary" class="flex-wrap-gap-12-mb16-c mt-8">
+                                    <span class="text-sm-secondary">总收益: <strong :class="(r.summary.total_return || 0) >= 0 ? 'color-success' : 'color-danger'">{{ r.summary.total_return }}%</strong></span>
+                                    <span class="text-sm-secondary">胜率: <strong>{{ r.summary.win_rate }}%</strong></span>
+                                    <span class="text-sm-secondary">交易次数: <strong>{{ r.summary.total_trades || 0 }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- v3.17.2 FR-3.17.2 市场复盘代码起点 -->
                     <div v-else-if="currentSubPage === 'market-review'" class="card market-review-card">
@@ -940,6 +1060,13 @@
           return state.currentPage.value + '/' + state.currentSubPage.value;
         },
         function (key) {
+          // V4.9 (P2): 进入研究概览时加载各子页数据
+          if (key === 'research/research-overview') {
+            loadStrategies();
+            loadMarketReviews();
+            loadVariants();
+            loadCustoms();
+          }
           // 进入研究页「市场复盘」且未停留在详情时加载列表
           if (key === 'research/market-review' && !selectedReviewDate.value) {
             loadMarketReviews();
@@ -952,6 +1079,10 @@
           // v3.19: 进入「量化研究」时加载策略列表
           if (key === 'research/quant-research') {
             loadStrategies();
+          }
+          // V4.9 (P3): 进入回测历史时加载列表
+          if (key === 'research/backtest-history') {
+            loadBtHistory();
           }
         },
         { immediate: true }
@@ -1251,8 +1382,31 @@
         }
       }
 
+      // ─── V4.9 (P3): 回测历史 ───
+      const btHistory = Vue.ref([]);
+      const btHistoryLoading = Vue.ref(false);
+      const btHistoryError = Vue.ref(false);
+      const btHistoryDays = Vue.ref(30);
+
+      async function loadBtHistory() {
+        btHistoryLoading.value = true;
+        btHistoryError.value = false;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const res = await fetch('/api/backtest/history?days=' + btHistoryDays.value, { headers }).then(function (r) { return r.json(); });
+          btHistory.value = (res && res.data) || [];
+        } catch (e) {
+          console.error('[backtest] 回测历史加载失败:', e);
+          btHistoryError.value = true;
+        } finally {
+          btHistoryLoading.value = false;
+        }
+      }
+
       return {
         ...state,
+        btHistory, btHistoryLoading, btHistoryError, btHistoryDays, loadBtHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
         loadMarketReviews, openMarketReview, backToMarketReviewList, loadMarketReviewDetail,

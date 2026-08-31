@@ -6,8 +6,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 
-from backtest import backtest_engine
-from auth import get_non_guest_user
+from backtest import backtest_engine, save_backtest_result, get_backtest_history
+from auth import get_non_guest_user, get_current_active_user
 
 router = APIRouter(prefix="/backtest", tags=["策略回测"])
 
@@ -41,6 +41,12 @@ async def run_strategy_backtest(
         )
 
         summary = backtest_engine.get_backtest_summary(result)
+        # V4.9 (P3): 保存回测结果到历史
+        save_backtest_result(strategy_id, summary, {
+            "start_date": params.get("start_date"),
+            "end_date": params.get("end_date"),
+            "initial_capital": params.get("initial_capital", 100000.0),
+        })
         return {
             "success": result.success,
             "summary": summary,
@@ -150,3 +156,17 @@ async def get_strategy_attribution(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
+
+
+# ─── V4.9 (P3): 回测历史列表 ───
+
+@router.get("/history")
+async def list_backtest_history(
+    days: int = 30,
+    sid: str = '',
+    limit: int = 100,
+    user: dict = Depends(get_current_active_user),
+):
+    """V4.9 (P3): 回测历史记录列表"""
+    history = get_backtest_history(days=days, sid=sid, limit=limit)
+    return {"success": True, "data": history, "count": len(history)}

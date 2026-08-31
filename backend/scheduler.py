@@ -5,6 +5,7 @@
 """
 
 import asyncio
+import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ from data_parser import parser
 from feishu_push import FeishuPusher
 from ai_evaluator import ai_evaluator
 from views_aggregator import views_aggregator
-from paths import EXTERNAL_DATA_DIR
+from paths import EXTERNAL_DATA_DIR, DATA_DIR
 from db import backup_db
 from report_generator import generate_weekly_report
 
@@ -20,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 # v3.17.12 (FR-3.17.12): 数据拉取任务连续失败飞书告警阈值
 PULL_ALERT_THRESHOLD = 3
+
+# V4.9 (P1): 调度执行历史持久化 — 记录每次任务运行详情
+HISTORY_FILE = os.path.join(DATA_DIR, "scheduler_history.json")
+_HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
 
 
@@ -74,7 +79,7 @@ class Scheduler:
         self._backup_failures = 0  # 备份连续失败计数
 
     def _record_task_run(self, task: str, success: bool, detail: str = ''):
-        """记录一次调度任务运行结果 (状态聚合 + Prometheus 埋点)"""
+        """记录一次调度任务运行结果 (状态聚合 + Prometheus 埋点 + 持久化历史)"""
         now = datetime.now()
         slot = self.task_status.setdefault(task, {
             'name': task, 'last_run': None, 'last_success': None,
@@ -97,7 +102,100 @@ class Scheduler:
             metrics.record_scheduler_run(task, success)
         except Exception:
             logger.warning("指标埋点失败 (忽略)", exc_info=True)
+        # V4.9 (P1): 持久化每条历史记录
+        self._persist_history(task, success, detail)
         return slot
+
+    def _persist_history(self, task: str, success: bool, detail: str):
+        """将单次执行记录追加到 scheduler_history.json"""
+        try:
+            record = {
+                'task': task,
+                'success': success,
+                'detail': detail[:200] if detail else '',
+                'ts': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            history = []
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                        history = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    history = []
+            history.append(record)
+            # 超限滚动删除最旧记录
+            if len(history) > _HISTORY_MAX:
+                history = history[-_HISTORY_MAX:]
+            with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+                json.dump(history, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning("调度历史持久化失败 (忽略): %s", e)
+
+    def get_execution_history(self, days: int = 7, task: str = '', status: str = '', limit: int = 200) -> list:
+        """从持久化文件读取执行历史，支持按天/任务名/状态筛选"""
+        try:
+            if not os.path.exists(HISTORY_FILE):
+                return []
+            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                history = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
+        if not isinstance(history, list):
+            return []
+        # 按时间倒序（最新在前）；同秒记录按写入顺序倒序（后写在前）
+        history = list(enumerate(history))
+        history.sort(key=lambda i_r: (i_r[1].get('ts', ''), i_r[0]), reverse=True)
+        history = [r for _, r in history]
+        # 按天数筛选
+        if days > 0:
+            cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+            history = [r for r in history if r.get('ts', '')[:10] >= cutoff]
+        # 按任务名筛选
+        if task:
+            history = [r for r in history if r.get('task', '') == task]
+        # 按状态筛选
+        if status == 'success':
+            history = [r for r in history if r.get('success')]
+        elif status == 'failed':
+            history = [r for r in history if not r.get('success')]
+        return history[:limit]
+
+    def get_execution_summary(self, days: int = 30) -> dict:
+        """聚合统计：各任务执行次数/成功率/趋势"""
+        history = self.get_execution_history(days=days, limit=_HISTORY_MAX)
+        total = len(history)
+        success_count = sum(1 for r in history if r.get('success'))
+        by_task = {}
+        for r in history:
+            t = r.get('task', 'unknown')
+            if t not in by_task:
+                by_task[t] = {'total': 0, 'success': 0, 'failed': 0, 'last_run': '', 'last_status': ''}
+            by_task[t]['total'] += 1
+            if r.get('success'):
+                by_task[t]['success'] += 1
+            else:
+                by_task[t]['failed'] += 1
+            if r.get('ts', '') > by_task[t]['last_run']:
+                by_task[t]['last_run'] = r['ts']
+                by_task[t]['last_status'] = 'success' if r.get('success') else 'failed'
+        # 每日趋势
+        daily = {}
+        for r in history:
+            day = r.get('ts', '')[:10]
+            if day not in daily:
+                daily[day] = {'total': 0, 'success': 0, 'failed': 0}
+            daily[day]['total'] += 1
+            if r.get('success'):
+                daily[day]['success'] += 1
+            else:
+                daily[day]['failed'] += 1
+        return {
+            'total': total,
+            'success_count': success_count,
+            'success_rate': round(success_count / total * 100, 1) if total > 0 else 0,
+            'by_task': by_task,
+            'daily_trend': daily,
+        }
 
     def get_task_status(self) -> dict:
         """返回各调度任务运行状态快照 (FR-3.17.12)"""
@@ -424,6 +522,14 @@ class Scheduler:
                 try:
                     # V4.7.1 (并发安全): 引擎取数/因子计算同步阻塞事件循环(全市场每策略 60-120s) → 移入后台线程
                     await asyncio.to_thread(run_strategy_once)
+                    # V4.8.2-fix (用户反馈): 持仓生成后热刷新 parser — data_parser.parser 为模块级单例,
+                    # 仅启动时加载; 不刷新则软件(日历/策略总览)读不到当日持仓, 需重启服务才能看到
+                    try:
+                        from data_parser import parser as _dp_parser
+                        _dp_parser.reload()
+                        logger.info("📊 策略持仓已热刷新进日历数据")
+                    except Exception as _e:
+                        logger.warning("策略持仓热刷新失败: %s", _e)
                     self._record_task_run("strategy_run", True, f"策略持仓已生成 {today}")
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
