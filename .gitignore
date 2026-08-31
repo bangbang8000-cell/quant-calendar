@@ -31,6 +31,7 @@ env/
 
 # User data (generated at runtime)
 quant-calendar-ops/data/
+data/
 *.db
 *.sqlite3
 

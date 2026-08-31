@@ -59,7 +59,18 @@ class UserManager:
         self._load_users()
 
     def _load_users(self):
-        """加载用户数据"""
+        """加载用户数据 (v3.3.0: 优先 SQLite, 回退 JSON)"""
+        # 尝试从 SQLite 加载
+        try:
+            import db
+            if db.schema_ok():
+                db_users = db.kv_all('users')
+                if db_users:
+                    self.users = db_users
+                    return
+        except Exception:
+            pass
+        # 回退 JSON
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
                 self.users = json.load(f)
@@ -99,10 +110,18 @@ class UserManager:
             self._save_users()
 
     def _save_users(self):
-        """保存用户数据"""
+        """保存用户数据 (v3.3.0: SQLite + JSON 双写, SQLite 失败不影响 JSON)"""
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.users, f, ensure_ascii=False, indent=2)
+        # SQLite 同步 (尽力而为)
+        try:
+            import db
+            if db.schema_ok():
+                for username, data in self.users.items():
+                    db.kv_set('users', username, data)
+        except Exception:
+            pass
 
     def _hash_password(self, password: str) -> str:
         """密码哈希 (使用 bcrypt 强加密)"""

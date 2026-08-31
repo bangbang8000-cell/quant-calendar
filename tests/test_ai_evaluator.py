@@ -147,6 +147,17 @@ class TestAIEvaluation:
         mock_post.return_value = mock_response
 
         evaluator = AIEvaluator()
-        result = evaluator.evaluate_stock('000001.SZ', '平安银行')
+        # v3.2.0 fix: 传 stock_data 绕过真实行情获取 (_fetch_stock_data 会阻塞等待数据源)
+        sample_data = {
+            'code': '000001.SZ', 'name': '平安银行',
+            'has_kline': True, 'has_fundamentals': True,
+            'latest': {'date': '2026-07-14', 'close': 12.8, 'open': 12.5, 'high': 12.9, 'low': 12.3, 'pct_chg': 2.4},
+            'rsi': 58.5, 'macd': {'dif': 0.15, 'dea': 0.10, 'hist': 0.05},
+            'ma_alignment': '多头排列', 'pct_5d': 3.2, 'pct_20d': 5.1,
+            'price_range': {'high': 13.2, 'low': 11.8},
+            'volume_analysis': {'trend': '温和放量', 'detail': '近5日量能递增'},
+            'fundamentals': {'pe': 6.5, 'pb': 0.85, 'total_mv': 250000000000, 'data_source': 'mock'},
+        }
+        result = evaluator.evaluate_stock('000001.SZ', '平安银行', stock_data=sample_data)
         assert 'result' in result
         assert 'total_score' in result['result']

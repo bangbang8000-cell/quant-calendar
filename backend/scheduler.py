@@ -14,6 +14,7 @@ from feishu_push import FeishuPusher
 from ai_evaluator import ai_evaluator
 from views_aggregator import views_aggregator
 from paths import EXTERNAL_DATA_DIR
+from db import backup_db
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +323,22 @@ class Scheduler:
                 logger.info(f"文件监听任务异常: {e}")
                 await asyncio.sleep(60)
     
+    async def daily_backup_task(self):
+        """v3.3.0-T7: 每日自动备份数据库 (凌晨 3:05)"""
+        while self.running:
+            now = datetime.now()
+            # 3:05-3:10 窗口内执行
+            if now.hour == 3 and 5 <= now.minute < 10:
+                name = backup_db()
+                if name:
+                    logger.info(f"💾 每日自动备份成功: {name}")
+                else:
+                    logger.warning("💾 每日自动备份失败")
+                # 执行后休眠 1 小时避免重复
+                await asyncio.sleep(3600)
+            else:
+                await asyncio.sleep(60)
+
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -333,6 +350,7 @@ class Scheduler:
         asyncio.create_task(self.auto_evaluate_task())
         asyncio.create_task(self.data_refresh_task())
         asyncio.create_task(self.file_watch_task())
+        asyncio.create_task(self.daily_backup_task())
     
     async def stop(self):
         """停止调度器"""

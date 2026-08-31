@@ -194,9 +194,19 @@ async def test_tushare_config(_: Dict = Depends(get_admin_user)):
     except Exception as e:
         return {
             "success": False,
-            "message": f"测试失败: {str(e)}",
-            "available": False
+            "message": f"测试失败: {e}"
         }
+
+# v3.3.0-T11: 数据管线 (tushare 拉取 + 解析器刷新)
+@router.post('/pipeline/run')
+async def run_data_pipeline(_: Dict = Depends(get_admin_user)):
+    """执行完整数据管线: tushare 行情拉取 → 缓存更新 → 解析器 reload"""
+    try:
+        from data_pipeline import run_pipeline
+        result = run_pipeline()
+        return {"success": result.get("success", False), "steps": result.get("steps", [])}
+    except Exception as e:
+        return {"success": False, "message": f"数据管线执行失败: {e}"}
 
 @router.post('/tushare/sync')
 async def sync_tushare_data(_: Dict = Depends(get_admin_user)):

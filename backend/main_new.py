@@ -32,6 +32,16 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用启动/关闭生命周期"""
+    # v3.3.0-T9: 启动 schema 校验 (损坏自动告警而非静默)
+    import db
+    if not db.schema_ok():
+        ok = db.init_db()
+        if not ok:
+            logger.critical("❌ 数据库初始化/校验失败, 数据可能损坏! 请检查 data/app.db")
+        else:
+            logger.info("✅ 数据库 schema 已重建")
+    else:
+        logger.info("✅ 数据库 schema 校验通过")
     from scheduler import scheduler
     await scheduler.start()
     logger.info("⏰ 定时任务调度器已启动")
@@ -42,13 +52,17 @@ async def lifespan(app: FastAPI):
 
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="量化选股日历 API v3.1.0",
-    version="3.1.0",
+    title="量化选股日历 API v3.2.0",
+    version="3.2.0",
     description="基于美林时钟的量化选股系统",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# v3.3.0-T13: 统一错误码体系
+from api.v1.errors import register_error_handlers
+register_error_handlers(app)
 
 # CORS 安全配置
 app.add_middleware(
@@ -117,7 +131,7 @@ async def health_check():
     """健康检查"""
     return {
         "status": "ok",
-        "version": "3.1.0",
+        "version": "3.2.0",
         "message": "量化选股日历服务运行中"
     }
 

@@ -6,8 +6,19 @@
 """
 from fastapi import APIRouter, Query
 from typing import Optional
+from functools import lru_cache
 
 router = APIRouter(prefix="/search", tags=["搜索"])
+
+
+@lru_cache(maxsize=8192)
+def _pinyin_initials(name: str) -> str:
+    """名称 → 拼音首字母 (如 中国神华 → zgsh), 模块级缓存避免重复计算"""
+    try:
+        from pypinyin import lazy_pinyin
+        return ''.join(p[0] for p in lazy_pinyin(name)).lower()
+    except Exception:
+        return ''
 
 
 @router.get("")
@@ -24,11 +35,11 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
     results = []
     seen = set()
 
-    # 1. 从 stock_info 搜索（代码+名称）
+    # 1. 从 stock_info 搜索（代码+名称+拼音）
     try:
         from stock_info import stock_manager
         for code, name in stock_manager.stock_map.items():
-            if q_lower in code.lower() or q_lower in name.lower():
+            if q_lower in code.lower() or q_lower in name.lower() or (len(q_lower) >= 2 and q_lower in _pinyin_initials(name)):
                 if code not in seen:
                     seen.add(code)
                     results.append({
@@ -51,7 +62,7 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
                     name = s.get('name', '')
                     if code in seen:
                         continue
-                    if q_lower in code.lower() or (name and q_lower in name.lower()):
+                    if q_lower in code.lower() or (name and (q_lower in name.lower() or (len(q_lower) >= 2 and q_lower in _pinyin_initials(name)))):
                         seen.add(code)
                         results.append({
                             "code": code,
