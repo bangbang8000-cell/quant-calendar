@@ -150,6 +150,7 @@ def _kline_metrics(kline) -> tuple:
             closes.append(float(r[_K_CLOSE]))
             dates.append(str(r[_K_DATE]))
         except (TypeError, ValueError, IndexError):
+            logger.debug('prompt_facts:152 跳过 ((TypeError, ValueError, IndexError))')
             continue
     if len(closes) < 2:
         return {}, 'unavailable', None

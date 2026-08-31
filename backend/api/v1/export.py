@@ -7,6 +7,7 @@
 - GET  /api/export/excel → 导出完整数据集 Excel
 - POST /api/import        → 导入恢复
 """
+import logging
 import json
 import os
 import io
@@ -18,7 +19,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from auth import get_current_active_user
+from auth import get_non_guest_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/data", tags=["数据导出导入"])
 
@@ -69,7 +72,7 @@ def _collect_user_data(username: str) -> dict:
 
 
 @router.get("/export")
-async def export_data(user: dict = Depends(get_current_active_user)):
+async def export_data(user: dict = Depends(get_non_guest_user)):
     """导出当前用户数据 (JSON)"""
     username = user.get("username", "default")
     data = _collect_user_data(username)
@@ -77,7 +80,7 @@ async def export_data(user: dict = Depends(get_current_active_user)):
 
 
 @router.post("/import")
-async def import_data(req: ImportRequest, user: dict = Depends(get_current_active_user)):
+async def import_data(req: ImportRequest, user: dict = Depends(get_non_guest_user)):
     """导入用户数据 (自选/聊天/评估历史)"""
     username = user.get("username", "default")
     d = req.data
@@ -131,7 +134,7 @@ async def import_data(req: ImportRequest, user: dict = Depends(get_current_activ
 @router.get("/export/csv")
 async def export_csv(
     type: str = Query("strategies", description="导出类型: strategies|stocks|evaluation"),
-    user: dict = Depends(get_current_active_user)
+    user: dict = Depends(get_non_guest_user)
 ):
     """导出股票/策略数据为 CSV"""
     output = io.StringIO()
@@ -199,7 +202,7 @@ async def export_csv(
 
 @router.get("/export/excel")
 async def export_excel(
-    user: dict = Depends(get_current_active_user)
+    user: dict = Depends(get_non_guest_user)
 ):
     """导出完整数据集为 Excel (.xlsx)"""
     try:
@@ -226,7 +229,7 @@ async def export_excel(
                     if rows:
                         pd.DataFrame(rows).to_excel(writer, sheet_name="策略持仓", index=False)
             except Exception:
-                pass
+                logger.warning('export:231 静默异常 (Exception)')
 
             # Sheet 2: 股票信息
             try:
@@ -237,7 +240,7 @@ async def export_excel(
                 if rows:
                     pd.DataFrame(rows).to_excel(writer, sheet_name="股票信息", index=False)
             except Exception:
-                pass
+                logger.warning('export:242 静默异常 (Exception)')
 
             # Sheet 3: AI 评估历史
             try:
@@ -258,7 +261,7 @@ async def export_excel(
                 if rows:
                     pd.DataFrame(rows).to_excel(writer, sheet_name="AI评估历史", index=False)
             except Exception:
-                pass
+                logger.warning('export:263 静默异常 (Exception)')
 
         buffer.seek(0)
         return Response(

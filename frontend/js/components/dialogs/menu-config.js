@@ -9,7 +9,7 @@
   window.__quantComponents.MenuConfigDialog = {
     name: 'qc-menu-config-dialog',
     template: `
-        <el-dialog v-model="menuConfigDialog" :title="'⚙️ ' + (allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
+        <el-dialog v-model="menuConfigDialog" :title="'⚙ ' + (allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
             <div class="p-15-0">
                 <el-form label-width="60px" size="small">
                     <el-form-item label="组名">

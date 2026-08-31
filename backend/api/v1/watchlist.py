@@ -12,6 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from auth import get_current_active_user
 from paths import DATA_DIR
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/watchlist", tags=["自选股"])
 
 BASE_USERS_DIR = os.path.join(DATA_DIR, "users")
@@ -121,7 +123,7 @@ async def clear_watchlist(user: dict = Depends(get_current_active_user)):
         from audit_log import log
         log("clear_watchlist", user["username"], {"count": cnt})
     except Exception:
-        pass
+        logger.warning('watchlist:123 静默异常 (Exception)')
     return {"success": True, "message": "自选已清空", "count": cnt}
 
 

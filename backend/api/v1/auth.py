@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from typing import Dict, Any
 
 from auth import login_user, get_current_active_user, get_admin_user, get_non_guest_user
-from rate_limit import check_login_rate_limit
+from rate_limit import (check_login_rate_limit, get_client_ip,
+                           is_account_locked, record_login_fail, reset_login_fail)
 from user_manager import user_manager
 
 logger = logging.getLogger(__name__)
@@ -20,16 +21,24 @@ router = APIRouter(tags=["用户认证"])
 @router.post("/login")
 async def login(request: Request, req: Dict[str, str]):
     """用户登录 - 返回 JWT Token"""
-    # 登录接口更严格的速率限制
-    client_ip = request.client.host if request.client else "unknown"
+    # 登录接口更严格的速率限制 (V4.1: 经代理链解析真实 IP)
+    client_ip = get_client_ip(request)
     if not check_login_rate_limit(client_ip):
         raise HTTPException(
             status_code=429,
             detail="登录尝试过于频繁，请1分钟后再试"
         )
+    # V4.1: 账号级失败锁定
+    username = req.get("username", "")
+    if is_account_locked(username):
+        raise HTTPException(
+            status_code=429,
+            detail="该账号登录失败次数过多，已临时锁定，请15分钟后再试"
+        )
 
-    token = login_user(req.get("username", ""), req.get("password", ""))
+    token = login_user(username, req.get("password", ""))
     if token:
+        reset_login_fail(username)
         try:
             from .user_config import init_user_config
             init_user_config(req.get("username"))
@@ -48,6 +57,8 @@ async def login(request: Request, req: Dict[str, str]):
             "data": token,
             "user": user_manager.get_user(req.get("username"))
         }
+    # V4.1: 记录账号失败, 用于临时锁定
+    record_login_fail(username)
     # v3.4.0-T1: 审计 — 登录失败
     try:
         from audit_log import log
@@ -110,6 +121,12 @@ async def add_user(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
         except Exception:
             logger.warning("[warn] 操作异常 (v3.4.0-T8)")
             pass
+        # V4.1: 用户管理审计
+        try:
+            from audit_log import log
+            log("add_user", _.get("username", "admin"), {"target": username, "role": role})
+        except Exception:
+            logger.warning('auth:128 静默异常 (Exception)')
     return {"success": success, "message": "添加成功" if success else "用户名已存在"}
 
 
@@ -136,6 +153,15 @@ async def update_user(
         req.get("theme"),
         req.get("group")
     )
+    # V4.1: 用户管理审计 (改密/降权/改角色属敏感操作)
+    if success:
+        try:
+            from audit_log import log
+            log("update_user", current_user.get("username", "admin"),
+                {"target": username, "password": bool(req.get("password")),
+                 "role": role, "theme": req.get("theme"), "group": req.get("group")})
+        except Exception:
+            logger.warning('auth:163 静默异常 (Exception)')
     return {"success": success, "message": "更新成功" if success else "用户不存在"}
 
 
@@ -149,7 +175,7 @@ async def delete_user(username: str, admin: Dict = Depends(get_admin_user)):
         log("delete_user", admin.get("username", "admin"),
             {"target": username, "success": success})
     except Exception:
-        pass
+        logger.warning('auth:177 静默异常 (Exception)')
     return {"success": success, "message": "删除成功" if success else "无法删除admin或用户不存在"}
 
 

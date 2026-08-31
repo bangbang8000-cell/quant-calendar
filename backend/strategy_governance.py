@@ -30,7 +30,7 @@ def _default_state() -> dict:
     """4 内置策略默认纳管状态"""
     return {
         sid: {"enabled": True, "schedule": DEFAULT_SCHEDULE,
-              "universe": "default",  # v3.21: default=策略自带池 | all=全市场5530
+              "universe": "all",  # V4.7: 默认全市场5530(批量取数已提速); default=策略自带池8只(开发占位)
               # V4.0 M3: 完全体闭环 — 内置策略引擎持仓默认进入日历展示
               "show_in_calendar": True,
               "last_run": None, "last_holdings": None}
@@ -54,12 +54,24 @@ def get_state() -> dict:
 
 
 def save_state(state: dict) -> dict:
-    """持久化纳管状态"""
+    """持久化纳管状态
+
+    V4.7.1 (修复): 部分更新时缺失 sid 合并现有 json 状态, 避免 universe 等字段被重置回 default。
+    此前 PUT /strategies/governance 只传 1 个 sid 时, 其余 3 个 sid 用空字典 → universe 归 default。
+    """
     os.makedirs(DATA_DIR, exist_ok=True)
+    # 读取现有状态, 供部分更新补缺
+    existing = {}
+    try:
+        if os.path.exists(GOV_FILE):
+            with open(GOV_FILE, "r", encoding="utf-8") as f:
+                existing = json.load(f) or {}
+    except Exception:
+        logger.warning("读取纳管状态失败(保存时), 以空态继续")
     # 仅保留内置策略 + 合法字段, 防止注入
     clean = {}
     for sid in BUILTIN_SIDS:
-        s = (state or {}).get(sid) or {}
+        s = (state or {}).get(sid) or existing.get(sid) or {}
         clean[sid] = {
             "enabled": bool(s.get("enabled", True)),
             "schedule": str(s.get("schedule") or DEFAULT_SCHEDULE)[:5],
@@ -143,17 +155,24 @@ def _holdings_matrix_rows(holdings, universe) -> list:
 
 
 def _write_holdings_matrix(holdings, sid, out_dir: str, universe=None) -> str:
-    """写持仓文件 (qresult 完全一致矩阵: 行=日期, 列=股票代码, 值=1持有)"""
+    """写持仓文件 (qresult 完全一致矩阵: 行=日期, 列=股票代码, 值=1持有)
+
+    V4.7.1 (并发安全): 原子写入 — 先写同目录临时文件, 再 os.replace 原子重命名。
+    避免 data_parser/file_watch 在生成期间读到半截 CSV (截断行/脏数据)。
+    """
     os.makedirs(out_dir, exist_ok=True)
     name = _display_name(sid)
     path = os.path.join(out_dir, name + "持仓.csv")
+    tmp_path = path + ".tmp"
     rows, cols = _holdings_matrix_rows(holdings, universe or [])
     if not rows:
         raise ValueError("持仓矩阵为空")
-    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+    # 先写临时文件 (同目录 → 同文件系统, os.replace 原子)
+    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         for r in rows:
             w.writerow(r)
+    os.replace(tmp_path, path)  # 原子替换: 读者要么看到旧完整文件, 要么看到新完整文件
     return path
 
 

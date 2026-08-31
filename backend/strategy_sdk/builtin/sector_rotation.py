@@ -93,5 +93,6 @@ class SectorRotationStrategy(BaseStrategy):
                 for s in picks:
                     holdings.at[d, s] = w
             except KeyError:
+                logger.debug('sector_rotation:95 跳过 (KeyError)')
                 continue
         return holdings

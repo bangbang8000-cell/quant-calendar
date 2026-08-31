@@ -57,6 +57,14 @@ class RealDataPortal:
         kline_fields = [f for f in fields if f in ('close', 'volume', 'amount', 'high', 'low', 'open')]
         basic_fields = [f for f in fields if _FIELD_SOURCE.get(f) == 'basic']
         flow_fields = [f for f in fields if _FIELD_SOURCE.get(f) == 'moneyflow']
+        # V4.7: 全市场池(>500只)走按日批量取数 — 单次调用拉全市场, 替代逐股 5500 次请求
+        if len(symbols) > 500 and hasattr(self.source, 'get_market_daily_batch'):
+            batch = self._get_batch_panel(fields, start, end, symbols,
+                                          kline_fields, basic_fields, flow_fields)
+            if batch is not None and not batch.empty:
+                return batch[fields] if all(f in batch.columns for f in fields) else batch
+            # 批量失败则回退逐股(限流/接口不可用时保底)
+            logger.warning('批量全市场面板失败, 回退逐股取数 (%d 只)', len(symbols))
         frames = []
 
         def _fetch_one(code):
@@ -99,8 +107,79 @@ class RealDataPortal:
                 days = (_dt.datetime.strptime(e, '%Y%m%d') - _dt.datetime.strptime(s, '%Y%m%d')).days
                 return max(default, min(int(days * 1.5) + 20, cap))
         except Exception:
-            pass
+            logger.warning('data_portal:109 静默异常 (Exception)')
         return default
+
+    # V4.7: 全市场按日批量面板 — 每个交易日 3 次调用(daily/daily_basic/moneyflow) 覆盖 5500 只
+    def _get_batch_panel(self, fields, start, end, symbols,
+                         kline_fields, basic_fields, flow_fields):
+        try:
+            import time as _t
+            trade_dates = self.source.get_trade_dates(start, end) or []
+            if not trade_dates:
+                return pd.DataFrame()
+            need_kline = bool(kline_fields)
+            need_basic = bool(basic_fields)
+            need_flow = bool(flow_fields)
+            rows = []  # (date, symbol, field_dict)
+            for td in trade_dates:
+                day_data = {}
+                if need_kline:
+                    df = self.source.get_market_daily_batch(td)
+                    if df is not None and len(df):
+                        for _, r in df.iterrows():
+                            code = str(r.get('ts_code', '')).strip()
+                            if not code:
+                                continue
+                            d = day_data.setdefault(code, {})
+                            for f in kline_fields:
+                                v = r.get(f)
+                                if v is not None:
+                                    d[f] = float(v)
+                if need_basic:
+                    df = self.source.get_market_daily_basic_batch(td)
+                    if df is not None and len(df):
+                        for _, r in df.iterrows():
+                            code = str(r.get('ts_code', '')).strip()
+                            if not code:
+                                continue
+                            d = day_data.setdefault(code, {})
+                            for f in basic_fields:
+                                v = r.get(f)
+                                if v is not None:
+                                    d[f] = float(v)
+                if need_flow:
+                    df = self.source.get_market_moneyflow_batch(td)
+                    if df is not None and len(df):
+                        for _, r in df.iterrows():
+                            code = str(r.get('ts_code', '')).strip()
+                            if not code:
+                                continue
+                            d = day_data.setdefault(code, {})
+                            for f in flow_fields:
+                                # tushare moneyflow 列名: net_mf_amount → 策略字段 main_net_inflow
+                                col = 'net_mf_amount' if f == 'main_net_inflow' else f
+                                v = r.get(col) if col in r.index else r.get(f)
+                                if v is not None:
+                                    d[f] = float(v)
+                for code, d in day_data.items():
+                    if not d:
+                        continue
+                    row = {'date': str(td), 'symbol': code}
+                    row.update(d)
+                    rows.append(row)
+                _t.sleep(0.6)  # 尊重数据源限流(500次/分)
+            if not rows:
+                return pd.DataFrame()
+            import pandas as _pd
+            frame = _pd.DataFrame(rows)
+            frame['date'] = frame['date'].str.replace(r'(\d{4})(\d{2})(\d{2})', r'\1-\2-\3', regex=True)
+            frame = frame.set_index(['date', 'symbol'])
+            cols = [f for f in fields if f in frame.columns]
+            return frame[cols] if cols else frame
+        except Exception as e:
+            logger.warning('批量全市场面板失败: %s', e)
+            return pd.DataFrame()
 
     def _stock_panel(self, code, start, end, kline_fields, basic_fields, flow_fields):
         """单只股票: K线(日频) + 估值/资金流(历史序列按日合并, 前向填充不越界 → 无未来函数)

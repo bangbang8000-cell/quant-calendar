@@ -19,14 +19,14 @@
       ],
       legend: { textStyle: { color: getCSSVar('--text-secondary') || '#6b7280' } },
       categoryAxis: {
-        axisLine: { lineStyle: { color: getCSSVar('--border-light') || '#e5e7eb' } },
+        axisLine: { lineStyle: { color: getCSSVar('--chart-axis') || '#cbd5e1' } },
         axisLabel: { color: getCSSVar('--text-secondary') || '#6b7280' },
-        splitLine: { lineStyle: { color: getCSSVar('--border-light') || '#f3f4f6' } },
+        splitLine: { lineStyle: { color: getCSSVar('--chart-split') || '#e2e8f0' } },
       },
       valueAxis: {
-        axisLine: { lineStyle: { color: getCSSVar('--border-light') || '#e5e7eb' } },
+        axisLine: { lineStyle: { color: getCSSVar('--chart-axis') || '#cbd5e1' } },
         axisLabel: { color: getCSSVar('--text-secondary') || '#6b7280' },
-        splitLine: { lineStyle: { color: getCSSVar('--border-light') || '#f3f4f6' } },
+        splitLine: { lineStyle: { color: getCSSVar('--chart-split') || '#e2e8f0' } },
       },
       tooltip: {
         backgroundColor: getCSSVar('--bg-card') || '#ffffff',

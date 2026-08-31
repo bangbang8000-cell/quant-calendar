@@ -197,7 +197,9 @@ def test_index_sw_register_and_gesture_loaded():
     """index.html: 注册 service worker + 加载并初始化手势模块"""
     idx = _read("index.html")
     assert "navigator.serviceWorker.register('/sw.js')" in idx, "index.html 应注册 SW"
-    assert "js/mobile-gestures.js" in idx, "index.html 应加载 mobile-gestures.js"
+    # V4.3 (方案A): mobile-gestures 由 src/main.js 打包, 不在 index.html 单独列出
+    main = _read("src/main.js")
+    assert "js/mobile-gestures.js" in main, "构建入口 main.js 应加载 mobile-gestures.js"
     assert "initGestures()" in idx, "index.html 应调用手势装配 initGestures()"
     assert 'rel="manifest"' in idx, "index.html 应引用 manifest"
     assert 'name="theme-color"' in idx, "index.html 应有 theme-color meta"

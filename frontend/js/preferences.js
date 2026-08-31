@@ -29,7 +29,7 @@
     default_view: ['strategies', 'calendar', 'ai', 'research', 'system'],
     theme: ['light', 'dark', 'system'],
     chart_period: ['daily', 'weekly', 'monthly'],
-    language: ['zh-CN', 'en'],
+    language: ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'],
   };
 
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）

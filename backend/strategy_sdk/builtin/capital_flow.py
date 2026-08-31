@@ -81,5 +81,6 @@ class CapitalFlowStrategy(BaseStrategy):
                 for s in picks:
                     holdings.at[d, s] = w
             except KeyError:
+                logger.debug('capital_flow:83 跳过 (KeyError)')
                 continue
         return holdings

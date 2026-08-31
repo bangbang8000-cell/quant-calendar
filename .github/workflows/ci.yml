@@ -56,6 +56,18 @@ jobs:
           EOF
       - name: Lint
         run: ruff check backend/ --select=E,F,W --ignore=E501
+      - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5; workflow_dispatch 仅校验存在)
+        run: |
+          V=$(grep -oP 'APP_VERSION = "\K[0-9.]+' backend/main_new.py || true)
+          if [ -z "$V" ]; then echo "未找到 APP_VERSION"; exit 1; fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG=${GITHUB_REF_NAME#v}
+            if [ "$TAG" != "$V" ]; then echo "tag=$TAG 与 APP_VERSION=$V 不一致"; exit 1; fi
+            echo "版本一致: $V"
+          else
+            echo "workflow_dispatch/分支触发: 仅校验 APP_VERSION 存在 ($V)"
+          fi
+
       - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
         run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"
       - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
@@ -67,7 +79,7 @@ jobs:
           # 数据源自愈门禁含既有 data_sources 测试 (test_data_sources/test_data_sources_fetch),
           # 否则仅路由测试对 data_sources 覆盖不足 (40% < 60%), CI 恒红
           python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
-            tests/test_market_review_activation.py tests/test_event_alert_live.py \
+            tests/test_market_review_activation.py tests/test_event_alert_live.py tests/test_market_review.py \
             --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。

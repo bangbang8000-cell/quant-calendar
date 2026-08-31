@@ -75,6 +75,7 @@ def compute_cross_section_ic(factor_values: List[Optional[float]],
             x = float(fv)
             y = float(r)
         except (TypeError, ValueError):
+            logger.debug('factor_ic:77 跳过 ((TypeError, ValueError))')
             continue
         if x != x or y != y:  # NaN
             continue
@@ -155,18 +156,82 @@ def build_factor_ic_report(factor_panels: Dict[str, Dict[str, List[Dict]]]) -> D
     return report
 
 
-def get_factor_ic_report() -> Dict:
-    """获取因子 IC 报告 (FR-3.18.7)。
+def _future_return_matrix(close, window: int):
+    """由收盘价矩阵生成未来 N 日收益矩阵 (shift(-window) 前瞻, 供 IC 研究用)
 
-    数据获取: 需多股票多日期因子值 + 未来收益 (横截面), 依赖数据源;
+    注意: 仅用于因子研究展示 (研究口径), 不回测/实盘决策。
+    """
+    fwd = close.shift(-window) / close - 1.0
+    return fwd
+
+
+def get_factor_ic_report() -> Dict:
+    """获取因子 IC 报告 (FR-3.18.7 / V4.7.4 落地真实数据)。
+
+    数据链路: registry 内置多因子策略 factor_specs → DataPortal.get_panel 全市场面板
+              → compute_cross_section_factors 因子矩阵 → close 生成 n5/n10/n20 未来收益
+              → 逐日横截面 IC → 三档标注。
     数据不可达 → 返回空报告 {} (优雅降级, 不抛错)。
     """
     try:
-        from data_sources import data_source_manager
-        # 简化数据获取: 沙箱不可达时返回空; 接入真实横截面数据后填充 factor_panels
-        _ = data_source_manager
-        # TODO(FR-3.18.7): 接入真实多股票因子值+未来收益横截面数据
-        return {}
+        import pandas as pd
+        from strategy_sdk.registry import registry
+        from strategy_sdk.data_portal import RealDataPortal
+        from strategy_sdk.factor_engine import compute_cross_section_factors
+
+        strategy = registry.get('multi_factor')
+        specs = list(getattr(strategy, 'factor_specs', []) or [])
+        if not specs:
+            logger.warning('因子 IC 报告: multi_factor 无 factor_specs, 返回空')
+            return {}
+        universe = list(getattr(strategy, 'universe', []) or [])
+        if not universe:
+            logger.warning('因子 IC 报告: multi_factor 无 universe, 返回空')
+            return {}
+        # 汇总所有因子输入字段 + close (未来收益基准)
+        fields = ['close']
+        for s in specs:
+            for f in (s.inputs or []):
+                if f not in fields:
+                    fields.append(f)
+        # 近 120 个自然日窗口 (足够 n20 未来收益 + 因子 lookback)
+        import datetime as _dt
+        end = _dt.date.today().isoformat()
+        start = (_dt.date.today() - _dt.timedelta(days=120)).isoformat()
+        portal = RealDataPortal()
+        panel = portal.get_panel(fields, start=start, end=end, universe=universe)
+        if panel is None or panel.empty or 'close' not in panel.columns:
+            logger.warning('因子 IC 报告: 面板数据为空, 降级空报告')
+            return {}
+        factor_values = compute_cross_section_factors(panel, specs)
+        if not factor_values:
+            logger.warning('因子 IC 报告: 因子计算无有效值, 降级空报告')
+            return {}
+        close = panel['close'].unstack('symbol')
+        report: Dict[str, Dict] = {}
+        for fkey, fdf in factor_values.items():
+            # 因子矩阵全 NaN (数据源字段不可达) → 跳过, 报告不含该因子
+            if fdf.empty or int(fdf.notna().sum().sum()) == 0:
+                logger.warning('因子 IC 报告: 因子 %s 无有效值, 跳过', fkey)
+                continue
+            report[fkey] = {}
+            for wkey in TRACK_WINDOWS:
+                window = int(wkey[1:])
+                fwd = _future_return_matrix(close, window)
+                ics = []
+                for d in sorted(set(fdf.index) & set(fwd.index)):
+                    fv = fdf.loc[d]
+                    rt = fwd.loc[d]
+                    common = [c for c in fv.index if c in rt.index
+                              and pd.notna(fv[c]) and pd.notna(rt[c])]
+                    if len(common) < 2:
+                        continue
+                    ic = compute_cross_section_ic(
+                        [float(fv[c]) for c in common],
+                        [float(rt[c]) for c in common])
+                    ics.append(ic)
+                report[fkey][wkey] = evaluate_ic_series(ics)
+        return report
     except Exception as e:
         logger.warning('因子 IC 报告数据获取失败 (降级): %s', e)
         return {}

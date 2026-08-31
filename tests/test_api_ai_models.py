@@ -12,6 +12,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
+from auth import create_access_token
 import paths
 import api.v1.ai as ai_router
 from ai_evaluator import VENDOR_CATALOG
@@ -251,11 +252,13 @@ class TestHttpRequestValidation:
 
         app = FastAPI()
         app.include_router(ai_router.router)
+        _tok = create_access_token({"sub": "admin", "role": "admin"})
         mock_get = MagicMock()
         mock_get.status_code = 200
         mock_get.json.return_value = {"data": [{"id": "model-x"}, {"id": "model-y"}]}
         with patch("ai_evaluator.requests.get", return_value=mock_get):
             with TestClient(app) as c:
+                c.headers.update({"Authorization": "Bearer " + _tok})
                 r = c.post("/ai/models/list", json={
                     "vendor_key": "custom-new",
                     "base_url": "https://mock.example.com/v1",
@@ -274,11 +277,13 @@ class TestHttpRequestValidation:
 
         app = FastAPI()
         app.include_router(ai_router.router)
+        _tok = create_access_token({"sub": "admin", "role": "admin"})
         mock_post = MagicMock()
         mock_post.status_code = 200
         mock_post.text = ""
         with patch("ai_evaluator.requests.post", return_value=mock_post):
             with TestClient(app) as c:
+                c.headers.update({"Authorization": "Bearer " + _tok})
                 r = c.post("/ai/models/test", json={
                     "vendor_key": "custom-new",
                     "model": "brand-new-model",

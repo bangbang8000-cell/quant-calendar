@@ -55,7 +55,7 @@ def _get_quote(ts_code: str) -> dict | None:
                     if prev:
                         pct_chg = round((close - prev) / prev * 100, 2)
                 except (TypeError, ValueError):
-                    pass
+                    logger.warning('portfolio:57 静默异常 ((TypeError, ValueError))')
             return {'close': close, 'pct_chg': pct_chg}
     except Exception as e:
         logger.warning("portfolio get_kline_data(%s) 失败: %s", ts_code, e)
@@ -246,6 +246,7 @@ async def get_equity_curve(days: int = 30, user: dict = Depends(get_current_acti
                 try:
                     day_close[str(b[0])] = float(b[2])
                 except (TypeError, ValueError, IndexError):
+                    logger.debug('portfolio:248 跳过 ((TypeError, ValueError, IndexError))')
                     continue
             if day_close:
                 series[p['stock_code']] = day_close

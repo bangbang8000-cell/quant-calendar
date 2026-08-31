@@ -222,6 +222,7 @@ def _normalize_kline_response(ts_code: str, result) -> List[dict]:
                 high = float(bar.get('high') or close)
                 vol = float(bar.get('vol') or bar.get('volume') or 0)
             except (TypeError, ValueError, KeyError):
+                logger.debug('scan_engine:224 跳过 ((TypeError, ValueError, KeyError))')
                 continue
         elif isinstance(bar, (list, tuple)) and len(bar) >= 6:
             try:
@@ -232,6 +233,7 @@ def _normalize_kline_response(ts_code: str, result) -> List[dict]:
                 high = float(bar[4])
                 vol = float(bar[5])
             except (TypeError, ValueError):
+                logger.debug('scan_engine:234 跳过 ((TypeError, ValueError))')
                 continue
         else:
             continue
@@ -306,7 +308,7 @@ def _resolve_scan_codes(pool: Optional[List[str]]) -> List[str]:
         if cfg_pool:
             return list(cfg_pool)
     except Exception:
-        pass
+        logger.warning('scan_engine:308 静默异常 (Exception)')
     strat = _strategy_pool_codes()
     if strat:
         return strat

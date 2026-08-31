@@ -27,7 +27,7 @@
 
   // Apply saved theme on load (启动兜底：优先恢复本地已保存主题)
   const saved = localStorage.getItem('quant_theme');
-  if (saved) applyTheme(saved);
+  applyTheme(saved || 'vibrant-orange');
 
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.themes = {

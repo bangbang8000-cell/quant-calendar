@@ -79,13 +79,14 @@ async def get_pool_signal(data: Dict[str, Any]):
 @router.get("/stock/{stock_code}")
 async def get_stock_history(stock_code: str, date: Optional[str] = None):
     """获取单只股票的持仓历史 + 行情数据 + 评分"""
-    history = parser.get_stock_history(stock_code)
+    import asyncio
+    history = await asyncio.to_thread(parser.get_stock_history, stock_code)
 
-    # 如果指定了日期，获取当日行情和评分
+    # 如果指定了日期，获取当日行情和评分 (V4.2: 同步数据源调用迁 to_thread)
     if date:
-        daily_data = stock_manager.get_daily_data(stock_code, date)
-        ma_data = stock_manager.get_ma_data(stock_code, date, days=30)
-        score_data = stock_manager.calculate_score(daily_data, ma_data)
+        daily_data = await asyncio.to_thread(stock_manager.get_daily_data, stock_code, date)
+        ma_data = await asyncio.to_thread(stock_manager.get_ma_data, stock_code, date, 30)
+        score_data = await asyncio.to_thread(stock_manager.calculate_score, daily_data, ma_data)
 
         history["daily_data"] = daily_data
         history["ma_data"] = ma_data

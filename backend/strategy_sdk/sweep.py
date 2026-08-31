@@ -48,6 +48,7 @@ def param_sweep(strategy, param_grid: Dict[str, List[Any]],
         try:
             validated = strategy.validate_params(params)
         except Exception:
+            logger.debug('sweep:50 跳过 (Exception)')
             continue
         try:
             ctx = StrategyContext(portal=portal, params=validated, as_of=end_date)

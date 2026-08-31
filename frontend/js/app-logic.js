@@ -111,10 +111,10 @@
 
 const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] },
-                    { key: 'calendar', name: '量化日历', icon: '🗓️', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
+                    { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
-                    { key: 'system', name: '系统配置', icon: '⚙️', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
+                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -285,6 +285,13 @@ const allMenuDefs = [
                     const menu = allMenuDefs.find(m => m.key === currentPage.value);
                     return menu ? menu.name : currentPage.value;
                 });
+
+                // V4.3-S3: 动态页面组件名映射 — currentPage -> qc-xxx-page
+                // <component :is> 每次渲染重新解析组件名, 懒加载 chunk 注册后即可命中
+                const pageComp = computed(() => {
+                    const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', system: 'qc-system-page' };
+                    return _map[currentPage.value] || '';
+                });
                 const showUserMenu = ref(false);
                 const dashboardData = ref({});
                 // v3.11 (FR-3.11.7): 数据源健康指标（/api/system/metrics data_sources）
@@ -450,7 +457,8 @@ const allMenuDefs = [
                         console.error('[kline] 加载失败:', stockDetail.value && stockDetail.value.stock, period, e);
                         if (stockDetailTab.value === 'kline') {
                             stockKlineLoaded.value = false;  // 复位, 保持"加载K线"按钮可点
-                            ElementPlus.ElMessage.error('K线加载失败');
+                            // V4.2 (FR-4.2.6): 失败态显示原因, 支持重试
+                            ElementPlus.ElMessage.error('K线加载失败: ' + (e && e.message ? e.message : '数据源不可达，请重试'));
                         }
                         return false;
                     } finally {
@@ -550,6 +558,8 @@ const allMenuDefs = [
                         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                         sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                         healthDetail, loadHealthDetail,
+                        reviewTriggering, triggerMarketReview,
+                        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
                         backups, backupCreating, loadBackups, createBackup, restoreBackup,
                         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
                         feedbackText, feedbackSubmitting, submitFeedback } = __ops;
@@ -571,7 +581,10 @@ const allMenuDefs = [
                         handleGlobalKeydown } = __keys;
 
                 // ===== 详情弹窗（护栏片段保留: 先弹窗后拉数据, 加载态）=====
+                // V4.2 (FR-4.2.5): 连开竞态保护 — 请求序列号, 旧慢响应不覆盖新选中
+                let _stockDetailSeq = 0;
                 async function showStockDetail(stockCode) {
+                    const seq = ++_stockDetailSeq;
                     rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
                     // v3.17.10 (FR-3.17.10): 记录最近查看（先记代码，数据返回后补名称）
                     if (window.__quantModules && window.__quantModules.recent) {
@@ -591,6 +604,7 @@ const allMenuDefs = [
                     nextTick(() => animateScoreEntrance());
                     try {
                         const res = await fetch(`/api/calendar/stock/${stockCode}?date=${selectedDate.value}`);
+                        if (seq !== _stockDetailSeq) return;  // V4.2: 旧响应丢弃
                         stockDetail.value = await res.json();
                         // v3.17.10 (FR-3.17.10): 数据返回后补全最近查看名称
                         if (stockDetail.value && stockDetail.value.name
@@ -598,10 +612,11 @@ const allMenuDefs = [
                             window.__quantModules.recent.recordViewed(stockCode, stockDetail.value.name);
                         }
                     } catch (e) {
+                        if (seq !== _stockDetailSeq) return;
                         ElementPlus.ElMessage.error('加载失败');
                         stockDetail.value = { stock: stockCode, name: '', total_days: 0 };
                     } finally {
-                        stockDetailLoading.value = false;
+                        if (seq === _stockDetailSeq) stockDetailLoading.value = false;
                     }
                     // 数据就绪后加载K线
                     setTimeout(async () => {
@@ -663,7 +678,7 @@ const allMenuDefs = [
                         loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels,
                         testVendorModel, testAllVendorModels, fetchVendorModels,
                         addVendorFromCatalog, addCustomVendor, addVendorModel,
-                        removeVendorModel, removeVendor, toggleVendorKeyReveal, autoEvaluateConfig,
+                        removeVendorModel, removeVendor, toggleVendorKeyReveal, toggleVendorEdit, autoEvaluateConfig,
                         // v3.11: AI 评估配置（原 app-logic 前段并入本域）
                         aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
                         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
@@ -718,12 +733,14 @@ const allMenuDefs = [
                         saveAiConfig, testAiApi, exportConfig, importConfig,
                         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
                         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+                        toggleDatasourceEdit,
                         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData } = __systemDomain;
 
                 // ===== v3.17.11.1: 登录/登出/密码/初始化向导域 (js/app-logic/auth.js) =====
                 const __auth = window.__quantAppLogic.auth.create({
-                    currentUser, loadUserConfig, loadDates, loadDashboardData,
+                    currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached,
                     loadHealthMetrics, loadConsensusData, applyTheme, maybeShowTour,
+                    loadAiVendors,  // V4.6: 登录成功即加载 AI 厂商(修复自动评估子页厂商卡不显示)
                 });
                 const { loginForm, logining, guestLogining,
                         showChangePassword, changePasswordForm, changingPassword,
@@ -739,8 +756,8 @@ const allMenuDefs = [
                     fetchMerrillClock, fetchMarketData,
                     loadWatchlist, loadAiHistory, preloadWatchlistKline, loadChatHistory,
                     loadSystemStatus, checkTushareConnection, loadSysMonitor, loadAnalytics,
-                    loadHealthDetail, loadHealthMetrics, loadAiUsage,
-                    loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig,
+                    loadHealthDetail, loadHealthMetrics, loadAiUsage, loadFactCheck,
+                    loadAutoEvaluateConfig, loadDatasourceConfig, loadFeishuConfig, loadAiConfig, loadAiVendors,
                     loadRateLimit, loadDataRefreshConfig, loadBackups, loadAllGroups, loadUsers,
                     stockDetailTab, stockDetailVisible, stockKlineLoaded, loadStockKline,
                     currentKlinePeriod,
@@ -761,11 +778,38 @@ const allMenuDefs = [
                 });
                 const { runOnMounted } = __lifecycle;
 
+                // ===== V4.3-S3: 全局切页 — 先懒加载目标页组件再切换 (sidebar/快捷键/内部跳转共用) =====
+                window.__quantGoPage = async (page, sub) => {
+                    try {
+                        const l = window.__lazyLoaders && window.__lazyLoaders[page];
+                        if (l) await l();
+                    } catch (e) {
+                        console.warn('[lazy] 页面组件加载失败', page, e);
+                    }
+                    // V4.3-S3: 懒加载 chunk 仅写入 __quantComponents — 补注册到 Vue app
+                    // (mount 时遍历一次未含懒加载组件, 不注册则主模板 resolveComponent 失败整页空白)
+                    if (window.__quantApp && window.__quantComponents) {
+                        Object.values(window.__quantComponents).forEach((comp) => {
+                            if (comp && comp.name && !comp.__quantRegistered) {
+                                window.__quantApp.component(comp.name, comp);
+                                comp.__quantRegistered = true;
+                            }
+                        });
+                    }
+                    currentPage.value = page;
+                    if (sub) currentSubPage.value = sub;
+                };
+
                 // ===== 监听页面切换（护栏: 页面切换 watch 全仓唯一）=====
                 // v1.11: 策略总览定时刷新（每5分钟）
                 let strategyPollTimer;
                 watch(currentPage, async (page) => {
                     hapticFeedback('light');
+                    // V4.5 (FR-4.5.6): 页面 title 随切换更新(体验小项)
+                    try {
+                        const menu = allMenuDefs.find(function (m) { return m.key === page; });
+                        document.title = (menu ? menu.name + ' - ' : '') + '量化日历';
+                    } catch (e) {}
                     // v1.10
                     localStorage.setItem('quant_last_page', page);
                     // v3.16 (16.8): 离开日历页时取消在途池信号请求
@@ -855,7 +899,7 @@ const allMenuDefs = [
 
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
-                    currentPage, currentSubPage, sidebarCollapsed, menus,
+                    currentPage, pageComp, currentSubPage, sidebarCollapsed, menus,
                     fmtNum, sanitizeHtml, keyClick, isOnline,
                     currentUser, iconSystem, allMenuDefs,
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
@@ -871,6 +915,8 @@ const allMenuDefs = [
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
                     sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                     healthDetail, loadHealthDetail,
+                    reviewTriggering, triggerMarketReview,
+                    factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
                     strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
@@ -956,11 +1002,11 @@ const allMenuDefs = [
                     loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
                     testVendorModel, testAllVendorModels, fetchVendorModels,
                     addVendorFromCatalog, addCustomVendor, addVendorModel,
-                    removeVendorModel, removeVendor, toggleVendorKeyReveal,
+                    removeVendorModel, removeVendor, toggleVendorKeyReveal, toggleVendorEdit,
                     checkTushareConnection,
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
-                    loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+                    loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal, toggleDatasourceEdit,
                     strategyFilter, strategyFilterOptions, strategyFilterCounts, strategyPreviewCount, saveStrategyFilter,
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,

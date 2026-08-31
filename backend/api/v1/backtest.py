@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 
 from backtest import backtest_engine
-from auth import get_current_active_user
+from auth import get_non_guest_user
 
 router = APIRouter(prefix="/backtest", tags=["策略回测"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/backtest", tags=["策略回测"])
 async def run_strategy_backtest(
     strategy_id: str,
     params: Dict[str, Any],
-    _: Dict = Depends(get_current_active_user)
+    _: Dict = Depends(get_non_guest_user)
 ):
     """
     运行单策略回测
@@ -56,7 +56,7 @@ async def run_strategy_backtest(
 @router.post("/multi")
 async def run_multi_strategy_backtest(
     params: Dict[str, Any],
-    _: Dict = Depends(get_current_active_user)
+    _: Dict = Depends(get_non_guest_user)
 ):
     """
     运行多策略组合回测
@@ -85,7 +85,7 @@ async def run_multi_strategy_backtest(
 @router.get("/attribution/{strategy_id}")
 async def get_strategy_attribution(
     strategy_id: str,
-    _: Dict = Depends(get_current_active_user)
+    _: Dict = Depends(get_non_guest_user)
 ):
     """
     策略归因分析 — 收益拆解 + 月度热力图数据

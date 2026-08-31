@@ -57,7 +57,7 @@ function _maskSecret(s) {
 async function _revealSecret(target) {
     let password;
     try {
-        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认 admin123，可在 .env 的 KEY_VIEW_PASSWORD 修改）', '查看完整密钥', {
+        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认密码见项目 README「密钥查看」说明）', '查看完整密钥', {
             inputType: 'password',
             inputPattern: /^.+$/,
             inputErrorMessage: '密码不能为空',
@@ -96,9 +96,32 @@ async function toggleVendorKeyReveal(v) {
     v._revealed = true;
 }
 
+// V4.6 编辑锁: 解锁加载完整 key(admin full 接口), 锁定重新掩码
+async function toggleVendorEdit(v) {
+    if (v._editing) {
+        v._editing = false;
+        v._revealed = false;
+        if (v.api_key) v._masked = _maskSecret(v.api_key);
+        return;
+    }
+    v._editing = true;
+    try {
+        const res = await fetch('/api/ai/models?full=1');
+        const data = await res.json();
+        if (data.success) {
+            const found = (data.data.vendors || []).find(x => x.vendor_key === v.vendor_key);
+            if (found) v.api_key = found.api_key || '';
+        } else if (data.message) {
+            ElementPlus.ElMessage.error(String(data.message));
+        }
+    } catch (e) { ElementPlus.ElMessage.error('解锁失败: ' + e.message); }
+}
+
 function _stripVendorClientFlags(v) {
     // 剔除前端临时标志，只提交后端 schema 字段
-    const { _fetching, _testing, _revealed, _masked, ...clean } = v;
+    const { _fetching, _testing, _revealed, _masked, _editing, ...clean } = v;
+    // V4.6 编辑锁: 未解锁编辑的厂商不发送 api_key(后端保留原值, 防掩码覆盖真实 key)
+    if (!_editing) clean.api_key = '';
     clean.models = (v.models || []).map(m => {
         const { _testing: _t, testResult, ...mc } = m;
         return mc;
@@ -125,6 +148,7 @@ async function loadAiVendors() {
                 _fetching: false,
                 _testing: false,
                 _revealed: false,
+                _editing: false,  // V4.6 编辑锁: 默认锁定
                 _masked: v.api_key || '',
                 models: (v.models || []).map(m => ({ ...m, _testing: false, testResult: undefined })),
             }));
@@ -160,6 +184,8 @@ async function saveAiVendors() {
         });
         const data = await res.json();
         if (data.success) {
+            // V4.6 编辑锁: 保存成功自动锁定全部厂商 key
+            aiVendors.value.forEach(v => { v._editing = false; v._revealed = false; if (v.api_key) v._masked = _maskSecret(v.api_key); });
             ElementPlus.ElMessage.success('模型配置已保存');
         } else {
             ElementPlus.ElMessage.error(data.message || '保存失败');
@@ -427,10 +453,13 @@ function cancelPoolSignals() {
 }
 
 // 加载最近一次 AI 评估（供 showStockDetail 弹窗使用）
+let _lastEvalSeq = 0;  // V4.2 (FR-4.2.5): 连开竞态保护
 async function loadLastEvaluation(stockCode) {
+    const seq = ++_lastEvalSeq;
     try {
         const res = await fetch(`/api/ai/history/last/${encodeURIComponent(stockCode)}`);
         const data = await res.json();
+        if (seq !== _lastEvalSeq) return;  // V4.2: 旧响应丢弃
         if (data.success && data.data) {
             aiResult.value = data.data;
             lastEvalTime.value = data.data.evaluate_time;
@@ -463,7 +492,7 @@ async function updateEvalComparison(stockCode, currentResult) {
     } catch(e) { console.warn('[refreshStrategyData] autoPoll failed:', e); }
 }
 
-// 操作检查清单：根据评估维度生成 ✅⚠️❌
+// 操作检查清单：根据评估维度生成 ✅⚠❌
 function updateChecklist(result) {
     const dims = result.result?.dimensions || {};
     const items = [];
@@ -496,7 +525,7 @@ function updateChecklist(result) {
         loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
         testVendorModel, testAllVendorModels, fetchVendorModels,
         addVendorFromCatalog, addCustomVendor, addVendorModel,
-        removeVendorModel, removeVendor, toggleVendorKeyReveal, autoEvaluateConfig,
+        removeVendorModel, removeVendor, toggleVendorKeyReveal, toggleVendorEdit, autoEvaluateConfig,
         aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
         aiConfig, selectedPreset, providerInfo, aiPresets,

@@ -10,6 +10,10 @@ __pycache__/
 *.egg
 dist/
 build/
+# V4.3 (方案A): 前端构建产物入库 (Docker/ops 无需 Node 构建) - 仅 frontend/dist 例外
+!frontend/dist/
+!frontend/dist/**
+node_modules/
 
 # Virtual environments
 venv/
@@ -79,3 +83,30 @@ htmlcov/
 # 仅入库基线 baseline/ (参考截图)
 tests/e2e/screenshots/current/
 tests/e2e/reports/
+
+# V4.6: 归档文档(旧版本) 本地保留, 不同步 GitHub
+docs/archive/
+
+# V4.8.2 精简: 运行产物与历史审计截图本地归档, 不入库
+qresult/
+screenshots/
+assets/screenshots/audit-*/
+assets/screenshots/*.jpg
+
+reports/
+
+docs/audits/
+
+docs/superpowers/
+
+docs/reports/
+
+.task-state.json
+
+frontend/_new_script.html
+
+frontend/_extract_modules.py
+
+frontend/static/test.html
+
+frontend/api-docs.html

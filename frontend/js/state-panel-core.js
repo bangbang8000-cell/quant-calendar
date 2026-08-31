@@ -21,7 +21,7 @@
       skeleton: true,
     },
     error: {
-      icon: '⚠️',
+      icon: '⚠',
       title: '加载失败',
       desc: '数据获取出错，请稍后重试',
       tone: 'danger',

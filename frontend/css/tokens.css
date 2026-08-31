@@ -13,7 +13,8 @@
   --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
 
   /* ─── Typography: Font Size (Major Third 1.25) ─── */
-  --font-xs: 11px;   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
+  --font-xs: 11px;
+  --font-2xs: 9px;   --font-icon: 44px;   --font-hero: 64px;  /* V4.6 排版补全 */   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
   --font-lg: 18px;   --font-xl: 22px;   --font-2xl: 26px;   --font-3xl: 36px;
 
   /* ─── Typography: Font Weight ─── */
@@ -27,13 +28,35 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* V4.1: 全局边框强调色与 chip 固定深字(原 layout.css 内联 fallback 提为令牌, 满足令牌纪律门禁) */
+  --border-strong: #d9dee8;
+  /* V4.8.2 (D4): ECharts 网格线/轴线令牌 (dark 由 themes.css 覆盖) */
+  --chart-split: #e2e8f0;   /* 图表网格线(弱) */
+  --chart-axis:  #cbd5e1;   /* 图表轴线(中) */
+  --text-on-chip:  #1f2937;
+  /* V4.4 (FR-4.4.1): 补全被使用但未定义的令牌(默认亮色值, dark 由 themes.css 覆盖) */
+  --border-color: #d9dee8;        /* 通用边框色(layout 使用) */
+  --surface: #ffffff;              /* 表面色(代码块等) */
+  --bg-code: #f6f8fa;              /* 代码块背景 */
+  --bg-tertiary: #f1f5f9;          /* 三级背景(kbd/标签) */
+  --primary-color-dark: #2563eb;   /* 主色深(渐变端点) */
+  --text-disabled: #9ca3af;        /* 禁用态文本(EP 覆盖) */
+  --radius-2: 10px;                /* 中等圆角(卡片) */
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 400ms ease;
-  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */
+  --glass-blur: 12px;
+  --glass-saturate: 150%;
+  --glass-bg: rgba(255, 255, 255, 0.72);        /* 浅色浮层半透明底 */
+  --glass-border: rgba(255, 255, 255, 0.35);    /* 顶部受光描边 */
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
 
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;
@@ -75,3 +98,7 @@
 
 /* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
 [v-cloak] { display: none !important; }
+
+
+/* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */
+.num-tabular { font-variant-numeric: tabular-nums; }

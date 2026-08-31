@@ -15,7 +15,7 @@
   'use strict';
 
   const DEFAULT_LOCALE = 'zh-CN';
-  const SUPPORTED_LOCALES = ['zh-CN', 'en'];
+  const SUPPORTED_LOCALES = ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'];
 
   // 语言包注册表：外部 locales/*.js 经 registerLocale 填充
   const messages = {};

@@ -234,11 +234,14 @@
           const menuKeys = menus.value.map(function(m) { return m.key; });
           const idx = menuKeys.indexOf(currentPage.value);
           if (diffX > 0 && idx < menuKeys.length - 1) {
-            currentPage.value = menuKeys[idx + 1];
-            currentSubPage.value = '';
+            // V4.3-S3: 切页前懒加载
+            const np = menuKeys[idx + 1];
+            const gl = window.__quantGoPage;
+            if (gl) { gl(np, ''); } else { currentPage.value = np; currentSubPage.value = ''; }
           } else if (diffX < 0 && idx > 0) {
-            currentPage.value = menuKeys[idx - 1];
-            currentSubPage.value = '';
+            const np = menuKeys[idx - 1];
+            const gl = window.__quantGoPage;
+            if (gl) { gl(np, ''); } else { currentPage.value = np; currentSubPage.value = ''; }
           }
         }
       }

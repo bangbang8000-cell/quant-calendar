@@ -21,6 +21,9 @@ class ViewsAggregator:
         self.daily_data = {}  # date -> stocks
         self.all_dates = []
         self._cache = {}  # 视图结果缓存: key="view_date" → result dict
+        # V4.7 (性能): 周期股票集合缓存 — 年/月视图 calculate_status O(N×D) → O(N)
+        # key: ("year", 年份) → set | ("month", YYYY-MM) → set
+        self._period_set_cache = {}
         self._load_data()
 
     def _load_data(self):
@@ -61,11 +64,30 @@ class ViewsAggregator:
                 for code, info in stock_info.items()
             ]
 
+    # V4.7 (性能): 缓存某年/某月全部交易日的股票集合(避免 calculate_status 每只股票重建 O(D×S))
+    def _period_set(self, kind: str, prefix: str) -> set:
+        key = (kind, prefix)
+        if key in self._period_set_cache:
+            return self._period_set_cache[key]
+        s = set()
+        for d in self.all_dates:
+            if d.startswith(prefix):
+                for st in self.daily_data.get(d, []):
+                    c = st.get('stock', '') or st.get('code', '')
+                    if c:
+                        s.add(c)
+        self._period_set_cache[key] = s
+        return s
+
+    def _clear_period_cache(self):
+        self._period_set_cache.clear()
+
     def reload(self) -> dict:
         """重新从 DataParser 加载数据"""
         from data_parser import parser
         self._build_from_parser(parser)
         self._cache.clear()  # 清空视图缓存
+        self._period_set_cache.clear()
         stats = {
             "dates_count": len(self.all_dates),
             "stocks_count": sum(len(v) for v in self.daily_data.values()),
@@ -309,16 +331,11 @@ class ViewsAggregator:
         curr_year = date[:4]
         prev_year = str(int(curr_year) - 1)
         try:
-            prev_stocks = set()
-            for d in self.all_dates:
-                if d.startswith(prev_year):
-                    for s in self.daily_data.get(d, []):
-                        code = s.get('stock', '') or s.get('code', '')
-                        if code:
-                            prev_stocks.add(code)
+            # V4.7 (性能): 复用周期集合缓存, 避免重建; out 全量上千只拖慢接口
+            prev_stocks = self._period_set('year', prev_year)
             curr_codes = set(s['code'] for s in result['stocks'])
             out_codes = prev_stocks - curr_codes
-            for code in out_codes:
+            for code in sorted(out_codes)[:200]:  # V4.7: out 最多补 200 只(按代码排序稳定), 避免响应膨胀
                 info = None
                 for d in reversed(self.all_dates):
                     if d.startswith(prev_year):
@@ -392,7 +409,7 @@ class ViewsAggregator:
             return 'out'
 
         elif view == 'month':
-            # 月视图：和上个月对比
+            # 月视图：和上个月对比 (V4.7: 用周期集合缓存)
             curr_month = current_date[:7]
             prev_month = None
             for i in range(curr_idx, -1, -1):
@@ -401,13 +418,8 @@ class ViewsAggregator:
                     prev_month = d[:7]
                     break
             if prev_month:
-                prev_stocks = set()
-                curr_stocks = set()
-                for d in self.all_dates:
-                    if d.startswith(prev_month):
-                        prev_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
-                    if d.startswith(curr_month):
-                        curr_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
+                prev_stocks = self._period_set('month', prev_month)
+                curr_stocks = self._period_set('month', curr_month)
 
                 if stock_code in curr_stocks and stock_code not in prev_stocks:
                     return 'new'
@@ -416,16 +428,11 @@ class ViewsAggregator:
                 return 'out'
 
         elif view == 'year':
-            # 年视图：和去年对比
+            # 年视图：和去年对比 (V4.7: 用周期集合缓存, O(D×S) → O(N))
             curr_year = current_date[:4]
             prev_year = str(int(curr_year) - 1)
-            prev_stocks = set()
-            curr_stocks = set()
-            for d in self.all_dates:
-                if d.startswith(prev_year):
-                    prev_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
-                if d.startswith(curr_year):
-                    curr_stocks.update(s.get('stock', '') or s.get('code', '') for s in self.daily_data.get(d, []))
+            prev_stocks = self._period_set('year', prev_year)
+            curr_stocks = self._period_set('year', curr_year)
 
             if stock_code in curr_stocks and stock_code not in prev_stocks:
                 return 'new'

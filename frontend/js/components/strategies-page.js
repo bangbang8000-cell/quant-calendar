@@ -181,11 +181,34 @@
                     <div class="card overflow-hidden">
                         <div class="flex-between-mb16">
                             <div class="strategy-title-bar">
-                                ⏱️ 美林时钟 · 经济周期
+                                ⏱ 美林时钟 · 经济周期
                             </div>
                             <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
+                            <!-- V4.5 (FR-4.5.1): 配置就近 -->
+                            <el-button size="small" type="primary" plain @click="merrillConfigOpen = !merrillConfigOpen">
+                                ⚙ {{ merrillConfigOpen ? '收起配置' : '配置' }}
+                            </el-button>
+                        </div>
+                        <div class="card mt-4" v-if="merrillConfigOpen">
+                            <div class="card-title">⏱ 美林时钟配置</div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong></span>
+                                <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">🔄 手动重评估</el-button>
+                            </div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">自动刷新</span>
+                                <el-switch v-model="merrillClockConfig.autoRefresh" @change="saveMerrillClockConfig" size="small" />
+                            </div>
+                            <div class="flex-between-mb12">
+                                <span class="text-base-secondary">刷新间隔(分钟)</span>
+                                <el-select class="w-100px" v-model="merrillClockConfig.refreshInterval" @change="saveMerrillClockConfig" size="small" :disabled="!merrillClockConfig.autoRefresh">
+                                    <el-option :value="10" label="10" />
+                                    <el-option :value="30" label="30" />
+                                    <el-option :value="60" label="60" />
+                                </el-select>
+                            </div>
                         </div>
 
                         <!-- 四阶段网格 -->
@@ -258,28 +281,96 @@
                             💡 点击阶段卡片查看详细分析和投资建议
                         </div>
 
-                        <!-- v3.22-I4: 历史周期时间轴(最近4轮) -->
+                        <!-- v3.22-I4 + V4.0.1: 历史周期时间轴(最近4轮, 历史在上/最新在下, 蛇形连线, hover介绍) -->
                         <div class="merrill-timeline-block">
                             <div class="merrill-timeline-head">
-                                <span>🕰️ 历史周期时间轴</span>
-                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 点击阶段查看详情</span>
+                                <span>🕰 历史周期时间轴</span>
+                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
                                 <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
                             </div>
                             <div class="merrill-timeline" v-if="merrillTimeline?.cycles?.length">
-                                <div class="merrill-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
-                                    <div class="merrill-cycle-label">{{ cycle.label }}</div>
-                                    <div class="merrill-cycle-track">
-                                        <div v-for="(st, si) in cycle.stages" :key="si"
-                                             class="merrill-stage-chip"
-                                             :class="{ 'is-current': st.is_current }"
-                                             :style="{background: getTimelineStageColor(st.stage), borderColor: st.is_current ? 'var(--color-primary)' : 'transparent'}"
-                                             @click.prevent="showTimelineStage(st.stage)"
-                                             :title="(st.name || getTimelineStageName(st.stage) || st.stage) + ' · ' + (st.start ? st.start.slice(0,10) : '起点') + ' → ' + (st.end ? st.end.slice(0,10) : '至今')">
-                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
-                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}</span>
-                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                <div class="tl-spine">
+                                    <div class="tl-spine-arrow tl-top">▲ 历史</div>
+                                    <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
+                                        <div class="tl-cycle-node"><span class="tl-cycle-node-dot"></span></div>
+                                        <div class="tl-cycle-body">
+                                            <div class="tl-cycle-label">{{ cycle.label }}<span class="tl-cycle-years" v-if="tlCycleYears(cycle)"> · {{ tlCycleYears(cycle) }}</span></div>
+                                            <div class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 120 : 60) + 'px'}">
+                                                <template v-for="(row, ri) in timelineRows(cycle.stages)" :key="ri">
+                                                    <div class="tl-stage-row" :class="ri === 0 ? 'tl-row-top' : 'tl-row-bottom'">
+                                                        <div v-for="(st, si) in row" :key="si"
+                                                             class="merrill-stage-chip"
+                                                             :class="{ 'is-current': st.is_current }"
+                                                             :style="tlChipStyle(st.stage)"
+                                                             @click.prevent="showTimelineStage(st.stage, $event)"
+                                                             @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
+                                                             @mouseleave="clearTlHover()">
+                                                            <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
+                                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
+                                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
+                                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
+                                                            <div class="tl-tip" v-if="tlHoverKey === (ci + '-' + ri + '-' + si)">
+                                                                <div class="tl-tip-head">
+                                                                    <span class="tl-tip-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
+                                                                    <span class="tl-tip-title">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
+                                                                    <span class="tl-tip-current" v-if="st.is_current">当前</span>
+                                                                </div>
+                                                                <div class="tl-tip-meta">
+                                                                    <span v-if="tlTipYears(st)">{{ tlTipYears(st) }}</span>
+                                                                    <template v-if="st.duration_months"><span class="tl-tip-sep">·</span><span>约 {{ Math.round(st.duration_months) }} 个月</span></template>
+                                                                    <template v-if="st.is_current && merrillData?.timing?.duration_days != null">
+                                                                        <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
+                                                                    </template>
+                                                                </div>
+                                                                <div class="tl-tip-brief" v-if="st.is_current && tlCurrentBrief()">{{ tlCurrentBrief() }}</div>
+                                                                <div class="tl-tip-brief" v-else-if="!st.is_current && tlTipBrief(st)">{{ tlTipBrief(st) }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlPathFor(ci).vb" preserveAspectRatio="none" aria-hidden="true">
+                                                    <path :d="tlPathFor(ci).d" class="tl-line" :class="{ 'is-active': tlHoverKey && String(tlHoverKey).indexOf(ci + '-') === 0 }" />
+                                                </svg>
+                                            </div>
+                                            <!-- V4.0.5-D: 甘特式连续时间条 (按时长比例分段着色, 展示各阶段时间占比) -->
+                                            <div class="tl-gantt" v-if="cycle.stages.length > 1">
+                                                <div v-for="(st, gi) in cycle.stages" :key="gi" class="tl-gantt-seg" :style="tlGanttStyle(st, cycle.stages, gi)"></div>
+                                            </div>
                                         </div>
-                                        <div class="merrill-stage-arrow" v-if="si < cycle.stages.length - 1">→</div>
+                                    </div>
+                                    <div class="tl-spine-arrow tl-bottom">▼ 最新</div>
+                                </div>
+                            </div>
+                            <!-- V4.8 (R1): 时间轴小阶段点击紧凑弹窗 — 仅展示该阶段独有信息 -->
+                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" :style="tlClickPosStyle" @click.self="closeTlClick">
+                                <div class="tl-click-card" role="dialog" aria-label="阶段详情">
+                                    <button class="tl-click-close" @click="closeTlClick" aria-label="关闭">✕</button>
+                                    <div class="tl-click-head">
+                                        <span class="tl-tip-dot" :style="{background: getTimelineStageColor(tlClickStage.stage)}"></span>
+                                        <span class="tl-click-title">{{ tlClickStage.name || getTimelineStageName(tlClickStage.stage) || tlClickStage.stage }}</span>
+                                        <span class="tl-tip-current" v-if="tlClickStage.is_current">当前</span>
+                                    </div>
+                                    <div class="tl-click-meta">
+                                        <span v-if="tlClickStage.start">{{ String(tlClickStage.start).slice(0,4) }}<template v-if="tlClickStage.end">–{{ String(tlClickStage.end).slice(0,4) }}</template><template v-else>–至今</template></span>
+                                        <template v-if="tlClickStage.duration_months"><span class="tl-tip-sep">·</span><span>约 {{ Math.round(tlClickStage.duration_months) }} 个月</span></template>
+                                        <template v-if="tlClickStage.is_current && merrillData?.timing?.duration_days != null">
+                                            <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
+                                        </template>
+                                    </div>
+                                    <div class="tl-click-brief" v-if="tlClickStage.essence">{{ tlClickStage.essence }}</div>
+                                    <div class="tl-click-trigger" v-if="tlClickStage.trigger && !tlClickStage.is_current">
+                                        <span class="tl-click-label">触发</span>{{ tlClickStage.trigger }}
+                                    </div>
+                                    <div class="tl-click-trigger" v-else-if="tlClickStage.is_current && tlCurrentBrief()">
+                                        <span class="tl-click-label">实时</span>{{ tlCurrentBrief() }}
+                                    </div>
+                                    <div class="tl-click-indicators" v-if="tlClickStage.key_indicators && Object.keys(tlClickStage.key_indicators).length">
+                                        <span v-for="(v, k) in tlClickStage.key_indicators" :key="k" class="tl-click-ind-card">
+                                            {{ k === 'gdp_growth' ? 'GDP' : k === 'cpi' ? 'CPI' : k === 'pmi' ? 'PMI' : k === 'ppi' ? 'PPI' : k === 'm2_growth' ? 'M2' : k }} {{ v }}%
+                                        </span>
+                                    </div>
+                                    <div class="tl-click-highlight" v-if="tlClickStage.highlight">
+                                        <span class="tl-click-label">亮点</span>{{ tlClickStage.highlight }}
                                     </div>
                                 </div>
                             </div>
@@ -493,6 +584,7 @@
     `,
     setup() {
       const state = inject('qcState');
+      const merrillConfigOpen = Vue.ref(false);  // V4.5 (FR-4.5.1): 内联配置展开
       if (!state) return {};
       const { computed } = Vue;
 
@@ -544,14 +636,14 @@
           items.push({
             icon: '🆕', level: 'new',
             text: `今日新入池 ${n} 只${names ? ' · ' + names : ''}`,
-            action: () => { state.currentPage.value = 'calendar'; state.currentSubPage.value = 'pool'; state.statusFilter.value = 'new'; },
+            action: () => { if (window.__quantGoPage) window.__quantGoPage('calendar', 'pool'); else { state.currentPage.value = 'calendar'; state.currentSubPage.value = 'pool'; } state.statusFilter.value = 'new'; },
           });
         }
         for (const s of health.value.filter(x => x.degraded)) {
           items.push({
-            icon: '⚠️', level: 'warn',
+            icon: '⚠', level: 'warn',
             text: `数据源 ${healthName(s.name)} degraded（连续失败）`,
-            action: () => { state.currentPage.value = 'system'; },
+            action: () => { if (window.__quantGoPage) window.__quantGoPage('system', ''); else { state.currentPage.value = 'system'; } },
           });
         }
         const t = merrill.value.timing;
@@ -582,8 +674,78 @@
       // v3.22-I4: 美林时间轴 (显式解包 ref)
       const merrillTimeline = computed(() => state.merrillTimeline?.value || state.merrillTimeline || { cycles: [] });
       const timelineLoading = computed(() => state.timelineLoading?.value || false);
-      function showTimelineStage(stage) {
-        if (state.showTimelineStage) state.showTimelineStage(stage);
+      // V4.0.5: 修复时间轴点击无弹窗 — qcState 未注入 showTimelineStage, 改用同源的 showStageDetail(阶段详情弹窗)
+      // V4.8 (R1): 点击改为时间轴内嵌紧凑弹窗 — 仅展示该小阶段独有信息(essence/highlight/指标),
+      //            不再跳转大而全的阶段详情弹窗 (showStageDetail 保留其他入口用)
+      const tlClickStage = Vue.ref(null);   // 当前点击的阶段对象 (含 essence/highlight/key_indicators)
+      const tlClickVisible = Vue.ref(false);
+      const tlClickPos = Vue.reactive({ top: 0, left: 0, right: null, bottom: null, maxWidth: 460 });
+      // V4.8.2-fix (用户反馈): 弹窗锚定被点击阶段 chip 的右侧合适位置
+      // 定位策略: 优先 chip 右侧垂直居中; 右侧空间不足时左侧; 上下空间不足时贴边
+      function computeTlClickPos(ev) {
+        const el = ev && ev.currentTarget;
+        const pop = document.querySelector('.tl-click-pop');
+        if (!el || !pop) return;
+        const cRect = el.getBoundingClientRect();
+        const popW = pop.offsetWidth || 340;
+        const popH = pop.offsetHeight || 220;
+        const pad = 10;
+        // 定位祖先: .merrill-timeline-block (relative), 弹窗 absolute 相对它
+        const cont = el.closest('.merrill-timeline-block');
+        const contRect = cont ? cont.getBoundingClientRect() : cRect;
+        const cLeft = cRect.left - contRect.left;   // chip 相对容器坐标
+        const cTop = cRect.top - contRect.top;
+        const cW = cRect.width, cH = cRect.height;
+        const contW = contRect.width, contH = contRect.height;
+        // 水平: 优先右侧, 空间不足放左侧
+        let left = null, right = null;
+        if (cLeft + cW + pad + popW <= contW) {
+          left = cLeft + cW + pad;
+        } else if (cLeft - pad - popW >= 0) {
+          left = cLeft - pad - popW;
+        } else {
+          left = Math.max(8, Math.min(cLeft, contW - popW - 8));
+        }
+        // 垂直: chip 中心对齐, 容器内贴边
+        const idealTop = cTop + cH / 2 - popH / 2;
+        const top = Math.max(8, Math.min(idealTop, contH - popH - 8));
+        tlClickPos.top = top;
+        tlClickPos.left = left;
+        tlClickPos.right = null;
+        tlClickPos.bottom = null;
+      }
+      // V4.8.2-fix: 弹窗位置样式 (relative 容器内 absolute 定位)
+      const tlClickPosStyle = Vue.computed(function () {
+        const st = {};
+        if (tlClickPos.top != null) st.top = tlClickPos.top + 'px';
+        if (tlClickPos.left != null) st.left = tlClickPos.left + 'px';
+        if (tlClickPos.right != null) st.right = tlClickPos.right + 'px';
+        return st;
+      });
+      function showTimelineStage(stageKey, ev) {
+        // 从时间轴数据中找完整阶段对象 (含 V4.8 注入的独有信息)
+        let found = null;
+        const cycles = (merrillTimeline.value && merrillTimeline.value.cycles) || [];
+        for (const c of cycles) {
+          const s = (c.stages || []).find(x => x.stage === stageKey && x.is_current);
+          if (s) { found = s; break; }
+        }
+        if (!found) {
+          for (const c of cycles) {
+            const s = (c.stages || []).find(x => x.stage === stageKey);
+            if (s) { found = s; break; }
+          }
+        }
+        if (found) {
+          tlClickStage.value = found;
+          tlClickVisible.value = true;
+          // 锚定位置: 弹窗渲染后 nextTick 测量并定位
+          Vue.nextTick(function () { computeTlClickPos(ev); });
+        }
+      }
+      function closeTlClick() {
+        tlClickVisible.value = false;
+        tlClickStage.value = null;
       }
 
       // v3.22-I4: 美林时间轴阶段取色
@@ -602,7 +764,160 @@
         return (cfg[stage] && cfg[stage].name) || '';
       }
 
-      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, getTimelineStageColor, getTimelineStageName, merrillTimeline, timelineLoading, showTimelineStage };
+      // ─── V4.0.1: 时间轴重设计 — 历史在上/最新在下 · 蛇形折行连线 · hover 介绍 ───
+      function _tlCfg() {
+        const raw = state.merrillStagesConfig;
+        return (raw && raw.value) ? raw.value : (raw || {});
+      }
+      function getTimelineStageDesc(stage) {
+        return (_tlCfg()[stage] && _tlCfg()[stage].description) || '';
+      }
+      // V4.0.5-A: 轮次年份范围 (首阶段 start → 末阶段 end 取年)
+      function tlCycleYears(cycle) {
+        const stages = cycle && cycle.stages ? cycle.stages : [];
+        if (!stages.length) return '';
+        const y1 = stages[0] && stages[0].start ? String(stages[0].start).slice(0, 4) : '';
+        const last = stages[stages.length - 1] || {};
+        const y2 = last.end ? String(last.end).slice(0, 4) : (last.start ? String(last.start).slice(0, 4) : '');
+        return (y1 || y2) ? (y1 ? y1 + '–' + y2 : y2) : '';
+      }
+      // V4.0.6: tooltip 精简 — 年份短格式 (如 2009–2011; 无 end 用 start 或至今)
+      function tlTipYears(st) {
+        const y1 = st.start ? String(st.start).slice(0, 4) : '';
+        const y2 = st.end ? String(st.end).slice(0, 4) : (y1 ? '至今' : '');
+        return y1 ? (y2 ? y1 + '–' + y2 : y1) : '';
+      }
+      // V4.0.8: tooltip 内容重写 — 历史阶段显示「本周期·本阶段」凝练要点(essence), 与四方格子通用描述不同; 无 essence 回落触发原因
+      // V4.8 (R1): 补充 highlight 独特性亮点 (若存在, 追加在 essence 后)
+      function tlTipBrief(st) {
+        const base = st.essence || st.trigger || getTimelineStageDesc(st.stage) || '';
+        if (st.highlight) return base ? base + ' · ' + st.highlight : st.highlight;
+        return base;
+      }
+      // V4.0.8: 当前阶段 tooltip — 本周期实时核心指标(替代四方格子通用描述), 按当前阶段选最相关指标
+      function tlCurrentBrief() {
+        const ind = merrill.value.indicators || {};
+        const stage = merrill.value.stage || '';
+        const map = {
+          recovery: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['M2', ind.m2_growth]],
+          overheat: [['PPI', ind.ppi], ['CPI', ind.cpi], ['PMI', ind.pmi]],
+          stagflation: [['CPI', ind.cpi], ['PPI', ind.ppi], ['GDP', ind.gdp_growth]],
+          recession: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['CPI', ind.cpi]],
+        };
+        const picks = (map[stage] || map.recession).filter(p => p[1] != null && p[1] !== 0);
+        if (!picks.length) return '';
+        return '实时 · ' + picks.map(p => p[0] + ' ' + p[1] + '%').join(' ｜ ');
+      }
+      // V4.0.5-D: 甘特式连续时间条段样式 — 按时长比例 flex-basis + 阶段色填充
+      function tlGanttStyle(st, stages, gi) {
+        const cfg = _tlCfg()[st.stage] || {};
+        const color = cfg.color || 'var(--color-primary)';
+        const arr = stages || [];
+        const durs = arr.map(s => s.duration_months || 0);
+        const total = durs.reduce((a, b) => a + b, 0);
+        const basis = total > 0 ? (durs[gi] / total) * 100 : 100 / Math.max(1, arr.length);
+        const isFirst = gi === 0, isLast = gi === arr.length - 1;
+        return {
+          flex: '0 0 ' + basis + '%',
+          background: color,
+          borderRadius: isFirst ? '6px 0 0 6px' : (isLast ? '0 6px 6px 0' : '0')
+        };
+      }
+      // 蛇形折行: n<=4 单行; n>=5 两行(行2 DOM 反向, 普通 row → 视觉从左到右为时间倒序, 右端短连接)
+      function timelineRows(stages) {
+        const n = stages.length;
+        if (n <= 4) return [stages];
+        const half = Math.ceil(n / 2);
+        return [stages.slice(0, half), stages.slice(half).reverse()];
+      }
+      // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 固定深字
+      // V4.0.4+V4.1: color 固定深字令牌 var(--text-on-chip)(tokens.css 定义, 深浅主题一致) — dark 下不随 --text-primary 变浅
+      function tlChipStyle(stage) {
+        const s = _tlCfg()[stage] || {};
+        const color = s.color || 'var(--color-primary)';
+        const bg = s.bg_color || 'var(--bg-card)';
+        return {
+          background: bg,
+          borderColor: color,
+          color: 'var(--text-on-chip)',
+          boxShadow: 'inset 0 0 0 1px rgba(var(--primary-rgb, 37 99 235), 0.06)'
+        };
+      }
+
+      // ─── V4.0.3: 测量式精确连线 + chip 内嵌玻璃 hover 浮层 ───
+      // 连线基于每个 chip 的真实 DOM 坐标生成, 真正"接上"各阶段, 而非等分估算
+      // 用 querySelectorAll 直接测量(不依赖函数 ref, 兼容运行时编译模板)
+      const tlPaths = Vue.reactive({});     // ci -> {d, vb}
+      const tlHoverKey = Vue.ref(null);
+      let _tlResizeHandler = null;
+      let _tlRebuildTimer = null;
+      let _tlObserver = null;
+
+      // 测量每轮 chip 真实中心点 → 生成精确连接线 (行1 左→右, 跨行竖下, 行2 右→左)
+      function buildTlPaths() {
+        try {
+          const cycles = document.querySelectorAll('.merrill-timeline .tl-cycle');
+          cycles.forEach((c, ci) => {
+            const rows = c.querySelector('.tl-stage-rows');
+            const topRow = c.querySelector('.tl-row-top');
+            const botRow = c.querySelector('.tl-row-bottom');
+            const chipsTop = topRow ? Array.from(topRow.querySelectorAll('.merrill-stage-chip')) : [];
+            const chipsBot = botRow ? Array.from(botRow.querySelectorAll('.merrill-stage-chip')).reverse() : [];
+            const chips = chipsTop.concat(chipsBot);  // 时间正序: 行1 左→右, 行2 右→左
+            if (!rows || chips.length < 2) { tlPaths[ci] = { d: '', vb: '0 0 1 1' }; return; }
+            const rowRect = rows.getBoundingClientRect();
+            const W = Math.max(1, rowRect.width);
+            const H = Math.max(1, rowRect.height);
+            const half = chipsTop.length;
+            const pts = chips.map(el => {
+              const r = el.getBoundingClientRect();
+              return { x: r.left + r.width / 2 - rowRect.left, y: r.top + r.height / 2 - rowRect.top };
+            });
+            let d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+            for (let i = 1; i < pts.length; i++) {
+              const prev = pts[i - 1], cur = pts[i];
+              if (i === half) {
+                d += ' L ' + prev.x.toFixed(1) + ' ' + cur.y.toFixed(1);  // 行1 末竖下到行2
+                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);   // 横接到行2 首(最右)
+              } else {
+                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);
+              }
+            }
+            tlPaths[ci] = { d, vb: '0 0 ' + W.toFixed(1) + ' ' + H.toFixed(1) };
+          });
+        } catch (e) { console.error('[tl] buildTlPaths error', e); }
+      }
+      function tlPathFor(ci) { return tlPaths[ci] || { d: '', vb: '0 0 1 1' }; }
+
+      function setTlHover(key) { tlHoverKey.value = key; }
+      function clearTlHover() { tlHoverKey.value = null; }
+
+      function scheduleTlRebuild(delay) {
+        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
+        _tlRebuildTimer = setTimeout(() => { _tlRebuildTimer = null; Vue.nextTick(buildTlPaths); }, delay || 120);
+      }
+      Vue.onMounted(() => {
+        scheduleTlRebuild(0);
+        scheduleTlRebuild(800);   // 数据可能后到: 兜底重测
+        _tlResizeHandler = () => scheduleTlRebuild(150);
+        window.addEventListener('resize', _tlResizeHandler);
+        // DOM 变化(时间轴数据渲染/布局变化) → debounce 重测, 不依赖 Vue watch 时序
+        _tlObserver = new MutationObserver(() => scheduleTlRebuild(120));
+        _tlObserver.observe(document.body || document.documentElement, { childList: true, subtree: true });
+      });
+      Vue.onBeforeUnmount(() => {
+        if (_tlResizeHandler) window.removeEventListener('resize', _tlResizeHandler);
+        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
+        if (_tlObserver) { _tlObserver.disconnect(); _tlObserver = null; }
+      });
+
+      return { ...state, todayText, tradingStatus, merrillNext, todayFocus, merrillConfigOpen,
+        getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
+        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
+        tlHoverKey, setTlHover, clearTlHover,
+        tlClickStage, tlClickVisible, closeTlClick,
+        tlClickPosStyle,
+        merrillTimeline, timelineLoading, showTimelineStage };
     },
   };
 })();

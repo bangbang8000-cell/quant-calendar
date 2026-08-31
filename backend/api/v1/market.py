@@ -106,7 +106,8 @@ async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
         period: 周期: daily=日线, weekly=周线, monthly=月线
         limit: 返回条数
     """
-    data = get_kline_data(ts_code, period, limit)
+    import asyncio
+    data = await asyncio.to_thread(get_kline_data, ts_code, period, limit)
     if data:
         return {"success": True, "data": data, "period": period}
     return {"success": False, "message": "获取K线数据失败"}
@@ -143,8 +144,13 @@ async def save_datasource_config(req: Dict[str, Any], _: Dict = Depends(get_admi
         for src_name in ['sxsc_tushare', 'tushare']:
             src_cfg = sources.get(src_name, {})
             existing_token = existing[src_name].get('token', '') if src_name in existing else ''
-            if src_cfg.get('token', '') == '' or is_masked_form(src_cfg.get('token', ''), existing_token):
+            submitted_token = src_cfg.get('token', '') or ''
+            # V4.7.2 兜底: token 为 56 位十六进制, 绝不含 '*'; 含 '*' 且非掩码形式一律拒绝写入
+            if submitted_token == '' or is_masked_form(submitted_token, existing_token):
                 src_cfg['token'] = existing_token
+            elif '*' in submitted_token:
+                return {"success": False,
+                        "message": f"{src_name} Token 含掩码字符(*), 请点击 🔓 编辑解锁后输入完整 Token 再保存"}
         data_source_manager.save_config(req)
         return {"success": True, "message": "数据源配置已保存"}
     except Exception as e:
@@ -413,10 +419,16 @@ async def get_market_review(date: Optional[str] = None):
 
 @router.get("/factor-ic")
 async def factor_ic_report(user: dict = Depends(get_current_active_user)):
-    """FR-3.18.7: 因子有效性检验 IC/IR 报告 (数据不可达优雅降级为空)"""
+    """FR-3.18.7: 因子有效性检验 IC/IR 报告 (数据不可达优雅降级为空)
+
+    V4.7.4: 真实取数可能 10-30s, 用 asyncio.to_thread 避免阻塞事件循环
+    (与 V4.7 kline/stock_history 的 to_thread 修复一致)。
+    """
+    import asyncio
     from factor_ic import get_factor_ic_report
     try:
-        return {"success": True, "data": get_factor_ic_report()}
+        data = await asyncio.to_thread(get_factor_ic_report)
+        return {"success": True, "data": data}
     except Exception as e:
         logger.warning("因子 IC 报告失败 (降级): %s", e)
         return {"success": False, "message": str(e), "data": {}}

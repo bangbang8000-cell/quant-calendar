@@ -119,5 +119,6 @@ class IndexEnhanceStrategy(BaseStrategy):
                 for s in picks:
                     holdings.at[d, s] = w
             except KeyError:
+                logger.debug('index_enhance:121 跳过 (KeyError)')
                 continue
         return holdings

@@ -6,12 +6,19 @@
 """
 import json
 import os
+import sys
 import time
 import logging
 import threading
 import pandas as pd
 from datetime import datetime
 from paths import DATA_DIR
+
+# V4.0 删除条件①: sxsc-tushare 从仓库 libs/ 加载 (家目录只读无法 editable 重装;
+# sys.path 优先于 site-packages .pth, 保证任意启动方式都不再 import /home/evergreen/量化程序/sxsc-tushare)
+_LIBS_SXSC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'libs', 'sxsc_tushare'))
+if os.path.isdir(_LIBS_SXSC_DIR) and _LIBS_SXSC_DIR not in sys.path:
+    sys.path.insert(0, _LIBS_SXSC_DIR)
 
 # v3.20.1 (网络修复): 清掉失效的系统代理环境变量, 强制直连外网。
 # 本机历史遗留 http_proxy=127.0.0.1:7892 指向不存在的代理端口, requests 默认读取导致数据源全挂。
@@ -35,13 +42,13 @@ DEFAULT_CONFIG = {
         "sxsc_tushare": {
             "enabled": True,
             "token": "",  # v1.8: 从 .env SXSC_TUSHARE_TOKEN 读取
-            "timeout": 30
+            "timeout": 5  # V4.6: 连接超时缩短(30->5s)
         },
         "tushare": {
             "enabled": True,
             "token": "",
             "endpoint": "http://api.tushare.pro",
-            "timeout": 30
+            "timeout": 5  # V4.6: 连接超时缩短(30->5s)
         },
         "akshare": {
             "enabled": True
@@ -435,7 +442,7 @@ class DataSourceManager:
                     except Exception:
                         logger.debug("数据源回退尝试")
                         pass
-                timeout = sxsc.get('timeout', 30)
+                timeout = sxsc.get('timeout', 5)
                 if token:
                     self._clients['sxsc_tushare'] = get_api(token, timeout=timeout, env='prd')
                     logger.info("✅ sxsc-tushare 初始化成功")
@@ -458,8 +465,9 @@ class DataSourceManager:
                         logger.debug("数据源回退尝试")
                         pass
                 if token:
-                    ts.set_token(token)
-                    self._clients['tushare'] = ts.pro_api()
+                    # V4.6 修复: 直接传 token 给 pro_api, 跳过 ts.set_token 写 ~/tk.csv
+                    # (沙箱家目录只读导致 set_token 写文件失败 -> tushare 未初始化)
+                    self._clients['tushare'] = ts.pro_api(token)
                     logger.info("✅ tushare 初始化成功")
             except Exception as e:
                 logger.warning(f"⚠️ tushare 初始化失败: {e}")
@@ -929,6 +937,78 @@ class DataSourceManager:
 
         # akshare 无统一逐日主力净流入接口，降级
         return None
+
+    # ==================== V4.7: 按交易日全市场批量取数 (引擎 universe 扩大后逐股取数太慢/限流) ====================
+
+    def get_trade_dates(self, start_date: str, end_date: str):
+        """交易日历: 返回 [YYYYMMDD, ...] 开市日 (tushare trade_cal, 单次调用)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return []
+        try:
+            df = pro.trade_cal(exchange='SSE', start_date=start_date.replace('-', ''),
+                               end_date=end_date.replace('-', ''), is_open='1')
+            if df is None or len(df) == 0:
+                return []
+            return sorted(df['cal_date'].astype(str).tolist())
+        except Exception as e:
+            logger.warning('get_trade_dates(%s~%s) 失败: %s', start_date, end_date, e)
+            return []
+
+    def get_market_daily_batch(self, trade_date: str):
+        """按交易日一次拉全市场日线 (tushare daily(trade_date=...) → 全市场 5500+ 只)
+
+        返回 DataFrame(ts_code, trade_date, open, high, low, close, volume, amount) 或 None。
+        单次调用替代逐股 5500 次请求 — 引擎全市场 universe 的核心提速。
+        """
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.daily(trade_date=trade_date)
+            if df is None or len(df) == 0:
+                return None
+            df = df.rename(columns={'vol': 'volume'})
+            return df
+        except Exception as e:
+            logger.warning('get_market_daily_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
+
+    def get_market_daily_basic_batch(self, trade_date: str):
+        """按交易日一次拉全市场基本面 (tushare daily_basic(trade_date=...) → pe/pb/turnover)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.daily_basic(trade_date=trade_date,
+                                 fields='ts_code,trade_date,pe,pb,turnover_rate,total_mv,circ_mv,float_mv')
+            if df is None or len(df) == 0:
+                return None
+            return df
+        except Exception as e:
+            logger.warning('get_market_daily_basic_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
+
+    def get_market_moneyflow_batch(self, trade_date: str):
+        """按交易日一次拉全市场资金流 (tushare moneyflow(trade_date=...) → net_mf_amount)"""
+        pro = self._clients.get('tushare')
+        if pro is None:
+            return None
+        try:
+            df = pro.moneyflow(trade_date=trade_date,
+                               fields='ts_code,trade_date,net_mf_amount,buy_lg_amount,sell_lg_amount')
+            if df is None or len(df) == 0:
+                return None
+            return df
+        except Exception as e:
+            logger.warning('get_market_moneyflow_batch(%s) 失败: %s', trade_date, e)
+            self._errors['tushare'] = str(e)
+            record_call('tushare', False, 0, rate_limited=_is_rate_limited(e))
+            return None
 
     def _fetch_daily_basic(self, src_name, ts_code, limit):
         """各数据源获取基本面数据"""

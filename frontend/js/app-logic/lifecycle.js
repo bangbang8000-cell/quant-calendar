@@ -83,8 +83,12 @@
             withTimeout(fetchMerrillClock(), 3000, 'merrillClock');
           });
           loadAiConfig();
-          loadAiVendors();
           loadAiCatalog();
+          // V4.6 修复: loadAiVendors 需登录后才加载(未登录 401 会污染 aiModelsError,
+          // 导致进入「自动评估」子页时厂商卡不显示, 误以为配置丢失)
+          if (hasSession && currentUser.value) {
+            loadAiVendors();
+          }
 
           if (!hasSession || !currentUser.value) {
             // 无会话: 等 wave1 完成后即可（登录页已先行渲染）

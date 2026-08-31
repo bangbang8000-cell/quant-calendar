@@ -65,6 +65,7 @@ def extract_numbers(text: str) -> List[float]:
         try:
             num = float(raw)
         except ValueError:
+            logger.debug('fact_check:67 跳过 (ValueError)')
             continue
         if _is_id_like(num, raw):
             continue

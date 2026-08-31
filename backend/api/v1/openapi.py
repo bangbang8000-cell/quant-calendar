@@ -10,6 +10,7 @@
 - Key 维度限流 (复用 rate_limit.SimpleMemoryBackend, 独立于 IP 级中间件)
 - 安全: Key 明文仅在签发响应一次性返回; 审计只记 prefix 不落明文
 """
+import asyncio
 import logging
 from typing import List, Optional
 
@@ -17,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from auth import get_admin_user
+from secret_utils import mask_secret
 import api_keys
 import webhook as webhook_module
 from rate_limit import SimpleMemoryBackend
@@ -123,18 +125,22 @@ async def openapi_watchlist(_key: dict = Depends(_require_api_key)):
 
 
 @router.get("/evaluations", tags=["开放 API"],
-            summary="评估记录", description="最近 N 条 AI 评估记录（默认 admin 用户，可用 user 参数切换）。")
-async def openapi_evaluations(limit: int = 10, user: str = "admin",
+            summary="评估记录", description="最近 N 条 AI 评估记录（read_admin Key 可指定 user；read Key 无法枚举他人）。")
+async def openapi_evaluations(limit: int = 10, user: Optional[str] = None,
                               _key: dict = Depends(_require_api_key)):
-    """评估记录: ?limit=N&user=xxx, 最近 N 条"""
+    """评估记录: ?limit=N&user=xxx — V4.1 IDOR 修复: 仅 read_admin 可指定 user"""
     limit = max(1, min(int(limit or 10), 100))
+    role = (_key or {}).get("role") or "read"
+    if user and role != "read_admin":
+        raise HTTPException(status_code=403, detail="仅 read_admin 权限可指定 user")
+    target = user or "admin"
     try:
         from ai_evaluator import ai_evaluator
-        history = ai_evaluator.get_history(user or "admin", limit=limit)
-        return _degraded(history, limit=limit, user=user or "admin")
+        history = ai_evaluator.get_history(target, limit=limit)
+        return _degraded(history, limit=limit, user=target)
     except Exception as e:
         logger.warning("openapi /evaluations 失败: %s", e)
-        return _degraded([], limit=limit, user=user or "admin")
+        return _degraded([], limit=limit, user=target)
 
 
 @router.get("/health", tags=["开放 API"],
@@ -147,18 +153,18 @@ async def openapi_health(_key: dict = Depends(_require_api_key)):
         from main_new import APP_VERSION  # 请求期导入, 无循环
         version = APP_VERSION
     except Exception:
-        pass
+        logger.warning('openapi:155 静默异常 (Exception)')
     db_ok = False
     try:
         db_ok = dbm.schema_ok()
     except Exception:
-        pass
+        logger.warning('openapi:160 静默异常 (Exception)')
     dates = []
     try:
         from data_parser import parser
         dates = parser.get_available_dates()
     except Exception:
-        pass
+        logger.warning('openapi:166 静默异常 (Exception)')
     data = {
         "status": "ok",
         "version": version,
@@ -167,6 +173,72 @@ async def openapi_health(_key: dict = Depends(_require_api_key)):
         "latest_date": dates[-1] if dates else None,
     }
     return _degraded(data)
+
+
+# ─── 扩容端点 (V4.7.4, FR-3.18.13): 复盘 / 胜率 / 因子IC ──────────────
+
+
+def _market_review_summary(date: Optional[str] = None) -> dict:
+    """内部数据获取: 市场复盘 (数据不可达 → degraded 空)"""
+    from market_review import get_review
+    data = get_review(date=date)
+    if not data:
+        return {"degraded": True}
+    return data
+
+
+@router.get("/review", tags=["开放 API"],
+            summary="市场复盘", description="当日/指定日期市场复盘（数据不可达时 degraded=true）。")
+async def openapi_review(date: Optional[str] = None, _key: dict = Depends(_require_api_key)):
+    """市场复盘: date=YYYY-MM-DD (默认最新)"""
+    try:
+        data = await asyncio.to_thread(_market_review_summary, date)
+        return _degraded(data)
+    except Exception as e:
+        logger.warning("openapi /review 失败: %s", e)
+        return _degraded({"degraded": True})
+
+
+def _winrate_summary(window: Optional[str] = None) -> dict:
+    """内部数据获取: AI 评估胜率追踪"""
+    from eval_track import compute_stats, track_evaluations
+    samples = track_evaluations()
+    stats = compute_stats(samples)
+    if window:
+        from eval_track import _normalize_window, _filter_stats_window
+        wkey = _normalize_window(window)
+        stats = _filter_stats_window(stats, wkey) if wkey else stats
+    return stats
+
+
+@router.get("/winrate", tags=["开放 API"],
+            summary="AI 评估胜率", description="AI 评估命中率追踪（n5/n10/n20 窗口）。")
+async def openapi_winrate(window: Optional[str] = None, _key: dict = Depends(_require_api_key)):
+    """AI 评估胜率: window=n5|n10|n20 (默认全窗口)"""
+    try:
+        data = await asyncio.to_thread(_winrate_summary, window)
+        return _degraded(data)
+    except Exception as e:
+        logger.warning("openapi /winrate 失败: %s", e)
+        return _degraded({})
+
+
+def _factor_ic_summary() -> dict:
+    """内部数据获取: 因子 IC 报告"""
+    from factor_ic import get_factor_ic_report
+    return get_factor_ic_report()
+
+
+@router.get("/factor-ic", tags=["开放 API"],
+            summary="因子 IC 报告", description="多因子 n5/n10/n20 未来收益 IC 报告（数据不可达时 degraded=true）。")
+async def openapi_factor_ic(_key: dict = Depends(_require_api_key)):
+    """因子 IC: 多因子多窗口横截面 IC 报告"""
+    try:
+        data = await asyncio.to_thread(_factor_ic_summary)
+        return _degraded(data)
+    except Exception as e:
+        logger.warning("openapi /factor-ic 失败: %s", e)
+        return _degraded({})
 
 
 # ─── 管理端点: API Key (JWT admin) ──────────────────────────────
@@ -252,14 +324,18 @@ async def create_webhook(req: WebhookCreate, user: dict = Depends(get_admin_user
     return {"success": True, "data": {"id": sub_id, "url": url,
                                       "events": [e for e in (req.events or []) if e in webhook_module.WEBHOOK_EVENTS],
                                       "enabled": req.enabled,
-                                      "secret": sub.get("secret", "")}}
+                                      "secret": mask_secret(sub.get("secret", ""))}}
 
 
 @router.get("/webhooks", tags=["开放 API 管理"],
             summary="列出 Webhook 订阅", description="列出全部 Webhook 订阅。")
 async def list_webhooks(user: dict = Depends(get_admin_user)):
-    """列出订阅"""
-    return {"success": True, "data": webhook_module.list_subscriptions()}
+    """列出订阅 (V4.1: secret 掩码返回)"""
+    subs = webhook_module.list_subscriptions()
+    for s_ in subs:
+        if isinstance(s_, dict) and s_.get("secret"):
+            s_["secret"] = mask_secret(s_["secret"])
+    return {"success": True, "data": subs}
 
 
 @router.delete("/webhooks/{sub_id}", tags=["开放 API 管理"],

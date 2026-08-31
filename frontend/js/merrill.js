@@ -20,7 +20,7 @@
   const assetNames = {
     stock: '📈 股票',
     bond: '📜 债券',
-    commodity: '🛢️ 大宗商品',
+    commodity: '🛢 大宗商品',
     cash: '💰 现金'
   };
 
@@ -77,8 +77,8 @@
         const s = cfg[key] || {};
         return {
           key, name: s.name || key, icon: s.icon || '📊',
-          color: s.color || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
-          textColor: s.color || '#333',
+          color: s.color || getCSSVar('--text-tertiary') || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
+          textColor: s.color || getCSSVar('--text-primary') || '#333',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
         };
       });
@@ -87,10 +87,10 @@
     const indicatorList = computed(() => {
       const ind = merrillData.value.indicators || {};
       return [
-        { key: 'pmi', label: 'PMI', value: ind.pmi?.toFixed(2), color: ind.pmi >= 50 ? '#43a047' : '#E53935' },
-        { key: 'gdp', label: 'GDP增速', value: ind.gdp_growth?.toFixed(2) + '%', color: '#43a047' },
-        { key: 'cpi', label: 'CPI同比', value: ind.cpi?.toFixed(2) + '%', color: ind.cpi > 1.2 ? '#E53935' : '#43a047' },
-        { key: 'm2', label: 'M2增速', value: ind.m2_growth?.toFixed(2) + '%', color: '#43a047' }
+        { key: 'pmi', label: 'PMI', value: ind.pmi?.toFixed(2), color: ind.pmi >= 50 ? (getCSSVar('--color-success') || '#43a047') : (getCSSVar('--color-danger') || '#E53935') },
+        { key: 'gdp', label: 'GDP增速', value: ind.gdp_growth?.toFixed(2) + '%', color: getCSSVar('--color-success') || '#43a047' },
+        { key: 'cpi', label: 'CPI同比', value: ind.cpi?.toFixed(2) + '%', color: ind.cpi > 1.2 ? (getCSSVar('--color-danger') || '#E53935') : (getCSSVar('--color-success') || '#43a047') },
+        { key: 'm2', label: 'M2增速', value: ind.m2_growth?.toFixed(2) + '%', color: getCSSVar('--color-success') || '#43a047' }
       ];
     });
 
@@ -104,7 +104,7 @@
         { key: 'employment', label: '就业' },
         { key: 'external', label: '外部' }
       ];
-      const levelColors = { '宽松': '#43a047', '中位': '#FF9800', '偏低': '#E53935', '高增长': '#43a047', '承压': '#E53935', '不利': '#E53935' };
+      const G = () => getCSSVar('--color-success') || '#43a047'; const R = () => getCSSVar('--color-danger') || '#E53935'; const W = () => getCSSVar('--color-warning') || '#FF9800'; const levelColors = { '宽松': G(), '中位': W(), '偏低': R(), '高增长': G(), '承压': R(), '不利': R() };
       return dims.map(d => {
         const dim = scores[d.key] || {};
         const z = dim.score || 0;
@@ -229,14 +229,16 @@
       }
     }
 
-    // v3.22-I4: 加载历史周期时间轴(最近4轮)
+    // v3.22-I4 + V4.0.1: 加载历史周期时间轴(最近4轮)
     async function loadMerrillTimeline() {
       timelineLoading.value = true;
       try {
         const res = await fetch('/api/market/merrill-clock/timeline');
         const data = await res.json();
         if (data.success && data.data) {
-          merrillTimeline.value = data.data;
+          // V4.0.1: API 返回最新在前, 展示改为历史(第1轮)在上 → 反转
+          const cycles = Array.isArray(data.data.cycles) ? data.data.cycles.slice().reverse() : [];
+          merrillTimeline.value = { cycles };
         }
       } catch (e) {
         console.warn('获取美林时钟时间轴失败');

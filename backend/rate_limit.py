@@ -14,9 +14,22 @@ import time
 from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException, Request
-from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
+
+
+def get_client_ip(request) -> str:
+    """V4.1 (FR-4.1.10): 解析客户端真实 IP
+
+    部署经 cloudflared 反代, 请求经代理链到达; 优先取 X-Forwarded-For 首个地址,
+    空则回退 socket 对端。避免所有用户被合并为代理 IP 导致限流失效。
+    """
+    xff = request.headers.get("x-forwarded-for", "") or ""
+    if xff:
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    return request.client.host if request.client else "unknown"
 
 
 # ─── 限流后端接口 (可插拔) ────────────────────────────────────────
@@ -73,22 +86,76 @@ class SimpleMemoryBackend(RateLimiterBackend):
             self._records.pop(key, None)
 
 
+class RedisBackend(RateLimiterBackend):
+    """Redis 固定窗口限流后端 (V4.7.4, FR-3.18.13 补全)
+
+    多进程/多实例部署时共享计数 (单机内存后端不共享)。使用 INCR + EXPIRE 原子计数:
+      - 首次请求: INCR=1 + EXPIRE=window (新窗口)
+      - 后续请求: INCR 累加, count > limit 拒绝
+    redis-py 为可选依赖: 未安装或连接失败 → 由 get_limiter_backend 回退内存后端。
+    """
+
+    def __init__(self, url: str = "redis://localhost:6379/0"):
+        import redis
+        self._client = redis.from_url(url, decode_responses=True)
+        self._ok = True
+
+    def check(self, key: str, limit: int, window: int) -> Tuple[bool, int]:
+        rk = f"rl:{key}"
+        try:
+            count = self._client.incr(rk)
+            if count == 1:
+                self._client.expire(rk, window)
+            if count > limit:
+                return (False, 0)
+            return (True, max(0, limit - count))
+        except Exception as e:
+            # Redis 不可达: 限流失败开放 (fail-open), 避免全站 429
+            logger.warning("[rate_limit] Redis 后端不可用, fail-open 放行: %s", e)
+            return (True, limit)
+
+    def get_remaining(self, key: str, limit: int, window: int) -> int:
+        rk = f"rl:{key}"
+        try:
+            count = int(self._client.get(rk) or 0)
+            return max(0, limit - count)
+        except Exception:
+            return limit
+
+    def reset(self, key: str = None):
+        try:
+            if key is None:
+                for k in self._client.keys("rl:*"):
+                    self._client.delete(k)
+            else:
+                self._client.delete(f"rl:{key}")
+        except Exception:
+            pass
+
+
 def get_limiter_backend() -> RateLimiterBackend:
     """按配置返回限流后端 (v3.17.13: 默认 memory; RATE_LIMIT_BACKEND 指定可扩展)
 
     - RATE_LIMIT_BACKEND=memory (默认) → SimpleMemoryBackend
-    - RATE_LIMIT_BACKEND=redis → 预留 Redis 后端 (未实现, 回退内存并告警; REDIS_URL 供该后端连接)
+    - RATE_LIMIT_BACKEND=redis → RedisBackend (V4.7.4 落地; redis-py 未安装或连接失败回退内存并告警)
+    - REDIS_URL 指定 Redis 连接地址 (默认 redis://localhost:6379/0)
     """
     backend_type = "memory"
+    redis_url = "redis://localhost:6379/0"
     try:
         from config import settings
         configured = (getattr(settings, "RATE_LIMIT_BACKEND", "") or "memory").strip().lower()
         if configured in ("redis", "redis://"):
             backend_type = "redis"
+        redis_url = getattr(settings, "REDIS_URL", "") or redis_url
     except Exception:
         pass
     if backend_type == "redis":
-        logger.warning("[rate_limit] Redis 后端尚未实现 (预留接口), 回退单机内存后端")
+        try:
+            return RedisBackend(redis_url)
+        except Exception as e:
+            logger.warning("[rate_limit] Redis 后端初始化失败 (%s), 回退单机内存后端", e)
+            return SimpleMemoryBackend()
     return SimpleMemoryBackend()
 
 
@@ -142,9 +209,9 @@ simple_limiter = SimpleLimiter()
 async def rate_limit_middleware(request: Request, call_next):
     """速率限制中间件
 
-    限制每个 IP 每分钟最多 600 次请求
+    限制每个 IP 每分钟最多 600 次请求 (V4.1: 经代理链解析真实 IP)
     """
-    client_ip = get_remote_address(request)
+    client_ip = get_client_ip(request)
 
     if not simple_limiter.check_rate_limit(client_ip):
         logger.warning(f"请求频率超限: {client_ip}")
@@ -181,3 +248,29 @@ def check_login_rate_limit(client_ip: str) -> bool:
     if not allowed:
         logger.warning(f"登录尝试超限: {client_ip}")
     return allowed
+
+
+# V4.1 (FR-4.1.10): 账号级失败锁定 — 15 分钟内连续 5 次失败锁定
+ACCOUNT_FAIL_LIMIT = 5
+ACCOUNT_FAIL_WINDOW = 900  # 15 分钟
+_account_fail = SimpleMemoryBackend()
+
+
+def is_account_locked(username: str) -> bool:
+    """账号是否因连续失败被临时锁定 (15 分钟窗口内失败次数达上限)"""
+    if not username:
+        return False
+    remaining = _account_fail.get_remaining(username, ACCOUNT_FAIL_LIMIT, ACCOUNT_FAIL_WINDOW)
+    return remaining <= 0
+
+
+def record_login_fail(username: str):
+    """记录一次登录失败 (计数一次)"""
+    if username:
+        _account_fail.check(username, ACCOUNT_FAIL_LIMIT, ACCOUNT_FAIL_WINDOW)
+
+
+def reset_login_fail(username: str):
+    """登录成功后清零失败计数"""
+    if username:
+        _account_fail.reset(username)

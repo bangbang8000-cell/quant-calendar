@@ -7,13 +7,15 @@
 """
 
 import os
-from fastapi import APIRouter, HTTPException
+from typing import Dict
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 import logging
 
 from paths import DATA_DIR
 from user_manager import UserManager
 from api.v1.user_config import load_user_config, save_user_config
+from auth import get_admin_user
 
 logger = logging.getLogger(__name__)
 
@@ -80,12 +82,11 @@ def reset_setup():
 
 @router.get("/setup/status")
 async def get_setup_status():
-    """检查是否需要运行初始化向导"""
+    """检查是否需要运行初始化向导 (V4.1: 不再泄露默认密码状态)"""
     if is_setup_done():
         return {"needed": False, "steps": {}}
 
     steps = {
-        "password": _is_default_password(),
         "ai_key": _config_empty("admin", "ai.apiKey"),
         "tushare_token": _config_empty("admin", "tushare.token"),
     }
@@ -95,17 +96,28 @@ async def get_setup_status():
 
 
 @router.post("/setup/complete")
-async def complete_setup(req: SetupCompleteRequest):
-    """完成初始化配置"""
+async def complete_setup(req: SetupCompleteRequest, _: Dict = Depends(get_admin_user)):
+    """完成初始化配置 (V4.1: 仅首次初始化可改密码; 已初始化后走用户管理)"""
     try:
+        if is_setup_done():
+            raise HTTPException(status_code=403, detail="系统已初始化，请使用用户管理修改配置")
+        if not (req.new_password and req.new_password.strip()):
+            raise HTTPException(status_code=400, detail="初始化必须设置管理员密码")
+        if len(req.new_password.strip()) < 8:
+            raise HTTPException(status_code=400, detail="密码至少 8 个字符")
         config_updates = {}
 
         # 1. 修改密码
-        if req.new_password and req.new_password.strip():
-            if len(req.new_password) < 4:
-                raise HTTPException(status_code=400, detail="密码至少 4 个字符")
-            um = UserManager()
-            um.update_user("admin", password=req.new_password.strip())
+        um = UserManager()
+        um.update_user("admin", password=req.new_password.strip())
+        # V4.1: 初始化/改密审计
+        try:
+            from audit_log import log
+            log("setup_complete", "admin", {"password_changed": True,
+                                            "ai_key": bool(req.ai_key),
+                                            "tushare_token": bool(req.tushare_token)})
+        except Exception:
+            logger.warning('setup_wizard:119 静默异常 (Exception)')
 
         # 2. 保存 AI 配置
         if req.ai_key and req.ai_key.strip():
@@ -138,7 +150,7 @@ async def complete_setup(req: SetupCompleteRequest):
 
 
 @router.post("/setup/reset")
-async def reset_setup_wizard():
-    """重置初始化标记，下次登录时再次显示向导"""
+async def reset_setup_wizard(_: Dict = Depends(get_admin_user)):
+    """重置初始化标记，下次登录时再次显示向导 (V4.1: 仅管理员)"""
     reset_setup()
     return {"success": True, "message": "已重置，下次登录时将显示初始化向导"}

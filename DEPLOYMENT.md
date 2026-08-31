@@ -39,6 +39,12 @@ cp quant-calendar-dev\.env.example .env
 
 # 5. 启动
 .venv\Scripts\python.exe backend\main_new.py
+> **前端构建（V4.3+）**：`frontend/dist/` 构建产物已入库（后端优先 serve `dist/index.html`），直接部署无需 Node 环境。仅开发/前端改动时需重建：
+> ```bash
+> cd frontend && npm install && npm run build   # 产物更新到 dist/
+> ```
+> 前端源码改动后必须 `npm run build` 再重启后端，浏览器强刷（Ctrl+Shift+R）验证。
+
 ```
 
 ---
@@ -303,11 +309,13 @@ quant-calendar-ops/
 │   ├── metrics.py          # Prometheus 可观测性
 │   ├── scheduler.py        # 定时任务
 │   └── api/v1/             # REST API 路由（含 /api/openapi）
-├── frontend/               # Vue 3 SPA
-│   ├── index.html          # 单文件应用
-│   ├── css/                # tokens.css / themes.css / layout.css
-│   ├── js/                 # JS 模块（含 locales/ 中英语言包、sw.js PWA）
-│   └── lib/                # Element Plus / ECharts
+├── frontend/               # Vue 3 SPA（V4.3 起 Vite 构建层）
+│   ├── index.html          # 应用入口模板（含 {{APP_VERSION}}/{{NONCE}} 注入占位）
+│   ├── src/main.js         # Vite 构建入口（业务 JS 顺序打包）
+│   ├── dist/               # 构建产物（已入库，Docker/部署免 Node 构建；后端优先 serve）
+│   ├── css/                # tokens.css / themes.css / layout.css（设计令牌体系）
+│   ├── js/                 # 源码模块（含 locales/ 中英语言包、sw.js PWA）
+│   └── lib/                # Element Plus / ECharts（vendor 不打包）
 ├── data/                   # 运行时数据（不入 git）
 │   ├── datasource_config.json
 │   ├── ai_models.json
@@ -324,6 +332,8 @@ quant-calendar-ops/
 
 | 版本 | 日期 | 关键变更 |
 |------|------|----------|
+| v4.7.1 | 2026-08 | 并发安全：策略 run-once 异步化(to_thread) / 持仓文件原子写入 / save_state 部分更新保留 universe / 1028 测试全绿 |
+| v4.7.0 | 2026-08 | 数据真实化：引擎全市场批量取数 / 日视图选股池真实轮动 / 年视图性能 32 倍提速 |
 | v3.17 | 2026-08 | 全版交付：AI 复盘/多因子体检/回测/胜率追踪/模拟组合/异动扫描；架构拆分/内联治理/鉴权收敛/可观测性/多用户隔离；移动端 PWA/性能优化/个性化/盘中增强；开放 API（API Key + Swagger + Webhook）/i18n。`APP_VERSION=3.17.3`，719 测试全绿 |
 | v3.15.1 | 2026-08 | 视觉回归基线、UI 审计修复 |
 | v3.14.0 | 2026-08 | 前端组件化拆分、备份恢复、页面热度 |

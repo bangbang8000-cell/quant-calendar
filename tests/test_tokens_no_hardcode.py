@@ -101,3 +101,46 @@ def test_css_usage_surface_no_hardcoded_colors():
         violations += [(path, ln, line) for ln, line in _scan_css(path)]
     assert not violations, 'CSS 使用区存在硬编码色值:\n' + '\n'.join(
         f'  {p}:{ln}  {s[:100]}' for p, ln, s in violations)
+
+# V4.8.1 (DEV-PLAN 2.1): dark-pro 主题块内「使用处」硬编码审计
+# 原白名单对整个 [data-theme] 块豁免; 本测试收窄: 令牌定义行(--xxx:)与
+# var(--token, ...) 派生/fallback 行豁免, 其余 #hex / rgba(数值) 必须令牌化
+DARKPRO_SEL_RE = re.compile(r'\[data-theme="dark-pro"\]')
+THEME_USE_IGNORE_RE = re.compile(r'^\s*--[a-zA-Z0-9-]+\s*:|var\(--')
+
+
+def _scan_darkpro_usage(path):
+    """按括号深度跟踪所有 [data-theme="dark-pro"] 规则块, 扫描使用处硬编码"""
+    lines = open(path, encoding='utf-8').read().split('\n')
+    bad, depth, in_dark = [], 0, False
+    for ln, raw in enumerate(lines, 1):
+        s = re.sub(r'/\*.*?\*/', '', raw).strip()
+        if not s:
+            continue
+        # 进入 dark-pro 规则块: 选择器行含 [data-theme="dark-pro"] 且本行开括号
+        if DARKPRO_SEL_RE.search(raw) and '{' in raw:
+            in_dark = True
+            depth += raw.count('{') - raw.count('}')
+        elif in_dark:
+            depth += raw.count('{') - raw.count('}')
+        if in_dark and depth <= 0 and '}' in raw:
+            # 本行已闭合(如单行规则), 先做使用处判断再退出
+            pass
+        if in_dark:
+            if THEME_USE_IGNORE_RE.search(s):
+                pass
+            elif _has_literal(s):
+                bad.append((ln, raw.strip()))
+        if in_dark and depth <= 0 and '}' in raw:
+            in_dark = False
+            depth = 0
+    return bad
+
+
+def test_darkpro_usage_no_hardcoded_colors():
+    """dark-pro 主题块使用区无硬编码色值（V4.8.1 D1 审计）"""
+    violations = []
+    for path in _css_files():
+        violations += [(path, ln, line) for ln, line in _scan_darkpro_usage(path)]
+    assert not violations, 'dark-pro 使用区存在硬编码色值:\n' + '\n'.join(
+        f'  {p}:{ln}  {s[:100]}' for p, ln, s in violations)

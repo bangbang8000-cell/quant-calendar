@@ -51,7 +51,9 @@
       }
 
       // ===== 保存飞书配置 =====
+      const feishuSaving = Vue.ref(false);
       async function saveFeishuConfig() {
+        feishuSaving.value = true;
         try {
           const res = await fetch('/api/feishu/config', {
             method: 'POST',
@@ -60,7 +62,7 @@
           });
           const result = await res.json();
           // 保存结果在UI展示
-        } catch (e) { ElementPlus.ElMessage.error('保存失败'); }
+        } catch (e) { ElementPlus.ElMessage.error('保存失败'); } finally { feishuSaving.value = false; }
       }
 
       // v3.2.0-T13: 浮动 AI 按钮 → 跳转智能评估页并聚焦问股
@@ -204,7 +206,7 @@
         try {
           await ElementPlus.ElMessageBox.confirm(
             `确定要从备份 ${name} 恢复吗？当前数据将被覆盖。`,
-            '⚠️ 恢复确认',
+            '⚠ 恢复确认',
             { type: 'warning', confirmButtonText: '恢复', cancelButtonText: '取消' }
           );
         } catch (e) { console.warn('[restoreBackup] confirm cancelled:', e); return; }
@@ -228,7 +230,7 @@
       const tourVisible = ref(false);
       const tourStep = ref(0);
       const tourSteps = [
-        { icon: '🗓️', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
+        { icon: '🗓', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
         { icon: '🤖', title: 'AI 智能评估', desc: '在智能评估页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
         { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
       ];
@@ -272,7 +274,7 @@
       }
 
       return {
-        feishuConfig, feishuTestStatus, feishuTestMessage,
+        feishuConfig, feishuTestStatus, feishuTestMessage, feishuSaving,
         testFeishuWebhook, saveFeishuConfig,
         aiFabHidden, openAiFab,
         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,

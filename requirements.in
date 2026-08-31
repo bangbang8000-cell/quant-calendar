@@ -14,6 +14,10 @@ pydantic>=2.0.0
 pydantic-settings>=2.0.0
 slowapi>=0.1.9
 aiofiles>=23.0.0
+# V4.2 (FR-4.2.3): 实时报价 WebSocket — FastAPI WS 需要 websockets/wsproto (uvicorn[standard])
+# websockets<14 保留 legacy.handshake (uvicorn 0.47 websockets_impl 依赖)
+websockets>=12.0,<14
+wsproto>=1.2.0
 tushare>=1.4.0
 cryptography>=41.0.0
 pypinyin>=0.55.0

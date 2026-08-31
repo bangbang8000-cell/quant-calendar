@@ -131,7 +131,7 @@ def _normalize_panel(panel, symbols):
                         closes.setdefault(sym, {})[str(date)[:10]] = float(v)
             return closes
         except Exception:
-            pass
+            logger.warning('strategy_custom:133 静默异常 (Exception)')
     if not panel:
         return closes
     for sym in symbols:

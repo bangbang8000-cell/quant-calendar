@@ -40,10 +40,19 @@
           } else { cb(localHits); }
         } catch(e) { console.warn('[searchStocks] fetch failed:', e); cb(localHits); }
       }
+      // V4.8.1 (UMD 修复): 不再依赖 window.QuantCommandPanel (Rollup CJS 转换下挂载被跳过),
+      // dispatchSearchSelection 逻辑内联 (与 command-panel-core.js 保持一致, TC-11.4)
+      function _dispatchSearchSelection(item) {
+        if (!item) return null;
+        if (item.type === 'menu') return { action: 'menu', menuKey: item.menuKey, subPage: item.subPage };
+        if (item.type === 'command') return { action: 'command', key: item.key };
+        if (item.type === 'stock' || (item.code && item.name)) return { action: 'stock', code: item.code, name: item.name };
+        return null;
+      }
       function onSearchSelect(item) {
         searchQuery.value = '';
         const QCP = window.QuantCommandPanel;
-        const d = QCP ? QCP.dispatchSearchSelection(item) : null;
+        const d = QCP ? QCP.dispatchSearchSelection(item) : _dispatchSearchSelection(item);
         if (!d) return;
         if (d.action === 'menu') { navigateTo(d.menuKey, d.subPage); return; }
         if (d.action === 'command') { runGlobalCommand(d.key); return; }

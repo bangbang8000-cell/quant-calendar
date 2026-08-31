@@ -125,6 +125,9 @@
                             <el-select class="w-180" :model-value="locale" size="small" @change="changeLanguage">
                                 <el-option value="zh-CN" :label="t('lang.zh-CN')" />
                                 <el-option value="en" :label="t('lang.en')" />
+                                <el-option value="ja" :label="t('lang.ja')" />
+                                <el-option value="ko" :label="t('lang.ko')" />
+                                <el-option value="zh-TW" :label="t('lang.zh-TW')" />
                             </el-select>
                             <span class="text-sm-tertiary-ml4">{{ t('system.languageDesc') }}</span>
                         </div>
@@ -196,7 +199,7 @@
                                 <el-input class="max-w-460" v-model="feishuConfig.webhook_url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."/>
                             </el-form-item>
                             <el-form-item>
-                                <el-button type="primary" size="small" @click="saveFeishuConfig">💾 保存配置</el-button>
+                                <el-button type="primary" size="small" @click="saveFeishuConfig" :loading="feishuSaving">💾 保存配置</el-button>
                                 <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'">🧪 测试发送</el-button>
                                 <span class="ml-10-sm" v-if="feishuTestMessage" :style="{color: feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'var(--el-success)' : 'var(--el-danger)'}">{{ feishuTestMessage }}</span>
                             </el-form-item>
@@ -236,7 +239,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button v-if="!v.locked" size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -249,9 +252,10 @@
                                 <el-form-item label="套餐档位"><el-input class="w-220" v-model="v.tier" :disabled="v.locked" placeholder="CodingPlan: Lite/Pro"/></el-form-item>
                                 <el-form-item label="Base URL"><el-input v-model="v.base_url" placeholder="https://.../v1"/></el-form-item>
                                 <el-form-item label="API Key">
-                                    <el-input :model-value="v._revealed ? v.api_key : v._masked" @update:model-value="val => { v.api_key = val; if (!v._revealed) v._masked = val; }" placeholder="厂商级密钥，卡内模型共用">
+                                    <el-input :model-value="v._editing ? v.api_key : v._masked" :disabled="!v._editing" @update:model-value="val => { if (v._editing) { v.api_key = val; } else { v._masked = val; } }" placeholder="厂商级密钥，卡内模型共用">
                                         <template #suffix>
-                                            <span style="cursor:pointer;user-select:none" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)">{{ v._revealed ? '🙈' : '👁️' }}</span>
+                                            <el-button size="small" :type="v._editing ? 'warning' : 'primary'" plain @click="toggleVendorEdit(v)" style="margin-left:4px">🔓 {{ v._editing ? '锁定' : '编辑密钥' }}</el-button>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="sanitizeHtml(viewIcon(v._revealed))"></span>
                                         </template>
                                     </el-input>
                                 </el-form-item>
@@ -309,9 +313,9 @@
                         </div>
                         <el-form label-width="80px">
                             <el-form-item label="API Token">
-                                <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" @update:model-value="val => { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig">
+                                <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" :disabled="!datasourceConfig.sxsc_tushare._editing" @update:model-value="val => { if (datasourceConfig.sxsc_tushare._editing) { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; } }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.sxsc_tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('sxsc_tushare')">{{ datasourceConfig.sxsc_tushare._revealed ? '🙈' : '👁️' }}</span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.sxsc_tushare._editing ? '锁定（重新掩码）' : '编辑（查看完整 Token，需密码）'" @click="toggleDatasourceEdit('sxsc_tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.sxsc_tushare._editing))"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>
@@ -337,9 +341,9 @@
                         </div>
                         <el-form label-width="80px">
                             <el-form-item label="API Token">
-                                <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" @update:model-value="val => { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig">
+                                <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" :disabled="!datasourceConfig.tushare._editing" @update:model-value="val => { if (datasourceConfig.tushare._editing) { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; } }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig">
                                     <template #suffix>
-                                        <span style="cursor:pointer;user-select:none" :title="datasourceConfig.tushare._revealed ? '收起（重新掩码）' : '查看完整 Token（需密码）'" @click="toggleDatasourceKeyReveal('tushare')">{{ datasourceConfig.tushare._revealed ? '🙈' : '👁️' }}</span>
+                                        <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="datasourceConfig.tushare._editing ? '锁定（重新掩码）' : '编辑（查看完整 Token，需密码）'" @click="toggleDatasourceEdit('tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.tushare._editing))"></span>
                                     </template>
                                 </el-input>
                             </el-form-item>
@@ -983,20 +987,20 @@
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p class="m-0"><strong class="color-text-primary">核心功能：</strong></p>
                                 <ul class="about-ul">
-                                    美林时钟 — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯
-                                    多策略选股 — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证
-                                    AI 每日复盘 — 收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪
-                                    多因子体检 — 估值/基本面/资金面/情绪面/技术面，个股五维体检
-                                    回测工作台 — 单/多策略回测对比，收益/回撤/夏普/净值可视化
-                                    评估胜率追踪 — 评估命中率统计，决策复盘
-                                    模拟组合 — 持仓/买卖调仓/实时盈亏/收益曲线
-                                    异动扫描 — 涨停/跌停/放量/连板，自选/持仓事件提醒
-                                    AI 问股 — 多轮上下文 + 多股对比 + 事实数据护栏
-                                    移动端 & PWA — 375px 优化、离线可读、手势操作
-                                    开放 API — API Key 接入只读行情/日历/评估，Webhook 事件订阅
-                                    国际化 — 中/英双语切换
-                                    飞书推送 — 定时推送每日选股报告
-                                    数据源 — Tushare Pro / sxsc / akshare 三源热备
+                                    <li><strong class="about-item-name">美林时钟</strong> — GDP/CPI/PMI/社融/利率五维评分，四阶段自动切换，历史轮次追溯</li>
+                                    <li><strong class="about-item-name">多策略选股</strong> — 多因子/行业轮动/资金流/指数增强，共识榜交叉验证</li>
+                                    <li><strong class="about-item-name">AI 每日复盘</strong> — 收盘后自动生成市场复盘，AI 解读指数/板块/资金/情绪</li>
+                                    <li><strong class="about-item-name">多因子体检</strong> — 估值/基本面/资金面/情绪面/技术面，个股五维体检</li>
+                                    <li><strong class="about-item-name">回测工作台</strong> — 单/多策略回测对比，收益/回撤/夏普/净值可视化</li>
+                                    <li><strong class="about-item-name">评估胜率追踪</strong> — 评估命中率统计，决策复盘</li>
+                                    <li><strong class="about-item-name">模拟组合</strong> — 持仓/买卖调仓/实时盈亏/收益曲线</li>
+                                    <li><strong class="about-item-name">异动扫描</strong> — 涨停/跌停/放量/连板，自选/持仓事件提醒</li>
+                                    <li><strong class="about-item-name">AI 问股</strong> — 多轮上下文 + 多股对比 + 事实数据护栏</li>
+                                    <li><strong class="about-item-name">移动端 & PWA</strong> — 375px 优化、离线可读、手势操作</li>
+                                    <li><strong class="about-item-name">开放 API</strong> — API Key 接入只读行情/日历/评估，Webhook 事件订阅</li>
+                                    <li><strong class="about-item-name">国际化</strong> — 中/英双语切换</li>
+                                    <li><strong class="about-item-name">飞书推送</strong> — 定时推送每日选股报告</li>
+                                    <li><strong class="about-item-name">数据源</strong> — Tushare Pro / sxsc / akshare 三源热备</li>
                                 </ul>
                             </div>
                         </div>
@@ -1101,6 +1105,10 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
+      // V4.6 修复: 进入「自动评估」子页强制加载 AI 厂商卡(与刷新按钮同源, 规避 watch 时序/401 残留)
+      Vue.watch(() => state.currentSubPage && state.currentSubPage.value, (sub) => {
+        if (sub === 'autoeval' && state.loadAiVendors) state.loadAiVendors();
+      });
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
@@ -1262,12 +1270,18 @@
         if (typeof state.loadAnalytics === 'function') state.loadAnalytics();
       }
 
+      // V4.0.1: 密钥查看/收起 — 线性 feather eye / eye-off SVG (替代 emoji 👁️/🙈)
+      const VIEW_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const VIEW_OFF_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      function viewIcon(revealed) { return revealed ? VIEW_OFF_ICON : VIEW_ICON; }
+
       return {
         ...state,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
         aiTotal, aiDayPeak,
         setAnalyticsDays,
+        viewIcon,
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,

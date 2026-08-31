@@ -62,6 +62,7 @@ async def ws_quotes(websocket: WebSocket):
             except asyncio.TimeoutError:
                 message = None
             except (WebSocketDisconnect, RuntimeError):
+                logger.debug('market_ws:64 跳过 ((WebSocketDisconnect, RuntimeError))')
                 break
             except Exception as e:
                 logger.warning('[ws/quotes] 接收异常: %s', e)

@@ -21,7 +21,7 @@ def _get_tushare_token():
         if settings.TUSHARE_TOKEN:
             return settings.TUSHARE_TOKEN
     except Exception:
-        pass
+        logger.warning('stock_info:23 静默异常 (Exception)')
     token = os.environ.get("TUSHARE_TOKEN", "")
     if token:
         return token

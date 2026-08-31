@@ -292,12 +292,22 @@ class TestRateLimitBackend:
         assert isinstance(rl.get_limiter_backend(), rl.SimpleMemoryBackend)
 
     def test_redis_backend_reserved_fallback_memory(self, monkeypatch):
-        """RATE_LIMIT_BACKEND=redis → 预留接口, 未实现时回退内存"""
+        """RATE_LIMIT_BACKEND=redis → 已实现 RedisBackend (V4.7.4); redis 不可用回退内存"""
+        import builtins
         import rate_limit as rl
+
+        real_import = builtins.__import__
+
+        def _fake_import(name, *args, **kwargs):
+            if name == "redis" or name.startswith("redis."):
+                raise ImportError("No module named 'redis'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _fake_import)
         monkeypatch.setattr(rl, '_rate_limiter_backend', None)
         monkeypatch.setattr('config.settings.RATE_LIMIT_BACKEND', 'redis')
         backend = rl.get_limiter_backend()
-        assert isinstance(backend, rl.SimpleMemoryBackend)
+        assert isinstance(backend, rl.SimpleMemoryBackend), "redis 不可用应回退内存"
 
     def test_simple_limiter_backward_compat(self):
         import rate_limit as rl

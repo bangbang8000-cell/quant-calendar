@@ -37,7 +37,7 @@
                     <div class="section-title">📍 当前周期实时进度</div>
                     <div class="grid-4col-gap12">
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
+                            <div class="stat-value num-tabular">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
                             <div class="stat-label">周期起始日</div>
                         </div>
                         <div class="stat-item">
@@ -57,12 +57,12 @@
                         <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
                         <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ merrillDetailData._currentTiming.progress_percent }}%</b></span>
                         <span class="text-warning-semibold" v-if="merrillDetailData._nextPrediction?.next_stage">
-                            ⚠️ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%
+                            ⚠ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%
                         </span>
                     </div>
                     <!-- 过渡警告横幅 -->
                     <div class="warning-banner" v-if="merrillDetailData._currentTiming.progress_percent> 80 && merrillDetailData._nextPrediction?.transition_probability> 0.15">
-                        <b class="color-badge-warning">⚠️ 周期切换预警</b>
+                        <b class="color-badge-warning">⚠ 周期切换预警</b>
                         <span class="color-secondary-ml8">
                             当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
                             预测下一阶段为<b class="color-warning">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
@@ -142,7 +142,7 @@
                         <span class="text-sm-medium" :style="{color: dim.color}">{{ dim.level }}</span>
                     </div>
                     <div class="warning-note" v-if="merrillData.early_warnings?.length">
-                        <b class="color-el-danger">⚠️ 早期预警：</b>
+                        <b class="color-el-danger">⚠ 早期预警：</b>
                         <span class="inline-mr12" v-for="(w, i) in merrillData.early_warnings" :key="i">{{ w.type || w }}</span>
                     </div>
                 </div>
@@ -203,11 +203,11 @@
                             <div class="stat-label">历史平均持续时间</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.stock_avg_return * 100).toFixed(2) }}%</div>
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.stock_avg_return != null ? (merrillDetailData.historical_stats.stock_avg_return * 100).toFixed(2) : '—' }}%</div>
                             <div class="stat-label">股票平均年化收益</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">{{ (merrillDetailData.historical_stats?.bond_avg_return * 100).toFixed(2) }}%</div>
+                            <div class="stat-value">{{ merrillDetailData.historical_stats?.bond_avg_return != null ? (merrillDetailData.historical_stats.bond_avg_return * 100).toFixed(2) : '—' }}%</div>
                             <div class="stat-label">债券平均年化收益</div>
                         </div>
                         <div class="stat-item">
@@ -229,7 +229,7 @@
 
                 <!-- 风险提示 -->
                 <div class="detail-section risk-section">
-                    <div class="section-title">⚠️ 风险提示</div>
+                    <div class="section-title">⚠ 风险提示</div>
                     <div class="risk-list">
                         <div v-for="(risk, index) in merrillDetailData.risks" :key="index" class="risk-item">
                             {{ risk }}

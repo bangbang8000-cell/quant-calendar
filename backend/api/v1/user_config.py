@@ -10,6 +10,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from auth import get_current_active_user, get_admin_user
+from secret_utils import mask_secret
 from paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ BASE_CONFIG_DEFAULTS = {
     "ai": {"provider": "deepseek", "apiKey": "", "endpoint": "https://api.deepseek.com/v1", "model": "deepseek-chat"},
     "rate_limit": {"api_limit": 600},
     "auto_evaluate": {"enabled": False, "schedule_type": "daily", "schedule_time": "09:00", "push_to_feishu": True},
-    "theme": "tech-blue",
+    "theme": "vibrant-orange",
     # v3.17 (FR-3.17.2/3.17.7): 策略研究菜单默认开启（市场复盘/异动扫描 P0 功能可达）
     "research_menu_enabled": True
 }
@@ -169,10 +170,27 @@ def init_user_config(username: str):
 
 # ===== API 路由 =====
 
+
+def _mask_sensitive(obj, _depth=0):
+    """V4.1: 递归掩码配置敏感字段(apiKey/token/secret/webhook_url), 防明文下发"""
+    if _depth > 6:
+        return obj
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if k.lower() in ("apikey", "token", "secret", "webhook_url", "api_key", "access_key") and isinstance(v, str) and v:
+                out[k] = mask_secret(v)
+            else:
+                out[k] = _mask_sensitive(v, _depth + 1)
+        return out
+    if isinstance(obj, list):
+        return [_mask_sensitive(x, _depth + 1) for x in obj]
+    return obj
+
 @router.get("/config")
 async def get_my_config(user: dict = Depends(get_current_active_user)):
     """获取当前用户的完整配置（base + 覆盖）"""
-    config = load_user_config(user["username"])
+    config = _mask_sensitive(load_user_config(user["username"]))
     return {"success": True, "config": config, "username": user["username"]}
 
 
@@ -203,7 +221,7 @@ PREFERENCE_ALLOWED_VALUES = {
     "default_view": {"strategies", "calendar", "ai", "research", "system"},
     "theme": {"light", "dark", "system"},
     "chart_period": {"daily", "weekly", "monthly"},
-    "language": {"zh-CN", "en"},
+    "language": {"zh-CN", "en", "ja", "ko", "zh-TW"},
 }
 
 

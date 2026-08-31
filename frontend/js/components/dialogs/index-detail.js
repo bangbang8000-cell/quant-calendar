@@ -47,7 +47,7 @@
                 </div>
 
                 <!-- K线图区域 -->
-                <div class="section-title mt-20"><span>🕯️</span> K线图与均线</div>
+                <div class="section-title mt-20"><span>🕯</span> K线图与均线</div>
                 <div class="kline-container">
                     <div class="kline-tabs">
                         <button

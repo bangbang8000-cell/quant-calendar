@@ -9,7 +9,7 @@
   window.__quantComponents.AutoEvaluateDialog = {
     name: 'qc-auto-evaluate-dialog',
     template: `
-        <el-dialog v-model="showAutoEvaluateSettings" title="⚙️ 自动评估设置" width="520px">
+        <el-dialog v-model="showAutoEvaluateSettings" title="⚙ 自动评估设置" width="520px">
             <div class="p-15-0-25">
                 <el-form label-width="120px">
                     <el-form-item label="启用自动评估">

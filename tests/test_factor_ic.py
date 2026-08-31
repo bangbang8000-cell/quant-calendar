@@ -168,3 +168,71 @@ def test_factor_ic_endpoint(monkeypatch):
     res = asyncio.run(market_api.factor_ic_report(user={'username': 'admin'}))
     assert res['success'] is True
     assert res['data']['pe']['n5']['grade'] == '有效'
+
+
+# ==================== V4.7.4: get_factor_ic_report 真实数据链路 ====================
+
+
+class _FakePortal:
+    """模拟 RealDataPortal.get_panel: 构造 close/volume/pe 面板 (8 股票 x 8 日)"""
+
+    def __init__(self):
+        import pandas as pd
+        import numpy as np
+        symbols = [f'60000{i}.SH' for i in range(8)]
+        dates = pd.date_range('2026-06-01', periods=45, freq='B').strftime('%Y-%m-%d').tolist()
+        rows = []
+        rng = np.random.RandomState(42)
+        for d in dates:
+            for s in symbols:
+                rows.append({'date': d, 'symbol': s,
+                             'close': 10 + rng.rand() * 5,
+                             'volume': 1e6 + rng.rand() * 1e5,
+                             'pe': 10 + rng.rand() * 20,
+                             'float_mv': 5e9 + rng.rand() * 1e9})
+        self.panel = pd.DataFrame(rows).set_index(['date', 'symbol'])
+
+    def get_panel(self, fields, start, end, universe=None, max_workers=1):
+        cols = [f for f in fields if f in self.panel.columns]
+        return self.panel[cols]
+
+
+def test_get_factor_ic_report_real_data(monkeypatch):
+    """get_factor_ic_report 用真实链路: DataPortal 面板 → 因子矩阵 → 未来收益 → 多窗口 IC 报告"""
+    import strategy_sdk.data_portal as dp_mod
+    import strategy_sdk
+    from strategy_sdk.base import FactorSpec
+
+    class _S:
+        id = 'multi_factor'
+        factor_specs = [
+            FactorSpec('pe', 'valuation', ['pe'], {'direction': 'low'}),
+            FactorSpec('mom20', 'technical', ['close'], {'lookback': 20, 'skip': 5, 'direction': 'high'}),
+        ]
+
+    monkeypatch.setattr(strategy_sdk, 'registry', type('R', (), {'get': lambda self, sid: _S()})())
+    monkeypatch.setattr(dp_mod, 'RealDataPortal', _FakePortal)
+
+    report = fi.get_factor_ic_report()
+    assert isinstance(report, dict) and report, '报告不应为空'
+    for fkey in ('pe', 'mom20'):
+        assert fkey in report, f'缺因子 {fkey}'
+        for wkey in ('n5', 'n10', 'n20'):
+            assert wkey in report[fkey], f'{fkey} 缺窗口 {wkey}'
+            assert 'grade' in report[fkey][wkey]
+            assert report[fkey][wkey]['grade'] in ('有效', '失效', '不稳定', '样本不足')
+
+
+def test_get_factor_ic_report_degrade(monkeypatch):
+    """数据不可达 → 优雅降级为空报告 (不抛错)"""
+    import strategy_sdk.data_portal as dp_mod
+    import strategy_sdk
+
+    class _Broken:
+        def get_panel(self, *a, **k):
+            raise RuntimeError('no net')
+
+    monkeypatch.setattr(dp_mod, 'RealDataPortal', lambda: _Broken())
+    monkeypatch.setattr(strategy_sdk, 'registry', type('R', (), {'get': lambda self, sid: (_ for _ in ()).throw(Exception('no strategy'))})())
+    report = fi.get_factor_ic_report()
+    assert report == {}

@@ -252,6 +252,7 @@ class DataSourceEventProvider:
                         title = str(row.get('名称', '') or row.get('代码', '') or '')
                         events.append({'type': label, 'title': title, 'date': ''})
             except Exception:
+                logger.debug('event_alert:254 跳过 (Exception)')
                 continue
         return events
 

@@ -21,6 +21,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 I18N_PATH = os.path.join(FRONTEND_ROOT, "js", "i18n.js")
 ZH_PATH = os.path.join(FRONTEND_ROOT, "js", "locales", "zh-CN.js")
 EN_PATH = os.path.join(FRONTEND_ROOT, "js", "locales", "en.js")
+JA_PATH = os.path.join(FRONTEND_ROOT, "js", "locales", "ja.js")
+KO_PATH = os.path.join(FRONTEND_ROOT, "js", "locales", "ko.js")
+TW_PATH = os.path.join(FRONTEND_ROOT, "js", "locales", "zh-TW.js")
 
 
 def _read(rel: str) -> str:
@@ -72,11 +75,19 @@ def _all_t_literals():
 # ─── 语言包结构 ────────────────────────────────────────────────
 
 def test_locale_files_exist():
-    """语言包文件（zh-CN/en）存在且为原生 JS 对象（零构建）"""
-    for p in (ZH_PATH, EN_PATH):
+    """语言包文件（zh-CN/en/ja/ko/zh-TW）存在且为原生 JS 对象（零构建）"""
+    import re as _re
+    zh_keys = set(_re.findall(r"'([a-zA-Z0-9._-]+)':", open(ZH_PATH, encoding="utf-8").read()))
+    for p in (ZH_PATH, EN_PATH, JA_PATH, KO_PATH, TW_PATH):
         assert os.path.exists(p), f"语言包文件缺失: {p}"
         with open(p, encoding="utf-8") as f:
-            assert "module.exports" in f.read(), "语言包应支持 Node require（供 pytest）"
+            content = f.read()
+            assert "module.exports" in content, "语言包应支持 Node require（供 pytest）"
+            keys = set(_re.findall(r"'([a-zA-Z0-9._-]+)':", content))
+            assert keys == zh_keys, (
+                f"{os.path.basename(p)} 与 zh-CN 键集合不一致: "
+                f"缺 {sorted(zh_keys - keys)} 多 {sorted(keys - zh_keys)}"
+            )
 
 
 def test_locales_same_key_set():
@@ -120,7 +131,7 @@ def test_zh_matches_original():
     assert zh["detail.factorTitle"] == "多因子体检"
     assert zh["ai.evalHitRate"] == "评估命中率"
     assert zh["research.marketReview"] == "市场复盘"
-    assert zh["system.title"] == "🖥️ 系统状态"
+    assert zh["system.title"] == "🖥 系统状态"
 
 
 def test_default_locale_zh_cn():
@@ -204,7 +215,7 @@ def test_node_t_basic_zh():
     assert locale == "zh-CN", f"默认 locale 应为 zh-CN, got {locale}"
     assert nav == "量化日历"
     assert empty == "暂无数据"
-    assert sys_title == "🖥️ 系统状态"
+    assert sys_title == "🖥 系统状态"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node 不可用")

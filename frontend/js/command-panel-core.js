@@ -9,7 +9,7 @@
   } else {
     root.QuantCommandPanel = factory();
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})((typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : this))), function () {
   'use strict';
 
   // ─── 工具 ─────────────────────────────────────────
@@ -188,3 +188,8 @@
     DEFAULT_COMMANDS: DEFAULT_COMMANDS,
   };
 });
+
+// V4.8.1 (UMD 修复): UMD 被 Rollup 转 CJS 后走 module.exports 分支,
+// window.QuantCommandPanel 挂载被跳过 → keys.js/command-panel.js 取不到。
+// 修复: main.js 显式 import 本模块 (拿 factory 结果) 并挂载 window.QuantCommandPanel。
+// (本文件保持 UMD 结构, 供 Node require 单测; ESM 构建时 export 由 Rollup 从 module.exports 提取)

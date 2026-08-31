@@ -479,3 +479,57 @@ def test_config_has_openapi_enabled():
     import config
     assert hasattr(config.settings, "OPENAPI_ENABLED")
     assert config.settings.OPENAPI_ENABLED is True
+
+
+# ==================== V4.7.4: 开放 API 扩容 (复盘/胜率/因子IC) ====================
+
+
+def test_openapi_review_endpoint(monkeypatch, client):
+    """开放 API /openapi/review: 复盘数据 (monkeypatch 内部数据源)"""
+    from api.v1 import openapi as opmod
+    monkeypatch.setattr(opmod, "_market_review_summary",
+                        lambda date=None: {"date": "2026-08-24", "summary": "震荡上行", "degraded": False})
+    import api_keys
+    plain, _record = _api_key_fixture()
+    r = client.get("/openapi/review", headers={"X-API-Key": plain})
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["date"] == "2026-08-24"
+    assert data["summary"] == "震荡上行"
+
+
+def test_openapi_winrate_endpoint(monkeypatch, client):
+    """开放 API /openapi/winrate: AI 评估胜率"""
+    from api.v1 import openapi as opmod
+    monkeypatch.setattr(opmod, "_winrate_summary",
+                        lambda window=None: {"count": 10, "win_rate": 0.6, "window": "n5"})
+    import api_keys
+    plain, _record = _api_key_fixture()
+    r = client.get("/openapi/winrate", headers={"X-API-Key": plain})
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["win_rate"] == 0.6
+    assert data["count"] == 10
+
+
+def test_openapi_factor_ic_endpoint(monkeypatch, client):
+    """开放 API /openapi/factor-ic: 因子 IC 报告"""
+    from api.v1 import openapi as opmod
+    monkeypatch.setattr(opmod, "_factor_ic_summary",
+                        lambda: {"mom20": {"n5": {"count": 52, "grade": "不稳定"}}})
+    import api_keys
+    plain, _record = _api_key_fixture()
+    r = client.get("/openapi/factor-ic", headers={"X-API-Key": plain})
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert "mom20" in data
+    assert data["mom20"]["n5"]["grade"] == "不稳定"
+
+
+def test_openapi_new_endpoints_read_only():
+    """新端点保持只读 (仅 GET)"""
+    from api.v1.openapi import router as openapi_router
+    new_paths = {"/openapi/review", "/openapi/winrate", "/openapi/factor-ic"}
+    for r in openapi_router.routes:
+        if getattr(r, "path", "") in new_paths:
+            assert set(getattr(r, "methods", None) or []) == {"GET"}, r.path

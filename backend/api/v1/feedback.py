@@ -9,8 +9,9 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
+from auth import get_admin_user
 
 router = APIRouter(prefix="/feedback", tags=["反馈"])
 
@@ -69,7 +70,7 @@ async def submit_feedback(item: FeedbackIn, request: Request):
 
 
 @router.get("")
-async def list_feedback():
+async def list_feedback(_: dict = Depends(get_admin_user)):
     """查看反馈列表 (供系统页使用, 无需鉴权 — 仅本机部署场景)"""
     path = _feedback_file()
     if not os.path.exists(path):

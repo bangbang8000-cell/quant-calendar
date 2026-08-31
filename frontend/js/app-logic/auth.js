@@ -6,8 +6,8 @@
   window.__quantAppLogic = window.__quantAppLogic || {};
   window.__quantAppLogic.auth = {
     create: function (ctx) {
-      const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadHealthMetrics,
-              loadConsensusData, applyTheme, maybeShowTour } = ctx;
+      const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached, loadHealthMetrics,
+              loadConsensusData, applyTheme, maybeShowTour, loadAiVendors } = ctx;
 
       // ===== 登录状态 =====
       const loginForm = ref({ username: '', password: '' });
@@ -95,14 +95,22 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'tech-blue');
+            applyTheme(data.user.theme || 'vibrant-orange');
+            // V4.6 修复: 登录成功立即加载 AI 厂商(提前发出, 避免与系统配置页请求排队导致延迟)
+            if (typeof loadAiVendors === 'function') loadAiVendors();
             await loadUserConfig();
             await loadDates();
-            await loadDashboardData();
-            // v3.11 (FR-3.11.7): 登录后刷新数据源健康卡（登录早于页面切换 watch，需显式加载）
-            loadHealthMetrics().catch(() => {});
-            await loadConsensusData();
+            // V4.5 (FR-4.5.2): 并行加载(即时反馈) + loadDashboardCached(缓存防重复)
+            await Promise.all([
+              loadDashboardCached(),
+              loadConsensusData(),
+              loadHealthMetrics().catch(() => {}),
+            ]);
             ElementPlus.ElMessage.success('登录成功');
+            // V4.1 (FR-4.1.9): 默认口令登录 → 强制改密提示
+            if (data.data && data.data.must_change_password) {
+              ElementPlus.ElMessage.warning('检测到默认口令，请立即在「系统」页修改管理员密码');
+            }
             // v3.2.0-T22: 首次使用引导 (所有角色首次登录显示)
             maybeShowTour();
             // v2.2: 检查是否需要初始化向导
@@ -133,7 +141,7 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'tech-blue');
+            applyTheme(data.user.theme || 'vibrant-orange');
             await loadUserConfig();
             await loadDates();
             await loadDashboardData();
@@ -158,7 +166,12 @@
           type: 'warning'
         }).then(() => {
           currentUser.value = null;
+          // V4.2 (FR-4.2.7): 登出双清凭证 + 断开 WS
           localStorage.removeItem('quant_user');
+          localStorage.removeItem('quant_token');
+          try {
+            if (window.__quantWs && window.__quantWs.close) window.__quantWs.close();
+          } catch (e) {}
         }).catch(() => {});
       }
 

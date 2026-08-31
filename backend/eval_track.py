@@ -176,6 +176,7 @@ def _compute_windows_pct(kline_response, baseline_date: str) -> Optional[Dict]:
             dates.append(_normalize_date(row[0]))
             closes.append(float(row[2]))
         except (TypeError, ValueError, IndexError):
+            logger.debug('eval_track:178 跳过 ((TypeError, ValueError, IndexError))')
             continue
     if not dates or len(dates) != len(closes):
         return None
@@ -284,7 +285,7 @@ def _normalize_window(window) -> Optional[str]:
         if w.isdigit() and int(w) in WINDOW_DAYS.values():
             return "n" + str(int(w))
     except (TypeError, ValueError):
-        pass
+        logger.warning('eval_track:286 静默异常 ((TypeError, ValueError))')
     return None
 
 

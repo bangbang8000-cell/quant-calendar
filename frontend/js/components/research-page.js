@@ -58,7 +58,7 @@
                                             <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
-                                        <el-button size="small" type="primary" @click="saveProfile">💾 保存方案</el-button>
+                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
                                         <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
                                     </div>
                                 </div>
@@ -151,14 +151,14 @@
                                         <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
-                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠️ 疑似过拟合</span>
+                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠ 疑似过拟合</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-write'" class="card">
-                        <div class="card-title">⚙️ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
+                        <div class="card-title">⚙ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">母本策略</span>
@@ -211,7 +211,7 @@
                                     <el-input class="w-200" size="small" v-model="specCapText" placeholder="如 50,2000 (留空不限)" />
                                 </div>
                             </div>
-                            <el-button size="small" type="primary" @click="saveVariantSpec">💾 保存 SelectionSpec</el-button>
+                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving">💾 保存 SelectionSpec</el-button>
                         </div>
                         <!-- v3.22 (I3A): 第3步 AI 交易码 -->
                         <div v-if="variantSelected" class="strategy-params">
@@ -496,6 +496,8 @@
                 </div>`,
     setup() {
       const state = inject('qcState');
+      const savingProfile = Vue.ref(false);
+      const variantSaving = Vue.ref(false);
       if (!state) return {};
 
       // ===== v3.17.2 (FR-3.17.2): AI 每日市场复盘 — 列表 + 详情 =====
@@ -755,6 +757,7 @@
       }
 
       async function saveProfile() {
+        savingProfile.value = true;
         const name = (profileName.value || '').trim();
         if (!name) { window._core && window._core.showToast('请输入方案名称'); return; }
         try {
@@ -1096,7 +1099,7 @@
       async function loadVariantSpec(sid) {
         try {
           const res = await fetch("/api/strategies/" + sid + "/selection-spec", { headers: _authHeaders() }).then(function (r) { return r.json(); });
-          if (res && res.data) {
+          if (res && res.data && res.data.spec) {
             variantSpec.value = Object.assign({}, res.data.spec);
             specFields.value = res.data.fields;
             specIndustryText.value = (res.data.spec.industry_scope || []).join(",");
@@ -1106,6 +1109,7 @@
       }
 
       async function saveVariantSpec() {
+        variantSaving.value = true;
         if (!variantSelected.value || !variantSpec.value) return;
         try {
           variantSpec.value.industry_scope = specIndustryText.value ? specIndustryText.value.split(/[,，]/).map(function(s){ return s.trim(); }).filter(Boolean) : [];
@@ -1259,6 +1263,7 @@
         strategies, strategiesLoading, strategiesError,
         activeStrategyId, activeStrategy, paramValues,
         strategyRunning, ptradeCode, strategyRuns,
+        savingProfile, variantSaving,
         loadStrategies, onStrategyChange, runActiveStrategy,
         exportActivePtradeCode, copyPtradeCode,
         profiles, profileSelect, profileName,
