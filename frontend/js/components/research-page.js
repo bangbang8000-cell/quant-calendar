@@ -35,6 +35,8 @@
                                 <div class="strategy-param-row">
                                     <span class="strategy-param-label">纳管</span>
                                     <el-switch v-model="govEnabled" @change="updateGov" />
+                                    <span class="strategy-param-label">进日历</span>
+                                    <el-switch v-model="govShowCalendar" @change="updateGov" />
                                     <el-select class="w-110" size="small" v-model="govSchedule" @change="updateGov">
                                         <el-option v-for="t in ['20:00','21:00','22:00','08:00']" :key="t" :label="t" :value="t" />
                                     </el-select>
@@ -131,6 +133,26 @@
                                 </div>
                                 <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
                                     单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ factorLayerResult.spread }}%
+                                </div>
+                            </div>
+                            <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
+                            <div class="sweep-research mt-8">
+                                <div class="card-title">🔬 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
+                                <div class="flex-wrap-gap-12-mb16-c">
+                                    <el-input class="w-260" size="small" v-model="sweepGrid" placeholder='JSON 网格, 如 {"top_n":[10,20,30],"st_filter":[true,false]}' />
+                                    <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading">▶ 运行扫描</el-button>
+                                    <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
+                                </div>
+                                <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
+                                <div v-if="sweepResult && sweepResult.length" class="sweep-table mt-8">
+                                    <div v-for="(row, i) in sweepResult" :key="i" class="sweep-row flex-wrap-gap-12-mb16-c" :class="{ 'sweep-best': i === 0 }">
+                                        <span class="text-sm-secondary w-260">参数: {{ JSON.stringify(row.params) }}</span>
+                                        <span class="text-sm-primary">年化 {{ (row.annual_return * 100).toFixed(2) }}%</span>
+                                        <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
+                                        <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
+                                        <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
+                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠️ 疑似过拟合</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -672,6 +694,7 @@
       const profileSelect = ref('');
       const profileName = ref('');
       const govEnabled = ref(true);        // v3.21 (P0-6): 纳管状态
+      const govShowCalendar = ref(true);    // V4.0 M3: 完全体闭环 — 引擎持仓是否进日历展示
       const govSchedule = ref('20:00');
       const govUniverse = ref('default');  // v3.21: default=内置池 | all=全市场5530
       const govRunning = ref(false);
@@ -778,6 +801,7 @@
           govEnabled.value = cur.enabled !== false;
           govSchedule.value = cur.schedule || '20:00';
           govUniverse.value = cur.universe === 'all' ? 'all' : 'default';
+          govShowCalendar.value = cur.show_in_calendar !== false;
           lastHoldings.value = cur.last_holdings || '';
         } catch (e) {
           console.error('[research] 纳管状态加载失败:', e);
@@ -791,7 +815,7 @@
             body: JSON.stringify({
               strategies: (function () {
                 const o = {};
-                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value, universe: govUniverse.value };
+                o[activeStrategyId.value] = { enabled: govEnabled.value, schedule: govSchedule.value, universe: govUniverse.value, show_in_calendar: govShowCalendar.value };
                 return o;
               })(),
             }),
@@ -943,6 +967,32 @@
         { name: 'turnover20', category: 'sentiment' },
         { name: 'capital_flow', category: 'capital' },
       ];
+      // V4.0 M2-1: 参数扫描 (策略实验室)
+      const sweepGrid = ref('{"top_n":[10,20,30]}');
+      const sweepResult = ref(null);
+      const sweepMessage = ref('');
+      const sweepLoading = ref(false);
+
+      async function runSweep() {
+        if (!activeStrategyId.value) { ElementPlus.ElMessage.warning('请先选择策略'); return; }
+        let grid;
+        try { grid = JSON.parse(sweepGrid.value); }
+        catch (e) { ElementPlus.ElMessage.error('网格 JSON 格式错误'); return; }
+        if (!grid || Object.keys(grid).length === 0) { ElementPlus.ElMessage.warning('网格不能为空'); return; }
+        sweepLoading.value = true; sweepResult.value = null; sweepMessage.value = '';
+        try {
+          const res = await fetch('/api/strategies/' + activeStrategyId.value + '/sweep', {
+            method: 'POST', headers: _authHeaders(), body: JSON.stringify({ param_grid: grid }),
+          }).then(function (r) { return r.json(); });
+          if (res && Array.isArray(res.results)) {
+            sweepResult.value = res.results;
+            sweepMessage.value = '完成 ' + res.count + ' 组' + (res.data_degraded ? ' (数据不可达, 结果降级)' : '');
+          } else {
+            sweepMessage.value = (res && res.detail) || '扫描失败';
+          }
+        } catch (e) { console.error('[sweep]', e); sweepMessage.value = '扫描失败: ' + e.message; }
+        finally { sweepLoading.value = false; }
+      }
 
       async function runFactorIc() {
         factorIcLoading.value = true;
@@ -1215,6 +1265,7 @@
         loadProfiles, saveProfile, applyProfile, deleteProfile,
         govEnabled, govSchedule, govUniverse, govRunning, lastHoldings,
         loadGov, updateGov, runOnceActive, openLastHoldings, cloneStrategy,
+        govShowCalendar,
         factorKey, factorIcLoading, factorLayerLoading,
         factorIcReport, factorLayerResult, factorOptions,
         runFactorIc, runFactorLayer,

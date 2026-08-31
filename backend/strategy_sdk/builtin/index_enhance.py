@@ -8,7 +8,7 @@ from typing import List
 
 import pandas as pd
 
-from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext, COMMON_TRADING_PARAMS
+from strategy_sdk.base import BaseStrategy, ParamSpec, StrategyContext, COMMON_TRADING_PARAMS, FactorSpec
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,13 @@ class IndexEnhanceStrategy(BaseStrategy):
         ParamSpec(key="tracking_error_max", label="跟踪误差上限", type="float", default=0.05, min=0.01, max=0.2, step=0.01, ptrade_var="tracking_error_max"),
         ParamSpec(key="industry_neutral", label="行业中性", type="bool", default=True, ptrade_var="industry_neutral"),
     ] + list(COMMON_TRADING_PARAMS)
+
+    # V4.0 M2-2: 因子研究支持 — 指数增强动量+估值双因子
+    factor_specs: List[FactorSpec] = [
+        FactorSpec('mom60', 'technical', ['close'], {'lookback': 60, 'direction': 'high'}),
+        FactorSpec('pe', 'valuation', ['pe'], {'direction': 'low'}),
+        FactorSpec('pb', 'valuation', ['pb'], {'direction': 'low'}),
+    ]
 
     def generate_signals(self, ctx: StrategyContext) -> pd.DataFrame:
         """指数增强: 动量 + 估值双因子合成打分 → 行业中性下 TopN 等权持仓

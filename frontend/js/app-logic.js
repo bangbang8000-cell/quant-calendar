@@ -447,6 +447,7 @@ const allMenuDefs = [
                         return true;
                     } catch (e) {
                         // 仅在 K线 tab 下提示, 避免在 AI/问股 tab 后台加载误报
+                        console.error('[kline] 加载失败:', stockDetail.value && stockDetail.value.stock, period, e);
                         if (stockDetailTab.value === 'kline') {
                             stockKlineLoaded.value = false;  // 复位, 保持"加载K线"按钮可点
                             ElementPlus.ElMessage.error('K线加载失败');

@@ -93,7 +93,95 @@ class DataParser:
                         all_dates.add(date)
 
         self.date_list = sorted(all_dates)
+        # V4.0 M3: 完全体闭环 — 加载引擎持仓 overlay
+        self._load_engine_overlay()
         logger.info(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
+
+    # V4.0 M3: data_parser 侧 sid → SDK/governance 侧 sid(名称不同)
+    _PARSER_TO_SDK_SID = {
+        'multifactor': 'multi_factor',
+        'industry_rotation': 'sector_rotation',
+        'index_enhance': 'index_enhance',
+        'money_flow': 'capital_flow',
+    }
+
+    def _overlay_sid(self, stem: str) -> Optional[str]:
+        """引擎持仓文件名(如 多因子策略持仓) → 策略 sid; 派生策略按存储名称查 defs"""
+        for sid, cfg in STRATEGY_CONFIG.items():
+            if cfg['name'] == stem:
+                return sid
+        try:
+            from strategy_db import list_defs
+            for d in list_defs() or []:
+                if d.get('name') == stem:
+                    return d['id']
+        except Exception:
+            pass
+        return None
+
+    def _merge_overlay_file(self, sid: str, path: str) -> None:
+        """合并单份引擎持仓矩阵(与 qresult 同格式: 表头=股票代码, 行=日期, 值=1持有)"""
+        try:
+            with open(path, 'r', encoding='utf-8-sig') as f:
+                reader = csv.reader(f)
+                headers = next(reader)[1:]
+                if sid not in self.holdings_data:
+                    self.holdings_data[sid] = {}
+                for row in reader:
+                    if not row or not row[0]:
+                        continue
+                    date = row[0].strip()
+                    stocks = set()
+                    for idx, value in enumerate(row[1:]):
+                        if idx < len(headers) and value and float(value) > 0:
+                            stocks.add(headers[idx].strip())
+                    if stocks:
+                        # 引擎优先: 覆盖 qresult 同日期(完全体闭环, 内置引擎持仓进日历)
+                        self.holdings_data[sid][date] = stocks
+        except Exception as e:
+            logger.warning('引擎持仓 overlay 读取失败 %s: %s', path, e)
+
+    def _load_engine_overlay(self) -> None:
+        """V4.0 M3 完全体闭环: 加载引擎持仓 data/holdings/{date}/*.csv, 按 show_in_calendar 过滤进日历
+        运行时动态读 paths.DATA_DIR(测试 conftest 重定向后仍正确, 不受模块导入时机影响)"""
+        import paths as _paths
+        holdings_root = os.path.join(_paths.DATA_DIR, 'holdings')
+        if not os.path.isdir(holdings_root):
+            return
+        gov_state = {}
+        try:
+            import strategy_governance as _gov
+            gov_state = _gov.get_state()
+        except Exception:
+            pass
+        for date_dir in sorted(os.listdir(holdings_root)):
+            dpath = os.path.join(holdings_root, date_dir)
+            if not os.path.isdir(dpath):
+                continue
+            for fn in sorted(os.listdir(dpath)):
+                if not fn.endswith('.csv'):
+                    continue
+                stem = fn[:-4]
+                if stem.endswith('持仓'):
+                    stem = stem[:-2]
+                sid = self._overlay_sid(stem)
+                if sid is None:
+                    continue
+                # V4.0 M3: 内置策略用 SDK/governance 侧 sid 查 show_in_calendar
+                gov_sid = self._PARSER_TO_SDK_SID.get(sid, sid)
+                if gov_sid in gov_state:
+                    if not gov_state[gov_sid].get('show_in_calendar', True):
+                        continue
+                else:
+                    try:
+                        from strategy_db import get_def
+                        d = get_def(gov_sid) or {}
+                        if not (d.get('params') or {}).get('__show_in_calendar__', False):
+                            continue
+                    except Exception:
+                        continue
+                logger.info('🔗 引擎持仓 overlay: %s (%s)', stem, date_dir)
+                self._merge_overlay_file(sid, os.path.join(dpath, fn))
 
     def reload(self) -> dict:
         """重新加载所有策略数据（原子替换，失败不回滚旧数据）"""
@@ -150,6 +238,8 @@ class DataParser:
             "stocks_count": len(self.stock_info),
             "latest_date": self.date_list[-1] if self.date_list else None
         }
+        # V4.0 M3: 完全体闭环 — 重新加载引擎持仓 overlay(引擎数据并入 holdings_data)
+        self._load_engine_overlay()
         logger.info(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
         return stats
 

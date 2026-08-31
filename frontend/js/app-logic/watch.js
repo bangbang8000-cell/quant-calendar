@@ -85,7 +85,7 @@
         // 系统配子页切换
         if (page === 'system' && currentUser.value?.role === 'admin') {
           if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
-          if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage(); }
+          if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage(); loadFactCheck(); }
           if (sub === 'autoeval') loadAutoEvaluateConfig();
           if (sub === 'datasource') loadDatasourceConfig();
           if (sub === 'feature') { loadFeishuConfig(); loadAiConfig(); loadRateLimit(); loadDataRefreshConfig(); loadBackups(); }

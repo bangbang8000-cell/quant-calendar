@@ -69,7 +69,8 @@ async def page_rank(days: int = 7, user: dict = Depends(get_current_active_user)
         return {"success": False, "message": "仅管理员可查看热度排行"}
     _load()
     from datetime import timedelta
-    cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    # V4.0 bugfix: days 天应含今天 + (days-1) 天前(原 timedelta(days=days) 多算 1 天)
+    cutoff = (datetime.now() - timedelta(days=max(days - 1, 0))).strftime('%Y-%m-%d')
     totals = {}
     for date, pages in _aggregate.items():
         if date >= cutoff:

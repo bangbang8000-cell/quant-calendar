@@ -4644,6 +4644,11 @@ text {
 .mini-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
 .mini-bar { width: 100%; max-width: 14px; border-radius: 2px 2px 0 0; background: var(--color-primary); opacity: 0.85; min-height: 1px; }
 .mini-bar-label { font-size: 9px; color: var(--text-tertiary); margin-top: 3px; white-space: nowrap; }
+/* ===== V4.0 M2: 策略实验室 — 参数扫描结果表 ===== */
+.sweep-research { margin-top: 4px; }
+.sweep-row { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 8px; }
+.sweep-best { background: var(--bg-selected); }
+.sweep-table { border: 1px solid var(--border-light); border-radius: 8px; padding: 8px; }
 /* ===== AI 用量 (v3.18.2 UI 优化): 实时指示 + 强调卡 + 模型占比 + 趋势(今日高亮) ===== */
 .usage-ai-actions { align-items: center; }
 .usage-ai-live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-xs); color: var(--text-tertiary); }

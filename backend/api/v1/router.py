@@ -60,6 +60,8 @@ api_router.include_router(analytics_router)
 api_router.include_router(portfolio_router)
 # v3.17.15 (FR-3.17.15): 开放 API v2 (公开只读 + Key/Webhook 管理)
 api_router.include_router(openapi_router)
+# V4.0 M4-3: API v2 版本前缀 — 开放 API 的可版本化契约 (/api/v2/openapi/...), v1 (/api/openapi) 保持兼容
+api_router.include_router(openapi_router, prefix="/v2")
 api_router.include_router(strategy_research_router)
 
 __all__ = ["api_router"]

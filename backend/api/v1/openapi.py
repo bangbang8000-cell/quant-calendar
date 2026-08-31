@@ -11,7 +11,7 @@
 - 安全: Key 明文仅在签发响应一次性返回; 审计只记 prefix 不落明文
 """
 import logging
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -227,10 +227,11 @@ async def revoke_api_key(key_id: int, user: dict = Depends(get_admin_user)):
 # ─── 管理端点: Webhook 订阅 (JWT admin) ──────────────────────────
 
 class WebhookCreate(BaseModel):
-    """订阅 Webhook 请求体"""
+    """订阅 Webhook 请求体 (V4.0 M4: secret 为 HMAC 签名密钥, 留空自动生成)"""
     url: str
     events: List[str] = []
     enabled: bool = True
+    secret: Optional[str] = None
 
 
 @router.post("/webhooks", tags=["开放 API 管理"],
@@ -244,10 +245,14 @@ async def create_webhook(req: WebhookCreate, user: dict = Depends(get_admin_user
     invalid = [e for e in (req.events or []) if e not in webhook_module.WEBHOOK_EVENTS]
     if invalid:
         raise HTTPException(status_code=400, detail=f"不支持的事件: {invalid}")
-    sub_id = webhook_module.add_subscription(url, req.events or [], req.enabled)
+    sub_id = webhook_module.add_subscription(url, req.events or [], req.enabled,
+                                              secret=req.secret)
+    subs = {s["id"]: s for s in webhook_module.list_subscriptions()}
+    sub = subs.get(sub_id) or {}
     return {"success": True, "data": {"id": sub_id, "url": url,
                                       "events": [e for e in (req.events or []) if e in webhook_module.WEBHOOK_EVENTS],
-                                      "enabled": req.enabled}}
+                                      "enabled": req.enabled,
+                                      "secret": sub.get("secret", "")}}
 
 
 @router.get("/webhooks", tags=["开放 API 管理"],

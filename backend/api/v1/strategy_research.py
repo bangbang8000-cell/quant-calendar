@@ -135,12 +135,21 @@ async def update_strategy(sid: str, body: Dict[str, Any],
         raise HTTPException(status_code=404, detail=f'策略 {sid} 不存在')
     params = body.get('params') or {}
     validated = st.validate_params(params)
+    # V4.0 M3: 派生策略 show_in_calendar(默认 False, 研究不污染日历), 存 params 保留键
+    show = body.get('show_in_calendar')
+    if show is not None:
+        validated['__show_in_calendar__'] = bool(show)
+    elif '__show_in_calendar__' in params:
+        validated['__show_in_calendar__'] = bool(params['__show_in_calendar__'])
+    else:
+        validated.setdefault('__show_in_calendar__', False)
     from strategy_db import upsert_def
     upsert_def(sid, {
         'name': st.name, 'version': st.version, 'type': st.id,
         'params': validated, 'enabled': body.get('enabled', True),
     })
-    return {'id': sid, 'params': validated, 'enabled': body.get('enabled', True)}
+    return {'id': sid, 'params': validated, 'enabled': body.get('enabled', True),
+            'show_in_calendar': validated.get('__show_in_calendar__', False)}
 
 
 @router.post('/{sid}/run')
@@ -228,6 +237,36 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
     except Exception as e:
         logger.exception('策略 %s 回测失败', sid)
         raise HTTPException(status_code=500, detail=f'回测失败: {e}')
+
+
+@router.post('/{sid}/sweep')
+async def strategy_param_sweep(sid: str, body: Dict[str, Any],
+                               _: Dict = Depends(get_current_active_user)):
+    """参数网格扫描 (V4.0 M2-1 策略实验室): {param_grid: {key: [候选值]}, start_date,
+    end_date, metric, max_combos} → 按 metric 降序的绩效表"""
+    try:
+        st = registry.get(sid)
+    except StrategyNotFoundError:
+        raise HTTPException(status_code=404, detail=f'策略 {sid} 不存在')
+    param_grid = body.get('param_grid') or {}
+    if not param_grid:
+        raise HTTPException(status_code=400, detail='param_grid 不能为空')
+    start = body.get('start_date') or '2026-04-01'
+    end = body.get('end_date') or '2026-07-31'
+    metric = body.get('metric') or 'annual_return'
+    universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
+    portal, is_real = _resolve_portal(universe=universe)
+    try:
+        from strategy_sdk.sweep import param_sweep
+        results = param_sweep(
+            st, param_grid, portal, start, end,
+            metric=metric, max_combos=int(body.get('max_combos', 50)),
+            universe=universe)
+    except Exception as e:
+        logger.exception('策略 %s 参数扫描失败', sid)
+        raise HTTPException(status_code=500, detail=f'参数扫描失败: {e}')
+    return {'sid': sid, 'data_degraded': not is_real, 'count': len(results),
+            'metric': metric, 'results': results}
 
 
 @router.get('/{sid}/runs')
