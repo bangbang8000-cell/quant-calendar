@@ -253,6 +253,27 @@
     'lang.ja': '日本語',
     'lang.ko': '한국어',
     'lang.zh-TW': '繁體中文',
+    // V4.9.2 (P1): 每日策略执行监控
+    'exec.planTitle': '今日执行计划',
+    'exec.statusTitle': '实时进展',
+    'exec.resultTitle': '执行结果',
+    'exec.traceTitle': '执行追溯',
+    'exec.strategy': '策略',
+    'exec.schedule': '调度',
+    'exec.countdown': '距下次运行',
+    'exec.lastRun': '上次运行',
+    'exec.waiting': '等待调度',
+    'exec.running': '运行中',
+    'exec.done': '已完成',
+    'exec.failed': '失败',
+    'exec.visible': '日视图已可见',
+    'exec.invisible': '日视图未可见',
+    'exec.holdings': '持仓',
+    'exec.union': '池内并集',
+    'exec.dayTotal': '日视图股票数',
+    'exec.date': '日期',
+    'exec.phase': '阶段',
+    'exec.duration': '耗时',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

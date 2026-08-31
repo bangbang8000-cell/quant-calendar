@@ -240,6 +240,27 @@
     'lang.ja': '日本語',
     'lang.ko': '한국어',
     'lang.zh-TW': '繁體中文',
+    // V4.9.2 (P1): 每日策略执行监控
+    'exec.planTitle': '本日の実行計画',
+    'exec.statusTitle': 'リアルタイム進捗',
+    'exec.resultTitle': '実行結果',
+    'exec.traceTitle': '実行トレース',
+    'exec.strategy': '戦略',
+    'exec.schedule': 'スケジュール',
+    'exec.countdown': '次回実行まで',
+    'exec.lastRun': '前回実行',
+    'exec.waiting': '待機中',
+    'exec.running': '実行中',
+    'exec.done': '完了',
+    'exec.failed': '失敗',
+    'exec.visible': '日ビュー表示済み',
+    'exec.invisible': '日ビュー未表示',
+    'exec.holdings': '保有数',
+    'exec.union': 'プール合計',
+    'exec.dayTotal': '日ビュー銘柄数',
+    'exec.date': '日付',
+    'exec.phase': '段階',
+    'exec.duration': '所要時間',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

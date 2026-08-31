@@ -253,6 +253,27 @@
     'lang.ja': '日本語',
     'lang.ko': '한국어',
     'lang.zh-TW': '繁體中文',
+    // V4.9.2 (P1): 每日策略执行监控
+    'exec.planTitle': 'Today\'s Plan',
+    'exec.statusTitle': 'Live Progress',
+    'exec.resultTitle': 'Execution Results',
+    'exec.traceTitle': 'Execution Trace',
+    'exec.strategy': 'Strategy',
+    'exec.schedule': 'Schedule',
+    'exec.countdown': 'Time to Next Run',
+    'exec.lastRun': 'Last Run',
+    'exec.waiting': 'Waiting',
+    'exec.running': 'Running',
+    'exec.done': 'Done',
+    'exec.failed': 'Failed',
+    'exec.visible': 'Visible in Day View',
+    'exec.invisible': 'Not Visible in Day View',
+    'exec.holdings': 'Holdings',
+    'exec.union': 'In-pool Union',
+    'exec.dayTotal': 'Day View Stocks',
+    'exec.date': 'Date',
+    'exec.phase': 'Phase',
+    'exec.duration': 'Duration',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

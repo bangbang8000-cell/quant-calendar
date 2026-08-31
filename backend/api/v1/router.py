@@ -30,6 +30,7 @@ from .analytics import router as analytics_router
 from .portfolio import router as portfolio_router
 from .openapi import router as openapi_router
 from .strategy_research import router as strategy_research_router
+from .strategy_execution import router as strategy_execution_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -58,6 +59,7 @@ api_router.include_router(audit_router)
 api_router.include_router(system_router)
 api_router.include_router(analytics_router)
 api_router.include_router(portfolio_router)
+api_router.include_router(strategy_execution_router)
 # v3.17.15 (FR-3.17.15): 开放 API v2 (公开只读 + Key/Webhook 管理)
 api_router.include_router(openapi_router)
 # V4.0 M4-3: API v2 版本前缀 — 开放 API 的可版本化契约 (/api/v2/openapi/...), v1 (/api/openapi) 保持兼容

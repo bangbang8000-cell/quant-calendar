@@ -30,9 +30,10 @@ _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
 
 # v3.21 (P0-8): 策略定期运行 — 对 governance 中 enabled 策略逐个 run-once 生成持仓
-def run_strategy_once():
+def run_strategy_once(progress_cb=None):
     """执行所有启用策略的 run-once (同步, 供调度任务与手工触发共用)
     返回 (ok, executed_sids, errors)
+    progress_cb(sid, stage): V4.9.2 可选进度回调 (stage: generating/done), 供执行监控
     """
     import strategy_governance as gov
     state = gov.get_state()
@@ -42,12 +43,68 @@ def run_strategy_once():
         if not s.get("enabled"):
             continue
         try:
+            if progress_cb:
+                progress_cb(sid, "generating")
             gov.run_once(sid)
             executed.append(sid)
+            if progress_cb:
+                progress_cb(sid, "done")
         except Exception as e:
             logger.error("策略 %s 定期运行失败: %s", sid, e)
             errors.append({"sid": sid, "error": str(e)[:120]})
     return (not errors, executed, errors)
+
+
+def verify_day_ingest(date, agg=None):
+    """V4.9.2 (F1.2): 校验某日期持仓是否已进入日视图 (聚合器整体新鲜度金丝雀).
+
+    四个视图(日/周/月/年)共享 views_aggregator.daily_data; 日视图 total>0
+    即代表聚合器包含该日期 → 四视图一致. 返回 (ok, detail).
+    """
+    from views_aggregator import views_aggregator as _default_agg
+    agg = agg or _default_agg
+    dates = list(getattr(agg, "all_dates", None) or [])
+    if date not in dates:
+        latest = dates[-1] if dates else "无"
+        return False, f"{date} 不在聚合器可用日期内(共{len(dates)}天, 最新 {latest})"
+    try:
+        total = int((agg.get_day_view(date) or {}).get("total", 0))
+    except Exception as e:
+        return False, f"{date} 日视图查询失败: {str(e)[:60]}"
+    if total <= 0:
+        return False, f"{date} 日视图为空(total=0)"
+    return True, f"{date} 日视图已可见(total={total})"
+
+
+def scan_csv_files(dirs, recursive=False):
+    """扫描多个目录下 .csv 的 mtime (V4.9.2 扩展: 含 data/holdings 递归目录).
+
+    recursive=True 时遍历子目录(适配 holdings/{日期}/*.csv 结构).
+    返回 {绝对路径: mtime}
+    """
+    import os as _os
+    mtimes = {}
+    for d in dirs:
+        if not d or not _os.path.isdir(d):
+            continue
+        if recursive:
+            for root, _subdirs, files in _os.walk(d):
+                for fname in files:
+                    if fname.endswith(".csv"):
+                        fpath = _os.path.join(root, fname)
+                        try:
+                            mtimes[fpath] = _os.path.getmtime(fpath)
+                        except OSError:
+                            pass
+        else:
+            for fname in _os.listdir(d):
+                if fname.endswith(".csv"):
+                    fpath = _os.path.join(d, fname)
+                    try:
+                        mtimes[fpath] = _os.path.getmtime(fpath)
+                    except OSError:
+                        pass
+    return mtimes
 
 
 def detect_csv_changes(prev_mtimes: dict, current_mtimes: dict):
@@ -77,6 +134,8 @@ class Scheduler:
         self.task_status = {}
         self._disk_alert_date = None  # 磁盘告警每日节流
         self._backup_failures = 0  # 备份连续失败计数
+        # V4.9.2 (P1): 策略自动执行进度快照 (供 /api/strategies/execution/status)
+        self.execution_progress = None
 
     def _record_task_run(self, task: str, success: bool, detail: str = ''):
         """记录一次调度任务运行结果 (状态聚合 + Prometheus 埋点 + 持久化历史)"""
@@ -492,6 +551,50 @@ class Scheduler:
             await asyncio.sleep(60)  # 避开重复触发
 
     # ─── v3.21 (P0-8): 策略定期运行(默认 20:00) ───
+    def _refresh_after_strategy_run(self, today):
+        """V4.9.2 (F1.1/F1.2): 持仓生成后刷新 parser+views_aggregator 并校验日视图可见性.
+
+        四视图(日/周/月/年)共享聚合器 daily_data, 一次 reload() 全覆盖;
+        校验失败返回 (False, 原因), 由调用方据实记录, 不再报假成功.
+        """
+        try:
+            from data_parser import parser as _dp_parser
+            _dp_parser.reload()
+            views_aggregator.reload()
+            logger.info("📊 策略持仓已热刷新进日历数据(parser+views_aggregator)")
+        except Exception as _e:
+            logger.warning("策略持仓热刷新失败: %s", _e)
+            return False, f"策略持仓热刷新失败: {str(_e)[:120]}"
+        return verify_day_ingest(today)
+
+    def _self_heal_aggregator(self) -> bool:
+        """V4.9.2 (F1.3): 聚合器自愈 — 持仓最新日期 > 聚合器最新日期时自动刷新.
+
+        health_check 每5分钟调用; 触发刷新时记录 self_heal 任务, 无漂移不记录.
+        """
+        try:
+            holdings_root = os.path.join(DATA_DIR, "holdings")
+            if not os.path.isdir(holdings_root):
+                return False
+            dates = sorted(d for d in os.listdir(holdings_root)
+                           if os.path.isdir(os.path.join(holdings_root, d)))
+            if not dates:
+                return False
+            latest_holdings = dates[-1]
+            agg_latest = views_aggregator.all_dates[-1] if views_aggregator.all_dates else None
+            if agg_latest is None or latest_holdings > agg_latest:
+                stats = views_aggregator.reload()
+                new_latest = (stats or {}).get("latest_date") or latest_holdings
+                self._record_task_run(
+                    "self_heal", True,
+                    f"聚合器滞后 {agg_latest}→{latest_holdings}, 已自动刷新至 {new_latest}")
+                logger.warning("🛠 聚合器自愈: 刷新至 %s", new_latest)
+                return True
+            return False
+        except Exception as _e:
+            logger.warning("聚合器自愈检查失败: %s", _e)
+            return False
+
     async def strategy_run_task(self):
         """每日收盘后按 governance 纳管状态定时运行启用策略 → 持仓文件"""
         last_date = None
@@ -521,18 +624,39 @@ class Scheduler:
                 logger.info("⏰ 策略定期运行: %s", today)
                 try:
                     # V4.7.1 (并发安全): 引擎取数/因子计算同步阻塞事件循环(全市场每策略 60-120s) → 移入后台线程
-                    await asyncio.to_thread(run_strategy_once)
-                    # V4.8.2-fix (用户反馈): 持仓生成后热刷新 parser — data_parser.parser 为模块级单例,
-                    # 仅启动时加载; 不刷新则软件(日历/策略总览)读不到当日持仓, 需重启服务才能看到
-                    try:
-                        from data_parser import parser as _dp_parser
-                        _dp_parser.reload()
-                        logger.info("📊 策略持仓已热刷新进日历数据")
-                    except Exception as _e:
-                        logger.warning("策略持仓热刷新失败: %s", _e)
-                    self._record_task_run("strategy_run", True, f"策略持仓已生成 {today}")
+                    started = datetime.now()
+                    self.execution_progress = {
+                        "phase": "running", "current_sid": None, "stage": "generating",
+                        "started_at": started.strftime("%Y-%m-%d %H:%M:%S"),
+                        "updated_at": started.strftime("%H:%M:%S"),
+                        "detail": f"策略持仓生成中 {today}",
+                    }
+
+                    def _progress_cb(sid, stage):
+                        self.execution_progress.update({
+                            "current_sid": sid, "stage": stage,
+                            "updated_at": datetime.now().strftime("%H:%M:%S"),
+                        })
+
+                    run_ok, executed, errors = await asyncio.to_thread(run_strategy_once, _progress_cb)
+                    # V4.9.2 (F1.1/F1.2): 刷新 parser+聚合器并校验当日已进日视图
+                    _ok, _detail = self._refresh_after_strategy_run(today)
+                    ok = run_ok and _ok and not errors
+                    detail = f"策略持仓已生成 {today}; {_detail}; 策略:{','.join(executed or []) or '无'}"
+                    if errors:
+                        detail += "; 失败:" + ";".join(e["sid"] + ":" + e["error"] for e in errors)[:100]
+                    self.execution_progress = {
+                        "phase": "done" if ok else "failed", "current_sid": None,
+                        "stage": "reloaded", "started_at": started.strftime("%Y-%m-%d %H:%M:%S"),
+                        "updated_at": datetime.now().strftime("%H:%M:%S"),
+                        "detail": detail[:200],
+                    }
+                    self._record_task_run("strategy_run", ok, detail[:200])
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
+                    if self.execution_progress:
+                        self.execution_progress["phase"] = "failed"
+                        self.execution_progress["updated_at"] = datetime.now().strftime("%H:%M:%S")
                     self._record_task_run("strategy_run", False, str(e)[:120])
                 await asyncio.sleep(60)
             except Exception as e:
@@ -668,21 +792,11 @@ class Scheduler:
 
         # 建立初始 mtime 快照
         file_mtimes = {}
-        csv_extensions = ('.csv',)
 
         def scan_files():
-            """扫描策略数据目录中的 CSV 文件"""
-            mtimes = {}
-            if os.path.isdir(EXTERNAL_DATA_DIR):
-                for fname in os.listdir(EXTERNAL_DATA_DIR):
-                    if fname.endswith(csv_extensions):
-                        fpath = os.path.join(EXTERNAL_DATA_DIR, fname)
-                        try:
-                            mtimes[fpath] = os.path.getmtime(fpath)
-                        except OSError:
-                            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
-                            pass
-            return mtimes
+            """V4.9.2 (F1.4): 扫描 qresult + data/holdings(递归) 下的 CSV mtime"""
+            return scan_csv_files([EXTERNAL_DATA_DIR, os.path.join(DATA_DIR, "holdings")],
+                                  recursive=True)
 
         # 建立基线
         file_mtimes = scan_files()
@@ -797,6 +911,8 @@ class Scheduler:
                                 logger.info("📮 健康检查告警已发送飞书")
                         except Exception as e:
                             logger.error(f"健康检查告警发送失败: {e}")
+                # V4.9.2 (F1.3): 聚合器自愈 — 持仓最新日期>聚合器最新日期时自动刷新
+                self._self_heal_aggregator()
                 # v3.17.12 (FR-3.17.12): 磁盘剩余空间不足 → 飞书告警
                 self._check_disk_alert()
             except Exception as e:

@@ -240,6 +240,27 @@
     'lang.ja': '日本語',
     'lang.ko': '한국어',
     'lang.zh-TW': '繁體中文',
+    // V4.9.2 (P1): 每日策略执行监控
+    'exec.planTitle': '오늘 실행 계획',
+    'exec.statusTitle': '실시간 진행',
+    'exec.resultTitle': '실행 결과',
+    'exec.traceTitle': '실행 추적',
+    'exec.strategy': '전략',
+    'exec.schedule': '일정',
+    'exec.countdown': '다음 실행까지',
+    'exec.lastRun': '마지막 실행',
+    'exec.waiting': '대기 중',
+    'exec.running': '실행 중',
+    'exec.done': '완료',
+    'exec.failed': '실패',
+    'exec.visible': '일뷰 표시됨',
+    'exec.invisible': '일뷰 미표시',
+    'exec.holdings': '보유',
+    'exec.union': '풀 합집합',
+    'exec.dayTotal': '일뷰 종목 수',
+    'exec.date': '날짜',
+    'exec.phase': '단계',
+    'exec.duration': '소요 시간',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

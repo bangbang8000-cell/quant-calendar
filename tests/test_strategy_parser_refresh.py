@@ -20,15 +20,18 @@ def _parser_src():
 
 
 def test_strategy_run_refreshes_parser_v482fix():
-    """策略运行成功后热刷新 parser, 软件无需重启即可读当日持仓"""
+    """策略运行成功后热刷新 parser + views_aggregator, 软件无需重启即可读当日持仓
+    V4.9.2: 刷新逻辑收束到 _refresh_after_strategy_run(parser→aggregator 顺序),
+    并在记录 strategy_run 前校验日视图已可见(防假成功)."""
     s = _scheduler_src()
     p = _parser_src()
     # 1) parser 提供 reload 方法
     assert re.search(r"def reload\(self\)", p), "data_parser 缺 reload 方法"
-    # 2) scheduler 策略任务成功路径调用 parser.reload()
-    assert "parser.reload()" in s, "strategy_run_task 成功路径未调用 parser.reload()"
-    # 3) reload 在 _record_task_run 之前 (刷新完成才记录成功)
-    idx_reload = s.find("parser.reload()")
-    idx_record = s.find("_record_task_run(\"strategy_run\", True")
-    assert idx_reload >= 0 and idx_record >= 0, "策略任务缺 reload 或 record"
-    assert idx_reload < idx_record, "reload() 应发生在记录任务成功之前"
+    # 2) scheduler 提供 _refresh_after_strategy_run (含 parser.reload + views_aggregator.reload)
+    assert "_dp_parser.reload()" in s, "_refresh_after_strategy_run 缺 parser.reload()"
+    assert "views_aggregator.reload()" in s, "_refresh_after_strategy_run 缺 views_aggregator.reload()"
+    # 3) 调用点: strategy_run_task 先 _refresh_after_strategy_run(today) 再 _record_task_run("strategy_run"
+    idx_refresh = s.find("_refresh_after_strategy_run(today)")
+    idx_record = s.find('_record_task_run("strategy_run"')
+    assert idx_refresh >= 0 and idx_record >= 0, "策略任务缺 _refresh_after_strategy_run 或 _record_task_run"
+    assert idx_refresh < idx_record, "_refresh_after_strategy_run 应发生在记录任务之前"

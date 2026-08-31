@@ -1476,5 +1476,27 @@ def test_watchlist_open_ai_result_per_stock():
     create_call = app[app.index("watchlist.create({"):app.index("})", app.index("watchlist.create({"))]
     assert "loadLastEvaluation" in create_call, "watchlist.create 依赖应传入 loadLastEvaluation"
 
+# ─── V4.9.2 (P1): 每日策略执行监控 — 前端接线护栏 ─────────────────
+
+def test_v492_execution_monitor_wired():
+    """V4.9.2 (P1): 执行看板须含「每日策略执行」区块 + 监控 API 调用 + 追溯时间线"""
+    page = _read("js/components/strategies-page.js")
+    assert "每日策略执行" in page, "执行看板应含「每日策略执行」区块注释"
+    assert "exec.planTitle" in page and "exec.resultTitle" in page and "exec.traceTitle" in page, "应引用 exec.* i18n 键"
+    for api in ("/api/strategies/execution/plan", "/api/strategies/execution/status",
+                "/api/strategies/execution/results?days=7", "/api/strategies/execution/trace/"):
+        assert api in page, f"执行看板应调用 {api}"
+    assert "loadExecutionTrace" in page, "应实现追溯加载"
+    assert "_startExecPoll" in page, "应实现运行中 5s 轮询"
+
+
+def test_v492_execution_locales_present():
+    """V4.9.2 (P1): exec.* i18n 键在 5 语言包齐备 (缺词守卫兜底, 此处显式断言核心键)"""
+    for lang in ("zh-CN", "en", "ja", "ko", "zh-TW"):
+        src = _read(f"js/locales/{lang}.js")
+        for k in ("exec.planTitle", "exec.visible", "exec.invisible", "exec.traceTitle"):
+            assert f"'{k}'" in src, f"{lang}.js 应含 {k}"
+
+
 
 

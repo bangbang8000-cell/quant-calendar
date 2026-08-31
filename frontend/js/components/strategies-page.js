@@ -649,6 +649,81 @@
                             </div>
                         </div>
 
+                        <!-- V4.9.2 (P1): 每日策略执行监控 -->
+                        <div class="card mt-4">
+                            <div class="card-title">📅 {{ t('exec.resultTitle') }}</div>
+                            <div class="dashboard-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon">🗓</div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ execCountdownText }}</div>
+                                        <div class="stat-label">{{ t('exec.countdown') }}</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">{{ execStatusIcon }}</div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ execPhaseText }}</div>
+                                        <div class="stat-label">{{ t('exec.statusTitle') }}</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">📦</div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ execLastDate }}</div>
+                                        <div class="stat-label">{{ t('exec.lastRun') }}</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">👁</div>
+                                    <div class="stat-content">
+                                        <div class="stat-value" :class="execVisibleClass">{{ execVisibleText }}</div>
+                                        <div class="stat-label">{{ t('exec.dayTotal') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-title mt-2">{{ t('exec.planTitle') }}</div>
+                            <div class="strategy-item" v-for="p in execPlan" :key="p.sid">
+                                <div class="strategy-header">
+                                    <span class="strategy-name">{{ p.name }}</span>
+                                    <span class="strategy-count">
+                                        <span :class="p.enabled ? 'color-success' : 'color-danger'">{{ p.enabled ? '✓' : '✗' }}</span>
+                                        <span class="text-tertiary"> | {{ p.schedule }} | {{ t('exec.lastRun') }}: {{ p.last_run || '—' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-title mt-2">{{ t('exec.resultTitle') }}</div>
+                            <div class="strategy-item" v-for="r in execResultsDates" :key="r.date">
+                                <div class="strategy-header">
+                                    <span class="strategy-name">{{ r.date }}</span>
+                                    <span class="strategy-count">
+                                        <span class="text-tertiary">{{ t('exec.union') }}: {{ r.in_pool_union }} | {{ t('exec.dayTotal') }}: {{ r.day_view_total }}</span>
+                                        <span :class="r.visible ? 'color-success' : 'color-danger'">{{ r.visible ? '✓ ' + t('exec.visible') : '✗ ' + t('exec.invisible') }}</span>
+                                        <el-button size="small" link type="primary" @click="loadExecutionTrace(r.date)">{{ t('exec.traceTitle') }}</el-button>
+                                    </span>
+                                </div>
+                                <div class="flex-between">
+                                    <span class="text-xs-tertiary">{{ r.strategies.map(function (s) { return s.strategy + ':' + s.held; }).join(' | ') }}</span>
+                                    <span class="text-xs-tertiary">{{ r.run_at || '—' }}</span>
+                                </div>
+                            </div>
+                            <div class="card-title mt-2">{{ t('exec.traceTitle') }}</div>
+                            <div class="flex-c-gap-8 mb-2">
+                                <el-select class="w-120" size="small" v-model="execTraceDate" @change="loadExecutionTrace(execTraceDate)">
+                                    <el-option v-for="r in execResultsDates" :key="r.date" :label="r.date" :value="r.date" />
+                                </el-select>
+                                <el-button size="small" @click="loadExecutionTrace(execTraceDate)" :loading="execTraceLoading">🔄 {{ t('exec.traceTitle') }}</el-button>
+                            </div>
+                            <div v-if="execTraceSteps.length" class="strategy-item" v-for="s in execTraceSteps" :key="s.step + (s.ts || '')">
+                                <div class="strategy-header">
+                                    <span class="strategy-name">{{ s.step }}</span>
+                                    <span class="text-xs-tertiary">{{ s.ts }}</span>
+                                </div>
+                                <div class="text-sm-tertiary">{{ s.detail }}</div>
+                            </div>
+                            <div v-else class="text-tertiary text-sm">—</div>
+                        </div>
+
                         <!-- 历史记录表 -->
                         <div class="card mt-4">
                             <div class="card-title flex-between">
@@ -1059,8 +1134,113 @@
         }
       }
 
+
+      // ─── V4.9.2 (P1): 每日策略执行监控 ───
+      const _execI18n = (window.__quantModules && window.__quantModules.i18n) || {};
+      const _execT = (typeof _execI18n.t === 'function') ? _execI18n.t : (function (k) { return String(k); });
+      const execPlan = Vue.ref([]);
+      const execStatus = Vue.ref(null);
+      const execResults = Vue.ref(null);
+      const execTraceDate = Vue.ref('');
+      const execTraceSteps = Vue.ref([]);
+      const execTraceLoading = Vue.ref(false);
+      let _execPollTimer = null;
+
+      const execResultsDates = Vue.computed(function () {
+        const d = (execResults.value && execResults.value.dates) || [];
+        if (d.length && !execTraceDate.value) execTraceDate.value = d[d.length - 1].date;
+        return d;
+      });
+      const execCountdownText = Vue.computed(function () {
+        const p = (execPlan.value || []).find(function (x) { return x.enabled; });
+        if (!p || p.countdown_seconds == null) return '—';
+        const s = p.countdown_seconds;
+        return Math.floor(s / 3600) + 'h' + String(Math.floor((s % 3600) / 60)).padStart(2, '0') + 'm';
+      });
+      const execPhaseText = Vue.computed(function () {
+        const st = execStatus.value;
+        if (!st || st.phase === 'idle') return _execT('exec.waiting');
+        if (st.phase === 'running') return _execT('exec.running') + (st.current_sid ? ' · ' + st.current_sid : '');
+        return st.phase === 'done' ? _execT('exec.done') : _execT('exec.failed');
+      });
+      const execStatusIcon = Vue.computed(function () {
+        return execStatus.value && execStatus.value.phase === 'running' ? '🟡' : '🟢';
+      });
+      const execLastDate = Vue.computed(function () {
+        const d = (execResults.value && execResults.value.dates) || [];
+        return d.length ? d[d.length - 1].date : '—';
+      });
+      const execVisibleClass = Vue.computed(function () {
+        const d = (execResults.value && execResults.value.dates) || [];
+        const last = d[d.length - 1];
+        return last && last.visible ? 'color-success' : 'color-danger';
+      });
+      const execVisibleText = Vue.computed(function () {
+        const d = (execResults.value && execResults.value.dates) || [];
+        const last = d[d.length - 1];
+        if (!last) return '—';
+        return (last.visible ? '✓ ' : '✗ ') + last.day_view_total;
+      });
+
+      function _execFetch(url) {
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+        return fetch(url, { headers }).then(function (r) { return r.json(); });
+      }
+
+      async function loadExecutionMonitor() {
+        try {
+          const [planRes, statusRes, resRes] = await Promise.all([
+            _execFetch('/api/strategies/execution/plan'),
+            _execFetch('/api/strategies/execution/status'),
+            _execFetch('/api/strategies/execution/results?days=7'),
+          ]);
+          execPlan.value = (planRes && planRes.data && planRes.data.plans) || [];
+          execStatus.value = (statusRes && statusRes.data) || null;
+          execResults.value = (resRes && resRes.data) || null;
+          if (execStatus.value && execStatus.value.phase === 'running') {
+            _startExecPoll();
+          } else {
+            _stopExecPoll();
+          }
+        } catch (e) {
+          console.error('[execution-monitor] 监控数据加载失败:', e);
+        }
+      }
+
+      function _startExecPoll() {
+        _stopExecPoll();
+        _execPollTimer = setInterval(function () {
+          _execFetch('/api/strategies/execution/status').then(function (res) {
+            execStatus.value = (res && res.data) || null;
+            if (execStatus.value && execStatus.value.phase !== 'running') {
+              _stopExecPoll();
+              loadExecutionMonitor();
+            }
+          }).catch(function () { });
+        }, 5000);
+      }
+      function _stopExecPoll() {
+        if (_execPollTimer) { clearInterval(_execPollTimer); _execPollTimer = null; }
+      }
+
+      async function loadExecutionTrace(date) {
+        if (!date) return;
+        execTraceLoading.value = true;
+        try {
+          const res = await _execFetch('/api/strategies/execution/trace/' + encodeURIComponent(date));
+          const data = (res && res.data) || null;
+          execTraceSteps.value = (data && data.steps) || [];
+        } catch (e) {
+          console.error('[execution-trace] 追溯加载失败:', e);
+        } finally {
+          execTraceLoading.value = false;
+        }
+      }
+
       Vue.watch(function () { return state.currentSubPage && state.currentSubPage.value; }, function (sub) {
-        if (sub === 'execution') loadExecutionData();
+        if (sub === 'execution') { loadExecutionData(); loadExecutionMonitor(); }
+        else { _stopExecPoll(); }
       });
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, merrillConfigOpen,
@@ -1072,7 +1252,11 @@
         merrillTimeline, timelineLoading, showTimelineStage,
         execHistory, execSummary, execLoading, execError,
         execDays, execTaskFilter, execStatusFilter, execTaskOptions, execSuccessClass,
-        loadExecutionData };
+        loadExecutionData,
+        execPlan, execStatus, execResults, execTraceDate, execTraceSteps, execTraceLoading,
+        execResultsDates, execCountdownText, execPhaseText, execStatusIcon,
+        execLastDate, execVisibleClass, execVisibleText,
+        loadExecutionMonitor, loadExecutionTrace };
     },
   };
 })();
