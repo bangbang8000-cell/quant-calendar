@@ -65,7 +65,8 @@
 
 | 模块 | 说明 |
 |------|------|
-| 美林时钟 | GDP/CPI/PMI/社融/利率五维度定量评分，四阶段自动切换，切换历史可追溯 |
+| 美林时钟 | 五维度定量评分 + 四象限可视化，14条历史周期数据覆盖2008年至今4轮完整经济周期 |
+| 美林时钟历史 | 非活跃阶段展示全部历史轮次，含触发原因（去杠杆/贸易战/四万亿等）+ GDP/CPI/PMI/PPI关键指标 |
 | 策略选股 | 多因子、行业轮动、资金流、指数增强四套策略独立运行，共识榜交叉验证 |
 | AI 评股 | 多模型串行评估，RSI/MACD/MA/KDJ 自动注入 prompt，支持 8+ 模型 |
 | AI 智能问股 | 对话式股票分析，流式输出，融合技术面+基本面+策略面多维度分析 |
@@ -74,7 +75,8 @@
 | 数据导出 | 各视图数据一键导出 CSV |
 | 飞书推送 | Webhook 定时推送每日选股报告 |
 | 多用户 | 管理组/用户组/访客组，独立自选股和评估历史 |
-| 主题 | 7 套主题 + 4 套图标系统 |
+| UI 主题 | 7 套主题 + 4 套图标系统 + 设计 Token 体系 + 骨架屏加载 |
+| 键盘导航 | Tab/Enter 导航，面包屑，侧边栏折叠 |
 | 初始化向导 | 首次启动引导配置密码、AI Key、Tushare Token |
 | 安全 | JWT + bcrypt + CSP + HSTS |
 
@@ -86,26 +88,21 @@
 quant-calendar/
 ├── README.md
 ├── quant-calendar-ops/          ← 应用代码
-│   ├── Dockerfile               ← Docker 镜像定义
-│   ├── docker-entrypoint.sh     ← 容器入口脚本
-│   ├── docker-compose.yml       ← Compose 编排
 │   ├── backend/                 ← FastAPI 后端 (Python)
 │   │   ├── main_new.py          ← 主入口
-│   │   ├── merrill_clock.py     ← 美林时钟引擎
+│   │   ├── merrill_clock.py     ← 美林时钟引擎（五维度评分+周期判断）
+│   │   ├── merrill_history.py   ← 历史周期结构化数据（14条转换记录）
 │   │   ├── ai_evaluator.py      ← AI 多模型评股
 │   │   ├── data_sources.py      ← 多数据源管理 (sxsc/tushare/akshare)
 │   │   ├── scheduler.py         ← 定时任务调度
-│   │   └── api/v1/              ← REST API (搜索/日历/视图/评估/用户)
+│   │   └── api/v1/              ← REST API
 │   ├── frontend/                ← Vue 3 SPA
 │   │   ├── index.html           ← 单文件应用
-│   │   ├── js/                  ← JS 模块
+│   │   ├── css/                 ← tokens.css / themes.css / layout.css
+│   │   ├── js/                  ← JS 模块 (merrill.js / ai.js / core.js 等)
 │   │   └── lib/                 ← Element Plus / ECharts
 │   └── tests/
 └── qresult/                     ← 策略选股 CSV 数据
-    ├── 多因子策略持仓.csv
-    ├── 行业轮动策略持仓.csv
-    ├── 资金流策略持仓文件.csv
-    └── 指数增强策略持仓.csv
 ```
 
 ---
@@ -176,14 +173,22 @@ python main_new.py --port 8000
 
 ---
 
+## 版本历史
+
+| 版本 | 日期 | 变更 |
+|------|------|------|
+| v3.1.0 | 2026-07 | 美林时钟历史周期数据：14条结构化转换记录（2008-至今），弹窗展示触发原因+关键指标 |
+| v3.0.0 | 2026-07 | 美林时钟模块解耦：提取 merrill.js composable，清理 ~1400 行冗余代码，CSS Token 体系 |
+| v2.5.0 | 2026-07 | UI 全面升级：侧边栏修复、Token 去重、8 Composables 清理、移动端增强 |
+| v2.4.0 | 2026-06 | AI 智能问股：对话式股票分析，流式输出 |
+| v2.3.0 | 2026-06 | UI Redesign：7 套主题、4 套图标系统、响应式布局、动画系统 |
+
 ## 路线图
 
 - PostgreSQL 存储后端（可选替代 JSON）
 - 策略回测收益归因可视化
 - 移动端 PWA 离线支持
 - 实时行情 WebSocket 推送
-- 更多选股策略
-- 更多 AI 模型集成
 
 ---
 
