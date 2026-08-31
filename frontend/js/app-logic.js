@@ -536,7 +536,7 @@ const allMenuDefs = [
                     currentView, statusFilter, dashboardData, loadHealthMetrics,
                     getLoadDashboardData, getLastRefreshTime, getFetchPoolSignals,
                 });
-                const { loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus,
+                const { loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote,
                         loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached } = __data;
                 // v3.17.11.1: 行情/指数详情/评分动画/触摸手势域 (js/app-logic/market.js)
                 const __market = window.__quantAppLogic.market.create({
@@ -905,7 +905,7 @@ const allMenuDefs = [
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
                     t, locale, changeLanguage,
                     currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
-                    selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV,
+                    selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV, viewNote,
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, handleLogout,
 

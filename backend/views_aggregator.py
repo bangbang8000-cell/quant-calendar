@@ -6,7 +6,7 @@
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 from data_parser import STRATEGY_CONFIG
 
 logger = logging.getLogger(__name__)
@@ -205,12 +205,25 @@ class ViewsAggregator:
         except Exception:
             logger.warning("操作异常 (v3.4.0-T8)")
             pass
+        # V4.9.4: 显式暴露"上一交易日"(入池/出池对比基准 = 交易日而非日历昨天, 周末/节假日自动跳过)
+        _prev = self.get_prev_trading_date(date)
+        _inherited = self.is_inherited_day(date)
         result = {
             'view': 'day',
             'date': date,
             'total': len(formatted),
-            'stocks': formatted
+            'stocks': formatted,
+            'prev_trading_date': _prev,
+            'data_inherited': _inherited,
         }
+        if _prev:
+            if _inherited:
+                result['note'] = (
+                    date + ' 沿用 ' + _prev + ' 持仓'
+                    '(当日尚未生成新持仓矩阵, 20:00 定时运行后自动更新)'
+                )
+            else:
+                result['note'] = '入池/出池对比基准: 上一交易日 ' + _prev
         self._cache[cache_key] = result
         return result
 
@@ -441,6 +454,30 @@ class ViewsAggregator:
             return 'out'
 
         return 'current'
+
+    # ─── V4.9.4: 入池/出池对比基准 — 上一交易日(非日历昨天) ───
+    def get_prev_trading_date(self, date: str) -> Optional[str]:
+        """返回 date 的"上一交易日"(all_dates 前一项; 周末/节假日自动跳过).
+
+        供日视图/入池出池对比使用: 周一 8/31 的基准是上周五 8/28, 而非周日 8/30.
+        """
+        try:
+            idx = self.all_dates.index(date)
+        except ValueError:
+            return None
+        return self.all_dates[idx - 1] if idx > 0 else None
+
+    def is_inherited_day(self, date: str) -> bool:
+        """当日持仓是否与上一交易日完全一致(尚未生成当日新持仓矩阵, 新入池/出池均为 0)."""
+        prev = self.get_prev_trading_date(date)
+        if not prev:
+            return False
+
+        def _codes(d):
+            return {s.get('stock') or s.get('code') for s in self.daily_data.get(d, [])}
+
+        c, p = _codes(date), _codes(prev)
+        return bool(c) and c == p
 
 
 # 全局实例

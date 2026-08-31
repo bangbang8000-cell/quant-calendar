@@ -18,6 +18,7 @@
       const selectedDate = ref('');
       const lastLoadTime = ref('');  // 上次数据加载时间
       const consensus = ref([]);
+      const viewNote = ref('');  // V4.9.4: 日视图对比基准/沿用持仓提示(来自 /api/view note 字段)
 
       // ===== v3.11 (FR-3.11.4): 数据缓存与静默刷新 =====
       // 请求级 TTL 缓存（同参数短 TTL）+ 后台静默刷新 + 变更提示
@@ -96,22 +97,27 @@
         const reqKey = (qcCache && typeof __core11.makeCacheKey === 'function')
           ? __core11.makeCacheKey('GET', `/api/view/${currentView.value}/${selectedDate.value}`, { status: 'all' })
           : null;
-        const applyStocks = (stocks) => {
+        const applyStocks = (stocks, note) => {
           consensus.value = stocks;
-          viewCache.set(cacheKey, stocks);
+          viewNote.value = note || '';
+          viewCache.set(cacheKey, { stocks, note: note || '' });
+        };
+        // V4.9.4: 应用完整视图数据(含 note 提示), 供主请求/缓存命中/后台静默刷新共用
+        const applyViewData = (data) => {
+          applyStocks((data && data.stocks) || [], (data && data.note) || '');
         };
         // 客户端缓存命中 → 直接渲染不闪烁，再后台静默刷新（有变才提示）
         if (viewCache.has(cacheKey)) {
-          applyStocks(viewCache.get(cacheKey));
-          backgroundRefresh(viewUrl, reqKey, (d) => d.stocks || [], applyStocks);
+          applyViewData(viewCache.get(cacheKey));
+          backgroundRefresh(viewUrl, reqKey, (d) => d, applyViewData);
           _consensusInflight.delete(cacheKey);
           return;
         }
         // v3.11 (11.6): 命中请求级 TTL 缓存 → 不闪烁 + 后台刷新
         const cached = (reqKey && qcCache) ? qcCache.get(reqKey) : undefined;
         if (cached !== undefined) {
-          applyStocks(cached);
-          backgroundRefresh(viewUrl, reqKey, (d) => d.stocks || [], applyStocks);
+          applyViewData(cached);
+          backgroundRefresh(viewUrl, reqKey, (d) => d, applyViewData);
           _consensusInflight.delete(cacheKey);
           return;
         }
@@ -122,8 +128,8 @@
           const res = await fetch(viewUrl);
           const data = await res.json();
           const stocks = data.stocks || [];
-          applyStocks(stocks);
-          if (qcCache && reqKey) qcCache.set(reqKey, stocks);  // 写入请求级 TTL 缓存
+          applyStocks(stocks, data.note || '');
+          if (qcCache && reqKey) qcCache.set(reqKey, { stocks, note: data.note || '' });  // 写入请求级 TTL 缓存
         } catch (e) {
           // 降级到旧API
           try {
@@ -169,7 +175,7 @@
       }
 
       return {
-        loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus,
+        loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote,
         loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached,
       };
     },

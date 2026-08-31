@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 474, f"qcState 唯一键数异常: {len(set(keys))} (期望 471; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages; V4.0 需求2 +2: toggleVendorKeyReveal/toggleDatasourceKeyReveal; V4.2 ops域注入 +6: reviewTriggering/triggerMarketReview/factCheck/factCheckRunning/loadFactCheck/triggerFactCheck; V4.7.2 +1: toggleDatasourceEdit)"
+    assert len(set(keys)) == 475, f"qcState 唯一键数异常: {len(set(keys))} (期望 474; v3.22-I4 +2: merrillTimeline/timelineLoading; v3.22.1 时间轴修复 +2: merrillStagesConfig/fetchMerrillStages; V4.0 需求2 +2: toggleVendorKeyReveal/toggleDatasourceKeyReveal; V4.2 ops域注入 +6: reviewTriggering/triggerMarketReview/factCheck/factCheckRunning/loadFactCheck/triggerFactCheck; V4.7.2 +1: toggleDatasourceEdit; V4.9.4 +1: viewNote(日视图对比基准/沿用持仓提示))"
 
 
 def test_watch_currentpage_single():

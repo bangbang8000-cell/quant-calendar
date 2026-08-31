@@ -4399,6 +4399,7 @@ text {
 .border-left-warning { border-left: 4px solid var(--color-warning); }
 .cal-count-badge { background: var(--primary-color); color: white; border-radius: var(--r-lg); padding: 4px 8px; font-size: var(--font-xs); font-weight: var(--font-semibold); min-width: 20px; text-align: center; }
 .cal-note-box { margin-bottom: 12px; padding: 8px 12px; background: var(--bg-card-header); border-radius: var(--r-md); border: 1px solid var(--border-light); }
+.cal-view-note { margin-bottom: 12px; padding: 6px 10px; font-size: var(--font-xs); color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 8%, transparent); border-left: 3px solid var(--color-warning); border-radius: var(--r-sm); line-height: 1.5; }
 .cal-subtitle-ellipsis { font-size:var(--font-xs);color:var(--text-tertiary);margin-top: 4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
 .card-title-hint { font-weight: normal; color: var(--text-tertiary); font-size: var(--font-sm); margin-left: 8px; }
 .chat-bubble-user { display:inline-block;background:var(--primary-color);color:var(--white);padding: 8px 12px;border-radius: var(--r-lg) 12px 2px 12px;max-width:80%;font-size:var(--font-sm);text-align:left; }

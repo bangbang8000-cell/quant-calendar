@@ -307,18 +307,27 @@ class DataParser:
             logger.warning('data_parser: 前向填充失败: %s', e)
 
     def _nearest_prior(self, strategy_id: str, date: str) -> Optional[str]:
-        """返回该策略在 date 之前最近的"真实"持仓日期(供前向填充日期继承)"""
+        """返回该策略在 date 之前最近的"真实"持仓日期(供前沿日期继承).
+
+        陈旧上限: 间隔 > CARRY_FORWARD_MAX_GAP_DAYS 时返回 None(不把数周前持仓当今天).
+        """
         best = None
         for dd in self.date_list:
             if dd < date:
                 best = dd
             else:
                 break
-        if best is None:
-            return None
         hd = self.holdings_data.get(strategy_id, {})
-        while best is not None and best not in hd:
-            # 该真实日无此策略持仓 → 继续向前找
+        while best is not None:
+            if best in hd:
+                try:
+                    gap = (datetime.strptime(date, '%Y-%m-%d')
+                           - datetime.strptime(best, '%Y-%m-%d')).days
+                except Exception:
+                    gap = 0
+                if gap <= CARRY_FORWARD_MAX_GAP_DAYS:
+                    return best
+                return None
             prev = None
             for dd in self.date_list:
                 if dd < best:
@@ -326,16 +335,27 @@ class DataParser:
                 else:
                     break
             best = prev
-        return best
+        return None
 
     def _resolve_holdings_date(self, strategy_id: str, date: str) -> Optional[str]:
-        """返回该策略在 date 实际使用的持仓日期 (支持前向填充日期 → 最近前一真实日)"""
+        """返回该策略在 date 实际使用的持仓日期.
+
+        优先自身持仓; 命中"已可查看"日期集合(真实交易日 ∪ 前向填充日, 即日历可选日期)且
+        该策略缺当日数据 → 继承最近前一持仓日. 覆盖:
+        1) 前向填充日(8/31 周一, 全局最新仅到 8/28);
+        2) 部分策略未生成当日(某策略覆盖到 8/31, 其余策略滞后/失败 → 继承其最近持仓).
+        不在可选集合的日期(未来/非工作日)不伪造数据.
+        """
         hd = self.holdings_data.get(strategy_id, {})
         if date in hd:
             return date
-        if date in self.carried_dates:
+        if date in self.get_available_dates_set():
             return self._nearest_prior(strategy_id, date)
         return None
+
+    def get_available_dates_set(self) -> set:
+        """日历可选日期集合(真实交易日 ∪ 前向填充日)"""
+        return set(self.get_available_dates())
 
     def get_holdings_by_date(self, date: str, strategy: Optional[str] = None) -> Dict:
         """获取指定日期的持仓 (V4.9.3: 前向填充日期回退到最近前一真实持仓日)"""

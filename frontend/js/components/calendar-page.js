@@ -26,6 +26,8 @@
 
                         <div class="card">
                             <div class="card-title">💎 {{ t('calendar.poolTitle') }}</div>
+                            <!-- V4.9.4: 对比基准/沿用持仓提示(来自 /api/view note) -->
+                            <div v-if="state.viewNote" class="cal-view-note" role="status">{{ state.viewNote }}</div>
                             
                             <!-- 状态筛选 -->
                             <div class="status-tabs" role="tablist">

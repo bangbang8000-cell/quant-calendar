@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="量化日历">
+    <!-- theme-color meta 需字面量色值（浏览器不解析 CSS 变量），与 manifest 品牌色一致 -->
+    <meta name="theme-color" content="#667eea"><!-- qc-allow-hardcode -->
+    <link rel="manifest" href="/assets/manifest-CmioyzmD.json">
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"><!-- v3.22-logo: K线折线日历 logo (方案B) -->
+    <title>量化日历</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- v3.17.9 (FR-3.17.9): 关键 CSS 提前于脚本加载（render-blocking 但并行下载，保证首屏样式先就绪）；
+         脚本全部 defer（并行下载、按序执行于 DOM 解析后），首屏 DOM + 启动骨架屏先渲染 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/vue.global.prod.min.js"></script>
+    <link rel="stylesheet" href="/static/lib/element-plus.css">
+    <script nonce="{{NONCE}}" defer src="/static/lib/element-plus.min.js"></script>
+    <!-- v3.17.9 (FR-3.17.9): echarts 改为按需懒加载（非首屏，见 charts.js ensureEcharts），不再同步阻塞首屏 -->
+    <script nonce="{{NONCE}}" defer src="/static/lib/zh-cn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/tokens.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/themes.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/layout.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/animations.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/responsive.css?v={{APP_VERSION}}">
+
+    <!-- Module JS (v3.17.9: 全部 defer, 按文档顺序执行, 依赖通过 window.__quantModules 全局保持) -->
+    <!-- v3.17.10 (FR-3.17.10): 个性化与搜索纯模块（拼音/偏好/最近查看/i18n，早于 app-logic 装配） -->
+    <!-- v3.17.14 (FR-3.17.14): 语言包 zh-CN/en（零构建原生对象，i18n.js 之后按序装配） -->
+    <!-- v3.17.4 (FR-3.17.4): 回测工作台（先加载纯函数核心，再加载域模块） -->
+    <!-- v3.17.8 (FR-3.17.8): 移动端手势核心（左滑露出/下拉刷新判定/长按复制，纯函数可测） -->
+    <!-- v3.11 (FR-3.11.5): 状态面板（四态核心纯数据 + 组件，先加载 core） -->
+    <!-- v3.11 (FR-3.11.1): 命令面板核心逻辑(纯函数) + 组件 -->
+    <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
+    <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
+    <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
+<script type="module" crossorigin src="/assets/index-C3IO8ecT.js"></script>
+
+<body>
+    <!-- v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（无内联样式），
+         defer 使 DOM 先于脚本渲染，此骨架屏在脚本下载/初始化期间展示，Vue 挂载后立即移除 -->
+    <div id="qc-boot" class="qc-boot-skeleton" aria-hidden="true">
+        <div class="qc-boot-skeleton-shell">
+            <div class="qc-boot-skeleton-sidebar">
+                <div class="qc-boot-skeleton-logo"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+                <div class="qc-boot-skeleton-nav"></div>
+            </div>
+            <div class="qc-boot-skeleton-body">
+                <div class="qc-boot-skeleton-header"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+                <div class="qc-boot-skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div id="app" v-cloak>
+        <!-- 登录页 (v3.16 / 16.9: 品牌化) -->
+        <div v-if="!currentUser" class="app-container login-screen">
+            <div class="card login-box">
+                <div class="login-brand">
+                    <div class="login-icon">
+                        <svg viewBox="0 0 100 100" width="40" height="40" aria-label="量化选股日历 logo" role="img">
+                            <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
+                            <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>
+                            <line x1="20" y1="78" x2="82" y2="78" stroke="var(--logo-border)" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
+                            <rect x="22" y="58" width="15" height="20" rx="3.5" fill="var(--logo-blue)" opacity="0.95"/>
+                            <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="var(--logo-yellow)" opacity="0.95"/>
+                            <rect x="63" y="26" width="15" height="52" rx="3.5" fill="var(--logo-red)"/>
+                            <rect x="63" y="26" width="15" height="14" rx="3.5" fill="var(--logo-white)" opacity="0.35"/>
+                            <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="var(--logo-border)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+                        </svg>
+                    </div>
+                    <div class="login-brand-text">
+                        <div class="login-title">{{ t('login.title') }}</div>
+                        <div class="login-subtitle">{{ t('login.subtitle') }}</div>
+                    </div>
+                </div>
+                <div class="login-desc">{{ t('login.desc') }}</div>
+                <el-form @submit.prevent="handleLogin">
+                    <el-form-item>
+                        <el-input v-model="loginForm.username" :placeholder="t('login.username')" size="large" @keyup.enter="handleLogin">
+                            <template #prefix>
+                                <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-input v-model="loginForm.password" type="password" placeholder="密码" size="large" show-password @keyup.enter="handleLogin">
+                            <template #prefix>
+                                <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                            </template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="logining">
+                            {{ t('login.submit') }}
+                        </el-button>
+                    </el-form-item>
+                </el-form>
+                <el-button type="primary" size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
+                    {{ t('login.guest') }}
+                </el-button>
+                <div class="login-footer">{{ t('login.footer') }}</div>
+            </div>
+        </div>
+
+        <!-- 主界面 --><template v-else>
+            <div :class="'icon-system-' + iconSystem">
+            <!-- 桌面端左侧导航 (v3.6.0-T3: 组件化) -->
+            <qc-sidebar></qc-sidebar>
+
+            <!-- 主内容区 -->
+            <div class="main-content" :class="{ expanded: sidebarCollapsed }" @touchstart="onTouchStart" @touchend="onTouchEnd">
+
+                <!-- v3.6.0-T3: 全局 Header + 面包屑 (组件化) -->
+                <qc-global-header></qc-global-header>
+
+                <!-- V4.3-S3: 页面组件动态渲染 — pageComp 映射 currentPage -> 组件名 -->
+                <!-- 懒加载组件(chunk)注册后, :is 每次渲染重新 resolveComponent 即命中 -->
+                <Transition name="fade-slide" mode="out-in">
+                <KeepAlive>
+                <component :is="pageComp"></component>
+                </KeepAlive>
+                </Transition>
+            </div>
+
+            <!-- 移动端底部导航 -->
+            <div class="mobile-nav">
+                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="navigateTo(menu.key, menu.subPages[0] || '')" tabindex="0" role="button" :aria-label="menu.name" @keydown.enter.prevent="navigateTo(menu.key, menu.subPages[0] || '')" @keydown.space.prevent="navigateTo(menu.key, menu.subPages[0] || '')">
+                    <div class="mobile-nav-icon" v-html="sanitizeHtml(menu.icon)"></div>
+                    <div class="mobile-nav-label">{{ menu.name }}</div>
+                </div>
+            </div>
+            </div>
+
+            <!-- v3.11 (FR-3.11.1): 智能命令面板 (Ctrl+K) -->
+            <qc-command-panel></qc-command-panel>
+</template>
+
+        <!-- v3.11 (FR-3.11.2): 股票详情对话框 — 移至 components/dialogs/ -->
+        <qc-stock-detail-dialog></qc-stock-detail-dialog>
+
+        <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
+        <!-- 注意：in-DOM 模板必须用成对标签（HTML 解析器不认自闭合自定义元素） -->
+        <qc-menu-config-dialog></qc-menu-config-dialog>
+        <qc-add-group-dialog></qc-add-group-dialog>
+        <qc-add-user-dialog></qc-add-user-dialog>
+        <qc-batch-evaluate-dialog></qc-batch-evaluate-dialog>
+
+        <!-- v3.11 (FR-3.11.2): 指数详情对话框 — 移至 components/dialogs/ -->
+        <qc-index-detail-dialog></qc-index-detail-dialog>
+
+        <!-- v3.11 (FR-3.11.2): 自动评估设置对话框 — 移至 components/dialogs/ -->
+        <qc-auto-evaluate-dialog></qc-auto-evaluate-dialog>
+
+        <!-- 美林时钟阶段详情弹窗 -->
+        <!-- v3.11 (FR-3.11.2): 美林时钟详情报告 — 移至 components/dialogs/ -->
+        <qc-merrill-detail-dialog></qc-merrill-detail-dialog>
+
+        <!-- v1.5.0: 修改密码弹窗 -->
+        <!-- v3.11 (FR-3.11.2): 系统初始化向导 — 移至 components/dialogs/ -->
+        <qc-setup-wizard-dialog></qc-setup-wizard-dialog>
+
+        <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
+        <qc-change-password-dialog></qc-change-password-dialog>
+        <qc-shortcut-help-dialog></qc-shortcut-help-dialog>
+        <qc-tour-dialog></qc-tour-dialog>
+
+        <!-- v3.2.0-T13: 浮动 AI 按钮 -->
+        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
+            <span class="ai-fab-icon">🤖</span>
+        </div>
+
+    
+</div>
+
+    <!-- v3.17.9 (FR-3.17.9): 内联启动脚本全部延迟到 DOMContentLoaded 执行 —
+         defer 的模块脚本在 DOM 解析完成后、DOMContentLoaded 前按序执行，故此处可安全引用 window.__quantModules -->
+    <script nonce="{{NONCE}}">
+    // v3.17.11 (FR-3.17.11.3/4): 鉴权注入唯一实现收敛至 core.js withAuthHeaders
+    // 全局 fetch monkey-patch 保留（SSE 流式/文件下载/直接 fetch 均依赖其注入 Token），
+    // 但不再重复实现 Authorization 拼接 —— 仅委托 __quantModules.core.withAuthHeaders。
+    document.addEventListener('DOMContentLoaded', function () {
+        const originalFetch = window.fetch;
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        const withAuthHeaders = (typeof core.withAuthHeaders === 'function')
+            ? core.withAuthHeaders
+            : function(url, options) { return options; };
+        window.fetch = function(...args) {
+            const url = args[0];
+            const options = args[1] || {};
+            const opts = withAuthHeaders(url, options);
+            return originalFetch.apply(this, [url, opts]);
+        };
+    });
+</script>
+    <script nonce="{{NONCE}}">
+        // ===== Vue 应用初始化 (v3.17.9: 延迟到 DOMContentLoaded, 先于模块脚本执行完) =====
+        // 保持 Vue 解构为「顶层 var 全局词法绑定」: 各域模块(app-logic/market.js 等)裸引用
+        // ref/computed/watch/nextTick 依赖此声明 (原同步方案由顶层 const 提供, defer 后需显式声明)。
+        // 赋值延迟到 DOMContentLoaded (Vue 已加载), 域模块在 create 时调用, 时序安全。
+        var createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide;
+        document.addEventListener('DOMContentLoaded', function () {
+        ({ createApp, ref, computed, onMounted, onUnmounted, watch, nextTick, provide } = Vue);
+        const app = createApp({
+            setup() {
+                // v3.6.0-T8: 逻辑已提取至 js/app-logic.js
+                const qcState = window.createAppLogic();
+                provide('qcState', qcState);
+                return qcState;
+            }
+        });
+
+        // 配置Element Plus中文语言
+        if (ElementPlusLocaleZhCn && ElementPlusLocaleZhCn.default) {
+            app.use(ElementPlus, {
+                locale: ElementPlusLocaleZhCn.default
+            });
+        } else if (ElementPlusLocaleZhCn) {
+            app.use(ElementPlus, {
+                locale: ElementPlusLocaleZhCn
+            });
+        } else {
+            app.use(ElementPlus);
+        }
+        // v1.5.0: 点击外部关闭指令
+        app.directive('click-outside', {
+            mounted(el, binding) {
+                el.__clickOutside = (event) => {
+                    if (!el.contains(event.target)) {
+                        binding.value(event);
+                    }
+                };
+                document.addEventListener('click', el.__clickOutside);
+            },
+            unmounted(el) {
+                document.removeEventListener('click', el.__clickOutside);
+            }
+        });
+        // v3.6.0: 注册全局组件 (零构建, 用组件 name 属性保证 kebab-case 正确)
+        if (window.__quantComponents) {
+            Object.values(window.__quantComponents).forEach((comp) => {
+                if (comp && comp.name) {
+                    app.component(comp.name, comp);
+                    comp.__quantRegistered = true;
+                }
+            });
+        }
+        app.mount('#app');
+        // V4.3-S3: 暴露 app 实例 — 懒加载页面组件需在 chunk 加载后补注册 app.component
+        window.__quantApp = app;
+
+        // v3.17.9 (FR-3.17.9): 挂载完成立即移除启动骨架屏（首屏主区域随后由各页状态面板骨架接管）
+        const bootEl = document.getElementById('qc-boot');
+        if (bootEl) bootEl.remove();
+        });
+
+    </script>
+    <script nonce="{{NONCE}}">
+        // v3.17.8 (FR-3.17.8): PWA Service Worker 注册 + 移动端手势装配
+        // - SW: cacheName 含 APP_VERSION（后端 /sw.js 注入），发布新版本即缓存爆破
+        // - 手势: 左滑露出操作 / 长按复制代码（委托式，仅移动端生效由 CSS/touch 天然限制）
+        document.addEventListener('DOMContentLoaded', function () {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                        console.warn('[sw] 注册失败:', err);
+                    });
+                });
+            }
+            if (window.__quantModules && window.__quantModules.gestures
+                && typeof window.__quantModules.gestures.initGestures === 'function') {
+                window.__quantModules.gestures.initGestures();
+            }
+        });
+    </script>
+</body>
+</html>

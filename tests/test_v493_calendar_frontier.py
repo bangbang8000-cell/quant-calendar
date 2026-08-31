@@ -72,3 +72,33 @@ class TestCarryForward:
         assert "multifactor" in res
         assert res["multifactor"]["count"] == 1
         assert res["multifactor"]["stocks"][0]["code"] == "600519.SH"
+
+    def test_partial_strategy_frontier_falls_back(self):
+        """部分策略未生成 8/31(全局有其他策略已覆盖) → 该策略 8/31 继承最近持仓"""
+        holdings = {
+            "multifactor": {"2026-08-28": {"600519.SH"}},
+            "index_enhance": {"2026-08-28": {"600519.SH"}, "2026-08-31": {"000001.SZ"}},
+        }
+        p = _parser_with(holdings, ["2026-08-28", "2026-08-31"])
+        p._carry_forward_to_today(today="2026-08-31")  # 全局最新=8/31 → 无 carried
+        assert p.carried_dates == []
+        # 缺 8/31 的策略继承 8/28; 有 8/31 的策略用自身
+        assert p._resolve_holdings_date("multifactor", "2026-08-31") == "2026-08-28"
+        assert p._resolve_holdings_date("index_enhance", "2026-08-31") == "2026-08-31"
+
+    def test_stale_prior_not_inherited(self):
+        """策略持仓陈旧超过 CARRY_FORWARD_MAX_GAP_DAYS → 不继承(缺口可见, 不伪造)"""
+        holdings = {
+            "multifactor": {"2026-08-01": {"600519.SH"}},          # 陈旧 > 10 天
+            "index_enhance": {"2026-08-31": {"000001.SZ"}},        # 覆盖 8/31
+        }
+        p = _parser_with(holdings, ["2026-08-01", "2026-08-31"])
+        p._carry_forward_to_today(today="2026-08-31")
+        assert p.carried_dates == []
+        assert p._resolve_holdings_date("multifactor", "2026-08-31") is None
+
+    def test_future_non_selectable_date_no_data(self):
+        """不在可选集合的未来日期不伪造数据"""
+        p = _parser_with({"multifactor": {"2026-08-28": {"600519.SH"}}}, ["2026-08-28"])
+        p.carried_dates = ["2026-08-31"]
+        assert p._resolve_holdings_date("multifactor", "2026-09-01") is None
