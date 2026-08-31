@@ -161,14 +161,14 @@
 
 | # | 任务 | 对应 PRD | 文件 | 估时 | 验证方式 | 状态 |
 |---|------|---------|------|------|----------|------|
-| 3.5-T1 | 批量日报生成 | FR-3.5.1 | backend/report_generator.py | 6h | 日报产出检查 | ⏳ |
-| 3.5-T2 | 日报飞书定时推送 | FR-3.5.1 | scheduler.py | 2h | 推送成功 | ⏳ |
-| 3.5-T3 | AI 周报 | FR-3.5.2 | report_generator.py | 4h | 周报产出 | ⏳ |
-| 3.5-T4 | 问股 RAG 上下文 | FR-3.5.3 | chat.py, prompts/ | 5h | 多轮记忆测试 | ⏳ |
-| 3.5-T5 | 策略推荐 | FR-3.5.4 | ai_evaluator.py + 前端 | 4h | 推荐合理性 | ⏳ |
-| 3.5-T6 | 成本控制 (缓存+统计+限流) | FR-3.5.5 | ai_evaluator.py | 4h | 用量统计页 | ⏳ |
-| 3.5-T7 | ai_evaluator 模块拆分 | FR-3.5.6 | 拆分 4 模块 | 8h | 接口不变, 测试全过 | ⏳ |
-| 3.5-T8 | AI 测试 mock 化 | FR-3.5.7 | tests/test_ai_mock.py | 4h | 无 Key 可跑通 | ⏳ |
+| 3.5-T1 | 批量日报生成 | FR-3.5.1 | backend/report_generator.py | 6h | 日报产出检查 | ✅ |
+| 3.5-T2 | 日报飞书定时推送 | FR-3.5.1 | scheduler.py | 2h | 推送成功 | ✅ |
+| 3.5-T3 | AI 周报 | FR-3.5.2 | report_generator.py | 4h | 周报产出 | ✅ |
+| 3.5-T4 | 问股 RAG 上下文 | FR-3.5.3 | chat.py, prompts/ | 5h | 多轮记忆测试 | ✅ |
+| 3.5-T5 | 策略推荐 | FR-3.5.4 | ai_evaluator.py + 前端 | 4h | 推荐合理性 | ✅ |
+| 3.5-T6 | 成本控制 (缓存+统计+限流) | FR-3.5.5 | ai_evaluator.py | 4h | 用量统计页 | ✅ |
+| 3.5-T7 | ai_evaluator 模块拆分 | FR-3.5.6 | 拆分 4 模块 | 8h | 接口不变, 测试全过 | ✅ |
+| 3.5-T8 | AI 测试 mock 化 | FR-3.5.7 | tests/test_ai_mock.py | 4h | 无 Key 可跑通 | ✅ |
 
 ### 7.1 发布门禁 (v3.5.0)
 

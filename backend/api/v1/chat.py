@@ -169,6 +169,36 @@ async def chat(request: Request, body: ChatRequest):
     consensus = get_consensus_snapshot(stock_code)
     market = get_market_context()
 
+    # v3.5.0-T4: RAG 上下文增强 — 注入历史评估结果 + 自选状态
+    rag_context = ""
+    try:
+        from ai_evaluator import ai_evaluator
+        username = "default"
+        hist = ai_evaluator._load_history_for(username)
+        if hist:
+            # 找该股票最近一次评估
+            for h in reversed(hist):
+                if h.get("stock_code") == stock_code:
+                    result = h.get("result", {})
+                    rag_context += (
+                        f"\n[历史AI评估 {h.get('evaluate_time', '')[:10]}]\n"
+                        f"评分: {result.get('total_score')} ({result.get('level')})\n"
+                        f"结论: {result.get('detailed_report', '')[:200]}\n"
+                    )
+                    break
+    except Exception:
+        pass
+    # 自选状态
+    try:
+        import db
+        wl = db.watchlist_get("default")
+        if any(r["stock_code"] == stock_code for r in wl):
+            rag_context += "\n[该股票在当前用户自选列表中]\n"
+    except Exception:
+        pass
+    if rag_context:
+        body.message = body.message + "\n\n[参考上下文]" + rag_context
+
     # 3. 构建 Prompt
     system_prompt = build_ask_stock_system_prompt()
     user_prompt = build_ask_stock_user_prompt(
