@@ -163,7 +163,6 @@
   padding: 12px;
   background: var(--bg-card-header);
   border-radius: var(--r-lg);
-  position: relative;  /* V4.8.2-fix: 弹窗 absolute 定位祖先 */
 }
 .merrill-timeline-head {
   display: flex;
@@ -427,12 +426,10 @@
 }
 
 /* V4.8 (R1): 时间轴小阶段点击紧凑弹窗 — 仅展示该阶段独有信息, 不遮全图 */
-/* V4.8.2-fix (用户反馈): 弹窗绝对定位锚定被点击 chip 右侧 (位置由 JS 计算) */
 .tl-click-pop {
-  position: absolute;
+  position: relative;
+  margin: 4px 0 12px;
   z-index: 45;
-  max-width: 460px;
-  pointer-events: auto;
 }
 .tl-click-card {
   position: relative;

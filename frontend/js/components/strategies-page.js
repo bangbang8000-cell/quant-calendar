@@ -302,7 +302,7 @@
                                                              class="merrill-stage-chip"
                                                              :class="{ 'is-current': st.is_current }"
                                                              :style="tlChipStyle(st.stage)"
-                                                             @click.prevent="showTimelineStage(st.stage, $event)"
+                                                             @click.prevent="showTimelineStage(st.stage)"
                                                              @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
                                                              @mouseleave="clearTlHover()">
                                                             <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
@@ -342,7 +342,7 @@
                                 </div>
                             </div>
                             <!-- V4.8 (R1): 时间轴小阶段点击紧凑弹窗 — 仅展示该阶段独有信息 -->
-                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" :style="tlClickPosStyle" @click.self="closeTlClick">
+                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" @click.self="closeTlClick">
                                 <div class="tl-click-card" role="dialog" aria-label="阶段详情">
                                     <button class="tl-click-close" @click="closeTlClick" aria-label="关闭">✕</button>
                                     <div class="tl-click-head">
@@ -679,50 +679,7 @@
       //            不再跳转大而全的阶段详情弹窗 (showStageDetail 保留其他入口用)
       const tlClickStage = Vue.ref(null);   // 当前点击的阶段对象 (含 essence/highlight/key_indicators)
       const tlClickVisible = Vue.ref(false);
-      const tlClickPos = Vue.reactive({ top: 0, left: 0, right: null, bottom: null, maxWidth: 460 });
-      // V4.8.2-fix (用户反馈): 弹窗锚定被点击阶段 chip 的右侧合适位置
-      // 定位策略: 优先 chip 右侧垂直居中; 右侧空间不足时左侧; 上下空间不足时贴边
-      function computeTlClickPos(ev) {
-        const el = ev && ev.currentTarget;
-        const pop = document.querySelector('.tl-click-pop');
-        if (!el || !pop) return;
-        const cRect = el.getBoundingClientRect();
-        const popW = pop.offsetWidth || 340;
-        const popH = pop.offsetHeight || 220;
-        const pad = 10;
-        // 定位祖先: .merrill-timeline-block (relative), 弹窗 absolute 相对它
-        const cont = el.closest('.merrill-timeline-block');
-        const contRect = cont ? cont.getBoundingClientRect() : cRect;
-        const cLeft = cRect.left - contRect.left;   // chip 相对容器坐标
-        const cTop = cRect.top - contRect.top;
-        const cW = cRect.width, cH = cRect.height;
-        const contW = contRect.width, contH = contRect.height;
-        // 水平: 优先右侧, 空间不足放左侧
-        let left = null, right = null;
-        if (cLeft + cW + pad + popW <= contW) {
-          left = cLeft + cW + pad;
-        } else if (cLeft - pad - popW >= 0) {
-          left = cLeft - pad - popW;
-        } else {
-          left = Math.max(8, Math.min(cLeft, contW - popW - 8));
-        }
-        // 垂直: chip 中心对齐, 容器内贴边
-        const idealTop = cTop + cH / 2 - popH / 2;
-        const top = Math.max(8, Math.min(idealTop, contH - popH - 8));
-        tlClickPos.top = top;
-        tlClickPos.left = left;
-        tlClickPos.right = null;
-        tlClickPos.bottom = null;
-      }
-      // V4.8.2-fix: 弹窗位置样式 (relative 容器内 absolute 定位)
-      const tlClickPosStyle = Vue.computed(function () {
-        const st = {};
-        if (tlClickPos.top != null) st.top = tlClickPos.top + 'px';
-        if (tlClickPos.left != null) st.left = tlClickPos.left + 'px';
-        if (tlClickPos.right != null) st.right = tlClickPos.right + 'px';
-        return st;
-      });
-      function showTimelineStage(stageKey, ev) {
+      function showTimelineStage(stageKey) {
         // 从时间轴数据中找完整阶段对象 (含 V4.8 注入的独有信息)
         let found = null;
         const cycles = (merrillTimeline.value && merrillTimeline.value.cycles) || [];
@@ -739,8 +696,6 @@
         if (found) {
           tlClickStage.value = found;
           tlClickVisible.value = true;
-          // 锚定位置: 弹窗渲染后 nextTick 测量并定位
-          Vue.nextTick(function () { computeTlClickPos(ev); });
         }
       }
       function closeTlClick() {
@@ -916,7 +871,6 @@
         timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,
         tlClickStage, tlClickVisible, closeTlClick,
-        tlClickPosStyle,
         merrillTimeline, timelineLoading, showTimelineStage };
     },
   };

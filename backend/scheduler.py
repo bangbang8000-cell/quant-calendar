@@ -424,14 +424,6 @@ class Scheduler:
                 try:
                     # V4.7.1 (并发安全): 引擎取数/因子计算同步阻塞事件循环(全市场每策略 60-120s) → 移入后台线程
                     await asyncio.to_thread(run_strategy_once)
-                    # V4.8.2-fix (用户反馈): 持仓生成后热刷新 parser — data_parser.parser 为模块级单例,
-                    # 仅启动时加载; 不刷新则软件(日历/策略总览)读不到当日持仓, 需重启服务才能看到
-                    try:
-                        from data_parser import parser as _dp_parser
-                        _dp_parser.reload()
-                        logger.info("📊 策略持仓已热刷新进日历数据")
-                    except Exception as _e:
-                        logger.warning("策略持仓热刷新失败: %s", _e)
                     self._record_task_run("strategy_run", True, f"策略持仓已生成 {today}")
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)

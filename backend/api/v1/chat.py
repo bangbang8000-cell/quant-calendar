@@ -258,8 +258,7 @@ def _call_llm_sync(system_prompt: str, user_prompt: str) -> str:
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.3,
-        # V4.8.2-fix: 不硬截断 2048 — 推理模型(reasoning_content)会吃光预算致回复为空 (v4-flash 实测需 8192)
-        "max_tokens": model.max_tokens,
+        "max_tokens": min(model.max_tokens, 2048),
     }
 
     resp = requests.post(endpoint, headers=headers, json=payload, timeout=120)
@@ -468,7 +467,7 @@ async def chat_stream(body: ChatRequest, user: dict = Depends(get_non_guest_user
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.3,
-        "max_tokens": model.max_tokens,
+        "max_tokens": min(model.max_tokens, 2048),
         "stream": True,
     }
     headers = {
