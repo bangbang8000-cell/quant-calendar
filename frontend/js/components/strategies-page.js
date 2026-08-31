@@ -69,29 +69,29 @@
                         <div class="card skeleton skeleton-card" v-for="i in 4" :key="i"></div>
                     </div>
                     <div v-else class="dashboard-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon">📅</div>
+                        <div class="stat-card info">
+                            <div class="stat-icon info">📅</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_trading_days || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.tradingDays') }}</div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">📈</div>
+                        <div class="stat-card success">
+                            <div class="stat-icon success">📈</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_stocks_covered || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.coveredStocks') }}</div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">🎯</div>
+                        <div class="stat-card gold">
+                            <div class="stat-icon gold">🎯</div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.strategy_count || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.strategyCount') }}</div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">💎</div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon warning">💎</div>
                             <div class="stat-content">
                                 <div class="flex-baseline-gap-8">
                                     <div class="stat-value">{{ currentPoolSize }}</div>
@@ -596,29 +596,29 @@
 
                         <!-- 聚合统计卡片 -->
                         <div v-if="execSummary" class="dashboard-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon">📋</div>
+                            <div class="stat-card info">
+                                <div class="stat-icon info">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ execSummary.total }}</div>
                                     <div class="stat-label">总执行次数</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">✅</div>
+                            <div class="stat-card success">
+                                <div class="stat-icon success">✅</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ execSummary.success_count }}</div>
                                     <div class="stat-label">成功次数</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📈</div>
+                            <div class="stat-card warning">
+                                <div class="stat-icon warning">📈</div>
                                 <div class="stat-content">
                                     <div class="stat-value" :class="execSuccessClass">{{ execSummary.success_rate || 0 }}%</div>
                                     <div class="stat-label">成功率</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📅</div>
+                            <div class="stat-card gold">
+                                <div class="stat-icon gold">📅</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ Object.keys(execSummary.daily_trend || {}).length }}</div>
                                     <div class="stat-label">覆盖天数</div>
@@ -640,7 +640,7 @@
                                     </span>
                                 </div>
                                 <div class="strategy-progress">
-                                    <div class="progress-bar" :style="{width: (stats.total > 0 ? (stats.success / stats.total * 100) : 0) + '%', background: (stats.total > 0 && stats.success / stats.total >= 0.8) ? 'var(--el-success)' : (stats.total > 0 && stats.success / stats.total >= 0.5) ? 'var(--el-warning)' : 'var(--el-danger)'}"></div>
+                                    <div class="progress-bar" :class="execRateClass(stats.total, stats.success)" :style="{width: (stats.total > 0 ? (stats.success / stats.total * 100) : 0) + '%'}"></div>
                                 </div>
                                 <div class="flex-between">
                                     <span class="text-xs-tertiary">最近: {{ stats.last_run || '—' }}</span>
@@ -653,29 +653,29 @@
                         <div class="card mt-4">
                             <div class="card-title">📅 {{ t('exec.resultTitle') }}</div>
                             <div class="dashboard-grid">
-                                <div class="stat-card">
-                                    <div class="stat-icon">🗓</div>
+                                <div class="stat-card warning">
+                                    <div class="stat-icon warning">🗓</div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execCountdownText }}</div>
                                         <div class="stat-label">{{ t('exec.countdown') }}</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-icon">{{ execStatusIcon }}</div>
+                                <div class="stat-card success">
+                                    <div class="stat-icon success">{{ execStatusIcon }}</div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execPhaseText }}</div>
                                         <div class="stat-label">{{ t('exec.statusTitle') }}</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-icon">📦</div>
+                                <div class="stat-card info">
+                                    <div class="stat-icon info">📦</div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execLastDate }}</div>
                                         <div class="stat-label">{{ t('exec.lastRun') }}</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-icon">👁</div>
+                                <div class="stat-card gold">
+                                    <div class="stat-icon gold">👁</div>
                                     <div class="stat-content">
                                         <div class="stat-value" :class="execVisibleClass">{{ execVisibleText }}</div>
                                         <div class="stat-label">{{ t('exec.dayTotal') }}</div>
@@ -1110,6 +1110,13 @@
         const rate = (execSummary.value && execSummary.value.success_rate) || 0;
         return rate >= 80 ? 'color-success' : rate >= 50 ? 'color-warning' : 'color-danger';
       });
+
+      // V4.9.5: 各任务成功率进度条状态色 → CSS 类 (status-ok/warn/bad, 遵守禁内联 style 约定)
+      function execRateClass(total, success) {
+        if (total > 0 && success / total >= 0.8) return 'status-ok';
+        if (total > 0 && success / total >= 0.5) return 'status-warn';
+        return 'status-bad';
+      }
 
       async function loadExecutionData() {
         execLoading.value = true;

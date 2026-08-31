@@ -239,7 +239,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button size="small" type="warning" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -268,7 +268,7 @@
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
                                             <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
                                             <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
-                                            <el-button v-if="!m.locked" size="small" type="warning" @click="removeVendorModel(v,mi)">🗑️</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
                                         </div>
                                         <div class="flex-gap-8-mt8">
                                             <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
@@ -609,7 +609,7 @@
                                 <div class="user-actions-enhanced">
                                     <el-button size="small" type="primary" @click="editUser(user)">编辑</el-button>
                                     <el-button size="small" type="warning" @click="resetUserPassword(user)">重置密码</el-button>
-                                    <el-button v-if="user.username !== 'admin'" size="small" type="warning" @click="deleteUser(user.username)">删除</el-button>
+                                    <el-button v-if="user.username !== 'admin'" size="small" type="danger" @click="deleteUser(user.username)">删除</el-button>
                                 </div>
                             </div>
                     </div>
@@ -635,7 +635,7 @@
                             <div class="flex-gap-6-shrink0">
                                 <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
                                 <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
-                                <el-button v-if="!g.locked" size="small" type="warning" @click="deleteGroupConfig(gid)">删除</el-button>
+                                <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                             </div>
                         </div>
                         <!-- 成员列表（锁定组始终显示，非锁定组展开后显示） -->
@@ -679,7 +679,7 @@
                                         <span v-if="k.enabled === 0" class="user-disabled-badge">已吊销</span>
                                     </div>
                                     <div class="flex-gap-6-shrink0">
-                                        <el-button v-if="k.enabled" size="small" type="warning" @click="revokeOpenApiKey(k)">吊销</el-button>
+                                        <el-button v-if="k.enabled" size="small" type="danger" @click="revokeOpenApiKey(k)">吊销</el-button>
                                     </div>
                                 </div>
                             </div>

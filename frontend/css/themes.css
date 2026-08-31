@@ -585,26 +585,27 @@
         /* v1.12: 暗色主题 — 用户卡片 */
 
         /* ===== Element Plus 语义色按钮全局覆盖 ===== */
-        .el-button--success {
+        /* v4.9.5: 排除 .is-text/.is-plain — 修复 text/plain 变体(如 🗑 行内删除) 橙字橙底不可见; 文字/朴素按钮保留 Element 默认高对比 */
+        .el-button--success:not(.is-text):not(.is-plain) {
             background-color: var(--el-success) !important;
             border-color: var(--el-success) !important;
         }
-        .el-button--success:hover { opacity: 0.85; }
-        .el-button--warning {
+        .el-button--success:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
+        .el-button--warning:not(.is-text):not(.is-plain) {
             background-color: var(--el-warning) !important;
             border-color: var(--el-warning) !important;
         }
-        .el-button--warning:hover { opacity: 0.85; }
-        .el-button--danger {
+        .el-button--warning:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
+        .el-button--danger:not(.is-text):not(.is-plain) {
             background-color: var(--el-danger) !important;
             border-color: var(--el-danger) !important;
         }
-        .el-button--danger:hover { opacity: 0.85; }
-        .el-button--info {
+        .el-button--danger:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
+        .el-button--info:not(.is-text):not(.is-plain) {
             background-color: var(--el-info) !important;
             border-color: var(--el-info) !important;
         }
-        .el-button--info:hover { opacity: 0.85; }
+        .el-button--info:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         /* el-tag 语义色覆盖 */
         .el-tag--success { background-color: var(--badge-success-bg) !important; color: var(--badge-success-text) !important; border-color: var(--badge-success-text) !important; }
         .el-tag--danger { background-color: var(--badge-danger-bg) !important; color: var(--badge-danger-text) !important; border-color: var(--badge-danger-text) !important; }
@@ -4741,14 +4742,14 @@ text {
 /* 空状态占位: 实心虚线卡 (用量统计页统一, v3.18.5) */
 .usage-ai-empty { border: 1px dashed var(--border-base); border-radius: var(--r-lg); background: var(--bg-card); box-shadow: var(--shadow-sm); padding: 16px 16px; text-align: center; font-size: var(--font-sm); color: var(--text-tertiary); }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
-.el-button--success { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
-.el-button--success:hover, .el-button--success:focus { opacity: .85; }
-.el-button--warning { background-color: var(--el-warning) !important; border-color: var(--el-warning) !important; }
-.el-button--warning:hover, .el-button--warning:focus { opacity: .85; }
-.el-button--danger { background-color: var(--el-danger) !important; border-color: var(--el-danger) !important; }
-.el-button--danger:hover, .el-button--danger:focus { opacity: .85; }
-.el-button--info { background-color: var(--el-info) !important; border-color: var(--el-info) !important; }
-.el-button--info:hover, .el-button--info:focus { opacity: .85; }
+.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
+.el-button--success:not(.is-text):not(.is-plain):hover, .el-button--success:not(.is-text):not(.is-plain):focus { opacity: .85; }
+.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--el-warning) !important; border-color: var(--el-warning) !important; }
+.el-button--warning:not(.is-text):not(.is-plain):hover, .el-button--warning:not(.is-text):not(.is-plain):focus { opacity: .85; }
+.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--el-danger) !important; border-color: var(--el-danger) !important; }
+.el-button--danger:not(.is-text):not(.is-plain):hover, .el-button--danger:not(.is-text):not(.is-plain):focus { opacity: .85; }
+.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--el-info) !important; border-color: var(--el-info) !important; }
+.el-button--info:not(.is-text):not(.is-plain):hover, .el-button--info:not(.is-text):not(.is-plain):focus { opacity: .85; }
 .stage-chip { padding: 4px 6px; border-radius: var(--r-sm); font-size: var(--font-xs); margin-right: 8px; background: var(--el-fill-color-light); }
 .stat-card-gold { cursor:pointer; border-left: 3px solid var(--color-gold); }
 .stat-card-info-border { border-left: 3px solid var(--el-info); }
@@ -4887,3 +4888,17 @@ text {
 .w-90 { width: 90px; }
 .warning-banner { margin-top: 8px; padding: 8px 14px; background: linear-gradient(135deg, var(--badge-warning-bg), var(--badge-danger-bg)); border-radius: var(--r-md); border-left: 4px solid var(--color-warning); font-size: var(--font-base); }
 .warning-note { margin-top: 12px; padding: 8px 14px; background: var(--badge-warning-bg); border-radius: var(--r-md); font-size: var(--font-sm); }
+/* ===== v4.9.5: 策略总览/执行看板 — 非可点击语义色统计卡 (对齐 AI 页 stat-card-*/stat-icon-* 彩色设计语言, 随主题令牌) ===== */
+.stat-card.info { border-left: 3px solid var(--el-info); }
+.stat-card.success { border-left: 3px solid var(--el-success); }
+.stat-card.gold { border-left: 3px solid var(--color-gold); }
+.stat-card.warning { border-left: 3px solid var(--el-warning); }
+.stat-icon.info { background: var(--badge-info-bg); color: var(--el-info); }
+.stat-icon.success { background: var(--badge-success-bg); color: var(--el-success); }
+.stat-icon.gold { background: var(--badge-gold-bg); color: var(--color-gold); }
+.stat-icon.warning { background: var(--badge-warning-bg); color: var(--el-warning); }
+/* 执行看板 各任务成功率进度条 — 状态色走 CSS 类 (仓库约定禁内联 style) */
+.progress-bar.status-ok { background: var(--color-success); }
+.progress-bar.status-warn { background: var(--color-warning); }
+.progress-bar.status-bad { background: var(--color-danger); }
+
