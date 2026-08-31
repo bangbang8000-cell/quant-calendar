@@ -64,16 +64,29 @@ def verify_day_ingest(date, agg=None):
     from views_aggregator import views_aggregator as _default_agg
     agg = agg or _default_agg
     dates = list(getattr(agg, "all_dates", None) or [])
-    if date not in dates:
-        latest = dates[-1] if dates else "无"
-        return False, f"{date} 不在聚合器可用日期内(共{len(dates)}天, 最新 {latest})"
+    if not dates:
+        return False, "聚合器无可用日期"
+    # V4.9.3: 自动回退到 <= date 的最近可用日期(周末/节假日运行 → 校验最近交易日),
+    # 修复 8/29、8/30 等周末运行被误判失败的缺陷.
+    probe = date
     try:
-        total = int((agg.get_day_view(date) or {}).get("total", 0))
+        import datetime as _dt
+        _d = _dt.datetime.strptime(date, "%Y-%m-%d").date()
+        _first = _dt.datetime.strptime(dates[0], "%Y-%m-%d").date()
+    except Exception as _e:
+        return False, f"{date} 日期格式无效: {str(_e)[:40]}"
+    while probe not in dates:
+        _d -= _dt.timedelta(days=1)
+        if _d < _first:
+            return False, f"{date} 不在聚合器可用日期内(共{len(dates)}天, 最早 {dates[0]})"
+        probe = _d.strftime("%Y-%m-%d")
+    try:
+        total = int((agg.get_day_view(probe) or {}).get("total", 0))
     except Exception as e:
-        return False, f"{date} 日视图查询失败: {str(e)[:60]}"
+        return False, f"{probe} 日视图查询失败: {str(e)[:60]}"
     if total <= 0:
-        return False, f"{date} 日视图为空(total=0)"
-    return True, f"{date} 日视图已可见(total={total})"
+        return False, f"{probe} 日视图为空(total=0, 原始请求 {date})"
+    return True, f"{probe} 日视图已可见(total={total}, 原始请求 {date})"
 
 
 def scan_csv_files(dirs, recursive=False):
@@ -568,9 +581,11 @@ class Scheduler:
         return verify_day_ingest(today)
 
     def _self_heal_aggregator(self) -> bool:
-        """V4.9.2 (F1.3): 聚合器自愈 — 持仓最新日期 > 聚合器最新日期时自动刷新.
+        """V4.9.3 (F1.3 强化): 聚合器自愈 — parser + views 一并刷新.
 
-        health_check 每5分钟调用; 触发刷新时记录 self_heal 任务, 无漂移不记录.
+        修复 V4.9.2 仅刷 views_aggregator 的缺陷: parser 单例若陈旧(文件监听漏事件等),
+        新持仓永远进不了日历(实测 8/29、8/30 目录存在但聚合器停留在 8/28).
+        触发条件: 持仓目录最新日期 > 聚合器最新日期 → 先 parser.reload() 再 views_aggregator.reload().
         """
         try:
             holdings_root = os.path.join(DATA_DIR, "holdings")
@@ -582,12 +597,17 @@ class Scheduler:
                 return False
             latest_holdings = dates[-1]
             agg_latest = views_aggregator.all_dates[-1] if views_aggregator.all_dates else None
-            if agg_latest is None or latest_holdings > agg_latest:
+            if latest_holdings > (agg_latest or ""):
+                try:
+                    from data_parser import parser as _dp_parser
+                    _dp_parser.reload()
+                except Exception as _e:
+                    logger.warning("聚合器自愈 parser 刷新失败: %s", _e)
                 stats = views_aggregator.reload()
                 new_latest = (stats or {}).get("latest_date") or latest_holdings
                 self._record_task_run(
                     "self_heal", True,
-                    f"聚合器滞后 {agg_latest}→{latest_holdings}, 已自动刷新至 {new_latest}")
+                    f"聚合器滞后 {agg_latest}→{latest_holdings}, 已自动刷新至 {new_latest} (parser+views 一并刷新)")
                 logger.warning("🛠 聚合器自愈: 刷新至 %s", new_latest)
                 return True
             return False

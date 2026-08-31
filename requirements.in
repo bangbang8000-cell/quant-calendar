@@ -10,7 +10,9 @@ requests>=2.28.0
 python-dotenv>=1.0.0
 bcrypt>=4.0.0
 python-jose[cryptography]>=3.3.0
-pydantic>=2.0.0
+# V4.9.2: pydantic 2.13.5 刚发布尚未在 PyPI CDN 全量传播, uv 重编译解析不确定(2.13.4/2.13.5 抖动致 CI 锁漂移门禁红);
+# 暂排除 2.13.5 稳定锁文件(与生产运行版本一致); 传播完成后移除上界
+pydantic>=2.0.0,<2.13.5
 pydantic-settings>=2.0.0
 slowapi>=0.1.9
 aiofiles>=23.0.0

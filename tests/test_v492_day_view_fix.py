@@ -30,12 +30,22 @@ class TestVerifyDayIngest:
         assert ok is True
         assert "日视图已可见" in detail and "84" in detail
 
-    def test_fail_when_date_missing(self):
+    def test_fail_when_date_missing_and_prior_empty(self):
+        # V4.9.3: 请求日不在聚合器时自动回退到最近前一可用日(周末/节假日语义);
+        # 前一可用日视图也为空 → 校验失败(报告实际校验日).
         from scheduler import verify_day_ingest
         agg = self._FakeAgg(["2026-08-27"], {})
         ok, detail = verify_day_ingest("2026-08-28", agg)
         assert ok is False
-        assert "不在聚合器" in detail
+        assert "日视图为空" in detail and "2026-08-27" in detail
+
+    def test_weekend_falls_back_to_last_trading_day(self):
+        # V4.9.3: 周末(8/29 周六)运行 → 回退校验最近交易日 8/28, 不再误报失败
+        from scheduler import verify_day_ingest
+        agg = self._FakeAgg(["2026-08-27", "2026-08-28"], {"2026-08-28": 84})
+        ok, detail = verify_day_ingest("2026-08-29", agg)
+        assert ok is True
+        assert "2026-08-28" in detail and "原始请求 2026-08-29" in detail
 
     def test_fail_when_empty_view(self):
         from scheduler import verify_day_ingest
@@ -94,10 +104,12 @@ class TestSelfHeal:
         s = Scheduler()
         hold_root = str(tmp_path / "holdings")
         os.makedirs(os.path.join(hold_root, "2026-08-29"), exist_ok=True)
+        # V4.9.3: self_heal 先刷新 parser 再刷 views(修复 parser 陈旧导致聚合器卡旧日)
         with patch("scheduler.DATA_DIR", str(tmp_path)), \
              patch("scheduler.views_aggregator.all_dates", ["2026-08-28"]), \
              patch("scheduler.views_aggregator.reload",
                     return_value={"latest_date": "2026-08-29"}), \
+             patch("data_parser.parser.reload", return_value=None), \
              patch.object(s, "_persist_history", return_value=None):
             triggered = s._self_heal_aggregator()
         assert triggered is True

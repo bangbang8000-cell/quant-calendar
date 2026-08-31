@@ -6,6 +6,7 @@
 import os
 import csv
 import logging
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from collections import defaultdict
 from stock_info import stock_manager
@@ -13,6 +14,9 @@ from stock_info import stock_manager
 from paths import EXTERNAL_DATA_DIR as DATA_DIR
 
 logger = logging.getLogger(__name__)
+
+# V4.9.3: 日历前向填充 — 最新持仓填充到"今天"的最大间隔(天), 防止数据长期陈旧时伪造日期掩盖缺口
+CARRY_FORWARD_MAX_GAP_DAYS = 10
 
 STRATEGY_CONFIG = {
     'multifactor': {
@@ -42,6 +46,7 @@ class DataParser:
     def __init__(self):
         self.holdings_data = {}  # strategy -> {date -> set(stocks)}
         self.date_list = []
+        self.carried_dates = []  # V4.9.3: 前向填充日期(最新持仓继承, 支持"今天"可选可看)
         self.stock_info = defaultdict(lambda: {'strategies': set(), 'hold_days': defaultdict(int)})
         self._load_all_data()
 
@@ -95,7 +100,9 @@ class DataParser:
         self.date_list = sorted(all_dates)
         # V4.0 M3: 完全体闭环 — 加载引擎持仓 overlay
         self._load_engine_overlay()
-        logger.info(f"✅ 数据加载完成: {len(self.date_list)}个交易日, {len(self.stock_info)}只股票")
+        # V4.9.3: 前向填充到今天(周一/节假日次日可查看上一交易日持仓)
+        self._carry_forward_to_today()
+        logger.info(f"✅ 数据加载完成: {len(self.get_available_dates())}个交易日, {len(self.stock_info)}只股票")
 
     # V4.0 M3: data_parser 侧 sid → SDK/governance 侧 sid(名称不同)
     _PARSER_TO_SDK_SID = {
@@ -243,23 +250,95 @@ class DataParser:
         self.holdings_data = temp_holdings
         self.stock_info = temp_stock_info
         self.date_list = temp_date_list
+        self.carried_dates = []
 
-        stats = {
-            "dates_count": len(self.date_list),
-            "stocks_count": len(self.stock_info),
-            "latest_date": self.date_list[-1] if self.date_list else None
-        }
         # V4.0 M3: 完全体闭环 — 重新加载引擎持仓 overlay(引擎数据并入 holdings_data)
         self._load_engine_overlay()
+        # V4.9.3: 前向填充到今天
+        self._carry_forward_to_today()
+        _avail = self.get_available_dates()
+        stats = {
+            "dates_count": len(_avail),
+            "stocks_count": len(self.stock_info),
+            "latest_date": _avail[-1] if _avail else None
+        }
         logger.info(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
         return stats
 
     def get_available_dates(self) -> List[str]:
-        """获取所有可用日期"""
-        return self.date_list
+        """获取所有可用日期 (真实交易日 + V4.9.3 前向填充日期)"""
+        if not self.carried_dates:
+            return self.date_list
+        return sorted(set(self.date_list) | set(self.carried_dates))
+
+    # ─── V4.9.3: 前向填充 (次日按此调仓语义: 收盘生成 → 下一交易日持有) ───
+    def _carry_forward_to_today(self, today: Optional[str] = None) -> None:
+        """把最新持仓前向填充到 today(含), 工作日(Mon-Fri)且无自身数据的日期继承最近一日持仓.
+
+        让日历在周一/节假日次日即可选中并查看"今天应持有的持仓矩阵",
+        而不是因最新持仓只到最近收盘日而无法选择今天.
+        限制最大间隔 CARRY_FORWARD_MAX_GAP_DAYS, 避免数据长期陈旧时伪造大量日期.
+        """
+        self.carried_dates = []
+        if not self.date_list:
+            return
+        try:
+            if today is None:
+                today = datetime.now().strftime('%Y-%m-%d')
+            last_d = datetime.strptime(self.date_list[-1], '%Y-%m-%d').date()
+            today_d = datetime.strptime(today, '%Y-%m-%d').date()
+            if today_d <= last_d:
+                return
+            if (today_d - last_d).days > CARRY_FORWARD_MAX_GAP_DAYS:
+                return
+            known = set(self.date_list)
+            carried = []
+            d = last_d + timedelta(days=1)
+            while d <= today_d:
+                ds = d.strftime('%Y-%m-%d')
+                if d.weekday() < 5 and ds not in known:
+                    carried.append(ds)
+                d += timedelta(days=1)
+            self.carried_dates = sorted(carried)
+            if self.carried_dates:
+                logger.info("🔁 前向填充 %d 个日期至 %s: %s", len(self.carried_dates), today,
+                            ','.join(self.carried_dates))
+        except Exception as e:
+            logger.warning('data_parser: 前向填充失败: %s', e)
+
+    def _nearest_prior(self, strategy_id: str, date: str) -> Optional[str]:
+        """返回该策略在 date 之前最近的"真实"持仓日期(供前向填充日期继承)"""
+        best = None
+        for dd in self.date_list:
+            if dd < date:
+                best = dd
+            else:
+                break
+        if best is None:
+            return None
+        hd = self.holdings_data.get(strategy_id, {})
+        while best is not None and best not in hd:
+            # 该真实日无此策略持仓 → 继续向前找
+            prev = None
+            for dd in self.date_list:
+                if dd < best:
+                    prev = dd
+                else:
+                    break
+            best = prev
+        return best
+
+    def _resolve_holdings_date(self, strategy_id: str, date: str) -> Optional[str]:
+        """返回该策略在 date 实际使用的持仓日期 (支持前向填充日期 → 最近前一真实日)"""
+        hd = self.holdings_data.get(strategy_id, {})
+        if date in hd:
+            return date
+        if date in self.carried_dates:
+            return self._nearest_prior(strategy_id, date)
+        return None
 
     def get_holdings_by_date(self, date: str, strategy: Optional[str] = None) -> Dict:
-        """获取指定日期的持仓"""
+        """获取指定日期的持仓 (V4.9.3: 前向填充日期回退到最近前一真实持仓日)"""
         result = {}
 
         if strategy:
@@ -268,29 +347,33 @@ class DataParser:
             strategies = list(STRATEGY_CONFIG.keys())
 
         for s in strategies:
-            if s in self.holdings_data and date in self.holdings_data[s]:
-                stocks_list = []
-                for code in sorted(list(self.holdings_data[s][date])):
-                    stocks_list.append({
-                        'code': code,
-                        'name': stock_manager.get_name(code)
-                    })
-                result[s] = {
-                    'name': STRATEGY_CONFIG[s]['name'],
-                    'stocks': stocks_list,
-                    'count': len(stocks_list)
-                }
+            src = self._resolve_holdings_date(s, date)
+            if src is None:
+                continue
+            stocks_list = []
+            for code in sorted(list(self.holdings_data[s][src])):
+                stocks_list.append({
+                    'code': code,
+                    'name': stock_manager.get_name(code)
+                })
+            result[s] = {
+                'name': STRATEGY_CONFIG[s]['name'],
+                'stocks': stocks_list,
+                'count': len(stocks_list)
+            }
 
         return result
 
     def get_strategy_consensus(self, date: str) -> Dict:
-        """获取指定日期的策略共识度分析"""
+        """获取指定日期的策略共识度分析 (V4.9.3: 支持前向填充日期)"""
         stock_counts = defaultdict(list)
 
         for strategy_id in STRATEGY_CONFIG.keys():
-            if strategy_id in self.holdings_data and date in self.holdings_data[strategy_id]:
-                for stock in self.holdings_data[strategy_id][date]:
-                    stock_counts[stock].append(strategy_id)
+            src = self._resolve_holdings_date(strategy_id, date)
+            if src is None:
+                continue
+            for stock in self.holdings_data[strategy_id][src]:
+                stock_counts[stock].append(strategy_id)
 
         consensus = []
         for stock, strategies in stock_counts.items():
@@ -312,8 +395,9 @@ class DataParser:
             strategy_data = self.holdings_data.get(strategy_id, {})
             hold_dates = []
 
-            for date in self.date_list:
-                if date in strategy_data and stock_code in strategy_data[date]:
+            for date in self.get_available_dates():
+                src = self._resolve_holdings_date(strategy_id, date)
+                if src is not None and stock_code in strategy_data.get(src, set()):
                     hold_dates.append(date)
 
             if hold_dates:
