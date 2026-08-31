@@ -619,7 +619,8 @@ class AIEvaluator:
         return {"vendors": [v.to_dict() for v in vendors]}
 
     def update_models(self, payload: Dict) -> Dict:
-        """批量保存厂商配置（保留厂商/模型两级 locked；api_key 原样透传）"""
+        """批量保存厂商配置（保留厂商/模型两级 locked；api_key 掩码形式提交 → 保留既有值, 防掩码覆盖真实 key）"""
+        from secret_utils import is_masked_form
         vendors_data = payload.get("vendors", []) if isinstance(payload, dict) else []
         existing = {v.vendor_key: v for v in self._load_models()}
         vendors = []
@@ -628,6 +629,9 @@ class AIEvaluator:
             # 厂商级 locked 保留
             if v.vendor_key in existing:
                 v.locked = existing[v.vendor_key].locked
+                # V4.0 需求2: 掩码/空值提交 → 保留既有 api_key（前端未点眼睛查看时发回的是掩码）
+                if is_masked_form(v.api_key, existing[v.vendor_key].api_key):
+                    v.api_key = existing[v.vendor_key].api_key
             # 模型级 locked 保留（按 name；新厂商无既有状态则用客户端值）
             existing_vendor = existing.get(v.vendor_key)
             existing_models = {m.name: m.locked for m in existing_vendor.models} if existing_vendor else {}
@@ -678,7 +682,10 @@ class AIEvaluator:
             else:
                 vendor.base_url = base_url
         if api_key is not None and vendor is not None:
-            vendor.api_key = api_key
+            # V4.0 需求2: 前端未查看时内联发回的是掩码, 视为不覆盖 → 用存储的真实 key 探测
+            from secret_utils import is_masked_form
+            if not is_masked_form(api_key, vendor.api_key):
+                vendor.api_key = api_key
         if timeout is not None and vendor is not None:
             vendor.timeout = timeout
         return vendor
@@ -1708,7 +1715,7 @@ class AIEvaluator:
                 elif pos_pct < 30:
                     position_score = 55
                 # 附加数据注解
-                scores["_price_position_pct"] = round(pos_pct, 1)
+                scores["_price_position_pct"] = round(pos_pct, 2)
         scores["价格位置"] = max(10, min(95, position_score))
 
         # ── 加权总分 ──
@@ -1717,7 +1724,7 @@ class AIEvaluator:
             s = scores.get(dim["name"], 50)
             total_score += s * dim["weight"]
 
-        total_score = round(total_score, 1)
+        total_score = round(total_score, 2)
 
         # ── 评级 ──
         if total_score >= 85:

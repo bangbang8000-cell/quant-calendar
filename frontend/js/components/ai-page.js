@@ -825,7 +825,7 @@
       ];
       function fmtTrackRate(st) {
         if (!st || st.total === 0 || st.rate === null || st.rate === undefined) return '--';
-        return st.rate.toFixed(1) + '%';
+        return st.rate.toFixed(2) + '%';
       }
       // v3.18 (FR-3.18.6): 决策复盘 — 按日期浏览窗口切换 + 命中标注
       const trackWindow = ref(5);

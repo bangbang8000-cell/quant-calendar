@@ -87,10 +87,10 @@
     const indicatorList = computed(() => {
       const ind = merrillData.value.indicators || {};
       return [
-        { key: 'pmi', label: 'PMI', value: ind.pmi?.toFixed(1), color: ind.pmi >= 50 ? '#43a047' : '#E53935' },
-        { key: 'gdp', label: 'GDP增速', value: ind.gdp_growth?.toFixed(1) + '%', color: '#43a047' },
-        { key: 'cpi', label: 'CPI同比', value: ind.cpi?.toFixed(1) + '%', color: ind.cpi > 1.2 ? '#E53935' : '#43a047' },
-        { key: 'm2', label: 'M2增速', value: ind.m2_growth?.toFixed(1) + '%', color: '#43a047' }
+        { key: 'pmi', label: 'PMI', value: ind.pmi?.toFixed(2), color: ind.pmi >= 50 ? '#43a047' : '#E53935' },
+        { key: 'gdp', label: 'GDP增速', value: ind.gdp_growth?.toFixed(2) + '%', color: '#43a047' },
+        { key: 'cpi', label: 'CPI同比', value: ind.cpi?.toFixed(2) + '%', color: ind.cpi > 1.2 ? '#E53935' : '#43a047' },
+        { key: 'm2', label: 'M2增速', value: ind.m2_growth?.toFixed(2) + '%', color: '#43a047' }
       ];
     });
 

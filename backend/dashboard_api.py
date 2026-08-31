@@ -121,7 +121,7 @@ class DashboardAnalyzer:
         # 计算占比
         total = len(total_stocks) or 1
         for item in result:
-            item['percentage'] = round(item['count'] / total * 100, 1)
+            item['percentage'] = round(item['count'] / total * 100, 2)
 
         result.sort(key=lambda x: -x['count'])
         return result

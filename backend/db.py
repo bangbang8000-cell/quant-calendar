@@ -403,13 +403,13 @@ def _portfolio_merge(conn, username: str, stock_code: str, stock_name: str,
         new_cost = (old_qty * old_cost + (quantity or 0) * (cost_price or 0)) / new_qty if new_qty > 0 else (cost_price or 0)
         conn.execute(
             "UPDATE portfolio_positions SET stock_name=?, cost_price=?, quantity=?, updated_at=? WHERE id=?",
-            (stock_name or '', round(new_cost, 4), round(new_qty, 4), now, row['id'])
+            (stock_name or '', round(new_cost, 2), round(new_qty, 2), now, row['id'])
         )
     else:
         conn.execute(
             "INSERT INTO portfolio_positions (username, stock_code, stock_name, cost_price, quantity, created_at, updated_at) "
             "VALUES (?,?,?,?,?,?,?)",
-            (username, stock_code, stock_name or '', round(cost_price or 0, 4), round(quantity or 0, 4), now, now)
+            (username, stock_code, stock_name or '', round(cost_price or 0, 2), round(quantity or 0, 2), now, now)
         )
 
 
@@ -477,7 +477,7 @@ def portfolio_apply_trade(username: str, stock_code: str, stock_name: str,
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             conn.execute(
                 "UPDATE portfolio_positions SET quantity=?, updated_at=? WHERE id=?",
-                (round(new_qty, 4), now, row['id'])
+                (round(new_qty, 2), now, row['id'])
             )
             conn.commit()
             conn.close()
@@ -499,7 +499,7 @@ def portfolio_add_trade(username: str, stock_code: str, stock_name: str = '', ac
         cur = conn.execute(
             "INSERT INTO portfolio_trades (username, stock_code, stock_name, action, price, quantity, trade_date, note, created_at) "
             "VALUES (?,?,?,?,?,?,?,?,?)",
-            (username, stock_code, stock_name or '', action, round(price or 0, 4), round(quantity or 0, 4),
+            (username, stock_code, stock_name or '', action, round(price or 0, 2), round(quantity or 0, 2),
              trade_date, note or '', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         )
         conn.commit()

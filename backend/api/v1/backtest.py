@@ -130,11 +130,11 @@ async def get_strategy_attribution(
             "total": len(trades),
             "wins": len(win_trades),
             "losses": len(lose_trades),
-            "win_rate": round(result.win_rate * 100, 1),
+            "win_rate": round(result.win_rate * 100, 2),
             "profit_loss_ratio": round(result.profit_loss_ratio, 2) if result.profit_loss_ratio else 0,
             "avg_win_return": round(np.mean([t.get("return", 0) for t in win_trades]) * 100, 2) if win_trades else 0,
             "avg_loss_return": round(np.mean([t.get("return", 0) for t in lose_trades]) * 100, 2) if lose_trades else 0,
-            "turnover_rate": round(result.turnover_rate * 100, 1) if result.turnover_rate else 0,
+            "turnover_rate": round(result.turnover_rate * 100, 2) if result.turnover_rate else 0,
         }
 
         return {

@@ -213,7 +213,7 @@
                             <div class="flex-between-xs-mb7">
                                 <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
                                 <span class="text-warning-semibold" v-if="merrillData.next_stage_prediction?.transition_probability> 0.2">
-                                    →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(0) }}%
+                                    →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(2) }}%
                                 </span>
                                 <span v-else>均值 {{ merrillData.timing.avg_duration_months }}月</span>
                             </div>
@@ -249,7 +249,7 @@
                                 <span class="color-secondary">→预测</span>
                                 <span class="text-warning-semibold">{{ merrillData.next_stage_prediction.next_stage_name || '—' }}</span>
                                 <span class="color-secondary" v-if="merrillData.next_stage_prediction.transition_probability">
-                                    {{ (merrillData.next_stage_prediction.transition_probability * 100).toFixed(0) }}%
+                                    {{ (merrillData.next_stage_prediction.transition_probability * 100).toFixed(2) }}%
                                 </span>
                             </div>
                         </div>
@@ -527,7 +527,7 @@
       const merrillNext = computed(() => {
         const nsp = merrill.value.next_stage_prediction;
         if (nsp && nsp.next_stage_name && nsp.transition_probability > 0.2) {
-          return `→${nsp.next_stage_name} ${Math.round(nsp.transition_probability * 100)}%`;
+          return `→${nsp.next_stage_name} ${(nsp.transition_probability * 100).toFixed(2)}%`;
         }
         return '';
       });

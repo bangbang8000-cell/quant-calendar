@@ -144,7 +144,7 @@ class Scheduler:
             free = st.f_bavail * st.f_frsize
             if total <= 0:
                 return
-            percent = round(free / total * 100, 1)
+            percent = round(free / total * 100, 2)
             today = datetime.now().strftime('%Y-%m-%d')
             if percent < threshold_percent and self._disk_alert_date != today:
                 self._disk_alert_date = today

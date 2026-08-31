@@ -663,7 +663,7 @@ const allMenuDefs = [
                         loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels,
                         testVendorModel, testAllVendorModels, fetchVendorModels,
                         addVendorFromCatalog, addCustomVendor, addVendorModel,
-                        removeVendorModel, removeVendor, autoEvaluateConfig,
+                        removeVendorModel, removeVendor, toggleVendorKeyReveal, autoEvaluateConfig,
                         // v3.11: AI 评估配置（原 app-logic 前段并入本域）
                         aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning,
                         batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors,
@@ -717,7 +717,7 @@ const allMenuDefs = [
                         rateLimitConfig, rateLimitDirty, rateLimitSaving, loadRateLimit, saveRateLimit,
                         saveAiConfig, testAiApi, exportConfig, importConfig,
                         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
-                        syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource,
+                        syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
                         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData } = __systemDomain;
 
                 // ===== v3.17.11.1: 登录/登出/密码/初始化向导域 (js/app-logic/auth.js) =====
@@ -956,11 +956,11 @@ const allMenuDefs = [
                     loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,
                     testVendorModel, testAllVendorModels, fetchVendorModels,
                     addVendorFromCatalog, addCustomVendor, addVendorModel,
-                    removeVendorModel, removeVendor,
+                    removeVendorModel, removeVendor, toggleVendorKeyReveal,
                     checkTushareConnection,
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
-                    loadDatasourceConfig, saveDatasourceConfig, testDatasource,
+                    loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
                     strategyFilter, strategyFilterOptions, strategyFilterCounts, strategyPreviewCount, saveStrategyFilter,
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,

@@ -131,10 +131,10 @@ def evaluate_ic_series(ics: List[Optional[float]]) -> Dict:
         grade = '不稳定'
     return {
         'count': n,
-        'ic_mean': round(mean, 4),
-        'ic_std': round(std, 4),
-        'icir': round(icir, 4) if icir is not None else None,
-        'win_rate': round(win_rate, 4),
+        'ic_mean': round(mean, 2),
+        'ic_std': round(std, 2),
+        'icir': round(icir, 2) if icir is not None else None,
+        'win_rate': round(win_rate, 2),
         'grade': grade,
     }
 
