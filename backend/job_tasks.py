@@ -78,7 +78,7 @@ def report_generate_job(payload, ctx):
     from datetime import date as _date
     d = payload.get('date') or _date.today().isoformat()
     ctx.progress(10, '开始生成日报 %s' % d)
-    highlights = report_center.collect_highlights(d)
-    report = report_center.render_report('量化日报', highlights.get('blocks', []), d)
+    highlights = report_center.collect_highlights(d)  # 返回 [{type,title,content,level}, ...] 列表
+    report = report_center.render_report('量化日报', highlights, d)
     ctx.progress(100, '日报生成完成')
-    return {'date': d, 'blocks': len(highlights.get('blocks', [])), 'report_len': len(report.get('content', ''))}
+    return {'date': d, 'blocks': len(highlights), 'report_len': len(report.get('content', ''))}
