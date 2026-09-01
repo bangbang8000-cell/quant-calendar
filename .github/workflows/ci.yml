@@ -81,9 +81,25 @@ jobs:
           python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
             tests/test_market_review_activation.py tests/test_event_alert_live.py tests/test_market_review.py \
             --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
+          # V5.1 (T-5.1.1~5.1.6): 数据中台模块覆盖率门禁 ≥70% (TEST-PLAN 2.3)
+          python -m pytest tests/test_data_portal2.py tests/test_data_quality.py tests/test_pit_no_lookahead.py             tests/test_data_dict.py tests/test_survivorship.py tests/test_data_lineage.py             --cov=data_portal2 --cov=data_quality --cov=pit --cov=data_dict --cov=survivorship --cov=lineage             --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
+  # V5.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
+  pit-gate:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install -r requirements.lock
+      - name: PIT 防前视断言 (end<=as_of 四路径)
+        run: python -m pytest tests/test_pit_no_lookahead.py -v --tb=short
+
   e2e-visual:
     runs-on: ubuntu-latest
     continue-on-error: true
