@@ -5001,6 +5001,13 @@ text {
 .qc-empty-icon, .qc-error-icon { font-size: 40px; line-height: 1; opacity: 0.8; }
 .qc-empty-title, .qc-error-title { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); }
 .qc-empty-desc, .qc-error-desc { font-size: var(--font-sm); color: var(--text-tertiary); max-width: 360px; line-height: var(--lh-relaxed); }
+
+/* V5.6 T-5.6.4: 信息密度 compact — 收紧卡片间距/字号 (data-density 由 preferences.applyDensity 设置) */
+[data-density="compact"] .card { padding: 12px 14px; }
+[data-density="compact"] .card-title { margin-bottom: 8px; }
+[data-density="compact"] .today-highlight-item { gap: 6px; font-size: var(--font-xs); }
+[data-density="compact"] .stat-label { font-size: var(--font-xs); }
+[data-density="compact"] .onboarding-card { padding: 16px 20px; }
 .portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
 .portfolio-rule-msg { color: var(--text-secondary); }
 

@@ -21,15 +21,17 @@
     theme: 'system',
     chart_period: 'daily',
     language: 'zh-CN',
+    info_density: 'comfortable',
   };
 
-  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language'];
+  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language', 'info_density'];
 
   const PREFERENCE_VALUES = {
     default_view: ['strategies', 'calendar', 'ai', 'research', 'system'],
     theme: ['light', 'dark', 'system'],
     chart_period: ['daily', 'weekly', 'monthly'],
     language: ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'],
+    info_density: ['comfortable', 'compact'],
   };
 
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）
@@ -143,6 +145,15 @@
     return merged;
   }
 
+  // V5.6 (T-5.6.4): 信息密度应用到根元素 (data-density 属性, CSS 令牌联动)
+  function applyDensity(density) {
+    const d = density || getPreference('info_density') || 'comfortable';
+    const v = PREFERENCE_VALUES.info_density.indexOf(d) !== -1 ? d : 'comfortable';
+    if (typeof document === 'undefined') return v;
+    document.documentElement.setAttribute('data-density', v);
+    return v;
+  }
+
   // 主题模式 → 具体主题名（system 跟随系统；亮/暗映射到既有主题）
   function resolveTheme(mode) {
     const m = mode || getPreference('theme') || 'system';
@@ -170,6 +181,7 @@
     saveToBackend: saveToBackend,
     loadPreferences: loadPreferences,
     resolveTheme: resolveTheme,
+    applyDensity: applyDensity,
   };
 
   if (typeof window !== 'undefined') {

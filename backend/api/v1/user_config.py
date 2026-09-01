@@ -216,6 +216,8 @@ PREFERENCE_DEFAULTS = {
     "language": "zh-CN",
     # V5.6 (T-5.6.1): 新手引导进度 (onboarding-core persistState JSON 字符串, 跨设备同步)
     "onboarding_progress": "",
+    # V5.6 (T-5.6.4): 信息密度 (comfortable/compact)
+    "info_density": "comfortable",
 }
 PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
 # 各偏好键合法取值（后端仅做键校验，值合法性由前端偏好模块约束）
@@ -224,6 +226,7 @@ PREFERENCE_ALLOWED_VALUES = {
     "theme": {"light", "dark", "system"},
     "chart_period": {"daily", "weekly", "monthly"},
     "language": {"zh-CN", "en", "ja", "ko", "zh-TW"},
+    "info_density": {"comfortable", "compact"},
 }
 
 
@@ -255,8 +258,14 @@ def save_user_preferences(username: str, prefs: dict) -> bool:
     prefs_path = _get_user_preferences_path(username)
     saved = get_user_preferences(username)
     for k in PREFERENCE_KEYS:
-        if k in prefs:
-            saved[k] = prefs[k]
+        if k not in prefs:
+            continue
+        # V5.6 (T-5.6.4): 值合法性校验 (非法值丢弃, 保持默认)
+        allowed = PREFERENCE_ALLOWED_VALUES.get(k)
+        if allowed is not None and prefs[k] not in allowed:
+            logger.warning(f"偏好键 {k} 非法值 {prefs[k]!r} 已忽略")
+            continue
+        saved[k] = prefs[k]
     user_dir = os.path.join(BASE_USERS_DIR, username)
     os.makedirs(user_dir, exist_ok=True)
     try:
