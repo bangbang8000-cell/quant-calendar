@@ -145,6 +145,16 @@ CREATE TABLE IF NOT EXISTS event_dedup (
     dedup_key TEXT PRIMARY KEY,
     delivered_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS alert_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT NOT NULL,
+    stock_code TEXT NOT NULL,
+    rule_type TEXT NOT NULL,
+    threshold REAL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_alert_rules_user ON alert_rules(user);
 """
 
 SCHEMA += OPENAPI_SCHEMA

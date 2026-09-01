@@ -48,6 +48,12 @@ SENSITIVE_ENDPOINTS = [
     # V5.3 T-5.3.1/T-5.3.4: 组合风险指标/规则评估 (持仓私密数据)
     ("get", "/api/portfolio/risk", None),
     ("get", "/api/portfolio/risk-rules", None),
+    # V5.4 T-5.4.3: 预警规则 CRUD/评估 (用户自定义规则 + 触发通知)
+    ("get", "/api/alerts/rules", None),
+    ("post", "/api/alerts/rules", {"stock_code": "600519.SH", "rule_type": "price_above", "threshold": 1500.0}),
+    ("put", "/api/alerts/rules/1", {"threshold": 1600.0}),
+    ("delete", "/api/alerts/rules/1", None),
+    ("post", "/api/alerts/evaluate", {}),
 ]
 
 

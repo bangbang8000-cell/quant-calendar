@@ -29,6 +29,7 @@ from .system import router as system_router
 from .analytics import router as analytics_router
 from .portfolio import router as portfolio_router
 from .openapi import router as openapi_router
+from .alerts import router as alerts_router
 from .strategy_research import router as strategy_research_router
 from .strategy_execution import router as strategy_execution_router
 from .reliability import router as reliability_router
@@ -70,6 +71,8 @@ api_router.include_router(openapi_router)
 api_router.include_router(openapi_router, prefix="/v2")
 api_router.include_router(strategy_research_router)
 api_router.include_router(reliability_router)
+# V5.4 T-5.4.3: 自定义预警规则
+api_router.include_router(alerts_router)
 api_router.include_router(quality_router)
 api_router.include_router(data_dict_router)
 api_router.include_router(lineage_router)
