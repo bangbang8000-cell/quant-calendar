@@ -54,6 +54,11 @@ SENSITIVE_ENDPOINTS = [
     ("put", "/api/alerts/rules/1", {"threshold": 1600.0}),
     ("delete", "/api/alerts/rules/1", None),
     ("post", "/api/alerts/evaluate", {}),
+    # V5.4 T-5.4.5: 通知中心 — 投递历史/通道状态/静默
+    ("get", "/api/alerts/history", None),
+    ("get", "/api/alerts/channels", None),
+    ("get", "/api/alerts/silence", None),
+    ("post", "/api/alerts/silence", {"minutes": 60}),
 ]
 
 

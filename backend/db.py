@@ -135,6 +135,7 @@ CREATE TABLE IF NOT EXISTS event_delivery_log (
     title TEXT,
     channel TEXT,
     recipient TEXT,
+    user TEXT,
     ok INTEGER NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 1,
     error TEXT,
@@ -222,6 +223,19 @@ def migrate() -> None:
             conn.executescript(EVENTS_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: event_subscriptions/delivery_log/dedup 表就绪")
+            # V5.4 (T-5.4.5): event_delivery_log 补 user 列 (旧库, 幂等)
+            dlog_cols = [r['name'] for r in conn.execute(
+                "PRAGMA table_info(event_delivery_log)").fetchall()]
+            if dlog_cols and 'user' not in dlog_cols:
+                conn.execute("ALTER TABLE event_delivery_log ADD COLUMN user TEXT")
+                conn.commit()
+                logger.info("[db] migrate: event_delivery_log 增加 user 列")
+            # V5.4 (T-5.4.5): 预警静默表 (幂等建表)
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS alert_silence ("
+                " user TEXT PRIMARY KEY, until_ts REAL NOT NULL )")
+            conn.commit()
+            logger.info("[db] migrate: alert_silence 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:

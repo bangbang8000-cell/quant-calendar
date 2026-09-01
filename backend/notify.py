@@ -224,6 +224,38 @@ def get_channel(name, config):
     return build_channel(name, config)
 
 
+def channel_status():
+    """通道状态: 已注册通道 + 可用性/配置提示 (供通知中心页展示)。
+
+    - available: 当前是否有可用的默认配置 (feishu 读 DATA_DIR/feishu_config.json)
+    - configured: 是否存在配置入口
+    """
+    import os
+    from paths import DATA_DIR
+    statuses = []
+    feishu_webhook = ""
+    try:
+        cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
+        if os.path.exists(cfg_path):
+            import json as _json
+            feishu_webhook = (_json.load(open(cfg_path, encoding="utf-8"))
+                              or {}).get("webhook_url", "")
+    except Exception:
+        feishu_webhook = ""
+    for name in sorted(_CHANNELS):
+        if name == "fake":
+            continue  # 测试通道不展示
+        if name == "feishu":
+            configured = bool(feishu_webhook)
+        elif name == "email":
+            configured = True  # SMTP 配置为静态 env/settings, 视为可配置
+        else:
+            configured = True  # webhook 类: url 由用户配置
+        statuses.append({"name": name, "configured": configured,
+                         "available": configured})
+    return statuses
+
+
 def send_notification(channel, recipient, title, content,
                       retries=3, base_delay=0.1):
     """单通道投递 + 失败重试 (指数退避 base_delay * attempt)。

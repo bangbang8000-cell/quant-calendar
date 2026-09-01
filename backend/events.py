@@ -183,6 +183,8 @@ class EventEngine:
         返回投递结果列表 [{ok, attempts, error, channel, recipient, sub_id}]。
         去重: 同 dedup_key 窗口内第二次发布直接跳过 (不投递)。
         """
+        event = dict(event)
+        event["user"] = user
         subs = list_subscriptions(user) if user else self._all_subs()
         matched = [s for s in subs if self._matches(s, event)]
         if not matched:
@@ -224,10 +226,10 @@ class EventEngine:
         conn = get_conn()
         try:
             conn.execute(
-                "INSERT INTO event_delivery_log (event_id, event_type, title, channel, recipient, ok, attempts, error, created_at) "
-                "VALUES (?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO event_delivery_log (event_id, event_type, title, channel, recipient, user, ok, attempts, error, created_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (event["id"], event["type"], event["title"], channel,
-                 recipient, 1 if result.get("ok") else 0,
+                 recipient, event.get("user"), 1 if result.get("ok") else 0,
                  result.get("attempts", 1), result.get("error"), _ts()))
             conn.commit()
         except Exception as e:
