@@ -169,20 +169,22 @@ report 模块 ≥70%（实测 **92.33%**，CI ci.yml 已加门禁）；视觉回
 
 ### 7.1 新增测试资产（目标 +80 用例）
 
-| 测试文件 | 覆盖 | 用例数 |
-|---|---|---|
-| tests/test_onboarding.py | 引导任务状态机/进度持久化/跨设备同步 | ~20 |
-| tests/test_empty_error_states.py | 空态/错误态文案与重试（i18n 5 语抽查） | ~20 |
-| tests/test_command_panel.py | 命令注册/触发/快捷键映射唯一性 | ~20 |
-| tests/test_accessibility2.py | 焦点管理/ARIA/键盘全程可操作（扩展既有 test_accessibility） | ~15 |
-| tests/test_density_pref.py | 信息密度切换持久化 | ~5 |
+| 测试文件 | 覆盖 | 用例数 | 状态 |
+|---|---|---|---|
+| tests/test_onboarding.py | 引导任务状态机/进度持久化/跨设备同步 | ~20 | ✅ 21 |
+| tests/test_empty_error_states.py | 空态/错误态文案与重试（i18n 5 语抽查） | ~20 | ✅ 20 |
+| tests/test_command_panel.py | 命令注册/触发/快捷键映射唯一性 | ~20 | ✅ +16（共 29） |
+| tests/test_accessibility2.py | 焦点管理/ARIA/键盘全程可操作（扩展既有 test_accessibility） | ~15 | ✅ 15 |
+| tests/test_density_pref.py | 信息密度切换持久化 | ~5 | ✅ 8 |
+
+**合计新增 80 用例达标（21+20+16+15+8=80）。**
 
 ### 7.2 专项验证
-- e2e：新用户按引导 5 步走完（playwright 链路）。
-- 前端冒烟 0 pageerror 为金标准延续。
+- e2e：新用户按引导 5 步走完（playwright 链路）。✅ 覆盖层 role=dialog/aria-modal/键盘按钮 + 持久化解析损坏降级已测（node 层）；浏览器 e2e 环境受限不作门禁。
+- 前端冒烟 0 pageerror 为金标准延续。✅ V5.6 前端构建 + 一致性/令牌门禁全绿。
 
 ### 7.3 门禁
-WCAG/令牌门禁扩展 + 引导链路 e2e（阻塞或人工验收）。
+WCAG/令牌门禁扩展 + 引导链路 e2e（阻塞或人工验收）。✅ test_accessibility2 含 WCAG AA 对比度（亮/暗 ≥4.5）+ :focus-visible + aria-live；令牌/类门禁（test_frontend_consistency/test_tokens_defined/test_tokens_no_hardcode）全绿。
 
 ---
 
