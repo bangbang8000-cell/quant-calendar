@@ -99,7 +99,7 @@
                             <div class="text-sm-tertiary mt-8" v-if="!freshnessData.items || !freshnessData.items.length">暂无新鲜度数据 — 数据资产在运行时自动登记</div>
 
                             <!-- 自愈时间线 -->
-                            <div class="health-section-title mt-16">🔧 自愈时间线（最近 {{ healHistory.length }} 次）</div>
+                            <div class="health-section-title mt-20">🔧 自愈时间线（最近 {{ healHistory.length }} 次）</div>
                             <div v-if="healHistory.length" class="heal-list">
                                 <div v-for="(h, i) in healHistory" :key="i" class="heal-row">
                                     <span class="text-xs-tertiary heal-ts">{{ h.ts }}</span>
@@ -112,7 +112,7 @@
                             <div class="text-sm-tertiary" v-else>暂无自愈记录 — 巡检随调度健康检查自动执行</div>
 
                             <!-- 数据源可用性 -->
-                            <div class="health-section-title mt-16">📡 数据源可用性</div>
+                            <div class="health-section-title mt-20">📡 数据源可用性</div>
                             <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
                                 <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
                                     <span class="source-name">{{ s.name }}</span>
