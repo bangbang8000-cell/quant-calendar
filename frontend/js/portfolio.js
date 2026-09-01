@@ -30,6 +30,56 @@
 
       const portfolioCount = computed(() => positions.value.length);
 
+      // ─── V5.3 T-5.3.4: 风险 Tab (指标/规则/再平衡建议) ────
+      const riskTab = ref('metrics');
+      const riskLoading = ref(false);
+      const riskNote = ref('');
+      const riskHasData = ref(false);
+      const riskData = ref({ metrics: null, rules: [], rebalance: null });
+
+      const riskMetricList = computed(function () {
+        const m = riskData.value.metrics;
+        if (!m) return [];
+        const pct = function (v) { return v == null ? '--' : Number(v).toFixed(2) + '%'; };
+        const num = function (v) { return v == null ? '--' : Number(v).toFixed(2); };
+        return [
+          { key: 'volatility', label: '年化波动率', value: pct(m.volatility) },
+          { key: 'var_historical', label: 'VaR(95% 历史)', value: pct(m.var_historical) },
+          { key: 'var_parametric', label: 'VaR(95% 参数)', value: pct(m.var_parametric) },
+          { key: 'cvar', label: 'CVaR(95%)', value: pct(m.cvar) },
+          { key: 'max_drawdown', label: '最大回撤', value: pct(m.max_drawdown) },
+          { key: 'annual_return', label: '年化收益', value: pct(m.annual_return) },
+          { key: 'sharpe_ratio', label: '夏普比率', value: num(m.sharpe_ratio) },
+          { key: 'sortino_ratio', label: 'Sortino', value: num(m.sortino_ratio) },
+          { key: 'calmar_ratio', label: 'Calmar', value: num(m.calmar_ratio) },
+          { key: 'beta', label: 'Beta', value: num(m.beta) },
+        ];
+      });
+
+      async function loadRisk() {
+        riskLoading.value = true;
+        try {
+          const [mRes, rRes] = await Promise.all([
+            fetch('/api/portfolio/risk?days=60'),
+            fetch('/api/portfolio/risk-rules?days=60'),
+          ]);
+          const m = await mRes.json();
+          const r = await rRes.json();
+          const metrics = m && m.success ? m.risk : null;
+          const rules = r && r.success ? (r.rules || []) : [];
+          const rebalance = r && r.success ? r.rebalance : null;
+          riskData.value = { metrics: metrics, rules: rules, rebalance: rebalance };
+          riskHasData.value = !!(metrics && Object.keys(metrics).length > 0);
+          riskNote.value = (m && m.note) || (r && r.note) || '';
+        } catch (e) {
+          console.warn('[portfolio] 加载风险数据失败:', e);
+          riskHasData.value = false;
+          riskNote.value = '风险数据加载失败';
+        } finally {
+          riskLoading.value = false;
+        }
+      }
+
       // ─── 持仓 ───────────────────────────────────────────────
       async function loadPortfolio() {
         loading.value = true;
@@ -282,6 +332,8 @@
         loadPortfolio, addPosition, removePosition,
         openTradeForm, submitTrade, loadTrades, loadEquity,
         fmtSigned, fmtSignedPct, signClass,
+        riskTab, riskLoading, riskNote, riskHasData, riskData,
+        riskMetricList, loadRisk,
       };
     }
   };

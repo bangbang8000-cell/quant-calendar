@@ -303,3 +303,92 @@ async def get_portfolio_risk(days: int = 60, benchmark: str = None,
         note = "VaR 采用历史模拟+参数法双实现交叉核对"
     return {"success": True, "risk": risk, "dates": dates, "note": note,
             "count": len(positions)}
+
+
+# ─── V5.3 T-5.3.4: 风控规则评估 + 再平衡建议 ───
+
+def _stock_vol_from_kline(ts_code: str, days: int = 60):
+    """由近 N 日收盘价估算年化波动 (数据不可达返回 None)"""
+    try:
+        kline = data_source_manager.get_kline_data(ts_code, 'daily', days)
+        bars = kline.get('data') if isinstance(kline, dict) else kline
+        if not bars:
+            return None
+        closes = []
+        for b in bars:
+            try:
+                closes.append(float(b[2]))
+            except (TypeError, ValueError, IndexError):
+                continue
+        if len(closes) < 5:
+            return None
+        rets = [(closes[i] / closes[i - 1] - 1.0) for i in range(1, len(closes))
+                if closes[i - 1] > 0]
+        from risk import volatility_annual
+        return volatility_annual(rets)
+    except Exception as e:
+        logger.warning("portfolio _stock_vol(%s) 失败: %s", ts_code, e)
+        return None
+
+
+@router.get("/risk-rules")
+async def get_portfolio_risk_rules(days: int = 60,
+                                   user: dict = Depends(get_current_active_user)):
+    """风控规则评估 + 再平衡建议 (V5.3 T-5.3.3/5.3.4)。
+
+    由持仓市值权重/浮亏/日收益/净值 + 个股波动率驱动; 数据不可达优雅降级。
+    返回 {rules: [{rule_id,type,triggered,severity,action,message}], rebalance, note}
+    """
+    from risk import position_sizing
+    from rules import evaluate_rules, make_rule
+    days = max(10, min(days, 365))
+    positions = db.portfolio_get_positions(user["username"])
+    if not positions:
+        return {"success": True, "rules": [], "rebalance": None, "note": "暂无持仓"}
+    views = [_position_view(p) for p in positions]
+    available = [v for v in views if v.get("market_value")]
+    weights = {}
+    if available:
+        total_mv = sum(v["market_value"] for v in available)
+        if total_mv:
+            weights = {v["stock_code"]: round(v["market_value"] / total_mv, 4) for v in available}
+    # 单持仓浮亏 (小数, 供止损规则): float_profit_pct 为 % (负值)
+    losses = {}
+    for v in views:
+        pct = v.get("float_profit_pct")
+        if pct is not None and float(pct) < 0:
+            losses[v["stock_code"]] = round(float(pct) / 100.0, 6)
+    summary = _build_summary(views)
+    day_return = round((summary.get("day_profit_pct") or 0.0) / 100.0, 6)
+    # 净值序列 (归一化)
+    _, values, _ = _portfolio_values(days, user["username"])
+    equity = [v / values[0] for v in values] if values and values[0] else [1.0]
+    # 个股波动率
+    vols = {}
+    for v in views:
+        vol = _stock_vol_from_kline(v["stock_code"], days)
+        if vol is not None:
+            vols[v["stock_code"]] = vol
+    state = {"weights": weights, "sector_weights": {}, "day_return": day_return,
+             "equity": equity, "losses": losses}
+    rules = [
+        make_rule("r1", "concentration", max_stock_weight=0.2, max_sector_weight=0.3),
+        make_rule("r2", "stop_loss", single_loss_threshold=0.08, day_loss_threshold=0.03),
+        make_rule("r3", "take_profit", day_profit_threshold=0.05),
+        make_rule("r4", "drawdown_circuit", trigger=0.1, action="reduce"),
+    ]
+    results = evaluate_rules(state, rules)
+    # 再平衡建议: 波动率目标仓位 vs 当前权重
+    rebalance = None
+    if vols:
+        sizing = position_sizing(vols, target_vol=0.12, max_position=0.2,
+                                 method="vol_target")
+        current = {k: round(weights.get(k, 0.0), 4) for k in sizing["positions"]}
+        diffs = {k: round(sizing["positions"][k] - current.get(k, 0.0), 4)
+                 for k in sizing["positions"]}
+        rebalance = {"targets": sizing["positions"], "current": current,
+                     "diffs": diffs, "total": sizing["total"],
+                     "method": sizing["method"], "max_position": sizing["max_position"]}
+    note = "数据不可达降级" if not vols else ""
+    return {"success": True, "rules": results, "rebalance": rebalance,
+            "note": note, "count": len(positions)}

@@ -679,6 +679,7 @@
                                 <el-radio-group v-model="portfolioTab" size="small">
                                     <el-radio-button value="positions">持仓明细</el-radio-button>
                                     <el-radio-button value="trades">调仓记录</el-radio-button>
+                                    <el-radio-button value="risk">风控</el-radio-button>
                                 </el-radio-group>
                                 <el-button size="small" type="primary" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起表单' : '新增持仓' }}</el-button>
                             </div>
@@ -743,7 +744,7 @@
                             </template>
 
                             <!-- 调仓记录 -->
-                            <template v-else>
+                            <template v-else-if="portfolioTab === 'trades'">
                                 <div v-if="trades.length === 0" class="portfolio-empty">
                                     <div class="portfolio-empty-title">暂无调仓记录</div>
                                 </div>
@@ -756,6 +757,48 @@
                                         <div class="portfolio-trade-meta">价格 {{ fmtNum(t.price, 3) }} × {{ fmtNum(t.quantity, 2) }} · {{ t.trade_date || t.created_at }}</div>
                                         <div v-if="t.note" class="portfolio-trade-note">{{ t.note }}</div>
                                     </div>
+                                </div>
+                            </template>
+
+                            <!-- V5.3 T-5.3.4: 风控 Tab (指标卡/规则/再平衡建议) -->
+                            <template v-else-if="portfolioTab === 'risk'">
+                                <qc-state-panel v-if="riskLoading" type="loading"></qc-state-panel>
+                                <div v-else-if="!riskHasData && riskData.rules.length === 0" class="portfolio-chart-empty">{{ riskNote || '暂无风险数据' }}</div>
+                                <div v-else class="portfolio-risk-panel">
+                                    <div v-if="riskHasData" class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">组合风险指标</div>
+                                        <div class="portfolio-risk-grid">
+                                            <div v-for="item in riskMetricList" :key="item.key" class="portfolio-risk-metric">
+                                                <div class="portfolio-risk-label">{{ item.label }}</div>
+                                                <div class="portfolio-risk-value">{{ item.value }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">风控规则 <span class="portfolio-risk-sub">(集中度/止损/止盈/回撤熔断)</span></div>
+                                        <div v-for="rule in riskData.rules" :key="rule.rule_id" class="portfolio-rule-item" :class="rule.triggered ? 'portfolio-rule-warn' : ''">
+                                            <span class="portfolio-rule-badge" :class="rule.triggered ? 'portfolio-rule-badge-warn' : 'portfolio-rule-badge-ok'">{{ rule.triggered ? '触发' : '正常' }}</span>
+                                            <span class="portfolio-rule-type">{{ rule.type }}</span>
+                                            <span class="portfolio-rule-msg">{{ rule.message || (rule.triggered ? '' : '未触发') }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-if="riskData.rebalance" class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">再平衡建议 <span class="portfolio-risk-sub">(波动率目标仓位 vs 当前权重)</span></div>
+                                        <div class="portfolio-table-wrap">
+                                            <table class="portfolio-table">
+                                                <thead><tr><th>标的</th><th>当前权重</th><th>目标权重</th><th>调整</th></tr></thead>
+                                                <tbody>
+                                                    <tr v-for="(diff, code) in riskData.rebalance.diffs" :key="code">
+                                                        <td>{{ code }}</td>
+                                                        <td>{{ fmtNum(riskData.rebalance.current[code], 4) }}</td>
+                                                        <td>{{ fmtNum(riskData.rebalance.targets[code], 4) }}</td>
+                                                        <td :class="signClass(diff * 100)">{{ fmtSignedPct(diff * 100) }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div v-if="riskNote" class="portfolio-chart-note">{{ riskNote }}</div>
                                 </div>
                             </template>
                         </div>
@@ -868,6 +911,8 @@
         loadPortfolio, addPosition, removePosition,
         openTradeForm, submitTrade, loadTrades, loadEquity,
         fmtSigned, fmtSignedPct, signClass,
+        riskTab, riskLoading, riskNote, riskHasData, riskData,
+        riskMetricList, loadRisk,
       } = __portfolioDomain;
       // v3.17.10 (FR-3.17.10): 持仓纳入本地拼音检索索引（自选/持仓/评估历史构造可测索引）
       watch(positions, function (list) {
@@ -885,6 +930,7 @@
             loadPortfolio();
             loadTrades();
             loadEquity(equityDays ? equityDays.value : 30);
+            if (typeof loadRisk === 'function') loadRisk();
           } else if (key === 'ai/overview') {
             loadPortfolio();
           }
@@ -901,6 +947,8 @@
         loadPortfolio, addPosition, removePosition,
         openTradeForm, submitTrade, loadTrades, loadEquity,
         fmtSigned, fmtSignedPct, signClass,
+        riskTab, riskLoading, riskNote, riskHasData, riskData,
+        riskMetricList, loadRisk,
       };
     },
   };

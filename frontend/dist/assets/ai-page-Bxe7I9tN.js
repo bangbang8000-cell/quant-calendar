@@ -1,4 +1,4 @@
-(function(){const{inject:y}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.AiPage={name:"qc-ai-page",template:`
+(function(){const{inject:f}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.AiPage={name:"qc-ai-page",template:`
                 <div v-if="currentPage === 'ai'" key="ai">
 
                     <!-- overview: 概览统计 + 快捷操作 -->
@@ -670,6 +670,7 @@
                                 <el-radio-group v-model="portfolioTab" size="small">
                                     <el-radio-button value="positions">持仓明细</el-radio-button>
                                     <el-radio-button value="trades">调仓记录</el-radio-button>
+                                    <el-radio-button value="risk">风控</el-radio-button>
                                 </el-radio-group>
                                 <el-button size="small" type="primary" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起表单' : '新增持仓' }}</el-button>
                             </div>
@@ -734,7 +735,7 @@
                             </template>
 
                             <!-- 调仓记录 -->
-                            <template v-else>
+                            <template v-else-if="portfolioTab === 'trades'">
                                 <div v-if="trades.length === 0" class="portfolio-empty">
                                     <div class="portfolio-empty-title">暂无调仓记录</div>
                                 </div>
@@ -747,6 +748,48 @@
                                         <div class="portfolio-trade-meta">价格 {{ fmtNum(t.price, 3) }} × {{ fmtNum(t.quantity, 2) }} · {{ t.trade_date || t.created_at }}</div>
                                         <div v-if="t.note" class="portfolio-trade-note">{{ t.note }}</div>
                                     </div>
+                                </div>
+                            </template>
+
+                            <!-- V5.3 T-5.3.4: 风控 Tab (指标卡/规则/再平衡建议) -->
+                            <template v-else-if="portfolioTab === 'risk'">
+                                <qc-state-panel v-if="riskLoading" type="loading"></qc-state-panel>
+                                <div v-else-if="!riskHasData && riskData.rules.length === 0" class="portfolio-chart-empty">{{ riskNote || '暂无风险数据' }}</div>
+                                <div v-else class="portfolio-risk-panel">
+                                    <div v-if="riskHasData" class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">组合风险指标</div>
+                                        <div class="portfolio-risk-grid">
+                                            <div v-for="item in riskMetricList" :key="item.key" class="portfolio-risk-metric">
+                                                <div class="portfolio-risk-label">{{ item.label }}</div>
+                                                <div class="portfolio-risk-value">{{ item.value }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">风控规则 <span class="portfolio-risk-sub">(集中度/止损/止盈/回撤熔断)</span></div>
+                                        <div v-for="rule in riskData.rules" :key="rule.rule_id" class="portfolio-rule-item" :class="rule.triggered ? 'portfolio-rule-warn' : ''">
+                                            <span class="portfolio-rule-badge" :class="rule.triggered ? 'portfolio-rule-badge-warn' : 'portfolio-rule-badge-ok'">{{ rule.triggered ? '触发' : '正常' }}</span>
+                                            <span class="portfolio-rule-type">{{ rule.type }}</span>
+                                            <span class="portfolio-rule-msg">{{ rule.message || (rule.triggered ? '' : '未触发') }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-if="riskData.rebalance" class="portfolio-risk-section">
+                                        <div class="portfolio-risk-section-title">再平衡建议 <span class="portfolio-risk-sub">(波动率目标仓位 vs 当前权重)</span></div>
+                                        <div class="portfolio-table-wrap">
+                                            <table class="portfolio-table">
+                                                <thead><tr><th>标的</th><th>当前权重</th><th>目标权重</th><th>调整</th></tr></thead>
+                                                <tbody>
+                                                    <tr v-for="(diff, code) in riskData.rebalance.diffs" :key="code">
+                                                        <td>{{ code }}</td>
+                                                        <td>{{ fmtNum(riskData.rebalance.current[code], 4) }}</td>
+                                                        <td>{{ fmtNum(riskData.rebalance.targets[code], 4) }}</td>
+                                                        <td :class="signClass(diff * 100)">{{ fmtSignedPct(diff * 100) }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div v-if="riskNote" class="portfolio-chart-note">{{ riskNote }}</div>
                                 </div>
                             </template>
                         </div>
@@ -788,4 +831,4 @@
                             </template>
                         </el-dialog>
                     </div>
-                </div>`,setup(){const{ref:a,watch:i,onUnmounted:f}=Vue,e=y("qcState");if(!e)return{};function r(){if(!e.hasMoreAiHistory||!e.loadMoreAiHistory||e.currentPage.value!=="ai"||e.currentSubPage.value!=="history")return;const t=document.documentElement;t.scrollTop+window.innerHeight>=t.scrollHeight-300&&e.loadMoreAiHistory()}window.addEventListener("scroll",r,{passive:!0}),f(()=>window.removeEventListener("scroll",r));const l=a(null),o=a(!1),g=[{key:"n5",label:"5 日"},{key:"n10",label:"10 日"},{key:"n20",label:"20 日"}];function b(t){return!t||t.total===0||t.rate===null||t.rate===void 0?"--":t.rate.toFixed(2)+"%"}const n=a(5);function k(t){n.value=t}function w(t,s){if(!t)return"--";if(t.available===!1)return"— 数据不可达";const h=t["hit_n"+s];return h===!0?"✓ 命中":h===!1?"✗ 未中":"– 中性/待验证"}async function v(){o.value=!0;try{const s=await(await fetch("/api/ai/track")).json();l.value=s&&s.success?s.data:null}catch(t){console.warn("[eval-track] 评估命中率加载失败:",t),l.value=null}finally{o.value=!1}}i(function(){return e.currentPage.value+"/"+e.currentSubPage.value},function(t){t==="ai/history"&&v()},{immediate:!0});const x=window.__quantModules&&window.__quantModules.portfolio?window.__quantModules.portfolio.create({}):{},{positions:p,summary:q,trades:C,loading:_,loadError:S,showAddForm:H,addForm:z,addSaving:W,tradeFormVisible:E,tradeForm:I,tradeSaving:F,portfolioTab:D,equityDays:d,equityLoading:T,equityNote:R,equityHasData:P,loadPortfolio:c,addPosition:A,removePosition:M,openTradeForm:L,submitTrade:V,loadTrades:m,loadEquity:u,fmtSigned:B,fmtSignedPct:N,signClass:$}=x;return i(p,function(t){window.__quantModules&&window.__quantModules.pinyin&&window.__quantModules.pinyin.registerExtraStocks((t||[]).map(function(s){return{code:s.stock_code,name:s.stock_name||s.stock_code}}))},{deep:!0}),i(function(){return e.currentPage.value+"/"+e.currentSubPage.value},function(t){t==="ai/portfolio"?(c(),m(),u(d?d.value:30)):t==="ai/overview"&&c()},{immediate:!0}),{...e,trackData:l,trackLoading:o,trackWindows:g,fmtTrackRate:b,loadTrack:v,trackWindow:n,setTrackWindow:k,trackHitText:w,positions:p,summary:q,trades:C,loading:_,loadError:S,showAddForm:H,addForm:z,addSaving:W,tradeFormVisible:E,tradeForm:I,tradeSaving:F,portfolioTab:D,equityDays:d,equityLoading:T,equityNote:R,equityHasData:P,loadPortfolio:c,addPosition:A,removePosition:M,openTradeForm:L,submitTrade:V,loadTrades:m,loadEquity:u,fmtSigned:B,fmtSignedPct:N,signClass:$}}}})();
+                </div>`,setup(){const{ref:a,watch:i,onUnmounted:g}=Vue,e=f("qcState");if(!e)return{};function n(){if(!e.hasMoreAiHistory||!e.loadMoreAiHistory||e.currentPage.value!=="ai"||e.currentSubPage.value!=="history")return;const t=document.documentElement;t.scrollTop+window.innerHeight>=t.scrollHeight-300&&e.loadMoreAiHistory()}window.addEventListener("scroll",n,{passive:!0}),g(()=>window.removeEventListener("scroll",n));const l=a(null),o=a(!1),b=[{key:"n5",label:"5 日"},{key:"n10",label:"10 日"},{key:"n20",label:"20 日"}];function k(t){return!t||t.total===0||t.rate===null||t.rate===void 0?"--":t.rate.toFixed(2)+"%"}const v=a(5);function w(t){v.value=t}function x(t,s){if(!t)return"--";if(t.available===!1)return"— 数据不可达";const y=t["hit_n"+s];return y===!0?"✓ 命中":y===!1?"✗ 未中":"– 中性/待验证"}async function p(){o.value=!0;try{const s=await(await fetch("/api/ai/track")).json();l.value=s&&s.success?s.data:null}catch(t){console.warn("[eval-track] 评估命中率加载失败:",t),l.value=null}finally{o.value=!1}}i(function(){return e.currentPage.value+"/"+e.currentSubPage.value},function(t){t==="ai/history"&&p()},{immediate:!0});const q=window.__quantModules&&window.__quantModules.portfolio?window.__quantModules.portfolio.create({}):{},{positions:m,summary:C,trades:_,loading:S,loadError:H,showAddForm:z,addForm:W,addSaving:E,tradeFormVisible:D,tradeForm:I,tradeSaving:F,portfolioTab:T,equityDays:r,equityLoading:R,equityNote:P,equityHasData:M,loadPortfolio:d,addPosition:A,removePosition:L,openTradeForm:V,submitTrade:B,loadTrades:u,loadEquity:h,fmtSigned:N,fmtSignedPct:$,signClass:K,riskTab:O,riskLoading:G,riskNote:j,riskHasData:Y,riskData:Q,riskMetricList:U,loadRisk:c}=q;return i(m,function(t){window.__quantModules&&window.__quantModules.pinyin&&window.__quantModules.pinyin.registerExtraStocks((t||[]).map(function(s){return{code:s.stock_code,name:s.stock_name||s.stock_code}}))},{deep:!0}),i(function(){return e.currentPage.value+"/"+e.currentSubPage.value},function(t){t==="ai/portfolio"?(d(),u(),h(r?r.value:30),typeof c=="function"&&c()):t==="ai/overview"&&d()},{immediate:!0}),{...e,trackData:l,trackLoading:o,trackWindows:b,fmtTrackRate:k,loadTrack:p,trackWindow:v,setTrackWindow:w,trackHitText:x,positions:m,summary:C,trades:_,loading:S,loadError:H,showAddForm:z,addForm:W,addSaving:E,tradeFormVisible:D,tradeForm:I,tradeSaving:F,portfolioTab:T,equityDays:r,equityLoading:R,equityNote:P,equityHasData:M,loadPortfolio:d,addPosition:A,removePosition:L,openTradeForm:V,submitTrade:B,loadTrades:u,loadEquity:h,fmtSigned:N,fmtSignedPct:$,signClass:K,riskTab:O,riskLoading:G,riskNote:j,riskHasData:Y,riskData:Q,riskMetricList:U,loadRisk:c}}}})();

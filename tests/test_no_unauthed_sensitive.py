@@ -42,6 +42,12 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/quality/score?symbol=000001.SZ", None),
     ("get", "/api/data-dict", None),
     ("get", "/api/lineage", None),
+    # V5.2 T-5.2.2/T-5.2.6: 回测基准/报告导出 (策略与数据敏感)
+    ("get", "/api/backtest/benchmarks", None),
+    ("post", "/api/backtest/export", {"fmt": "csv", "result": {"strategy_id": "s1"}}),
+    # V5.3 T-5.3.1/T-5.3.4: 组合风险指标/规则评估 (持仓私密数据)
+    ("get", "/api/portfolio/risk", None),
+    ("get", "/api/portfolio/risk-rules", None),
 ]
 
 

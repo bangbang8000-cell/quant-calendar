@@ -4955,3 +4955,20 @@ text {
 .progress-bar.status-warn { background: var(--color-warning); }
 .progress-bar.status-bad { background: var(--color-danger); }
 
+/* V5.3 T-5.3.4: 组合风控 Tab (指标卡/规则/再平衡建议) */
+.portfolio-risk-panel { display: flex; flex-direction: column; gap: 4px; }
+.portfolio-risk-section { margin-bottom: 8px; }
+.portfolio-risk-section-title { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); margin: 8px 0 10px; }
+.portfolio-risk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.portfolio-risk-metric { background: var(--bg-card-header); border-radius: var(--r-md); padding: 10px 12px; }
+.portfolio-risk-label { font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 6px; }
+.portfolio-risk-value { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); }
+.portfolio-risk-sub { font-size: var(--font-xs); color: var(--text-secondary); font-weight: var(--font-regular); }
+.portfolio-rule-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border-light); border-radius: var(--r-md); margin-bottom: 6px; font-size: var(--font-sm); }
+.portfolio-rule-warn { border-color: var(--color-danger); background: var(--bg-card-header); }
+.portfolio-rule-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: var(--font-xs); font-weight: var(--font-medium); }
+.portfolio-rule-badge-ok { background: var(--badge-success-bg); color: var(--el-success); }
+.portfolio-rule-badge-warn { background: var(--badge-danger-bg); color: var(--color-danger); }
+.portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
+.portfolio-rule-msg { color: var(--text-secondary); }
+
