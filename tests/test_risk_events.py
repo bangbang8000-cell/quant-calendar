@@ -1,11 +1,9 @@
 """V5.3 T-5.3.5: 风险预警接入事件总线测试 (TEST-PLAN 4.1 test_risk_events.py)
 
 - risk_alerts_to_events: 触发规则 → 事件, 未触发排除
-- RiskEventProvider: 空仓返回 [], 有触发返回事件, 数据不可达不抛错
+- RiskEventProvider: 空仓返回 [], 有持仓(假数据)触发事件, 事件字段完整
 - register_risk_provider 幂等 (重复注册不重复)
-- 事件字段完整 (type/title/date/severity/action)
 """
-import asyncio
 import os
 import sys
 import tempfile
@@ -62,14 +60,31 @@ def pf_db():
     db.DATA_DIR, db.DB_FILE = old_data, old_file
 
 
+@pytest.fixture
+def fake_data(pf_db, monkeypatch):
+    """注入假行情 (不触网, 快且确定)"""
+    from data_sources import data_source_manager
+
+    def _daily_basic(ts_code):
+        return {'close': 9.5, 'pct_chg': 1.2}
+
+    def _kline(ts_code, period='daily', limit=30):
+        days = []
+        for i in range(limit):
+            days.append([f'2026-08-{i + 1:02d}', 10.0 - i * 0.05, 10.0 - i * 0.05])
+        return {'data': days}
+
+    monkeypatch.setattr(data_source_manager, 'get_daily_basic', _daily_basic)
+    monkeypatch.setattr(data_source_manager, 'get_kline_data', _kline)
+    return data_source_manager
+
+
 class TestProvider:
     def test_empty_portfolio_returns_empty(self, pf_db):
         p = RiskEventProvider("risk_user")
         assert p.fetch_events() == []
 
-    def test_with_position_no_crash_wellformed(self, pf_db):
-        """有持仓 → 返回事件列表 (数据可达时规则可能真实触发, 不可达时为空);
-        无论是否触发均不抛错且事件字段完整。"""
+    def test_with_position_returns_wellformed(self, pf_db, fake_data):
         import db
         db.portfolio_upsert_position("risk_user", "600000.SH", "浦发银行",
                                      10.0, 100.0)
