@@ -113,12 +113,12 @@ class DataPortal:
         return out
 
     # ─── 缓存 ───
-    def _cache_key(self, kind, symbol, period, adjust, kw):
+    def _cache_key(self, kind, symbol, period, adjust, kw, as_of=None):
         try:
-            extra = tuple(sorted((k, v) for k, v in kw.items() if k not in ("symbol", "period", "adjust")))
+            extra = tuple(sorted((k, v) for k, v in kw.items() if k not in ("symbol", "period", "adjust", "as_of")))
         except TypeError:
             extra = ()
-        return (kind, symbol, period, adjust, extra)
+        return (kind, symbol, period, adjust, as_of, extra)
 
     def _cache_get(self, key):
         with self._lock:
@@ -171,9 +171,13 @@ class DataPortal:
         return result or []
 
     # ─── 主入口 ───
-    def fetch(self, kind, symbol, *, period="daily", adjust="qfq", **kw):
-        """统一取数: 缓存 → 逐源(限流+重试) → 口径 → 缓存。全源失败抛 DataPortalError。"""
-        key = self._cache_key(kind, symbol, period, adjust, kw)
+    def fetch(self, kind, symbol, *, period="daily", adjust="qfq", as_of=None, **kw):
+        """统一取数: 缓存 → 逐源(限流+重试) → 口径 → PIT(as_of) → 缓存。
+
+        as_of: 指定后按 PIT 过滤 trade_date <= as_of 的行 (防前视, 安全默认静默过滤)。
+        全源失败抛 DataPortalError。
+        """
+        key = self._cache_key(kind, symbol, period, adjust, kw, as_of=as_of)
         cached = self._cache_get(key)
         if cached is not None:
             self._cache_hits += 1
@@ -196,6 +200,9 @@ class DataPortal:
                 continue
             if rows:
                 rows = self.normalize(rows, kind)
+                if as_of is not None:
+                    from pit import pit_filter
+                    rows = pit_filter(rows, as_of, strict=False)
                 self._stats[adapter.name]["successes"] += 1
                 self._cache_set(key, rows)
                 return rows
