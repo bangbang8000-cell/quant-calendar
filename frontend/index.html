@@ -181,10 +181,13 @@
         <qc-onboarding></qc-onboarding>
         <!-- V5.6 (T-5.6.2): 空态/错误态通用组件 qc-empty / qc-error (按需挂载) -->
 
-        <!-- v3.2.0-T13: 浮动 AI 按钮 -->
-        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
+        <!-- v3.2.0-T13: 浮动 AI 按钮 (V5.6 T-5.6.5: 补 aria-label 可访问性) -->
+        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股" role="button" tabindex="0" aria-label="打开 AI 智能问股">
             <span class="ai-fab-icon">🤖</span>
         </div>
+
+        <!-- V5.6 (T-5.6.5): 无障碍播报区 (aria-live, 加载/通知/错误播报) -->
+        <div class="a11y-live" aria-live="polite" role="status"></div>
 
     
 </div>

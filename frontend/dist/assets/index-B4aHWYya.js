@@ -1065,6 +1065,7 @@ var fc=(s,e)=>()=>(e||s((e={exports:{}}).exports,e),e.exports);var pc=fc((Ec,_e)
                  :show-close="false" :close-on-click-modal="true" :append-to-body="true">
         <div class="command-palette-body">
           <el-input ref="inputEl" v-model="query" size="large" placeholder="搜索股票 / 菜单 / 指令…"
+                    aria-label="搜索股票 / 菜单 / 指令"
                     @keydown.up.prevent="onUp" @keydown.down.prevent="onDown"
                     @keydown.enter.prevent="onEnter">
             <template #prefix><span class="opacity-6">🔍</span></template>

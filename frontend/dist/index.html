@@ -37,7 +37,7 @@
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
     <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
-<script type="module" crossorigin src="/assets/index-DxvWTG4d.js"></script>
+<script type="module" crossorigin src="/assets/index-B4aHWYya.js"></script>
 
 <body>
     <!-- v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（无内联样式），
@@ -182,10 +182,13 @@
         <qc-onboarding></qc-onboarding>
         <!-- V5.6 (T-5.6.2): 空态/错误态通用组件 qc-empty / qc-error (按需挂载) -->
 
-        <!-- v3.2.0-T13: 浮动 AI 按钮 -->
-        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">
+        <!-- v3.2.0-T13: 浮动 AI 按钮 (V5.6 T-5.6.5: 补 aria-label 可访问性) -->
+        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股" role="button" tabindex="0" aria-label="打开 AI 智能问股">
             <span class="ai-fab-icon">🤖</span>
         </div>
+
+        <!-- V5.6 (T-5.6.5): 无障碍播报区 (aria-live, 加载/通知/错误播报) -->
+        <div class="a11y-live" aria-live="polite" role="status"></div>
 
     
 </div>
