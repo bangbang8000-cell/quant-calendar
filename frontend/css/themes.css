@@ -4995,6 +4995,12 @@ text {
 .onboarding-title { font-size: var(--font-lg); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 8px; }
 .onboarding-desc { font-size: var(--font-sm); color: var(--text-secondary); line-height: var(--lh-relaxed); margin-bottom: 20px; min-height: 42px; }
 .onboarding-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
+/* V5.6 T-5.6.2: 空态/错误态体系化通用组件 (qc-empty / qc-error) */
+.qc-empty-state, .qc-error-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 48px 24px; text-align: center; }
+.qc-empty-icon, .qc-error-icon { font-size: 40px; line-height: 1; opacity: 0.8; }
+.qc-empty-title, .qc-error-title { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); }
+.qc-empty-desc, .qc-error-desc { font-size: var(--font-sm); color: var(--text-tertiary); max-width: 360px; line-height: var(--lh-relaxed); }
 .portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
 .portfolio-rule-msg { color: var(--text-secondary); }
 

@@ -72,6 +72,11 @@
     'common.search': 'Search',
     'common.empty': 'No data',
     'common.retry': 'Retry',
+    // V5.6 T-5.6.2: standardized empty/error state copy
+    'common.emptyTitle': 'No data',
+    'common.emptyDesc': 'Nothing to show here yet',
+    'common.errorTitle': 'Load failed',
+    'common.errorDesc': 'Something went wrong, please retry',
     'common.refresh': 'Refresh',
     'common.refreshing': 'Refreshing data...',
     'common.export': 'Export',
