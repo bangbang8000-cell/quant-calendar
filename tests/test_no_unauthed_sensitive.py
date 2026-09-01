@@ -59,6 +59,13 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/alerts/channels", None),
     ("get", "/api/alerts/silence", None),
     ("post", "/api/alerts/silence", {"minutes": 60}),
+    # V5.5 T-5.5.2/5.5.3: 报表中心 — 订阅/生成/导出
+    ("get", "/api/reports/subscriptions", None),
+    ("post", "/api/reports/subscriptions", {"schedule": "daily"}),
+    ("delete", "/api/reports/subscriptions/1", None),
+    ("post", "/api/reports/subscriptions/1/run", {}),
+    ("get", "/api/reports/generate", None),
+    ("get", "/api/reports/export", None),
 ]
 
 

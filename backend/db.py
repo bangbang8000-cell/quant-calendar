@@ -236,6 +236,17 @@ def migrate() -> None:
                 " user TEXT PRIMARY KEY, until_ts REAL NOT NULL )")
             conn.commit()
             logger.info("[db] migrate: alert_silence 表就绪")
+            # V5.5 (T-5.5.3): 报表订阅表 (幂等建表)
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS report_subscriptions ("
+                " id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT NOT NULL,"
+                " schedule TEXT NOT NULL, blocks TEXT NOT NULL DEFAULT '[]',"
+                " channels TEXT NOT NULL DEFAULT '[]',"
+                " recipients TEXT NOT NULL DEFAULT '[]',"
+                " enabled INTEGER NOT NULL DEFAULT 1,"
+                " last_run_date TEXT, created_at TEXT NOT NULL)")
+            conn.commit()
+            logger.info("[db] migrate: report_subscriptions 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:

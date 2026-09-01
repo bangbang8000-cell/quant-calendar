@@ -403,6 +403,19 @@ class Scheduler:
                         logger.warning('scheduler:215 静默异常 (Exception)')
             await asyncio.sleep(60)  # 避开重复触发
 
+    async def report_subscription_task(self):
+        """V5.5 T-5.5.3: 报表订阅任务 — 每 10 分钟检查到期订阅并投递。"""
+        while self.running:
+            try:
+                from report_subscribe import run_due_subscriptions
+                result = run_due_subscriptions()
+                if result.get("dispatched", 0) > 0:
+                    logger.info("📮 报表订阅投递: %d 条 (%d 个到期)",
+                                result.get("dispatched"), result.get("total"))
+            except Exception as e:
+                logger.warning("报表订阅任务异常 (忽略): %s", e)
+            await asyncio.sleep(600)
+
     async def auto_evaluate_task(self):
         """自动评估任务"""
         while self.running:
@@ -1158,6 +1171,8 @@ class Scheduler:
         asyncio.create_task(self.event_alert_scan_task())
         # v3.18 (FR-3.18.9): 每日 AI 事实护栏抽查
         asyncio.create_task(self.fact_check_audit_task())
+        # V5.5 T-5.5.3: 报表订阅 — 定时生成 + 通知中心投递
+        asyncio.create_task(self.report_subscription_task())
 
     async def stop(self):
         """停止调度器"""
