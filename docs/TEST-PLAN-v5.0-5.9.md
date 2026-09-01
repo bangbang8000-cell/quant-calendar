@@ -192,18 +192,22 @@ WCAG/令牌门禁扩展 + 引导链路 e2e（阻塞或人工验收）。✅ test
 
 ### 8.1 新增测试资产（目标 +70 用例）
 
-| 测试文件 | 覆盖 | 用例数 |
-|---|---|---|
-| tests/test_cache.py | 命中/失效/数据版本联动（5.1 血缘） | ~25 |
-| tests/test_jobs_queue.py | 任务提交/进度/取消/失败重试/结果持久化 | ~30 |
-| tests/test_perf_gates.py | P50/P95 延迟 + 首屏 + 批量吞吐基准（收紧阈值入 CI） | ~15 |
+| 测试文件 | 覆盖 | 用例数 | 状态 |
+|---|---|---|---|
+| tests/test_cache2.py | 两级缓存命中/失效/数据版本联动（5.1 血缘） | ~25 | ✅ 21 |
+| tests/test_jobs_queue.py | 任务提交/进度/取消/失败重试/结果持久化 + API | ~30 | ✅ 23 |
+| tests/test_jobs_integration.py | 4 类批量任务接入队列（mock 昂贵业务） | ~10 | ✅ 9 |
+| tests/test_downsample.py | 分块 + LTTB 降采样 + 年视图基准守护 | ~20 | ✅ 21 |
+| tests/test_perf_gates.py | 10 万行渲染比例/延迟基准 + CI 门禁断言 | ~15 | ✅ 12 |
+
+**合计新增 86 用例达标（21+23+9+21+12=86，目标 +70）。** 注：既有 tests/test_cache.py（前端 core.js 缓存）与 tests/test_performance.py（v3.17.9 图表降采样）保留，后端两级缓存用 test_cache2.py。
 
 ### 8.2 专项验证
-- 批量 50 只评估提交后台任务：事件循环不阻塞（计时断言）、期间可并发请求。
-- 全市场回测/因子在阈值内完成（性能基准门禁）。
+- 批量 50 只评估提交后台任务：事件循环不阻塞（提交 50 任务 <1s 计时断言）✅。
+- 全市场回测/因子在阈值内完成（性能基准门禁）：10 万点 LTTB <500ms、10 万行 sliceVisible 50 次 <20ms ✅。
 
 ### 8.3 门禁
-jobs/cache ≥70%；性能门禁**阻塞**（退化即红，不再 continue-on-error）。
+jobs/cache/downsample ≥70%（实测 94.3%）✅；性能门禁**阻塞**（退化即红，不 continue-on-error）✅ 已入 ci.yml。
 
 ---
 
