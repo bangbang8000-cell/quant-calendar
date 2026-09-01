@@ -30,9 +30,8 @@ def _load_all():
             logger.warning("读取 SelectionSpec 失败: %s", e)
     return {}
 def _save_all(data):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(SPEC_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    from reliability.atomic import atomic_write_json
+    atomic_write_json(SPEC_FILE, data)
 def get_selection_spec(sid):
     all_specs = _load_all()
     spec = dict(_default_spec())

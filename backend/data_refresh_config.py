@@ -46,9 +46,9 @@ def save_config(config: dict) -> dict:
     for key in DEFAULT_CONFIG:
         if key in config:
             current[key] = config[key]
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(current, f, ensure_ascii=False, indent=2)
+    # V5.0 T-5.0.5: 原子写 (tmp+replace)
+    from reliability.atomic import atomic_write_json
+    atomic_write_json(CONFIG_FILE, current)
     return current
 
 

@@ -202,12 +202,20 @@ class Scheduler:
                         history = json.load(f)
                 except (json.JSONDecodeError, OSError):
                     history = []
-            history.append(record)
-            # 超限滚动删除最旧记录
-            if len(history) > _HISTORY_MAX:
-                history = history[-_HISTORY_MAX:]
-            with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-                json.dump(history, f, ensure_ascii=False, indent=2)
+            # V5.0 T-5.0.5: 读-改-写整段加锁 + 原子写 (tmp+replace), 防崩溃半写/并发丢记录
+            from reliability.atomic import atomic_write_json, file_lock
+            with file_lock(HISTORY_FILE):
+                history = []
+                if os.path.exists(HISTORY_FILE):
+                    try:
+                        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                            history = json.load(f)
+                    except (json.JSONDecodeError, OSError):
+                        history = []
+                history.append(record)
+                if len(history) > _HISTORY_MAX:
+                    history = history[-_HISTORY_MAX:]
+                atomic_write_json(HISTORY_FILE, history)
         except Exception as e:
             logger.warning("调度历史持久化失败 (忽略): %s", e)
 

@@ -80,8 +80,9 @@ def save_state(state: dict) -> dict:
             "last_run": s.get("last_run"),
             "last_holdings": s.get("last_holdings"),
         }
-    with open(GOV_FILE, "w", encoding="utf-8") as f:
-        json.dump(clean, f, ensure_ascii=False, indent=2)
+    # V5.0 T-5.0.5: 原子写 (tmp+replace)
+    from reliability.atomic import atomic_write_json
+    atomic_write_json(GOV_FILE, clean)
     return clean
 
 
