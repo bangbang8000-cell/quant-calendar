@@ -87,6 +87,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("插件加载异常(不影响主程序): %s", e)
     logger.info("🚀 量化选股日历服务启动完成")
+    # V5.0 T-5.0.3: 启动自检 (依赖/目录/DB/配置) → 持久化报告 + 摘要日志 (失败不阻塞启动)
+    try:
+        from reliability import checks
+        _report = checks.run_checks(app_version=APP_VERSION)
+        logger.info("%s: ok=%s warn=%s fail=%s",
+                    "✅ 启动自检通过" if _report["healthy"] else "⚠️ 启动自检有告警/失败",
+                    _report["ok_count"], _report["warn_count"], _report["fail_count"])
+    except Exception as _e:
+        logger.warning("启动自检执行失败: %s", _e)
     yield
     await scheduler.stop()
     logger.info("⏰ 定时任务调度器已停止")
