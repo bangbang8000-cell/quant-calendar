@@ -154,6 +154,11 @@ def run_daily_pull(pool: list = None, date: str = None) -> dict:
              "latest_date": None, "date": date or datetime.now().strftime('%Y-%m-%d')}
     if not pool:
         stats["message"] = "股票池为空"
+        try:
+            from lineage import record_pull
+            record_pull("kline", stats, trigger="scheduler")
+        except Exception:
+            logger.debug("空池批次登记跳过", exc_info=True)
         return stats
 
     from data_sources import data_source_manager, record_call, retry_with_backoff
@@ -212,6 +217,11 @@ def run_daily_pull(pool: list = None, date: str = None) -> dict:
     record_call("data_pipeline", stats["failed"] == 0, 0)  # 健康记录: 批次级
     logger.info(f"📥 日线拉取完成: {stats['pulled']}/{stats['total']} 成功, "
                 f"最新日期 {stats['latest_date']}")
+    try:
+        from lineage import record_pull
+        record_pull("kline", stats, trigger="scheduler")  # V5.1 T-5.1.6 血缘批次
+    except Exception:
+        logger.warning("日线血缘批次登记失败", exc_info=True)
     return stats
 
 
@@ -241,6 +251,11 @@ def run_financial_pull(pool: list = None) -> dict:
     stats = {"total": len(pool), "pulled": 0, "failed": 0, "errors": []}
     if not pool:
         stats["message"] = "股票池为空"
+        try:
+            from lineage import record_pull
+            record_pull("financial", stats, trigger="scheduler")
+        except Exception:
+            logger.debug("空池批次登记跳过", exc_info=True)
         return stats
 
     from data_sources import data_source_manager
@@ -278,6 +293,11 @@ def run_financial_pull(pool: list = None) -> dict:
         stats["errors"].append(f"snapshot: {e}")
 
     logger.info(f"📊 财务拉取完成: {stats['pulled']}/{stats['total']} 成功")
+    try:
+        from lineage import record_pull
+        record_pull("financial", stats, trigger="scheduler")  # V5.1 T-5.1.6 血缘批次
+    except Exception:
+        logger.warning("财务血缘批次登记失败", exc_info=True)
     return stats
 
 
