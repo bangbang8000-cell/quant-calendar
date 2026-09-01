@@ -73,6 +73,11 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/jobs/J-test", None),
     ("post", "/api/jobs/J-test/cancel", {}),
     ("delete", "/api/jobs/J-test", None),
+    # V5.8 T-5.8.1: RBAC 2.0 — 角色/权限管理 (权限体系敏感)
+    ("get", "/api/rbac/roles", None),
+    ("post", "/api/rbac/roles", {"role_id": "x", "permissions": []}),
+    ("put", "/api/rbac/roles/x", {"permissions": []}),
+    ("delete", "/api/rbac/roles/x", None),
 ]
 
 

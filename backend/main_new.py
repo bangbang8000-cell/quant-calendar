@@ -24,6 +24,7 @@ from rate_limit import setup_rate_limiter
 from api.v1.router import api_router
 from api.v1.errors import register_error_handlers
 import job_tasks  # noqa: F401  # V5.7 T-5.7.3: 批量任务注册到任务队列
+import rbac  # noqa: F401  # V5.8 T-5.8.1: RBAC 2.0 权限引擎
 
 # 配置日志 (v3.4.0-T6: 按日轮转 + 保留 30 天)
 import os
