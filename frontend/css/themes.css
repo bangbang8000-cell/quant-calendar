@@ -4714,6 +4714,10 @@ text {
 .sweep-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px; border-radius: var(--r-md); }
 .sweep-best { background: var(--bg-selected); }
 .sweep-table { border: 1px solid var(--border-light); border-radius: var(--r-md); padding: 8px; }
+/* V5.2 T-5.2.4: 参数稳定性诊断面板 */
+.param-stability { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: var(--r-md); background: var(--bg-card); }
+.param-stability-overfit { border-color: var(--color-danger); }
+.param-stability-robust { border-color: var(--color-success); }
 /* ===== AI 用量 (v3.18.2 UI 优化): 实时指示 + 强调卡 + 模型占比 + 趋势(今日高亮) ===== */
 .usage-ai-actions { align-items: center; }
 .usage-ai-live { display: inline-flex; align-items: center; gap: 8px; font-size: var(--font-xs); color: var(--text-tertiary); }

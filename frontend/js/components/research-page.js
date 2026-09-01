@@ -229,6 +229,14 @@
                                     <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
                                 </div>
                                 <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
+                                <!-- V5.2 T-5.2.4: 参数稳定性诊断 (高原 + 过拟合判定) -->
+                                <div v-if="sweepStability" class="param-stability mt-8" :class="{ 'param-stability-overfit': sweepStability.verdict === 'overfit', 'param-stability-robust': sweepStability.verdict === 'robust' }">
+                                    <span class="text-sm-secondary">参数稳定性:</span>
+                                    <span v-if="sweepStability.verdict === 'overfit'" class="text-danger-semibold">过拟合风险 (扰动衰减比 {{ sweepStability.spread_ratio }})</span>
+                                    <span v-else-if="sweepStability.verdict === 'robust'" class="text-sm-primary">稳健高原 (衰减比 {{ sweepStability.spread_ratio }}, 高原覆盖 {{ (sweepStability.plateau_ratio * 100).toFixed(0) }}%)</span>
+                                    <span v-else class="text-sm-tertiary">{{ sweepStability.note || '稳定性诊断不可用' }}</span>
+                                    <span v-if="sweepStability.verdict !== 'unknown'" class="text-sm-tertiary">最优参数 {{ sweepStability.best_param }} · 高原区间 [{{ sweepStability.plateau_min }}, {{ sweepStability.plateau_max }}]</span>
+                                </div>
                                 <div v-if="sweepResult && sweepResult.length" class="sweep-table mt-8">
                                     <div v-for="(row, i) in sweepResult" :key="i" class="sweep-row flex-wrap-gap-12-mb16-c" :class="{ 'sweep-best': i === 0 }">
                                         <span class="text-sm-secondary w-260">参数: {{ JSON.stringify(row.params) }}</span>
@@ -1106,6 +1114,7 @@
       const sweepResult = ref(null);
       const sweepMessage = ref('');
       const sweepLoading = ref(false);
+      const sweepStability = ref(null); // V5.2 T-5.2.4: 参数稳定性诊断
 
       async function runSweep() {
         if (!activeStrategyId.value) { ElementPlus.ElMessage.warning('请先选择策略'); return; }
@@ -1121,6 +1130,7 @@
           if (res && Array.isArray(res.results)) {
             sweepResult.value = res.results;
             sweepMessage.value = '完成 ' + res.count + ' 组' + (res.data_degraded ? ' (数据不可达, 结果降级)' : '');
+            sweepStability.value = res.param_stability || null;
           } else {
             sweepMessage.value = (res && res.detail) || '扫描失败';
           }
@@ -1434,6 +1444,8 @@
         customGenLoading, customBtLoading, customOptLoading,
         loadCustoms, genCustomCode, loadCustomCode, runCustomBacktest, runCustomOptimize, copyCustomCode,
         tagClass, formatPrice, chgClass, chgText,
+        // V4.0 M2-1 参数扫描 (修复未进 return 的绑定缺口) + V5.2 T-5.2.4 稳定性
+        sweepGrid, sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep,
       };
     },
   };

@@ -269,8 +269,21 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
     except Exception as e:
         logger.exception('策略 %s 参数扫描失败', sid)
         raise HTTPException(status_code=500, detail=f'参数扫描失败: {e}')
-    return {'sid': sid, 'data_degraded': not is_real, 'count': len(results),
+    resp = {'sid': sid, 'data_degraded': not is_real, 'count': len(results),
             'metric': metric, 'results': results}
+    # V5.2 T-5.2.4: 参数稳定性诊断 (单参数维度 → 高原 + 过拟合判定)
+    try:
+        if len(param_grid) == 1:
+            from param_stability import overfit_diagnosis
+            pkey = next(iter(param_grid))
+            resp['param_stability'] = overfit_diagnosis(results, pkey, perf_key=metric)
+        else:
+            resp['param_stability'] = {'verdict': 'unknown',
+                                       'note': '多维网格: 请按单参数维度查看稳定性'}
+    except Exception as e2:
+        logger.warning('参数稳定性诊断失败: %s', e2)
+        resp['param_stability'] = {'verdict': 'unknown', 'note': '诊断不可用'}
+    return resp
 
 
 @router.get('/{sid}/runs')
