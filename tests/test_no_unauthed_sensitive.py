@@ -78,6 +78,16 @@ SENSITIVE_ENDPOINTS = [
     ("post", "/api/rbac/roles", {"role_id": "x", "permissions": []}),
     ("put", "/api/rbac/roles/x", {"permissions": []}),
     ("delete", "/api/rbac/roles/x", None),
+    # V5.8 T-5.8.2: 协作 — 共享组/成员/股票/备注/组合可见性 (私密与共享数据)
+    ("get", "/api/collab/groups/my", None),
+    ("post", "/api/collab/groups", {"name": "g"}),
+    ("post", "/api/collab/groups/G1/members", {"username": "bob"}),
+    ("delete", "/api/collab/groups/G1/members/bob", None),
+    ("post", "/api/collab/groups/G1/stocks", {"code": "600000.SH"}),
+    ("post", "/api/collab/notes/600000.SH", {"note": "x"}),
+    ("get", "/api/collab/notes/600000.SH", None),
+    ("get", "/api/collab/portfolio-visibility", None),
+    ("put", "/api/collab/portfolio-visibility", {"visible_to": "all"}),
 ]
 
 

@@ -39,6 +39,7 @@ from .data_dict import router as data_dict_router
 from .lineage import router as lineage_router
 from .jobs import router as jobs_router
 from .rbac import router as rbac_router
+from .collab import router as collab_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -83,5 +84,6 @@ api_router.include_router(data_dict_router)
 api_router.include_router(lineage_router)
 api_router.include_router(jobs_router)
 api_router.include_router(rbac_router)
+api_router.include_router(collab_router)
 
 __all__ = ["api_router"]
