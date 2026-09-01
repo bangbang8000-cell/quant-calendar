@@ -64,7 +64,7 @@ def param_sweep(strategy, param_grid: Dict[str, List[Any]],
             bt = backtest_holdings(holdings, returns=returns,
                                    start_date=start_date, end_date=end_date)
             if bt.get("success"):
-                results.append({
+                entry = {
                     "params": validated,
                     "total_return": bt["total_return"],
                     "annual_return": bt["annual_return"],
@@ -72,7 +72,11 @@ def param_sweep(strategy, param_grid: Dict[str, List[Any]],
                     "sharpe_ratio": bt["sharpe_ratio"],
                     "win_rate": bt.get("win_rate", 0.0),
                     "overfit_warning": bt.get("overfit_warning", False),
-                })
+                }
+                # V5.2 T-5.2.3: walk-forward 样本外稳定性 (跨折 CV)
+                from walkforward import walkforward_evaluate_result
+                entry.update(walkforward_evaluate_result(bt))
+                results.append(entry)
         except Exception as e:
             logger.info("参数组合 %s 扫描失败: %s", params, e)
     results.sort(key=lambda r: r.get(metric, -999.0), reverse=True)
