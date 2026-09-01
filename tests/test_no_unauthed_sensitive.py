@@ -39,6 +39,7 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/reliability/startup-report", None),
     ("get", "/api/reliability/heal-history", None),
     ("get", "/api/reliability/source-health", None),
+    ("get", "/api/quality/score?symbol=000001.SZ", None),
 ]
 
 
