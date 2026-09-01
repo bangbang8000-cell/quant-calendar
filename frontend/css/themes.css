@@ -298,6 +298,8 @@
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
             --chart-split: #2e4162 ;
             --chart-axis: #53699a ;
+            /* V5.5 (T-5.5.4): 图表画布背景暗色变体 (与 dark-pro --bg-card 一致) */
+            --chart-bg: #1a1a3e ;
             --bg-page-rgb: 15, 15, 35;  /* 页面背景 rgb(loading 遮罩) */
             /* V4.0.2 毛玻璃深色浮层 */
             --glass-bg: rgba(26, 26, 62, 0.72);

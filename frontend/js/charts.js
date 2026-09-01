@@ -71,6 +71,35 @@
   // v3.15 (15.4): 单令牌运行时读取 — ECharts canvas 无法解析 CSS var(), 令牌优先, 字面量兜底
   const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
 
+  // V5.5 (T-5.5.4): 图表语义配色 palette — 语义角色 → 令牌 (令牌优先, 显式字面量兜底)
+  // 语义角色: up/down(涨跌) neutral(中性) accent(强调) risk(风险) warn(警示)
+  //           success(成功) grid/axis(网格/轴线) bg(画布) series(8 序列色)
+  function chartPalette() {
+    return {
+      up: getCSSVar('--color-up') || '#E63946',
+      down: getCSSVar('--color-down') || '#2E7D32',
+      neutral: getCSSVar('--color-neutral') || '#43a047',
+      accent: getCSSVar('--color-accent') || '#F59E0B',
+      risk: getCSSVar('--color-danger') || '#C62828',
+      warn: getCSSVar('--color-warning') || '#FF9800',
+      success: getCSSVar('--color-success') || '#4CAF50',
+      primary: getCSSVar('--primary-color') || '#667eea',
+      grid: getCSSVar('--chart-split') || '#e2e8f0',
+      axis: getCSSVar('--chart-axis') || '#cbd5e1',
+      bg: getCSSVar('--chart-bg') || 'transparent',
+      series: [
+        getCSSVar('--primary-color') || '#667eea',
+        getCSSVar('--color-up') || '#E63946',
+        getCSSVar('--color-down') || '#2E7D32',
+        getCSSVar('--color-accent') || '#F59E0B',
+        getCSSVar('--color-warning') || '#FF9800',
+        getCSSVar('--color-info') || '#1976d2',
+        getCSSVar('--color-success') || '#4CAF50',
+        getCSSVar('--text-tertiary') || '#9ca3af',
+      ],
+    };
+  }
+
   function renderKlineChart(chart, data, period, isIndex = false, isMobile = false) {
     if (!data || data.length === 0) return;
 
@@ -389,8 +418,8 @@
     renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
     renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest,
     renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio,
-    downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS,
-    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS }; },
+    downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette,
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette }; },
   };
   if (typeof window !== 'undefined') {
     if (!window.__quantModules) window.__quantModules = {};
