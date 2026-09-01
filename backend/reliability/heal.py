@@ -18,7 +18,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-_WRITE_LOCK = threading.Lock()
+_WRITE_LOCK = threading.RLock()  # RLock: persist 整段(读-改-写)持有, _save_history 内重入
 _HEAL_HISTORY_MAX = 200
 
 
@@ -98,9 +98,10 @@ def _save_history(store: list) -> None:
 def persist(records: list, max_len: int = None) -> None:
     """追加自愈记录到时间线 (超出上限截断尾部)"""
     cap = max_len or _HEAL_HISTORY_MAX
-    store = _load_history()
-    store.extend(records)
-    _save_history(store[-cap:])
+    with _WRITE_LOCK:  # T-5.0.4: 读-改-写整段加锁, 防并发丢记录
+        store = _load_history()
+        store.extend(records)
+        _save_history(store[-cap:])
 
 
 def heal_history(limit: int = 100) -> list:

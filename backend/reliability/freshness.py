@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-_WRITE_LOCK = threading.Lock()
+_WRITE_LOCK = threading.RLock()  # RLock: record_update 整段(读-改-写)持有, _save 内重入
 
 
 @dataclass
@@ -119,19 +119,20 @@ def record_update(asset_id: str, latest_date: str = None, count: int = None,
     if asset_id not in ASSET_REGISTRY:
         raise ValueError(f"未知数据资产: {asset_id}")
     now = now or datetime.now()
-    store = _load()
-    rec = store.get(asset_id) or {}
-    rec["asset_id"] = asset_id
-    rec["last_update"] = now.isoformat(timespec="seconds")
-    if latest_date is not None:
-        rec["latest_date"] = latest_date
-    if count is not None:
-        rec["count"] = count
-    if detail:
-        rec["detail"] = detail
-    store[asset_id] = rec
-    _save(store)
-    return rec
+    with _WRITE_LOCK:  # T-5.0.4: 读-改-写整段加锁, 防并发丢记录
+        store = _load()
+        rec = store.get(asset_id) or {}
+        rec["asset_id"] = asset_id
+        rec["last_update"] = now.isoformat(timespec="seconds")
+        if latest_date is not None:
+            rec["latest_date"] = latest_date
+        if count is not None:
+            rec["count"] = count
+        if detail:
+            rec["detail"] = detail
+        store[asset_id] = rec
+        _save(store)
+        return rec
 
 
 def get_record(asset_id: str) -> dict:
