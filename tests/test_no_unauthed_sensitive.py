@@ -67,6 +67,12 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/reports/generate", None),
     ("get", "/api/reports/export", None),
     ("get", "/api/reports/today-highlights", None),
+    # V5.7 T-5.7.2: 任务队列 — 提交/查询/取消/清理 (后台任务资源 + 结果数据)
+    ("post", "/api/jobs", {"task_type": "batch_evaluate", "payload": {}}),
+    ("get", "/api/jobs", None),
+    ("get", "/api/jobs/J-test", None),
+    ("post", "/api/jobs/J-test/cancel", {}),
+    ("delete", "/api/jobs/J-test", None),
 ]
 
 
