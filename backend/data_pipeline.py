@@ -114,16 +114,28 @@ def run_pipeline(force: bool = False) -> dict:
     return result
 
 
-def resolve_stock_pool(pool: list = None) -> list:
-    """解析股票池：给定池非空用之；否则用系统覆盖股票列表（全量）"""
+def resolve_stock_pool(pool: list = None, as_of: str = None) -> list:
+    """解析股票池：给定池非空用之；否则用系统覆盖股票列表（全量）。
+
+    V5.1 T-5.1.5: as_of 指定时按 PIT 治理幸存者偏差 — 历史时点纳入当时
+    可交易的退市/改名股 (universe_as_of), 避免用现在成分股回溯高估收益。
+    """
     if pool:
-        return [c for c in pool if c]
-    try:
-        from stock_info import stock_manager
-        return [c for c in stock_manager.stock_map.keys()]
-    except Exception:
-        logger.warning("股票池解析失败, 返回空池", exc_info=True)
-        return []
+        base = [c for c in pool if c]
+    else:
+        try:
+            from stock_info import stock_manager
+            base = [c for c in stock_manager.stock_map.keys()]
+        except Exception:
+            logger.warning("股票池解析失败, 返回空池", exc_info=True)
+            return []
+    if as_of:
+        try:
+            from survivorship import universe_as_of
+            return universe_as_of(base, as_of)
+        except Exception:
+            logger.warning("幸存者偏差治理失败, 退回原池", exc_info=True)
+    return base
 
 
 def run_daily_pull(pool: list = None, date: str = None) -> dict:
