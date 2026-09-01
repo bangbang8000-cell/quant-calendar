@@ -940,28 +940,16 @@ class Scheduler:
                 self._record_task_run("health_check", False, str(e)[:120])
 
     def _send_health_alert(self, cycle, detail):
-        """V5.0 T-5.0.2: 健康检查连续失败 → 飞书告警 (含自愈未解决的资产清单)"""
+        """V5.0 T-5.0.7: 健康检查连续失败 → 分级告警送达 (reliability/alerts.py)
+
+        分级: db_schema 错误=critical / 资产过期·数据为空·自愈未解决=warning / 自愈已执行=info;
+        防抖: 同源同标题 1 小时冷却; best-effort 不阻断健康检查循环。
+        """
         try:
-            import json
-            import os
-            from paths import DATA_DIR
-            cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
-            webhook = ""
-            if os.path.exists(cfg_path):
-                with open(cfg_path, 'r', encoding='utf-8') as f:
-                    webhook = json.load(f).get('webhook_url', '')
-            if webhook:
-                from feishu_push import FeishuPusher
-                lines = [f"🚨 量化选股日历健康检查异常 ({detail})"]
-                still = cycle.get("still_affected") or []
-                if still:
-                    lines.append("自愈未解决资产: " + ", ".join(still))
-                errors = sorted(set(f["kind"] for f in cycle.get("findings", []) if f.get("severity") == "error"))
-                if errors:
-                    lines.append("异常项: " + ", ".join(errors))
-                pusher = FeishuPusher(webhook)
-                pusher.send_text("\n".join(lines))
-                logger.info("📮 健康检查告警已发送飞书")
+            from reliability import alerts
+            sent = alerts.dispatch_health_cycle(cycle, detail)
+            if sent:
+                logger.info("📮 健康检查告警已送达 %d 条飞书", sent)
         except Exception as e:
             logger.error("健康检查告警发送失败: %s", e)
 
