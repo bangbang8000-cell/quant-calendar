@@ -288,12 +288,12 @@ def test_real_api_matrix_admin_vs_user():
     db.DATA_DIR = tempfile.mkdtemp()
     db.DB_FILE = os.path.join(db.DATA_DIR, "app.db")
     db.init_db(); db.migrate()
-    um.add_user("alice", "pw", role="admin")
-    um.add_user("bob", "pw", role="user")
+    um.add_user("mx_admin", "pw", role="admin")
+    um.add_user("mx_user", "pw", role="user")
     app = FastAPI()
     app.include_router(router, prefix="/api")
-    admin_h = {"Authorization": "Bearer " + create_access_token({"sub": "alice", "role": "admin"})}
-    user_h = {"Authorization": "Bearer " + create_access_token({"sub": "bob", "role": "user"})}
+    admin_h = {"Authorization": "Bearer " + create_access_token({"sub": "mx_admin", "role": "admin"})}
+    user_h = {"Authorization": "Bearer " + create_access_token({"sub": "mx_user", "role": "user"})}
     with TestClient(app) as c:
         # 匿名 → 401
         assert c.post("/api/rbac/roles", json={"role_id": "r", "permissions": []}).status_code == 401

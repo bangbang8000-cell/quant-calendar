@@ -274,8 +274,8 @@ def _api_env(tmp_path, monkeypatch):
     os.makedirs(db.DATA_DIR, exist_ok=True)
     db.DB_FILE = os.path.join(db.DATA_DIR, "app.db")
     db.init_db(); db.migrate()
-    um.add_user("alice", "pw", role="admin")
-    um.add_user("bob", "pw", role="user")
+    um.add_user("co_admin", "pw", role="admin")
+    um.add_user("co_user", "pw", role="user")
     app = FastAPI()
     app.include_router(router, prefix="/api")
     app.include_router(rbac_router, prefix="/api")
@@ -296,13 +296,13 @@ def test_api_group_lifecycle(tmp_path, monkeypatch):
     ctx = _api_env(tmp_path, monkeypatch)
     try:
         c, h = ctx.c, ctx.h
-        r = c.post("/api/collab/groups", json={"name": "研究组"}, headers=h("alice"))
+        r = c.post("/api/collab/groups", json={"name": "研究组"}, headers=h("co_admin"))
         assert r.status_code == 200
         gid = r.json()["data"]["gid"]
-        # bob 是 user 角色 (collab.read), 能看组 (成员) 但 admin alice 先加他
-        r = c.post(f"/api/collab/groups/{gid}/members", json={"username": "bob", "role": "view"}, headers=h("alice"))
+        # co_user 是 user 角色 (collab.read), 能看组 (成员) 但 admin co_admin 先加他
+        r = c.post(f"/api/collab/groups/{gid}/members", json={"username": "co_user", "role": "view"}, headers=h("co_admin"))
         assert r.status_code == 200
-        r = c.get("/api/collab/groups/my", headers=h("bob"))
+        r = c.get("/api/collab/groups/my", headers=h("co_user"))
         assert r.status_code == 200 and r.json()["data"]["count"] == 1
     finally:
         ctx._restore()
@@ -313,9 +313,9 @@ def test_api_non_member_403(tmp_path, monkeypatch):
     ctx = _api_env(tmp_path, monkeypatch)
     try:
         c, h = ctx.c, ctx.h
-        gid = c.post("/api/collab/groups", json={"name": "A"}, headers=h("alice")).json()["data"]["gid"]
-        # carol 不存在, 用匿名 → 401; 非成员 bob → 404 (get_group None)
-        assert c.get(f"/api/collab/groups/{gid}", headers=h("bob")).status_code == 404
+        gid = c.post("/api/collab/groups", json={"name": "A"}, headers=h("co_admin")).json()["data"]["gid"]
+        # 匿名 → 401; 非成员 co_user → 404 (get_group None)
+        assert c.get(f"/api/collab/groups/{gid}", headers=h("co_user")).status_code == 404
         assert c.get(f"/api/collab/groups/{gid}").status_code == 401
     finally:
         ctx._restore()
@@ -326,10 +326,10 @@ def test_api_viewer_cannot_write_notes(tmp_path, monkeypatch):
     ctx = _api_env(tmp_path, monkeypatch)
     try:
         c, h = ctx.c, ctx.h
-        # bob 是 user 角色, 无 collab.write → notes POST 403
-        assert c.post("/api/collab/notes/600000.SH", json={"note": "x"}, headers=h("bob")).status_code == 403
-        # alice admin 可以
-        assert c.post("/api/collab/notes/600000.SH", json={"note": "x"}, headers=h("alice")).status_code == 200
+        # co_user 是 user 角色, 无 collab.write → notes POST 403
+        assert c.post("/api/collab/notes/600000.SH", json={"note": "x"}, headers=h("co_user")).status_code == 403
+        # co_admin admin 可以
+        assert c.post("/api/collab/notes/600000.SH", json={"note": "x"}, headers=h("co_admin")).status_code == 200
     finally:
         ctx._restore()
         C.reset_collab()

@@ -88,6 +88,12 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/collab/notes/600000.SH", None),
     ("get", "/api/collab/portfolio-visibility", None),
     ("put", "/api/collab/portfolio-visibility", {"visible_to": "all"}),
+    # V5.8 T-5.8.3: API v3 — 分页/过滤/写操作 (用户数据)
+    ("get", "/api/v3/watchlist", None),
+    ("post", "/api/v3/watchlist", {"code": "600000.SH"}),
+    ("delete", "/api/v3/watchlist/600000.SH", None),
+    ("get", "/api/v3/evaluations", None),
+    ("get", "/api/v3/groups", None),
 ]
 
 
