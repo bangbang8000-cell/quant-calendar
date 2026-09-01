@@ -12,6 +12,23 @@ from auth import get_non_guest_user, get_current_active_user
 router = APIRouter(prefix="/backtest", tags=["策略回测"])
 
 
+@router.post("/export")
+async def export_backtest_report(body: Dict[str, Any],
+                                 user: dict = Depends(get_current_active_user)):
+    """回测报告导出 (V5.2 T-5.2.6): {result: {...}, fmt: 'csv'|'html'} → 文件落盘
+    零依赖: CSV(UTF-8 BOM Excel 兼容) / 自包含 HTML(浏览器打印 PDF)。"""
+    from backtest_report import save_report
+    result = body.get("result") or {}
+    fmt = body.get("fmt") or "csv"
+    if not result:
+        raise HTTPException(status_code=400, detail="result 不能为空")
+    out = save_report(result, fmt)
+    if not out.get("success"):
+        raise HTTPException(status_code=400, detail=out.get("message", "导出失败"))
+    return {"success": True, "filename": out["filename"],
+            "path": out["path"], "bytes": out["bytes"]}
+
+
 @router.post("/{strategy_id}")
 async def run_strategy_backtest(
     strategy_id: str,
