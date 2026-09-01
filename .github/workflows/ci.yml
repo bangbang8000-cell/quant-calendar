@@ -87,6 +87,8 @@ jobs:
           python -m pytest tests/test_cost_model.py tests/test_backtest_benchmark.py tests/test_walkforward.py             tests/test_param_stability.py tests/test_attribution.py tests/test_backtest_report.py             --cov=cost_model --cov=benchmark --cov=walkforward --cov=param_stability             --cov=attribution --cov=backtest_report             --cov-report=term --cov-fail-under=70 -m "not e2e"
           # V5.3 (T-5.3.1~5.3.5): 风险/组合模块覆盖率门禁 ≥70% (TEST-PLAN 4.3)
           python -m pytest tests/test_risk_metrics.py tests/test_position_sizing.py tests/test_risk_rules.py             tests/test_risk_events.py tests/test_portfolio_risk_api.py             --cov=risk --cov=rules --cov=risk_events             --cov-report=term --cov-fail-under=70 -m "not e2e"
+          # V5.4 T-5.4.1/5.4.2: 通知通道 + 事件引擎 覆盖率门禁 (TEST-PLAN 5.3)
+          python -m pytest tests/test_notify_channels.py tests/test_event_engine.py tests/test_alert_rules.py             tests/test_alerts_api.py --cov=notify --cov=events --cov=rules_alert             --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
