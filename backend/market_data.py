@@ -312,13 +312,18 @@ if __name__ == '__main__':
 # ===== K线数据获取 =====
 
 
-def get_kline_data(ts_code, period='daily', limit=60):
-    """获取K线数据（支持股票和指数），通过统一数据源管理器"""
+def get_kline_data(ts_code, period='daily', limit=60, max_points=None):
+    """获取K线数据（支持股票和指数），通过统一数据源管理器。
+    V5.7 (T-5.7.4): max_points 非空且数据超过时按 close LTTB 降采样 (年视图/长周期场景)。"""
     try:
         from data_sources import data_source_manager
         result = data_source_manager.get_kline_data(ts_code, period, limit)
         if result and result.get('data'):
-            return result['data']  # 直接返回 kline 数组列表，与旧接口兼容
+            data = result['data']
+            if max_points is not None and len(data) > max_points:
+                from downsample import downsample_kline
+                data = downsample_kline(data, max_points)
+            return data  # 直接返回 kline 数组列表，与旧接口兼容
         return None
     except Exception as e:
         import logging
