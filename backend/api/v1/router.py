@@ -33,6 +33,7 @@ from .strategy_research import router as strategy_research_router
 from .strategy_execution import router as strategy_execution_router
 from .reliability import router as reliability_router
 from .quality import router as quality_router
+from .data_dict import router as data_dict_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -69,5 +70,6 @@ api_router.include_router(openapi_router, prefix="/v2")
 api_router.include_router(strategy_research_router)
 api_router.include_router(reliability_router)
 api_router.include_router(quality_router)
+api_router.include_router(data_dict_router)
 
 __all__ = ["api_router"]

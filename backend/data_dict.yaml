@@ -1,0 +1,245 @@
+# 量化选股日历 数据字典 — 单一事实源 (V5.1 T-5.1.4)
+# 字段口径在此单点维护; data_dict.py 加载并校验 (零外部依赖 mini-YAML 子集解析器)
+# 子集契约: 注释(#) / 扁平映射(key: value) / 块列表(- item + 缩进子块) / 行内列表([a, b]) / 标量
+version: 1
+description: 字段口径单点维护 — 与 DataPortal 口径 (FIELD_ALIASES) 双向对拍
+fields:
+  # ── K线行情 (kline) ──
+  - key: trade_date
+    label: 交易日
+    category: kline
+    type: date
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [date, 日期, day, 日历]
+    description: 交易日, YYYY-MM-DD
+  - key: open
+    label: 开盘价
+    category: kline
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [开盘, open_price, op]
+    description: 当日开盘价 (前复权口径)
+  - key: high
+    label: 最高价
+    category: kline
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [最高]
+    description: 当日最高价 (前复权口径)
+  - key: low
+    label: 最低价
+    category: kline
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [最低]
+    description: 当日最低价 (前复权口径)
+  - key: close
+    label: 收盘价
+    category: kline
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [收盘, close_price]
+    description: 当日收盘价 (前复权口径)
+  - key: volume
+    label: 成交量
+    category: kline
+    type: number
+    unit: 手
+    frequency: daily
+    source: 三源
+    aliases: [vol, 成交量, 成交手, vol_手]
+    description: 当日成交量
+  - key: amount
+    label: 成交额
+    category: kline
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [成交额]
+    description: 当日成交额
+  - key: adj_factor
+    label: 复权因子
+    category: kline
+    type: number
+    unit: ""
+    frequency: daily
+    source: tushare
+    aliases: [adj_factor]
+    description: 复权因子, 用于前/后复权口径换算
+  # ── 每日基本面 (daily_basic) ──
+  - key: ts_code
+    label: 股票代码
+    category: daily_basic
+    type: string
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [code, symbol]
+    description: 统一代码, 如 000001.SZ
+  - key: pe
+    label: 市盈率
+    category: daily_basic
+    type: number
+    unit: 倍
+    frequency: daily
+    source: tushare
+    aliases: [pe]
+    description: 静态市盈率
+  - key: pe_ttm
+    label: 市盈率(TTM)
+    category: daily_basic
+    type: number
+    unit: 倍
+    frequency: daily
+    source: tushare
+    aliases: [pe_ttm]
+    description: 滚动市盈率
+  - key: pb
+    label: 市净率
+    category: daily_basic
+    type: number
+    unit: 倍
+    frequency: daily
+    source: tushare
+    aliases: [pb]
+    description: 市净率
+  - key: ps
+    label: 市销率
+    category: daily_basic
+    type: number
+    unit: 倍
+    frequency: daily
+    source: tushare
+    aliases: [ps]
+    description: 市销率
+  - key: turnover_rate
+    label: 换手率
+    category: daily_basic
+    type: number
+    unit: "%"
+    frequency: daily
+    source: tushare
+    aliases: [turnover_rate]
+    description: 换手率 (%)
+  - key: total_mv
+    label: 总市值
+    category: daily_basic
+    type: number
+    unit: 万元
+    frequency: daily
+    source: tushare
+    aliases: [total_mv]
+    description: 总市值 (万元)
+  - key: circ_mv
+    label: 流通市值
+    category: daily_basic
+    type: number
+    unit: 万元
+    frequency: daily
+    source: tushare
+    aliases: [circ_mv]
+    description: 流通市值 (万元)
+  - key: dv_ratio
+    label: 股息率
+    category: daily_basic
+    type: number
+    unit: "%"
+    frequency: daily
+    source: tushare
+    aliases: [dv_ratio]
+    description: 股息率 (%)
+  # ── 财务报表 (financial) ──
+  - key: ann_date
+    label: 公告日期
+    category: financial
+    type: date
+    unit: ""
+    frequency: quarterly
+    source: tushare
+    aliases: [ann_date]
+    description: 财报公告日期 (PIT 可获知时间)
+  - key: end_date
+    label: 报告期
+    category: financial
+    type: date
+    unit: ""
+    frequency: quarterly
+    source: tushare
+    aliases: [end_date]
+    description: 财报报告期截止日
+  - key: eps
+    label: 每股收益
+    category: financial
+    type: number
+    unit: 元
+    frequency: quarterly
+    source: tushare
+    aliases: [eps]
+    description: 每股收益
+  - key: revenue
+    label: 营业收入
+    category: financial
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: tushare
+    aliases: [revenue]
+    description: 营业收入 (万元)
+  - key: roe
+    label: 净资产收益率
+    category: financial
+    type: number
+    unit: "%"
+    frequency: quarterly
+    source: tushare
+    aliases: [roe]
+    description: 净资产收益率 (%)
+  # ── 交易日历 (calendar) ──
+  - key: trade_status
+    label: 交易状态
+    category: calendar
+    type: string
+    unit: ""
+    frequency: daily
+    source: internal
+    aliases: [is_open, 是否开市]
+    description: open/closed, 当日是否交易日
+  - key: pre_trade_date
+    label: 上一交易日
+    category: calendar
+    type: date
+    unit: ""
+    frequency: daily
+    source: internal
+    aliases: [pre_date]
+    description: 上一交易日 (用于前向填充/收益计算)
+  # ── 数据质量 (quality) ──
+  - key: quality_score
+    label: 数据质量分
+    category: quality
+    type: number
+    unit: 分
+    frequency: as-of
+    source: internal
+    aliases: [score]
+    description: 0-100 综合质量分 (缺数/异常/复权/停牌/对齐规则)
+  - key: quality_grade
+    label: 质量等级
+    category: quality
+    type: string
+    unit: ""
+    frequency: as-of
+    source: internal
+    aliases: [grade]
+    description: A/B/C/D 质量等级
