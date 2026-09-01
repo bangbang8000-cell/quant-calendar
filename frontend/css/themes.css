@@ -4984,6 +4984,17 @@ text {
 .today-highlight-dot.dot-risk { background: var(--color-danger); }
 .today-highlight-type { flex: 0 0 auto; font-weight: var(--font-semibold); color: var(--text-primary); }
 .today-highlight-content { color: var(--text-secondary); }
+
+/* V5.6 T-5.6.1: 新手引导任务流覆盖层 (onboarding-core 状态机薄壳渲染) */
+.onboarding-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(15, 15, 35, 0.55); display: flex; align-items: center; justify-content: center; }
+.onboarding-card { width: min(420px, 90vw); background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--r-xl); padding: 24px; box-shadow: var(--shadow-lg); }
+.onboarding-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.onboarding-step-badge { flex: 0 0 auto; font-size: var(--font-xs); font-weight: var(--font-semibold); color: var(--text-primary); background: var(--bg-card-header); border-radius: var(--r-sm); padding: 2px 8px; }
+.onboarding-progress-track { flex: 1; height: 6px; background: var(--bg-card-header); border-radius: 999px; overflow: hidden; }
+.onboarding-progress-fill { height: 100%; background: var(--primary-color); border-radius: 999px; transition: width 0.25s ease; }
+.onboarding-title { font-size: var(--font-lg); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 8px; }
+.onboarding-desc { font-size: var(--font-sm); color: var(--text-secondary); line-height: var(--lh-relaxed); margin-bottom: 20px; min-height: 42px; }
+.onboarding-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
 .portfolio-rule-msg { color: var(--text-secondary); }
 

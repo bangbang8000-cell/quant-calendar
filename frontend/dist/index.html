@@ -37,7 +37,7 @@
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
     <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
-<script type="module" crossorigin src="/assets/index-B7Gs-_UQ.js"></script>
+<script type="module" crossorigin src="/assets/index-qGqN4-mO.js"></script>
 
 <body>
     <!-- v3.17.9 (FR-3.17.9): 首屏启动骨架屏 — 纯 CSS 类（无内联样式），
@@ -178,6 +178,8 @@
         <qc-change-password-dialog></qc-change-password-dialog>
         <qc-shortcut-help-dialog></qc-shortcut-help-dialog>
         <qc-tour-dialog></qc-tour-dialog>
+        <!-- V5.6 (T-5.6.1): 新手引导任务流覆盖层 -->
+        <qc-onboarding></qc-onboarding>
 
         <!-- v3.2.0-T13: 浮动 AI 按钮 -->
         <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股">

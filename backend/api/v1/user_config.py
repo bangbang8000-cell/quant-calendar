@@ -214,6 +214,8 @@ PREFERENCE_DEFAULTS = {
     "theme": "system",
     "chart_period": "daily",
     "language": "zh-CN",
+    # V5.6 (T-5.6.1): 新手引导进度 (onboarding-core persistState JSON 字符串, 跨设备同步)
+    "onboarding_progress": "",
 }
 PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
 # 各偏好键合法取值（后端仅做键校验，值合法性由前端偏好模块约束）
