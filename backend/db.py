@@ -117,6 +117,36 @@ CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_enabled
     ON webhook_subscriptions(enabled);
 """
 
+# V5.4 T-5.4.2: 事件引擎 2.0 — 订阅 / 投递日志 / 去重 (幂等建表)
+EVENTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS event_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    channels TEXT NOT NULL DEFAULT '[]',
+    recipients TEXT NOT NULL DEFAULT '[]',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS event_delivery_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    title TEXT,
+    channel TEXT,
+    recipient TEXT,
+    ok INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 1,
+    error TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_event_delivery_log_event ON event_delivery_log(event_id);
+CREATE TABLE IF NOT EXISTS event_dedup (
+    dedup_key TEXT PRIMARY KEY,
+    delivered_at TEXT NOT NULL
+);
+"""
+
 SCHEMA += OPENAPI_SCHEMA
 
 
@@ -178,6 +208,10 @@ def migrate() -> None:
             conn.executescript(OPENAPI_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: api_keys/webhook_subscriptions 表就绪")
+            # V5.4 (T-5.4.2): 事件引擎 — event_subscriptions/delivery_log/dedup 表 (幂等建表)
+            conn.executescript(EVENTS_SCHEMA)
+            conn.commit()
+            logger.info("[db] migrate: event_subscriptions/delivery_log/dedup 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:
