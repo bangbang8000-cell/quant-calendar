@@ -56,11 +56,36 @@
     return index;
   }
 
+  // ─── V5.7 (T-5.7.5): 性能增强 ─────────────────────
+  // 动态行高估算: 未知行高时用"样本行高均值"估窗口 (首屏未知行高场景)
+  function estimateDynamicRowHeight(items, fallback, sampleSize) {
+    var list = items || [];
+    if (!list.length) return fallback > 0 ? fallback : 1;
+    var n = Math.min(sampleSize || 50, list.length);
+    var sum = 0, cnt = 0;
+    for (var i = 0; i < n; i++) {
+      var h = list[i] && list[i].rowHeight;
+      if (typeof h === 'number' && h > 0) { sum += h; cnt++; }
+    }
+    if (!cnt) return fallback > 0 ? fallback : 1;
+    return sum / cnt;
+  }
+
+  // 渲染比例: 窗口内渲染行数 / 总行数 (性能门禁 — 大列表必须 < 阈值)
+  function renderedRatio(scrollTop, viewportH, rowHeight, total, buffer) {
+    var range = computeVisibleRange(scrollTop, viewportH, rowHeight, total, buffer);
+    var totalN = Math.max(0, total);
+    if (!totalN) return 0;
+    return (range.endIndex - range.startIndex) / totalN;
+  }
+
   return {
     DEFAULT_BUFFER: DEFAULT_BUFFER,
     computeVisibleRange: computeVisibleRange,
     computeTotalHeight: computeTotalHeight,
     sliceVisible: sliceVisible,
     getRowKey: getRowKey,
+    estimateDynamicRowHeight: estimateDynamicRowHeight,
+    renderedRatio: renderedRatio,
   };
 });

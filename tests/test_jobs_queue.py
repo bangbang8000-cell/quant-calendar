@@ -19,7 +19,8 @@ def jobs(tmp_path, monkeypatch):
     import jobs
     monkeypatch.setattr(jobs, "JOBS_FILE", str(tmp_path / "jobs.json"))
     jobs.reset_jobs()
-    jobs.clear_registry()
+    _saved_registry = dict(jobs._registry)  # 保存既有注册 (job_tasks), teardown 恢复
+    jobs._registry.clear()
 
     @jobs.register("test-echo")
     def _echo(payload, ctx):
@@ -42,7 +43,8 @@ def jobs(tmp_path, monkeypatch):
         return {"ok": True, "attempts": n}
 
     yield jobs
-    jobs.clear_registry()
+    jobs._registry.clear()
+    jobs._registry.update(_saved_registry)
     jobs.reset_jobs()
 
 

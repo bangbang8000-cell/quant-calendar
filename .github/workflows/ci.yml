@@ -91,6 +91,8 @@ jobs:
           python -m pytest tests/test_notify_channels.py tests/test_event_engine.py tests/test_alert_rules.py             tests/test_alerts_api.py --cov=notify --cov=events --cov=rules_alert             --cov-report=term --cov-fail-under=70 -m "not e2e"
           # V5.5 T-5.5.1/5.5.2/5.5.3/5.5.5: 报表中心模块覆盖率门禁 ≥70% (TEST-PLAN 6.3)
           python -m pytest tests/test_report_templates.py tests/test_report_export.py             tests/test_report_subscribe.py tests/test_today_highlights.py             --cov=report_center --cov=report_export --cov=report_subscribe             --cov-report=term --cov-fail-under=70 -m "not e2e"
+          # V5.7 T-5.7.1/5.7.2/5.7.4: 缓存/任务队列/降采样覆盖率门禁 ≥70% (TEST-PLAN 8.3, 阻塞)
+          python -m pytest tests/test_cache2.py tests/test_jobs_queue.py tests/test_jobs_integration.py             tests/test_downsample.py --cov=jobs --cov=cache --cov=downsample             --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
