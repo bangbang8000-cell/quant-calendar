@@ -152,17 +152,16 @@ notify/events ≥70%；既有 feishu/webhook 兼容测试全绿。
 
 | 测试文件 | 覆盖 | 用例数 |
 |---|---|---|
-| tests/test_report_templates.py | 区块编排/渲染快照（数据源 mock） | ~25 |
-| tests/test_report_export.py | PDF/Excel 导出结构校验（可打开/含关键数据） | ~20 |
-| tests/test_report_subscribe.py | 定时生成 + 通知中心投递闭环 | ~15 |
-| tests/test_chart_tokens.py | 图表语义配色令牌化/暗色联动（视觉回归 + 令牌门禁） | ~10 |
+| tests/test_report_templates.py | 区块编排/渲染快照（数据源 mock） | ✅ 20 |
+| tests/test_report_export.py | PDF/Excel 导出结构校验（可打开/含关键数据） | ✅ 16 |
+| tests/test_report_subscribe.py | 定时生成 + 通知中心投递闭环 | ✅ 15 |
+| tests/test_chart_tokens.py | 图表语义配色令牌化/暗色联动（视觉回归 + 令牌门禁） | ✅ 10 |
+| tests/test_today_highlights.py | 今日要点聚合（mock providers, 与各模块 API 一致） | ✅ 9 |
 
-### 6.2 专项验证
-- 报表渲染快照对比（内容变更即红）。
-- 今日要点聚合卡数据与各模块 API 一致（一致性测试）。
+> V5.5 实测新增 **70 用例**（合计，含既有 20 模板例）。快照 hash 变更即红 ✅；今日要点与 report_center 各区块 API 同源一致 ✅。
 
 ### 6.3 门禁
-report 模块 ≥70%；视觉回归截图存档双主题。
+report 模块 ≥70%（实测 **92.33%**，CI ci.yml 已加门禁）；视觉回归截图存档双主题（dark-pro/亮色令牌门禁 test_chart_tokens ✅）。
 
 ---
 

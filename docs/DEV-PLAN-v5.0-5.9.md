@@ -139,11 +139,13 @@
 
 | 任务 | 内容 | 涉及文件 | 估时 | 前置 |
 |---|---|---|---|---|
-| T-5.5.1 | 报表模板化（区块编排：周期/策略/异动/评估/风控/组合） | report_generator.py、新增 backend/report_center.py | 2d | 5.2/5.3 |
-| T-5.5.2 | 报表导出 PDF/Excel | report_generator.py、前端 | 1.5d | T-5.5.1 |
-| T-5.5.3 | 报表订阅（定时生成 + 通知中心投递） | scheduler.py、notify | 1d | 5.4 |
-| T-5.5.4 | 图表规范与语义配色增强（主题令牌联动） | 前端 charts.js、echarts-theme.js | 1.5d | - |
-| T-5.5.5 | 首页"今日要点"聚合卡 | 前端、api | 1d | 5.3/5.4 |
+| T-5.5.1 | 报表模板化（区块编排：周期/策略/异动/评估/风控/组合） | report_generator.py、新增 backend/report_center.py | 2d | 5.2/5.3 | ✅ 7154b89 |
+| T-5.5.2 | 报表导出 PDF/Excel | report_generator.py、前端 | 1.5d | T-5.5.1 | ✅ cc176c2 |
+| T-5.5.3 | 报表订阅（定时生成 + 通知中心投递） | scheduler.py、notify | 1d | 5.4 | ✅ 440e081 |
+| T-5.5.4 | 图表规范与语义配色增强（主题令牌联动） | 前端 charts.js、echarts-theme.js | 1.5d | - | ✅ 804488b |
+| T-5.5.5 | 首页"今日要点"聚合卡 | 前端、api | 1d | 5.3/5.4 | ✅ 8f73a89 |
+
+> 5.5.0 出口（8f73a89 后）：APP_VERSION 5.5.0、CI 报表模块覆盖率门禁 ≥70%（实测 92.33%）、tag v5.5.0。
 
 ### 6.2 里程碑
 - M1（1-3d）：模板 + PDF/Excel → M2（4-6d）：订阅 + 图表增强 → M3（7-8d）：今日要点 + 发布。
