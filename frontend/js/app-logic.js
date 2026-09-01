@@ -114,7 +114,7 @@ const allMenuDefs = [
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
-                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
+                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -333,7 +333,7 @@ const allMenuDefs = [
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
                     'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
-                    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于'
+                    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'user': '用户与权限', 'about': '关于'
                 };
 
                 // ===== 主题 =====

@@ -603,6 +603,33 @@
                         </div>
                     </div>
                 </div>
+                    <div v-else-if="currentSubPage === 'datadict'">
+                        <div class="card">
+                            <div class="usage-card-title">📖 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.1 T-5.1.4)</span></div>
+                            <div class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                                <el-radio-group v-model="dictCategory" size="small" @change="loadDataDict">
+                                    <el-radio label="">全部</el-radio>
+                                    <el-radio label="kline">K线行情</el-radio>
+                                    <el-radio label="daily_basic">每日基本面</el-radio>
+                                    <el-radio label="financial">财务报表</el-radio>
+                                    <el-radio label="calendar">交易日历</el-radio>
+                                    <el-radio label="quality">数据质量</el-radio>
+                                </el-radio-group>
+                                <el-button size="small" :loading="dictLoading" @click="loadDataDict">刷新</el-button>
+                                <span v-if="dictError" style="color:var(--color-danger)">{{ dictError }}</span>
+                            </div>
+                            <el-table :data="dictData.fields" size="small" v-loading="dictLoading" style="width:100%" class="mt-8">
+                                <el-table-column prop="key" label="规范字段" width="150" />
+                                <el-table-column prop="label" label="名称" width="120" />
+                                <el-table-column prop="category" label="分类" width="110" />
+                                <el-table-column prop="type" label="类型" width="80" />
+                                <el-table-column prop="unit" label="单位" width="70" />
+                                <el-table-column prop="frequency" label="频率" width="90" />
+                                <el-table-column prop="source" label="数据源" width="100" />
+                                <el-table-column prop="description" label="说明" min-width="220" />
+                            </el-table>
+                        </div>
+                    </div>
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card text-center-pad40">
                             <div class="text-3xl-mb12">🔐</div>
@@ -1167,6 +1194,7 @@
       // V4.6 修复: 进入「自动评估」子页强制加载 AI 厂商卡(与刷新按钮同源, 规避 watch 时序/401 残留)
       Vue.watch(() => state.currentSubPage && state.currentSubPage.value, (sub) => {
         if (sub === 'autoeval' && state.loadAiVendors) state.loadAiVendors();
+        if (sub === 'datadict') loadDataDict();
       });
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
@@ -1232,6 +1260,26 @@
           healHistory.value = [];
         } finally {
           healthLoading.value = false;
+        }
+      }
+      // V5.1 T-5.1.4: 数据字典子页
+      const dictLoading = Vue.ref(false);
+      const dictError = Vue.ref('');
+      const dictCategory = Vue.ref('');
+      const dictData = Vue.ref({ fields: [] });
+      async function loadDataDict() {
+        dictLoading.value = true;
+        dictError.value = '';
+        try {
+          const url = '/api/data-dict' + (dictCategory.value ? '?category=' + dictCategory.value : '');
+          const res = await _healthFetch(url);
+          dictData.value = (res && res.data) || { fields: [] };
+        } catch (e) {
+          console.warn('[dict] 加载失败:', e);
+          dictError.value = '数据字典加载失败: ' + (e.message || '');
+          dictData.value = { fields: [] };
+        } finally {
+          dictLoading.value = false;
         }
       }
       function statusColor(st) {
@@ -1397,6 +1445,8 @@
         healthLoading, healthError, healthUpdatedAt,
         freshnessData, healHistory, startupReport, sourceHealth,
         refreshHealth, statusColor, statusLabel, sourceOk,
+        // V5.1 T-5.1.4: 数据字典
+        dictLoading, dictError, dictCategory, dictData, loadDataDict,
       };
     },
   };
