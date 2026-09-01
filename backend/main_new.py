@@ -86,6 +86,13 @@ async def lifespan(app: FastAPI):
         load_plugins({"app": app})
     except Exception as e:
         logger.warning("插件加载异常(不影响主程序): %s", e)
+    # V5.3 T-5.3.5: 风险预警 provider 注册到事件总线 (V5.4 通知消费; 幂等)
+    try:
+        from risk_events import register_risk_provider
+        register_risk_provider("default")
+        logger.info("✅ 风险事件源已注册到事件总线")
+    except Exception as e:
+        logger.warning("风险事件源注册失败(不影响主程序): %s", e)
     logger.info("🚀 量化选股日历服务启动完成")
     # V5.0 T-5.0.3: 启动自检 (依赖/目录/DB/配置) → 持久化报告 + 摘要日志 (失败不阻塞启动)
     try:
