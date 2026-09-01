@@ -223,13 +223,11 @@ async def get_trades(user: dict = Depends(get_current_active_user)):
     return {"success": True, "trades": trades, "count": len(trades)}
 
 
-@router.get("/equity_curve")
-async def get_equity_curve(days: int = 30, user: dict = Depends(get_current_active_user)):
-    """组合收益曲线: 近 N 日持仓股历史 close × 当前数量 = 每日组合市值, 归一化净值"""
-    days = max(1, min(days, 365))
-    positions = db.portfolio_get_positions(user["username"])
+def _portfolio_values(days: int, username: str):
+    """组合近 N 日每日市值序列 (dates, values, positions) — equity_curve/risk 共用"""
+    positions = db.portfolio_get_positions(username)
     if not positions:
-        return {"success": True, "dates": [], "values": [], "equity": [], "note": "", "count": 0}
+        return [], [], []
     qty_by_code = {p['stock_code']: p['quantity'] for p in positions}
     series = {}   # code -> {date: close}
     all_dates = set()
@@ -265,18 +263,43 @@ async def get_equity_curve(days: int = 30, user: dict = Depends(get_current_acti
             if day in day_close:
                 v += day_close[day] * qty_by_code.get(code, 0)
         values.append(round(v, 2))
+    return dates, values, positions
+
+
+@router.get("/equity_curve")
+async def get_equity_curve(days: int = 30, user: dict = Depends(get_current_active_user)):
+    """组合收益曲线: 近 N 日持仓股历史 close × 当前数量 = 每日组合市值, 归一化净值"""
+    days = max(1, min(days, 365))
+    dates, values, positions = _portfolio_values(days, user["username"])
+    if not positions:
+        return {"success": True, "dates": [], "values": [], "equity": [], "note": "", "count": 0}
     equity = []
     if values and values[0]:
         base = values[0]
         equity = [round(v / base * 100, 2) for v in values]
-
-    if missing and not series:
-        note = '数据暂不可用'
-    elif missing:
-        note = f"{len(missing)} 只股票历史数据暂不可用"
-    else:
-        note = ''
+    note = '' if values else '数据暂不可用'
     return {
         "success": True, "dates": dates, "values": values, "equity": equity,
         "note": note, "count": len(positions),
     }
+
+
+# ─── V5.3 T-5.3.1: 组合风险指标 ───
+
+@router.get("/risk")
+async def get_portfolio_risk(days: int = 60, benchmark: str = None,
+                             user: dict = Depends(get_current_active_user)):
+    """组合风险指标: 由近 N 日市值序列计算 波动/VaR(历史+参数)/CVaR/回撤/夏普/Sortino/Calmar/Beta"""
+    days = max(10, min(days, 365))
+    dates, values, positions = _portfolio_values(days, user["username"])
+    if not positions or len(values) < 3 or not values[0]:
+        return {"success": True, "risk": None, "note": "组合市值数据不足"}
+    base = values[0]
+    equity = [v / base for v in values]
+    from risk import compute_risk_metrics
+    risk = compute_risk_metrics(equity, is_equity=True, var_level=0.95)
+    note = ""
+    if risk["var_historical"] > 0:
+        note = "VaR 采用历史模拟+参数法双实现交叉核对"
+    return {"success": True, "risk": risk, "dates": dates, "note": note,
+            "count": len(positions)}
