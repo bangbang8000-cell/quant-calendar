@@ -288,3 +288,168 @@ def test_move_index_empty_list():
         return { e, n };
     """)
     assert out == {'e': 0, 'n': 3}
+
+
+# ═══════════════════ V5.6 (T-5.6.3): 注册制 + 全局快捷键 ═══════════════════
+
+# ─── parseKeyCombo ───────────────────────────────────────────
+
+@NEEDS_NODE
+def test_parse_key_combo_ctrl_k():
+    out = _run_js("return QCP.parseKeyCombo('Ctrl+K');")
+    assert out == {'ctrl': True, 'alt': False, 'shift': False, 'meta': False, 'key': 'k'}
+
+
+@NEEDS_NODE
+def test_parse_key_combo_multi_mods():
+    out = _run_js("return QCP.parseKeyCombo('Shift+Alt+A');")
+    assert out['shift'] is True and out['alt'] is True and out['key'] == 'a'
+
+
+@NEEDS_NODE
+def test_parse_key_combo_fn_key():
+    out = _run_js("return QCP.parseKeyCombo('F5');")
+    assert out['key'] == 'f5' and not out['ctrl']
+
+
+@NEEDS_NODE
+def test_parse_key_combo_meta_alias():
+    out = _run_js("return QCP.parseKeyCombo('Cmd+O');")
+    assert out['meta'] is True and out['key'] == 'o'
+
+
+@NEEDS_NODE
+def test_parse_key_combo_invalid():
+    out = _run_js("return QCP.parseKeyCombo('');")
+    assert out is None
+
+
+# ─── matchShortcut ───────────────────────────────────────────
+
+@NEEDS_NODE
+def test_match_shortcut_exact_mods():
+    out = _run_js("""
+        const p = QCP.parseKeyCombo('Ctrl+K');
+        return QCP.matchShortcut(p, { key:'k', ctrlKey:true, altKey:false, shiftKey:false, metaKey:false });
+    """)
+    assert out is True
+
+
+@NEEDS_NODE
+def test_match_shortcut_rejects_extra_mod():
+    out = _run_js("""
+        const p = QCP.parseKeyCombo('Ctrl+K');
+        return QCP.matchShortcut(p, { key:'k', ctrlKey:true, altKey:true, shiftKey:false, metaKey:false });
+    """)
+    assert out is False
+
+
+@NEEDS_NODE
+def test_match_shortcut_wrong_key():
+    out = _run_js("""
+        const p = QCP.parseKeyCombo('Ctrl+K');
+        return QCP.matchShortcut(p, { key:'j', ctrlKey:true, altKey:false, shiftKey:false, metaKey:false });
+    """)
+    assert out is False
+
+
+# ─── createCommandRegistry ──────────────────────────────────
+
+@NEEDS_NODE
+def test_command_registry_register_list():
+    out = _run_js("""
+        const reg = QCP.createCommandRegistry();
+        reg.register({ key:'refresh', label:'刷新' });
+        reg.register({ key:'export', label:'导出' });
+        return { count: reg.count(), keys: reg.list().map(c => c.key), has: reg.has('refresh') };
+    """)
+    assert out == {'count': 2, 'keys': ['refresh', 'export'], 'has': True}
+
+
+@NEEDS_NODE
+def test_command_registry_duplicate_rejected():
+    out = _run_js("""
+        const reg = QCP.createCommandRegistry();
+        reg.register({ key:'a', label:'A' });
+        let threw = false;
+        try { reg.register({ key:'a', label:'B' }); } catch (e) { threw = true; }
+        return threw;
+    """)
+    assert out is True
+
+
+@NEEDS_NODE
+def test_command_registry_get_remove():
+    out = _run_js("""
+        const reg = QCP.createCommandRegistry();
+        reg.register({ key:'a', label:'A' });
+        const before = reg.get('a') && reg.get('a').label;
+        reg.remove('a');
+        return { before, after: reg.get('a'), count: reg.count() };
+    """)
+    assert out['before'] == 'A' and out['after'] is None and out['count'] == 0
+
+
+# ─── createShortcutRegistry ─────────────────────────────────
+
+@NEEDS_NODE
+def test_shortcut_register_and_resolve():
+    out = _run_js("""
+        const reg = QCP.createShortcutRegistry();
+        reg.register('Ctrl+K', 'toggle-palette', '打开命令面板');
+        reg.register('F5', 'refresh', '刷新');
+        return {
+          a: reg.resolve({ key:'k', ctrlKey:true, altKey:false, shiftKey:false, metaKey:false }),
+          b: reg.resolve({ key:'f5', ctrlKey:false, altKey:false, shiftKey:false, metaKey:false }),
+          c: reg.resolve({ key:'x', ctrlKey:true, altKey:false, shiftKey:false, metaKey:false }),
+        };
+    """)
+    assert out == {'a': 'toggle-palette', 'b': 'refresh', 'c': None}
+
+
+@NEEDS_NODE
+def test_shortcut_conflict_rejected():
+    out = _run_js("""
+        const reg = QCP.createShortcutRegistry();
+        reg.register('Ctrl+K', 'a', '');
+        let threw = false;
+        try { reg.register('Ctrl+K', 'b', ''); } catch (e) { threw = true; }
+        return threw;
+    """)
+    assert out is True
+
+
+@NEEDS_NODE
+def test_shortcut_action_uniqueness():
+    out = _run_js("""
+        const reg = QCP.createShortcutRegistry();
+        reg.register('Ctrl+K', 'open', '');
+        let threw = false;
+        try { reg.register('Ctrl+J', 'open', ''); } catch (e) { threw = true; }
+        return threw;
+    """)
+    assert out is True
+
+
+@NEEDS_NODE
+def test_shortcut_registry_count_unregister():
+    out = _run_js("""
+        const reg = QCP.createShortcutRegistry();
+        reg.register('Ctrl+K', 'a', '');
+        reg.register('Ctrl+L', 'b', '');
+        const n1 = reg.count();
+        reg.unregister('Ctrl+K');
+        return { n1, n2: reg.count(), left: reg.list().map(s => s.action) };
+    """)
+    assert out == {'n1': 2, 'n2': 1, 'left': ['b']}
+
+
+@NEEDS_NODE
+def test_shortcut_defaults_present():
+    out = _run_js("""
+        const reg = QCP.createDefaultShortcuts();
+        return reg.list().map(s => ({ combo: s.combo, action: s.action }));
+    """)
+    assert any(s['action'] == 'toggle-palette' for s in out)
+    assert any(s['combo'] == 'Ctrl+K' for s in out)
+

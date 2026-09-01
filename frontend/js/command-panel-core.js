@@ -174,6 +174,113 @@
     { key: 'sidebar', label: '折叠/展开侧边栏', icon: '📁', keywords: 'sidebar nav 侧边栏' },
   ];
 
+  // ─── V5.6 T-5.6.3: 注册制 + 全局快捷键 ─────────────────────
+  // 快捷键组合规范: "Ctrl+K" / "Shift+Alt+A" / "F5"; 修饰键 Ctrl/Alt/Shift/Meta(Cmd/Win)
+  var MOD_ALIASES = {
+    ctrl: ['ctrl', 'control', '⌃'],
+    alt: ['alt', 'option', '⌥'],
+    shift: ['shift', '⇧'],
+    meta: ['meta', 'cmd', 'command', 'win', '⌘', '⊞'],
+  };
+
+  function parseKeyCombo(combo) {
+    if (!combo || typeof combo !== 'string') return null;
+    var parts = combo.split('+').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!parts.length) return null;
+    var key = parts.pop().toLowerCase();
+    if (!key) return null;
+    var mods = { ctrl: false, alt: false, shift: false, meta: false };
+    parts.forEach(function (m) {
+      var l = m.toLowerCase();
+      if (MOD_ALIASES.ctrl.indexOf(l) !== -1) mods.ctrl = true;
+      else if (MOD_ALIASES.alt.indexOf(l) !== -1) mods.alt = true;
+      else if (MOD_ALIASES.shift.indexOf(l) !== -1) mods.shift = true;
+      else if (MOD_ALIASES.meta.indexOf(l) !== -1) mods.meta = true;
+    });
+    return { ctrl: mods.ctrl, alt: mods.alt, shift: mods.shift, meta: mods.meta, key: key };
+  }
+
+  function matchShortcut(parsed, ev) {
+    if (!parsed || !ev) return false;
+    var k = String(ev.key || ev.code || '').toLowerCase();
+    if (parsed.key !== k) return false;
+    return parsed.ctrl === !!ev.ctrlKey
+        && parsed.alt === !!ev.altKey
+        && parsed.shift === !!ev.shiftKey
+        && parsed.meta === !!ev.metaKey;
+  }
+
+  function canonicalCombo(parsed) {
+    if (!parsed) return '';
+    var mods = [];
+    if (parsed.ctrl) mods.push('Ctrl');
+    if (parsed.alt) mods.push('Alt');
+    if (parsed.shift) mods.push('Shift');
+    if (parsed.meta) mods.push('Meta');
+    mods.push(parsed.key.toUpperCase());
+    return mods.join('+');
+  }
+
+  // 命令注册表: key 全局唯一
+  function createCommandRegistry() {
+    var map = {};
+    return {
+      register: function (def) {
+        if (!def || !def.key) throw new Error('命令 key 必填');
+        if (map[def.key]) throw new Error('命令重复注册: ' + def.key);
+        map[def.key] = Object.assign({}, def);
+        return def.key;
+      },
+      list: function () { return Object.keys(map).map(function (k) { return map[k]; }); },
+      get: function (key) { return map[key] || null; },
+      remove: function (key) { delete map[key]; },
+      has: function (key) { return !!map[key]; },
+      count: function () { return Object.keys(map).length; },
+    };
+  }
+
+  // 快捷键注册表: 同一组合唯一 + 同一 action 唯一
+  function createShortcutRegistry() {
+    var map = {};
+    var byAction = {};
+    return {
+      register: function (combo, action, description) {
+        var parsed = parseKeyCombo(combo);
+        if (!parsed) throw new Error('无效快捷键: ' + combo);
+        var canon = canonicalCombo(parsed);
+        if (map[canon]) throw new Error('快捷键冲突: ' + combo);
+        if (action != null && byAction[action] !== undefined) {
+          throw new Error('动作重复绑定: ' + action);
+        }
+        map[canon] = { combo: combo, action: action, description: description || '', parsed: parsed };
+        byAction[action] = canon;
+        return canon;
+      },
+      resolve: function (ev) {
+        for (var c in map) {
+          if (matchShortcut(map[c].parsed, ev)) return map[c].action;
+        }
+        return null;
+      },
+      list: function () { return Object.keys(map).map(function (c) { return map[c]; }); },
+      unregister: function (combo) {
+        var canon = canonicalCombo(parseKeyCombo(combo));
+        if (map[canon]) { delete byAction[map[canon].action]; delete map[canon]; }
+      },
+      count: function () { return Object.keys(map).length; },
+    };
+  }
+
+  // 默认快捷键: 命令面板 Ctrl+K + 常用 (刷新 F5 / 侧边栏 Ctrl+B / AI 问股 Ctrl+J)
+  function createDefaultShortcuts() {
+    var reg = createShortcutRegistry();
+    reg.register('Ctrl+K', 'toggle-palette', '打开命令面板');
+    reg.register('F5', 'refresh', '刷新当前页');
+    reg.register('Ctrl+B', 'toggle-sidebar', '折叠/展开侧边栏');
+    reg.register('Ctrl+J', 'open-ai', '打开 AI 问股');
+    return reg;
+  }
+
   return {
     normalize: normalize,
     createPaletteState: createPaletteState,
@@ -186,6 +293,12 @@
     buildSearchSuggestions: buildSearchSuggestions,
     dispatchSearchSelection: dispatchSearchSelection,
     DEFAULT_COMMANDS: DEFAULT_COMMANDS,
+    parseKeyCombo: parseKeyCombo,
+    matchShortcut: matchShortcut,
+    canonicalCombo: canonicalCombo,
+    createCommandRegistry: createCommandRegistry,
+    createShortcutRegistry: createShortcutRegistry,
+    createDefaultShortcuts: createDefaultShortcuts,
   };
 });
 

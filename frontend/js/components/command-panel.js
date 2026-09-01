@@ -2,7 +2,7 @@
 // 智能命令面板：Ctrl+K 打开，三域检索（股票/菜单/指令）+ 全键盘操作。
 // 纯逻辑在 command-panel-core.js（可单测），本组件仅做渲染薄壳。
 (function () {
-  const { ref, computed, watch, nextTick, inject } = Vue;
+  const { ref, computed, watch, nextTick, inject, onMounted } = Vue;
   const QCP = window.QuantCommandPanel;
 
   window.__quantComponents = window.__quantComponents || {};
@@ -201,10 +201,36 @@
       });
       watch(query, fetchStocks);
 
+      // ─── V5.6 (T-5.6.3): 全局快捷键 (Ctrl+K 打开面板 + 常用快捷键) ───
+      function runShortcut(action) {
+        if (action === 'toggle-palette') {
+          state.commandPaletteVisible.value = !state.commandPaletteVisible.value;
+        } else if (action === 'toggle-sidebar') {
+          state.toggleSidebar();
+        } else if (action === 'open-ai') {
+          state.openAiFab();
+        } else if (action === 'refresh') {
+          runCommand('refresh');
+        }
+      }
+      function onGlobalKeydown(ev) {
+        if (!QCP.createDefaultShortcuts || !QCP.createShortcutRegistry) return;
+        const reg = QCP.createDefaultShortcuts();
+        const action = reg.resolve({ key: ev.key, ctrlKey: ev.ctrlKey, altKey: ev.altKey, shiftKey: ev.shiftKey, metaKey: ev.metaKey });
+        if (action) {
+          ev.preventDefault();
+          runShortcut(action);
+        }
+      }
+      onMounted(function () {
+        document.addEventListener('keydown', onGlobalKeydown);
+      });
+
       return {
         visible, query, results, inputEl,
         sanitizeHtml: state.sanitizeHtml,
         onDown, onUp, onEnter, execute, isActive, setActive, itemKey,
+        onGlobalKeydown,
       };
     },
   };
