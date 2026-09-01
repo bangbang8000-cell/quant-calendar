@@ -211,24 +211,25 @@ jobs/cache/downsample ≥70%（实测 94.3%）✅；性能门禁**阻塞**（退
 
 ---
 
-## 9. V5.8 多用户协作与开放平台 2.0 —— 测试计划
+## 9. V5.8 多用户协作与开放平台 2.0 —— 测试计划 ✅ 已完成 (tag v5.8.0, 2026-09-02)
 
-### 9.1 新增测试资产（目标 +110 用例）
+### 9.1 新增测试资产（目标 +110 用例）✅ 实际新增 130 用例
 
 | 测试文件 | 覆盖 | 用例数 |
 |---|---|---|
-| tests/test_rbac_matrix.py | **权限矩阵**：读/写/管理 × 角色 × 关键端点 | ~40 |
-| tests/test_collaboration.py | 共享自选/备注/组合可见性 + 并发一致性 | ~25 |
-| tests/test_api_v3.py | v3 契约（分页/过滤/错误码）+ **v1/v2 兼容** | ~30 |
-| tests/test_sdk.py | Python SDK 示例端到端可运行 | ~10 |
-| tests/test_plugins_v2.py | 事件钩子/策略插件加载与隔离 | ~5 |
+| tests/test_rbac_matrix.py | **权限矩阵**：读/写/管理 × 角色 × 关键端点（35 例，deny-by-default） | ~40 → 35 |
+| tests/test_collaboration.py | 共享自选/备注/组合可见性 + 并发一致性（34 例，20 线程不损坏） | ~25 → 34 |
+| tests/test_api_v3.py | v3 契约（分页/过滤/错误码）+ **v1/v2 兼容**（33 例） | ~30 → 33 |
+| tests/test_sdk.py | Python SDK 单元（FakeTransport）+ 真实 uvicorn e2e（13 例） | ~10 → 13 |
+| tests/test_plugins_v2.py | 事件钩子/策略插件注册与隔离（15 例） | ~5 → 15 |
 
 ### 9.2 专项验证
-- 权限矩阵自动化：枚举端点 × 角色断言 401/403/200。
-- v3 与 v2 相同请求响应字段兼容（契约回归）。
+- 权限矩阵自动化：枚举端点 × 角色断言 401/403/200（test_real_api_matrix_admin_vs_user）。
+- v3 与 v1/v2 相同请求响应字段兼容（契约回归：v3 与 v1 同 SQLite 存储、旧端点响应形状不变断言）。
+- SDK 真实服务 e2e：uvicorn 临时服务跑登录 → v3 自选 → RBAC → 403 越权信封。
 
-### 9.3 门禁
-rbac ≥70%；权限矩阵为独立 job（fail 即红）；deny-by-default 守护延续。
+### 9.3 门禁 ✅
+rbac/collab/api_v3/sdk/plugins 覆盖率 ≥70% 入 CI 阻塞步骤；权限矩阵独立 job（fail 即红）；deny-by-default 守护延续（guest 空权限 + 未授权端点清单）。
 
 ---
 
