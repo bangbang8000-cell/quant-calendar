@@ -122,3 +122,58 @@ def test_component_classes_no_hardcode_color():
     src = _component_src()
     hard = re.findall(r"#[0-9a-fA-F]{3,6}|rgb\(|rgba\(", src)
     assert not hard, "空态/错误态组件硬编码颜色: " + repr(hard)
+
+
+
+# ─── 补充 (V5.6 出口: 达标 +80 用例) ───────────────────────────
+
+def test_error_component_has_retrying_prop():
+    """错误态组件支持 retrying 加载态"""
+    src = _component_src()
+    assert "retrying" in src and ":loading=\"retrying\"" in src
+
+
+def test_empty_component_action_button():
+    """空态组件: actionText 显示 + 触发 action 事件"""
+    src = _component_src()
+    assert "actionText" in src and "$emit('action')" in src
+
+
+def test_locale_zh_tw_has_keys():
+    keys = _locale_keys("zh-TW")
+    missing = [k for k in KEYS if k not in keys]
+    assert not missing, f"zh-TW 缺: {missing}"
+
+
+def test_empty_desc_translated():
+    vals = set()
+    for name in LOCALES:
+        src = _read(os.path.join("js", "locales", name + ".js"))
+        m = re.search(r"'common\.emptyDesc':\s*'([^']+)'", src)
+        assert m, f"{name} 缺 common.emptyDesc"
+        vals.add(m.group(1))
+    assert len(vals) == len(LOCALES)
+
+
+def test_error_desc_translated():
+    vals = set()
+    for name in LOCALES:
+        src = _read(os.path.join("js", "locales", name + ".js"))
+        m = re.search(r"'common\.errorDesc':\s*'([^']+)'", src)
+        assert m, f"{name} 缺 common.errorDesc"
+        vals.add(m.group(1))
+    assert len(vals) == len(LOCALES)
+
+
+def test_empty_error_css_uses_tokens():
+    """组件 CSS 类选择器存在且区块使用 var() 令牌 (不硬编码颜色)"""
+    css = _read(os.path.join("css", "themes.css"))
+    for cls in ("qc-empty-state", "qc-error-state"):
+        idx = css.find("." + cls)
+        assert idx != -1, f"CSS 缺类 {cls}"
+        # 类定义后的最近 400 字符内应出现 var( (令牌), 且不含裸 #hex/rgb 颜色
+        snippet = css[idx:idx + 400]
+        assert "var(" in snippet, f"{cls} 区块未用令牌"
+        hard = re.findall(r"#[0-9a-fA-F]{3,6}|rgb\(|rgba\(", snippet)
+        assert not hard, f"{cls} 区块硬编码颜色: {hard}"
+

@@ -138,3 +138,10 @@ def test_primary_text_contrast_dark():
     bg = re.search(r"--bg-page:\s*(#[0-9a-fA-F]{6})", body)
     assert fg and bg, "dark-pro 主文本/背景令牌缺失"
     assert _contrast(fg.group(1), bg.group(1)) >= 4.5
+
+
+def test_onboarding_actions_keyboard_reachable():
+    """引导按钮可键盘触发 (el-button 默认可聚焦 + @click 处理器)"""
+    src = _read(os.path.join("js", "onboarding.js"))
+    assert "@click=\"next\"" in src and "@click=\"finish\"" in src
+    assert "@click=\"skip\"" in src

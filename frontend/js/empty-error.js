@@ -52,7 +52,7 @@
         <div class="qc-error-title">{{ title || t('common.errorTitle') }}</div>
         <div class="qc-error-desc">{{ desc || t('common.errorDesc') }}</div>
         <el-button v-if="!retrying" size="small" @click="$emit('retry')">{{ t('common.retry') }}</el-button>
-        <el-button v-else size="small" loading>{{ t('common.retry') }}</el-button>
+        <el-button v-else size="small" :loading="retrying">{{ t('common.retry') }}</el-button>
       </div>
     `,
     setup() {
