@@ -13,6 +13,7 @@ import pandas as pd
 
 from backtest import (compute_period_metrics, overfitting_assessment,
                       sensitivity_analysis, split_insample_outsample)
+from cost_model import CostConfig, CostModel, DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ def backtest_holdings(holdings: pd.DataFrame,
                       commission_rate: float = 0.0003,
                       slippage: float = 0.001,
                       annual_trading_days: int = 252,
-                      risk_free_rate: float = 0.03) -> Dict:
+                      risk_free_rate: float = 0.03,
+                      cost_model: Optional[CostModel] = None) -> Dict:
     """回测持仓矩阵, 返回绩效结果 dict(与 BacktestResult 字段对齐)
 
     Args:
@@ -71,8 +73,11 @@ def backtest_holdings(holdings: pd.DataFrame,
     if len(daily_returns) < 2:
         return {"success": False, "message": "行情收益数据不足, 无法计算绩效"}
 
-    # 成本: 用换手率近似(仅当有相邻权重可算时)
-    turnover_costs = _estimate_turnover_cost(holdings, dates, commission_rate, slippage)
+    # 成本: 用换手率近似(仅当有相邻权重可算时) — V5.2 可插拔成本模型 2.0
+    if cost_model is None:
+        cost_model = CostModel(CostConfig(commission_rate=commission_rate,
+                                          slippage=slippage))
+    turnover_costs = _estimate_turnover_cost(holdings, dates, cost_model)
     net_returns = [r - c for r, c in zip(daily_returns, turnover_costs)]
 
     # 绩效指标 + 样本内外 + 敏感性 + 过拟合
@@ -112,11 +117,11 @@ def backtest_holdings(holdings: pd.DataFrame,
 
 
 def _estimate_turnover_cost(holdings: pd.DataFrame, dates: List[str],
-                            commission_rate: float, slippage: float) -> List[float]:
-    """逐日换手成本近似: |权重变化| 之和 × (佣金+滑点)"""
+                            cost_model: CostModel) -> List[float]:
+    """逐日换手成本近似: |权重变化| 之和 × 换手成本率 (V5.2 成本模型 2.0)"""
     costs: List[float] = []
     prev = None
-    rate = commission_rate + slippage
+    rate = cost_model.turnover_rate()
     for d in dates:
         w = holdings.loc[d]
         if prev is not None:

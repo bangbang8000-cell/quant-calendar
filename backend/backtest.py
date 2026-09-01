@@ -170,10 +170,12 @@ def attach_overfitting_analysis(result: 'BacktestResult', out_ratio: float = OUT
 class BacktestEngine:
     """策略回测引擎"""
 
-    def __init__(self):
+    def __init__(self, cost_model=None):
         from paths import DATA_DIR
         self.data_dir = DATA_DIR
         self.cache = {}  # 回测结果缓存
+        # V5.2 T-5.2.1: 可插拔成本模型 2.0 (缺省=旧费率佣金万3+滑点千1+印花税)
+        self.cost_model = cost_model
 
     def run_backtest(
         self,
@@ -182,7 +184,8 @@ class BacktestEngine:
         end_date: Optional[str] = None,
         initial_capital: float = 100000.0,
         commission_rate: float = 0.0003,  # 万分之三手续费
-        slippage: float = 0.001  # 千分之一滑点
+        slippage: float = 0.001,  # 千分之一滑点
+        cost_model=None  # V5.2: 可插拔成本模型 (覆盖 commission_rate/slippage)
     ) -> BacktestResult:
         """
         运行单策略回测
@@ -289,11 +292,16 @@ class BacktestEngine:
 
                     portfolio_return = float(np.mean(stock_returns))
 
-                    # 扣除手续费和滑点（如果有调仓）
+                    # 扣除交易成本（如果有调仓）— V5.2 T-5.2.1: 成本模型 2.0
                     if i > 0:
                         prev_stocks = set(equity_curve[-1].get("stocks", []))
                         turnover = len(today_stocks - prev_stocks) / max(1, len(prev_stocks))
-                        portfolio_return -= turnover * (commission_rate + slippage)
+                        cm = cost_model or self.cost_model
+                        if cm is None:
+                            from cost_model import CostConfig, CostModel
+                            cm = CostModel(CostConfig(commission_rate=commission_rate,
+                                                      slippage=slippage))
+                        portfolio_return -= turnover * cm.turnover_rate()
                 else:
                     portfolio_return = 0.0  # 空仓
 
