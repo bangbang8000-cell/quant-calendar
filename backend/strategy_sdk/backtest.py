@@ -27,7 +27,8 @@ def backtest_holdings(holdings: pd.DataFrame,
                       annual_trading_days: int = 252,
                       risk_free_rate: float = 0.03,
                       cost_model: Optional[CostModel] = None,
-                      benchmark_returns: Optional[List[float]] = None) -> Dict:
+                      benchmark_returns: Optional[List[float]] = None,
+                      industry_map: Optional[Dict] = None) -> Dict:
     """回测持仓矩阵, 返回绩效结果 dict(与 BacktestResult 字段对齐)
 
     Args:
@@ -120,6 +121,19 @@ def backtest_holdings(holdings: pd.DataFrame,
         from benchmark import attach_benchmark
         attach_benchmark(result, list(benchmark_returns),
                          strategy_returns=net_returns, benchmark_name="自定义基准")
+    # V5.2 T-5.2.5: 行业归因 + 瀑布图数据 (industry_map: {代码: 行业})
+    if industry_map is not None:
+        from attribution import industry_attribution, build_waterfall
+        try:
+            ind = industry_attribution(holdings, returns, industry_map)
+            items = ([{"label": x["industry"], "value": x["contribution"]}
+                      for x in ind["industries"]]
+                     + [{"label": "组合总收益", "value": ind["total"], "is_total": True}])
+            result["attribution"] = {"industries": ind["industries"],
+                                     "total": ind["total"],
+                                     "waterfall": build_waterfall(items)}
+        except Exception as exc:
+            logger.warning("行业归因失败: %s", exc)
     return result
 
 
