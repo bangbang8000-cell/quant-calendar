@@ -37,6 +37,8 @@ SENSITIVE_ENDPOINTS = [
     # V5.0 T-5.0.1: 可靠性/数据新鲜度 (运维信息, 需登录)
     ("get", "/api/reliability/freshness", None),
     ("get", "/api/reliability/startup-report", None),
+    ("get", "/api/reliability/heal-history", None),
+    ("get", "/api/reliability/source-health", None),
 ]
 
 
