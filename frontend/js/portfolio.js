@@ -59,12 +59,8 @@
       async function loadRisk() {
         riskLoading.value = true;
         try {
-          const [mRes, rRes] = await Promise.all([
-            fetch('/api/portfolio/risk?days=60'),
-            fetch('/api/portfolio/risk-rules?days=60'),
-          ]);
-          const m = await mRes.json();
-          const r = await rRes.json();
+          const m = await (await fetch('/api/portfolio/risk?days=60')).json();
+          const r = await (await fetch('/api/portfolio/risk-rules?days=60')).json();
           const metrics = m && m.success ? m.risk : null;
           const rules = r && r.success ? (r.rules || []) : [];
           const rebalance = r && r.success ? r.rebalance : null;

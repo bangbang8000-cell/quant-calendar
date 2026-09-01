@@ -4963,7 +4963,7 @@ text {
 .portfolio-risk-metric { background: var(--bg-card-header); border-radius: var(--r-md); padding: 10px 12px; }
 .portfolio-risk-label { font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 6px; }
 .portfolio-risk-value { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); }
-.portfolio-risk-sub { font-size: var(--font-xs); color: var(--text-secondary); font-weight: var(--font-regular); }
+.portfolio-risk-sub { font-size: var(--font-xs); color: var(--text-secondary); font-weight: var(--font-normal); }
 .portfolio-rule-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border-light); border-radius: var(--r-md); margin-bottom: 6px; font-size: var(--font-sm); }
 .portfolio-rule-warn { border-color: var(--color-danger); background: var(--bg-card-header); }
 .portfolio-rule-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: var(--font-xs); font-weight: var(--font-medium); }
