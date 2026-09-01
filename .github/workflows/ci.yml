@@ -93,9 +93,28 @@ jobs:
           python -m pytest tests/test_report_templates.py tests/test_report_export.py             tests/test_report_subscribe.py tests/test_today_highlights.py             --cov=report_center --cov=report_export --cov=report_subscribe             --cov-report=term --cov-fail-under=70 -m "not e2e"
           # V5.7 T-5.7.1/5.7.2/5.7.4: 缓存/任务队列/降采样覆盖率门禁 ≥70% (TEST-PLAN 8.3, 阻塞)
           python -m pytest tests/test_cache2.py tests/test_jobs_queue.py tests/test_jobs_integration.py             tests/test_downsample.py --cov=jobs --cov=cache --cov=downsample             --cov-report=term --cov-fail-under=70 -m "not e2e"
+          # V5.8 T-5.8.1/5.8.2/5.8.3/5.8.4/5.8.5: RBAC/协作/APIv3/SDK/插件SDK 覆盖率门禁 ≥70% (TEST-PLAN 9.3, 阻塞)
+          python -m pytest tests/test_rbac_matrix.py --cov=rbac --cov-report=term --cov-fail-under=70 -m "not e2e"
+          python -m pytest tests/test_collaboration.py --cov=collaboration --cov-report=term --cov-fail-under=70 -m "not e2e"
+          python -m pytest tests/test_api_v3.py tests/test_sdk.py --cov=api.v3 --cov=api.v1.watchlist --cov-report=term --cov-fail-under=70 -m "not e2e"
+          python -m pytest tests/test_plugins_v2.py --cov=plugin_sdk --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
+  # V5.8 T-5.8.1 (TEST-PLAN 9.3): RBAC 权限矩阵独立 job — deny-by-default 守护延续, fail 即红
+  rbac-matrix-gate:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install -r requirements.lock
+      - name: RBAC 权限矩阵 (deny-by-default, 独立红)
+        run: python -m pytest tests/test_rbac_matrix.py -v --tb=short
+
   # V5.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
   pit-gate:
     runs-on: ubuntu-latest

@@ -34,14 +34,21 @@ def _ts():
 
 
 def make_event(event_type, title, content, payload=None, dedup_key=None):
-    """构造事件: {id, type, title, content, payload, created_at, dedup_key}"""
+    """构造事件: {id, type, title, content, payload, created_at, dedup_key}
+    V5.8 (T-5.8.5): 构造后派发到插件 SDK 事件钩子 (emit, 钩子异常隔离)"""
     event_id = uuid.uuid4().hex
     if not dedup_key:
         raw = f"{event_type}|{title}|{content}"
         dedup_key = hashlib.sha1(raw.encode("utf-8")).hexdigest()
-    return {"id": event_id, "type": event_type, "title": title,
-            "content": content, "payload": payload or {},
-            "created_at": _ts(), "dedup_key": dedup_key}
+    event = {"id": event_id, "type": event_type, "title": title,
+             "content": content, "payload": payload or {},
+             "created_at": _ts(), "dedup_key": dedup_key}
+    try:
+        from plugin_sdk import emit
+        emit(event_type, event)
+    except Exception:
+        pass  # 钩子派发失败不影响事件构造
+    return event
 
 
 # ─── 订阅 CRUD (SQLite) ──────────────────────────────────────
