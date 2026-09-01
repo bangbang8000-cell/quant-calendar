@@ -26,7 +26,8 @@ def backtest_holdings(holdings: pd.DataFrame,
                       slippage: float = 0.001,
                       annual_trading_days: int = 252,
                       risk_free_rate: float = 0.03,
-                      cost_model: Optional[CostModel] = None) -> Dict:
+                      cost_model: Optional[CostModel] = None,
+                      benchmark_returns: Optional[List[float]] = None) -> Dict:
     """回测持仓矩阵, 返回绩效结果 dict(与 BacktestResult 字段对齐)
 
     Args:
@@ -96,7 +97,7 @@ def backtest_holdings(holdings: pd.DataFrame,
         _acc *= (1.0 + _r)
         equity_curve.append(round(_acc, 6))
 
-    return {
+    result = {
         "success": True,
         "total_return": metrics["total_return"],
         "annual_return": metrics["annual_return"],
@@ -114,6 +115,12 @@ def backtest_holdings(holdings: pd.DataFrame,
         "overfit_reason": overfit.get("reason", ""),
         "message": "回测完成",
     }
+    # V5.2 T-5.2.2: 基准对比 (超额/IR/alpha/beta)
+    if benchmark_returns is not None:
+        from benchmark import attach_benchmark
+        attach_benchmark(result, list(benchmark_returns),
+                         strategy_returns=net_returns, benchmark_name="自定义基准")
+    return result
 
 
 def _estimate_turnover_cost(holdings: pd.DataFrame, dates: List[str],

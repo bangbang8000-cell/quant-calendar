@@ -158,6 +158,21 @@ async def get_strategy_attribution(
         raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
 
 
+# ─── V5.2 T-5.2.2: 基准对比 — 可用基准列表 ───
+
+@router.get("/benchmarks")
+async def list_benchmarks(user: dict = Depends(get_current_active_user)):
+    """可用回测基准 (沪深300/中证500/中证1000 + 自定义指数代码)。"""
+    from benchmark import BENCHMARKS
+    return {"success": True, "data": {
+        "benchmarks": [
+            {"key": k, "code": v["code"], "label": v["label"]}
+            for k, v in BENCHMARKS.items()
+        ],
+        "custom": "可直接传指数代码作为自定义基准 (如 000688.SH)",
+    }}
+
+
 # ─── V4.9 (P3): 回测历史列表 ───
 
 @router.get("/history")
