@@ -104,6 +104,19 @@
 
                     <!-- 子页: 策略总览 -->
 
+                    <!-- V5.5 T-5.5.5: 今日要点聚合卡 (周期/策略/异动/评估/风险) -->
+                    <div class="card" v-if="highlightsLoaded">
+                        <div class="card-title">🎯 今日要点 <span class="text-sm-tertiary-normal">{{ highlightsDate }}</span></div>
+                        <div v-if="highlights.length === 0" class="today-highlights-empty">暂无要点（数据源未就绪或今日未生成）</div>
+                        <div v-else class="today-highlights-list">
+                            <div v-for="(h, i) in highlights" :key="i" class="today-highlight-item">
+                                <span class="today-highlight-dot" :class="'dot-' + h.level"></span>
+                                <span class="today-highlight-type">{{ h.title }}</span>
+                                <span class="today-highlight-content">{{ h.content }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 数据概览卡片 (v1.11 重构: 时间轴+多维度换手) -->
                     <div class="card">
                         <div class="card-title">{{ t('strategies.dataOverview') }}</div>
@@ -776,6 +789,25 @@
       const health = computed(() => state.healthMetrics?.value || []);
       const consensusRank = computed(() => state.filteredConsensusRank?.value || []);
 
+      // V5.5 T-5.5.5: 今日要点聚合 (首页卡片)
+      const highlights = Vue.ref([]);
+      const highlightsLoaded = Vue.ref(false);
+      const highlightsDate = Vue.ref('');
+      async function loadHighlights() {
+        try {
+          const res = await fetch('/api/reports/today-highlights');
+          const data = await res.json();
+          highlights.value = (data && data.items) || [];
+          highlightsDate.value = (data && data.date) || '';
+        } catch (e) {
+          console.error('[today-highlights] 加载失败:', e);
+          highlights.value = [];
+        } finally {
+          highlightsLoaded.value = true;
+        }
+      }
+      loadHighlights();
+
       // code → name 查找表（来自共识榜/当前池），用于今日新入池显示股票名
       const codeNameMap = computed(() => {
         const m = {};
@@ -1263,7 +1295,8 @@
         execPlan, execStatus, execResults, execTraceDate, execTraceSteps, execTraceLoading,
         execResultsDates, execCountdownText, execPhaseText, execStatusIcon,
         execLastDate, execVisibleClass, execVisibleText,
-        loadExecutionMonitor, loadExecutionTrace };
+        loadExecutionMonitor, loadExecutionTrace,
+        highlights, highlightsLoaded, highlightsDate, loadHighlights };
     },
   };
 })();

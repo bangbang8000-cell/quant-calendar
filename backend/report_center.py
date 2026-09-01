@@ -203,3 +203,91 @@ def render_report_snapshot(blocks, date, providers=None):
     raw = "\n".join(f"=={k}==" + v for k, v in rendered.items())
     return {"rendered": rendered,
             "content_hash": hashlib.sha256(raw.encode("utf-8")).hexdigest()}
+
+
+# ─── V5.5 T-5.5.5: 今日要点聚合 (首页) ─────────────────────────────
+
+_HL_BUILDERS = {}
+
+
+def _hl_period(data, date):
+    d = data or {}
+    return {"type": "period", "title": "周期概览",
+            "content": f"{d.get('trading_days', 0)} 个交易日 · "
+                       f"{d.get('strategies', 0)} 策略 · {d.get('stocks', 0)} 只持仓",
+            "level": "neutral"}
+
+
+def _hl_strategy(data, date):
+    d = data or {}
+    strategies = d.get("strategies") or []
+    if not strategies:
+        return None
+    picks = []
+    for s in strategies:
+        stocks = s.get("stocks") or []
+        if stocks:
+            picks.append(f"{s.get('name', '?')}: {'、'.join(stocks[:3])}"
+                         + ("…" if len(stocks) > 3 else ""))
+    if not picks:
+        return None
+    return {"type": "strategy", "title": "策略持仓",
+            "content": "；".join(picks), "level": "neutral"}
+
+
+def _hl_anomaly(data, date):
+    d = data or {}
+    items = d.get("items") or []
+    if not items:
+        return None
+    top = items[0]
+    pct = top.get("pct") or 0
+    return {"type": "anomaly", "title": "异动关注",
+            "content": f"{top.get('code', '?')} {pct:+.1f}% "
+                       f"{top.get('note', '')}".strip(),
+            "level": "up" if pct > 0 else "down"}
+
+
+def _hl_evaluate(data, date):
+    d = data or {}
+    total = d.get("total") or 0
+    hits = d.get("hits") or 0
+    rate = (hits / total) if total else 0
+    if not total:
+        return None
+    level = "up" if rate >= 0.6 else ("warn" if rate >= 0.4 else "risk")
+    return {"type": "evaluate", "title": "AI 评估命中率",
+            "content": f"{rate:.0%} ({hits}/{total})", "level": level}
+
+
+def _hl_risk(data, date):
+    d = data or {}
+    vol = d.get("volatility") or 0
+    dd = d.get("max_drawdown") or 0
+    if not vol and not dd:
+        return None
+    level = "risk" if vol > 0.3 or abs(dd) > 0.12 else "warn"
+    return {"type": "risk", "title": "组合风险",
+            "content": f"年化波动 {vol:.1%} · 最大回撤 {dd:.1%}",
+            "level": level}
+
+
+for _t, _b in (("period", _hl_period), ("strategy", _hl_strategy),
+               ("anomaly", _hl_anomaly), ("evaluate", _hl_evaluate),
+               ("risk", _hl_risk)):
+    _HL_BUILDERS[_t] = _b
+
+
+def collect_highlights(date, providers=None):
+    """按固定区块序聚合今日要点: [{type,title,content,level}]。失败区块跳过。"""
+    providers = providers or {}
+    items = []
+    for block_type in ("period", "strategy", "anomaly", "evaluate", "risk"):
+        try:
+            data = collect_block_data(block_type, date, providers)
+            item = _HL_BUILDERS[block_type](data, date)
+            if item:
+                items.append(item)
+        except Exception as e:
+            logger.warning("今日要点 %s 聚合失败 (跳过): %s", block_type, e)
+    return items

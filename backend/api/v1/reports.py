@@ -81,6 +81,17 @@ async def generate(date: str = "", blocks: str = "",
             "content": out["content"], "stats": out["stats"]}
 
 
+@router.get("/today-highlights")
+async def today_highlights(date: str = "",
+                           user: dict = Depends(get_current_active_user)):
+    """首页今日要点聚合: 周期/策略/异动/评估/风险 → [{type,title,content,level}]。"""
+    from report_center import collect_highlights
+    if not date:
+        date = datetime.now().strftime("%Y-%m-%d")
+    items = collect_highlights(date)
+    return {"success": True, "date": date, "items": items}
+
+
 @router.get("/export")
 async def export(format: str = "pdf", date: str = "",
                  user: dict = Depends(get_current_active_user)):

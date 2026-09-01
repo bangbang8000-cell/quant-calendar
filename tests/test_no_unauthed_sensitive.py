@@ -66,6 +66,7 @@ SENSITIVE_ENDPOINTS = [
     ("post", "/api/reports/subscriptions/1/run", {}),
     ("get", "/api/reports/generate", None),
     ("get", "/api/reports/export", None),
+    ("get", "/api/reports/today-highlights", None),
 ]
 
 

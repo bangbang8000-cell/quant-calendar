@@ -4971,6 +4971,19 @@ text {
 .portfolio-rule-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: var(--font-xs); font-weight: var(--font-medium); }
 .portfolio-rule-badge-ok { background: var(--badge-success-bg); color: var(--el-success); }
 .portfolio-rule-badge-warn { background: var(--badge-danger-bg); color: var(--color-danger); }
+
+/* V5.5 T-5.5.5: 首页今日要点聚合卡 (语义色小圆点按 level 着色) */
+.today-highlights-empty { font-size: var(--font-sm); color: var(--text-tertiary); padding: 12px 0; }
+.today-highlights-list { display: flex; flex-direction: column; gap: 8px; }
+.today-highlight-item { display: flex; align-items: center; gap: 8px; font-size: var(--font-sm); line-height: 1.5; }
+.today-highlight-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+.today-highlight-dot.dot-up { background: var(--color-up); }
+.today-highlight-dot.dot-down { background: var(--color-down); }
+.today-highlight-dot.dot-neutral { background: var(--text-tertiary); }
+.today-highlight-dot.dot-warn { background: var(--color-warning); }
+.today-highlight-dot.dot-risk { background: var(--color-danger); }
+.today-highlight-type { flex: 0 0 auto; font-weight: var(--font-semibold); color: var(--text-primary); }
+.today-highlight-content { color: var(--text-secondary); }
 .portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
 .portfolio-rule-msg { color: var(--text-secondary); }
 
