@@ -1,4 +1,4 @@
-(function(){const{inject:k}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:`
+(function(){const{inject:M}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:`
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">
@@ -63,6 +63,65 @@
                                     <div class="status-value color-primary">{{ currentPoolSize }} {{ t('common.unitStock') }}</div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- V5.0 (T-5.0.6): 健康与可靠性面板 — 数据新鲜度/自愈时间线/启动自检/数据源可用性 -->
+                        <div class="card mt-24">
+                            <div class="card-title flex-between">
+                                <span>🩺 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
+                                <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
+                            </div>
+                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+
+                            <!-- 启动自检摘要 -->
+                            <div class="flex-c-gap-8 mb-12" v-if="startupReport">
+                                <span class="health-badge" :style="{color:'var(--color-success)'}">自检 ok {{ startupReport.ok_count }}</span>
+                                <span class="health-badge" v-if="startupReport.warn_count" :style="{color:'var(--color-warning)'}">warn {{ startupReport.warn_count }}</span>
+                                <span class="health-badge" v-if="startupReport.fail_count" :style="{color:'var(--color-danger)'}">fail {{ startupReport.fail_count }}</span>
+                                <span class="health-badge" :style="{color: startupReport.healthy ? 'var(--color-success)' : 'var(--color-danger)'}">{{ startupReport.healthy ? '健康' : '不健康' }}</span>
+                                <span class="text-xs-tertiary" v-if="startupReport.ts">· {{ startupReport.ts }}</span>
+                            </div>
+                            <div class="text-sm-tertiary mb-12" v-else>启动自检报告尚未生成（服务重启后自动生成）</div>
+
+                            <!-- 数据新鲜度 -->
+                            <div class="health-section-title">📅 数据新鲜度</div>
+                            <el-table :data="freshnessData.items" size="small" v-loading="healthLoading" style="width:100%">
+                                <el-table-column prop="name" label="资产" min-width="150" />
+                                <el-table-column label="状态" width="90">
+                                    <template #default="{ row }">
+                                        <span :style="{color: statusColor(row.status)}">{{ statusLabel(row.status) }}</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="latest_date" label="最新日期" width="120" />
+                                <el-table-column prop="last_update" label="最后更新" min-width="160" />
+                                <el-table-column prop="age_hours" label="距今(时)" width="90" />
+                            </el-table>
+                            <div class="text-sm-tertiary mt-8" v-if="!freshnessData.items || !freshnessData.items.length">暂无新鲜度数据 — 数据资产在运行时自动登记</div>
+
+                            <!-- 自愈时间线 -->
+                            <div class="health-section-title mt-16">🔧 自愈时间线（最近 {{ healHistory.length }} 次）</div>
+                            <div v-if="healHistory.length" class="heal-list">
+                                <div v-for="(h, i) in healHistory" :key="i" class="heal-row">
+                                    <span class="text-xs-tertiary heal-ts">{{ h.ts }}</span>
+                                    <span class="heal-action">{{ h.action }}</span>
+                                    <span class="text-xs-tertiary">{{ h.target }}</span>
+                                    <span :style="{color: h.ok ? 'var(--color-success)' : 'var(--color-danger)'}">{{ h.ok ? '✓' : '✗' }}</span>
+                                    <span class="text-xs-tertiary heal-summary">{{ h.summary }}</span>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无自愈记录 — 巡检随调度健康检查自动执行</div>
+
+                            <!-- 数据源可用性 -->
+                            <div class="health-section-title mt-16">📡 数据源可用性</div>
+                            <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
+                                <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
+                                    <span class="source-name">{{ s.name }}</span>
+                                    <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                    <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
+                                    <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
                         </div>
 
                         <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (靠上放置, v3.17 UI优化) -->
@@ -229,7 +288,7 @@
                                     <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button size="small" type="warning" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -258,7 +317,7 @@
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
                                             <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
                                             <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
-                                            <el-button v-if="!m.locked" size="small" type="warning" @click="removeVendorModel(v,mi)">🗑️</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
                                         </div>
                                         <div class="flex-gap-8-mt8">
                                             <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
@@ -599,7 +658,7 @@
                                 <div class="user-actions-enhanced">
                                     <el-button size="small" type="primary" @click="editUser(user)">编辑</el-button>
                                     <el-button size="small" type="warning" @click="resetUserPassword(user)">重置密码</el-button>
-                                    <el-button v-if="user.username !== 'admin'" size="small" type="warning" @click="deleteUser(user.username)">删除</el-button>
+                                    <el-button v-if="user.username !== 'admin'" size="small" type="danger" @click="deleteUser(user.username)">删除</el-button>
                                 </div>
                             </div>
                     </div>
@@ -625,7 +684,7 @@
                             <div class="flex-gap-6-shrink0">
                                 <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
                                 <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
-                                <el-button v-if="!g.locked" size="small" type="warning" @click="deleteGroupConfig(gid)">删除</el-button>
+                                <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                             </div>
                         </div>
                         <!-- 成员列表（锁定组始终显示，非锁定组展开后显示） -->
@@ -669,7 +728,7 @@
                                         <span v-if="k.enabled === 0" class="user-disabled-badge">已吊销</span>
                                     </div>
                                     <div class="flex-gap-6-shrink0">
-                                        <el-button v-if="k.enabled" size="small" type="warning" @click="revokeOpenApiKey(k)">吊销</el-button>
+                                        <el-button v-if="k.enabled" size="small" type="danger" @click="revokeOpenApiKey(k)">吊销</el-button>
                                     </div>
                                 </div>
                             </div>
@@ -1091,4 +1150,4 @@
                         </div>
                     </div>
                     </div>
-    `,setup(){const a=k("qcState");if(!a)return{};Vue.watch(()=>a.currentSubPage&&a.currentSubPage.value,e=>{e==="autoeval"&&a.loadAiVendors&&a.loadAiVendors()});const f=Vue.ref([]),d=Vue.ref(""),y=Vue.ref("read"),i=Vue.ref(""),n=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},r=Vue.ref([]),o=Vue.ref(!1);async function x(){o.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()});r.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),r.value=[]}finally{o.value=!1}}const w=Vue.computed(()=>(a&&a.analyticsRank&&a.analyticsRank.value||[]).reduce((s,t)=>Math.max(s,t.views||0),0)||1),v=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function u(){n.value=!0;try{const e=await c().apiFetch(v()+"/keys");f.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{n.value=!1}}async function _(){try{const e=await c().apiFetch(v()+"/keys",{method:"POST",body:JSON.stringify({name:d.value||"未命名",role:y.value||"read",expire_days:365})});e&&e.success?(i.value=e.api_key||"",d.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await u()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function C(){if(i.value)try{await navigator.clipboard.writeText(i.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function A(e){try{const s=await c().apiFetch(v()+"/keys/"+e.id,{method:"DELETE"});s&&s.success?(ElementPlus.ElMessage.success("Key 已吊销"),i.value&&e.prefix&&i.value.includes(e.prefix)&&(i.value=""),await u()):ElementPlus.ElMessage.error(s&&(s.detail||s.message)||"吊销失败")}catch(s){ElementPlus.ElMessage.error("吊销失败: "+(s.message||""))}}const z={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function M(e){return z[e]||e}const P=computed(()=>{var e;return(((e=a.healthMetrics)==null?void 0:e.value)||[]).map(s=>({name:M(s.name),source:s.name,success_rate:s.success_rate,avg_latency_ms:s.avg_latency_ms,calls:s.calls||0,degraded:!!s.degraded,data_age_hours:s.data_age_hours!=null?s.data_age_hours:null,stale:!!s.stale,last_fetch:s.last_fetch||s.last_success||null}))});function R(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function D(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const l=a.aiUsage||Vue.ref({}),p=Vue.computed(()=>{const e=l.value&&l.value.by_model||{};return Object.entries(e).map(([s,t])=>({name:s,count:t})).sort((s,t)=>t.count-s.count)}),S=Vue.computed(()=>p.value.reduce((e,s)=>Math.max(e,s.count),0)||1),I=Vue.computed(()=>p.value.reduce((e,s)=>e+s.count,0)||1),E=Vue.computed(()=>m.value.reduce((e,s)=>Math.max(e,s.count),0)||0),m=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=[],t=new Date;for(let g=29;g>=0;g--){const h=new Date(t.getFullYear(),t.getMonth(),t.getDate()-g),b=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");s.push({day:b,count:e[b]||0})}return s}),T=Vue.computed(()=>m.value.reduce((e,s)=>Math.max(e,s.count),0)||1),V=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=new Date,t=s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0");return e[t]||0}),F=Vue.computed(()=>{const e=l.value&&l.value.by_day||{},s=Object.keys(e).filter(t=>(e[t]||0)>0);return s.length?s[s.length-1]:""});function K(e){a.analyticsDays&&(a.analyticsDays.value=e),typeof a.loadAnalytics=="function"&&a.loadAnalytics()}const L='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',O='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function U(e){return e?O:L}return{...a,analyticsMaxViews:w,aiModelRank:p,aiModelMax:S,aiDayTrend:m,aiDayMax:T,todayAiCalls:V,lastAiCallDay:F,aiTotal:I,aiDayPeak:E,setAnalyticsDays:K,viewIcon:U,openApiKeys:f,openApiKeyName:d,openApiKeyRole:y,newOpenApiKey:i,openApiLoading:n,loadOpenApiKeys:u,generateOpenApiKey:_,copyOpenApiKey:C,revokeOpenApiKey:A,healthRows:P,healthClass:R,fmtAge:D,auditLogs:r,auditLoading:o,loadAuditLogs:x}}}})();
+    `,setup(){const t=M("qcState");if(!t)return{};Vue.watch(()=>t.currentSubPage&&t.currentSubPage.value,e=>{e==="autoeval"&&t.loadAiVendors&&t.loadAiVendors()});const w=Vue.ref([]),d=Vue.ref(""),_=Vue.ref("read"),c=Vue.ref(""),o=Vue.ref(!1),l=()=>window.__quantModules&&window.__quantModules.core||{},v=Vue.ref([]),u=Vue.ref(!1);async function P(){u.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:l().authHeaders?l().authHeaders():{}}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()});v.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),v.value=[]}finally{u.value=!1}}const p=Vue.ref(!1),m=Vue.ref(null),C=Vue.ref(null),g=Vue.ref({items:[]}),h=Vue.ref([]),A=Vue.ref(null),R=Vue.ref({data_sources:[],alerts:[]}),D=function(){return l().authHeaders?l().authHeaders():{}},n=function(e){return fetch(e,{headers:D()}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()})};async function S(){p.value=!0,m.value=null;try{const[e,s,a,r]=await Promise.all([n("/api/reliability/freshness"),n("/api/reliability/heal-history?limit=20"),n("/api/reliability/startup-report"),n("/api/reliability/source-health")]);g.value=e&&e.data||{items:[]},h.value=s&&s.data||[],A.value=a&&a.data||null,R.value=r||{data_sources:[],alerts:[]},C.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),m.value="健康数据加载失败: "+(e.message||""),g.value={items:[]},h.value=[]}finally{p.value=!1}}function E(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function I(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}function T(e){return!!e&&!e.degraded}const V=Vue.computed(()=>(t&&t.analyticsRank&&t.analyticsRank.value||[]).reduce((s,a)=>Math.max(s,a.views||0),0)||1),f=()=>l().OPENAPI_ROUTE_BASE||"/api/openapi";async function y(){o.value=!0;try{const e=await l().apiFetch(f()+"/keys");w.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{o.value=!1}}async function F(){try{const e=await l().apiFetch(f()+"/keys",{method:"POST",body:JSON.stringify({name:d.value||"未命名",role:_.value||"read",expire_days:365})});e&&e.success?(c.value=e.api_key||"",d.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await y()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function H(){if(c.value)try{await navigator.clipboard.writeText(c.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function L(e){try{const s=await l().apiFetch(f()+"/keys/"+e.id,{method:"DELETE"});s&&s.success?(ElementPlus.ElMessage.success("Key 已吊销"),c.value&&e.prefix&&c.value.includes(e.prefix)&&(c.value=""),await y()):ElementPlus.ElMessage.error(s&&(s.detail||s.message)||"吊销失败")}catch(s){ElementPlus.ElMessage.error("吊销失败: "+(s.message||""))}}const K={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function O(e){return K[e]||e}const U=computed(()=>{var e;return(((e=t.healthMetrics)==null?void 0:e.value)||[]).map(s=>({name:O(s.name),source:s.name,success_rate:s.success_rate,avg_latency_ms:s.avg_latency_ms,calls:s.calls||0,degraded:!!s.degraded,data_age_hours:s.data_age_hours!=null?s.data_age_hours:null,stale:!!s.stale,last_fetch:s.last_fetch||s.last_success||null}))});function j(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function B(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const i=t.aiUsage||Vue.ref({}),b=Vue.computed(()=>{const e=i.value&&i.value.by_model||{};return Object.entries(e).map(([s,a])=>({name:s,count:a})).sort((s,a)=>a.count-s.count)}),G=Vue.computed(()=>b.value.reduce((e,s)=>Math.max(e,s.count),0)||1),N=Vue.computed(()=>b.value.reduce((e,s)=>e+s.count,0)||1),W=Vue.computed(()=>k.value.reduce((e,s)=>Math.max(e,s.count),0)||0),k=Vue.computed(()=>{const e=i.value&&i.value.by_day||{},s=[],a=new Date;for(let r=29;r>=0;r--){const x=new Date(a.getFullYear(),a.getMonth(),a.getDate()-r),z=x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");s.push({day:z,count:e[z]||0})}return s}),q=Vue.computed(()=>k.value.reduce((e,s)=>Math.max(e,s.count),0)||1),Y=Vue.computed(()=>{const e=i.value&&i.value.by_day||{},s=new Date,a=s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0");return e[a]||0}),$=Vue.computed(()=>{const e=i.value&&i.value.by_day||{},s=Object.keys(e).filter(a=>(e[a]||0)>0);return s.length?s[s.length-1]:""});function J(e){t.analyticsDays&&(t.analyticsDays.value=e),typeof t.loadAnalytics=="function"&&t.loadAnalytics()}const Q='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',X='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function Z(e){return e?X:Q}return{...t,analyticsMaxViews:V,aiModelRank:b,aiModelMax:G,aiDayTrend:k,aiDayMax:q,todayAiCalls:Y,lastAiCallDay:$,aiTotal:N,aiDayPeak:W,setAnalyticsDays:J,viewIcon:Z,openApiKeys:w,openApiKeyName:d,openApiKeyRole:_,newOpenApiKey:c,openApiLoading:o,loadOpenApiKeys:y,generateOpenApiKey:F,copyOpenApiKey:H,revokeOpenApiKey:L,healthRows:U,healthClass:j,fmtAge:B,auditLogs:v,auditLoading:u,loadAuditLogs:P,healthLoading:p,healthError:m,healthUpdatedAt:C,freshnessData:g,healHistory:h,startupReport:A,sourceHealth:R,refreshHealth:S,statusColor:E,statusLabel:I,sourceOk:T}}}})();

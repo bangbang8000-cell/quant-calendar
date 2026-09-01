@@ -134,7 +134,7 @@
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
                                         <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
-                                        <el-button v-if="profileSelect" size="small" type="warning" @click="deleteProfile">🗑 删除</el-button>
+                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
                                     </div>
                                 </div>
                                 <!-- schema 驱动参数表单 -->

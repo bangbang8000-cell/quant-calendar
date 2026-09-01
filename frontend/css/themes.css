@@ -2977,6 +2977,55 @@ text {
     font-weight: var(--font-semibold);
 }
 
+/* V5.0 (T-5.0.6): 健康与可靠性面板 */
+.health-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: var(--r-full);
+    font-size: var(--font-xs);
+    font-weight: var(--font-semibold);
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-light);
+}
+.health-section-title {
+    font-size: var(--font-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.heal-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-md);
+    padding: 4px 8px;
+}
+.heal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border-light);
+}
+.heal-row:last-child { border-bottom: none; }
+.heal-ts { white-space: nowrap; }
+.heal-action {
+    font-family: var(--font-mono);
+    font-size: var(--font-xs);
+    color: var(--primary-color);
+}
+.heal-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-source-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
+}
+.health-source-item .source-name { font-weight: var(--font-semibold); font-size: var(--font-sm); }
+
 .status-badge {
     padding: 4px 10px;
     border-radius: var(--r-md);

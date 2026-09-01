@@ -75,6 +75,65 @@
                             </div>
                         </div>
 
+                        <!-- V5.0 (T-5.0.6): 健康与可靠性面板 — 数据新鲜度/自愈时间线/启动自检/数据源可用性 -->
+                        <div class="card mt-24">
+                            <div class="card-title flex-between">
+                                <span>🩺 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
+                                <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
+                            </div>
+                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+
+                            <!-- 启动自检摘要 -->
+                            <div class="flex-c-gap-8 mb-12" v-if="startupReport">
+                                <span class="health-badge" :style="{color:'var(--color-success)'}">自检 ok {{ startupReport.ok_count }}</span>
+                                <span class="health-badge" v-if="startupReport.warn_count" :style="{color:'var(--color-warning)'}">warn {{ startupReport.warn_count }}</span>
+                                <span class="health-badge" v-if="startupReport.fail_count" :style="{color:'var(--color-danger)'}">fail {{ startupReport.fail_count }}</span>
+                                <span class="health-badge" :style="{color: startupReport.healthy ? 'var(--color-success)' : 'var(--color-danger)'}">{{ startupReport.healthy ? '健康' : '不健康' }}</span>
+                                <span class="text-xs-tertiary" v-if="startupReport.ts">· {{ startupReport.ts }}</span>
+                            </div>
+                            <div class="text-sm-tertiary mb-12" v-else>启动自检报告尚未生成（服务重启后自动生成）</div>
+
+                            <!-- 数据新鲜度 -->
+                            <div class="health-section-title">📅 数据新鲜度</div>
+                            <el-table :data="freshnessData.items" size="small" v-loading="healthLoading" style="width:100%">
+                                <el-table-column prop="name" label="资产" min-width="150" />
+                                <el-table-column label="状态" width="90">
+                                    <template #default="{ row }">
+                                        <span :style="{color: statusColor(row.status)}">{{ statusLabel(row.status) }}</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="latest_date" label="最新日期" width="120" />
+                                <el-table-column prop="last_update" label="最后更新" min-width="160" />
+                                <el-table-column prop="age_hours" label="距今(时)" width="90" />
+                            </el-table>
+                            <div class="text-sm-tertiary mt-8" v-if="!freshnessData.items || !freshnessData.items.length">暂无新鲜度数据 — 数据资产在运行时自动登记</div>
+
+                            <!-- 自愈时间线 -->
+                            <div class="health-section-title mt-16">🔧 自愈时间线（最近 {{ healHistory.length }} 次）</div>
+                            <div v-if="healHistory.length" class="heal-list">
+                                <div v-for="(h, i) in healHistory" :key="i" class="heal-row">
+                                    <span class="text-xs-tertiary heal-ts">{{ h.ts }}</span>
+                                    <span class="heal-action">{{ h.action }}</span>
+                                    <span class="text-xs-tertiary">{{ h.target }}</span>
+                                    <span :style="{color: h.ok ? 'var(--color-success)' : 'var(--color-danger)'}">{{ h.ok ? '✓' : '✗' }}</span>
+                                    <span class="text-xs-tertiary heal-summary">{{ h.summary }}</span>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无自愈记录 — 巡检随调度健康检查自动执行</div>
+
+                            <!-- 数据源可用性 -->
+                            <div class="health-section-title mt-16">📡 数据源可用性</div>
+                            <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
+                                <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
+                                    <span class="source-name">{{ s.name }}</span>
+                                    <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                    <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
+                                    <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
+                        </div>
+
                         <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (靠上放置, v3.17 UI优化) -->
                         <div class="card mt-24">
                             <div class="card-title flex-between">
@@ -1134,6 +1193,54 @@
           auditLoading.value = false;
         }
       }
+
+      // V5.0 (T-5.0.6): 健康与可靠性面板 — 数据新鲜度 / 自愈时间线 / 启动自检 / 数据源可用性
+      const healthLoading = Vue.ref(false);
+      const healthError = Vue.ref(null);
+      const healthUpdatedAt = Vue.ref(null);
+      const freshnessData = Vue.ref({ items: [] });
+      const healHistory = Vue.ref([]);
+      const startupReport = Vue.ref(null);
+      const sourceHealth = Vue.ref({ data_sources: [], alerts: [] });
+
+      const _authH = function () { return _core().authHeaders ? _core().authHeaders() : {}; };
+      const _healthFetch = function (url) {
+        return fetch(url, { headers: _authH() }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        });
+      };
+      async function refreshHealth() {
+        healthLoading.value = true;
+        healthError.value = null;
+        try {
+          const [f, h, s, sh] = await Promise.all([
+            _healthFetch('/api/reliability/freshness'),
+            _healthFetch('/api/reliability/heal-history?limit=20'),
+            _healthFetch('/api/reliability/startup-report'),
+            _healthFetch('/api/reliability/source-health'),
+          ]);
+          freshnessData.value = (f && f.data) || { items: [] };
+          healHistory.value = (h && h.data) || [];
+          startupReport.value = (s && s.data) || null;
+          sourceHealth.value = sh || { data_sources: [], alerts: [] };
+          healthUpdatedAt.value = new Date().toLocaleTimeString();
+        } catch (e) {
+          console.warn('[health] 加载失败:', e);
+          healthError.value = '健康数据加载失败: ' + (e.message || '');
+          freshnessData.value = { items: [] };
+          healHistory.value = [];
+        } finally {
+          healthLoading.value = false;
+        }
+      }
+      function statusColor(st) {
+        return { fresh: 'var(--color-success)', stale: 'var(--color-danger)', missing: 'var(--text-tertiary)', unknown: 'var(--color-warning)' }[st] || 'var(--text-secondary)';
+      }
+      function statusLabel(st) {
+        return { fresh: '正常', stale: '过期', missing: '缺失', unknown: '未知' }[st] || st;
+      }
+      function sourceOk(s) { return !!s && !s.degraded; }
       // 页面热度相对条最大参考值 (v3.17 UI优化) — v3.18.6 fix: state.analyticsRank 为 ref, 需 .value 取数组
       const analyticsMaxViews = Vue.computed(() => {
         const rank = (state && state.analyticsRank && state.analyticsRank.value) || [];
@@ -1286,6 +1393,10 @@
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,
         auditLogs, auditLoading, loadAuditLogs,
+        // V5.0 T-5.0.6: 健康与可靠性面板
+        healthLoading, healthError, healthUpdatedAt,
+        freshnessData, healHistory, startupReport, sourceHealth,
+        refreshHealth, statusColor, statusLabel, sourceOk,
       };
     },
   };
