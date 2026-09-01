@@ -265,6 +265,100 @@
                         </el-form>
                     </div>
 
+                    <!-- V5.4 T-5.4.5: 通知中心 (规则/投递历史/通道状态+静默) -->
+                    <div class="card mt-4">
+                        <div class="card-title flex-between">
+                            <span>🔔 通知中心</span>
+                            <span class="text-sm-tertiary" v-if="ncMsg">{{ ncMsg }}</span>
+                        </div>
+                        <div class="flex-gap-8-mb16">
+                            <el-button :type="ncTab === 'rules' ? 'primary' : ''" size="small" @click="onNcTab('rules')">📜 通知规则</el-button>
+                            <el-button :type="ncTab === 'history' ? 'primary' : ''" size="small" @click="onNcTab('history')">📡 投递历史</el-button>
+                            <el-button :type="ncTab === 'channels' ? 'primary' : ''" size="small" @click="onNcTab('channels')">🔕 通道与静默</el-button>
+                        </div>
+
+                        <!-- 通知规则 Tab -->
+                        <div v-if="ncTab === 'rules'">
+                            <div class="flex-gap-12-mb12">
+                                <el-input class="w-140" v-model="ncNewCode" placeholder="股票代码 600519" clearable size="small"/>
+                                <el-select class="w-140" v-model="ncNewType" size="small">
+                                    <el-option label="价格突破" value="price_above" />
+                                    <el-option label="价格跌破" value="price_below" />
+                                    <el-option label="涨跌幅超" value="pct_change" />
+                                    <el-option label="量比异动" value="volume_surge" />
+                                    <el-option label="入选股票池" value="new_pool" />
+                                </el-select>
+                                <el-input class="w-120" v-model="ncNewThreshold" placeholder="阈值" size="small"/>
+                                <el-button type="primary" size="small" @click="addAlertRule" :loading="ncLoading">+ 添加规则</el-button>
+                            </div>
+                            <el-table :data="ncRules" size="small" v-loading="ncLoading" style="width:100%">
+                                <el-table-column prop="stock_code" label="股票" width="110" />
+                                <el-table-column label="类型" width="110">
+                                    <template #default="s">
+                                        {{ ncTypeLabel(s.row.rule_type) }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="threshold" label="阈值" width="100" />
+                                <el-table-column label="启用" width="90">
+                                    <template #default="s">
+                                        <el-switch :model-value="s.row.enabled" size="small" @change="toggleAlertRule(s.row)" />
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="created_at" label="创建时间" min-width="150" />
+                                <el-table-column label="操作" width="80">
+                                    <template #default="s">
+                                        <el-button size="small" type="danger" text @click="removeAlertRule(s.row)">删除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+
+                        <!-- 投递历史 Tab -->
+                        <div v-if="ncTab === 'history'">
+                            <el-table :data="ncHistory" size="small" v-loading="ncLoading" style="width:100%">
+                                <el-table-column prop="created_at" label="时间" width="150" />
+                                <el-table-column prop="event_type" label="类型" width="90" />
+                                <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
+                                <el-table-column prop="channel" label="通道" width="90" />
+                                <el-table-column prop="recipient" label="收件人" width="120" />
+                                <el-table-column label="结果" width="90">
+                                    <template #default="s">
+                                        <span :style="{color: s.row.ok ? 'var(--color-success)' : 'var(--color-danger)'}">
+                                            {{ s.row.ok ? '成功' : '失败' }}
+                                        </span>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                            <p class="text-sm-tertiary mt-8" v-if="ncHistory.length === 0 && !ncLoading">暂无投递记录</p>
+                        </div>
+
+                        <!-- 通道与静默 Tab -->
+                        <div v-if="ncTab === 'channels'">
+                            <el-table :data="ncChannels" size="small" v-loading="ncLoading" style="width:100%" class="mb-12">
+                                <el-table-column prop="name" label="通道" width="120" />
+                                <el-table-column label="状态" width="140">
+                                    <template #default="s">
+                                        <span :style="{color: s.row.available ? 'var(--color-success)' : 'var(--text-tertiary)'}">
+                                            {{ s.row.available ? '可用' : '未配置' }}
+                                        </span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="configured" label="已配置" width="90">
+                                    <template #default="s">
+                                        <span :style="{color: s.row.configured ? 'var(--color-success)' : 'var(--text-tertiary)'}">{{ s.row.configured ? '是' : '否' }}</span>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                            <div class="flex-gap-12-mb12">
+                                <el-switch v-model="ncSilence" active-text="静默预警" inactive-text="正常推送" @change="applySilence"/>
+                                <span class="text-sm-secondary">静默时长(分钟):</span>
+                                <el-input-number v-model="ncSilenceMinutes" :min="1" :max="1440" size="small" />
+                                <el-button size="small" @click="applySilence">💤 静默 {{ ncSilenceMinutes }} 分钟</el-button>
+                                <el-button size="small" v-if="ncSilence" @click="clearSilence">恢复推送</el-button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- AI 模型管理 (v3.14 厂商化: 以厂商为主配置卡, 卡内配 API 后管理多个模型名) -->
                     <div class="card mt-4">
                         <div class="card-title">🤖 AI 模型管理</div>
@@ -1288,6 +1382,95 @@
       function statusLabel(st) {
         return { fresh: '正常', stale: '过期', missing: '缺失', unknown: '未知' }[st] || st;
       }
+      // V5.4 T-5.4.5: 通知中心 (规则/投递历史/通道状态+静默) — 本地状态
+      const ncTab = Vue.ref('rules');
+      const ncRules = Vue.ref([]);
+      const ncHistory = Vue.ref([]);
+      const ncChannels = Vue.ref([]);
+      const ncLoading = Vue.ref(false);
+      const ncNewCode = Vue.ref('');
+      const ncNewType = Vue.ref('price_above');
+      const ncNewThreshold = Vue.ref('');
+      const ncSilence = Vue.ref(false);
+      const ncSilenceMinutes = Vue.ref(60);
+      const ncMsg = Vue.ref('');
+      function ncTypeLabel(t) {
+        return { price_above: '价格突破', price_below: '价格跌破', pct_change: '涨跌幅超', volume_surge: '量比异动', new_pool: '入池' }[t] || t;
+      }
+      async function loadAlertRules() {
+        ncLoading.value = true;
+        try {
+          const r = await (await fetch('/api/alerts/rules')).json();
+          ncRules.value = (r && r.rules) || [];
+        } catch (err) { ncMsg.value = '规则加载失败: ' + err; }
+        finally { ncLoading.value = false; }
+      }
+      async function loadAlertHistory() {
+        ncLoading.value = true;
+        try {
+          const r = await (await fetch('/api/alerts/history?limit=50')).json();
+          ncHistory.value = (r && r.history) || [];
+        } catch (err) { ncMsg.value = '历史加载失败: ' + err; }
+        finally { ncLoading.value = false; }
+      }
+      async function loadAlertChannels() {
+        ncLoading.value = true;
+        try {
+          const c = await (await fetch('/api/alerts/channels')).json();
+          const s = await (await fetch('/api/alerts/silence')).json();
+          ncChannels.value = (c && c.channels) || [];
+          ncSilence.value = !!(s && s.silenced);
+        } catch (err) { ncMsg.value = '通道状态加载失败: ' + err; }
+        finally { ncLoading.value = false; }
+      }
+      function onNcTab(tab) {
+        ncTab.value = tab;
+        if (tab === 'rules') loadAlertRules();
+        else if (tab === 'history') loadAlertHistory();
+        else loadAlertChannels();
+      }
+      async function addAlertRule() {
+        const code = ncNewCode.value.trim();
+        if (!code) { ncMsg.value = '请填写股票代码'; return; }
+        ncLoading.value = true;
+        try {
+          const body = { stock_code: code, rule_type: ncNewType.value };
+          if (ncNewType.value !== 'new_pool') {
+            const t = Number(ncNewThreshold.value);
+            if (isNaN(t)) { ncMsg.value = '阈值必须为数值'; return; }
+            body.threshold = t;
+          }
+          const r = await (await fetch('/api/alerts/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+          if (r && r.rule) { ncMsg.value = '规则已添加'; ncNewCode.value = ''; ncNewThreshold.value = ''; loadAlertRules(); }
+          else ncMsg.value = (r && r.detail) || '添加失败';
+        } catch (err) { ncMsg.value = '添加失败: ' + err; }
+        finally { ncLoading.value = false; }
+      }
+      async function toggleAlertRule(rule) {
+        try {
+          await fetch('/api/alerts/rules/' + rule.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: !rule.enabled }) });
+          rule.enabled = !rule.enabled;
+        } catch (err) { ncMsg.value = '切换失败: ' + err; }
+      }
+      async function removeAlertRule(rule) {
+        try {
+          const r = await (await fetch('/api/alerts/rules/' + rule.id, { method: 'DELETE' })).json();
+          if (r && r.success) { ncMsg.value = '规则已删除'; loadAlertRules(); }
+          else ncMsg.value = '删除失败';
+        } catch (err) { ncMsg.value = '删除失败: ' + err; }
+      }
+      async function applySilence() {
+        try {
+          const minutes = ncSilence.value ? ncSilenceMinutes.value : 0;
+          const r = await (await fetch('/api/alerts/silence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minutes }) })).json();
+          ncSilence.value = !!(r && r.silenced);
+          ncMsg.value = ncSilence.value ? '已静默' : '已恢复推送';
+        } catch (err) { ncMsg.value = '静默设置失败: ' + err; }
+      }
+      async function clearSilence() {
+        ncSilence.value = false;
+        await applySilence();
+      }
       function sourceOk(s) { return !!s && !s.degraded; }
       // 页面热度相对条最大参考值 (v3.17 UI优化) — v3.18.6 fix: state.analyticsRank 为 ref, 需 .value 取数组
       const analyticsMaxViews = Vue.computed(() => {
@@ -1447,6 +1630,11 @@
         refreshHealth, statusColor, statusLabel, sourceOk,
         // V5.1 T-5.1.4: 数据字典
         dictLoading, dictError, dictCategory, dictData, loadDataDict,
+        // V5.4 T-5.4.5: 通知中心
+        ncTab, ncRules, ncHistory, ncChannels, ncLoading, ncNewCode, ncNewType,
+        ncNewThreshold, ncSilence, ncSilenceMinutes, ncMsg, ncTypeLabel,
+        onNcTab, loadAlertRules, loadAlertHistory, loadAlertChannels,
+        addAlertRule, toggleAlertRule, removeAlertRule, applySilence, clearSilence,
       };
     },
   };
