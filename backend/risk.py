@@ -158,3 +158,65 @@ def compute_risk_metrics(returns, annual_days=ANNUAL_DAYS, risk_free_rate=0.03,
             "sharpe_ratio": float(sharpe), "sortino_ratio": float(sortino),
             "calmar_ratio": float(calmar) if calmar is not None else None,
             "beta": beta, "total_days": total_days}
+# ─── V5.3 T-5.3.2: 仓位建议 (Kelly 修正 / 风险平价 / 波动率目标 / 上限约束) ───
+
+
+def kelly_fraction(win_rate, odds):
+    """Kelly 单笔仓位: f = (b*p - q)/b; 负值归 0 (不押负期望)。"""
+    p = float(win_rate)
+    b = float(odds)
+    if b <= 0 or p <= 0 or p >= 1:
+        return 0.0
+    f = (b * p - (1.0 - p)) / b
+    return max(0.0, f)
+
+
+def half_kelly(win_rate, odds):
+    """半 Kelly: 实盘常用 (满 Kelly 波动难以拿住, 估计误差放大下注)。"""
+    return kelly_fraction(win_rate, odds) / 2.0
+
+
+def quarter_kelly(win_rate, odds):
+    return kelly_fraction(win_rate, odds) / 4.0
+
+
+def vol_target_position(est_vol_annual, target_vol=0.12):
+    """波动率目标仓位 = target/est, 上限 1.0 (无杠杆); 仓位随波动缩放。"""
+    if est_vol_annual is None or float(est_vol_annual) <= 0:
+        return 1.0
+    return min(float(target_vol) / float(est_vol_annual), 1.0)
+
+
+def risk_parity_weights(vols, max_position=1.0):
+    """等风险贡献 (风险平价) 权重 ∝ 1/σ, 归一化, 单标的上限 max_position。"""
+    vols = [float(v) for v in vols]
+    inv = [1.0 / v if v > 1e-12 else 0.0 for v in vols]
+    s = sum(inv)
+    if s <= 1e-12:
+        return [0.0] * len(vols)
+    w = [x / s for x in inv]
+    if max_position < 1.0:
+        w = [min(x, max_position) for x in w]
+    return w
+
+
+def position_sizing(vols, target_vol=0.12, max_position=0.2, method="vol_target"):
+    """组合仓位建议。
+
+    vols: {名称: 年化波动}; method: vol_target|risk_parity|equal
+    返回 {positions: {名称: 权重}, total, method, max_position}
+    """
+    names = list(vols.keys())
+    if method == "risk_parity":
+        w = risk_parity_weights([vols[k] for k in names], max_position=max_position)
+        positions = dict(zip(names, [float(x) for x in w]))
+    elif method == "equal":
+        n = max(1, len(names))
+        w = min(1.0 / n, max_position)
+        positions = {k: float(w) for k in names}
+    else:  # vol_target (应用单标的上限 max_position)
+        positions = {k: float(min(vol_target_position(vols[k], target_vol), max_position)) for k in names}
+    total = float(sum(positions.values()))
+    return {"positions": positions, "total": total, "method": method,
+            "max_position": max_position}
+
