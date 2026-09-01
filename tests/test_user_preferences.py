@@ -63,6 +63,8 @@ class TestUserPreferences:
             'theme': 'system',
             'chart_period': 'daily',
             'language': 'zh-CN',
+            'info_density': 'comfortable',  # V5.6 T-5.6.4
+            'onboarding_progress': '',      # V5.6 T-5.6.1
         }
 
     def test_set_single_preference(self, pref):
@@ -83,6 +85,8 @@ class TestUserPreferences:
         assert r.json()['preferences'] == {
             'default_view': 'calendar', 'theme': 'dark', 'chart_period': 'weekly',
             'language': 'zh-CN',
+            'info_density': 'comfortable',  # V5.6 T-5.6.4
+            'onboarding_progress': '',      # V5.6 T-5.6.1
         }
 
     def test_restart_keep_new_client(self, pref):

@@ -1058,7 +1058,7 @@ var fc=(s,e)=>()=>(e||s((e={exports:{}}).exports,e),e.exports);var pc=fc((Ec,_e)
         <div class="qc-error-title">{{ title || t('common.errorTitle') }}</div>
         <div class="qc-error-desc">{{ desc || t('common.errorDesc') }}</div>
         <el-button v-if="!retrying" size="small" @click="$emit('retry')">{{ t('common.retry') }}</el-button>
-        <el-button v-else size="small" loading>{{ t('common.retry') }}</el-button>
+        <el-button v-else size="small" :loading="retrying">{{ t('common.retry') }}</el-button>
       </div>
     `,setup(){function s(e){try{const d=window.__quantModules&&window.__quantModules.i18n&&window.__quantModules.i18n.t;if(d)return d(e)||""}catch{}return e}return{t:s}}})})();(function(){const{ref:s,computed:e,watch:d,nextTick:l,inject:g,onMounted:r}=Vue,P=window.QuantCommandPanel;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.CommandPanel={name:"qc-command-panel",template:`
       <el-dialog v-model="visible" width="580px" top="12vh" class="command-palette"
