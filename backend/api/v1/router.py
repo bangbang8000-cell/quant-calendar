@@ -31,6 +31,7 @@ from .portfolio import router as portfolio_router
 from .openapi import router as openapi_router
 from .strategy_research import router as strategy_research_router
 from .strategy_execution import router as strategy_execution_router
+from .reliability import router as reliability_router
 
 # 创建 v1 路由汇总
 api_router = APIRouter(prefix="/api")
@@ -65,5 +66,6 @@ api_router.include_router(openapi_router)
 # V4.0 M4-3: API v2 版本前缀 — 开放 API 的可版本化契约 (/api/v2/openapi/...), v1 (/api/openapi) 保持兼容
 api_router.include_router(openapi_router, prefix="/v2")
 api_router.include_router(strategy_research_router)
+api_router.include_router(reliability_router)
 
 __all__ = ["api_router"]

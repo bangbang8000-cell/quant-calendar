@@ -94,6 +94,13 @@ class ViewsAggregator:
             "latest_date": self.all_dates[-1] if self.all_dates else None
         }
         logger.info(f"✅ ViewsAggregator 刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}条股票记录")
+        # V5.0 T-5.0.1: 记录日历视图新鲜度 (best-effort; 生成策略后/文件变动/定时刷新均经此中央点)
+        try:
+            from reliability.freshness import record_update
+            record_update("calendar_views", latest_date=stats.get("latest_date"),
+                          count=stats["dates_count"], detail="views_aggregator reload")
+        except Exception as e:
+            logger.warning("日历视图新鲜度记录失败: %s", e)
         return stats
 
     def _get_week_range(self, date_str: str) -> List[str]:

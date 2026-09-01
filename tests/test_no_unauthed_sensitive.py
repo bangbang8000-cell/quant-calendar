@@ -34,6 +34,8 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/feedback", None),
     # Prometheus 指标: 内部暴露面
     ("get", "/metrics", None),
+    # V5.0 T-5.0.1: 可靠性/数据新鲜度 (运维信息, 需登录)
+    ("get", "/api/reliability/freshness", None),
 ]
 
 

@@ -178,6 +178,14 @@ class Scheduler:
         self._persist_history(task, success, detail)
         return slot
 
+    def _record_freshness(self, asset_id: str, **kwargs):
+        """V5.0 T-5.0.1: 记录数据资产新鲜度 (best-effort, 不中断业务链路)"""
+        try:
+            from reliability.freshness import record_update
+            record_update(asset_id, **kwargs)
+        except Exception as e:
+            logger.warning("新鲜度记录失败 %s: %s", asset_id, e)
+
     def _persist_history(self, task: str, success: bool, detail: str):
         """将单次执行记录追加到 scheduler_history.json"""
         try:
@@ -373,6 +381,7 @@ class Scheduler:
                         self.pusher.send_text(report["content"][:3500])
                         logger.info("📮 日报已推送飞书")
                         self._record_task_run("daily_report", True, f"日报 {dates[-1]}")
+                        self._record_freshness("daily_report", latest_date=dates[-1], detail="daily_report")
                     else:
                         # 回退旧版推送
                         self.pusher.send_daily_report(dates[-1])
@@ -672,6 +681,9 @@ class Scheduler:
                         "detail": detail[:200],
                     }
                     self._record_task_run("strategy_run", ok, detail[:200])
+                    if ok:
+                        self._record_freshness("strategy_holdings", latest_date=today,
+                                               count=len(executed or []), detail="strategy_run ok")
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
                     if self.execution_progress:
@@ -719,6 +731,7 @@ class Scheduler:
                         update_refresh_status(True, f"定时刷新成功 {today}")
                         logger.info("✅ 定时刷新完成")
                         self._record_task_run("data_refresh", True, f"刷新成功 {today}")
+                        self._record_freshness("market_daily", latest_date=today, detail="data_refresh")
                     except Exception as e:
                         logger.error(f" 定时刷新失败: {e}")
                         self._record_task_run("data_refresh", False, str(e)[:120])
@@ -844,6 +857,7 @@ class Scheduler:
                         update_refresh_status(True, "文件变动触发刷新")
                         logger.info("✅ 文件变动刷新完成")
                         self._record_task_run("file_watch", True, change_desc)
+                        self._record_freshness("strategy_holdings", detail=change_desc)
                     except Exception as e:
                         logger.error(f" 文件变动刷新失败: {e}")
                         self._record_task_run("file_watch", False, str(e)[:120])
@@ -869,6 +883,7 @@ class Scheduler:
                     if name:
                         logger.info(f"💾 每日自动备份成功: {name}")
                         self._record_task_run("daily_backup", True, name)
+                        self._record_freshness("backup", detail=name)
                         self._backup_failures = 0
                     else:
                         logger.warning("💾 每日自动备份失败")
@@ -997,6 +1012,7 @@ class Scheduler:
         """
         if not outcome.get("degraded"):
             self._record_task_run("daily_market_review", True, f"{today}({stage})")
+            self._record_freshness("market_review", latest_date=today, detail=f"{stage} ok")
             # v3.17.15: Webhook — market_review_ready 事件
             try:
                 from webhook import dispatch as webhook_dispatch
