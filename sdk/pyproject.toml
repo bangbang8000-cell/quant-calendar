@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-calendar-sdk"
+version = "5.8.0"
+description = "quant-calendar 客户端 SDK (零依赖)"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+py-modules = ["quant_calendar_client"]
