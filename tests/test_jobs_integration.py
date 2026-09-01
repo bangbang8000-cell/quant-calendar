@@ -132,15 +132,19 @@ def test_data_sync_task_success(job_env, monkeypatch):
 # ─── report_generate ─────────────────────────────────────────
 
 def test_report_generate_task_success(job_env, monkeypatch):
-    # collect_highlights 真实返回 [{type,title,content,level}, ...] 列表
-    monkeypatch.setattr("report_center.collect_highlights",
-                        lambda d: [{"type": "period", "title": "a"}, {"type": "strategy", "title": "b"}])
-    monkeypatch.setattr("report_center.render_report",
-                        lambda title, blocks, date: {"content": "xx"})
+    # render_report 的 blocks 是 block_type 字符串列表
+    captured = {}
+
+    def fake_render(title, blocks, date):
+        captured["blocks"] = blocks
+        return {"content": "xx"}
+
+    monkeypatch.setattr("report_center.render_report", fake_render)
     jid = job_env.create_task("report_generate", {"date": "2026-09-01"})
     j = _wait(job_env, jid)
     assert j["status"] == "success"
-    assert j["result"]["blocks"] == 2
+    assert j["result"]["blocks"] == 5
+    assert captured["blocks"] == ["period", "strategy", "anomaly", "evaluate", "risk"]
 
 
 # ─── 取消批量任务 ────────────────────────────────────────────
