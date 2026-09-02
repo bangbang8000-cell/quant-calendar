@@ -1,0 +1,5 @@
+v5.1 (5.1.1-1): T-5.1.11 截面处理三步 factor_preprocess (去极值/中性化/标准化)
+
+- 新增 backend/factor_preprocess.py: mad_winsorize/winsorize/zscore/neutralize(行业+市值回归残差)/preprocess_pipeline(顺序固定三步, 各步可选)/preprocess_with_report(覆盖度/极端值/均值/标准差)
+- 新增 tests/test_factor_preprocess.py 28 用例 (TDD: 先失败后实现, 全绿)
+- 纯函数可测, NaN 保留, 常数/退化序列安全, 索引对齐校验
