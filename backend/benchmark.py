@@ -115,3 +115,57 @@ def attach_benchmark(result, bench_returns, strategy_returns=None,
     cmp["benchmark_name"] = benchmark_name
     result["benchmark"] = cmp
     return result
+
+
+# ==================== 分年度报告 (T-5.1.26 / FR-5.1.2.6) ====================
+
+def yearly_returns(dates, daily_returns) -> Dict[str, float]:
+    """分年度复利收益: {year: 累计收益}。
+
+    dates: 与 daily_returns 等长的日期列表 (YYYY-MM-DD 或 YYYYMMDD)。
+    """
+    yearly: Dict[str, float] = {}
+    for d, r in zip(dates, daily_returns):
+        try:
+            year = str(d)[:4]
+        except (TypeError, ValueError):
+            continue
+        if r is None:
+            continue
+        yearly.setdefault(year, 1.0)
+        yearly[year] *= (1 + float(r))
+    return {y: v - 1.0 for y, v in yearly.items()}
+
+
+def yearly_excess(dates, strategy_returns, bench_returns) -> Dict[str, float]:
+    """分年度超额收益: 策略年收益 - 基准年收益。"""
+    s = yearly_returns(dates, strategy_returns)
+    b = yearly_returns(dates, bench_returns)
+    years = sorted(set(s) | set(b))
+    return {y: s.get(y, 0.0) - b.get(y, 0.0) for y in years}
+
+
+def yearly_benchmark_report(dates, strategy_returns, bench_returns,
+                            benchmark_name="基准") -> Dict:
+    """分年度报告: [{year, strategy, benchmark, excess}] + best/worst 年份。"""
+    s = yearly_returns(dates, strategy_returns)
+    b = yearly_returns(dates, bench_returns)
+    years = sorted(set(s) | set(b))
+    rows = []
+    for y in years:
+        rows.append({
+            'year': y,
+            'strategy': round(s.get(y, 0.0) * 100, 2),
+            'benchmark': round(b.get(y, 0.0) * 100, 2),
+            'excess': round(s.get(y, 0.0) - b.get(y, 0.0), 4),
+        })
+    if not rows:
+        return {'years': [], 'best_year': None, 'worst_year': None}
+    best = max(rows, key=lambda r: r['excess'])
+    worst = min(rows, key=lambda r: r['excess'])
+    return {
+        'years': rows,
+        'best_year': best['year'],
+        'worst_year': worst['year'],
+        'benchmark_name': benchmark_name,
+    }
