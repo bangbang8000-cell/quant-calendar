@@ -1,0 +1,5 @@
+v5.1 (5.1.2-4): T-5.1.24 Walk-forward 报告 (滚动 OOS 各折 + 稳定性诊断)
+
+- walkforward.py 新增 build_walkforward_report(各折明细+CV稳定性+verdict 稳定/不稳定/样本不足 + note)
+- 新增 tests/test_backtest_walkforward.py 7 用例 (含无前视核心断言: 训练严格在测试前+测试段不相交+只接收训练信息)
+- 回归 27 passed

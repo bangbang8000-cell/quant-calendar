@@ -139,3 +139,33 @@ def walkforward_evaluate_result(bt_result, train_frac=0.6, n_folds=3,
     return {"wf_supported": True, "wf_stable": rep["stable"], "wf_cv": rep["cv"],
             "wf_mean_oos_total": rep["mean"], "wf_std_oos_total": rep["std"],
             "wf_n_folds": rep["n_folds"]}
+
+
+def build_walkforward_report(returns, predict_fn, train_frac=0.6, n_folds=3,
+                             expanding=True, cv_threshold=0.5) -> Dict:
+    """Walk-forward 报告 (T-5.1.24 / FR-5.1.2.4): 滚动 OOS 各折明细 + 稳定性诊断 + 结论。
+
+    复用 evaluate_walkforward (各折指标) + walkforward_summary (跨折 CV 稳定性)。
+    返回 {folds: [...], summary: {...}, verdict, note}。
+    """
+    result = evaluate_walkforward(returns, predict_fn, train_frac=train_frac,
+                                  n_folds=n_folds, expanding=expanding)
+    summary = result["summary"]
+    folds = result["folds"]
+    if not folds or len(folds) < 2:
+        verdict = '样本不足'
+        note = '折叠数 <2, 无法做跨折稳定性诊断'
+    else:
+        stable = summary.get("stable", False)
+        cv = summary.get("cv")
+        verdict = '稳定' if stable else '不稳定'
+        note = ('各折 OOS 收益 CV=%.3f (<%s), 跨折稳定' % (cv, cv_threshold)) if stable else             ('各折 OOS 收益 CV=%.3f (≥%s), 跨折不稳定, 策略可能依赖特定行情段'
+             % (cv, cv_threshold))
+    return {
+        'folds': folds,
+        'summary': summary,
+        'verdict': verdict,
+        'note': note,
+        'params': {'train_frac': train_frac, 'n_folds': n_folds,
+                   'expanding': expanding, 'cv_threshold': cv_threshold},
+    }
