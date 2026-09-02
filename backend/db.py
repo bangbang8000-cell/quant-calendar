@@ -15,6 +15,7 @@ import threading
 from datetime import datetime, timedelta
 
 from paths import DATA_DIR
+import migrations  # V5.9 (T-5.9.4): 版本化 schema 迁移框架
 
 logger = logging.getLogger(__name__)
 
@@ -177,13 +178,40 @@ def init_db() -> bool:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
             conn.commit()
+            # V5.9 (T-5.9.4): 版本化迁移 — 失败即拒绝初始化 (启动失败而非带损运行)
+            migrations.upgrade(conn)
+            conn.commit()
             # 校验: 尝试查询 meta 表
             conn.execute("SELECT COUNT(*) FROM meta").fetchone()
             conn.close()
         return True
     except Exception as e:
-        logger.error(f"[db] 数据库初始化/校验失败: {e}")
+        logger.error(f"[db] 数据库初始化/迁移/校验失败: {e}")
         return False
+
+
+def apply_migrations() -> None:
+    """V5.9 (T-5.9.4): 在现有库上应用版本化迁移 (幂等; 失败抛 MigrationError → 启动拒绝)"""
+    with _db_lock:
+        conn = get_conn()
+        try:
+            migrations.upgrade(conn)
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def validate_migrations() -> None:
+    """V5.9 (T-5.9.4): 校验版本化迁移一致性; 不通过抛 MigrationError → 启动拒绝"""
+    with _db_lock:
+        conn = get_conn()
+        try:
+            v = migrations.validate(conn)
+            if not v["ok"]:
+                raise migrations.MigrationError(
+                    "迁移校验不通过: missing=%s extra=%s" % (v["missing"], v["extra"]))
+        finally:
+            conn.close()
 
 
 def schema_ok() -> bool:

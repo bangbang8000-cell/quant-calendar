@@ -60,6 +60,14 @@ async def lifespan(app: FastAPI):
         db.migrate()
     except Exception as e:
         logger.warning(f"DB 增量迁移失败(可忽略): {e}")
+    # V5.9 (T-5.9.4): 版本化迁移 — 失败拒绝启动 (schema 不一致/迁移损坏不放行)
+    try:
+        db.apply_migrations()
+        db.validate_migrations()
+    except Exception as e:
+        logger.critical(f"❌ 版本化迁移失败/校验不通过, 拒绝启动: {e}")
+        import sys
+        sys.exit(1)
     if not db.schema_ok():
         ok = db.init_db()
         if not ok:
