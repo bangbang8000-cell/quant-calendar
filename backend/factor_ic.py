@@ -235,3 +235,78 @@ def get_factor_ic_report() -> Dict:
     except Exception as e:
         logger.warning('因子 IC 报告数据获取失败 (降级): %s', e)
         return {}
+
+
+# ==================== IC 衰减分析 (T-5.1.12 / FR-5.1.1.2) ====================
+
+def compute_ic_decay(panel: List[Dict],
+                     windows: tuple = ('n1', 'n5', 'n10', 'n20')) -> Dict[str, List[Dict]]:
+    """对多个持有期窗口计算横截面 IC 序列 → {window: [{date, ic}]}
+
+    panel: 同 compute_ic_series (每期 stocks 含 factor_value + future_return.{nX})。
+    IC 衰减曲线: 短窗口 IC 强、长窗口 IC 弱 → 最优持有期取 |IC| 最强窗口。
+    """
+    if not panel:
+        return {}
+    decay: Dict[str, List[Dict]] = {}
+    for wkey in windows:
+        decay[wkey] = compute_ic_series(panel, window=wkey)
+    return decay
+
+
+def ic_decay_summary(decay: Dict[str, List[Dict]]) -> Dict:
+    """由衰减曲线计算 {windows: [{window, ic_mean, icir}], optimal_window, decay_rate}。
+
+    optimal_window: |IC| 均值最强窗口 (平局取短窗口);
+    decay_rate: 最长/最短窗口 |IC| 之比 (1.0=不衰减, <1=衰减, 0=长窗无信号)。
+    """
+    rows = []
+    for wkey, ics in decay.items():
+        valid = [x['ic'] for x in ics if x.get('ic') is not None]
+        if not valid:
+            rows.append({'window': wkey, 'ic_mean': None, 'icir': None, 'abs_ic': 0.0})
+            continue
+        mean = sum(valid) / len(valid)
+        std = (sum((ic - mean) ** 2 for ic in valid) / len(valid)) ** 0.5 if len(valid) > 1 else 0.0
+        icir = (mean / std) if (std and std > 0) else None
+        rows.append({
+            'window': wkey,
+            'ic_mean': round(mean, 2),
+            'icir': round(icir, 2) if icir is not None else None,
+            'abs_ic': abs(mean),
+        })
+    if not rows:
+        return {'windows': [], 'optimal_window': None, 'decay_rate': None}
+    # 窗口数值排序 (n1 < n5 < n10 < n20)
+    def _wnum(w):
+        try:
+            return int(w[1:])
+        except (ValueError, IndexError):
+            return 999
+    rows_sorted = sorted(rows, key=lambda r: _wnum(r['window']))
+    # 最优 = |IC| 最强; 平局取最短窗口 (abs_ic 降序, 再按窗口数升序)
+    best = min(rows_sorted, key=lambda r: (-r['abs_ic'], _wnum(r['window'])))
+    short_abs = best['abs_ic']
+    long_row = max(rows_sorted, key=lambda r: _wnum(r['window']))
+    decay_rate = (long_row['abs_ic'] / short_abs) if short_abs > 0 else None
+    return {
+        'windows': [{'window': r['window'], 'ic_mean': r['ic_mean'], 'icir': r['icir']}
+                    for r in rows_sorted],
+        'optimal_window': best['window'],
+        'decay_rate': round(decay_rate, 2) if decay_rate is not None else None,
+    }
+
+
+def build_ic_decay_report(factor_panels: Dict[str, Dict[str, List[Dict]]]) -> Dict:
+    """由 {factor_key: {window: [panel]}} 组装 IC 衰减报告。
+
+    返回 {factor_key: {windows, optimal_window, decay_rate}}。
+    """
+    report: Dict[str, Dict] = {}
+    for fkey, windows in factor_panels.items():
+        # 重建衰减结构: 用各窗口的 panel
+        decay: Dict[str, List[Dict]] = {}
+        for wkey, panel in windows.items():
+            decay[wkey] = compute_ic_series(panel, window=wkey)
+        report[fkey] = ic_decay_summary(decay)
+    return report

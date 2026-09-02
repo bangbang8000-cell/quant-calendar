@@ -1,0 +1,5 @@
+v5.1 (5.1.1-2): T-5.1.12 IC 衰减分析 (1/5/10/20日 IC 序列 + 最优持有期)
+
+- factor_ic.py 新增 compute_ic_decay(多窗口 IC 序列)/ic_decay_summary(optimal_window 平局取短窗 + decay_rate)/build_ic_decay_report(多因子报告)
+- 新增 tests/test_factor_ic_decay.py 11 用例 (TDD 全绿)
+- 回归: 既有 test_factor_ic.py 20 用例全绿 (31 passed)
