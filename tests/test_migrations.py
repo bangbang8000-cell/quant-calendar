@@ -155,11 +155,23 @@ def test_rollback_preserves_schema_table(conn):
 
 # ─── 4. 校验 ────────────────────────────────────────────
 
-def test_validate_detects_missing(conn):
+def test_validate_partial_upgrade_is_ok_prefix(conn):
+    # 只升到 1 是合法前缀 (部分升级正常态); missing 仅报告
     upgrade(conn, target=1)
     v = validate(conn)
-    assert v["ok"] is False
+    assert v["ok"] is True
     assert v["missing"] == [2, 3]
+    assert v["current"] == 1
+
+
+def test_validate_detects_gap(conn):
+    # 删除中间版本 2 → 前缀空洞 → 不一致
+    upgrade(conn)
+    conn.execute("DELETE FROM schema_migrations WHERE version=2")
+    conn.commit()
+    v = validate(conn)
+    assert v["ok"] is False
+    assert v["gap"] == [2]
 
 
 def test_validate_detects_extra(conn):
@@ -175,6 +187,14 @@ def test_validate_ok_after_full_upgrade(conn):
     upgrade(conn)
     v = validate(conn)
     assert v["ok"] is True and v["applied"] == v["available"]
+
+
+def test_validate_ok_after_rollback_prefix(conn):
+    upgrade(conn)
+    rollback(conn, target=2)
+    v = validate(conn)
+    assert v["ok"] is True  # 回滚后低版本是合法前缀
+    assert v["current"] == 2
 
 
 # ─── 5. 失败处理 ─────────────────────────────────────────
@@ -297,7 +317,8 @@ def test_validate_migrations_raises_on_missing(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DATA_DIR", str(tmp_path))
     db.init_db()
     conn = sqlite3.connect(str(tmp_path / "app.db"))
-    conn.execute("DELETE FROM schema_migrations WHERE version=3")
+    # 外来版本 → 不一致 → validate_migrations 拒绝
+    conn.execute("INSERT INTO schema_migrations (version,name,applied_at) VALUES (99,'ghost','x')")
     conn.commit()
     conn.close()
     with pytest.raises(MigrationError):

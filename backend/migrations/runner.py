@@ -128,19 +128,26 @@ def rollback(conn, target=0):
 
 
 def validate(conn) -> dict:
-    """版本一致性校验: 已应用 == 可用 (缺/多/乱序均不 ok)"""
+    """版本一致性校验 (V5.9 T-5.9.5 语义修正):
+    已应用集必须是可用版本的合法前缀 {1..current} —
+    部分升级/回滚到低版本是正常态 (ok=True); 仅当存在
+    外来版本 (extra) 或前缀内空洞 (gap) 时视为不一致 (ok=False)。
+    整体缺失 (missing) 供报告, 不单独判不 ok。"""
     _ensure_table(conn)
     applied = {r[0] for r in conn.execute("SELECT version FROM %s" % MIGRATION_TABLE).fetchall()}
     available = {m.version for m in MIGRATIONS}
-    missing = sorted(available - applied)
-    extra = sorted(applied - available)
     cur = get_current_version(conn)
+    expected = {v for v in available if v <= cur}
+    extra = sorted(applied - available)
+    gap = sorted(expected - applied)
+    missing = sorted(available - applied)
     return {
-        "ok": not missing and not extra,
+        "ok": not extra and not gap,
         "current": cur,
         "latest": latest_version(),
         "applied": sorted(applied),
         "available": sorted(available),
         "missing": missing,
         "extra": extra,
+        "gap": gap,
     }
