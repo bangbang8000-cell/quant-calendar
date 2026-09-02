@@ -1,0 +1,4 @@
+v5.1 (5.1.2-3): T-5.1.23 样本外纪律 (backtest_oos) — 70/30 切分 + OOS未触碰标注
+
+- 新增 backend/backtest_oos.py: split_train_test(70/30)/oos_untouched_marker(参数仅训练段)/oos_audit_report(审计报告+violation)/assert_oos_untouched(违规抛异常)
+- 新增 tests/test_backtest_oos.py 12 用例 (TDD 全绿)

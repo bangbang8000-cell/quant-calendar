@@ -1,4 +1,0 @@
-v5.1 (5.1.2-2): T-5.1.22 前视偏差守卫 (lookahead_guard) — t日信号/t+1成交审计
-
-- 新增 backend/lookahead_guard.py: audit_execution_timing(符号级同日成交违规)/detect_same_day_close_fill(信号日收盘价成交违规)/sanitize_execution_delay(≥1天)/lookahead_audit_report(综合报告+note)
-- 新增 tests/test_backtest_lookahead.py 12 用例 (TDD 全绿)
