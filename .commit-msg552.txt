@@ -1,0 +1,4 @@
+v5.1 (5.1.5-2): T-5.1.52 复盘→策略关联 (link_review_experiment)
+
+- market_review.py 新增 link_review_experiment(复盘关联实验id,去重,不存在创建骨架)/get_review_experiments(读关联)/find_reviews_for_experiment(策略反查复盘日期)
+- 新增 tests/test_market_review_link.py 6 用例 (TDD 全绿)

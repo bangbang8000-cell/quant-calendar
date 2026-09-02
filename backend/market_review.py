@@ -407,3 +407,42 @@ def ensure_structured_fields(report: dict) -> dict:
     report = dict(report or {})
     report.update(structured_fields(report))
     return report
+
+
+# ─── T-5.1.52 / FR-5.1.5.2: 复盘→策略关联 ───
+
+_LINK_KEY = 'linked_experiments'
+
+
+def link_review_experiment(date: str, eid: str) -> bool:
+    """给日期复盘关联一个实验 id (去重, 不存在则创建复盘骨架)。"""
+    date_str = _date_str(date)
+    path = os.path.join(_reviews_dir(), f"{date_str}.json")
+    report = _read_review_file(path) if os.path.exists(path) else {'date': date_str}
+    links = list(report.get(_LINK_KEY) or [])
+    if eid not in links:
+        links.append(eid)
+    report[_LINK_KEY] = links
+    _save_review(report)
+    return True
+
+
+def get_review_experiments(date: str) -> list:
+    """读取指定日期复盘关联的实验 id 列表 (无 → 空)。"""
+    path = os.path.join(_reviews_dir(), f"{_date_str(date)}.json")
+    report = _read_review_file(path)
+    if not report:
+        return []
+    return list(report.get(_LINK_KEY) or [])
+
+
+def find_reviews_for_experiment(eid: str) -> list:
+    """反查: 哪些复盘日期关联了该实验 id (日期升序)。"""
+    found = []
+    for path in _list_review_files():
+        report = _read_review_file(path)
+        if not report:
+            continue
+        if eid in (report.get(_LINK_KEY) or []):
+            found.append(report.get('date'))
+    return sorted(found)
