@@ -36,7 +36,7 @@
               </template>
             </div>
             <span v-if="type === 'history'" class="score-badge-small" :style="{background: item.result.level_color + '20', color: item.result.level_color}">
-              <span class="score-num">{{ item.result.total_score }}</span>
+              <span class="score-num">{{ fmtNum(item.result.total_score) }}</span>
               <span class="score-level">{{ item.result.level }}</span>
             </span>
             <span v-else class="score-badge-small chat-badge">
@@ -109,6 +109,7 @@
         isSelected, watchState, providerIcon, providerText, dimsText, timeText,
         toggleSelect, view, remove, toggleWatchlist,
         keyClick: state.keyClick,
+        fmtNum: state.fmtNum,
         evaluatedCodes: state.evaluatedCodes,
         klineLoadedCodes: state.klineLoadedCodes,
       };

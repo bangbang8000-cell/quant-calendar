@@ -27,7 +27,7 @@
                         <div class="score-num-wrap">
                             <div class="num">{{ stockDetail.score_data?.score || '-' }}</div>
                             <span v-if="scoreDelta" class="score-delta" :class="scoreDelta.dir">
-                                {{ scoreDelta.value > 0 ? '+' : '' }}{{ scoreDelta.value }}
+                                {{ scoreDelta.value > 0 ? '+' : '' }}{{ fmtNum(scoreDelta.value) }}
                             </span>
                         </div>
                         <div class="label">{{ stockDetail.score_data?.level || '未评估' }}</div>

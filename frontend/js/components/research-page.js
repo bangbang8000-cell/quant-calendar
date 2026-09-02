@@ -190,15 +190,15 @@
                             <div v-if="factorIcReport" class="factor-ic-report">
                                 <div class="grid-auto-fit-140-mb16">
                                     <div class="stat-card p-12">
-                                        <div class="stat-value text-lg">{{ factorIcReport.ic_mean }}</div>
+                                        <div class="stat-value text-lg">{{ fmtNum(factorIcReport.ic_mean) }}</div>
                                         <div class="stat-label">IC 均值</div>
                                     </div>
                                     <div class="stat-card p-12">
-                                        <div class="stat-value text-lg">{{ factorIcReport.icir }}</div>
+                                        <div class="stat-value text-lg">{{ fmtNum(factorIcReport.icir) }}</div>
                                         <div class="stat-label">ICIR</div>
                                     </div>
                                     <div class="stat-card p-12">
-                                        <div class="stat-value text-lg">{{ factorIcReport.win_rate }}</div>
+                                        <div class="stat-value text-lg">{{ fmtNum(factorIcReport.win_rate) }}</div>
                                         <div class="stat-label">IC>0 胜率</div>
                                     </div>
                                     <div class="stat-card p-12">
@@ -212,12 +212,12 @@
                             <div v-if="factorLayerResult" class="factor-layer-result">
                                 <div class="flex-wrap-gap-12-mb16-c">
                                     <div class="stat-card p-12" v-for="ly in factorLayerResult.layers" :key="ly.layer">
-                                        <div class="stat-value text-lg" :class="ly.layer === factorLayerResult.layers.length ? 'up' : (ly.return < 0 ? 'down' : 'flat')">{{ ly.return }}%</div>
+                                        <div class="stat-value text-lg" :class="ly.layer === factorLayerResult.layers.length ? 'up' : (ly.return < 0 ? 'down' : 'flat')">{{ fmtNum(ly.return) }}%</div>
                                         <div class="stat-label">层 {{ ly.layer }}</div>
                                     </div>
                                 </div>
                                 <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
-                                    单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ factorLayerResult.spread }}%
+                                    单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ fmtNum(factorLayerResult.spread) }}%
                                 </div>
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
@@ -232,8 +232,8 @@
                                 <!-- V5.0.2 T-5.0.24: 参数稳定性诊断 (高原 + 过拟合判定) -->
                                 <div v-if="sweepStability" class="param-stability mt-8" :class="{ 'param-stability-overfit': sweepStability.verdict === 'overfit', 'param-stability-robust': sweepStability.verdict === 'robust' }">
                                     <span class="text-sm-secondary">参数稳定性:</span>
-                                    <span v-if="sweepStability.verdict === 'overfit'" class="text-danger-semibold">过拟合风险 (扰动衰减比 {{ sweepStability.spread_ratio }})</span>
-                                    <span v-else-if="sweepStability.verdict === 'robust'" class="text-sm-primary">稳健高原 (衰减比 {{ sweepStability.spread_ratio }}, 高原覆盖 {{ (sweepStability.plateau_ratio * 100).toFixed(0) }}%)</span>
+                                    <span v-if="sweepStability.verdict === 'overfit'" class="text-danger-semibold">过拟合风险 (扰动衰减比 {{ fmtNum(sweepStability.spread_ratio) }})</span>
+                                    <span v-else-if="sweepStability.verdict === 'robust'" class="text-sm-primary">稳健高原 (衰减比 {{ fmtNum(sweepStability.spread_ratio) }}, 高原覆盖 {{ fmtNum(sweepStability.plateau_ratio * 100, 0) }}%)</span>
                                     <span v-else class="text-sm-tertiary">{{ sweepStability.note || '稳定性诊断不可用' }}</span>
                                     <span v-if="sweepStability.verdict !== 'unknown'" class="text-sm-tertiary">最优参数 {{ sweepStability.best_param }} · 高原区间 [{{ sweepStability.plateau_min }}, {{ sweepStability.plateau_max }}]</span>
                                 </div>
@@ -353,10 +353,10 @@
                             <div class="custom-bt-grid">
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">年化</span><b>{{ customBtResult.metrics.annual_return_pct }}%</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">最大回撤</span><b>{{ customBtResult.metrics.max_drawdown_pct }}%</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">夏普</span><b>{{ customBtResult.metrics.sharpe }}</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ customBtResult.metrics.win_rate_pct }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">年化</span><b>{{ fmtNum(customBtResult.metrics.annual_return_pct) }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">最大回撤</span><b>{{ fmtNum(customBtResult.metrics.max_drawdown_pct) }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">夏普</span><b>{{ fmtNum(customBtResult.metrics.sharpe) }}</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ fmtNum(customBtResult.metrics.win_rate_pct) }}%</b></div>
                             </div>
                         </div>
                     </div>
@@ -375,19 +375,19 @@
                         <template v-if="backtestResult">
                             <div class="grid-auto-fit-140-mb16">
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ backtestResult.total_return_pct }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.total_return_pct) }}%</div>
                                     <div class="stat-label">总收益率</div>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ backtestResult.annual_return_pct }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.annual_return_pct) }}%</div>
                                     <div class="stat-label">年化收益</div>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ backtestResult.max_drawdown_pct }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.max_drawdown_pct) }}%</div>
                                     <div class="stat-label">最大回撤</div>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ backtestResult.sharpe_ratio }}</div>
+                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.sharpe_ratio) }}</div>
                                     <div class="stat-label">夏普比率</div>
                                 </div>
                             </div>
@@ -424,14 +424,14 @@
                                         <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
                                     </div>
                                     <div class="flex-c-gap-8">
-                                        <span class="strategy-tag" v-if="r.summary">年化 {{ r.summary.annual_return }}%</span>
-                                        <span class="strategy-tag" v-if="r.summary">回撤 {{ r.summary.max_drawdown }}%</span>
-                                        <span class="strategy-tag" v-if="r.summary">夏普 {{ r.summary.sharpe_ratio }}</span>
+                                        <span class="strategy-tag" v-if="r.summary">年化 {{ fmtNum(r.summary.annual_return) }}%</span>
+                                        <span class="strategy-tag" v-if="r.summary">回撤 {{ fmtNum(r.summary.max_drawdown) }}%</span>
+                                        <span class="strategy-tag" v-if="r.summary">夏普 {{ fmtNum(r.summary.sharpe_ratio) }}</span>
                                     </div>
                                 </div>
                                 <div v-if="r.summary" class="flex-wrap-gap-12-mb16-c mt-8">
-                                    <span class="text-sm-secondary">总收益: <strong :class="(r.summary.total_return || 0) >= 0 ? 'color-success' : 'color-danger'">{{ r.summary.total_return }}%</strong></span>
-                                    <span class="text-sm-secondary">胜率: <strong>{{ r.summary.win_rate }}%</strong></span>
+                                    <span class="text-sm-secondary">总收益: <strong :class="(r.summary.total_return || 0) >= 0 ? 'color-success' : 'color-danger'">{{ fmtNum(r.summary.total_return) }}%</strong></span>
+                                    <span class="text-sm-secondary">胜率: <strong>{{ fmtNum(r.summary.win_rate) }}%</strong></span>
                                     <span class="text-sm-secondary">交易次数: <strong>{{ r.summary.total_trades || 0 }}</strong></span>
                                 </div>
                             </div>
@@ -583,7 +583,7 @@
                                         <div class="scan-row-tags">
                                             <span v-for="tag in m.labels" :key="tag" class="scan-tag"
                                                   :class="'scan-tag-' + tagClass(tag)">{{ tag }}</span>
-                                            <span v-if="m.volume_ratio" class="scan-row-vol">量比 {{ m.volume_ratio }}</span>
+                                            <span v-if="m.volume_ratio" class="scan-row-vol">量比 {{ fmtNum(m.volume_ratio) }}</span>
                                         </div>
                                     </div>
                                 </div>

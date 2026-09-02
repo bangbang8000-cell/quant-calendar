@@ -79,7 +79,7 @@
                                 <div class="rec-card" v-for="r in strategyRecommendations" :key="r.strategy_id">
                                     <div class="flex-between-mb6">
                                         <span class="text-semibold">{{ r.name }}</span>
-                                        <span class="text-sm-primary-semibold">{{ r.score }}%</span>
+                                        <span class="text-sm-primary-semibold">{{ fmtNum(r.score) }}%</span>
                                     </div>
                                     <div class="text-sm-secondary-mb8">{{ r.desc }}</div>
                                     <div class="flex-wrap-gap-6">
@@ -100,7 +100,7 @@
                                 <div v-for="item in aiHistory.slice(0,3)" :key="item.id" @click="viewAiResult(item)" class="hover-lift recent-card">
                                     <div class="flex-between-mb8">
                                         <span class="text-md-semibold">{{ item.stock_code }}</span>
-                                        <span :style="{color:item.result.level_color,fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ item.result.total_score }}</span>
+                                        <span :style="{color:item.result.level_color,fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb6">{{ item.stock_name }}</div>
                                     <div class="flex-between">
@@ -362,7 +362,7 @@
                                             <strong>{{ code }}</strong>
                                             <span class="color-tertiary">{{ records[0].stock_name }}</span>
                                             <span class="count-badge-sm">{{ records.length }}次</span>
-                                            <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ records[0].result.total_score }}分</span>
+                                            <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ fmtNum(records[0].result.total_score) }}分</span>
                                         </div>
                                     </div>
                                     <span class="group-toggle-arrow" :style="{transform: expandedStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
@@ -599,7 +599,7 @@
                                             <span class="watchlist-name">{{ stock.name }}</span>
                                             <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning">⏳</span>
                                             <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
-                                                {{ getWatchlistScore(stock.code).score }}
+                                                {{ fmtNum(getWatchlistScore(stock.code).score) }}
                                             </span>
                                             <!-- v3.17.7 实时化 (FR-3.17.7): 行内实时报价（涨跌色/涨跌幅/量比/涨速 + 预警标记） -->
                                             <div v-if="realtimeQuotes[stock.code]" class="watchlist-quote">

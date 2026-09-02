@@ -104,19 +104,6 @@
 
                     <!-- 子页: 策略总览 -->
 
-                    <!-- V5.0.5 T-5.0.55: 今日要点聚合卡 (周期/策略/异动/评估/风险) -->
-                    <div class="card" v-if="highlightsLoaded">
-                        <div class="card-title">🎯 今日要点 <span class="text-sm-tertiary-normal">{{ highlightsDate }}</span></div>
-                        <div v-if="highlights.length === 0" class="today-highlights-empty">暂无要点（数据源未就绪或今日未生成）</div>
-                        <div v-else class="today-highlights-list">
-                            <div v-for="(h, i) in highlights" :key="i" class="today-highlight-item">
-                                <span class="today-highlight-dot" :class="'dot-' + h.level"></span>
-                                <span class="today-highlight-type">{{ h.title }}</span>
-                                <span class="today-highlight-content">{{ h.content }}</span>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- 数据概览卡片 (v1.11 重构: 时间轴+多维度换手) -->
                     <div class="card">
                         <div class="card-title">{{ t('strategies.dataOverview') }}</div>
@@ -155,7 +142,7 @@
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item clickable" @click="navigateToStrategyFilter(item.strategy_name)">
                             <div class="strategy-header">
                                 <span class="strategy-name">{{ item.strategy_name }} <span class="text-xs-tertiary-ml4">→</span></span>
-                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ item.percentage }}%)</span></span>
+                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ fmtNum(item.percentage) }}%)</span></span>
                             </div>
                             <div class="strategy-progress">
                                 <div class="progress-bar" :style="{width: item.percentage + '%'}"></div>
@@ -251,7 +238,7 @@
                                 <span class="text-warning-semibold" v-if="merrillData.next_stage_prediction?.transition_probability> 0.2">
                                     →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(2) }}%
                                 </span>
-                                <span v-else>均值 {{ merrillData.timing.avg_duration_months }}月</span>
+                                <span v-else>均值 {{ fmtNum(merrillData.timing.avg_duration_months) }}月</span>
                             </div>
                             <div class="progress-track-8">
                                 <div class="progress-fill-4" :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', background: (merrillData.timing.progress_percent || 0)> 100 ? 'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : (merrillData.color || 'var(--color-success)')}"></div>
@@ -514,7 +501,7 @@
                             <!-- 最大回撤区间说明 -->
                             <div v-if="btDrawdownRegion" class="card">
                                 <div class="card-title">最大回撤区间</div>
-                                <div class="bt-dd-info">回撤幅度 <b>{{ btDrawdownRegion.maxDrawdown }}%</b> · {{ btDrawdownRegion.peakDate }} → {{ btDrawdownRegion.troughDate }}（净值图中已标注）</div>
+                                <div class="bt-dd-info">回撤幅度 <b>{{ fmtNum(btDrawdownRegion.maxDrawdown) }}%</b> · {{ btDrawdownRegion.peakDate }} → {{ btDrawdownRegion.troughDate }}（净值图中已标注）</div>
                             </div>
 
                             <!-- 净值曲线（多线 + 图例可切换） -->
@@ -535,7 +522,7 @@
                                         <tbody>
                                             <tr v-for="row in btAnnualReturns" :key="row.year">
                                                 <td>{{ row.year }}</td>
-                                                <td :class="row.return >= 0 ? 'is-up' : 'is-down'">{{ row.return >= 0 ? '+' : '' }}{{ row.return }}%</td>
+                                                <td :class="row.return >= 0 ? 'is-up' : 'is-down'">{{ row.return >= 0 ? '+' : '' }}{{ fmtNum(row.return) }}%</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -788,25 +775,6 @@
       const dashboard = computed(() => state.dashboardData?.value || {});
       const health = computed(() => state.healthMetrics?.value || []);
       const consensusRank = computed(() => state.filteredConsensusRank?.value || []);
-
-      // V5.0.5 T-5.0.55: 今日要点聚合 (首页卡片)
-      const highlights = Vue.ref([]);
-      const highlightsLoaded = Vue.ref(false);
-      const highlightsDate = Vue.ref('');
-      async function loadHighlights() {
-        try {
-          const res = await fetch('/api/reports/today-highlights');
-          const data = await res.json();
-          highlights.value = (data && data.items) || [];
-          highlightsDate.value = (data && data.date) || '';
-        } catch (e) {
-          console.error('[today-highlights] 加载失败:', e);
-          highlights.value = [];
-        } finally {
-          highlightsLoaded.value = true;
-        }
-      }
-      loadHighlights();
 
       // code → name 查找表（来自共识榜/当前池），用于今日新入池显示股票名
       const codeNameMap = computed(() => {
@@ -1296,8 +1264,7 @@
         execPlan, execStatus, execResults, execTraceDate, execTraceSteps, execTraceLoading,
         execResultsDates, execCountdownText, execPhaseText, execStatusIcon,
         execLastDate, execVisibleClass, execVisibleText,
-        loadExecutionMonitor, loadExecutionTrace,
-        highlights, highlightsLoaded, highlightsDate, loadHighlights };
+        loadExecutionTrace, };
     },
   };
 })();

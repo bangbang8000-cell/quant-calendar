@@ -55,7 +55,7 @@
                     </div>
                     <div class="flex-gap-18-mt12-wrap">
                         <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
-                        <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ merrillDetailData._currentTiming.progress_percent }}%</b></span>
+                        <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ fmtNum(merrillDetailData._currentTiming.progress_percent) }}%</b></span>
                         <span class="text-warning-semibold" v-if="merrillDetailData._nextPrediction?.next_stage">
                             ⚠ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%
                         </span>
@@ -64,7 +64,7 @@
                     <div class="warning-banner" v-if="merrillDetailData._currentTiming.progress_percent> 80 && merrillDetailData._nextPrediction?.transition_probability> 0.15">
                         <b class="color-badge-warning">⚠ 周期切换预警</b>
                         <span class="color-secondary-ml8">
-                            当前{{ merrillDetailData.name }}已进入后期（{{ merrillDetailData._currentTiming.progress_percent }}%），
+                            当前{{ merrillDetailData.name }}已进入后期（{{ fmtNum(merrillDetailData._currentTiming.progress_percent) }}%），
                             预测下一阶段为<b class="color-warning">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
                             （概率 {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%）
                         </span>
@@ -157,7 +157,7 @@
                                 <span class="asset-rank" :style="{backgroundColor: getRankColor(info.rank)}">排名 #{{ info.rank }}</span>
                             </div>
                             <div class="allocation-advice">{{ info.advice }}</div>
-                            <div class="allocation-return">预期收益：<span>{{ info.expected_return }}</span></div>
+                            <div class="allocation-return">预期收益：<span>{{ fmtNum(info.expected_return) }}</span></div>
                         </div>
                     </div>
                 </div>
@@ -199,7 +199,7 @@
                     <div class="section-title">📜 历史统计</div>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <div class="stat-value">{{ merrillDetailData.historical_stats?.avg_duration_months }}个月</div>
+                            <div class="stat-value">{{ fmtNum(merrillDetailData.historical_stats?.avg_duration_months) }}个月</div>
                             <div class="stat-label">历史平均持续时间</div>
                         </div>
                         <div class="stat-item">
