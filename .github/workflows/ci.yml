@@ -102,6 +102,9 @@ jobs:
           python -m pytest tests/test_ai_evaluator.py tests/test_ai_mock.py tests/test_eval_track.py tests/test_fact_check.py             tests/test_api_ai_models.py tests/test_api_batch_evaluate_stream.py tests/test_batch_evaluate_stream.py             tests/test_ai_eval_ui.py --cov=ai_eval --cov=ai_evaluator --cov-report=term --cov-fail-under=50 -m "not e2e"
           # V5.9 T-5.9.2 (TEST-PLAN 10.3): 调度器拆分后覆盖率不降门禁 ≥30% (拆前 scheduler.py 同测试集基线)
           python -m pytest tests/test_scheduler.py tests/test_file_watch.py tests/test_market_review_activation.py             tests/test_v492_day_view_fix.py tests/test_v492_daily_execution.py tests/test_reliability_atomic.py             tests/test_reliability_faults.py tests/test_metrics.py tests/test_holdings_concurrency.py             --cov=scheduler --cov-report=term --cov-fail-under=30 -m "not e2e"
+          # V5.9 T-5.9.3 (TEST-PLAN 10.3): 数据源/美林时钟拆分后覆盖率不降门禁 (拆前同测试集基线)
+          python -m pytest tests/test_data_sources.py tests/test_data_sources_fetch.py tests/test_data_source_routing.py             tests/test_batch_fetch.py --cov=data_sources --cov-report=term --cov-fail-under=60 -m "not e2e"
+          python -m pytest tests/test_merrill_clock.py tests/test_merrill_timeline.py --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
 
   # V5.9 T-5.9.1 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:

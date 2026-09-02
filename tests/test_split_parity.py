@@ -374,3 +374,80 @@ def test_scheduler_golden_self_heal_patch_routing(tmp_path):
         assert core._m.views_aggregator is va
     with patch("scheduler.DATA_DIR", "/tmp/qc-routing-check"):
         assert core._m.DATA_DIR == "/tmp/qc-routing-check"
+# ─── V5.9 (T-5.9.3): data_sources / merrill_clock 拆分对拍 ───
+
+DS_MODULE_FUNCS = ("record_call", "get_health_metrics", "reset_health", "get_route_order",
+                   "enqueue_alert", "get_alerts", "clear_alerts", "retry_with_backoff",
+                   "record_batch_failure", "timed_record", "_pause_source", "_resume_source",
+                   "_safe_float", "_ts_code_to_akshare_index", "_is_index_code",
+                   "_map_akshare_columns")
+
+
+def test_data_sources_module_funcs_and_singleton():
+    import data_sources as ds
+    for fn in DS_MODULE_FUNCS:
+        assert callable(getattr(ds, fn)), fn
+    assert isinstance(ds.data_source_manager, ds.DataSourceManager)
+    for c in ("SOURCE_ORDER", "MAX_RETRIES", "DEFAULT_CONFIG", "ALERT_QUEUE"):
+        assert hasattr(ds, c), c
+    # 模块状态可达 (测试直取 ds._health/_route_lock)
+    for s in ("_health_lock", "_health", "_route_lock", "_route_state"):
+        assert hasattr(ds, s), s
+
+
+def test_data_sources_structure():
+    m = importlib.import_module("data_sources._manager")
+    assert hasattr(m, "DataSourceManager")
+    methods = {n for n in dir(m.DataSourceManager) if not n.startswith("__")}
+    for meth in ("get_kline_data", "get_index_daily", "get_financial_data",
+                 "get_moneyflow", "get_market_daily_batch", "save_config",
+                 "test_connection", "get_trade_dates"):
+        assert meth in methods, meth
+
+
+def test_data_sources_patch_config_routing():
+    """monkeypatch ds.DATASOURCE_CONFIG_FILE 生效 (_manager 经包级解析)"""
+    import data_sources as ds
+    import data_sources._manager as mgr
+    with patch("data_sources.DATASOURCE_CONFIG_FILE", "/tmp/qc-no-config.json"):
+        assert mgr._ds_mod.DATASOURCE_CONFIG_FILE == "/tmp/qc-no-config.json"
+
+
+def test_merrill_clock_structure_and_singleton():
+    from merrill_clock import MerrillClock, merrill_clock, _normalize_score
+    assert isinstance(merrill_clock, MerrillClock)
+    methods = {n for n in dir(MerrillClock) if not n.startswith("__")}
+    for meth in ("determine_stage", "reevaluate", "get_stage_detail", "seed_history",
+                 "set_stage_start", "get_economic_indicators"):
+        assert meth in methods, meth
+    assert callable(_normalize_score)
+    import merrill_clock._history as mh
+    import merrill_clock._core as mc
+    import merrill_clock._indicators as mi
+    assert hasattr(mh, "ClockHistoryMixin") and hasattr(mc, "ClockCoreMixin")
+    assert hasattr(mi, "ClockIndicatorsMixin")
+
+
+def test_merrill_patch_file_constants_routing():
+    """patch("merrill_clock.CACHE_FILE") 生效 (_history 经包级解析)"""
+    import merrill_clock._history as mh
+    with patch("merrill_clock.CACHE_FILE", "/tmp/qc-mc-cache.json"):
+        assert mh._mc_mod.CACHE_FILE == "/tmp/qc-mc-cache.json"
+
+
+def test_merrill_golden_normalize_score():
+    from merrill_clock import _normalize_score
+    assert _normalize_score(50, 50, 3, False) == 0.0
+    assert _normalize_score(47, 50, 3, False) == -1.0
+    assert _normalize_score(4.0, 5.0, 1.0, True) == 1.0
+
+
+def test_ds_golden_detect_route_health(tmp_path):
+    import data_sources as ds
+    with patch("data_sources.DATASOURCE_CONFIG_FILE", str(tmp_path / "cfg.json")):
+        ds.reset_health()
+        ds.record_call("tushare", True, 12.0)
+        m = ds.get_health_metrics()
+        assert any(str(d).find("tushare") >= 0 for d in m)
+        ds._pause_source("akshare", "down")
+        assert "akshare" not in ds.get_route_order()
