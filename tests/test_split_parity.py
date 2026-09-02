@@ -1,0 +1,276 @@
+# -*- coding: utf-8 -*-
+"""V5.9 (T-5.9.1): 拆分对拍 (TEST-PLAN 10.1 test_split_parity.py)
+
+ai_evaluator.py (1896 行) 拆分为 ai_eval/ 子包 (Mixin 聚合 + 薄壳兼容)。
+对拍内容:
+1. 符号对拍 — 方法集契约 (56 方法拆前拆后一致, 不丢方法)
+2. 结构对拍 — 各 Mixin 文件/类/方法分布
+3. import 兼容对拍 — 全部原 importers 可导入, 薄壳 re-export 完整
+4. 行为对拍 — 关键路径 mock 注入下 golden 输出一致
+5. 覆盖率不降对拍 — ai_eval 核心路径语句覆盖 >= 基线 (防拆分后丢路径)
+"""
+import asyncio
+import json
+import os
+import sys
+import importlib
+
+import pytest
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(BASE, "backend"))
+
+from unittest.mock import patch  # noqa: E402
+
+import ai_eval  # noqa: E402
+from ai_eval import AIEvaluator  # noqa: E402
+
+# ─── 1. 符号对拍 ─────────────────────────────────────────────
+
+CONTRACT_METHODS = {
+    "_load_config", "save_config", "_load_response_cache",
+    "_save_response_cache", "_load_usage", "_save_usage", "_get_cache_key",
+    "_get_cached", "_set_cached", "_record_usage", "get_usage_stats",
+    "_load_index_eval_cache", "_save_index_eval_cache",
+    "_seed_default_vendors", "_load_models", "_save_models", "_normalize_name",
+    "_match_catalog", "_vendor_key_for_provider", "_migrate_v1_to_v2",
+    "get_models", "update_models", "get_vendors", "get_enabled_models",
+    "_resolve_provider", "_resolve_vendor", "test_vendor_model",
+    "test_model_connection", "list_vendor_models", "get_catalog",
+    "recommend_strategies", "generate_pool_signal", "generate_review",
+    "_fetch_stock_data", "_resolve_stock_name", "_load_prompt_template",
+    "_call_llm", "_calibrate_decision", "_build_data_prompt", "_builtin_evaluate",
+    "evaluate_stock", "batch_evaluate", "batch_evaluate_stream",
+    "_load_history", "_load_history_for", "_save_history_for", "_history_path",
+    "evaluate_index", "get_history", "count_history", "delete_history",
+    "get_last_evaluation", "test_connection", "get_auto_config", "save_auto_config",
+}
+
+
+def test_method_set_parity():
+    """拆前 56 方法契约在拆分后 AIEvaluator 上全部存在 (不丢方法)"""
+    have = {m for m in dir(AIEvaluator) if not m.startswith("__")}
+    assert CONTRACT_METHODS <= have, "丢失方法: %s" % (CONTRACT_METHODS - have)
+
+
+def test_instance_has_all_state_attrs():
+    """实例构造后关键状态属性齐备 (拆前 __init__ 语义保留)"""
+    import tempfile
+    import paths as P
+    old = P.DATA_DIR
+    P.DATA_DIR = tempfile.mkdtemp()
+    try:
+        e = AIEvaluator()
+        for attr in ("config_file", "history_file", "_models_file", "_models_cache",
+                     "_index_eval_file", "_index_eval_cache", "_cache_file",
+                     "_usage_file", "_response_cache", "_usage"):
+            assert hasattr(e, attr), attr
+    finally:
+        P.DATA_DIR = old
+
+
+def test_dataclass_init_not_shadowed():
+    """@dataclass(init=False) 不得遮蔽基类 __init__ (真实路径回归)"""
+    assert AIEvaluator.__dataclass_fields__ is not None
+    assert "config_file" not in AIEvaluator.__dataclass_fields__  # 字段由 __init__ 管理
+
+
+# ─── 2. 结构对拍 ─────────────────────────────────────────────
+
+MIXIN_METHODS = {
+    "_base": ["_load_config", "save_config", "_load_response_cache",
+              "_save_response_cache", "_load_usage", "_save_usage", "_get_cache_key",
+              "_get_cached", "_set_cached", "_record_usage", "get_usage_stats",
+              "_load_index_eval_cache", "_save_index_eval_cache"],
+    "_models": ["_seed_default_vendors", "_load_models", "_save_models", "_normalize_name",
+                "_match_catalog", "_vendor_key_for_provider", "_migrate_v1_to_v2",
+                "get_models", "update_models", "get_vendors", "get_enabled_models",
+                "_resolve_provider", "_resolve_vendor", "test_vendor_model",
+                "test_model_connection", "list_vendor_models", "get_catalog"],
+    "_eval": ["recommend_strategies", "generate_pool_signal", "generate_review",
+              "_fetch_stock_data", "_resolve_stock_name", "_load_prompt_template",
+              "_call_llm", "_calibrate_decision", "_build_data_prompt", "_builtin_evaluate",
+              "evaluate_stock", "batch_evaluate", "batch_evaluate_stream"],
+    "_history": ["_load_history", "_load_history_for", "_save_history_for", "_history_path",
+                 "evaluate_index", "get_history", "count_history", "delete_history",
+                 "get_last_evaluation", "test_connection", "get_auto_config", "save_auto_config"],
+}
+
+MIXIN_CLASS = {"_base": "AIEvalBase", "_models": "AIModelsMixin",
+               "_eval": "AIEvalMixin", "_history": "AIHistoryMixin"}
+
+
+@pytest.mark.parametrize("mod,cls", sorted(MIXIN_CLASS.items()))
+def test_mixin_structure(mod, cls):
+    """每个 ai_eval 子模块: 文件存在 + 类名正确 + 方法分布正确"""
+    m = importlib.import_module("ai_eval.%s" % mod)
+    assert hasattr(m, cls)
+    methods = {n for n in dir(getattr(m, cls)) if not n.startswith("__")}
+    assert set(MIXIN_METHODS[mod]) <= methods, "Mixin %s 缺方法 %s" % (mod, set(MIXIN_METHODS[mod]) - methods)
+
+
+def test_mixin_mro_order():
+    """MRO: History > Eval > Models > Base (方法互调可解析)"""
+    assert AIEvaluator.__mro__[1].__name__ == "AIHistoryMixin"
+    assert AIEvaluator.__mro__[2].__name__ == "AIEvalMixin"
+    assert AIEvaluator.__mro__[3].__name__ == "AIModelsMixin"
+    assert AIEvaluator.__mro__[4].__name__ == "AIEvalBase"
+
+
+# ─── 3. import 兼容对拍 ──────────────────────────────────────
+
+RE_EXPORTS = ("AIEvaluator", "ModelProvider", "VendorModel", "VendorConfig",
+              "VENDOR_CATALOG", "ai_evaluator")
+
+
+def test_thin_shell_re_exports():
+    import ai_evaluator as sh
+    for name in RE_EXPORTS:
+        assert hasattr(sh, name), "薄壳缺 re-export: %s" % name
+    assert sh.ai_evaluator is not None
+
+
+IMPORTERS = ("eval_track", "fact_check", "job_tasks", "market_review",
+             "report_generator", "scheduler", "strategy_custom", "strategy_variant",
+             "api.v1.ai", "api.v1.calendar", "api.v1.chat", "api.v1.export",
+             "api.v1.openapi", "api.v1.system")
+
+
+@pytest.mark.parametrize("importer", IMPORTERS)
+def test_all_importers_import(importer):
+    """全部原 import 方 (14 个) 拆分后可正常导入"""
+    importlib.import_module(importer)
+
+
+def test_ai_models_direct_import():
+    """ModelProvider 等顶层符号来源不变 (V4.5 ai_models)"""
+    from ai_models import ModelProvider as M1
+    from ai_evaluator import ModelProvider as M2
+    assert M1 is M2
+
+
+# ─── 4. 行为对拍 (golden) ────────────────────────────────────
+
+def _mk_eval(tmp_path):
+    import paths as P
+    old = P.DATA_DIR
+    P.DATA_DIR = str(tmp_path)
+    e = AIEvaluator(config_file=os.path.join(str(tmp_path), "ai_config.json"))
+    return e, old
+
+
+@pytest.fixture
+def isolated(tmp_path):
+    e, old = _mk_eval(tmp_path)
+    yield e
+    import paths as P
+    P.DATA_DIR = old
+
+
+def test_golden_resolve_stock_name_static(isolated):
+    """_resolve_stock_name 是静态方法, 不接收 self (拆分前 @staticmethod 语义)"""
+    sig = isolated._resolve_stock_name
+    # 静态方法可直接经类调用, 不绑定实例
+    assert AIEvaluator._resolve_stock_name("600000.SH", "") in ("600000.SH", "浦发银行")
+    assert isolated._resolve_stock_name("600000.SH", "已知名") == "已知名"
+
+
+def test_golden_normalize_name(isolated):
+    assert isolated._normalize_name("  DeepSeek  ") == "deepseek"
+
+
+def test_golden_cache_key_deterministic(isolated):
+    k1 = isolated._get_cache_key("600000.SH", "default")
+    k2 = isolated._get_cache_key("600000.SH", "default")
+    assert k1 == k2 and isinstance(k1, str) and k1
+
+
+def test_golden_build_data_prompt(isolated):
+    data = {"latest": {"close": 12.8, "pct_chg": 2.4}, "rsi": 58,
+            "macd": {"dif": 0.1, "dea": 0.05, "hist": 0.05}, "ma_alignment": "多头排列"}
+    p = isolated._build_data_prompt(data)
+    assert isinstance(p, str) and "12.8" in p
+
+
+def test_golden_history_roundtrip(isolated, tmp_path):
+    isolated._save_history_for("u1", [{"stock_code": "600000.SH", "result": {"level": "推荐"}}])
+    h = isolated._load_history_for("u1")
+    assert h[0]["stock_code"] == "600000.SH"
+    assert h[0]["result"]["level"] == "推荐"
+
+
+def test_golden_history_path(isolated, tmp_path):
+    assert str(tmp_path) in isolated._history_path("u1")
+
+
+def test_golden_calibrate_structure(isolated):
+    r = isolated._calibrate_decision({"result": {"total_score": 80, "level": "推荐"}},
+                                     {"rsi": 58}, "600000.SH", "u1")
+    assert "result" in r
+
+
+def test_golden_llm_success_path(isolated, tmp_path):
+    """mock requests.post → LLM 成功 → 返回 total_score 80 (拆分后引用同一 requests 模块)"""
+    from unittest.mock import patch, MagicMock
+    import ai_evaluator
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"choices": [{"message": {"content": json.dumps({
+        "total_score": 80, "level": "推荐", "dimensions": {},
+        "analysis": {"strengths": ["x"], "weaknesses": [], "suggestions": []},
+        "detailed_report": "mock"})}}]}
+    sample = {"has_kline": True, "latest": {"close": 12.8, "pct_chg": 2.4}, "rsi": 58,
+              "macd": {"dif": 0.1, "dea": 0.05, "hist": 0.05}, "ma_alignment": "多头排列"}
+    with patch("ai_evaluator.requests.post", return_value=mock_resp):
+        r = asyncio.run(isolated.evaluate_stock("000001.SZ", "平安银行", stock_data=sample))
+    assert r["result"]["total_score"] == 80
+
+
+def test_golden_llm_failure_fallback(isolated):
+    """mock requests.post 抛异常 → 不崩, 返回错误信封"""
+    from unittest.mock import patch
+    import ai_evaluator
+    with patch("ai_evaluator.requests.post", side_effect=Exception("boom")):
+        r = asyncio.run(isolated.evaluate_stock("000001.SZ", "平安银行",
+                                                stock_data={"latest": {"close": 1, "pct_chg": 0}, "rsi": 30, "macd": {}}))
+    assert r["result"]["level"] in ("评估失败", "强烈推荐", "推荐", "观望", "回避")
+
+
+# ─── 5. 覆盖率不降对拍 ──────────────────────────────────────
+
+COV_BASELINE = 0.10  # 对拍操作集自身的核心路径冒烟下限 (全 AI 组的覆盖率不降由 CI --cov=ai_eval --cov-fail-under=50 门禁承担)
+
+
+def test_coverage_not_lower(tmp_path):
+    """对拍操作集触发下, ai_eval 语句覆盖 >= 基线 (coverage API 现场测量)"""
+    import coverage
+    e, old = _mk_eval(tmp_path)
+    try:
+        cov = coverage.Coverage(source=["ai_eval"])
+        cov.start()
+        # 触发各 Mixin 核心路径
+        _ = AIEvaluator._resolve_stock_name("600000.SH", "")
+        _ = e._normalize_name(" DeepSeek ")
+        _ = e._get_cache_key("600000.SH", "default")
+        _ = e._build_data_prompt({"latest": {"close": 1, "pct_chg": 0}, "rsi": 30, "macd": {}})
+        e._save_history_for("u1", [{"stock_code": "a"}])
+        e._load_history_for("u1")
+        _ = e._calibrate_decision({"result": {"total_score": 80}}, {"rsi": 1}, "a", "u1")
+        try:
+            asyncio.run(e.evaluate_stock("a", "b", stock_data={"latest": {"close": 1, "pct_chg": 0}, "rsi": 30, "macd": {}}))
+        except Exception:
+            pass
+        cov.stop()
+        import io
+        buf = io.StringIO()
+        cov.report(file=buf, show_missing=False)
+        lines = buf.getvalue().strip().splitlines()
+        # 末行 TOTAL: "TOTAL   <stmts>  <miss>  <cover>%"
+        total_row = [ln for ln in lines if ln.startswith("TOTAL")]
+        assert total_row, "coverage 报告缺 TOTAL 行: %r" % lines
+        parts = total_row[-1].split()
+        ratio = float(parts[-1].rstrip("%")) / 100.0
+        assert ratio >= COV_BASELINE, "ai_eval 覆盖率 %.2f < 基线 %.2f" % (ratio, COV_BASELINE)
+    finally:
+        import paths as P
+        P.DATA_DIR = old

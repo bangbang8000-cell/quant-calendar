@@ -1086,8 +1086,9 @@ def test_lazy_history_pagination_params():
     ai_api = _read_backend("api/v1/ai.py")
     assert "offset: int = 0" in ai_api, "后端 /api/ai/history 应支持 offset 参数"
     assert '"total": total' in ai_api, "后端应返回 total 供前端判断是否还有更多"
-    ai_eval = _read_backend("ai_evaluator.py")
-    assert "def count_history" in ai_eval, "ai_evaluator 应提供 count_history"
+    # V5.9 (T-5.9.1): ai_evaluator.py 拆分为 ai_eval/ 子包, count_history 位于 ai_eval/_history.py
+    ai_eval = _read_backend("ai_eval/_history.py")
+    assert "def count_history" in ai_eval, "ai_evaluator 应提供 count_history (ai_eval/_history.py)"
 
 
 def test_chat_history_backend_pagination():
