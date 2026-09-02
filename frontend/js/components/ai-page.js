@@ -167,7 +167,7 @@
                     </div>
 
                     <!-- history: 评估历史记录 -->
-                    <div v-else-if="currentSubPage === 'history'">
+                    <div v-else-if="currentSubPage === 'evaluation-analysis'">
                         <!-- v3.17.6 (FR-3.17.6): 评估命中率（决策复盘） -->
                         <div class="card eval-track-card">
                             <div class="card-title">{{ t('ai.evalHitRate') }} <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
@@ -242,6 +242,9 @@
                                 </div>
                             </template>
                         </div>
+                    </div>
+
+                    <div v-else-if="currentSubPage === 'history'">
 
                         <!-- 批量操作工具栏 -->
                         <div class="card mb-4">
@@ -896,7 +899,7 @@
       }
       watch(
         function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
-        function (key) { if (key === 'ai/history') loadTrack(); },
+        function (key) { if (key === 'ai/evaluation-analysis') loadTrack(); }, // V5.9.2: 命中率随评估分析子页加载
         { immediate: true }
       );
       // v3.17.8 (FR-3.17.5): 组合/模拟持仓域 (工厂模块, 不经 qcState)

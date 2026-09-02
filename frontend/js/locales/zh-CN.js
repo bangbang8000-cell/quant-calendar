@@ -31,6 +31,9 @@
     'sub.pool': '股票池',
     'sub.watchlist': '我的自选',
     'sub.history': '评估历史',
+    'sub.evaluation-analysis': '评估分析',
+
+    'sub.datadict': '数据字典',
     'sub.chat_history': '问股历史',
     'sub.portfolio': '组合持仓',
     'sub.research-overview': '研究概览',

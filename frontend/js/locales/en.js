@@ -31,6 +31,8 @@
     'sub.pool': 'Stock Pool',
     'sub.watchlist': 'My Watchlist',
     'sub.history': 'Eval History',
+    'sub.evaluation-analysis': 'Evaluation Analysis',
+    'sub.datadict': 'Data Dictionary',
     'sub.chat_history': 'Chat History',
     'sub.portfolio': 'Portfolio',
     'sub.research-overview': 'Research Overview',

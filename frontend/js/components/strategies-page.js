@@ -14,7 +14,7 @@
 <div class="page-header">
                         <div class="page-title">{{ t('strategies.title') }}</div>
                         <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
-                        <button type="button" class="bt-entry-btn" @click="currentSubPage = 'backtest'">回测工作台</button>
+                        <button type="button" class="bt-entry-btn" @click="navigateTo('research', 'backtest')">回测工作台</button> <!-- V5.9.2: 回测移入策略研究, 入口跳转 -->
                         <div class="flex-c-gap-12">
                             <span class="text-base-secondary">{{ t('strategies.latestTradeDay') }}{{ dashboardData.latest_date || '-' }}</span>
                             <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
@@ -1292,6 +1292,7 @@
         execHistory, execSummary, execLoading, execError,
         execDays, execTaskFilter, execStatusFilter, execTaskOptions, execSuccessClass,
         loadExecutionData,
+        execRateClass,
         execPlan, execStatus, execResults, execTraceDate, execTraceSteps, execTraceLoading,
         execResultsDates, execCountdownText, execPhaseText, execStatusIcon,
         execLastDate, execVisibleClass, execVisibleText,

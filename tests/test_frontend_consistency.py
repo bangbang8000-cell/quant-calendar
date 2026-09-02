@@ -1535,3 +1535,107 @@ def test_onboarding_core_umd_double_write():
     assert "root.QuantOnboarding = api" in src,         "UMD 须无条件设置浏览器全局 (Vite 构建 module 分支不再吞掉浏览器挂载)"
     assert "module.exports = api" in src, "Node require 路径须保留 (pytest node 单测依赖)"
     assert "var api = factory()" in src, "factory 仅调用一次, 无重复副作用"
+
+
+
+# V5.9.2 (fix: 执行看板 execRateClass 未导出) 回归
+
+def test_page_components_template_calls_resolve():
+    """V5.9.2-fix: 页面组件模板调用的标识符必须能被解析。
+
+    回归: strategies-page 模板调用 execRateClass() 但 setup 返回对象漏导出该函数
+    (V4.9.5 引入) -> 执行看板子页渲染抛 TypeError 内容空白。
+
+    扫描: 对每个页面组件, 提取模板中 xxx(...) 调用, 断言其在
+    (qcState 键 ∪ setup 返回键 ∪ JS 内置) 内。
+
+    噪音豁免: 模板文本/CSS 中的词被正则误匹配, 集中豁免并注释。
+    """
+    import re as _re
+    import os as _os
+    _BT = chr(96)  # 反引号
+    _comps = ["strategies-page.js", "ai-page.js", "system-page.js", "research-page.js", "calendar-page.js"]
+    app = _read("js/app-logic.js")
+    _qs = app.index("const qcState = {")
+    qseg = app[_qs:app.index("};", _qs)]
+    qkeys = set(_re.findall(r"([A-Za-z_$][\w$]*)\s*[,}]", qseg))
+    builtins = set("map filter reduce forEach includes indexOf lastIndexOf join slice splice concat keys values entries some every find findIndex sort reverse push pop shift unshift replace split toFixed toString toLocaleString trim toLowerCase toUpperCase parseInt parseFloat isNaN isFinite min max abs round floor ceil random Date String Number Boolean Object Array Math JSON RegExp Promise setTimeout setInterval clearTimeout clearInterval encodeURIComponent decodeURIComponent charAt startsWith endsWith".split())
+    # 噪音豁免: 模板文本/CSS 误匹配词 (非真实模板调用)
+    noise = set("TOP5 gradient var function Tab rotate click if stringify".split())
+    for rel in _comps:
+        src = _read("js/components/" + rel)
+        tpl_start = src.index("template: ")
+        tpl_end = src.index(_BT + "," + "", tpl_start)
+        tpl = src[tpl_start:tpl_end]
+        calls = set(_re.findall(r"(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(", tpl))
+        sp = src.index("setup() {")
+        rp = src.rfind("return {", sp)
+        ret = src[rp:src.index("};", rp)]
+        lkeys = set(_re.findall(r"([A-Za-z_$][\w$]*)\s*[,}]", ret))
+        known = qkeys | lkeys | builtins | noise | set(["state"])
+        missing = sorted(c for c in calls if not c.startswith(("v-", "el-", ":")) and c not in known)
+        assert not missing, "%s 模板调用未解析: %s (setup 返回漏导出 → 渲染抛 TypeError)" % (rel, missing)
+
+
+
+# V5.9.2 (fix: sub.datadict 菜单英文) 回归
+
+def test_i18n_sub_datadict_in_all_locales():
+    """V5.9.2-fix: 系统配置 sub.datadict 菜单曾显示英文 key。
+
+    t() 对缺失 key 返回 key 本身且 truthy, 原 subTabLabel 的 || 中文兜底失效。
+
+    修复: ① 5 语语言包补 sub.datadict; ② subTabLabel 显式判 key 回退 subPageNames。
+    """
+    for f in ["zh-CN", "en", "zh-TW", "ja", "ko"]:
+        loc = _read("js/locales/%s.js" % f)
+        assert "sub.datadict" in loc, "%s 语言包缺 sub.datadict (菜单显示英文 key)" % f
+    gh = _read("js/components/global-header.js")
+    assert "(p !== plain && p) ? p :" in gh, "subTabLabel 应显式判 plain key 后回退 subPageNames"
+
+    assert "(state.subPageNames[sp] || sp)" in gh, "中文映射兜底应保留"
+
+
+
+# V5.9.2 (feature: 策略回测移入策略研究) 回归
+
+def test_backtest_moved_to_research_menu():
+    """V5.9.2: 策略回测从策略总览移入策略研究。
+
+    策略总览 subPages 不再含 backtest; 策略研究含 backtest+backtest-history;
+
+    策略总览 overview 的「回测工作台」入口按钮改跳 navigateTo(research, backtest)。
+    """
+    app = _read("js/app-logic.js")
+    strat = app.split("key: 'strategies'")[1].split("},")[0]
+    assert "'backtest'" not in strat, "策略总览 subPages 不应再含 backtest (已移入策略研究)"
+    research = app.split("key: 'research'")[1].split("},")[0]
+    assert "'backtest'" in research, "策略研究应含 backtest"
+    assert "'backtest-history'" in research, "策略研究应含 backtest-history"
+    sp = _read("js/components/strategies-page.js")
+    assert "navigateTo('research', 'backtest')" in sp,         "策略总览「回测工作台」入口应跳研究页回测"
+    assert "currentSubPage = 'backtest'" not in sp.split("bt-entry-btn")[0],         "回测入口不应再直接切策略总览子页"
+
+
+
+# V5.9.2 (feature: 评估历史拆分为 评估历史/评估分析) 回归
+
+def test_ai_history_split_evaluation_analysis():
+    """V5.9.2: 智能评估-评估历史拆成两个二级菜单。
+
+    评估历史(history)只关注评估股票历史; 评估分析(evaluation-analysis)关注命中率。
+
+    menus 增 evaluation-analysis; ai-page 新分支承接命中率卡; watch 触发条件随新子页;
+    history 分支不再含命中率卡(eval-track); 5 语补 sub.evaluation-analysis。
+    """
+    app = _read("js/app-logic.js")
+    ai = app.split("key: 'ai'")[1].split("},")[0]
+    assert "'evaluation-analysis'" in ai, "智能评估 menus 应含 evaluation-analysis"
+    page = _read("js/components/ai-page.js")
+    assert "currentSubPage === 'evaluation-analysis'" in page, "应有评估分析分支"
+    assert "eval-track-card" in page, "命中率卡应保留在页面中"
+    hist = page.split("currentSubPage === 'history'")[1]
+    assert "eval-track-card" not in hist.split("currentSubPage === 'chat_history'")[0],         "评估历史分支不应再含命中率卡 (已拆到评估分析)"
+    assert "ai/evaluation-analysis" in page, "loadTrack 应随评估分析子页触发"
+    for f in ["zh-CN", "en", "zh-TW", "ja", "ko"]:
+        assert "sub.evaluation-analysis" in _read("js/locales/%s.js" % f),             "%s 语言包缺 sub.evaluation-analysis" % f

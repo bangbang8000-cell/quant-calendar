@@ -27,6 +27,8 @@
     'sub.pool': '종목 풀',
     'sub.watchlist': '내 관심목록',
     'sub.history': '평가 이력',
+    'sub.evaluation-analysis': '평가 분석',
+    'sub.datadict': '데이터 사전',
     'sub.chat_history': '문의 이력',
     'sub.portfolio': '포트폴리오',
     'sub.research-overview': '연구 개요',

@@ -110,9 +110,9 @@
                 const groupsConfig = ref(null);
 
 const allMenuDefs = [
-                    { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'execution', 'merrill', 'market', 'consensus', 'backtest'] },
+                    { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'execution', 'merrill', 'market', 'consensus'] }, // V5.9.2: 策略回测移入策略研究
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'chat_history'] },
+                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.9.2: 评估分析(命中率)独立子页
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
                     { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];

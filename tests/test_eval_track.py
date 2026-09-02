@@ -334,3 +334,51 @@ def test_review_tracking_endpoint(monkeypatch):
     assert res["success"] is True
     assert res["data"]["overall"]["n5"]["rate"] == 100.0
     assert "历史命中率不代表未来收益" in res["data"]["note"]
+
+
+
+# ─── V5.9.2: 命中率持久缓存 ───────────────────────────
+
+def _cache_user_samples() -> list:
+    return [{"stock_code": "000001.SZ", "evaluate_date": "2026-01-10", "direction": 1,
+             "provider": "DeepSeek", "level": "推荐", "available": True,
+             "hit_n5": True, "hit_n10": True, "hit_n20": True}]
+
+
+def test_track_cache_hits_within_ttl(monkeypatch, isolated_data_dir):
+    """V5.9.2: 无 kline_getter 时命中率结果走持久缓存, 第二次调用不再重算。
+    命中率计算需同步拉全量 K 线, 无缓存时每次请求都超时; 缓存后 6h 内秒回。
+    """
+    import eval_track
+    import paths
+    calls = {"n": 0}
+    def fake_track(username, kline_getter=None):
+        calls["n"] += 1
+        return _cache_user_samples()
+    monkeypatch.setattr(eval_track, "track_evaluations", fake_track)
+    s1 = eval_track.get_track_summary("cacheuser")
+    s2 = eval_track.get_track_summary("cacheuser")
+    assert calls["n"] == 1, "第二次调用应命中缓存, 不重复拉 K 线"
+    assert s1["overall"]["n5"]["total"] == 1
+    assert s2["overall"] == s1["overall"]
+    assert os.path.isfile(os.path.join(paths.DATA_DIR, "eval_track_cache.json")), "缓存文件应落盘"
+
+
+def test_track_cache_degrade_keeps_last_good(monkeypatch, isolated_data_dir):
+    """V5.9.2: 数据源全不可达时保留最近一次成功缓存, 不覆盖为 0 样本。"""
+    import eval_track
+    state = {"mode": "ok"}
+    def fake_track(username, kline_getter=None):
+        if state["mode"] == "ok":
+            return _cache_user_samples()
+        return [{"stock_code": "000001.SZ", "evaluate_date": "2026-01-10", "direction": 1,
+                 "provider": "DeepSeek", "level": "推荐", "available": False,
+                 "hit_n5": None, "hit_n10": None, "hit_n20": None}]
+    monkeypatch.setattr(eval_track, "track_evaluations", fake_track)
+    s1 = eval_track.get_track_summary("degradeuser")
+    assert s1["overall"]["n5"]["total"] == 1
+    # 数据源故障后重算(缓存过期模拟: 直接改内存 ts 强制重算)
+    eval_track._track_cache_mem["degradeuser"]["ts"] -= eval_track.TRACK_CACHE_TTL_SECONDS + 1
+    state["mode"] = "bad"
+    s2 = eval_track.get_track_summary("degradeuser")
+    assert s2["overall"]["n5"]["total"] == 1, "数据源不可达应保留旧缓存"

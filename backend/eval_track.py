@@ -7,7 +7,10 @@ AI 评估胜率追踪（决策复盘闭环） FR-3.17.6
 - 纯函数（parse_level_direction / compute_hit / compute_stats）与数据获取分离，便于单测
 - 数据不可达优雅降级：不可达样本 mark unavailable，不计入命中率分母并在 note 中说明
 """
+import json
 import logging
+import os
+import time
 from typing import Callable, Dict, List, Optional
 
 from ai_evaluator import ai_evaluator
@@ -307,18 +310,11 @@ def group_samples_by_date(samples: List[Dict]) -> Dict[str, List[Dict]]:
     return out
 
 
-def get_track_summary(username: str = 'default', window=None, kline_getter: Optional[Callable] = None) -> Dict:
-    """计算评估命中率汇总。
 
-    返回 {"overall", "by_model", "by_level", "samples", "note"}；
-    note 含「历史命中率不代表未来收益」免责 + 不可达样本说明。
-    window 可选（5/10/20 或 'n5' 等），指定时仅返回该窗口统计。
-    """
+def _compute_track_summary(username: str = "default", kline_getter: Optional[Callable] = None) -> Dict:
+    # 计算评估命中率汇总(全量窗口, 不做 window 过滤) — 供 get_track_summary 调用。
     samples = track_evaluations(username, kline_getter=kline_getter)
     stats = compute_stats(samples)
-    wkey = _normalize_window(window)
-    if wkey is not None:
-        stats = _filter_stats_window(stats, wkey)
     unavailable = [s for s in samples if not s.get("available")]
     if not samples:
         note = "暂无足够评估样本。" + DISCLAIMER
@@ -334,3 +330,87 @@ def get_track_summary(username: str = 'default', window=None, kline_getter: Opti
         "samples": samples,
         "note": note,
     }
+
+
+# V5.9.2: 评估命中率持久缓存(TTL 6h + 数据源故障降级)。
+# 命中率计算需对每条评估记录同步拉取全量历史 K 线, 无缓存时每次请求全量拉取,
+# 数据源不可用/慢时超时(前端停在"计算中")。缓存全量汇总到内存+文件。
+# 显式传入 kline_getter(测试注入 fake)时跳过缓存直接计算, 保证测试确定性。
+TRACK_CACHE_TTL_SECONDS = 6 * 3600
+_track_cache_mem: Dict[str, Dict] = {}
+
+
+def _track_cache_path() -> str:
+    # 函数内动态解析, 让 isolated_data_dir fixture(paths.DATA_DIR 覆盖)生效
+    from paths import DATA_DIR
+    return os.path.join(DATA_DIR, "eval_track_cache.json")
+
+
+def _track_cache_read() -> Dict[str, Dict]:
+    try:
+        p = _track_cache_path()
+        if os.path.isfile(p):
+            with open(p, encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception as e:
+        logger.warning("eval_track 缓存读取失败: %s", e)
+    return {}
+
+
+def _track_cache_write(entry: Dict[str, Dict]) -> None:
+    try:
+        p = _track_cache_path()
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        data = _track_cache_read()
+        data.update(entry)
+        tmp = p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        os.replace(tmp, p)
+    except Exception as e:
+        logger.warning("eval_track 缓存写入失败: %s", e)
+
+
+def get_track_summary(username: str = "default", window=None, kline_getter: Optional[Callable] = None) -> Dict:
+    # 计算评估命中率汇总(带持久缓存)。
+    # 返回 {"overall", "by_model", "by_level", "samples", "note"};
+    # note 含「历史命中率不代表未来收益」免责 + 不可达样本说明。
+    # window 可选(5/10/20 或 "n5" 等), 指定时仅返回该窗口统计。
+    # 缓存: TTL 6h 内直接返回; 过期重算; 重算失败或样本全不可达时降级返回最近缓存。
+    if kline_getter is not None:
+        summary = _compute_track_summary(username, kline_getter=kline_getter)
+    else:
+        now = time.time()
+        cached = _track_cache_mem.get(username)
+        if not cached:
+            cached = _track_cache_read().get(username)
+        fresh = bool(cached) and (now - cached.get("ts", 0)) < TRACK_CACHE_TTL_SECONDS
+        if fresh:
+            summary = cached["summary"]
+        else:
+            try:
+                summary = _compute_track_summary(username)
+                samples = summary["samples"]
+                degraded = bool(cached) and bool(samples) and all(not s.get("available") for s in samples)
+                if degraded:
+                    summary = cached["summary"]
+                    logger.warning("eval_track 数据源全不可达, 保留旧缓存(%s)", username)
+                else:
+                    entry = {"ts": now, "summary": summary}
+                    _track_cache_mem[username] = entry
+                    _track_cache_write({username: entry})
+            except Exception as e:
+                if cached:
+                    summary = cached["summary"]
+                    logger.warning("eval_track 重算失败, 降级返回缓存(%s): %s", username, e)
+                else:
+                    raise
+    wkey = _normalize_window(window)
+    if wkey is not None:
+        filtered = _filter_stats_window(summary, wkey)
+        summary = dict(summary)
+        summary["overall"] = filtered["overall"]
+        summary["by_model"] = filtered["by_model"]
+        summary["by_level"] = filtered["by_level"]
+    return summary

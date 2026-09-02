@@ -27,6 +27,8 @@
     'sub.pool': '株プール',
     'sub.watchlist': 'マイ自選',
     'sub.history': '評価履歴',
+    'sub.evaluation-analysis': '評価分析',
+    'sub.datadict': 'データ辞書',
     'sub.chat_history': '質問履歴',
     'sub.portfolio': 'ポートフォリオ',
     'sub.research-overview': '研究概要',
