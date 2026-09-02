@@ -139,7 +139,7 @@ def compute_risk_metrics(returns, annual_days=ANNUAL_DAYS, risk_free_rate=0.03,
     # 年化收益 (复利): 净值^(252/n) - 1
     cum_eq = float(np.prod(1.0 + arr))
     annual_return = ((cum_eq ** (annual_days / n) - 1.0) * 100.0)
-    max_dd = max_drawdown_of(np.concatenate([[1.0], 1.0 + np.cumsum(arr) if False else np.cumprod(1.0 + arr)]))
+    max_dd = max_drawdown_of(np.concatenate([[1.0], np.cumprod(1.0 + arr)]))
     rf_daily = risk_free_rate / annual_days
     sharpe = ((mu - rf_daily) / sd * math.sqrt(annual_days)) if sd > 1e-12 else 0.0
     neg = arr[arr < 0]
