@@ -310,3 +310,76 @@ def build_ic_decay_report(factor_panels: Dict[str, Dict[str, List[Dict]]]) -> Di
             decay[wkey] = compute_ic_series(panel, window=wkey)
         report[fkey] = ic_decay_summary(decay)
     return report
+
+
+# ==================== 换手率分析 (T-5.1.13 / FR-5.1.1.3) ====================
+
+def layer_membership(panel: List[Dict]) -> Dict[str, Dict[int, List[str]]]:
+    """提取逐期分层成分 → {date: {layer: [codes]}}。
+
+    panel: [{date, layers: [{layer, stocks: [code]}]}]
+    """
+    out: Dict[str, Dict[int, List[str]]] = {}
+    for day in panel:
+        layers = day.get('layers')
+        if not layers:
+            continue
+        out[day.get('date')] = {int(l.get('layer')): list(l.get('stocks', []))
+                                for l in layers}
+    return out
+
+
+def single_side_turnover(panel: List[Dict], layer: int = 1) -> float:
+    """单边换手率 (相邻两期成分重叠度): 换手 = 1 - 交集/并集占比。
+
+    定义: 换手率 = (size_{t-1} + size_t - 2*|intersection|) / (size_{t-1} + size_t)
+    完全不变 → 0; 完全换 → 1。
+    """
+    members = layer_membership(panel)
+    dates = sorted(members.keys())
+    if len(dates) < 2:
+        return 0.0
+    total_union = 0.0
+    total_denom = 0.0
+    for i in range(1, len(dates)):
+        prev = set(members[dates[i - 1]].get(layer, []))
+        cur = set(members[dates[i]].get(layer, []))
+        if not prev and not cur:
+            continue
+        inter = len(prev & cur)
+        denom = len(prev) + len(cur)
+        total_union += (denom - 2 * inter)
+        total_denom += denom
+    return (total_union / total_denom) if total_denom else 0.0
+
+
+def annualized_turnover(panel: List[Dict], layer: int = 1,
+                        rebalance_days: int = 5, trading_days: int = 250) -> float:
+    """年化换手 = 单次换手 × (trading_days / rebalance_days)。"""
+    once = single_side_turnover(panel, layer=layer)
+    if once <= 0 or rebalance_days <= 0:
+        return 0.0
+    return once * (trading_days / rebalance_days)
+
+
+def turnover_cost_drag(annual_turnover: float, cost_rate: float) -> float:
+    """年化成本拖累 = 年化换手 × 单边成本 × 2 (双边)。"""
+    return annual_turnover * cost_rate * 2.0
+
+
+def turnover_analysis(panel: List[Dict], layer: int = 1, rebalance_days: int = 5,
+                      cost_rate: float = 0.001, trading_days: int = 250) -> Dict:
+    """换手分析报告: 单次换手 / 年化换手 / 成本拖累(绝对值与百分比)。"""
+    once = single_side_turnover(panel, layer=layer)
+    ann = annualized_turnover(panel, layer=layer,
+                              rebalance_days=rebalance_days, trading_days=trading_days)
+    drag = turnover_cost_drag(ann, cost_rate)
+    return {
+        'layer': layer,
+        'single_turnover': round(once, 4),
+        'annual_turnover': round(ann, 2),
+        'rebalance_days': rebalance_days,
+        'cost_rate': cost_rate,
+        'cost_drag': round(drag, 4),
+        'cost_drag_pct': round(drag * 100, 2),
+    }
