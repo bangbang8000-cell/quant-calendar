@@ -467,6 +467,7 @@
                                 <el-radio-button label="backtest">回测</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
+                            <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory">⬇️ 导出 CSV</el-button>
                         </div>
                         <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" desc="请检查网络后重试" @retry="loadResearchHistory"></qc-state-panel>
@@ -1534,6 +1535,7 @@
       const researchDetailId = Vue.ref('');
       const researchCompareRows = Vue.ref([]);
       const researchCompareLoading = Vue.ref(false);
+      const researchExportLoading = Vue.ref(false);
 
       const RESEARCH_TYPE_LABELS = {
         'factor_ic': '因子IC', 'layer': '分层', 'sweep': '扫描',
@@ -1560,6 +1562,29 @@
           researchHistoryError.value = true;
         } finally {
           researchHistoryLoading.value = false;
+        }
+      }
+      async function exportResearchHistory() {
+        researchExportLoading.value = true;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const q = researchHistoryType.value ? '?type=' + encodeURIComponent(researchHistoryType.value) : '';
+          const res = await fetch('/api/strategies/research-history/export' + q, { headers });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'research_history.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.error('[research-history] 导出失败:', e);
+        } finally {
+          researchExportLoading.value = false;
         }
       }
       function toggleResearchSelect(id) {
@@ -1612,7 +1637,7 @@
         // 5.1.0 (T-5.1.4): 研究历史
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
-        researchTypeLabel, openResearchHistory, loadResearchHistory,
+        researchTypeLabel, openResearchHistory, loadResearchHistory, researchExportLoading, exportResearchHistory,
         toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,

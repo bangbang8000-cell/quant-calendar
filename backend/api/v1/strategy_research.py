@@ -9,10 +9,11 @@
 - 因子研究: 单因子 IC 评价 / 分层回测
 """
 import asyncio
+import json
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 
 from auth import get_non_guest_user
 from strategy_db import StrategyBusyError, append_run, finish_run, get_run, list_runs
@@ -672,6 +673,50 @@ async def research_history_list(limit: int = 50, type: Optional[str] = None,
         logger.exception('研究历史列表失败')
         raise HTTPException(status_code=500, detail=f'研究历史列表失败: {e}')
     return {'items': items, 'count': len(items)}
+
+
+@router.get('/research-history/export')
+async def research_history_export(limit: int = 500, type: Optional[str] = None,
+                                  _: Dict = Depends(get_non_guest_user)):
+    """研究实验导出 CSV (T-5.1.5): 列表字段 + 关键指标一行一条。
+
+    表头: id,type,subject,created_at,app_version,date_range,
+           ic_mean,icir,win_rate,annual_return,max_drawdown,sharpe_ratio,
+           monotonic,spread,best_param
+    无记录也返回表头。前端 Blob 下载。注意: 必须定义在 /research-history/{eid} 之前,
+    否则 export 会被路径参数 {eid} 捕获 (FastAPI 按注册顺序匹配)。
+    """
+    from research_store import list_experiments
+    import csv, io
+    try:
+        items = list_experiments(type=type or None, limit=limit)
+    except Exception as e:
+        logger.exception('研究历史导出失败')
+        raise HTTPException(status_code=500, detail=f'研究历史导出失败: {e}')
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['id', 'type', 'subject', 'created_at', 'app_version',
+                     'date_range', 'ic_mean', 'icir', 'win_rate',
+                     'annual_return', 'max_drawdown', 'sharpe_ratio',
+                     'monotonic', 'spread', 'best_param'])
+    for exp in items:
+        s = exp.get('summary') or {}
+        writer.writerow([
+            exp.get('id', ''), exp.get('type', ''), exp.get('subject', ''),
+            exp.get('created_at', ''), exp.get('app_version', ''),
+            '|'.join(exp.get('date_range') or []),
+            s.get('ic_mean', ''), s.get('icir', ''), s.get('win_rate', ''),
+            s.get('annual_return', ''), s.get('max_drawdown', ''),
+            s.get('sharpe_ratio', ''),
+            '1' if s.get('monotonic') else ('0' if s.get('monotonic') is not None else ''),
+            s.get('spread', ''),
+            (s.get('best_param') and json.dumps(s.get('best_param'), ensure_ascii=False)) or '',
+        ])
+    return Response(
+        content='\ufeff' + buf.getvalue(),  # BOM 让 Excel 正确识别 UTF-8 中文
+        media_type='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename="research_history.csv"'})
+
 
 
 @router.get('/research-history/{eid}')

@@ -117,3 +117,44 @@ class TestDeleteAPI:
     def test_delete_missing_404(self, authed_client):
         r = authed_client.delete('/api/strategies/research-history/exp_ghost')
         assert r.status_code == 404
+
+class TestExportAPI:
+    """T-5.1.5: CSV 导出 (表头 + 数据行 + BOM + 类型过滤)。"""
+
+    def test_export_returns_csv_header(self, authed_client):
+        r = authed_client.get('/api/strategies/research-history/export')
+        assert r.status_code == 200, r.text
+        assert 'text/csv' in r.headers.get('content-type', '')
+        body = r.text
+        # BOM 开头 (Excel UTF-8 兼容)
+        assert body.startswith('\ufeff') or body.startswith('id,type')
+        assert 'id,type,subject,created_at,app_version' in body
+
+    def test_export_contains_seeded_rows(self, authed_client):
+        _seed(etype='factor_ic', subject='multi_factor/mom20',
+              summary={'ic_mean': 0.034, 'icir': 0.62, 'win_rate': 58.3})
+        r = authed_client.get('/api/strategies/research-history/export')
+        body = r.text.lstrip('\ufeff')
+        assert 'multi_factor/mom20' in body
+        assert '0.034' in body
+        assert '0.62' in body
+
+    def test_export_filter_by_type(self, authed_client):
+        _seed(etype='factor_ic', subject='a')
+        _seed(etype='sweep', subject='b')
+        r = authed_client.get('/api/strategies/research-history/export',
+                              params={'type': 'sweep'})
+        body = r.text.lstrip('\ufeff')
+        import csv, io as _io
+        rows = list(csv.reader(_io.StringIO(body)))
+        assert len(rows) == 2  # 表头 + 1 行
+        subjects = [row[2] for row in rows[1:]]
+        assert subjects == ['b']
+        assert 'a' not in subjects
+
+    def test_export_empty_has_header_only(self, authed_client):
+        r = authed_client.get('/api/strategies/research-history/export')
+        body = r.text.lstrip('\ufeff')
+        lines = [l for l in body.split('\n') if l.strip()]
+        assert len(lines) == 1  # 仅表头
+        assert lines[0].startswith('id,type')

@@ -1,7 +1,0 @@
-v5.1 (5.1.0-3): 研究历史前端面板 (T-5.1.4 入口 + 子页 + 对比)
-
-- research-page: 研究概览加「研究历史」统计卡 + 快捷入口第7项
-- 新增 research-history 子页: 类型过滤(IC/分层/扫描/回测) + 实验列表(摘要指标) + 勾选≤10对比 + 详情JSON + 删除
-- themes.css: .research-detail-pre JSON 展示样式
-- 修复 loadBtHistory finally 块误删导致的构建失败 (edit 副作用)
-- dist 重建入库 (research-page-DosUM1VU.js)
