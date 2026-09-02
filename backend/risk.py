@@ -218,3 +218,87 @@ def position_sizing(vols, target_vol=0.12, max_position=0.2, method="vol_target"
     return {"positions": positions, "total": total, "method": method,
             "max_position": max_position}
 
+
+# ─── V5.1.3 T-5.1.33: 风险报告 (回撤区间标注 + 尾部风险) ───
+
+
+def drawdown_period(equity):
+    """最大回撤区间标注: 净值序列 → {start, end, depth} (None 无回撤)。
+
+    从净值峰值跌至谷底的起始/结束索引与深度 (depth = (peak-valley)/peak)。
+    """
+    eq = [float(x) for x in equity if x is not None]
+    if not eq:
+        return None
+    peak_idx, valley_idx = 0, 0
+    peak = eq[0]
+    max_depth = 0.0
+    cur_valley, cur_valley_idx = eq[0], 0
+    for i, v in enumerate(eq):
+        if v > peak:
+            peak = v
+            peak_idx = i
+            cur_valley, cur_valley_idx = v, i
+        else:
+            depth = (peak - v) / peak if peak > 0 else 0.0
+            if depth > max_depth:
+                max_depth = depth
+                valley_idx = i
+                cur_valley_idx = i
+    if max_depth <= 0:
+        return None
+    return {'start': peak_idx, 'end': valley_idx,
+            'depth': max_depth, 'peak': eq[peak_idx],
+            'valley': eq[valley_idx]}  # 全精度; 展示层负责舍入 (数值纪律)
+
+
+def tail_risk_summary(returns, var_level=0.95):
+    """尾部风险专项: VaR95/CVaR + 说明 (损失 % 正数)。"""
+    rets = [float(r) for r in (returns or []) if r is not None]
+    if not rets:
+        return {'var_95': 0.0, 'cvar': 0.0, 'note': '样本不足'}
+    v = var_historical(rets, var_level) * 100.0
+    c = cvar_of(rets, var_level) * 100.0
+    return {
+        'var_95': round(v, 2),
+        'cvar': round(c, 2),
+        'level': var_level,
+        'note': '尾部风险: 95%% 置信度单日最大损失约 %.2f%%, 极端条件下平均损失约 %.2f%%'
+                % (v, c),
+    }
+
+
+def risk_report(equity, is_equity=True, var_level=0.95,
+                benchmark_returns=None):
+    """综合风险报告: {metrics, drawdown_period, tail, summary}。
+
+    equity 为净值序列 (is_equity=True) 或日收益序列 (is_equity=False)。
+    """
+    metrics = compute_risk_metrics(equity, is_equity=is_equity,
+                                   var_level=var_level,
+                                   benchmark_returns=benchmark_returns)
+    dd = drawdown_period(equity) if is_equity else None
+    if not is_equity:
+        # 从收益构造净值反推回撤区间
+        nav = 1.0
+        eq = []
+        for r in (equity or []):
+            nav *= (1 + float(r))
+            eq.append(nav)
+        dd = drawdown_period(eq)
+    tail = tail_risk_summary(
+        _equity_to_returns(equity) if is_equity else equity, var_level)
+    summary = ('最大回撤 %.2f%% (区间 第%d日→第%d日), VaR95 %.2f%%, Calmar %s'
+               % (metrics.get('max_drawdown', 0.0),
+                  (dd['start'] + 1) if dd else 0,
+                  (dd['end'] + 1) if dd else 0,
+                  tail['var_95'],
+                  ('%.2f' % metrics['calmar_ratio'])
+                  if metrics.get('calmar_ratio') is not None else '—'))
+    return {
+        'metrics': metrics,
+        'drawdown_period': dd,
+        'tail': tail,
+        'summary': summary,
+    }
+
