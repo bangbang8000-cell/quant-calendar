@@ -4,7 +4,7 @@
 模块级函数与全局单例 scheduler 一并收口于此 (scheduler.py 薄壳因包同名被遮蔽已删除)。"""
 import logging
 import os
-from paths import DATA_DIR
+from paths import DATA_DIR, EXTERNAL_DATA_DIR as EXTERNAL_DATA_DIR  # noqa: F401  # 模块属性: _core.file_watch_task 经 scheduler.EXTERNAL_DATA_DIR 引用 (拆分回归修复)
 from views_aggregator import views_aggregator  # noqa: F401  # 薄壳兼容属性
 
 logger = logging.getLogger(__name__)

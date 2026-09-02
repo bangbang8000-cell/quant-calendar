@@ -1,5 +1,4 @@
 """Tests for scheduler.py — async task scheduling"""
-import pytest
 from unittest.mock import patch
 
 
@@ -35,7 +34,7 @@ class TestStrategyRunTask:
     def test_strategy_run_task_sleep_until_20(self):
         """strategy_run_task 使用 governance 默认 20:00 (由 run_strategy_once 调度参数驱动)"""
         from scheduler import Scheduler
-        s = Scheduler()
+        Scheduler()
         # 验证默认 schedule 常量
         import strategy_governance as gov
         assert gov.DEFAULT_SCHEDULE == "20:00"
@@ -108,3 +107,123 @@ def test_start_registered_tasks_have_methods():
         assert hasattr(Scheduler, name), f"start() 注册了未定义的方法 {name}"
     for task in ("daily_market_review_task", "event_alert_scan_task", "fact_check_audit_task"):
         assert task in names, f"应注册 {task}"
+
+
+class TestSchedulerHelpersCoverage:
+    """V5.9 T-5.9.2: scheduler._helpers 纯函数覆盖 (覆盖率门禁 scheduler >=30%)"""
+
+    def test_scan_csv_files_flat(self, tmp_path):
+        from scheduler import _helpers as H
+        d1 = tmp_path / "q1"
+        d1.mkdir()
+        (d1 / "a.csv").write_text("x")
+        (d1 / "b.txt").write_text("x")
+        (d1 / "sub").mkdir()
+        (d1 / "sub" / "c.csv").write_text("x")
+        out = H.scan_csv_files([str(d1)], recursive=False)
+        assert len(out) == 1
+        assert str(d1 / "a.csv") in out
+
+    def test_scan_csv_files_recursive(self, tmp_path):
+        from scheduler import _helpers as H
+        d1 = tmp_path / "q1"
+        (d1 / "sub").mkdir(parents=True)
+        (d1 / "a.csv").write_text("x")
+        (d1 / "sub" / "b.csv").write_text("x")
+        out = H.scan_csv_files([str(d1)], recursive=True)
+        assert len(out) == 2
+
+    def test_scan_csv_files_skips_missing_dir(self):
+        from scheduler import _helpers as H
+        assert H.scan_csv_files(["/nonexistent/path/xyz"], recursive=True) == {}
+
+    def test_detect_csv_changes_modified(self):
+        from scheduler import _helpers as H
+        changed, desc = H.detect_csv_changes({"/x/a.csv": 1}, {"/x/a.csv": 2})
+        assert changed is True and "文件变动" in desc
+
+    def test_detect_csv_changes_new(self):
+        from scheduler import _helpers as H
+        changed, desc = H.detect_csv_changes({}, {"/x/a.csv": 1})
+        assert changed is True and "新文件" in desc
+
+    def test_detect_csv_changes_deleted(self):
+        from scheduler import _helpers as H
+        changed, desc = H.detect_csv_changes({"/x/a.csv": 1}, {})
+        assert changed is True and "文件删除" in desc
+
+    def test_detect_csv_changes_none(self):
+        from scheduler import _helpers as H
+        changed, desc = H.detect_csv_changes({"/x/a.csv": 1}, {"/x/a.csv": 1})
+        assert changed is False and desc == "无变动"
+
+    def test_verify_day_ingest_empty_agg(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = []
+        ok, detail = H.verify_day_ingest("2026-01-05", agg=FakeAgg())
+        assert ok is False and "无可用日期" in detail
+
+    def test_verify_day_ingest_bad_date(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = ["2026-01-05"]
+            def get_day_view(self, d): return {"total": 1}
+        ok, detail = H.verify_day_ingest("not-a-date", agg=FakeAgg())
+        assert ok is False and "日期格式无效" in detail
+
+    def test_verify_day_ingest_ok(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = ["2026-01-05", "2026-01-06"]
+            def get_day_view(self, d): return {"total": 3}
+        ok, detail = H.verify_day_ingest("2026-01-05", agg=FakeAgg())
+        assert ok is True and "日视图已可见" in detail
+
+    def test_verify_day_ingest_empty_total(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = ["2026-01-05"]
+            def get_day_view(self, d): return {"total": 0}
+        ok, detail = H.verify_day_ingest("2026-01-05", agg=FakeAgg())
+        assert ok is False and "日视图为空" in detail
+
+    def test_verify_day_ingest_fallback_weekend(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = ["2026-01-02", "2026-01-05"]
+            def get_day_view(self, d): return {"total": 7}
+        ok, detail = H.verify_day_ingest("2026-01-04", agg=FakeAgg())
+        assert ok is True and "原始请求 2026-01-04" in detail
+
+    def test_verify_day_ingest_too_old(self):
+        from scheduler import _helpers as H
+        class FakeAgg:
+            all_dates = ["2026-01-05"]
+            def get_day_view(self, d): return {"total": 1}
+        ok, detail = H.verify_day_ingest("2025-12-01", agg=FakeAgg())
+        assert ok is False and "不在聚合器可用日期内" in detail
+
+    def test_run_strategy_once_progress_cb(self):
+        import strategy_governance as gov
+        from scheduler import _helpers as H
+        state = {"multi_factor": {"enabled": True}}
+        stages = []
+        with patch.object(gov, "get_state", return_value=state),              patch.object(gov, "run_once", return_value={"sid": "multi_factor"}):
+            ok, executed, errors = H.run_strategy_once(progress_cb=lambda sid, st: stages.append((sid, st)))
+        assert ("multi_factor", "generating") in stages
+        assert ("multi_factor", "done") in stages
+        assert executed == ["multi_factor"]
+
+    def test_run_strategy_once_error_path(self):
+        import strategy_governance as gov
+        from scheduler import _helpers as H
+        state = {"multi_factor": {"enabled": True}}
+        def boom(sid, as_of=None):
+            raise ValueError("模拟失败")
+        with patch.object(gov, "get_state", return_value=state),              patch.object(gov, "run_once", side_effect=boom):
+            ok, executed, errors = H.run_strategy_once()
+        assert ok is False
+        assert executed == []
+        assert len(errors) == 1
+        assert "模拟失败" in errors[0]["error"]
