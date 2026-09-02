@@ -1,0 +1,4 @@
+v5.1 (5.1.4-3): T-5.1.43 实验对比雷达图数据 (radar_data 统一指标归一化)
+
+- research_store.py 新增 radar_data(indicators+series, 归一化[0,1], 缺失补0, 稳定指标顺序)/build_radar_data
+- 新增 tests/test_experiment_compare.py 6 用例 (TDD 全绿)

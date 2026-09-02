@@ -167,6 +167,67 @@ def compare_experiments(ids: list) -> list:
     return out
 
 
+# ─── T-5.1.43 / FR-5.1.4.3: 实验对比雷达图数据 (统一指标归一化) ───
+
+# 雷达图优先展示的数值指标 (顺序稳定)
+_RADAR_METRIC_ORDER = ('ic_mean', 'icir', 'win_rate', 'annual_return',
+                       'sharpe_ratio', 'max_drawdown', 'total_return')
+
+
+def _numeric_summary(summary: dict) -> dict:
+    """提取 summary 中的数值指标 (排除非数值/布尔)。"""
+    return {k: float(v) for k, v in (summary or {}).items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+
+def radar_data(ids: list) -> dict:
+    """多实验雷达图数据: {indicators, series}。
+
+    - indicators: 统一指标集 (有数值的 summary 键, 稳定顺序)
+    - series: [{name, values: 归一化 [0,1]}] (缺失指标补 0)
+    归一化: (v - min) / (max - min); min==max 时取 1.0。
+    """
+    exps = []
+    for eid in (ids or []):
+        exp = get_experiment(eid)
+        if exp:
+            exps.append(exp)
+    if not exps:
+        return {'indicators': [], 'series': []}
+    # 收集指标 (按稳定顺序 + 其余键)
+    keys = []
+    for k in _RADAR_METRIC_ORDER:
+        if any(k in _numeric_summary(e.get('summary') or {}) for e in exps):
+            keys.append(k)
+    all_nums = {k: [_numeric_summary(e.get('summary') or {}).get(k)
+                    for e in exps] for k in keys}
+    # 归一化
+    series = []
+    for e in exps:
+        nums = _numeric_summary(e.get('summary') or {})
+        values = []
+        for k in keys:
+            v = nums.get(k)
+            if v is None:
+                values.append(0.0)
+                continue
+            col = all_nums[k]
+            colv = [x for x in col if x is not None]
+            mn, mx = (min(colv), max(colv)) if colv else (0.0, 1.0)
+            if mx == mn:
+                values.append(1.0)
+            else:
+                values.append(round((v - mn) / (mx - mn), 4))
+        series.append({'name': e.get('subject', '') or e.get('id', ''),
+                       'values': values})
+    return {'indicators': keys, 'series': series}
+
+
+def build_radar_data(ids: list) -> dict:
+    """按 id 列表构建雷达图数据 (radar_data 的别名入口, 语义化命名)。"""
+    return radar_data(ids)
+
+
 def delete_experiment(eid: str) -> bool:
     """删除一条实验, 返回是否删除。"""
     conn = db.get_conn()
