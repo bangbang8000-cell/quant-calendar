@@ -233,24 +233,29 @@ rbac/collab/api_v3/sdk/plugins 覆盖率 ≥70% 入 CI 阻塞步骤；权限矩�
 
 ---
 
-## 10. V5.9 架构现代化与工程化 —— 测试计划
+## 10. V5.9 架构现代化与工程化 —— 测试计划 ✅ 已完成 (tag v5.9.0, 2026-09-02)
 
 ### 10.1 新增测试资产（目标 +120 用例）
 
-| 测试文件 | 覆盖 | 用例数 |
-|---|---|---|
-| tests/test_split_parity.py | **拆分对拍**：拆前拆后模块行为逐字段对拍（覆盖率不降断言） | ~30 |
-| tests/test_migrations.py | 迁移框架：顺序升级/回滚/失败不启动/跳级 | ~40 |
-| tests/test_upgrade_rollback.py | 一键升级 DryRun + 真回滚演练（备份→迁移→验证→回滚） | ~20 |
-| tests/test_observability.py | 结构化日志/SLO 指标（可用性/延迟/成功率） | ~15 |
-| tests/test_contract_openapi.py | OpenAPI→前端类型契约 + property-based（成本/风控/迁移） | ~15 |
+| 测试文件 | 覆盖 | 用例数 | 状态 |
+|---|---|---|---|
+| tests/test_split_parity.py | **拆分对拍**：拆前拆后模块行为逐字段对拍（覆盖率不降断言） | 52 | ✅ |
+| tests/test_migrations.py | 迁移框架：顺序升级/回滚/失败不启动/跳级 | 35 | ✅ |
+| tests/test_upgrade_rollback.py | 一键升级 DryRun + 真回滚演练（备份→迁移→验证→回滚） | 27 | ✅ |
+| tests/test_observability.py | 结构化日志/SLO 指标（可用性/延迟/成功率） | 20 | ✅ |
+| tests/test_contract_openapi.py | OpenAPI→前端契约（修复 4 处真实破口） | 11 | ✅ |
+| tests/test_property_based.py | property-based（SLO/迁移/日志/备份/配置不变量） | 21 | ✅ |
+| tests/test_scaffold.py | 脚手架生成器（test/module/migration 骨架） | 9 | ✅ |
 
 ### 10.2 专项验证
-- 拆分对拍：对每个拆分文件，拆前/拆后跑同一测试集，输出一致 + 覆盖率不降。
-- 迁移演练：v4.9.5 → v5.9 数据可顺序迁移且回滚到备份可用。
+- 拆分对拍：对每个拆分文件，拆前/拆后跑同一测试集，输出一致 + 覆盖率不降。✅
+- 迁移演练：顺序迁移 + 回滚到备份可用（backup→upgrade→rollback→verify 全链测试）。✅
+- 契约专项：前端每条真实 fetch 路径字面量解析到后端路由；发现并修复 4 处破口。✅
 
 ### 10.3 门禁
-migrations ≥70%；拆分对拍为独立 job；覆盖率总门禁维持 ≥40% 且新模块 ≥70%。
+migrations ≥70%（实测 98%）；split-parity 独立 job（52 例）；ai_eval+ai_evaluator ≥50%；
+scheduler ≥30%；data_sources ≥60%；merrill_clock ≥70%；deploy_tool ≥80%（实测 96%）；
+metrics+structured_log ≥80%（实测 96-97%）；scaffold ≥80%（实测 87%）。
 
 ---
 

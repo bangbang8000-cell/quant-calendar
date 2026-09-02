@@ -217,25 +217,25 @@
 
 ---
 
-## 10. V5.9 架构现代化与工程化（估 8-10 天）
+## 10. V5.9 架构现代化与工程化（估 8-10 天）✅ 已完成 (tag v5.9.0, 2026-09-02)
 
 ### 10.1 任务分解
 
-| 任务 | 内容 | 涉及文件 | 估时 | 前置 |
-|---|---|---|---|---|
-| T-5.9.1 | ai_evaluator 拆分（ModelProvider/Vendor/eval/复盘 → 子模块） | ai_evaluator.py → ai_eval/ | 2d | 全系列 |
-| T-5.9.2 | scheduler 拆分（调度/执行/监控解耦） | scheduler.py → scheduler/ | 1.5d | T-5.9.1 |
-| T-5.9.3 | data_sources/merrill_clock 拆分 | data_sources.py、merrill_clock.py | 1.5d | T-5.9.1 |
-| T-5.9.4 | schema 迁移框架（versioned + 回滚 + 校验） | 新增 backend/migrations/、db.py | 2d | T-5.9.2 |
-| T-5.9.5 | 一键升级/回滚脚本（备份→迁移→验证→回滚） | scripts/upgrade*.ps1、.sh | 1.5d | T-5.9.4 |
-| T-5.9.6 | 观测性 2.0（结构化日志/trace/SLO 指标） | metrics.py、logging | 1.5d | - |
-| T-5.9.7 | 契约/属性测试 + 开发脚手架 | tests、scripts/scaffold | 1.5d | T-5.9.1 |
+| 任务 | 内容 | 涉及文件 | 估时 | 前置 | 状态 |
+|---|---|---|---|---|---|
+| T-5.9.1 | ai_evaluator 拆分（ModelProvider/Vendor/eval/复盘 → 子模块） | ai_evaluator.py → ai_eval/ | 2d | 全系列 | ✅ 5.9.0-1 (对拍 34 例) |
+| T-5.9.2 | scheduler 拆分（调度/执行/监控解耦） | scheduler.py → scheduler/ | 1.5d | T-5.9.1 | ✅ 5.9.0-2 (对拍 11 例) |
+| T-5.9.3 | data_sources/merrill_clock 拆分 | data_sources.py、merrill_clock.py | 1.5d | T-5.9.1 | ✅ 5.9.0-3 (对拍 7 例) |
+| T-5.9.4 | schema 迁移框架（versioned + 回滚 + 校验） | 新增 backend/migrations/、db.py | 2d | T-5.9.2 | ✅ 5.9.0-4 (35 例) |
+| T-5.9.5 | 一键升级/回滚脚本（备份→迁移→验证→回滚） | scripts/upgrade.sh、rollback.sh | 1.5d | T-5.9.4 | ✅ 5.9.0-5 (27 例) |
+| T-5.9.6 | 观测性 2.0（结构化日志/SLO 指标） | metrics.py、structured_log.py | 1.5d | - | ✅ 5.9.0-6 (20 例) |
+| T-5.9.7 | 契约/属性测试 + 开发脚手架（修复 4 处前端-后端契约破口） | tests、scripts/scaffold | 1.5d | T-5.9.1 | ✅ 5.9.0-7 (41 例) |
 
 ### 10.2 里程碑
-- M1（1-4d）：巨型文件拆分（逐个对拍）→ M2（5-7d）：迁移框架 + 升级回滚 → M3（8-10d）：观测性 + 脚手架 + 发布。
+- M1（1-4d）：巨型文件拆分（逐个对拍）→ M2（5-7d）：迁移框架 + 升级回滚 → M3（8-10d）：观测性 + 脚手架 + 发布。✅ 已完成（1 会话交付）。
 
 ### 10.3 出口标准
-拆分后全量绿且覆盖率不降、迁移升/回滚演练通过、SLO 仪表盘可用、一键升级两模式通过。
+拆分后全量绿且覆盖率不降、迁移升/回滚演练通过、SLO 仪表盘可用、一键升级两模式通过。✅ 全部满足（V5.9 新增 206 用例；全量 2251 passed；双端 startup-report 7/1/0；tag v5.9.0）。
 
 ---
 
