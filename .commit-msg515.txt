@@ -1,5 +1,0 @@
-v5.1 (5.1.1-5): T-5.1.15 多重检验提示 (试验因子数 + IC 显著性校正)
-
-- factor_ic.py 新增 ic_t_statistic(IC t值)/bonferroni_alpha(α/n)/fdr_alpha(BH)/multiple_testing_warning(n>5且存活少→警示)/multiple_testing_report(存活因子清单)
-- 新增 tests/test_factor_multiple_testing.py 12 用例 (TDD 全绿)
-- 因子研究模块回归 103 passed

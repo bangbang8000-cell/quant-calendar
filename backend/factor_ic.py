@@ -463,3 +463,76 @@ def multiple_testing_report(results: Dict[str, Dict], n_factors: int,
                         'survive': t is not None and abs(t) >= t_crit})
     warning['survive'] = survive
     return warning
+
+
+# ==================== 因子详情面板数据 (T-5.1.16 / FR-5.1.1.6) ====================
+
+def build_factor_detail(ic_panel: List[Dict],
+                        layer_panel: List[Dict],
+                        meta: Optional[Dict] = None,
+                        recent_years: int = 2,
+                        n_factors_tested: int = 10,
+                        cost_rate: float = 0.001,
+                        rebalance_days: int = 5) -> Dict:
+    """组装单因子详情面板数据 (纯函数, 不依赖数据源)。
+
+    ic_panel:  IC 研究 panel [{date, stocks:[{code, factor_value, future_return:{nX}}]}]
+    layer_panel: 分层 panel [{date, layers:[{layer, stocks}]}] (换手率)
+    meta: 因子元信息 {name, category, description, params}
+    返回 {meta, coverage, ic_decay, turnover, multiple_testing, recent}
+    """
+    meta = meta or {}
+
+    # 1. 覆盖度: IC panel 中因子有值占比
+    total_cells = 0
+    filled = 0
+    for day in ic_panel:
+        for s in day.get('stocks', []):
+            total_cells += 1
+            if s.get('factor_value') is not None:
+                filled += 1
+    coverage = (filled / total_cells) if total_cells else 0.0
+
+    # 2. IC 衰减 (1/5/10/20)
+    decay = compute_ic_decay(ic_panel, windows=('n1', 'n5', 'n10', 'n20'))
+    decay_summary = ic_decay_summary(decay)
+
+    # 3. 换手率 (top 层 = layer 1)
+    turnover = turnover_analysis(layer_panel, layer=1,
+                                 rebalance_days=rebalance_days, cost_rate=cost_rate)
+
+    # 4. 多重检验: 用各窗口 IC 均值估 t
+    ic_stats = {}
+    for wkey, series in decay.items():
+        valid = [x['ic'] for x in series if x.get('ic') is not None]
+        if len(valid) >= 2:
+            mean = sum(valid) / len(valid)
+            var = sum((x - mean) ** 2 for x in valid) / (len(valid) - 1)
+            t = (mean / ((var / len(valid)) ** 0.5)) if var > 0 else 0.0
+            ic_stats[wkey] = {'ic_mean': round(mean, 3), 't_stat': round(t, 3)}
+        else:
+            ic_stats[wkey] = {'ic_mean': None, 't_stat': None}
+    mtest = multiple_testing_report(ic_stats, n_factors=n_factors_tested)
+
+    # 5. 近 1-2 年专测: 只取近 recent_years 年的 IC
+    recent_decay = {}
+    if ic_panel:
+        # 按日期排序取最近 N 年 (年份从日期前缀)
+        try:
+            dates = sorted({str(day.get('date')) for day in ic_panel})
+            cutoff = int(str(dates[-1])[:4]) - recent_years if dates else None
+            if cutoff is not None:
+                recent_panel = [d for d in ic_panel if int(str(d.get('date'))[:4]) >= cutoff]
+                recent_decay = compute_ic_decay(recent_panel, windows=('n1', 'n5', 'n10', 'n20'))
+        except (ValueError, TypeError):
+            recent_decay = {}
+    recent_summary = ic_decay_summary(recent_decay) if recent_decay else         {'windows': [], 'optimal_window': None, 'decay_rate': None}
+
+    return {
+        'meta': meta,
+        'coverage': round(coverage, 4),
+        'ic_decay': decay_summary,
+        'turnover': turnover,
+        'multiple_testing': mtest,
+        'recent': recent_summary,
+    }
