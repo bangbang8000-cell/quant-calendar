@@ -245,6 +245,14 @@ _DIST_ASSETS = os.path.join(FRONTEND_DIR, "dist", "assets")
 if os.path.isdir(_DIST_ASSETS):
     app.mount("/assets", StaticFiles(directory=_DIST_ASSETS), name="assets")
 
+# V5.9.1-dev(临时验证): 源码零构建入口路由 — /src/main.js (index.html 引用) + /js/* (import 相对路径)
+_src_dir = os.path.join(FRONTEND_DIR, "src")
+if os.path.isdir(_src_dir):
+    app.mount("/src", StaticFiles(directory=_src_dir), name="src")
+_js_dir = os.path.join(FRONTEND_DIR, "js")
+if os.path.isdir(_js_dir):
+    app.mount("/js", StaticFiles(directory=_js_dir), name="js")
+
 # 注册 API v1 路由
 app.include_router(api_router)
 
@@ -325,4 +333,3 @@ async def prometheus_metrics(_: dict = Depends(get_admin_user)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)
-

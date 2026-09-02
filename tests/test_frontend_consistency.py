@@ -1500,4 +1500,38 @@ def test_v492_execution_locales_present():
 
 
 
+# ----------------------------------------------------------------------
+# V5.9.1 (fix: 日/周/月/年视图无股票列表) 回归
+#----------------------------------------------------------------------
 
+def test_calendar_page_template_no_undefined_state_ref():
+    """V5.9.1-fix: calendar-page 模板不得引用未定义的顶层 state.
+
+    根因: setup() 返回 {...state, pullRefreshing, ...} 展开注入字段, 不包含名为
+    'state' 的键; 而模板曾写 v-if="state.viewNote", 渲染时 state 为 undefined
+    直接抛 TypeError, 导致 qc-calendar-page 组件渲染失败, 日/周/月/年视图空白。
+    修复: 模板改为引用展开后的顶层 viewNote (与 stockPool/currentSubPage 一致)。
+    """
+    src = _read("js/components/calendar-page.js")
+    tpl_start = src.index("template:")
+    tpl_end = src.index(chr(96) + ",", tpl_start)  # 模板字符串以反引号+逗号结束
+    tpl = src[tpl_start:tpl_end]
+    assert "state." not in tpl, "模板 state.X 顶层引用但 setup 返回 {...state,..} 不含 state 键"
+    assert "viewNote" in tpl, "修复后模板应引用顶层 viewNote 渲染对比基准提示"
+    assert "return { ...state" in src, "setup 返回应展开 qcState (viewNote/stockPool 到达模板)"
+
+
+
+# V5.9.1 (fix: onboarding UMD 双写) 回归
+
+def test_onboarding_core_umd_double_write():
+    """V5.9.1-fix: onboarding-core UMD 必须无条件设置浏览器全局.
+
+    Vite/Rollup 构建后 module 被模拟为对象, 原 if/else 只走 exports 分支,
+    window.QuantOnboarding 未设置 → onboarding 组件 setup 抛 TypeError。
+    双写: Node require 走 module.exports; 浏览器无条件挂 root.QuantOnboarding。
+    """
+    src = _read("js/onboarding-core.js")
+    assert "root.QuantOnboarding = api" in src,         "UMD 须无条件设置浏览器全局 (Vite 构建 module 分支不再吞掉浏览器挂载)"
+    assert "module.exports = api" in src, "Node require 路径须保留 (pytest node 单测依赖)"
+    assert "var api = factory()" in src, "factory 仅调用一次, 无重复副作用"

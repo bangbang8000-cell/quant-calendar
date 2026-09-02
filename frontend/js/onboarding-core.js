@@ -2,12 +2,16 @@
 // 新手引导 5 步任务流: 纯逻辑状态机 + 进度持久化 (序列化/反序列化)。
 // UMD 导出: 浏览器 window.QuantOnboarding / Node require(...) (供 pytest 跑 node 单测)。
 // 不含 DOM/Vue 依赖; Vue 组件做薄壳渲染。
+// V5.9.1-fix: UMD 双写 — Node require 走 module.exports; 浏览器无条件挂全局.
+// 原 if/else 在 Vite/Rollup 构建后 module 被模拟为对象 → 只走 exports 分支,
+// window.QuantOnboarding 未设置 → onboarding 组件 setup 抛 TypeError(createOnboardingState).
+// 现无条件 root.QuantOnboarding = api, 构建/源码两模式均生效; factory 仅调用一次, 无副作用.
 (function (root, factory) {
+  var api = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.QuantOnboarding = factory();
+    module.exports = api;
   }
+  root.QuantOnboarding = api;
 })((typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : this))), function () {
   'use strict';
 
