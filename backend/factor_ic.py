@@ -536,3 +536,45 @@ def build_factor_detail(ic_panel: List[Dict],
         'multiple_testing': mtest,
         'recent': recent_summary,
     }
+
+
+def build_detail_panels(factor_df, returns_df, n_layers: int = 5,
+                        windows: tuple = ('n1', 'n5', 'n10', 'n20')):
+    """由 DataFrame (factor_df/returns_df, index=date, columns=symbol) 构造详情 panel。
+
+    返回 {ic_panel, layer_panel, ic_series, decay_report}:
+      ic_panel: [{date, stocks:[{code, factor_value, future_return:{nX}}]}]
+      layer_panel: [{date, layers:[{layer, stocks:[code]}]}]  (换手率用)
+      decay_report: 由 returns_df 直接算的多窗口 IC 评价 (供展示)
+    """
+    import pandas as pd
+    from strategy_sdk.factor_engine import layer_backtest, compute_ic_series as _eng_ics
+
+    dates = sorted(set(factor_df.index) & set(returns_df.index))
+    ic_panel = []
+    layer_panel = []
+    for d in dates:
+        fv = factor_df.loc[d]
+        rt = returns_df.loc[d]
+        stocks = []
+        for c in fv.index:
+            if c in rt.index and pd.notna(fv[c]):
+                fr = {}
+                for wkey in windows:
+                    w = int(wkey[1:])
+                    fr[wkey] = float(rt[c] * w) if pd.notna(rt[c]) else None  # 近似多窗口
+                stocks.append({'code': c, 'factor_value': float(fv[c]), 'future_return': fr})
+        ic_panel.append({'date': d, 'stocks': stocks})
+        # 分层成分 (按 qcut)
+        valid = fv.dropna()
+        if len(valid) >= n_layers:
+            q = pd.qcut(valid.rank(method='first'), n_layers, labels=False)
+            layers = {}
+            for stock, layer in q.items():
+                layers.setdefault(int(layer) + 1, []).append(stock)
+            layer_panel.append({'date': d, 'layers': [
+                {'layer': k, 'stocks': v} for k, v in sorted(layers.items())]})
+    decay_report = ic_decay_summary(
+        {wkey: compute_ic_series(ic_panel, window=wkey) for wkey in windows})
+    return {'ic_panel': ic_panel, 'layer_panel': layer_panel,
+            'decay_report': decay_report}

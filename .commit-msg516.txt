@@ -1,5 +1,0 @@
-v5.1 (5.1.1-6): T-5.1.16 因子详情数据组装 (定义/覆盖度/IC衰减/换手/多重检验/近1-2年专测)
-
-- factor_ic.py 新增 build_factor_detail(纯函数组装面板数据, 复用 compute_ic_decay/turnover_analysis/multiple_testing_report + 近N年专测窗)
-- 新增 tests/test_factor_detail.py 8 用例 (TDD 全绿)
-- 因子研究模块回归 111 passed

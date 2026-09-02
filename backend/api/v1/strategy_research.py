@@ -469,6 +469,58 @@ async def factor_ic_research(body: Dict[str, Any],
         raise HTTPException(status_code=500, detail=f'因子 IC 研究失败: {e}')
 
 
+@router.post('/factors/detail')
+async def factor_detail_research(body: Dict[str, Any],
+                                 _: Dict = Depends(get_non_guest_user)):
+    """因子详情面板 (T-5.1.16 / FR-5.1.1.6):
+    定义/参数/覆盖度 + IC 衰减 + 换手率 + 多重检验 + 近1-2年专测。
+    """
+    sid = body.get('sid', 'multi_factor')
+    factor_key = body.get('factor_key', 'mom20')
+    start_date = body.get('start_date') or '2026-04-01'
+    end_date = body.get('end_date') or '2026-07-31'
+    n_layers = int(body.get('n_layers', 5))
+    try:
+        st = registry.get(sid)
+    except StrategyNotFoundError:
+        raise HTTPException(status_code=404, detail=f'策略 {sid} 不存在')
+    spec = next((s for s in st.factor_specs if s.name == factor_key), None)
+    if spec is None:
+        raise HTTPException(status_code=404, detail=f'策略 {sid} 无因子 {factor_key}')
+    try:
+        from strategy_sdk.factor_engine import compute_cross_section_factors
+        from factor_ic import build_detail_panels, build_factor_detail
+        symbols = list(getattr(st, 'universe', []) or [])
+        if not symbols:
+            symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
+        portal, _ = _resolve_portal(universe=symbols)
+        fields = list(spec.inputs or ['close'])
+        panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
+        factor_values = compute_cross_section_factors(panel, [spec])
+        if not factor_values:
+            return {'factor_key': factor_key, 'sid': sid, 'detail': {},
+                    'message': '因子计算无有效值(数据不足)'}
+        fv = factor_values[factor_key]
+        returns = _future_returns(panel)
+        # 数据不可达时 returns 可能全 NaN → 详情降级
+        panels = build_detail_panels(fv, returns, n_layers=n_layers)
+        meta = {
+            'name': factor_key,
+            'category': getattr(spec, 'category', ''),
+            'description': getattr(spec, 'description', ''),
+            'params': dict(getattr(spec, 'params', {}) or {}),
+            'inputs': list(getattr(spec, 'inputs', []) or []),
+        }
+        detail = build_factor_detail(panels['ic_panel'], panels['layer_panel'],
+                                     meta, n_factors_tested=int(body.get('n_factors_tested', 10)))
+        detail['decay_report'] = panels['decay_report']
+        return {'factor_key': factor_key, 'sid': sid, 'detail': detail,
+                'date_range': [start_date, end_date]}
+    except Exception as e:
+        logger.exception('因子详情失败: %s', e)
+        raise HTTPException(status_code=500, detail=f'因子详情失败: {e}')
+
+
 @router.post('/factors/layer')
 async def factor_layer_research(body: Dict[str, Any],
                                 _: Dict = Depends(get_non_guest_user)):

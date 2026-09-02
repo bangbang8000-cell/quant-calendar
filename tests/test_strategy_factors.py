@@ -222,3 +222,48 @@ def test_api_factor_layer_endpoint(authed_client):
     data = r.json()
     assert 'factor_key' in data
     assert 'layers' in data or 'message' in data
+
+
+# ---------- T-5.1.16: 因子详情 API (FR-5.1.1.6) ----------
+
+def test_api_factor_detail_endpoint(authed_client):
+    """POST /api/strategies/factors/detail → 因子详情面板 (定义/覆盖度/IC衰减/换手/多重检验/近2年)"""
+    client = authed_client
+    r = client.post('/api/strategies/factors/detail', json={
+        'sid': 'multi_factor',
+        'factor_key': 'mom20',
+        'params': {'top_n': 20},
+        'n_layers': 5,
+        'start_date': '2026-05-01', 'end_date': '2026-07-31',
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert 'factor_key' in data
+    assert 'detail' in data
+    detail = data['detail']
+    assert 'meta' in detail
+    assert 'coverage' in detail
+    assert 'ic_decay' in detail
+    assert 'turnover' in detail
+    assert 'multiple_testing' in detail
+    assert 'recent' in detail
+    assert detail['meta']['name'] == 'mom20'
+
+
+def test_api_factor_detail_unknown_factor(authed_client):
+    """未知因子 → 404"""
+    client = authed_client
+    r = client.post('/api/strategies/factors/detail', json={
+        'sid': 'multi_factor',
+        'factor_key': 'no_such_factor',
+    })
+    assert r.status_code == 404
+
+
+def test_api_factor_detail_unauth():
+    """无 token → 401 (deny-by-default)"""
+    from main_new import app
+    from fastapi.testclient import TestClient
+    c = TestClient(app)
+    r = c.post('/api/strategies/factors/detail', json={'factor_key': 'mom20'})
+    assert r.status_code in (401, 403)

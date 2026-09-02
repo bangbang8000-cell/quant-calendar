@@ -27,6 +27,53 @@ def _layer_panel(dates, top_sets):
     return out
 
 
+def _make_frames(dates=('20260101', '20260102', '20260103', '20260104')):
+    import pandas as pd
+    import numpy as np
+    stocks = ['a', 'b', 'c', 'd', 'e']
+    factor = pd.DataFrame(
+        [[1.0, 2.0, 3.0, 4.0, 5.0],
+         [1.1, 2.1, 3.1, 4.1, 5.1],
+         [0.9, 2.0, 3.2, 4.0, 5.2],
+         [1.0, 2.2, 3.0, 4.2, 5.0]],
+        index=dates, columns=stocks)
+    returns = pd.DataFrame(
+        [[0.01, 0.02, 0.03, 0.04, 0.05],
+         [0.02, 0.01, 0.04, 0.03, 0.05],
+         [0.01, 0.03, 0.02, 0.05, 0.04],
+         [0.02, 0.02, 0.03, 0.04, 0.01]],
+        index=dates, columns=stocks)
+    return factor, returns
+
+
+class TestBuildDetailPanels:
+    def test_panels_constructed(self):
+        from factor_ic import build_detail_panels
+        f, r = _make_frames()
+        out = build_detail_panels(f, r)
+        assert 'ic_panel' in out and 'layer_panel' in out
+        assert len(out['ic_panel']) == 4
+        assert len(out['layer_panel']) == 4
+        # 每期 stocks 有 factor_value 和 future_return
+        assert all(s['factor_value'] is not None for day in out['ic_panel'] for s in day['stocks'])
+        assert all('n1' in s['future_return'] for day in out['ic_panel'] for s in day['stocks'])
+
+    def test_layer_panel_layers(self):
+        from factor_ic import build_detail_panels
+        f, r = _make_frames()
+        out = build_detail_panels(f, r, n_layers=5)
+        day = out['layer_panel'][0]
+        assert len(day['layers']) == 5  # 5 股 5 层
+        assert all(len(l['stocks']) == 1 for l in day['layers'])
+
+    def test_decay_report(self):
+        from factor_ic import build_detail_panels
+        f, r = _make_frames()
+        out = build_detail_panels(f, r)
+        assert 'optimal_window' in out['decay_report']
+        assert out['decay_report']['optimal_window'] is not None
+
+
 class TestBuildFactorDetail:
     def _basic_panels(self):
         stocks = [_stock('s%02d' % i, float(i),
