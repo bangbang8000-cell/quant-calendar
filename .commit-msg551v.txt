@@ -1,0 +1,5 @@
+v5.1 (5.1.5-4): bump APP_VERSION 5.0.11 → 5.1.5 (5.1.x 主线完成, 部署 ops)
+
+- main_new.py: APP_VERSION = "5.1.5" (单一来源, 前端 ?v= 缓存号 + PWA cacheName 联动爆破)
+- dist 重建 (含新版本号注入)
+- 版本注入测试 19 passed
