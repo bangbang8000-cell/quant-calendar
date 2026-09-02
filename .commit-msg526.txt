@@ -1,5 +1,0 @@
-v5.1 (5.1.2-6): T-5.1.26 基准与分年度报告 (yearly_* 分年度收益/超额)
-
-- benchmark.py 新增 yearly_returns(分年度复利)/yearly_excess(分年度超额)/yearly_benchmark_report(分年度表+best/worst年份)
-- 新增 tests/test_backtest_yearly.py 10 用例 (TDD 全绿)
-- 回归 28 passed (含既有 benchmark)
