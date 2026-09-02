@@ -446,3 +446,63 @@ def find_reviews_for_experiment(eid: str) -> list:
         if eid in (report.get(_LINK_KEY) or []):
             found.append(report.get('date'))
     return sorted(found)
+
+
+# ─── T-5.1.53 / FR-5.1.5.3: 复盘检索 (日期/板块/标签) ───
+
+_TAG_KEYS = ('style', 'factors', 'points', 'insights')
+
+
+def _review_tags(report: dict) -> list:
+    """复盘的全部标签: 风格/因子/要点/策略启示 (含字符串切片)。"""
+    tags = []
+    for key in _TAG_KEYS:
+        val = report.get(key)
+        if isinstance(val, list):
+            tags.extend(str(v) for v in val if isinstance(v, str))
+        elif isinstance(val, str) and val.strip():
+            tags.append(val)
+    return tags
+
+
+def search_reviews(date: str = None, sector: str = None, tag: str = None,
+                   limit: int = 30) -> list:
+    """复盘检索: 日期精确 / 板块包含(领涨)/ 标签包含, 组合 AND, 日期倒序。
+
+    返回 [{date, sectors, style, factors, points, insights, summary}]。
+    summary = ai_summary 或 要点首条。
+    """
+    out = []
+    for path in reversed(_list_review_files()):
+        report = _read_review_file(path)
+        if not report:
+            continue
+        rdate = report.get('date')
+        # 日期过滤 (精确匹配)
+        if date and rdate != _date_str(date):
+            continue
+        # 板块过滤 (领涨板块包含)
+        if sector:
+            sectors = structured_fields(report).get('sectors') or []
+            if sector not in sectors:
+                continue
+        # 标签过滤 (风格/因子/要点/策略启示包含)
+        if tag:
+            if not any(tag in t for t in _review_tags(report)):
+                continue
+        fields = structured_fields(report)
+        ai = report.get('ai_summary')
+        points = fields.get('points') or []
+        summary = ai if isinstance(ai, str) and ai.strip() else             (points[0] if points else '')
+        out.append({
+            'date': rdate,
+            'sectors': fields.get('sectors', []),
+            'style': fields.get('style', []),
+            'factors': fields.get('factors', []),
+            'points': fields.get('points', []),
+            'insights': fields.get('insights', ''),
+            'summary': summary,
+        })
+        if len(out) >= limit:
+            break
+    return out
