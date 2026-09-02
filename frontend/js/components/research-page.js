@@ -47,6 +47,14 @@
                                     <div class="stat-label">市场复盘</div>
                                 </div>
                             </div>
+                            <!-- 5.1.0 (T-5.1.4): 研究历史入口 (实验持久化) -->
+                            <div class="stat-card clickable" @click="openResearchHistory">
+                                <div class="stat-icon">🗂️</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ researchHistory.length }}</div>
+                                    <div class="stat-label">研究历史</div>
+                                </div>
+                            </div>
                         </div>
                         <!-- 快速入口列表 -->
                         <div class="card-title mt-4">🔗 快捷入口</div>
@@ -95,6 +103,15 @@
                             <div class="consensus-info">
                                 <div class="consensus-code">⚡ 异动扫描</div>
                                 <div class="consensus-name">涨停 · 跌停 · 放量 · 连板 · 事件提醒</div>
+                            </div>
+                            <span class="market-review-arrow">›</span>
+                        </div>
+                        <!-- 5.1.0 (T-5.1.4): 研究历史入口 -->
+                        <div class="consensus-item clickable" @click="openResearchHistory">
+                            <div class="consensus-badge">7</div>
+                            <div class="consensus-info">
+                                <div class="consensus-code">🗂️ 研究历史</div>
+                                <div class="consensus-name">因子IC · 分层 · 扫描 · 回测 实验记录 · 对比</div>
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
@@ -436,6 +453,100 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <!-- 5.1.0 (T-5.1.4): 研究历史子页 (实验持久化列表/对比) -->
+                    <div v-else-if="currentSubPage === 'research-history'" class="card">
+                        <div class="card-title">🗂️ 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
+                        <!-- 类型过滤 -->
+                        <div class="flex-wrap-gap-12-mb16-c">
+                            <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">
+                                <el-radio-button label="">全部</el-radio-button>
+                                <el-radio-button label="factor_ic">因子IC</el-radio-button>
+                                <el-radio-button label="layer">分层</el-radio-button>
+                                <el-radio-button label="sweep">扫描</el-radio-button>
+                                <el-radio-button label="backtest">回测</el-radio-button>
+                            </el-radio-group>
+                            <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
+                        </div>
+                        <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" desc="请检查网络后重试" @retry="loadResearchHistory"></qc-state-panel>
+                        <div v-else-if="!researchHistory.length" class="empty-state">
+                            <div class="text-md-medium-primary">暂无研究实验</div>
+                            <div class="text-sm-tertiary-mt8">运行因子IC / 分层 / 参数扫描 / 回测后，结果将自动记录在此</div>
+                        </div>
+                        <template v-else>
+                            <!-- 对比按钮 -->
+                            <div v-if="researchHistorySelected.length >= 2" class="flex-c-gap-8 mb-12">
+                                <el-button size="small" type="primary" :loading="researchCompareLoading" @click="runResearchCompare">📊 对比所选 ({{ researchHistorySelected.length }})</el-button>
+                                <el-button size="small" @click="researchHistorySelected = []">清空选择</el-button>
+                            </div>
+                            <!-- 对比结果 -->
+                            <div v-if="researchCompareRows.length" class="card mb-12">
+                                <div class="card-title">📈 实验对比</div>
+                                <div class="table-container">
+                                    <table class="bt-compare-table">
+                                        <thead>
+                                            <tr>
+                                                <th>实验</th>
+                                                <th>类型</th>
+                                                <th>IC均值</th>
+                                                <th>ICIR</th>
+                                                <th>胜率</th>
+                                                <th>年化</th>
+                                                <th>回撤</th>
+                                                <th>夏普</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="row in researchCompareRows" :key="row.id">
+                                                <td>{{ row.subject }}</td>
+                                                <td>{{ researchTypeLabel(row.type) }}</td>
+                                                <td>{{ row.summary.ic_mean != null ? fmtNum(row.summary.ic_mean) : '—' }}</td>
+                                                <td>{{ row.summary.icir != null ? fmtNum(row.summary.icir) : '—' }}</td>
+                                                <td>{{ row.summary.win_rate != null ? fmtNum(row.summary.win_rate) + '%' : '—' }}</td>
+                                                <td>{{ row.summary.annual_return != null ? fmtNum(row.summary.annual_return) + '%' : '—' }}</td>
+                                                <td>{{ row.summary.max_drawdown != null ? fmtNum(row.summary.max_drawdown) + '%' : '—' }}</td>
+                                                <td>{{ row.summary.sharpe_ratio != null ? fmtNum(row.summary.sharpe_ratio) : '—' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- 实验列表 -->
+                            <div v-for="exp in researchHistory" :key="exp.id" class="card mb-12">
+                                <div class="flex-between-start-wrap">
+                                    <div class="flex-c-gap-8">
+                                        <el-checkbox :model-value="researchHistorySelected.includes(exp.id)"
+                                            @change="toggleResearchSelect(exp.id)"></el-checkbox>
+                                        <span class="strategy-name">{{ exp.subject }}</span>
+                                        <span class="strategy-tag">{{ researchTypeLabel(exp.type) }}</span>
+                                        <span class="text-xs-tertiary ml-8">{{ exp.created_at }}</span>
+                                    </div>
+                                    <div class="flex-c-gap-8">
+                                        <el-button size="small" link type="primary" @click="toggleResearchDetail(exp.id)">详情</el-button>
+                                        <el-button size="small" link type="danger" @click="deleteResearchHistory(exp.id)">删除</el-button>
+                                    </div>
+                                </div>
+                                <div class="flex-wrap-gap-12-mb16-c mt-8">
+                                    <span v-if="exp.summary.ic_mean != null" class="text-sm-secondary">IC均值 <strong>{{ fmtNum(exp.summary.ic_mean) }}</strong></span>
+                                    <span v-if="exp.summary.icir != null" class="text-sm-secondary">ICIR <strong>{{ fmtNum(exp.summary.icir) }}</strong></span>
+                                    <span v-if="exp.summary.win_rate != null" class="text-sm-secondary">胜率 <strong>{{ fmtNum(exp.summary.win_rate) }}%</strong></span>
+                                    <span v-if="exp.summary.annual_return != null" class="text-sm-secondary">年化 <strong>{{ fmtNum(exp.summary.annual_return) }}%</strong></span>
+                                    <span v-if="exp.summary.max_drawdown != null" class="text-sm-secondary">回撤 <strong>{{ fmtNum(exp.summary.max_drawdown) }}%</strong></span>
+                                    <span v-if="exp.summary.sharpe_ratio != null" class="text-sm-secondary">夏普 <strong>{{ fmtNum(exp.summary.sharpe_ratio) }}</strong></span>
+                                    <span v-if="exp.summary.monotonic != null" class="text-sm-secondary">单调 <strong>{{ exp.summary.monotonic ? '✓' : '✗' }}</strong></span>
+                                    <span v-if="exp.summary.spread != null" class="text-sm-secondary">多空价差 <strong>{{ fmtNum(exp.summary.spread) }}%</strong></span>
+                                    <span v-if="exp.summary.best_param" class="text-sm-secondary">最优参数 <strong>{{ JSON.stringify(exp.summary.best_param) }}</strong></span>
+                                </div>
+                                <div v-if="exp.range" class="text-xs-tertiary">区间 {{ exp.date_range.join(' → ') }} · v{{ exp.app_version }}</div>
+                                <template v-if="researchDetailId === exp.id">
+                                    <div class="card mt-8">
+                                        <div class="card-title">实验详情</div>
+                                        <pre class="research-detail-pre">{{ JSON.stringify(exp, null, 2) }}</pre>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                     <!-- v3.17.2 FR-3.17.2 市场复盘代码起点 -->
                     <div v-else-if="currentSubPage === 'market-review'" class="card market-review-card">
@@ -1414,9 +1525,95 @@
         }
       }
 
+      // ===== 5.1.0 (T-5.1.4): 研究历史 (实验持久化列表/对比) =====
+      const researchHistory = Vue.ref([]);
+      const researchHistoryLoading = Vue.ref(false);
+      const researchHistoryError = Vue.ref(false);
+      const researchHistoryType = Vue.ref('');
+      const researchHistorySelected = Vue.ref([]);
+      const researchDetailId = Vue.ref('');
+      const researchCompareRows = Vue.ref([]);
+      const researchCompareLoading = Vue.ref(false);
+
+      const RESEARCH_TYPE_LABELS = {
+        'factor_ic': '因子IC', 'layer': '分层', 'sweep': '扫描',
+        'backtest': '回测', 'stability': '稳定性',
+      };
+      function researchTypeLabel(type) {
+        return RESEARCH_TYPE_LABELS[type] || type || '—';
+      }
+      function openResearchHistory() {
+        currentSubPage.value = 'research-history';
+        loadResearchHistory();
+      }
+      async function loadResearchHistory() {
+        researchHistoryLoading.value = true;
+        researchHistoryError.value = false;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const q = researchHistoryType.value ? '?type=' + encodeURIComponent(researchHistoryType.value) : '';
+          const res = await fetch('/api/strategies/research-history' + q, { headers }).then(function (r) { return r.json(); });
+          researchHistory.value = (res && res.items) || [];
+        } catch (e) {
+          console.error('[research-history] 加载失败:', e);
+          researchHistoryError.value = true;
+        } finally {
+          researchHistoryLoading.value = false;
+        }
+      }
+      function toggleResearchSelect(id) {
+        const i = researchHistorySelected.value.indexOf(id);
+        if (i >= 0) researchHistorySelected.value.splice(i, 1);
+        else if (researchHistorySelected.value.length < 10) researchHistorySelected.value.push(id);
+      }
+      function toggleResearchDetail(id) {
+        researchDetailId.value = (researchDetailId.value === id) ? '' : id;
+      }
+      async function runResearchCompare() {
+        const ids = researchHistorySelected.value;
+        if (ids.length < 2) return;
+        researchCompareLoading.value = true;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const res = await fetch('/api/strategies/research-history/compare', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+            body: JSON.stringify({ ids: ids }),
+          }).then(function (r) { return r.json(); });
+          researchCompareRows.value = (res && res.items) || [];
+        } catch (e) {
+          console.error('[research-history] 对比失败:', e);
+        } finally {
+          researchCompareLoading.value = false;
+        }
+      }
+      async function deleteResearchHistory(id) {
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const res = await fetch('/api/strategies/research-history/' + id, {
+            method: 'DELETE', headers: headers,
+          }).then(function (r) { return r.json(); });
+          if (res && res.deleted) {
+            researchHistory.value = researchHistory.value.filter(function (e) { return e.id !== id; });
+            const si = researchHistorySelected.value.indexOf(id);
+            if (si >= 0) researchHistorySelected.value.splice(si, 1);
+          }
+        } catch (e) {
+          console.error('[research-history] 删除失败:', e);
+        }
+      }
+
       return {
         ...state,
         btHistory, btHistoryLoading, btHistoryError, btHistoryDays, loadBtHistory,
+        // 5.1.0 (T-5.1.4): 研究历史
+        researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
+        researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
+        researchTypeLabel, openResearchHistory, loadResearchHistory,
+        toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
         loadMarketReviews, openMarketReview, backToMarketReviewList, loadMarketReviewDetail,

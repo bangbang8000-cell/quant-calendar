@@ -4263,6 +4263,21 @@ text {
 .bt-trades-table td.is-down { color: var(--color-fall); }
 .bt-trade-count { font-size: var(--font-xs); color: var(--text-secondary); font-weight: var(--font-normal); }
 .bt-trades-wrap { max-height: 360px; overflow-y: auto; }
+/* 5.1.0 (T-5.1.4): 研究历史实验详情 JSON 展示 */
+.research-detail-pre {
+    margin: 0;
+    padding: 12px 14px;
+    max-height: 420px;
+    overflow: auto;
+    font-size: var(--font-xs);
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
 
 @media (max-width: 768px) {
     .bt-form-label { width: auto; }
