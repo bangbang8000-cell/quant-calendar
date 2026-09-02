@@ -125,7 +125,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: 安装依赖
-        run: pip install -r requirements.lock
+        run: pip install -r requirements.lock -r requirements-dev.lock
       - name: 拆分对拍 (符号/结构/import/行为/覆盖)
         run: python -m pytest tests/test_split_parity.py -v --tb=short
 
@@ -141,7 +141,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: 安装依赖
-        run: pip install -r requirements.lock
+        run: pip install -r requirements.lock -r requirements-dev.lock
       - name: RBAC 权限矩阵 (deny-by-default, 独立红)
         run: python -m pytest tests/test_rbac_matrix.py -v --tb=short
 
@@ -155,7 +155,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: 安装依赖
-        run: pip install -r requirements.lock
+        run: pip install -r requirements.lock -r requirements-dev.lock
       - name: PIT 防前视断言 (end<=as_of 四路径)
         run: python -m pytest tests/test_pit_no_lookahead.py -v --tb=short
 
