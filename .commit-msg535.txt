@@ -1,0 +1,4 @@
+v5.1 (5.1.3-5): T-5.1.35 容量/流动性提示 (liquidity_cap 1% 参与度限仓)
+
+- portfolio_builder.py 新增 liquidity_cap_weights(日成交额×1%参与度限仓, 缺失保持/0成交归零)/liquidity_report(限仓后权重+受限提示)+PARTICIPATION_RATE
+- 新增 tests/test_liquidity_cap.py 8 用例 (TDD 全绿)

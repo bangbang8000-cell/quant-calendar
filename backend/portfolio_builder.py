@@ -97,3 +97,47 @@ def build_portfolio(factor_df: pd.DataFrame, returns_df: pd.DataFrame,
         'method': method,
         'as_of': as_of,
     }
+
+
+# ─── V5.1.3 T-5.1.35: 容量/流动性提示 (小票成交量 1% 参与度限仓) ───
+
+# 单标的最大成交量参与度 (限仓假设: 日成交额 × 1% 可参与)
+PARTICIPATION_RATE = 0.01
+
+
+def _cap_for_symbol(weight, daily_amount, total_capital):
+    """单标的限仓后权重: min(原权重, 日成交额×参与度/总资金)。"""
+    if daily_amount is None or daily_amount <= 0:
+        return 0.0 if daily_amount == 0 else weight  # 0 成交额 → 0; 缺失 → 保持
+    cap = float(daily_amount) * PARTICIPATION_RATE / total_capital if total_capital > 0 else 0.0
+    return min(float(weight), cap)
+
+
+def liquidity_cap_weights(weights: Dict[str, float],
+                          daily_amounts: Dict[str, float],
+                          total_capital: float) -> Dict[str, float]:
+    """按成交量 1% 参与度限仓。
+
+    weights: {symbol: 目标权重}; daily_amounts: {symbol: 日成交额};
+    缺失成交额 → 保持原权重 (无法判断则不惩罚); 0 成交额 → 0。
+    """
+    return {s: _cap_for_symbol(w, daily_amounts.get(s), total_capital)
+            for s, w in weights.items()}
+
+
+def liquidity_report(weights: Dict[str, float],
+                     daily_amounts: Dict[str, float],
+                     total_capital: float) -> Dict:
+    """容量/流动性报告: 限仓后权重 + 受限标的提示列表。"""
+    capped = liquidity_cap_weights(weights, daily_amounts, total_capital)
+    notes = []
+    for s, w in weights.items():
+        if s in daily_amounts and daily_amounts.get(s, 0) > 0:
+            cap = float(daily_amounts[s]) * PARTICIPATION_RATE / total_capital if total_capital > 0 else 0.0
+            if w > cap:
+                notes.append('%s 日成交额不足, 1%% 参与度限仓 %.1f%% → %.1f%%'
+                             % (s, w * 100, cap * 100))
+        elif s in daily_amounts and daily_amounts[s] == 0:
+            notes.append('%s 无成交, 无法建仓 (权重归零)' % s)
+    return {'weights': capped, 'capped': [s for s in weights if capped[s] < weights[s]],
+            'notes': notes, 'participation_rate': PARTICIPATION_RATE}
