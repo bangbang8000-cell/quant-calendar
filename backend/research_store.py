@@ -16,7 +16,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend import db
+import db
 
 # 合法实验类型 (拒绝未知类型, 防脏数据)
 VALID_TYPES = ('factor_ic', 'layer', 'sweep', 'backtest', 'stability')
@@ -47,8 +47,19 @@ def _now() -> str:
     return time.strftime('%Y-%m-%dT%H:%M:%S')
 
 
+_id_seq = [0]
+
+
 def _new_id() -> str:
-    return 'exp_%s_%04d' % (time.strftime('%Y%m%d%H%M%S'), int(time.time() * 1000) % 10000)
+    """生成唯一实验 id: 时间戳 + 毫秒取模 + 进程内递增序号。
+
+    序号保证同毫秒连续多次保存不碰撞 (INSERT OR REPLACE 会覆盖同 id)。
+    """
+    _id_seq[0] += 1
+    return 'exp_%s_%04d_%04d' % (
+        time.strftime('%Y%m%d%H%M%S'),
+        int(time.time() * 1000) % 10000,
+        _id_seq[0] % 10000)
 
 
 def save_experiment(exp: dict) -> str:

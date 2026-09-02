@@ -1,7 +1,0 @@
-v5.1 (5.1.0-4): CSV 导出 (T-5.1.5 实验列表导出)
-
-- strategy_research: GET /research-history/export (必须定义在 /{eid} 前避免路径捕获) 返回 UTF-8 BOM CSV
-- research-page: 研究历史子页加「导出 CSV」按钮 (Blob 下载 research_history.csv)
-- tests: export 4 用例 (表头/BOM/数据行/类型过滤/空表头)
-- 修复 export 路由被 {eid} 捕获的 404 (FastAPI 注册顺序)
-- dist 重建入库 (research-page-eA629LM-.js)
