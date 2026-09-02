@@ -328,3 +328,157 @@ class TestV3142Regression:
             assert results[0]['result']['total_score'] == 88
         finally:
             stock_manager.stock_map = _orig
+
+
+class TestBuiltinEvaluateCoverage:
+    """V5.9 T-5.9.1: _builtin_evaluate 纯函数全覆盖 (覆盖率门禁 ai_eval >=50%)"""
+
+    @staticmethod
+    def _full_market_data(**over):
+        d = {
+            "stock_code": "000001.SZ", "stock_name": "平安银行",
+            "has_kline": True, "has_fundamentals": True,
+            "latest": {"close": 12.8, "high": 12.9, "low": 12.3, "pct_chg": 2.4, "ma5": 12.6, "ma20": 12.2},
+            "rsi": 58.5, "macd": {"dif": 0.15, "dea": 0.10, "hist": 0.05},
+            "ma_alignment": "多头排列", "pct_5d": 3.2, "pct_20d": 5.1,
+            "price_range": {"close": 12.8, "max60": 14.0, "min60": 10.0},
+            "volume_analysis": {"vol_ratio": 1.5, "detail": "温和放量"},
+            "fundamentals": {"pe": 6.5, "pb": 0.85, "turnover_rate": 3.0, "total_mv": 2.5e11},
+        }
+        d.update(over)
+        return d
+
+    def test_builtin_bullish_full(self):
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', '平安银行', self._full_market_data())
+        assert r["total_score"] >= 55
+        assert r["level"] in ("推荐", "谨慎推荐", "中性", "强烈推荐")
+        assert "strengths" in r["analysis"]
+        assert r["provider"].startswith("内置引擎")
+
+    def test_builtin_bearish(self):
+        md = self._full_market_data(
+            ma_alignment="空头排列", pct_5d=-4.0, pct_20d=-8.0,
+            rsi=25, macd={"dif": -0.2, "dea": -0.1, "hist": -0.3},
+            latest={"close": 10.0, "high": 10.3, "low": 9.8, "pct_chg": -3.0, "ma5": 10.5, "ma20": 11.0},
+            volume_analysis={"vol_ratio": 0.4, "detail": "缩量"},
+            fundamentals={"pe": -5.0, "pb": 0.6},
+        )
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', '平安银行', md)
+        assert r["total_score"] < 55
+        assert r["level"] == "观望"
+
+    def test_builtin_no_data(self):
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', '平安银行', {"has_kline": False})
+        assert r["total_score"] >= 40
+        assert r["level"] in ("中性", "观望", "谨慎推荐")
+        assert "离线模式" in r["provider"]
+        assert r["dimensions"]["指标共振"] == 50  # 无数据中性兜底 (回归: 曾 UnboundLocalError)
+
+    def test_builtin_extreme_rsi_and_position(self):
+        md = self._full_market_data(rsi=85, price_range={"close": 13.5, "max60": 13.8, "min60": 9.0})
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', '平安银行', md)
+        # 高位价格 → 价格位置低分 (score dict 含内部注解 _price_position_pct)
+        assert r["dimensions"]["价格位置"] <= 40
+        assert "RSI" in r["detailed_report"]
+
+    def test_builtin_high_pe(self):
+        md = self._full_market_data(fundamentals={"pe": 150.0, "pb": 2.0})
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', '平安银行', md)
+        assert any("PE" in w for w in r["analysis"]["weaknesses"])
+
+    def test_builtin_volume_ratio_variants(self):
+        evaluator = AIEvaluator()
+        r1 = evaluator._builtin_evaluate('000001.SZ', 'x', self._full_market_data(volume_analysis={"vol_ratio": 5.0}, latest={"close": 12, "pct_chg": 2.0}))
+        r2 = evaluator._builtin_evaluate('000001.SZ', 'x', self._full_market_data(volume_analysis={"vol_ratio": 1.0}, latest={"close": 12, "pct_chg": 0.5}))
+        r3 = evaluator._builtin_evaluate('000001.SZ', 'x', self._full_market_data(volume_analysis={"vol_ratio": 2.0}, latest={"close": 12, "pct_chg": -3.0}))
+        assert r1["total_score"] >= 10 and r2["total_score"] >= 10 and r3["total_score"] >= 10
+
+    def test_builtin_turnover_variants(self):
+        evaluator = AIEvaluator()
+        r1 = evaluator._builtin_evaluate('000001.SZ', 'x', self._full_market_data(fundamentals={"turnover_rate": 20.0, "pe": 10}))
+        r2 = evaluator._builtin_evaluate('000001.SZ', 'x', self._full_market_data(fundamentals={"turnover_rate": 0.2, "pe": 10}))
+        assert r1["total_score"] >= 10 and r2["total_score"] >= 10
+
+    def test_builtin_consensus_neutral(self):
+        md = self._full_market_data(rsi=90, macd={"hist": 0.0}, latest={"close": 12, "pct_chg": 0.0})
+        evaluator = AIEvaluator()
+        r = evaluator._builtin_evaluate('000001.SZ', 'x', md)
+        assert r["dimensions"]["指标共振"] == 50
+
+    def test_evaluate_index_cache_hit(self, isolated_data_dir):
+        from datetime import datetime as _dt
+        evaluator = AIEvaluator()
+        today = _dt.now().strftime('%Y-%m-%d')
+        evaluator._index_eval_cache["600000_" + today] = {"analysis": "<p>缓存</p>", "suggestion": "观望", "confidence": 50}
+        r = evaluator.evaluate_index("600000", "浦发", current_price=10.0, pct_chg=1.0)
+        assert r["analysis"] == "<p>缓存</p>"
+
+    def test_evaluate_index_no_data(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        with patch.object(AIEvaluator, '_fetch_stock_data', lambda self, code: {"has_kline": False}):
+            r = evaluator.evaluate_index("600000", "浦发")
+            assert "无法获取" in r["analysis"]
+            assert r["suggestion"] == "观望"
+            assert r["confidence"] == 0
+
+    def test_evaluate_index_with_data(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        md = self._full_market_data()
+        with patch.object(AIEvaluator, '_fetch_stock_data', lambda self, code: dict(md)):
+            r = evaluator.evaluate_index("600000", "浦发")
+            assert "analysis" in r and r["analysis"]
+            assert r["confidence"] >= 0
+
+
+class TestHistoryMixinCoverage:
+    """V5.9 T-5.9.1: _history mixin 方法覆盖 (覆盖率门禁 ai_eval >=50%)"""
+
+    def test_history_get_count_delete(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        recs = [
+            {"id": "1", "stock_code": "600000.SH", "result": {"level": "推荐"}},
+            {"id": "2", "stock_code": "000001.SZ", "result": {"level": "中性"}},
+        ]
+        evaluator._save_history_for("alice", recs)
+        assert evaluator.count_history("alice") == 2
+        h = evaluator.get_history("alice", limit=1, offset=0)
+        assert len(h) == 1
+        last = evaluator.get_last_evaluation("alice", "000001.SZ")
+        assert last is not None and last["id"] == "2"
+        assert evaluator.get_last_evaluation("alice", "999999.SZ") is None
+        assert evaluator.delete_history("alice", "1") is True
+        assert evaluator.count_history("alice") == 1
+        assert evaluator.delete_history("alice", "no-such") is False
+
+    def test_history_load_missing_file(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        assert evaluator._load_history_for("ghost") == []
+
+    def test_history_legacy_load(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        evaluator._save_history_for("default", [{"id": "1", "stock_code": "600000.SH"}])
+        assert evaluator._load_history() == [{"id": "1", "stock_code": "600000.SH"}]
+
+    def test_test_connection_missing_key(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        evaluator.config = {"provider": "codingplan"}
+        r = evaluator.test_connection()
+        assert r["success"] is True
+        evaluator.config = {"provider": "custom", "apiKey": ""}
+        r = evaluator.test_connection()
+        assert r["success"] is False
+        assert "请先配置API Key" in r["message"]
+
+    def test_auto_config_roundtrip(self, isolated_data_dir):
+        evaluator = AIEvaluator()
+        cfg = {"enabled": True, "schedule_type": "daily", "schedule_time": "09:00",
+               "selected_strategies": ["multifactor"], "selected_stocks": ["600000.SH"], "push_to_feishu": True}
+        assert evaluator.save_auto_config(cfg) is True
+        loaded = evaluator.get_auto_config()
+        assert loaded["enabled"] is True
+        assert loaded["selected_strategies"] == ["multifactor"]

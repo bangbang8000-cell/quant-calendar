@@ -155,7 +155,8 @@ def v3_env(tmp_path, monkeypatch):
     old_data, old_file = db.DATA_DIR, db.DB_FILE
     db.DATA_DIR = str(tmp_path)
     db.DB_FILE = os.path.join(tmp_path, "app.db")
-    db.init_db(); db.migrate()
+    db.init_db()
+    db.migrate()
     um.add_user("alice", "pw", role="user")
     # 自选读写以 SQLite 为主 (tmp db); 评估历史读 JSON (evmod.DATA_DIR 隔离)
     monkeypatch.setattr(wlmod, "BASE_USERS_DIR", str(tmp_path / "users"))
@@ -323,3 +324,124 @@ def test_v3_openapi_lists_paths():
     assert "/api/v3/evaluations" in paths
     assert "/api/v3/groups" in paths
     assert all("params" in p for p in spec["paths"])
+
+
+# ─── v1 watchlist 端点覆盖 (覆盖率门禁: api.v1.watchlist ≥70%) ─────
+
+class TestV1WatchlistEndpoints:
+    """v1 自选股端点全覆盖 — 补足 api.v1.watchlist 覆盖率 (门禁短板)"""
+
+    def test_v1_add_success(self, v3_env):
+        """POST /api/watchlist 添加成功 (自动解析中文名)"""
+        ctx = v3_env
+        r = ctx["c"].post("/api/watchlist", json={"code": "600519.SH"}, headers=ctx["h"])
+        assert r.status_code == 200
+        body = r.json()
+        assert body["success"] is True
+        assert "已加入自选" in body["message"]
+        assert body["count"] == 1
+
+    def test_v1_add_missing_code(self, v3_env):
+        """POST 缺 code → 400"""
+        r = v3_env["c"].post("/api/watchlist", json={}, headers=v3_env["h"])
+        assert r.status_code == 400
+        assert "不能为空" in r.json()["detail"]
+
+    def test_v1_add_duplicate(self, v3_env):
+        """重复添加 → existed=True 不去重写入"""
+        ctx = v3_env
+        ctx["c"].post("/api/watchlist", json={"code": "600519.SH", "name": "贵州茅台"}, headers=ctx["h"])
+        r = ctx["c"].post("/api/watchlist", json={"code": "600519.SH", "name": "贵州茅台"}, headers=ctx["h"])
+        assert r.status_code == 200
+        assert r.json()["existed"] is True
+        # 重复分支不写库, 列表仍 1 条
+        r2 = ctx["c"].get("/api/watchlist", headers=ctx["h"])
+        assert r2.json()["count"] == 1
+
+    def test_v1_get_returns_stocks(self, v3_env):
+        """GET /api/watchlist 返回列表与 count"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "浦发银行", "added_at": "t"}])
+        r = ctx["c"].get("/api/watchlist", headers=ctx["h"])
+        body = r.json()
+        assert body["success"] is True
+        assert body["count"] == 1
+        assert body["stocks"][0]["code"] == "600000.SH"
+
+    def test_v1_remove_success(self, v3_env):
+        """DELETE /api/watchlist/{code} 移除成功"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "a", "added_at": "t"}])
+        r = ctx["c"].delete("/api/watchlist/600000.SH", headers=ctx["h"])
+        assert r.status_code == 200
+        assert r.json()["message"] == "已移除自选"
+        assert r.json()["count"] == 0
+
+    def test_v1_remove_missing(self, v3_env):
+        """DELETE 不存在的代码 → success=False"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "a", "added_at": "t"}])
+        r = ctx["c"].delete("/api/watchlist/999999.SZ", headers=ctx["h"])
+        assert r.status_code == 200
+        assert r.json()["success"] is False
+        assert r.json()["message"] == "未在自选中"
+
+    def test_v1_clear(self, v3_env):
+        """DELETE /api/watchlist 清空全部"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "a", "added_at": "t"},
+                              {"code": "000001.SZ", "name": "b", "added_at": "t"}])
+        r = ctx["c"].delete("/api/watchlist", headers=ctx["h"])
+        assert r.status_code == 200
+        assert r.json()["message"] == "自选已清空"
+        assert r.json()["count"] == 2
+        r2 = ctx["c"].get("/api/watchlist", headers=ctx["h"])
+        assert r2.json()["count"] == 0
+
+    def test_v1_check_in_list(self, v3_env):
+        """GET /api/watchlist/check/{code} 命中"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "a", "added_at": "t"}])
+        r = ctx["c"].get("/api/watchlist/check/600000.SH", headers=ctx["h"])
+        assert r.status_code == 200
+        assert r.json()["in_watchlist"] is True
+
+    def test_v1_check_not_in_list(self, v3_env):
+        """GET /api/watchlist/check/{code} 未命中"""
+        r = v3_env["c"].get("/api/watchlist/check/999999.SZ", headers=v3_env["h"])
+        assert r.status_code == 200
+        assert r.json()["in_watchlist"] is False
+
+    def test_v1_search_empty_q(self, v3_env):
+        """GET /api/watchlist/stock/search 空 q → 空结果"""
+        r = v3_env["c"].get("/api/watchlist/stock/search?q=", headers=v3_env["h"])
+        assert r.status_code == 200
+        assert r.json()["results"] == []
+
+    def test_v1_search_matches(self, v3_env, monkeypatch):
+        """search 命中 daily_data (mock views_aggregator 为空表, 只验证空路径不 500)"""
+        r = v3_env["c"].get("/api/watchlist/stock/search?q=600000", headers=v3_env["h"])
+        assert r.status_code == 200
+        assert isinstance(r.json()["results"], list)
+
+    def test_v1_preload_empty(self, v3_env):
+        """kline/preload 空自选 → 空预加载"""
+        r = v3_env["c"].post("/api/watchlist/kline/preload", headers=v3_env["h"])
+        assert r.status_code == 200
+        assert r.json()["loaded"] == 0
+        assert r.json()["message"] == "自选股为空，无需预加载"
+
+    def test_v1_preload_with_mock_kline(self, v3_env, monkeypatch):
+        """kline/preload 带自选 + mock get_kline_data → loaded>0"""
+        ctx = v3_env
+        _seed_watchlist(ctx, [{"code": "600000.SH", "name": "a", "added_at": "t"},
+                              {"code": "000001.SZ", "name": "b", "added_at": "t"}])
+        import market_data
+        monkeypatch.setattr(market_data, "get_kline_data",
+                            lambda code, period, limit: [{"date": "2026-01-01", "close": 10.0}] if code == "600000.SH" else [])
+        r = ctx["c"].post("/api/watchlist/kline/preload?period=daily&limit=60", headers=ctx["h"])
+        assert r.status_code == 200
+        body = r.json()
+        assert body["loaded"] == 1
+        assert body["failed"] == 1
+        assert body["total"] == 2

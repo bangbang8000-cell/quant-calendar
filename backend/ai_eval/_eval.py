@@ -767,6 +767,7 @@ class AIEvalMixin:
 
         # ── 指标共振 ──
         # 多技术指标的方向一致性
+        consensus_score = 50  # default neutral when <3 signals
         if has_data:
             ma = market_data.get("ma_alignment", "")
             rsi = market_data.get("rsi", 50)
@@ -796,7 +797,6 @@ class AIEvalMixin:
             elif pct and pct < 0:
                 bearish_signals += 1
 
-            consensus_score = 50  # default neutral when <3 signals
             total = bullish_signals + bearish_signals
             if total >= 3:
                 if bullish_signals >= 3:
