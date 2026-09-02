@@ -1,6 +1,0 @@
-v5.1 (5.1.1-8): T-5.1.16 因子详情面板前端 (按钮 + 展示区 + 样式)
-
-- research-page.js: 因子研究区加"因子详情"按钮 + 详情面板 (覆盖度/最优持有期/年化换手/成本拖累 + IC衰减chips + 多重检验note + 近1-2年专测)
-- themes.css: factor-detail-panel/ic-decay-row/ic-decay-chip(.ic-best) 样式
-- dist 重建入库 (research-page-Kb94oCi-.js)
-- 前端一致性 114 passed

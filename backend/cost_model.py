@@ -18,8 +18,8 @@ class CostConfig:
     """成本配置 (可插拔)。"""
     commission_rate: float = 0.0003   # 佣金 万3 (双边)
     stamp_duty_rate: float = 0.0005   # 印花税 万5 (仅卖出)
-    slippage: float = 0.001           # 滑点 0.1%
-    impact: float = 0.0005            # 冲击成本 0.05%
+    slippage: float = 0.0005          # 滑点 0.05% (V5.1.2 T-5.1.21: 单边成本落 0.1-0.15%)
+    impact: float = 0.0003            # 冲击成本 0.03%
     min_commission: float = 5.0       # 单笔最低佣金 (元)
 
     def scaled(self, factor: float) -> "CostConfig":

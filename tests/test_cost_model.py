@@ -45,8 +45,9 @@ class TestTradeCost:
 
     def test_slippage_and_impact(self):
         c = CostModel().compute_trade(100000, is_buy=True)
-        assert c.slippage == pytest.approx(100.0)   # 千1
-        assert c.impact == pytest.approx(50.0)      # 万5
+        # V5.1.2 T-5.1.21: 默认滑点 万5 / 冲击 万3 (单边成本落 0.1-0.15%)
+        assert c.slippage == pytest.approx(50.0)
+        assert c.impact == pytest.approx(30.0)
 
     def test_total_decomposition(self):
         c = CostModel().compute_trade(100000, is_buy=False)
