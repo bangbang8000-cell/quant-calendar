@@ -274,3 +274,103 @@ def test_coverage_not_lower(tmp_path):
     finally:
         import paths as P
         P.DATA_DIR = old
+# ─── V5.9 (T-5.9.2): Scheduler 拆分对拍 ───────────────────
+
+SCHEDULER_CONTRACT = {
+    "run_strategy_once", "verify_day_ingest", "scan_csv_files", "detect_csv_changes",
+    "_record_task_run", "_record_freshness", "_persist_history", "get_execution_history",
+    "get_execution_summary", "get_task_status", "_read_feishu_webhook", "_send_feishu_alert",
+    "_check_disk_alert", "set_webhook", "_should_execute_today", "daily_report_task",
+    "report_subscription_task", "auto_evaluate_task", "_push_ai_evaluation_report",
+    "weekly_report_task", "_refresh_after_strategy_run", "_self_heal_aggregator",
+    "strategy_run_task", "data_refresh_task", "tushare_pull_task", "file_watch_task",
+    "daily_backup_task", "health_check_task", "_send_health_alert", "error_alert_task",
+    "run_daily_review", "_handle_review_outcome", "_sleep_until", "_should_retry_review",
+    "_run_market_review_with_retry", "review_produced_today", "_catchup_market_review",
+    "event_alert_scan_task", "fact_check_audit_task", "daily_market_review_task",
+    "start", "stop",
+}
+
+SCHED_MIXINS = {
+    "_records": ("SchedulerRecordsMixin", ["_record_task_run", "_record_freshness",
+                 "_persist_history", "get_execution_history", "get_execution_summary",
+                 "get_task_status"]),
+    "_alerts": ("SchedulerAlertsMixin", ["_read_feishu_webhook", "_send_feishu_alert",
+                "_check_disk_alert", "set_webhook"]),
+    "_core": ("SchedulerCoreMixin", ["_should_execute_today", "daily_report_task",
+              "_self_heal_aggregator", "strategy_run_task", "data_refresh_task",
+              "tushare_pull_task", "health_check_task", "start", "stop"]),
+    "_review": ("SchedulerReviewMixin", ["run_daily_review", "_handle_review_outcome",
+                "_should_retry_review", "review_produced_today"]),
+    "_helpers": (None, ["run_strategy_once", "verify_day_ingest", "scan_csv_files",
+                "detect_csv_changes"]),
+}
+
+
+def test_scheduler_method_set_parity():
+    from scheduler import Scheduler
+    have = {m for m in dir(Scheduler) if not m.startswith("__")}
+    want = SCHEDULER_CONTRACT - {"run_strategy_once", "verify_day_ingest",
+                                 "scan_csv_files", "detect_csv_changes"}
+    assert want <= have, "Scheduler 缺方法: %s" % (want - have)
+
+
+@pytest.mark.parametrize("mod,cls,methods", [(m, c, ms) for m, (c, ms) in SCHED_MIXINS.items()])
+def test_scheduler_mixin_structure(mod, cls, methods):
+    m = importlib.import_module("scheduler.%s" % mod)
+    if cls:
+        assert hasattr(m, cls)
+        obj = getattr(m, cls)
+    else:
+        obj = m
+    have = {n for n in dir(obj) if not n.startswith("__")}
+    assert set(methods) <= have, "Mixin %s 缺 %s" % (mod, set(methods) - have)
+
+
+def test_scheduler_module_funcs_and_singleton():
+    import scheduler as sch
+    for fn in ("run_strategy_once", "verify_day_ingest", "scan_csv_files",
+               "detect_csv_changes"):
+        assert callable(getattr(sch, fn)), fn
+    assert isinstance(sch.scheduler, sch.Scheduler)
+    import scheduler._records as rec
+    assert rec.SchedulerRecordsMixin._persist_history.__module__ == "scheduler._records"
+
+
+def test_scheduler_importers_compatible():
+    importlib.import_module("main_new")
+    importlib.import_module("strategy_execution")
+
+
+def test_scheduler_golden_detect_csv_changes():
+    import scheduler as sch
+    assert sch.detect_csv_changes({"/a.csv": 1.0}, {"/a.csv": 1.0})[0] is False
+    assert sch.detect_csv_changes({}, {"/a.csv": 1.0})[0] is True
+
+
+def test_scheduler_golden_persist_history_roundtrip(tmp_path):
+    import scheduler as sch
+    import paths as P
+    old = P.DATA_DIR
+    P.DATA_DIR = str(tmp_path)
+    try:
+        tmp_file = os.path.join(str(tmp_path), "scheduler_history.json")
+        with patch("scheduler.HISTORY_FILE", tmp_file):
+            inst = sch.Scheduler.__new__(sch.Scheduler)
+            inst._persist_history("t1", True, "d1")
+            inst._persist_history("t1", False, "d2")
+            h = inst.get_execution_history()
+            assert len(h) >= 2 and h[0]["detail"] == "d2"  # 最新在前
+    finally:
+        P.DATA_DIR = old
+
+
+def test_scheduler_golden_self_heal_patch_routing(tmp_path):
+    """拆分后 patch("scheduler.views_aggregator"/"scheduler.DATA_DIR") 仍生效 (包级解析)"""
+    from unittest.mock import patch
+    import scheduler as sch
+    import scheduler._core as core
+    with patch("scheduler.views_aggregator") as va:
+        assert core._m.views_aggregator is va
+    with patch("scheduler.DATA_DIR", "/tmp/qc-routing-check"):
+        assert core._m.DATA_DIR == "/tmp/qc-routing-check"

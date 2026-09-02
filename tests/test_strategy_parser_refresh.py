@@ -12,7 +12,8 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _scheduler_src():
-    return open(os.path.join(BASE, "backend", "scheduler.py"), encoding="utf-8").read()
+    # V5.9 (T-5.9.2): scheduler.py 拆分为 scheduler/ 子包, 调度逻辑在 _core.py
+    return open(os.path.join(BASE, "backend", "scheduler", "_core.py"), encoding="utf-8").read()
 
 
 def _parser_src():

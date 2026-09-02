@@ -19,336 +19,17 @@ from report_generator import generate_weekly_report
 
 logger = logging.getLogger(__name__)
 
+import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)
+
 # v3.17.12 (FR-3.17.12): 数据拉取任务连续失败飞书告警阈值
 PULL_ALERT_THRESHOLD = 3
 
 # V4.9 (P1): 调度执行历史持久化 — 记录每次任务运行详情
-HISTORY_FILE = os.path.join(DATA_DIR, "scheduler_history.json")
+HISTORY_FILE = os.path.join(_m.DATA_DIR, "scheduler_history.json")
 _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
-
-
-
-# v3.21 (P0-8): 策略定期运行 — 对 governance 中 enabled 策略逐个 run-once 生成持仓
-def run_strategy_once(progress_cb=None):
-    """执行所有启用策略的 run-once (同步, 供调度任务与手工触发共用)
-    返回 (ok, executed_sids, errors)
-    progress_cb(sid, stage): V4.9.2 可选进度回调 (stage: generating/done), 供执行监控
-    """
-    import strategy_governance as gov
-    state = gov.get_state()
-    executed = []
-    errors = []
-    for sid, s in state.items():
-        if not s.get("enabled"):
-            continue
-        try:
-            if progress_cb:
-                progress_cb(sid, "generating")
-            gov.run_once(sid)
-            executed.append(sid)
-            if progress_cb:
-                progress_cb(sid, "done")
-        except Exception as e:
-            logger.error("策略 %s 定期运行失败: %s", sid, e)
-            errors.append({"sid": sid, "error": str(e)[:120]})
-    return (not errors, executed, errors)
-
-
-def verify_day_ingest(date, agg=None):
-    """V4.9.2 (F1.2): 校验某日期持仓是否已进入日视图 (聚合器整体新鲜度金丝雀).
-
-    四个视图(日/周/月/年)共享 views_aggregator.daily_data; 日视图 total>0
-    即代表聚合器包含该日期 → 四视图一致. 返回 (ok, detail).
-    """
-    from views_aggregator import views_aggregator as _default_agg
-    agg = agg or _default_agg
-    dates = list(getattr(agg, "all_dates", None) or [])
-    if not dates:
-        return False, "聚合器无可用日期"
-    # V4.9.3: 自动回退到 <= date 的最近可用日期(周末/节假日运行 → 校验最近交易日),
-    # 修复 8/29、8/30 等周末运行被误判失败的缺陷.
-    probe = date
-    try:
-        import datetime as _dt
-        _d = _dt.datetime.strptime(date, "%Y-%m-%d").date()
-        _first = _dt.datetime.strptime(dates[0], "%Y-%m-%d").date()
-    except Exception as _e:
-        return False, f"{date} 日期格式无效: {str(_e)[:40]}"
-    while probe not in dates:
-        _d -= _dt.timedelta(days=1)
-        if _d < _first:
-            return False, f"{date} 不在聚合器可用日期内(共{len(dates)}天, 最早 {dates[0]})"
-        probe = _d.strftime("%Y-%m-%d")
-    try:
-        total = int((agg.get_day_view(probe) or {}).get("total", 0))
-    except Exception as e:
-        return False, f"{probe} 日视图查询失败: {str(e)[:60]}"
-    if total <= 0:
-        return False, f"{probe} 日视图为空(total=0, 原始请求 {date})"
-    return True, f"{probe} 日视图已可见(total={total}, 原始请求 {date})"
-
-
-def scan_csv_files(dirs, recursive=False):
-    """扫描多个目录下 .csv 的 mtime (V4.9.2 扩展: 含 data/holdings 递归目录).
-
-    recursive=True 时遍历子目录(适配 holdings/{日期}/*.csv 结构).
-    返回 {绝对路径: mtime}
-    """
-    import os as _os
-    mtimes = {}
-    for d in dirs:
-        if not d or not _os.path.isdir(d):
-            continue
-        if recursive:
-            for root, _subdirs, files in _os.walk(d):
-                for fname in files:
-                    if fname.endswith(".csv"):
-                        fpath = _os.path.join(root, fname)
-                        try:
-                            mtimes[fpath] = _os.path.getmtime(fpath)
-                        except OSError:
-                            pass
-        else:
-            for fname in _os.listdir(d):
-                if fname.endswith(".csv"):
-                    fpath = _os.path.join(d, fname)
-                    try:
-                        mtimes[fpath] = _os.path.getmtime(fpath)
-                    except OSError:
-                        pass
-    return mtimes
-
-
-def detect_csv_changes(prev_mtimes: dict, current_mtimes: dict):
-    """检测 CSV 文件变动 (FR-3.12.1 / task 12.3, 纯函数可测)
-
-    返回 (changed, description); changed=True 表示有 变动/新增/删除。
-    """
-    for fpath, mtime in current_mtimes.items():
-        if fpath in prev_mtimes and prev_mtimes[fpath] != mtime:
-            return True, f"文件变动: {os.path.basename(fpath)}"
-    for fpath in current_mtimes:
-        if fpath not in prev_mtimes:
-            return True, f"新文件: {os.path.basename(fpath)}"
-    for fpath in prev_mtimes:
-        if fpath not in current_mtimes:
-            return True, f"文件删除: {os.path.basename(fpath)}"
-    return False, "无变动"
-
-
-class Scheduler:
-    def __init__(self):
-        self.pusher = FeishuPusher()
-        self.tasks = {}
-        self.running = False
-        self.last_exec_date = None  # 记录最后执行日期，避免重复
-        # v3.17.12 (FR-3.17.12): 各调度任务运行状态 (供 /api/system/health-detail + Prometheus)
-        self.task_status = {}
-        self._disk_alert_date = None  # 磁盘告警每日节流
-        self._backup_failures = 0  # 备份连续失败计数
-        # V4.9.2 (P1): 策略自动执行进度快照 (供 /api/strategies/execution/status)
-        self.execution_progress = None
-
-    def _record_task_run(self, task: str, success: bool, detail: str = ''):
-        """记录一次调度任务运行结果 (状态聚合 + Prometheus 埋点 + 持久化历史)"""
-        now = datetime.now()
-        slot = self.task_status.setdefault(task, {
-            'name': task, 'last_run': None, 'last_success': None,
-            'last_status': None, 'detail': '',
-            'success_count': 0, 'failure_count': 0, 'consecutive_failures': 0,
-        })
-        slot['last_run'] = now.strftime('%Y-%m-%d %H:%M:%S')
-        slot['detail'] = detail or ''
-        if success:
-            slot['last_success'] = now.strftime('%Y-%m-%d %H:%M:%S')
-            slot['last_status'] = 'success'
-            slot['success_count'] += 1
-            slot['consecutive_failures'] = 0
-        else:
-            slot['last_status'] = 'failed'
-            slot['failure_count'] += 1
-            slot['consecutive_failures'] += 1
-        try:
-            import metrics
-            metrics.record_scheduler_run(task, success)
-        except Exception:
-            logger.warning("指标埋点失败 (忽略)", exc_info=True)
-        # V4.9 (P1): 持久化每条历史记录
-        self._persist_history(task, success, detail)
-        return slot
-
-    def _record_freshness(self, asset_id: str, **kwargs):
-        """V5.0 T-5.0.1: 记录数据资产新鲜度 (best-effort, 不中断业务链路)"""
-        try:
-            from reliability.freshness import record_update
-            record_update(asset_id, **kwargs)
-        except Exception as e:
-            logger.warning("新鲜度记录失败 %s: %s", asset_id, e)
-
-    def _persist_history(self, task: str, success: bool, detail: str):
-        """将单次执行记录追加到 scheduler_history.json"""
-        try:
-            record = {
-                'task': task,
-                'success': success,
-                'detail': detail[:200] if detail else '',
-                'ts': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            }
-            history = []
-            if os.path.exists(HISTORY_FILE):
-                try:
-                    with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                        history = json.load(f)
-                except (json.JSONDecodeError, OSError):
-                    history = []
-            # V5.0 T-5.0.5: 读-改-写整段加锁 + 原子写 (tmp+replace), 防崩溃半写/并发丢记录
-            from reliability.atomic import atomic_write_json, file_lock
-            with file_lock(HISTORY_FILE):
-                history = []
-                if os.path.exists(HISTORY_FILE):
-                    try:
-                        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                            history = json.load(f)
-                    except (json.JSONDecodeError, OSError):
-                        history = []
-                history.append(record)
-                if len(history) > _HISTORY_MAX:
-                    history = history[-_HISTORY_MAX:]
-                atomic_write_json(HISTORY_FILE, history)
-        except Exception as e:
-            logger.warning("调度历史持久化失败 (忽略): %s", e)
-
-    def get_execution_history(self, days: int = 7, task: str = '', status: str = '', limit: int = 200) -> list:
-        """从持久化文件读取执行历史，支持按天/任务名/状态筛选"""
-        try:
-            if not os.path.exists(HISTORY_FILE):
-                return []
-            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                history = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            return []
-        if not isinstance(history, list):
-            return []
-        # 按时间倒序（最新在前）；同秒记录按写入顺序倒序（后写在前）
-        history = list(enumerate(history))
-        history.sort(key=lambda i_r: (i_r[1].get('ts', ''), i_r[0]), reverse=True)
-        history = [r for _, r in history]
-        # 按天数筛选
-        if days > 0:
-            cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-            history = [r for r in history if r.get('ts', '')[:10] >= cutoff]
-        # 按任务名筛选
-        if task:
-            history = [r for r in history if r.get('task', '') == task]
-        # 按状态筛选
-        if status == 'success':
-            history = [r for r in history if r.get('success')]
-        elif status == 'failed':
-            history = [r for r in history if not r.get('success')]
-        return history[:limit]
-
-    def get_execution_summary(self, days: int = 30) -> dict:
-        """聚合统计：各任务执行次数/成功率/趋势"""
-        history = self.get_execution_history(days=days, limit=_HISTORY_MAX)
-        total = len(history)
-        success_count = sum(1 for r in history if r.get('success'))
-        by_task = {}
-        for r in history:
-            t = r.get('task', 'unknown')
-            if t not in by_task:
-                by_task[t] = {'total': 0, 'success': 0, 'failed': 0, 'last_run': '', 'last_status': ''}
-            by_task[t]['total'] += 1
-            if r.get('success'):
-                by_task[t]['success'] += 1
-            else:
-                by_task[t]['failed'] += 1
-            if r.get('ts', '') > by_task[t]['last_run']:
-                by_task[t]['last_run'] = r['ts']
-                by_task[t]['last_status'] = 'success' if r.get('success') else 'failed'
-        # 每日趋势
-        daily = {}
-        for r in history:
-            day = r.get('ts', '')[:10]
-            if day not in daily:
-                daily[day] = {'total': 0, 'success': 0, 'failed': 0}
-            daily[day]['total'] += 1
-            if r.get('success'):
-                daily[day]['success'] += 1
-            else:
-                daily[day]['failed'] += 1
-        return {
-            'total': total,
-            'success_count': success_count,
-            'success_rate': round(success_count / total * 100, 1) if total > 0 else 0,
-            'by_task': by_task,
-            'daily_trend': daily,
-        }
-
-    def get_task_status(self) -> dict:
-        """返回各调度任务运行状态快照 (FR-3.17.12)"""
-        return dict(self.task_status)
-
-    @staticmethod
-    def _read_feishu_webhook() -> str:
-        """读取飞书 Webhook (data/feishu_config.json), 未配置/读取失败返回空串"""
-        try:
-            import json
-            from paths import DATA_DIR
-            cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
-            if os.path.exists(cfg_path):
-                with open(cfg_path, 'r', encoding='utf-8') as f:
-                    return json.load(f).get('webhook_url', '')
-        except Exception:
-            logger.warning("读取飞书配置失败", exc_info=True)
-        return ''
-
-    def _send_feishu_alert(self, title: str, body: str) -> bool:
-        """发送飞书告警; 未配置/不可达仅记录日志不崩溃 (FR-3.17.12)"""
-        webhook = self._read_feishu_webhook()
-        if not webhook:
-            logger.warning(f"飞书告警未发送 (未配置 webhook): {title}")
-            return False
-        try:
-            pusher = FeishuPusher(webhook)
-            ok = pusher.send_text(f"🚨 {title}\n{body}")
-            if ok:
-                logger.info(f"📮 告警已发送飞书: {title}")
-            else:
-                logger.warning(f"飞书告警发送失败: {title}")
-            return ok
-        except Exception as e:
-            logger.error(f"飞书告警发送异常: {e}")
-            return False
-
-    def _check_disk_alert(self, threshold_percent: float = 10.0):
-        """磁盘剩余空间 < 阈值 → 飞书告警 (每日最多一次, FR-3.17.12)"""
-        try:
-            from paths import DATA_DIR
-            st = os.statvfs(DATA_DIR)
-            total = st.f_blocks * st.f_frsize
-            free = st.f_bavail * st.f_frsize
-            if total <= 0:
-                return
-            percent = round(free / total * 100, 2)
-            today = datetime.now().strftime('%Y-%m-%d')
-            if percent < threshold_percent and self._disk_alert_date != today:
-                self._disk_alert_date = today
-                self._send_feishu_alert(
-                    "磁盘剩余空间不足",
-                    f"剩余 {percent}% (可用 {free / (1024 ** 3):.1f} GB / 共 {total / (1024 ** 3):.1f} GB)\n"
-                    f"阈值: {threshold_percent}%"
-                )
-        except (AttributeError, OSError):
-            # 平台不支持 os.statvfs (Windows) → 忽略
-            logger.debug("磁盘检测不可用 (平台不支持 os.statvfs)")
-        except Exception as e:
-            logger.warning(f"磁盘告警检测异常: {e}")
-
-    def set_webhook(self, url: str):
-        """设置飞书Webhook"""
-        self.pusher.set_webhook(url)
-
+class SchedulerCoreMixin:
+    """V5.9 (T-5.9.2): Scheduler 拆分 Mixin (_core)"""
     def _should_execute_today(self) -> bool:
         """判断今天是否应该执行（避免重复执行）"""
         today = datetime.now().strftime('%Y-%m-%d')
@@ -356,7 +37,6 @@ class Scheduler:
             return False
         self.last_exec_date = today
         return True
-
     async def daily_report_task(self):
         """每日报告任务 (v3.5.0-T2: 用批量日报生成器 + 飞书推送)"""
         while self.running:
@@ -402,7 +82,6 @@ class Scheduler:
                     except Exception:
                         logger.warning('scheduler:215 静默异常 (Exception)')
             await asyncio.sleep(60)  # 避开重复触发
-
     async def report_subscription_task(self):
         """V5.5 T-5.5.3: 报表订阅任务 — 每 10 分钟检查到期订阅并投递。"""
         while self.running:
@@ -415,7 +94,6 @@ class Scheduler:
             except Exception as e:
                 logger.warning("报表订阅任务异常 (忽略): %s", e)
             await asyncio.sleep(600)
-
     async def auto_evaluate_task(self):
         """自动评估任务"""
         while self.running:
@@ -494,7 +172,6 @@ class Scheduler:
 
                 # 等待1分钟避免重复执行
                 await asyncio.sleep(60)
-
     async def _push_ai_evaluation_report(self, results):
         """推送AI评估报告到飞书"""
         try:
@@ -510,7 +187,7 @@ class Scheduler:
                     import json
                     import os
                     from paths import DATA_DIR
-                    feishu_config_file = os.path.join(DATA_DIR, "feishu_config.json")
+                    feishu_config_file = os.path.join(_m.DATA_DIR, "feishu_config.json")
                     if os.path.exists(feishu_config_file):
                         with open(feishu_config_file) as f:
                             fc = json.load(f)
@@ -556,7 +233,6 @@ class Scheduler:
             logger.info("✅ AI评估报告已推送到飞书")
         except Exception as e:
             logger.error(f" 推送AI报告失败: {e}")
-
     async def weekly_report_task(self):
         """每周报告任务"""
         while self.running:
@@ -592,10 +268,8 @@ class Scheduler:
                 logger.error(f"每周报告任务异常: {e}")
                 self._record_task_run("weekly_report", False, str(e)[:120])
             await asyncio.sleep(60)  # 避开重复触发
-
-    # ─── v3.21 (P0-8): 策略定期运行(默认 20:00) ───
     def _refresh_after_strategy_run(self, today):
-        """V4.9.2 (F1.1/F1.2): 持仓生成后刷新 parser+views_aggregator 并校验日视图可见性.
+        """V4.9.2 (F1.1/F1.2): 持仓生成后刷新 parser+_m.views_aggregator 并校验日视图可见性.
 
         四视图(日/周/月/年)共享聚合器 daily_data, 一次 reload() 全覆盖;
         校验失败返回 (False, 原因), 由调用方据实记录, 不再报假成功.
@@ -603,22 +277,21 @@ class Scheduler:
         try:
             from data_parser import parser as _dp_parser
             _dp_parser.reload()
-            views_aggregator.reload()
-            logger.info("📊 策略持仓已热刷新进日历数据(parser+views_aggregator)")
+            _m.views_aggregator.reload()
+            logger.info("📊 策略持仓已热刷新进日历数据(parser+_m.views_aggregator)")
         except Exception as _e:
             logger.warning("策略持仓热刷新失败: %s", _e)
             return False, f"策略持仓热刷新失败: {str(_e)[:120]}"
-        return verify_day_ingest(today)
-
+        return _m.verify_day_ingest(today)
     def _self_heal_aggregator(self) -> bool:
         """V4.9.3 (F1.3 强化): 聚合器自愈 — parser + views 一并刷新.
 
-        修复 V4.9.2 仅刷 views_aggregator 的缺陷: parser 单例若陈旧(文件监听漏事件等),
+        修复 V4.9.2 仅刷 _m.views_aggregator 的缺陷: parser 单例若陈旧(文件监听漏事件等),
         新持仓永远进不了日历(实测 8/29、8/30 目录存在但聚合器停留在 8/28).
-        触发条件: 持仓目录最新日期 > 聚合器最新日期 → 先 parser.reload() 再 views_aggregator.reload().
+        触发条件: 持仓目录最新日期 > 聚合器最新日期 → 先 parser.reload() 再 _m.views_aggregator.reload().
         """
         try:
-            holdings_root = os.path.join(DATA_DIR, "holdings")
+            holdings_root = os.path.join(_m.DATA_DIR, "holdings")
             if not os.path.isdir(holdings_root):
                 return False
             dates = sorted(d for d in os.listdir(holdings_root)
@@ -626,14 +299,14 @@ class Scheduler:
             if not dates:
                 return False
             latest_holdings = dates[-1]
-            agg_latest = views_aggregator.all_dates[-1] if views_aggregator.all_dates else None
+            agg_latest = _m.views_aggregator.all_dates[-1] if _m.views_aggregator.all_dates else None
             if latest_holdings > (agg_latest or ""):
                 try:
                     from data_parser import parser as _dp_parser
                     _dp_parser.reload()
                 except Exception as _e:
                     logger.warning("聚合器自愈 parser 刷新失败: %s", _e)
-                stats = views_aggregator.reload()
+                stats = _m.views_aggregator.reload()
                 new_latest = (stats or {}).get("latest_date") or latest_holdings
                 self._record_task_run(
                     "self_heal", True,
@@ -644,7 +317,6 @@ class Scheduler:
         except Exception as _e:
             logger.warning("聚合器自愈检查失败: %s", _e)
             return False
-
     async def strategy_run_task(self):
         """每日收盘后按 governance 纳管状态定时运行启用策略 → 持仓文件"""
         last_date = None
@@ -688,7 +360,7 @@ class Scheduler:
                             "updated_at": datetime.now().strftime("%H:%M:%S"),
                         })
 
-                    run_ok, executed, errors = await asyncio.to_thread(run_strategy_once, _progress_cb)
+                    run_ok, executed, errors = await asyncio.to_thread(_m.run_strategy_once, _progress_cb)
                     # V4.9.2 (F1.1/F1.2): 刷新 parser+聚合器并校验当日已进日视图
                     _ok, _detail = self._refresh_after_strategy_run(today)
                     ok = run_ok and _ok and not errors
@@ -747,7 +419,7 @@ class Scheduler:
                     logger.info(f"⏰ 定时刷新: {today}")
                     try:
                         parser.reload()
-                        views_aggregator.reload()
+                        _m.views_aggregator.reload()
                         from data_refresh_config import update_refresh_status
                         update_refresh_status(True, f"定时刷新成功 {today}")
                         logger.info("✅ 定时刷新完成")
@@ -760,7 +432,6 @@ class Scheduler:
             except Exception as e:
                 logger.info(f"定时刷新任务异常: {e}")
                 await asyncio.sleep(60)
-
     async def tushare_pull_task(self):
         """定时 Tushare 日线拉取任务 (FR-3.12.1)
 
@@ -806,7 +477,7 @@ class Scheduler:
                             consecutive_failures = 0
                             # 拉取成功后刷新解析器/视图 (自动入库)
                             parser.reload()
-                            views_aggregator.reload()
+                            _m.views_aggregator.reload()
                             self._record_task_run("tushare_pull", True, f"拉取 {result.get('pulled', 0)}/{result.get('total', 0)}")
                         else:
                             consecutive_failures += 1
@@ -839,7 +510,6 @@ class Scheduler:
             except Exception as e:
                 logger.info(f"定时拉取任务异常: {e}")
                 await asyncio.sleep(60)
-
     async def file_watch_task(self):
         """文件变动监听任务（轮询 CSV 文件 mtime）"""
         import os
@@ -849,7 +519,7 @@ class Scheduler:
 
         def scan_files():
             """V4.9.2 (F1.4): 扫描 qresult + data/holdings(递归) 下的 CSV mtime"""
-            return scan_csv_files([EXTERNAL_DATA_DIR, os.path.join(DATA_DIR, "holdings")],
+            return _m.scan_csv_files([_m.EXTERNAL_DATA_DIR, os.path.join(_m.DATA_DIR, "holdings")],
                                   recursive=True)
 
         # 建立基线
@@ -867,13 +537,13 @@ class Scheduler:
                 current_mtimes = scan_files()
 
                 # 检测变动 (纯函数)
-                changed, change_desc = detect_csv_changes(file_mtimes, current_mtimes)
+                changed, change_desc = _m.detect_csv_changes(file_mtimes, current_mtimes)
                 if changed:
                     logger.info(f"📁 检测到{change_desc}")
                     logger.info("🔄 触发文件变动刷新...")
                     try:
                         parser.reload()
-                        views_aggregator.reload()
+                        _m.views_aggregator.reload()
                         from data_refresh_config import update_refresh_status
                         update_refresh_status(True, "文件变动触发刷新")
                         logger.info("✅ 文件变动刷新完成")
@@ -890,7 +560,6 @@ class Scheduler:
             except Exception as e:
                 logger.info(f"文件监听任务异常: {e}")
                 await asyncio.sleep(60)
-
     async def daily_backup_task(self):
         """v3.3.0-T7: 每日自动备份数据库 (凌晨 3:05)
         v3.17.12 (FR-3.17.12): 失败 → 飞书告警 + 任务状态/指标记录
@@ -923,7 +592,6 @@ class Scheduler:
                 await asyncio.sleep(3600)
             else:
                 await asyncio.sleep(60)
-
     async def health_check_task(self):
         """v3.4.0-T9 + V5.0 T-5.0.2: 健康巡检(数据新鲜度/db/数据) + 幂等自愈 + 连续3次失败→飞书告警"""
         consecutive_failures = 0
@@ -951,7 +619,6 @@ class Scheduler:
             except Exception as e:
                 logger.error("健康检查任务异常: %s", e)
                 self._record_task_run("health_check", False, str(e)[:120])
-
     def _send_health_alert(self, cycle, detail):
         """V5.0 T-5.0.7: 健康检查连续失败 → 分级告警送达 (reliability/alerts.py)
 
@@ -965,7 +632,6 @@ class Scheduler:
                 logger.info("📮 健康检查告警已送达 %d 条飞书", sent)
         except Exception as e:
             logger.error("健康检查告警发送失败: %s", e)
-
     async def error_alert_task(self):
         """v3.4.0-T5: 异常告警 → 飞书 (监控错误率)"""
         while self.running:
@@ -980,7 +646,7 @@ class Scheduler:
                         import json
                         import os
                         from paths import DATA_DIR
-                        cfg_path = os.path.join(DATA_DIR, "feishu_config.json")
+                        cfg_path = os.path.join(_m.DATA_DIR, "feishu_config.json")
                         webhook = ""
                         if os.path.exists(cfg_path):
                             with open(cfg_path, 'r', encoding='utf-8') as f:
@@ -1000,46 +666,6 @@ class Scheduler:
             except Exception as e:
                 logger.error(f"错误率监控异常: {e}")
                 self._record_task_run("error_alert", False, str(e)[:120])
-
-    def run_daily_review(self, today=None):
-        """产出当日复盘并判定 (FR-3.18.1): 返回 {report, degraded, reason}。
-
-        - 异常 → 视为失败 (degraded=True, report=None)
-        - 数据卡关键字段全不可达 → degraded=True (降级产出, 记失败 + 触发 16:30 重试)
-        """
-        from market_review import generate_review, is_review_degraded
-        try:
-            review = generate_review(today)
-        except Exception as e:
-            logger.error(f"市场复盘生成异常: {e}")
-            return {"report": None, "degraded": True, "reason": f"生成异常: {e}"}
-        degraded = is_review_degraded(review)
-        reason = "数据卡关键字段全不可达(降级产出)" if degraded else "正常产出"
-        return {"report": review, "degraded": degraded, "reason": reason}
-
-    def _handle_review_outcome(self, today, outcome, stage="16:00"):
-        """按产出判定记录任务状态 + 失败飞书告警 (FR-3.18.1, 不再静默)。
-
-        返回 True = 本次产出成功; False = 失败(已告警)。
-        """
-        if not outcome.get("degraded"):
-            self._record_task_run("daily_market_review", True, f"{today}({stage})")
-            self._record_freshness("market_review", latest_date=today, detail=f"{stage} ok")
-            # v3.17.15: Webhook — market_review_ready 事件
-            try:
-                from webhook import dispatch as webhook_dispatch
-                webhook_dispatch("market_review_ready", {"date": today})
-            except Exception as we:
-                logger.warning("webhook market_review_ready 投递失败 (忽略): %s", we)
-            return True
-        self._record_task_run("daily_market_review", False, f"{today}({stage}) {outcome.get('reason', '')}")
-        consecutive = self.task_status.get("daily_market_review", {}).get("consecutive_failures", 1)
-        self._send_feishu_alert(
-            "AI 每日复盘产出失败(数据不可达)",
-            f"{today} ({stage}) {outcome.get('reason', '')} (连续失败 {consecutive} 次)",
-        )
-        return False
-
     async def _sleep_until(self, hour, minute):
         """休眠到当日指定时刻 (跨日则等次日)"""
         now = datetime.now()
@@ -1047,12 +673,6 @@ class Scheduler:
         if target <= now:
             target += timedelta(days=1)
         await asyncio.sleep(max((target - now).total_seconds(), 1))
-
-    def _should_retry_review(self, now_hm=None):
-        """16:30 前允许重试 (FR-3.18.1); now_hm 可注入便于测试"""
-        now_hm = now_hm or datetime.now().strftime('%H:%M')
-        return now_hm < '16:30'
-
     async def _run_market_review_with_retry(self, today):
         """16:00 主跑 → 降级则 16:30 重试一次 → 失败可见 (FR-3.18.1)"""
         outcome = self.run_daily_review(today)
@@ -1065,14 +685,6 @@ class Scheduler:
                 return
             retry = self.run_daily_review(today)
             self._handle_review_outcome(today, retry, stage="16:30 重试")
-
-    def review_produced_today(self, today=None):
-        """今日是否已有"非降级"复盘归档 (FR-3.18.1 错过补偿门控)"""
-        from market_review import get_review, is_review_degraded
-        today = today or datetime.now().strftime('%Y-%m-%d')
-        r = get_review(date=today)
-        return bool(r) and not is_review_degraded(r)
-
     async def _catchup_market_review(self):
         """FR-3.18.1 错过补偿: 服务启动时若 16:00 已过且当日未产出 → 补跑一次"""
         await asyncio.sleep(3)  # 等调度器就绪
@@ -1084,7 +696,6 @@ class Scheduler:
                 await self._run_market_review_with_retry(today)
         except Exception as e:
             logger.error(f"复盘错过补偿异常: {e}")
-
     async def event_alert_scan_task(self):
         """每日事件提醒扫描 (FR-3.18.2): 09:30 扫描关注股票事件 + 24h 去重 + 飞书推送"""
         while self.running:
@@ -1105,7 +716,6 @@ class Scheduler:
                 logger.error(f"事件提醒扫描失败: {e}")
                 self._record_task_run("event_alert_scan", False, str(e)[:120])
             await asyncio.sleep(60)
-
     async def fact_check_audit_task(self):
         """每日 AI 事实护栏抽查 (FR-3.18.9): 17:30 抽查历史回复数值与数据卡一致性, 产出审计报告"""
         while self.running:
@@ -1127,7 +737,6 @@ class Scheduler:
                 logger.error(f"事实护栏抽查失败: {e}")
                 self._record_task_run("fact_check_audit", False, str(e)[:120])
             await asyncio.sleep(60)
-
     async def daily_market_review_task(self):
         """每日收盘后自动生成《市场复盘》 (FR-3.17.2, 16:00 执行; FR-3.18.1 激活)
 
@@ -1147,7 +756,6 @@ class Scheduler:
             logger.info(f"生成每日市场复盘: {today}")
             await self._run_market_review_with_retry(today)
             await asyncio.sleep(60)  # 避开重复触发
-
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -1173,21 +781,7 @@ class Scheduler:
         asyncio.create_task(self.fact_check_audit_task())
         # V5.5 T-5.5.3: 报表订阅 — 定时生成 + 通知中心投递
         asyncio.create_task(self.report_subscription_task())
-
     async def stop(self):
         """停止调度器"""
         self.running = False
         logger.info("⏰ 定时任务调度器已停止")
-
-
-# 全局单例
-scheduler = Scheduler()
-
-
-if __name__ == '__main__':
-    async def test():
-        logger.info("测试调度器...")
-        # 测试推送（不等待定时，直接发送）
-        scheduler.pusher.send_daily_report()
-
-    asyncio.run(test())
