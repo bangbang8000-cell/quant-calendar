@@ -1,4 +1,0 @@
-v5.1 (5.1.4-4): T-5.1.44 研究日志 (activity_log 按日期浏览)
-
-- research_store.py 新增 activity_log(按日期倒序聚合: count/by_type/experiments, days回溯以最近活动为基准)
-- 新增 tests/test_activity_log.py 6 用例 (TDD 全绿)

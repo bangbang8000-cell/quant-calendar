@@ -1,0 +1,4 @@
+v5.1 (5.1.5-1): T-5.1.51 复盘结构化字段 (板块/风格/因子/要点/策略启示)
+
+- market_review.py 新增 structured_fields(从报告提取: 领涨板块/风格/因子/要点/策略启示)/ensure_structured_fields(补全缺失键)+STRUCTURED_KEYS
+- 新增 tests/test_market_review_structured.py 4 用例 (TDD 全绿)

@@ -371,3 +371,39 @@ def list_reviews(limit=30):
         if len(metas) >= limit:
             break
     return metas
+
+
+# ─── T-5.1.51 / FR-5.1.5.1: 复盘结构化字段 (板块/风格/因子/要点/策略启示) ───
+
+STRUCTURED_KEYS = ('sectors', 'style', 'factors', 'points', 'insights')
+
+
+def structured_fields(report: dict) -> dict:
+    """从复盘报告提取结构化字段。
+
+    - sectors: 领涨板块列表 (从 sectors.leader 提取)
+    - style/factors/points/insights: 已有则保留, 否则空 (人工/后续可填)
+    返回新 dict (含全部 STRUCTURED_KEYS)。
+    """
+    report = report or {}
+    sectors_raw = report.get('sectors') or {}
+    if isinstance(sectors_raw, dict):
+        leader = sectors_raw.get('leader') or []
+    else:
+        leader = []
+    sectors = [str(s) for s in leader if isinstance(s, str) and s.strip()]
+    out = {
+        'sectors': sectors,
+        'style': [s for s in (report.get('style') or []) if isinstance(s, str) and s.strip()],
+        'factors': [f for f in (report.get('factors') or []) if isinstance(f, str) and f.strip()],
+        'points': [p for p in (report.get('points') or []) if isinstance(p, str) and p.strip()],
+        'insights': str(report.get('insights') or '').strip(),
+    }
+    return out
+
+
+def ensure_structured_fields(report: dict) -> dict:
+    """确保报告含全部结构化字段 (缺失补默认), 返回新 dict。"""
+    report = dict(report or {})
+    report.update(structured_fields(report))
+    return report
