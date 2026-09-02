@@ -13,6 +13,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
+import db as _db_mod  # noqa: E402  (lifespan 守卫用)
 import metrics
 from metrics import (reset, record_request, record_start, uptime_seconds,
                      slo_report, render_metrics)
@@ -204,6 +205,24 @@ def test_install_json_handler_writes_file(tmp_path):
 
 
 # ─── 迁移结构化事件 ────────────────────────────────────
+
+def test_lifespan_starts_on_healthy_migrated_db(tmp_path, monkeypatch):
+    """回归守卫 (V5.9 T-5.9.7): 健康且已迁移的库上 TestClient 启动不得崩 —
+    曾因 lifespan 里 ok=ok 未绑定 UnboundLocalError 只在实际部署暴露"""
+    from fastapi.testclient import TestClient
+    import event_alert as _ea
+    import main_new
+    monkeypatch.setattr(_db_mod, "DB_FILE", str(tmp_path / "app.db"))
+    monkeypatch.setattr(_db_mod, "DATA_DIR", str(tmp_path))
+    _db_mod.init_db()  # 建表 + 迁移完成 → schema_ok True (ok 分支不执行)
+    providers_before = list(_ea.EVENT_PROVIDERS)
+    try:
+        with TestClient(main_new.app) as client:
+            assert client.get("/api/system/health-detail").status_code in (200, 401)
+    finally:
+        # lifespan 会注册 default risk provider 等全局, 恢复避免污染其他测试
+        _ea.EVENT_PROVIDERS[:] = providers_before
+
 
 def test_apply_migrations_emits_structured_event(tmp_path, monkeypatch, caplog):
     import db

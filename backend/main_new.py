@@ -80,14 +80,10 @@ async def lifespan(app: FastAPI):
             logger.info("✅ 数据库 schema 已重建")
     else:
         logger.info("✅ 数据库 schema 校验通过")
-    # V5.9 (T-5.9.6): 观测性 — uptime 基准 + 结构化启动事件
+    # V5.9 (T-5.9.6): 观测性 — uptime 基准 + 结构化启动事件 (ok=ok 重复块已删除, 防 UnboundLocalError)
     metrics.record_start()
     structured_log.log_event(logger, logging.INFO, "app_startup",
                              ok=db.schema_ok(), version=APP_VERSION)
-    # V5.9 (T-5.9.6): 观测性 — uptime 基准 + 结构化启动事件
-    metrics.record_start()
-    structured_log.log_event(logger, logging.INFO, "app_startup",
-                             ok=ok, version=APP_VERSION)
     # V4.1 (FR-4.1.9): 启动自检 — 默认口令告警 (强烈建议立即轮换)
     try:
         from user_manager import user_manager as _um
@@ -329,5 +325,4 @@ async def prometheus_metrics(_: dict = Depends(get_admin_user)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)
-
 
