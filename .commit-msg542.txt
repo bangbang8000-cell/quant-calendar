@@ -1,0 +1,5 @@
+v5.1 (5.1.4-2): T-5.1.42 研究报告导出 (experiment → Markdown + md 格式)
+
+- report_export.py 新增 experiment_to_markdown(元信息/假设/指标表/结论/备注)/export_experiment_report(按id)/_summary_table(指标标签化)
+- export_report 新增 md/markdown 格式 (写文件)
+- 新增 tests/test_report_export_research.py 9 用例 (TDD 全绿), 回归 25 passed

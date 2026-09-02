@@ -202,4 +202,75 @@ def export_report(markdown, fmt, path):
         return export_excel(path, sheets)
     if fmt == "pdf":
         return export_pdf(path, markdown.split("\n"))
+    if fmt in ("md", "markdown"):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(markdown)
+        return {"format": "md", "path": path}
     raise ValueError("未知导出格式: " + str(fmt))
+
+
+# ─── T-5.1.42 / FR-5.1.4.2: 研究报告导出 (单实验 → Markdown) ───
+
+_SUMMARY_LABELS = (("ic_mean", "IC 均值"), ("icir", "ICIR"),
+                   ("win_rate", "胜率"), ("annual_return", "年化收益"),
+                   ("sharpe_ratio", "夏普"), ("max_drawdown", "最大回撤"),
+                   ("total_return", "总收益"), ("turnover", "年化换手"))
+
+
+def _summary_table(summary: dict) -> str:
+    """summary dict → Markdown 表格。"""
+    if not summary:
+        return "_（无指标数据）_"
+    rows = []
+    for key, label in _SUMMARY_LABELS:
+        if key in summary:
+            val = summary[key]
+            if isinstance(val, float):
+                val = ("%.2f" % val)
+            rows.append("| %s | %s |" % (label, val))
+    if not rows:
+        rows = ["| %s | %s |" % (k, v) for k, v in summary.items()]
+    return "| 指标 | 值 |\n| --- | --- |\n" + "\n".join(rows)
+
+
+def experiment_to_markdown(exp: dict) -> str:
+    """实验记录 → Markdown 报告 (元信息/假设/指标表/结论/备注)。"""
+    exp = exp or {}
+    lines = ["# 研究实验报告", ""]
+    lines.append("- **实验 ID**: %s" % exp.get('id', ''))
+    lines.append("- **类型**: %s" % exp.get('type', ''))
+    lines.append("- **主题**: %s" % exp.get('subject', ''))
+    lines.append("- **参数**: %s" % (exp.get('params') or {}))
+    lines.append("- **数据区间**: %s" % (exp.get('date_range') or []))
+    lines.append("- **应用版本**: %s" % exp.get('app_version', ''))
+    lines.append("- **创建时间**: %s" % exp.get('created_at', ''))
+    lines.append("- **标签**: %s" % (", ".join(exp.get('tags') or []) or '—'))
+    lines.append("")
+    if exp.get('hypothesis'):
+        lines.append("## 研究假设")
+        lines.append(exp['hypothesis'])
+        lines.append("")
+    lines.append("## 关键指标")
+    lines.append(_summary_table(exp.get('summary') or {}))
+    lines.append("")
+    if exp.get('conclusion'):
+        lines.append("## 结论")
+        lines.append(exp['conclusion'])
+        lines.append("")
+    if exp.get('notes'):
+        lines.append("## 备注")
+        lines.append(exp['notes'])
+        lines.append("")
+    return "\n".join(lines)
+
+
+def export_experiment_report(eid: str):
+    """按实验 id 导出 Markdown 报告; 不存在返回 None。"""
+    try:
+        from research_store import get_experiment
+        exp = get_experiment(eid)
+    except Exception:
+        return None
+    if not exp:
+        return None
+    return experiment_to_markdown(exp)
