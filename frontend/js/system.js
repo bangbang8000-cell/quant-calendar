@@ -182,7 +182,7 @@ async function saveAllConfig() {
 
     // v1.12: 并行保存，容错不中断
     const saves = [
-        fetch('/api/user/config', {
+        fetch('/api/user_config/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ config: {
@@ -252,7 +252,7 @@ async function saveAllConfig() {
 async function resetAllConfig() {
     // v1.12: 真正从后端重新加载配置
     try {
-        const res = await fetch('/api/user/config');
+        const res = await fetch('/api/user_config/config');
         const data = await res.json();
         if (data.success && data.config) {
             const c = data.config;
@@ -503,7 +503,7 @@ async function loadAiConfig() {
 // v1.5.7: 从用户专属端点加载所有配置
 async function loadUserConfig() {
     try {
-        const res = await fetch('/api/user/config');
+        const res = await fetch('/api/user_config/config');
         const data = await res.json();
         if (data.success && data.config) {
             const c = data.config;

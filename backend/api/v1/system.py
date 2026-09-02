@@ -13,7 +13,7 @@ from datetime import datetime
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from auth import get_admin_user, get_current_active_user
 
@@ -271,3 +271,32 @@ async def execution_summary(
     from scheduler import scheduler
     summary = scheduler.get_execution_summary(days=days)
     return {"success": True, "data": summary}
+# ─── V5.9 (T-5.9.7): 速率限制配置端点 (契约修复: 前端 system.js 调用) ───────
+
+@router.get("/rate-limit")
+async def get_rate_limit_config_endpoint(_: dict = Depends(get_current_active_user)):
+    """读取当前速率限制配置 (运行中限流器 + 持久化配置)"""
+    import api.v1.user_config as uc
+    import rate_limit
+    cfg = uc.get_rate_limit_config()
+    cfg["active_limit"] = rate_limit.simple_limiter.limit_per_minute
+    return {"success": True, "data": cfg}
+
+
+@router.post("/rate-limit")
+async def save_rate_limit_config_endpoint(req: dict, _: dict = Depends(get_admin_user)):
+    """保存速率限制配置 (仅 admin): 持久化 + 更新运行中限流器"""
+    import api.v1.user_config as uc
+    import rate_limit
+    raw = req.get("api_limit", req.get("rate_limit", {}).get("api_limit") if isinstance(req.get("rate_limit"), dict) else None)
+    try:
+        api_limit = int(raw)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="api_limit 必须是正整数")
+    if api_limit <= 0:
+        raise HTTPException(status_code=400, detail="api_limit 必须是正整数")
+    ok = uc.save_rate_limit_config(api_limit)
+    if not ok:
+        raise HTTPException(status_code=500, detail="保存限流配置失败")
+    rate_limit.simple_limiter.limit_per_minute = api_limit
+    return {"success": True, "data": uc.get_rate_limit_config()}

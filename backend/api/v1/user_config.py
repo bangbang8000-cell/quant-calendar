@@ -278,6 +278,34 @@ def save_user_preferences(username: str, prefs: dict) -> bool:
         return False
 
 
+# V5.9 (T-5.9.7): 速率限制配置读写 (契约修复: /api/system/rate-limit 依赖)
+def get_rate_limit_config() -> dict:
+    """读取当前速率限制配置 (来自基础配置 rate_limit 节)"""
+    cfg = _load_base_config()
+    rl = cfg.get("rate_limit") or {}
+    if not isinstance(rl, dict):
+        rl = {}
+    return {"api_limit": int(rl.get("api_limit") or 600)}
+
+
+def save_rate_limit_config(api_limit: int) -> bool:
+    """持久化速率限制配置到 admin 基础配置 rate_limit 节"""
+    if not isinstance(api_limit, int) or api_limit <= 0:
+        return False
+    try:
+        cfg = _load_base_config()
+        cfg.setdefault("rate_limit", {})
+        cfg["rate_limit"]["api_limit"] = api_limit
+        path = _get_base_config_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.warning("保存 rate_limit 配置失败: %s", e)
+        return False
+
+
 @router.get("/preferences")
 async def get_my_preferences(user: dict = Depends(get_current_active_user)):
     """获取当前用户的个性化偏好（登录用户；游客由前端降级 localStorage）"""
@@ -309,3 +337,27 @@ async def get_base_config(_: dict = Depends(get_admin_user)):
     """获取基础配置（仅 admin）"""
     config = _load_base_config()
     return {"success": True, "config": config}
+
+@router.get("/config")
+async def get_config(_: dict = Depends(get_admin_user)):
+    """V5.9 (T-5.9.7): 获取基础配置 (契约对齐: 前端 system.js /api/user_config/config)"""
+    return {"success": True, "config": _load_base_config()}
+
+
+@router.post("/config")
+async def save_config(req: dict, _: dict = Depends(get_admin_user)):
+    """V5.9 (T-5.9.7): 保存基础配置 (admin; 深合并到 admin config.json, 非法类型拒绝)"""
+    cfg = req.get("config")
+    if not isinstance(cfg, dict) or not cfg:
+        raise HTTPException(status_code=400, detail="config 必须是非空对象")
+    try:
+        base = _load_base_config()
+        _deep_merge(base, cfg)
+        path = _get_base_config_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(base, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.warning("保存基础配置失败: %s", e)
+        raise HTTPException(status_code=500, detail="保存基础配置失败")
+    return {"success": True, "config": _load_base_config()}

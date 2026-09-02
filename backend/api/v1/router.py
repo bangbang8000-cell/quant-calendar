@@ -55,7 +55,7 @@ api_router.include_router(feishu_router)
 api_router.include_router(ai_router)
 api_router.include_router(backtest_router)
 api_router.include_router(dashboard_router)
-api_router.include_router(user_config_router, prefix="/user")
+api_router.include_router(user_config_router, prefix="/user_config")  # V5.9 T-5.9.7: 契约对齐前端 /api/user_config/*
 api_router.include_router(watchlist_router)
 api_router.include_router(data_refresh_router)
 api_router.include_router(groups_router)
