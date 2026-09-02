@@ -195,10 +195,17 @@ def apply_migrations() -> None:
     with _db_lock:
         conn = get_conn()
         try:
-            migrations.upgrade(conn)
+            applied = migrations.upgrade(conn)
             conn.commit()
         finally:
             conn.close()
+    if applied:  # V5.9 (T-5.9.6): 结构化迁移事件
+        try:
+            import structured_log
+            structured_log.log_event(logger, logging.INFO, "migration_applied",
+                                     versions=applied, db_file=DB_FILE)
+        except Exception:
+            logger.debug("结构化日志不可用, 降级跳过")
 
 
 def validate_migrations() -> None:

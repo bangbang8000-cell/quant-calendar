@@ -47,10 +47,13 @@ _backup = {"success": 0, "failure": 0, "last_success": None}
 _disk_free_bytes = None
 _disk_total_bytes = None
 
+# V5.9 (T-5.9.6): 进程启动时间 (uptime) 与 SLO 计算
+_start_ts = None
+
 
 def reset():
     """清空全部指标状态 (测试用)"""
-    global _disk_free_bytes, _disk_total_bytes
+    global _disk_free_bytes, _disk_total_bytes, _start_ts
     with _lock:
         _requests.clear()
         _statuses.clear()
@@ -62,9 +65,58 @@ def reset():
         _backup["last_success"] = None
         _disk_free_bytes = None
         _disk_total_bytes = None
+        _start_ts = None
 
 
 # ==================== 埋点接口 ====================
+
+def record_start() -> None:
+    """记录进程启动时间 (uptime 基准), 幂等 (重复调用以首次为准)"""
+    global _start_ts
+    with _lock:
+        if _start_ts is None:
+            _start_ts = time.time()
+
+
+def uptime_seconds() -> float:
+    """进程已运行秒数; 未 record_start 返回 0"""
+    with _lock:
+        return (time.time() - _start_ts) if _start_ts else 0.0
+
+
+def slo_report() -> dict:
+    """V5.9 (T-5.9.6): SLO 计算 — 纯函数, 供导出与断言
+    返回: total_requests/availability(非5xx占比)/success_rate(2xx占比)/
+          error_rate(5xx占比)/avg_latency/p95_latency (秒)"""
+    with _lock:
+        statuses = dict(_statuses)
+        times = list(_request_times)
+    total = sum(statuses.values())
+    if total == 0:
+        return {"total_requests": 0, "availability": 1.0, "success_rate": 1.0,
+                "error_rate": 0.0, "avg_latency": 0.0, "p95_latency": 0.0}
+    five_xx = sum(v for k, v in statuses.items() if k >= 500)
+    two_xx = sum(v for k, v in statuses.items() if 200 <= k < 300)
+    avg = (sum(times) / len(times)) if times else 0.0
+    p95 = _p95(times) if times else 0.0
+    return {
+        "total_requests": total,
+        "availability": round((total - five_xx) / total, 4),
+        "success_rate": round(two_xx / total, 4),
+        "error_rate": round(five_xx / total, 4),
+        "avg_latency": round(avg, 6),
+        "p95_latency": round(p95, 6),
+    }
+
+
+def _p95(times: list) -> float:
+    """p95 延迟: 排序后取 95 分位"""
+    if not times:
+        return 0.0
+    s = sorted(times)
+    idx = max(0, int(0.95 * len(s)) - 1)
+    return s[idx]
+
 
 def record_request(method: str, path: str, status_code: int, elapsed_ms: float) -> None:
     """记录一次 HTTP 请求 (由中间件调用)"""
@@ -278,6 +330,35 @@ def _disk_metrics() -> str:
     return "\n".join(lines)
 
 
+def _slo_metrics() -> str:
+    """V5.9 (T-5.9.6): SLO 指标块 (可用性/成功率/错误率/延迟/uptime)"""
+    s = slo_report()
+    lines = [
+        "# HELP quant_slo_availability_ratio SLO 可用性: 非5xx请求占比 (gauge 0..1)",
+        "# TYPE quant_slo_availability_ratio gauge",
+        "# HELP quant_slo_success_rate SLO 成功率: 2xx请求占比 (gauge 0..1)",
+        "# TYPE quant_slo_success_rate gauge",
+        "# HELP quant_slo_error_rate SLO 错误率: 5xx请求占比 (gauge 0..1)",
+        "# TYPE quant_slo_error_rate gauge",
+        "# HELP quant_slo_avg_latency_seconds SLO 平均延迟 (秒)",
+        "# TYPE quant_slo_avg_latency_seconds gauge",
+        "# HELP quant_slo_p95_latency_seconds SLO p95 延迟 (秒)",
+        "# TYPE quant_slo_p95_latency_seconds gauge",
+        "# HELP quant_slo_total_requests SLO 统计窗口内总请求数",
+        "# TYPE quant_slo_total_requests gauge",
+        "# HELP quant_process_uptime_seconds 进程运行秒数",
+        "# TYPE quant_process_uptime_seconds gauge",
+    ]
+    lines.append("quant_slo_availability_ratio %s" % s["availability"])
+    lines.append("quant_slo_success_rate %s" % s["success_rate"])
+    lines.append("quant_slo_error_rate %s" % s["error_rate"])
+    lines.append("quant_slo_avg_latency_seconds %s" % s["avg_latency"])
+    lines.append("quant_slo_p95_latency_seconds %s" % s["p95_latency"])
+    lines.append("quant_slo_total_requests %d" % s["total_requests"])
+    lines.append("quant_process_uptime_seconds %s" % _fmt(round(uptime_seconds(), 3)))
+    return "\n".join(lines)
+
+
 # ==================== 导出 ====================
 
 def render_metrics() -> str:
@@ -288,5 +369,6 @@ def render_metrics() -> str:
         _scheduler_metrics(),
         _backup_metrics(),
         _disk_metrics(),
+        _slo_metrics(),
     ]
     return "\n".join(b for b in blocks if b)

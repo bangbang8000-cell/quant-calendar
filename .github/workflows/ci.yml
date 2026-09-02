@@ -109,6 +109,8 @@ jobs:
           python -m pytest tests/test_migrations.py --cov=migrations --cov-report=term --cov-fail-under=70 -m "not e2e"
           # V5.9 T-5.9.5 (TEST-PLAN 10.5): 一键升级/回滚工具覆盖率门禁 ≥80% (阻塞)
           python -m pytest tests/test_upgrade_rollback.py --cov=deploy_tool --cov-report=term --cov-fail-under=80 -m "not e2e"
+          # V5.9 T-5.9.6 (TEST-PLAN 10.6): 观测性 2.0 覆盖率门禁 ≥80% (阻塞)
+          python -m pytest tests/test_observability.py tests/test_metrics.py --cov=metrics --cov=structured_log --cov-report=term --cov-fail-under=80 -m "not e2e"
 
   # V5.9 T-5.9.1 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:
