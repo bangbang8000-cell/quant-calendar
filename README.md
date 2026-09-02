@@ -213,6 +213,20 @@ docker run -d --name quant-calendar -p 8000:8000 \
 
 GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
+### 下载发布包（Release）
+
+每个版本在 [Releases 页面](https://github.com/bangbang8000-cell/quant-calendar/releases) 提供**源码压缩包**（Source code 的 zip / tar.gz）与版本号，当前最新版本：
+
+| 项 | 链接 |
+|----|------|
+| 最新版本 | **v5.0.11**（V5 系列重基线后最新发布） |
+| Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.0.11.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.0.11.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.0.11 |
+
+> 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
+
 ### 源码安装
 
 环境要求：Python 3.10+，[Tushare Pro](https://tushare.pro/) 账号。
