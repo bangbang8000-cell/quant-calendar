@@ -655,3 +655,61 @@ async def api_custom_optimize(sid: str, payload: Optional[dict] = Body(default=N
     except Exception as e:
         raise HTTPException(500, 'AI 优化失败: ' + str(e))
     return {'data': result}
+
+
+# ==================== 5.1.0 (T-5.1.3): 研究历史 API ====================
+# 实验列表/详情/对比, 供研究台「实验面板」前端使用 (FR-5.1.0.4).
+
+
+@router.get('/research-history')
+async def research_history_list(limit: int = 50, type: Optional[str] = None,
+                                _: Dict = Depends(get_non_guest_user)):
+    """研究实验列表: 按创建时间倒序, 可按 type 过滤 (factor_ic|layer|sweep|backtest|stability)。"""
+    from research_store import list_experiments
+    try:
+        items = list_experiments(type=type or None, limit=limit)
+    except Exception as e:
+        logger.exception('研究历史列表失败')
+        raise HTTPException(status_code=500, detail=f'研究历史列表失败: {e}')
+    return {'items': items, 'count': len(items)}
+
+
+@router.get('/research-history/{eid}')
+async def research_history_detail(eid: str,
+                                  _: Dict = Depends(get_non_guest_user)):
+    """研究实验详情: 完整记录 (含 result, 可复现)。"""
+    from research_store import get_experiment
+    exp = get_experiment(eid)
+    if exp is None:
+        raise HTTPException(status_code=404, detail=f'实验 {eid} 不存在')
+    return {'experiment': exp}
+
+
+@router.post('/research-history/compare')
+async def research_history_compare(body: Dict[str, Any],
+                                   _: Dict = Depends(get_non_guest_user)):
+    """研究实验对比: body {ids: [eid, ...]} → 关键指标并列 (subject/summary/created_at)。"""
+    from research_store import compare_experiments
+    ids = (body or {}).get('ids') or []
+    if not ids:
+        raise HTTPException(status_code=400, detail='ids 不能为空')
+    if len(ids) > 10:
+        raise HTTPException(status_code=400, detail='一次最多对比 10 个实验')
+    try:
+        rows = compare_experiments(ids)
+    except Exception as e:
+        logger.exception('研究实验对比失败')
+        raise HTTPException(status_code=500, detail=f'研究实验对比失败: {e}')
+    return {'items': rows, 'count': len(rows)}
+
+
+@router.delete('/research-history/{eid}')
+async def research_history_delete(eid: str,
+                                  _: Dict = Depends(get_non_guest_user)):
+    """删除一条研究实验。"""
+    from research_store import delete_experiment
+    ok = delete_experiment(eid)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f'实验 {eid} 不存在')
+    return {'deleted': True, 'id': eid}
+
