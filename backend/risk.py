@@ -302,3 +302,39 @@ def risk_report(equity, is_equity=True, var_level=0.95,
         'summary': summary,
     }
 
+
+# ─── V5.1.3 T-5.1.34: 仓位建议 (合规标注「参考非投资建议」) ───
+
+# 合规声明: 仓位建议仅供研究参考, 不构成投资建议
+DISCLAIMER = ('参考非投资建议: 本仓位建议仅供量化研究参考, 不构成任何投资建议; '
+              '市场有风险, 投资需谨慎, 据此操作风险自负')
+
+
+def position_advice(vols, target_vol=0.12, max_position=0.2,
+                    method="vol_target"):
+    """组合仓位建议 (复用 position_sizing) + 合规标注。"""
+    sizing = position_sizing(vols, target_vol=target_vol,
+                             max_position=max_position, method=method)
+    sizing['disclaimer'] = DISCLAIMER
+    sizing['reference'] = True
+    return sizing
+
+
+def position_advice_kelly(win_rate, odds, fraction='half'):
+    """Kelly 单标的仓位建议 (参考) + 合规标注。
+
+    fraction: half (默认, 实盘常用) / full / quarter。
+    """
+    if fraction == 'full':
+        k = kelly_fraction(win_rate, odds)
+    elif fraction == 'quarter':
+        k = quarter_kelly(win_rate, odds)
+    else:
+        k = half_kelly(win_rate, odds)
+    return {
+        'kelly': round(k, 4),
+        'fraction': fraction,
+        'disclaimer': DISCLAIMER,
+        'reference': True,
+    }
+

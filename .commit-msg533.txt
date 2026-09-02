@@ -1,5 +1,0 @@
-v5.1 (5.1.3-3): T-5.1.33 风险报告 (回撤区间标注 + 尾部风险专测)
-
-- risk.py 新增 drawdown_period(最大回撤起止区间+深度,全精度)/tail_risk_summary(VaR95+CVaR+说明)/risk_report(综合: metrics+回撤区间+尾部+summary)
-- 新增 tests/test_risk_report.py 9 用例 (TDD 全绿)
-- 回归 35 passed
