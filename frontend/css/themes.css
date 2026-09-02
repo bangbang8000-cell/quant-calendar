@@ -4279,6 +4279,31 @@ text {
     word-break: break-all;
 }
 
+/* 5.1.1 (T-5.1.16): 因子详情面板 */
+.factor-detail-panel {
+    padding: 12px 0;
+    border-top: 1px solid var(--border-light);
+}
+.ic-decay-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.ic-decay-chip {
+    padding: 3px 10px;
+    border: 1px solid var(--border-base);
+    border-radius: 12px;
+    background: var(--bg-card-header);
+    font-size: var(--font-xs);
+}
+.ic-decay-chip.ic-best {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: var(--bg-selected);
+    font-weight: 600;
+}
+
 @media (max-width: 768px) {
     .bt-form-label { width: auto; }
     .bt-date-picker { width: 100%; }

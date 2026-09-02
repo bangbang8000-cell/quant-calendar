@@ -202,6 +202,7 @@
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
                                 <el-button size="small" @click="runFactorLayer" :loading="factorLayerLoading">分层回测</el-button>
+                                <el-button size="small" @click="runFactorDetail" :loading="factorDetailLoading">因子详情</el-button>
                             </div>
                             <!-- IC 报告 -->
                             <div v-if="factorIcReport" class="factor-ic-report">
@@ -235,6 +236,47 @@
                                 </div>
                                 <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
                                     单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ fmtNum(factorLayerResult.spread) }}%
+                                </div>
+                            </div>
+                            <!-- T-5.1.16: 因子详情面板 (定义/覆盖度/IC衰减/换手/多重检验/近2年) -->
+                            <div v-if="factorDetail" class="factor-detail-panel mt-8">
+                                <div class="card-title">📋 因子详情 <span class="text-sm-tertiary">{{ factorDetail.meta.name }} · {{ factorDetail.meta.category }}</span></div>
+                                <div v-if="factorDetail.meta.description" class="text-sm-tertiary-mt8">{{ factorDetail.meta.description }}</div>
+                                <!-- 覆盖度 -->
+                                <div class="grid-auto-fit-140-mb16 mt-8">
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ fmtNum(factorDetail.coverage * 100, 0) }}%</div>
+                                        <div class="stat-label">因子覆盖度</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ factorDetail.ic_decay.optimal_window || '—' }}</div>
+                                        <div class="stat-label">最优持有期</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ fmtNum(factorDetail.turnover.annual_turnover, 0) }}</div>
+                                        <div class="stat-label">年化换手</div>
+                                    </div>
+                                    <div class="stat-card p-12">
+                                        <div class="stat-value text-lg">{{ fmtNum(factorDetail.turnover.cost_drag_pct, 1) }}%</div>
+                                        <div class="stat-label">年化成本拖累</div>
+                                    </div>
+                                </div>
+                                <!-- IC 衰减 -->
+                                <div v-if="factorDetail.ic_decay.windows.length" class="ic-decay-row mt-8">
+                                    <span class="text-sm-secondary">IC 衰减:</span>
+                                    <span v-for="w in factorDetail.ic_decay.windows" :key="w.window" class="text-sm-primary ic-decay-chip"
+                                          :class="{ 'ic-best': w.window === factorDetail.ic_decay.optimal_window }">
+                                        {{ w.window }} · IC {{ w.ic_mean != null ? fmtNum(w.ic_mean, 3) : '—' }}
+                                    </span>
+                                </div>
+                                <!-- 多重检验 -->
+                                <div class="mt-8" :class="factorDetail.multiple_testing.flagged ? 'text-danger-semibold' : 'text-sm-tertiary'">
+                                    {{ factorDetail.multiple_testing.note }}
+                                </div>
+                                <!-- 近1-2年专测 -->
+                                <div v-if="factorDetail.recent && factorDetail.recent.optimal_window" class="text-sm-tertiary-mt8">
+                                    近1-2年专测: 最优持有期 {{ factorDetail.recent.optimal_window }}
+                                    (衰减比 {{ factorDetail.recent.decay_rate != null ? fmtNum(factorDetail.recent.decay_rate, 2) : '—' }})
                                 </div>
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
@@ -1297,6 +1339,35 @@
         }
       }
 
+      // T-5.1.16: 因子详情面板
+      const factorDetail = ref(null);
+      const factorDetailLoading = ref(false);
+      async function runFactorDetail() {
+        factorDetailLoading.value = true;
+        factorDetail.value = null;
+        try {
+          const res = await withAuth('/api/strategies/factors/detail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sid: activeStrategyId.value || 'multi_factor',
+              factor_key: factorKey.value,
+              params: paramValues.value || {},
+            }),
+          }).then(function (r) { return r.json(); });
+          if (res && res.detail) {
+            factorDetail.value = res.detail;
+          } else {
+            alert('因子详情: ' + (res.message || '无数据'));
+          }
+        } catch (e) {
+          console.error('[research] 因子详情失败:', e);
+          alert('因子详情失败: ' + e.message);
+        } finally {
+          factorDetailLoading.value = false;
+        }
+      }
+
 
       // ===== v3.22 (I3A): 策略微调向导 — variant 复制 / SelectionSpec / AI 交易码 =====
       const variants = ref([]);
@@ -1661,6 +1732,7 @@
         factorKey, factorIcLoading, factorLayerLoading,
         factorIcReport, factorLayerResult, factorOptions,
         runFactorIc, runFactorLayer,
+        factorDetail, factorDetailLoading, runFactorDetail,
         variants, variantSelected, variantSpec, specFields, aiCode, aiCodeLoading, variantBusy, variantMsg,
         loadVariants, cloneNewStrategy, selectVariant, loadVariantSpec, saveVariantSpec, runVariantOnce, genVariantAiCode, copyVariantCode,
         customName, customPrompt, customs, customSelected, customCode, customMsg, customBtResult,

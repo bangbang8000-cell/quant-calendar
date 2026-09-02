@@ -1,5 +1,0 @@
-v5.1 (5.1.1-7): T-5.1.16 因子详情 API (build_detail_panels + /factors/detail)
-
-- factor_ic.py 新增 build_detail_panels(DataFrame→ic_panel/layer_panel/decay_report 纯函数)
-- api/v1/strategy_research.py 新增 POST /factors/detail (定义/覆盖度/IC衰减/换手/多重检验/近2年, deny-by-default)
-- tests: test_factor_detail.py 3 用例 + test_strategy_factors.py 3 API 用例
