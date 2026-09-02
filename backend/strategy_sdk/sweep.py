@@ -73,7 +73,7 @@ def param_sweep(strategy, param_grid: Dict[str, List[Any]],
                     "win_rate": bt.get("win_rate", 0.0),
                     "overfit_warning": bt.get("overfit_warning", False),
                 }
-                # V5.2 T-5.2.3: walk-forward 样本外稳定性 (跨折 CV)
+                # V5.0.2 T-5.0.23: walk-forward 样本外稳定性 (跨折 CV)
                 from walkforward import walkforward_evaluate_result
                 entry.update(walkforward_evaluate_result(bt))
                 results.append(entry)

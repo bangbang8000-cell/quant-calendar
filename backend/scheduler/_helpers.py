@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.2): scheduler 模块级函数 — 拆自原 scheduler.py 顶层
+"""V5.0.9 (T-5.0.92): scheduler 模块级函数 — 拆自原 scheduler.py 顶层
 独立模块避免 __init__ 循环导入。"""
 import logging
 import os

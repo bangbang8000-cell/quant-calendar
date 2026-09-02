@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.1: DataPortal 2.0 — 统一取数层 (三源 + 缓存 + 限流 + 重试 + 口径)
+"""V5.0.1 T-5.0.11: DataPortal 2.0 — 统一取数层 (三源 + 缓存 + 限流 + 重试 + 口径)
 
 定位: 所有取数路径 (评估/回测/因子/日历) 的统一入口, 收敛散落在各模块的直连调用。
 - 口径: 源字段 (trade_date/日期/vol/... ) → 规范字段 (trade_date/open/.../volume/amount), 数值安全转换

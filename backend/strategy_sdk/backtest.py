@@ -75,7 +75,7 @@ def backtest_holdings(holdings: pd.DataFrame,
     if len(daily_returns) < 2:
         return {"success": False, "message": "行情收益数据不足, 无法计算绩效"}
 
-    # 成本: 用换手率近似(仅当有相邻权重可算时) — V5.2 可插拔成本模型 2.0
+    # 成本: 用换手率近似(仅当有相邻权重可算时) — V5.0.2 可插拔成本模型 2.0
     if cost_model is None:
         cost_model = CostModel(CostConfig(commission_rate=commission_rate,
                                           slippage=slippage))
@@ -116,12 +116,12 @@ def backtest_holdings(holdings: pd.DataFrame,
         "overfit_reason": overfit.get("reason", ""),
         "message": "回测完成",
     }
-    # V5.2 T-5.2.2: 基准对比 (超额/IR/alpha/beta)
+    # V5.0.2 T-5.0.22: 基准对比 (超额/IR/alpha/beta)
     if benchmark_returns is not None:
         from benchmark import attach_benchmark
         attach_benchmark(result, list(benchmark_returns),
                          strategy_returns=net_returns, benchmark_name="自定义基准")
-    # V5.2 T-5.2.5: 行业归因 + 瀑布图数据 (industry_map: {代码: 行业})
+    # V5.0.2 T-5.0.25: 行业归因 + 瀑布图数据 (industry_map: {代码: 行业})
     if industry_map is not None:
         from attribution import industry_attribution, build_waterfall
         try:
@@ -139,7 +139,7 @@ def backtest_holdings(holdings: pd.DataFrame,
 
 def _estimate_turnover_cost(holdings: pd.DataFrame, dates: List[str],
                             cost_model: CostModel) -> List[float]:
-    """逐日换手成本近似: |权重变化| 之和 × 换手成本率 (V5.2 成本模型 2.0)"""
+    """逐日换手成本近似: |权重变化| 之和 × 换手成本率 (V5.0.2 成本模型 2.0)"""
     costs: List[float] = []
     prev = None
     rate = cost_model.turnover_rate()

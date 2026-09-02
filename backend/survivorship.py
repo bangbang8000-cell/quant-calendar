@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.5: 幸存者偏差治理 (survivorship.py)
+"""V5.0.1 T-5.0.15: 幸存者偏差治理 (survivorship.py)
 
 退市/改名股票必须按 PIT 纳入历史池: as_of 时点可交易即纳入, 杜绝"用现在成分股回溯"高估收益。
 - 注册表: backend/survivorship_registry.json (内置种子) + data/survivorship_registry.json (运维覆盖, 优先)

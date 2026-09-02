@@ -1,4 +1,4 @@
-"""V5.2 T-5.2.3: walk-forward 滚动回测测试 (TEST-PLAN 3.1 test_walkforward.py)
+"""V5.0.2 T-5.0.23: walk-forward 滚动回测测试 (TEST-PLAN 3.1 test_walkforward.py)
 
 样本内/外划分、滚动窗口、无前视 (PIT 联动)、跨折样本外稳定性。
 """

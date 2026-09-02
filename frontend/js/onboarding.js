@@ -1,4 +1,4 @@
-// quant-calendar: Onboarding 新手引导层 (V5.6 / T-5.6.1)
+// quant-calendar: Onboarding 新手引导层 (V5.0.6 / T-5.0.61)
 // 5 步任务流: 状态机与持久化在 onboarding-core.js (UMD, node 可测),
 // 本组件为薄壳渲染: 覆盖层 + 步骤卡 + 进度条 + 上一步/下一步/跳过/完成。
 // 进度持久化: 登录用户 → /api/user_config/preferences (onboarding_progress, 跨设备同步);

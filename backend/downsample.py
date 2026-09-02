@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.4): 全市场分块 + K线/因子降采样 + 年视图基准守护 (downsample.py)
+"""V5.0.7 (T-5.0.74): 全市场分块 + K线/因子降采样 + 年视图基准守护 (downsample.py)
 
 纯逻辑, 零依赖, 可单测:
 - chunked / chunk_tasks: 全市场股票列表分块 (批量评估/同步按块提交任务)

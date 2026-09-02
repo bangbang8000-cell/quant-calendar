@@ -265,7 +265,7 @@
                         </el-form>
                     </div>
 
-                    <!-- V5.4 T-5.4.5: 通知中心 (规则/投递历史/通道状态+静默) -->
+                    <!-- V5.0.4 T-5.0.45: 通知中心 (规则/投递历史/通道状态+静默) -->
                     <div class="card mt-4">
                         <div class="card-title flex-between">
                             <span>🔔 通知中心</span>
@@ -699,7 +699,7 @@
                 </div>
                     <div v-else-if="currentSubPage === 'datadict'">
                         <div class="card">
-                            <div class="usage-card-title">📖 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.1 T-5.1.4)</span></div>
+                            <div class="usage-card-title">📖 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.0.1 T-5.0.14)</span></div>
                             <div class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                                 <el-radio-group v-model="dictCategory" size="small" @change="loadDataDict">
                                     <el-radio label="">全部</el-radio>
@@ -1356,7 +1356,7 @@
           healthLoading.value = false;
         }
       }
-      // V5.1 T-5.1.4: 数据字典子页
+      // V5.0.1 T-5.0.14: 数据字典子页
       const dictLoading = Vue.ref(false);
       const dictError = Vue.ref('');
       const dictCategory = Vue.ref('');
@@ -1382,7 +1382,7 @@
       function statusLabel(st) {
         return { fresh: '正常', stale: '过期', missing: '缺失', unknown: '未知' }[st] || st;
       }
-      // V5.4 T-5.4.5: 通知中心 (规则/投递历史/通道状态+静默) — 本地状态
+      // V5.0.4 T-5.0.45: 通知中心 (规则/投递历史/通道状态+静默) — 本地状态
       const ncTab = Vue.ref('rules');
       const ncRules = Vue.ref([]);
       const ncHistory = Vue.ref([]);
@@ -1628,9 +1628,9 @@
         healthLoading, healthError, healthUpdatedAt,
         freshnessData, healHistory, startupReport, sourceHealth,
         refreshHealth, statusColor, statusLabel, sourceOk,
-        // V5.1 T-5.1.4: 数据字典
+        // V5.0.1 T-5.0.14: 数据字典
         dictLoading, dictError, dictCategory, dictData, loadDataDict,
-        // V5.4 T-5.4.5: 通知中心
+        // V5.0.4 T-5.0.45: 通知中心
         ncTab, ncRules, ncHistory, ncChannels, ncLoading, ncNewCode, ncNewType,
         ncNewThreshold, ncSilence, ncSilenceMinutes, ncMsg, ncTypeLabel,
         onNcTab, loadAlertRules, loadAlertHistory, loadAlertChannels,

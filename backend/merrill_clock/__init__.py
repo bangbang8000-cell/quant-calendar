@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 美林时钟子包 — MerrillClock 拆分自 merrill_clock.py"""
+"""V5.0.9 (T-5.0.93): 美林时钟子包 — MerrillClock 拆分自 merrill_clock.py"""
 from ._indicators import ClockIndicatorsMixin
 from ._history import ClockHistoryMixin
 from ._constants import STAGES, CACHE_FILE, HISTORY_FILE, SNAPSHOT_FILE, SCORING_WEIGHTS  # noqa: F401

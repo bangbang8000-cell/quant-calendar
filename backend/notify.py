@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.4 T-5.4.1: 通知中心通道抽象 (notify.py)
+"""V5.0.4 T-5.0.41: 通知中心通道抽象 (notify.py)
 
 统一通道契约 + 重试 + 多通道投递:
 - Channel 基类: send(recipient, title, content) -> bool

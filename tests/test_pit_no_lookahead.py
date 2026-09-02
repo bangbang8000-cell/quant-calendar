@@ -1,4 +1,4 @@
-"""V5.1 T-5.1.3: PIT 治理 — 防前视断言四路径 (TEST-PLAN 2.1 test_pit_no_lookahead.py)
+"""V5.0.1 T-5.0.13: PIT 治理 — 防前视断言四路径 (TEST-PLAN 2.1 test_pit_no_lookahead.py)
 
 四条取数路径 (评估/回测/因子/日历) 的数据都必须满足 end <= as_of。
 - pit_filter(rows, as_of, strict=True): 过滤未来数据; strict 时对未来数据抛 PitError

@@ -332,7 +332,7 @@ def _compute_track_summary(username: str = "default", kline_getter: Optional[Cal
     }
 
 
-# V5.9.2: 评估命中率持久缓存(TTL 6h + 数据源故障降级)。
+# V5.0.11: 评估命中率持久缓存(TTL 6h + 数据源故障降级)。
 # 命中率计算需对每条评估记录同步拉取全量历史 K 线, 无缓存时每次请求全量拉取,
 # 数据源不可用/慢时超时(前端停在"计算中")。缓存全量汇总到内存+文件。
 # 显式传入 kline_getter(测试注入 fake)时跳过缓存直接计算, 保证测试确定性。

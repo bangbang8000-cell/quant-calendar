@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 自选股 — 分页 + 过滤 + 错误码"""
+"""V5.0.8 (T-5.0.83): API v3 自选股 — 分页 + 过滤 + 错误码"""
 from typing import Dict, Any
 from fastapi import APIRouter, Depends
 

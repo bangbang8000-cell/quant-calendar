@@ -47,7 +47,7 @@ _backup = {"success": 0, "failure": 0, "last_success": None}
 _disk_free_bytes = None
 _disk_total_bytes = None
 
-# V5.9 (T-5.9.6): 进程启动时间 (uptime) 与 SLO 计算
+# V5.0.9 (T-5.0.96): 进程启动时间 (uptime) 与 SLO 计算
 _start_ts = None
 
 
@@ -85,7 +85,7 @@ def uptime_seconds() -> float:
 
 
 def slo_report() -> dict:
-    """V5.9 (T-5.9.6): SLO 计算 — 纯函数, 供导出与断言
+    """V5.0.9 (T-5.0.96): SLO 计算 — 纯函数, 供导出与断言
     返回: total_requests/availability(非5xx占比)/success_rate(2xx占比)/
           error_rate(5xx占比)/avg_latency/p95_latency (秒)"""
     with _lock:
@@ -331,7 +331,7 @@ def _disk_metrics() -> str:
 
 
 def _slo_metrics() -> str:
-    """V5.9 (T-5.9.6): SLO 指标块 (可用性/成功率/错误率/延迟/uptime)"""
+    """V5.0.9 (T-5.0.96): SLO 指标块 (可用性/成功率/错误率/延迟/uptime)"""
     s = slo_report()
     lines = [
         "# HELP quant_slo_availability_ratio SLO 可用性: 非5xx请求占比 (gauge 0..1)",

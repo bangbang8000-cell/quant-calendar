@@ -34,7 +34,7 @@
   /* V4.8.2 (D4): ECharts 网格线/轴线令牌 (dark 由 themes.css 覆盖) */
   --chart-split: #e2e8f0;   /* 图表网格线(弱) */
   --chart-axis:  #cbd5e1;   /* 图表轴线(中) */
-  /* V5.5 (T-5.5.4): 图表画布背景令牌 (dark 由 themes.css 覆盖) */
+  /* V5.5 (T-5.0.54): 图表画布背景令牌 (dark 由 themes.css 覆盖) */
   --chart-bg:     #ffffff;  /* 图表画布背景(亮) */
   --text-on-chip:  #1f2937;
   /* V4.4 (FR-4.4.1): 补全被使用但未定义的令牌(默认亮色值, dark 由 themes.css 覆盖) */
@@ -63,7 +63,7 @@
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;
   --color-danger:  #C62828;  --color-info:    #1976d2;
-  /* V5.5 (T-5.5.4): 图表强调色令牌 (原 charts/echarts-theme/backtest 使用未定义) */
+  /* V5.5 (T-5.0.54): 图表强调色令牌 (原 charts/echarts-theme/backtest 使用未定义) */
   --color-accent:  #F59E0B;
   /* v3.16 (16.5): 行情涨跌语义 — 统一"红涨绿跌"，跌由原蓝(#457B9D)改绿 */
   --color-up:      #E63946;  --color-down:    #2E7D32;

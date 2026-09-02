@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.1): AI 评估子包 — AIEvaluator 拆分自 ai_evaluator.py"""
+"""V5.0.9 (T-5.0.91): AI 评估子包 — AIEvaluator 拆分自 ai_evaluator.py"""
 from ._base import AIEvalBase
 from ._models import AIModelsMixin
 from ._eval import AIEvalMixin

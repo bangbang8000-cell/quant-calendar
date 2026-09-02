@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.4): 分块 + 降采样测试 (TEST-PLAN 8.1 test_downsample.py)
+"""V5.0.7 (T-5.0.74): 分块 + 降采样测试 (TEST-PLAN 8.1 test_downsample.py)
 
 全市场 K 线/因子分块 (chunked/chunk_tasks) + 长序列降采样 (LTTB/tail) +
 年视图基准守护 (year_view_budget)。纯 Python 逻辑, 不触数据源。

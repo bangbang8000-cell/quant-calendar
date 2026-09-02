@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.3 T-5.3.3: 风控规则引擎 (rules.py)
+"""V5.0.3 T-5.0.33: 风控规则引擎 (rules.py)
 
 集中度/止损止盈/回撤熔断: 规则声明 + 边界触发评估 (刚触线/未触线/已禁用)。
 - make_rule(rule_id, type, enabled, **params): 规则声明

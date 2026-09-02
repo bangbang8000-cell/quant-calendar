@@ -234,7 +234,7 @@ var fc=(s,e)=>()=>(e||s((e={exports:{}}).exports,e),e.exports);var pc=fc((Ec,be)
 <div class="page-header">
                         <div class="page-title">{{ t('strategies.title') }}</div>
                         <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
-                        <button type="button" class="bt-entry-btn" @click="navigateTo('research', 'backtest')">回测工作台</button> <!-- V5.9.2: 回测移入策略研究, 入口跳转 -->
+                        <button type="button" class="bt-entry-btn" @click="navigateTo('research', 'backtest')">回测工作台</button> <!-- V5.0.11: 回测移入策略研究, 入口跳转 -->
                         <div class="flex-c-gap-12">
                             <span class="text-base-secondary">{{ t('strategies.latestTradeDay') }}{{ dashboardData.latest_date || '-' }}</span>
                             <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
@@ -324,7 +324,7 @@ var fc=(s,e)=>()=>(e||s((e={exports:{}}).exports,e),e.exports);var pc=fc((Ec,be)
 
                     <!-- 子页: 策略总览 -->
 
-                    <!-- V5.5 T-5.5.5: 今日要点聚合卡 (周期/策略/异动/评估/风险) -->
+                    <!-- V5.0.5 T-5.0.55: 今日要点聚合卡 (周期/策略/异动/评估/风险) -->
                     <div class="card" v-if="highlightsLoaded">
                         <div class="card-title">🎯 今日要点 <span class="text-sm-tertiary-normal">{{ highlightsDate }}</span></div>
                         <div v-if="highlights.length === 0" class="today-highlights-empty">暂无要点（数据源未就绪或今日未生成）</div>

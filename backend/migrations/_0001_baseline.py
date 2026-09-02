@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.4): 迁移 0001 — 基线
+"""V5.0.9 (T-5.0.94): 迁移 0001 — 基线
 当前 13 张核心表由 db.init_db 的 SCHEMA 创建; 本迁移仅记录基线版本,
 确保 schema_migrations 表从版本 1 起有据可查。"""
 

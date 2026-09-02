@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.1): AI 评估模块兼容薄壳
+"""V5.0.9 (T-5.0.91): AI 评估模块兼容薄壳
 实现已拆分至 ai_eval/ 子包; 本文件保持 import 兼容与全局单例 ai_evaluator。"""
 import json  # noqa: F401  # 薄壳兼容属性
 import os  # noqa: F401

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.2): 异步任务队列测试 (TEST-PLAN 8.1 test_jobs_queue.py)
+"""V5.0.7 (T-5.0.72): 异步任务队列测试 (TEST-PLAN 8.1 test_jobs_queue.py)
 
 任务提交/进度/取消/失败重试/结果持久化 + 事件循环不阻塞计时断言。
 JOBS_FILE monkeypatch 到 tmp_path; 注册专用测试任务, 不触真实业务。
@@ -222,7 +222,7 @@ def test_progress_clamped(jobs):
 
 
 
-# ═══════════════════ V5.7 (T-5.7.2): API 集成 ═══════════════════
+# ═══════════════════ V5.0.7 (T-5.0.72): API 集成 ═══════════════════
 
 @pytest.fixture
 def api_client(tmp_path, monkeypatch):

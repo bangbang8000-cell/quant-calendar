@@ -1,4 +1,4 @@
-"""V5.5 T-5.5.3: 报表订阅测试 (TEST-PLAN 6.1 test_report_subscribe.py)
+"""V5.0.5 T-5.0.53: 报表订阅测试 (TEST-PLAN 6.1 test_report_subscribe.py)
 
 定时生成 + 通知中心投递闭环 (mock providers/channels)。
 """

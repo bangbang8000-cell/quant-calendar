@@ -1,4 +1,4 @@
-"""V5.3 T-5.3.2: 仓位建议测试 (TEST-PLAN 4.1 test_position_sizing.py)
+"""V5.0.3 T-5.0.32: 仓位建议测试 (TEST-PLAN 4.1 test_position_sizing.py)
 
 Kelly 修正 / 风险平价 / 波动率目标 / 上限约束, 边界 (0 仓位/全仓)。
 """

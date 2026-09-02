@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ruff: noqa: F405
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 美林时钟拆分 Mixin (_indicators)"""
+"""V5.0.9 (T-5.0.93): 美林时钟拆分 Mixin (_indicators)"""
 import time
 from datetime import datetime
 import numpy as np
@@ -24,7 +24,7 @@ def _normalize_score(raw, center, scale, invert=False):
     return -z if invert else z
 
 class ClockIndicatorsMixin:
-    """V5.9 (T-5.9.3): MerrillClock 拆分 Mixin (_indicators)"""
+    """V5.0.9 (T-5.0.93): MerrillClock 拆分 Mixin (_indicators)"""
     def _fetch_real_macro_data(self):
         """v3.0: 从 AKShare 获取真实宏观数据，失败返回 None"""
         import concurrent.futures

@@ -23,7 +23,7 @@ import logging  # noqa: E402
 logger = logging.getLogger(__name__)
 
 class AIHistoryMixin:
-    """V5.9 (T-5.9.1): AIEvaluator 拆分 Mixin (_history)"""
+    """V5.0.9 (T-5.0.91): AIEvaluator 拆分 Mixin (_history)"""
     def _load_history(self) -> List:
         """加载评估历史（已废弃，保留向后兼容）"""
         return self._load_history_for('default')

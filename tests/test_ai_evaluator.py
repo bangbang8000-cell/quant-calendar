@@ -331,7 +331,7 @@ class TestV3142Regression:
 
 
 class TestBuiltinEvaluateCoverage:
-    """V5.9 T-5.9.1: _builtin_evaluate 纯函数全覆盖 (覆盖率门禁 ai_eval >=50%)"""
+    """V5.0.9 T-5.0.91: _builtin_evaluate 纯函数全覆盖 (覆盖率门禁 ai_eval >=50%)"""
 
     @staticmethod
     def _full_market_data(**over):
@@ -436,7 +436,7 @@ class TestBuiltinEvaluateCoverage:
 
 
 class TestHistoryMixinCoverage:
-    """V5.9 T-5.9.1: _history mixin 方法覆盖 (覆盖率门禁 ai_eval >=50%)"""
+    """V5.0.9 T-5.0.91: _history mixin 方法覆盖 (覆盖率门禁 ai_eval >=50%)"""
 
     def test_history_get_count_delete(self, isolated_data_dir):
         evaluator = AIEvaluator()

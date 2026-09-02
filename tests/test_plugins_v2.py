@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.5): 插件 SDK 2.0 测试 (TEST-PLAN 9.1 test_plugins_v2.py)
+"""V5.0.8 (T-5.0.85): 插件 SDK 2.0 测试 (TEST-PLAN 9.1 test_plugins_v2.py)
 
 事件钩子注册/派发/异常隔离 + 策略插件注册/运行/隔离 + events 接线。
 """

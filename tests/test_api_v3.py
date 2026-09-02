@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 契约测试 (TEST-PLAN 9.1 test_api_v3.py)
+"""V5.0.8 (T-5.0.83): API v3 契约测试 (TEST-PLAN 9.1 test_api_v3.py)
 
 统一契约: 分页 {items,page,page_size,total,pages} + 过滤 + 错误码信封
 {success:false, error:{code,message,status}} + v1/v2 兼容 (旧端点不变)。

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ruff: noqa: F405
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 美林时钟拆分 Mixin (_history)"""
+"""V5.0.9 (T-5.0.93): 美林时钟拆分 Mixin (_history)"""
 import json
 import os
 from datetime import datetime
@@ -12,7 +12,7 @@ import merrill_clock as _mc_mod  # 调用期读包级文件常量 (patch("merril
 logger = logging.getLogger(__name__)
 
 class ClockHistoryMixin:
-    """V5.9 (T-5.9.3): MerrillClock 拆分 Mixin (_history)"""
+    """V5.0.9 (T-5.0.93): MerrillClock 拆分 Mixin (_history)"""
     def __init__(self):
         self.cache = self._load_file(_mc_mod.CACHE_FILE, {})
         self.history = self._load_file(_mc_mod.HISTORY_FILE, {

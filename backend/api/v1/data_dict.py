@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""数据字典 API (V5.1 T-5.1.4) — YAML 单一事实源只读暴露 (需登录)"""
+"""数据字典 API (V5.0.1 T-5.0.14) — YAML 单一事实源只读暴露 (需登录)"""
 from fastapi import APIRouter, Depends, Query
 
 from auth import get_current_active_user

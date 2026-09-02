@@ -30,7 +30,7 @@
 
       const portfolioCount = computed(() => positions.value.length);
 
-      // ─── V5.3 T-5.3.4: 风险 Tab (指标/规则/再平衡建议) ────
+      // ─── V5.0.3 T-5.0.34: 风险 Tab (指标/规则/再平衡建议) ────
       const riskTab = ref('metrics');
       const riskLoading = ref(false);
       const riskNote = ref('');

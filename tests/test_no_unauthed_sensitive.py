@@ -42,24 +42,24 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/quality/score?symbol=000001.SZ", None),
     ("get", "/api/data-dict", None),
     ("get", "/api/lineage", None),
-    # V5.2 T-5.2.2/T-5.2.6: 回测基准/报告导出 (策略与数据敏感)
+    # V5.0.2 T-5.0.22/T-5.0.26: 回测基准/报告导出 (策略与数据敏感)
     ("get", "/api/backtest/benchmarks", None),
     ("post", "/api/backtest/export", {"fmt": "csv", "result": {"strategy_id": "s1"}}),
-    # V5.3 T-5.3.1/T-5.3.4: 组合风险指标/规则评估 (持仓私密数据)
+    # V5.0.3 T-5.0.31/T-5.0.34: 组合风险指标/规则评估 (持仓私密数据)
     ("get", "/api/portfolio/risk", None),
     ("get", "/api/portfolio/risk-rules", None),
-    # V5.4 T-5.4.3: 预警规则 CRUD/评估 (用户自定义规则 + 触发通知)
+    # V5.0.4 T-5.0.43: 预警规则 CRUD/评估 (用户自定义规则 + 触发通知)
     ("get", "/api/alerts/rules", None),
     ("post", "/api/alerts/rules", {"stock_code": "600519.SH", "rule_type": "price_above", "threshold": 1500.0}),
     ("put", "/api/alerts/rules/1", {"threshold": 1600.0}),
     ("delete", "/api/alerts/rules/1", None),
     ("post", "/api/alerts/evaluate", {}),
-    # V5.4 T-5.4.5: 通知中心 — 投递历史/通道状态/静默
+    # V5.0.4 T-5.0.45: 通知中心 — 投递历史/通道状态/静默
     ("get", "/api/alerts/history", None),
     ("get", "/api/alerts/channels", None),
     ("get", "/api/alerts/silence", None),
     ("post", "/api/alerts/silence", {"minutes": 60}),
-    # V5.5 T-5.5.2/5.5.3: 报表中心 — 订阅/生成/导出
+    # V5.0.5 T-5.0.52/5.5.3: 报表中心 — 订阅/生成/导出
     ("get", "/api/reports/subscriptions", None),
     ("post", "/api/reports/subscriptions", {"schedule": "daily"}),
     ("delete", "/api/reports/subscriptions/1", None),
@@ -67,18 +67,18 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/reports/generate", None),
     ("get", "/api/reports/export", None),
     ("get", "/api/reports/today-highlights", None),
-    # V5.7 T-5.7.2: 任务队列 — 提交/查询/取消/清理 (后台任务资源 + 结果数据)
+    # V5.0.7 T-5.0.72: 任务队列 — 提交/查询/取消/清理 (后台任务资源 + 结果数据)
     ("post", "/api/jobs", {"task_type": "batch_evaluate", "payload": {}}),
     ("get", "/api/jobs", None),
     ("get", "/api/jobs/J-test", None),
     ("post", "/api/jobs/J-test/cancel", {}),
     ("delete", "/api/jobs/J-test", None),
-    # V5.8 T-5.8.1: RBAC 2.0 — 角色/权限管理 (权限体系敏感)
+    # V5.0.8 T-5.0.81: RBAC 2.0 — 角色/权限管理 (权限体系敏感)
     ("get", "/api/rbac/roles", None),
     ("post", "/api/rbac/roles", {"role_id": "x", "permissions": []}),
     ("put", "/api/rbac/roles/x", {"permissions": []}),
     ("delete", "/api/rbac/roles/x", None),
-    # V5.8 T-5.8.2: 协作 — 共享组/成员/股票/备注/组合可见性 (私密与共享数据)
+    # V5.0.8 T-5.0.82: 协作 — 共享组/成员/股票/备注/组合可见性 (私密与共享数据)
     ("get", "/api/collab/groups/my", None),
     ("post", "/api/collab/groups", {"name": "g"}),
     ("post", "/api/collab/groups/G1/members", {"username": "bob"}),
@@ -88,7 +88,7 @@ SENSITIVE_ENDPOINTS = [
     ("get", "/api/collab/notes/600000.SH", None),
     ("get", "/api/collab/portfolio-visibility", None),
     ("put", "/api/collab/portfolio-visibility", {"visible_to": "all"}),
-    # V5.8 T-5.8.3: API v3 — 分页/过滤/写操作 (用户数据)
+    # V5.0.8 T-5.0.83: API v3 — 分页/过滤/写操作 (用户数据)
     ("get", "/api/v3/watchlist", None),
     ("post", "/api/v3/watchlist", {"code": "600000.SH"}),
     ("delete", "/api/v3/watchlist/600000.SH", None),

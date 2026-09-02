@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.2): 定时任务调度器子包 — Scheduler 拆分自 scheduler.py
+"""V5.0.9 (T-5.0.92): 定时任务调度器子包 — Scheduler 拆分自 scheduler.py
 模块级函数与全局单例 scheduler 一并收口于此 (scheduler.py 薄壳因包同名被遮蔽已删除)。"""
 import logging
 import os

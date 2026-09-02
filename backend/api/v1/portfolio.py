@@ -284,7 +284,7 @@ async def get_equity_curve(days: int = 30, user: dict = Depends(get_current_acti
     }
 
 
-# ─── V5.3 T-5.3.1: 组合风险指标 ───
+# ─── V5.0.3 T-5.0.31: 组合风险指标 ───
 
 @router.get("/risk")
 async def get_portfolio_risk(days: int = 60, benchmark: str = None,
@@ -305,7 +305,7 @@ async def get_portfolio_risk(days: int = 60, benchmark: str = None,
             "count": len(positions)}
 
 
-# ─── V5.3 T-5.3.4: 风控规则评估 + 再平衡建议 ───
+# ─── V5.0.3 T-5.0.34: 风控规则评估 + 再平衡建议 ───
 
 def _stock_vol_from_kline(ts_code: str, days: int = 60):
     """由近 N 日收盘价估算年化波动 (数据不可达返回 None)"""
@@ -334,7 +334,7 @@ def _stock_vol_from_kline(ts_code: str, days: int = 60):
 @router.get("/risk-rules")
 async def get_portfolio_risk_rules(days: int = 60,
                                    user: dict = Depends(get_current_active_user)):
-    """风控规则评估 + 再平衡建议 (V5.3 T-5.3.3/5.3.4)。
+    """风控规则评估 + 再平衡建议 (V5.0.3 T-5.0.33/5.3.4)。
 
     由持仓市值权重/浮亏/日收益/净值 + 个股波动率驱动; 数据不可达优雅降级。
     返回 {rules: [{rule_id,type,triggered,severity,action,message}], rebalance, note}

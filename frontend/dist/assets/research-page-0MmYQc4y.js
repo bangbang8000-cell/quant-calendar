@@ -219,7 +219,7 @@
                                     <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
                                 </div>
                                 <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
-                                <!-- V5.2 T-5.2.4: 参数稳定性诊断 (高原 + 过拟合判定) -->
+                                <!-- V5.0.2 T-5.0.24: 参数稳定性诊断 (高原 + 过拟合判定) -->
                                 <div v-if="sweepStability" class="param-stability mt-8" :class="{ 'param-stability-overfit': sweepStability.verdict === 'overfit', 'param-stability-robust': sweepStability.verdict === 'robust' }">
                                     <span class="text-sm-secondary">参数稳定性:</span>
                                     <span v-if="sweepStability.verdict === 'overfit'" class="text-danger-semibold">过拟合风险 (扰动衰减比 {{ sweepStability.spread_ratio }})</span>

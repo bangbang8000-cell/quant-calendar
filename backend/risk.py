@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.3 T-5.3.1: 组合风险指标 (risk.py)
+"""V5.0.3 T-5.0.31: 组合风险指标 (risk.py)
 
 波动率(年化)/VaR(历史模拟+参数法双实现交叉核对)/CVaR/最大回撤/夏普/Sortino/Calmar/Beta。
 - 独立纯函数: volatility_annual / max_drawdown_of / var_historical / var_parametric /
@@ -156,7 +156,7 @@ def compute_risk_metrics(returns, annual_days=ANNUAL_DAYS, risk_free_rate=0.03,
             "sharpe_ratio": float(sharpe), "sortino_ratio": float(sortino),
             "calmar_ratio": float(calmar) if calmar is not None else None,
             "beta": beta, "total_days": total_days}
-# ─── V5.3 T-5.3.2: 仓位建议 (Kelly 修正 / 风险平价 / 波动率目标 / 上限约束) ───
+# ─── V5.0.3 T-5.0.32: 仓位建议 (Kelly 修正 / 风险平价 / 波动率目标 / 上限约束) ───
 
 
 def kelly_fraction(win_rate, odds):

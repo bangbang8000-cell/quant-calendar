@@ -28,7 +28,7 @@ import logging  # noqa: E402
 logger = logging.getLogger(__name__)
 
 class AIEvalMixin:
-    """V5.9 (T-5.9.1): AIEvaluator 拆分 Mixin (_eval)"""
+    """V5.0.9 (T-5.0.91): AIEvaluator 拆分 Mixin (_eval)"""
     def recommend_strategies(self, watchlist: list = None, username: str = 'default') -> Dict:
         """
         基于自选股风格推荐策略
@@ -317,7 +317,7 @@ class AIEvalMixin:
         """加载评估 prompt 模板 (带缓存)"""
         if not hasattr(self, '_prompt_template') or self._prompt_template is None:
             import os as _os
-            # V5.9 (T-5.9.1): 文件已移至 ai_eval/, 模板目录在 backend/prompts/ (上移一级)
+            # V5.0.9 (T-5.0.91): 文件已移至 ai_eval/, 模板目录在 backend/prompts/ (上移一级)
             template_path = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'prompts', 'evaluate_stock.txt')
             with open(template_path, 'r', encoding='utf-8') as f:
                 self._prompt_template = f.read()

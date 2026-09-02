@@ -1,4 +1,4 @@
-"""V5.1 T-5.1.4: 数据字典 YAML 单一事实源测试 (TEST-PLAN 2.1 test_data_dict.py)
+"""V5.0.1 T-5.0.14: 数据字典 YAML 单一事实源测试 (TEST-PLAN 2.1 test_data_dict.py)
 
 覆盖: 字典加载/解析子集 / 字段完整性(规范字段全集) / 引用一致(别名与 DataPortal 口径对拍) / API。
 设计: 零外部依赖 — mini-YAML 子集解析器 (注释/扁平映射/块列表/行内列表/标量)。

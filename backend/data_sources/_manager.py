@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ruff: noqa: F405
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): DataSourceManager (拆自 data_sources.py)"""
+"""V5.0.9 (T-5.0.93): DataSourceManager (拆自 data_sources.py)"""
 import json
 import os
 import time

@@ -271,7 +271,7 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
         raise HTTPException(status_code=500, detail=f'参数扫描失败: {e}')
     resp = {'sid': sid, 'data_degraded': not is_real, 'count': len(results),
             'metric': metric, 'results': results}
-    # V5.2 T-5.2.4: 参数稳定性诊断 (单参数维度 → 高原 + 过拟合判定)
+    # V5.0.2 T-5.0.24: 参数稳定性诊断 (单参数维度 → 高原 + 过拟合判定)
     try:
         if len(param_grid) == 1:
             from param_stability import overfit_diagnosis

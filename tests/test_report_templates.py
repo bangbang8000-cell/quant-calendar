@@ -1,4 +1,4 @@
-"""V5.5 T-5.5.1: 报表模板化测试 (TEST-PLAN 6.1 test_report_templates.py)
+"""V5.0.5 T-5.0.51: 报表模板化测试 (TEST-PLAN 6.1 test_report_templates.py)
 
 区块编排/渲染快照 (数据源 mock); 快照对比内容变更即红 (TEST-PLAN 6.2)。
 """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.5 T-5.5.2: 报表导出 PDF/Excel (report_export.py)
+"""V5.0.5 T-5.0.52: 报表导出 PDF/Excel (report_export.py)
 
 零外部依赖 (锁文件门禁, 不使用 openpyxl/reportlab):
 - export_excel(path, sheets): 手写最小有效 .xlsx (zipfile + XML)

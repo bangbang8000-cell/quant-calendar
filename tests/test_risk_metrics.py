@@ -1,4 +1,4 @@
-"""V5.3 T-5.3.1: 组合风险指标测试 (TEST-PLAN 4.1 test_risk_metrics.py)
+"""V5.0.3 T-5.0.31: 组合风险指标测试 (TEST-PLAN 4.1 test_risk_metrics.py)
 
 波动/VaR(95,99)/CVaR/回撤/夏普/Sortino/Calmar/Beta 与独立计算对拍;
 VaR 历史模拟法/参数法双实现交叉核对。

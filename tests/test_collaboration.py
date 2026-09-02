@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.2): 协作测试 (TEST-PLAN 9.1 test_collaboration.py)
+"""V5.0.8 (T-5.0.82): 协作测试 (TEST-PLAN 9.1 test_collaboration.py)
 
 共享自选组 (owner/member view|edit) + 评估备注 + 组合可见性 +
 组内角色门控 + 并发一致性 (原子写不损坏) + RBAC 权限门控。

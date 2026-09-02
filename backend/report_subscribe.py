@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.5 T-5.5.3: 报表订阅 (report_subscribe.py)
+"""V5.0.5 T-5.0.53: 报表订阅 (report_subscribe.py)
 
 定时生成 + 通知中心投递闭环:
 - create/list/delete/set_enabled: 订阅 CRUD (SQLite report_subscriptions, 按用户隔离)

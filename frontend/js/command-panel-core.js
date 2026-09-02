@@ -174,7 +174,7 @@
     { key: 'sidebar', label: '折叠/展开侧边栏', icon: '📁', keywords: 'sidebar nav 侧边栏' },
   ];
 
-  // ─── V5.6 T-5.6.3: 注册制 + 全局快捷键 ─────────────────────
+  // ─── V5.0.6 T-5.0.63: 注册制 + 全局快捷键 ─────────────────────
   // 快捷键组合规范: "Ctrl+K" / "Shift+Alt+A" / "F5"; 修饰键 Ctrl/Alt/Shift/Meta(Cmd/Win)
   var MOD_ALIASES = {
     ctrl: ['ctrl', 'control', '⌃'],

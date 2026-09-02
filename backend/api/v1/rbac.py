@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.1): RBAC 2.0 API — 权限点/角色列表 + 自定义角色 CRUD (需登录/管理员)"""
+"""V5.0.8 (T-5.0.81): RBAC 2.0 API — 权限点/角色列表 + 自定义角色 CRUD (需登录/管理员)"""
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 

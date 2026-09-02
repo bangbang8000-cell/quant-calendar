@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.6: 回测报告导出 (backtest_report.py) — 零外部依赖
+"""V5.0.2 T-5.0.26: 回测报告导出 (backtest_report.py) — 零外部依赖
 
 - export_csv: 回测结果 → UTF-8 BOM CSV (Excel 直接打开)
 - export_html: 回测结果 → 自包含 HTML 报告 (浏览器打印 → PDF)

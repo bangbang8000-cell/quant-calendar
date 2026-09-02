@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 协作组 — 分页列表 (复用 collaboration)"""
+"""V5.0.8 (T-5.0.83): API v3 协作组 — 分页列表 (复用 collaboration)"""
 from fastapi import APIRouter, Depends
 
 import collaboration as C

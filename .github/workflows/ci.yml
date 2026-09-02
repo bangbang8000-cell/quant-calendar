@@ -81,41 +81,41 @@ jobs:
           python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
             tests/test_market_review_activation.py tests/test_event_alert_live.py tests/test_market_review.py \
             --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
-          # V5.1 (T-5.1.1~5.1.6): 数据中台模块覆盖率门禁 ≥70% (TEST-PLAN 2.3)
+          # V5.0.1 (T-5.0.11~5.0.16): 数据中台模块覆盖率门禁 ≥70% (TEST-PLAN 2.3)
           python -m pytest tests/test_data_portal2.py tests/test_data_quality.py tests/test_pit_no_lookahead.py             tests/test_data_dict.py tests/test_survivorship.py tests/test_data_lineage.py             --cov=data_portal2 --cov=data_quality --cov=pit --cov=data_dict --cov=survivorship --cov=lineage             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.2 (T-5.2.1~5.2.6): 回测模块覆盖率门禁 ≥70% + 成本敏感度/样本外进入门禁 (TEST-PLAN 3.3)
+          # V5.0.2 (T-5.0.21~5.0.26): 回测模块覆盖率门禁 ≥70% + 成本敏感度/样本外进入门禁 (TEST-PLAN 3.3)
           python -m pytest tests/test_cost_model.py tests/test_backtest_benchmark.py tests/test_walkforward.py             tests/test_param_stability.py tests/test_attribution.py tests/test_backtest_report.py             --cov=cost_model --cov=benchmark --cov=walkforward --cov=param_stability             --cov=attribution --cov=backtest_report             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.3 (T-5.3.1~5.3.5): 风险/组合模块覆盖率门禁 ≥70% (TEST-PLAN 4.3)
+          # V5.0.3 (T-5.0.31~5.0.35): 风险/组合模块覆盖率门禁 ≥70% (TEST-PLAN 4.3)
           python -m pytest tests/test_risk_metrics.py tests/test_position_sizing.py tests/test_risk_rules.py             tests/test_risk_events.py tests/test_portfolio_risk_api.py             --cov=risk --cov=rules --cov=risk_events             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.4 T-5.4.1/5.4.2: 通知通道 + 事件引擎 覆盖率门禁 (TEST-PLAN 5.3)
+          # V5.0.4 T-5.0.41/5.0.42: 通知通道 + 事件引擎 覆盖率门禁 (TEST-PLAN 5.3)
           python -m pytest tests/test_notify_channels.py tests/test_event_engine.py tests/test_alert_rules.py             tests/test_alerts_api.py --cov=notify --cov=events --cov=rules_alert             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.5 T-5.5.1/5.5.2/5.5.3/5.5.5: 报表中心模块覆盖率门禁 ≥70% (TEST-PLAN 6.3)
+          # V5.0.5 T-5.0.51/5.0.52/5.0.53/5.0.55: 报表中心模块覆盖率门禁 ≥70% (TEST-PLAN 6.3)
           python -m pytest tests/test_report_templates.py tests/test_report_export.py             tests/test_report_subscribe.py tests/test_today_highlights.py             --cov=report_center --cov=report_export --cov=report_subscribe             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.7 T-5.7.1/5.7.2/5.7.4: 缓存/任务队列/降采样覆盖率门禁 ≥70% (TEST-PLAN 8.3, 阻塞)
+          # V5.0.7 T-5.0.71/5.0.72/5.0.74: 缓存/任务队列/降采样覆盖率门禁 ≥70% (TEST-PLAN 8.3, 阻塞)
           python -m pytest tests/test_cache2.py tests/test_jobs_queue.py tests/test_jobs_integration.py             tests/test_downsample.py --cov=jobs --cov=cache --cov=downsample             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.8 T-5.8.1/5.8.2/5.8.3/5.8.4/5.8.5: RBAC/协作/APIv3/SDK/插件SDK 覆盖率门禁 ≥70% (TEST-PLAN 9.3, 阻塞)
+          # V5.0.8 T-5.0.81/5.0.82/5.0.83/5.0.84/5.0.85: RBAC/协作/APIv3/SDK/插件SDK 覆盖率门禁 ≥70% (TEST-PLAN 9.3, 阻塞)
           python -m pytest tests/test_rbac_matrix.py --cov=rbac --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_collaboration.py --cov=collaboration --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_api_v3.py tests/test_sdk.py --cov=api.v3 --cov=api.v1.watchlist --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_plugins_v2.py --cov=plugin_sdk --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.9 T-5.9.1 (TEST-PLAN 10.3): AI 评估拆分后覆盖率不降门禁 ≥50% (拆前 ai_evaluator 同测试集基线)
+          # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): AI 评估拆分后覆盖率不降门禁 ≥50% (拆前 ai_evaluator 同测试集基线)
           python -m pytest tests/test_ai_evaluator.py tests/test_ai_mock.py tests/test_eval_track.py tests/test_fact_check.py             tests/test_api_ai_models.py tests/test_api_batch_evaluate_stream.py tests/test_batch_evaluate_stream.py             tests/test_ai_eval_ui.py --cov=ai_eval --cov=ai_evaluator --cov-report=term --cov-fail-under=50 -m "not e2e"
-          # V5.9 T-5.9.2 (TEST-PLAN 10.3): 调度器拆分后覆盖率不降门禁 ≥30% (拆前 scheduler.py 同测试集基线)
+          # V5.0.9 T-5.0.92 (TEST-PLAN 10.3): 调度器拆分后覆盖率不降门禁 ≥30% (拆前 scheduler.py 同测试集基线)
           python -m pytest tests/test_scheduler.py tests/test_file_watch.py tests/test_market_review_activation.py             tests/test_v492_day_view_fix.py tests/test_v492_daily_execution.py tests/test_reliability_atomic.py             tests/test_reliability_faults.py tests/test_metrics.py tests/test_holdings_concurrency.py             --cov=scheduler --cov-report=term --cov-fail-under=30 -m "not e2e"
-          # V5.9 T-5.9.3 (TEST-PLAN 10.3): 数据源/美林时钟拆分后覆盖率不降门禁 (拆前同测试集基线)
+          # V5.0.9 T-5.0.93 (TEST-PLAN 10.3): 数据源/美林时钟拆分后覆盖率不降门禁 (拆前同测试集基线)
           python -m pytest tests/test_data_sources.py tests/test_data_sources_fetch.py tests/test_data_source_routing.py             tests/test_batch_fetch.py --cov=data_sources --cov-report=term --cov-fail-under=60 -m "not e2e"
           python -m pytest tests/test_merrill_clock.py tests/test_merrill_timeline.py --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.9 T-5.9.4 (TEST-PLAN 10.3): 迁移框架覆盖率门禁 ≥70% (阻塞)
+          # V5.0.9 T-5.0.94 (TEST-PLAN 10.3): 迁移框架覆盖率门禁 ≥70% (阻塞)
           python -m pytest tests/test_migrations.py --cov=migrations --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.9 T-5.9.5 (TEST-PLAN 10.5): 一键升级/回滚工具覆盖率门禁 ≥80% (阻塞)
+          # V5.0.9 T-5.0.95 (TEST-PLAN 10.5): 一键升级/回滚工具覆盖率门禁 ≥80% (阻塞)
           python -m pytest tests/test_upgrade_rollback.py --cov=deploy_tool --cov-report=term --cov-fail-under=80 -m "not e2e"
-          # V5.9 T-5.9.6 (TEST-PLAN 10.6): 观测性 2.0 覆盖率门禁 ≥80% (阻塞)
+          # V5.0.9 T-5.0.96 (TEST-PLAN 10.6): 观测性 2.0 覆盖率门禁 ≥80% (阻塞)
           python -m pytest tests/test_observability.py tests/test_metrics.py --cov=metrics --cov=structured_log --cov-report=term --cov-fail-under=80 -m "not e2e"
-          # V5.9 T-5.9.7 (TEST-PLAN 10.7): 契约/property/脚手架门禁 (阻塞)
+          # V5.0.9 T-5.0.97 (TEST-PLAN 10.7): 契约/property/脚手架门禁 (阻塞)
           python -m pytest tests/test_contract_openapi.py tests/test_property_based.py -q -m "not e2e"
           python -m pytest tests/test_scaffold.py --cov=scripts_scaffold --cov-report=term --cov-fail-under=80 -m "not e2e"
 
-  # V5.9 T-5.9.1 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
+  # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -131,7 +131,7 @@ jobs:
 
   # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
   # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
-  # V5.8 T-5.8.1 (TEST-PLAN 9.3): RBAC 权限矩阵独立 job — deny-by-default 守护延续, fail 即红
+  # V5.0.8 T-5.0.81 (TEST-PLAN 9.3): RBAC 权限矩阵独立 job — deny-by-default 守护延续, fail 即红
   rbac-matrix-gate:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -145,7 +145,7 @@ jobs:
       - name: RBAC 权限矩阵 (deny-by-default, 独立红)
         run: python -m pytest tests/test_rbac_matrix.py -v --tb=short
 
-  # V5.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
+  # V5.0.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
   pit-gate:
     runs-on: ubuntu-latest
     needs: lint-and-test

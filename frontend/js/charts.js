@@ -71,7 +71,7 @@
   // v3.15 (15.4): 单令牌运行时读取 — ECharts canvas 无法解析 CSS var(), 令牌优先, 字面量兜底
   const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
 
-  // V5.5 (T-5.5.4): 图表语义配色 palette — 语义角色 → 令牌 (令牌优先, 显式字面量兜底)
+  // V5.0.5 (T-5.0.54): 图表语义配色 palette — 语义角色 → 令牌 (令牌优先, 显式字面量兜底)
   // 语义角色: up/down(涨跌) neutral(中性) accent(强调) risk(风险) warn(警示)
   //           success(成功) grid/axis(网格/轴线) bg(画布) series(8 序列色)
   function chartPalette() {

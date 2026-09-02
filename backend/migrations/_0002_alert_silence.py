@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.4): 迁移 0002 — 预警静默 + 报表订阅表
-原 db.migrate() 幂等建表 (V5.4 T-5.4.5 / V5.5 T-5.5.3), 收口为版本化迁移。"""
+"""V5.0.9 (T-5.0.94): 迁移 0002 — 预警静默 + 报表订阅表
+原 db.migrate() 幂等建表 (V5.0.4 T-5.0.45 / V5.0.5 T-5.0.53), 收口为版本化迁移。"""
 
 VERSION = 2
 NAME = "alert_silence_report_subs"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.3: PIT 治理 — 防前视 (Point-In-Time) 守卫
+"""V5.0.1 T-5.0.13: PIT 治理 — 防前视 (Point-In-Time) 守卫
 
 四条取数路径 (评估/回测/因子/日历) 的数据必须满足 end <= as_of, 杜绝前视偏差。
 - pit_filter(rows, as_of, tolerance_days, strict): 过滤未来数据; strict 时抛 PitError

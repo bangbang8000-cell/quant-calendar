@@ -1,4 +1,4 @@
-"""V5.2 T-5.2.5: 绩效归因测试 (TEST-PLAN 3.1 test_attribution.py)
+"""V5.0.2 T-5.0.25: 绩效归因测试 (TEST-PLAN 3.1 test_attribution.py)
 
 Brinson 行业归因 (配置/选择/交互) + 因子归因 + 瀑布图数据。
 """

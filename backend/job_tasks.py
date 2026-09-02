@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.3): 批量任务接入任务队列 (job_tasks.py)
+"""V5.0.7 (T-5.0.73): 批量任务接入任务队列 (job_tasks.py)
 
 服务启动时 import 本模块触发 jobs.register 注册 4 类任务:
 - batch_evaluate: 批量股票评估 (ai_evaluator.batch_evaluate, 异步经 asyncio.run 包)

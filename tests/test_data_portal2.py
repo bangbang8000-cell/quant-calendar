@@ -1,4 +1,4 @@
-"""V5.1 T-5.1.1: DataPortal 2.0 — 统一取数层测试 (FakeSource 注入, TEST-PLAN 2.1)
+"""V5.0.1 T-5.0.11: DataPortal 2.0 — 统一取数层测试 (FakeSource 注入, TEST-PLAN 2.1)
 
 覆盖: 统一取数 / 口径规范化 / 三源 fallback / TTL 缓存 / 每源限流 / 指数退避重试 / 统计
 """

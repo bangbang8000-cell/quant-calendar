@@ -1,4 +1,4 @@
-// quant-calendar: 空态/错误态通用组件 (V5.6 / T-5.6.2)
+// quant-calendar: 空态/错误态通用组件 (V5.0.6 / T-5.0.62)
 // qc-empty / qc-error: 体系化的空态/错误态展示 + 重试/操作按钮。
 // 文案来自 i18n (common.emptyTitle/emptyDesc/errorTitle/errorDesc/retry, 5 语齐全)。
 // 不硬编码颜色, 全部走 CSS 令牌; 静态类均在 themes.css 定义。

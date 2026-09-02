@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.3: walk-forward 滚动回测 (walkforward.py)
+"""V5.0.2 T-5.0.23: walk-forward 滚动回测 (walkforward.py)
 
 样本内外严格分离 + 滚动/扩展窗口 + 跨折样本外稳定性 (无前视, PIT 联动)。
 - walkforward_folds(total_days, train_frac, n_folds, expanding): 折叠索引

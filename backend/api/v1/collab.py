@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.2): 协作 API — 共享组/成员/股票 + 评估备注 + 组合可见性 (RBAC 权限门控)"""
+"""V5.0.8 (T-5.0.82): 协作 API — 共享组/成员/股票 + 评估备注 + 组合可见性 (RBAC 权限门控)"""
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 

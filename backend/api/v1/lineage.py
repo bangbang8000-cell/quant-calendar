@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""数据血缘 API (V5.1 T-5.1.6) — 刷新批次/审计只读 (需登录)"""
+"""数据血缘 API (V5.0.1 T-5.0.16) — 刷新批次/审计只读 (需登录)"""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from auth import get_current_active_user

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.3 T-5.3.5: 风险预警接入事件总线 (risk_events.py)
+"""V5.0.3 T-5.0.35: 风险预警接入事件总线 (risk_events.py)
 
-把风控规则触发结果转换为事件总线事件 (V5.4 通知中心消费)。
+把风控规则触发结果转换为事件总线事件 (V5.0.4 通知中心消费)。
 - risk_alerts_to_events(rule_results): 触发规则 → [{type:'risk', title, date, severity, action, name}]
 - build_risk_alerts(rule_results): 汇总 {events, count}
 - RiskEventProvider: event_alert 兼容 provider (name='risk', available=True,

@@ -1,4 +1,4 @@
-"""V5.2 T-5.2.6: 回测报告导出测试 (复用 report_generator 语义, 零外部依赖)
+"""V5.0.2 T-5.0.26: 回测报告导出测试 (复用 report_generator 语义, 零外部依赖)
 
 CSV (UTF-8 BOM, Excel 兼容) + HTML 报告 (浏览器打印 → PDF) + 文件落盘。
 """

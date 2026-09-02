@@ -271,7 +271,7 @@ async def execution_summary(
     from scheduler import scheduler
     summary = scheduler.get_execution_summary(days=days)
     return {"success": True, "data": summary}
-# ─── V5.9 (T-5.9.7): 速率限制配置端点 (契约修复: 前端 system.js 调用) ───────
+# ─── V5.0.9 (T-5.0.97): 速率限制配置端点 (契约修复: 前端 system.js 调用) ───────
 
 @router.get("/rate-limit")
 async def get_rate_limit_config_endpoint(_: dict = Depends(get_current_active_user)):

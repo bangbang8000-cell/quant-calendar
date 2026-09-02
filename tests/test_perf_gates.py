@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.5): 前端虚拟滚动 + 性能门禁 (TEST-PLAN 8.1 test_perf_gates.py)
+"""V5.0.7 (T-5.0.75): 前端虚拟滚动 + 性能门禁 (TEST-PLAN 8.1 test_perf_gates.py)
 
 - 虚拟滚动纯计算 (node 跑 virtual-list-core.js): 窗口正确性/边界/渲染比例门禁
 - 性能基准: 10 万行 sliceVisible 只渲染窗口内行且耗时 < 阈值 (阻塞门禁)
 - CI 增量: ci.yml 含 jobs/cache/downsample 覆盖率门禁 (阻塞, 无 continue-on-error)
-既有 tests/test_performance.py 为 v3.17.9 图表降采样回归, 本文件专注 V5.7 虚拟滚动+CI 门禁。
+既有 tests/test_performance.py 为 v3.17.9 图表降采样回归, 本文件专注 V5.0.7 虚拟滚动+CI 门禁。
 """
 import json
 import os
@@ -77,7 +77,7 @@ def test_get_row_key_priority():
     assert out == {"code": "600000.SH", "id": "y", "ts": "000001.SZ", "idx": 7}
 
 
-# ─── V5.7 增强 ──────────────────────────────────────────────
+# ─── V5.0.7 增强 ──────────────────────────────────────────────
 
 @NEEDS_NODE
 def test_estimate_dynamic_height():

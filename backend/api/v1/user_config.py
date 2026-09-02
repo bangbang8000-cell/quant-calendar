@@ -214,9 +214,9 @@ PREFERENCE_DEFAULTS = {
     "theme": "system",
     "chart_period": "daily",
     "language": "zh-CN",
-    # V5.6 (T-5.6.1): 新手引导进度 (onboarding-core persistState JSON 字符串, 跨设备同步)
+    # V5.0.6 (T-5.0.61): 新手引导进度 (onboarding-core persistState JSON 字符串, 跨设备同步)
     "onboarding_progress": "",
-    # V5.6 (T-5.6.4): 信息密度 (comfortable/compact)
+    # V5.0.6 (T-5.0.64): 信息密度 (comfortable/compact)
     "info_density": "comfortable",
 }
 PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
@@ -260,7 +260,7 @@ def save_user_preferences(username: str, prefs: dict) -> bool:
     for k in PREFERENCE_KEYS:
         if k not in prefs:
             continue
-        # V5.6 (T-5.6.4): 值合法性校验 (非法值丢弃, 保持默认)
+        # V5.0.6 (T-5.0.64): 值合法性校验 (非法值丢弃, 保持默认)
         allowed = PREFERENCE_ALLOWED_VALUES.get(k)
         if allowed is not None and prefs[k] not in allowed:
             logger.warning(f"偏好键 {k} 非法值 {prefs[k]!r} 已忽略")
@@ -278,7 +278,7 @@ def save_user_preferences(username: str, prefs: dict) -> bool:
         return False
 
 
-# V5.9 (T-5.9.7): 速率限制配置读写 (契约修复: /api/system/rate-limit 依赖)
+# V5.0.9 (T-5.0.97): 速率限制配置读写 (契约修复: /api/system/rate-limit 依赖)
 def get_rate_limit_config() -> dict:
     """读取当前速率限制配置 (来自基础配置 rate_limit 节)"""
     cfg = _load_base_config()
@@ -340,13 +340,13 @@ async def get_base_config(_: dict = Depends(get_admin_user)):
 
 @router.get("/config")
 async def get_config(_: dict = Depends(get_admin_user)):
-    """V5.9 (T-5.9.7): 获取基础配置 (契约对齐: 前端 system.js /api/user_config/config)"""
+    """V5.0.9 (T-5.0.97): 获取基础配置 (契约对齐: 前端 system.js /api/user_config/config)"""
     return {"success": True, "config": _load_base_config()}
 
 
 @router.post("/config")
 async def save_config(req: dict, _: dict = Depends(get_admin_user)):
-    """V5.9 (T-5.9.7): 保存基础配置 (admin; 深合并到 admin config.json, 非法类型拒绝)"""
+    """V5.0.9 (T-5.0.97): 保存基础配置 (admin; 深合并到 admin config.json, 非法类型拒绝)"""
     cfg = req.get("config")
     if not isinstance(cfg, dict) or not cfg:
         raise HTTPException(status_code=400, detail="config 必须是非空对象")

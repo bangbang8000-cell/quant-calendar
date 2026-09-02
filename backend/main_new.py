@@ -23,10 +23,10 @@ from config import settings
 from rate_limit import setup_rate_limiter
 from api.v1.router import api_router
 from api.v1.errors import register_error_handlers
-import job_tasks  # noqa: F401  # V5.7 T-5.7.3: 批量任务注册到任务队列
-import rbac  # noqa: F401  # V5.8 T-5.8.1: RBAC 2.0 权限引擎
-import metrics  # noqa: F401  # V5.9 T-5.9.6: 观测性 (uptime/SLO)
-import structured_log  # noqa: F401  # V5.9 T-5.9.6: 结构化日志
+import job_tasks  # noqa: F401  # V5.0.7 T-5.0.73: 批量任务注册到任务队列
+import rbac  # noqa: F401  # V5.0.8 T-5.0.81: RBAC 2.0 权限引擎
+import metrics  # noqa: F401  # V5.0.9 T-5.0.96: 观测性 (uptime/SLO)
+import structured_log  # noqa: F401  # V5.0.9 T-5.0.96: 结构化日志
 
 # 配置日志 (v3.4.0-T6: 按日轮转 + 保留 30 天)
 import os
@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
         db.migrate()
     except Exception as e:
         logger.warning(f"DB 增量迁移失败(可忽略): {e}")
-    # V5.9 (T-5.9.4): 版本化迁移 — 失败拒绝启动 (schema 不一致/迁移损坏不放行)
+    # V5.0.9 (T-5.0.94): 版本化迁移 — 失败拒绝启动 (schema 不一致/迁移损坏不放行)
     try:
         db.apply_migrations()
         db.validate_migrations()
@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
             logger.info("✅ 数据库 schema 已重建")
     else:
         logger.info("✅ 数据库 schema 校验通过")
-    # V5.9 (T-5.9.6): 观测性 — uptime 基准 + 结构化启动事件 (ok=ok 重复块已删除, 防 UnboundLocalError)
+    # V5.0.9 (T-5.0.96): 观测性 — uptime 基准 + 结构化启动事件 (ok=ok 重复块已删除, 防 UnboundLocalError)
     metrics.record_start()
     structured_log.log_event(logger, logging.INFO, "app_startup",
                              ok=db.schema_ok(), version=APP_VERSION)
@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
         load_plugins({"app": app})
     except Exception as e:
         logger.warning("插件加载异常(不影响主程序): %s", e)
-    # V5.3 T-5.3.5: 风险预警 provider 注册到事件总线 (V5.4 通知消费; 幂等)
+    # V5.0.3 T-5.0.35: 风险预警 provider 注册到事件总线 (V5.0.4 通知消费; 幂等)
     try:
         from risk_events import register_risk_provider
         register_risk_provider("default")
@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
 # v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破; 3.17.5: 数据源延迟趋势+数据健康度移入用量统计
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
-APP_VERSION = "5.9.2"  # V5.9.2 四项需求 + CI 门禁修复 (lint/锁/版本一致)
+APP_VERSION = "5.0.11"  # V5.0.11 (原 V5.0.11): 四项需求 + CI 门禁修复 (lint/锁/版本一致); V5.0.1~V5.0.9 重基线为 V5.0.1~V5.0.11
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404
@@ -245,7 +245,7 @@ _DIST_ASSETS = os.path.join(FRONTEND_DIR, "dist", "assets")
 if os.path.isdir(_DIST_ASSETS):
     app.mount("/assets", StaticFiles(directory=_DIST_ASSETS), name="assets")
 
-# V5.9.1-dev(临时验证): 源码零构建入口路由 — /src/main.js (index.html 引用) + /js/* (import 相对路径)
+# V5.0.10-dev(临时验证): 源码零构建入口路由 — /src/main.js (index.html 引用) + /js/* (import 相对路径)
 _src_dir = os.path.join(FRONTEND_DIR, "src")
 if os.path.isdir(_src_dir):
     app.mount("/src", StaticFiles(directory=_src_dir), name="src")

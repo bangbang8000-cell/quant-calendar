@@ -314,7 +314,7 @@ if __name__ == '__main__':
 
 def get_kline_data(ts_code, period='daily', limit=60, max_points=None):
     """获取K线数据（支持股票和指数），通过统一数据源管理器。
-    V5.7 (T-5.7.4): max_points 非空且数据超过时按 close LTTB 降采样 (年视图/长周期场景)。"""
+    V5.0.7 (T-5.0.74): max_points 非空且数据超过时按 close LTTB 降采样 (年视图/长周期场景)。"""
     try:
         from data_sources import data_source_manager
         result = data_source_manager.get_kline_data(ts_code, period, limit)

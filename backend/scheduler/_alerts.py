@@ -21,7 +21,7 @@ HISTORY_FILE = os.path.join(_m.DATA_DIR, "scheduler_history.json")
 _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
 class SchedulerAlertsMixin:
-    """V5.9 (T-5.9.2): Scheduler 拆分 Mixin (_alerts)"""
+    """V5.0.9 (T-5.0.92): Scheduler 拆分 Mixin (_alerts)"""
     @staticmethod
     def _read_feishu_webhook() -> str:
         """读取飞书 Webhook (data/feishu_config.json), 未配置/读取失败返回空串"""

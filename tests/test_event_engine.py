@@ -1,4 +1,4 @@
-"""V5.4 T-5.4.2: 事件引擎 2.0 测试 (TEST-PLAN 5.1 test_event_engine.py)
+"""V5.0.4 T-5.0.42: 事件引擎 2.0 测试 (TEST-PLAN 5.1 test_event_engine.py)
 
 事件→订阅→通道闭环、事件去重/乱序、投递日志、单通道故障不影响其他。
 """

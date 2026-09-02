@@ -15,7 +15,7 @@ router = APIRouter(prefix="/backtest", tags=["策略回测"])
 @router.post("/export")
 async def export_backtest_report(body: Dict[str, Any],
                                  user: dict = Depends(get_current_active_user)):
-    """回测报告导出 (V5.2 T-5.2.6): {result: {...}, fmt: 'csv'|'html'} → 文件落盘
+    """回测报告导出 (V5.0.2 T-5.0.26): {result: {...}, fmt: 'csv'|'html'} → 文件落盘
     零依赖: CSV(UTF-8 BOM Excel 兼容) / 自包含 HTML(浏览器打印 PDF)。"""
     from backtest_report import save_report
     result = body.get("result") or {}
@@ -175,7 +175,7 @@ async def get_strategy_attribution(
         raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
 
 
-# ─── V5.2 T-5.2.2: 基准对比 — 可用基准列表 ───
+# ─── V5.0.2 T-5.0.22: 基准对比 — 可用基准列表 ───
 
 @router.get("/benchmarks")
 async def list_benchmarks(user: dict = Depends(get_current_active_user)):

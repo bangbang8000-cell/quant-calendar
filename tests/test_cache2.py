@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.1): 后端两级缓存测试 (TEST-PLAN 8.1 test_cache2.py, 后端 cache.py)
+"""V5.0.7 (T-5.0.71): 后端两级缓存测试 (TEST-PLAN 8.1 test_cache2.py, 后端 cache.py)
 
 内存 TTL (L1) + 磁盘持久 (L2) + 统一失效 + 数据版本联动 (5.1 血缘)。
 既有 tests/test_cache.py 已被前端 core.js 缓存测试占用, 本文件为后端两层缓存。

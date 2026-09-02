@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.6: 数据血缘与刷新批次 (lineage.py)
+"""V5.0.1 T-5.0.16: 数据血缘与刷新批次 (lineage.py)
 
 每次数据刷新 (日线/财务/自愈/手动) 登记唯一 batch_id, 记录 状态/来源/行数/耗时,
 持久化到 data/lineage.json (原子写, 复用 V5.0 atomic.py), 上限 MAX_ENTRIES 裁剪。

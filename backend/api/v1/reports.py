@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.5 T-5.5.3/5.5.2: 报表中心 API (/api/reports)
+"""V5.0.5 T-5.0.53/5.5.2: 报表中心 API (/api/reports)
 
 - GET/POST /api/reports/subscriptions: 报表订阅 CRUD
 - DELETE /api/reports/subscriptions/{id}

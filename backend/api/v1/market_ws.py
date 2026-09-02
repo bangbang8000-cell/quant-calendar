@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-盘中增强实时化（FR-3.17.7 实时化，可选）— WS 实时报价端点 (V5.4 T-5.4.4: WS 2.0)
+盘中增强实时化（FR-3.17.7 实时化，可选）— WS 实时报价端点 (V5.0.4 T-5.0.44: WS 2.0)
 
 - WS /api/market/ws/quotes?token=xxx（JWT 查询参数鉴权，复用 auth.get_current_user）
 - 首帧 JSON 订阅: {"subscribe": ["600519", "000001"]}（支持后续更新订阅）

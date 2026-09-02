@@ -110,7 +110,7 @@ def test_start_registered_tasks_have_methods():
 
 
 class TestSchedulerHelpersCoverage:
-    """V5.9 T-5.9.2: scheduler._helpers 纯函数覆盖 (覆盖率门禁 scheduler >=30%)"""
+    """V5.0.9 T-5.0.92: scheduler._helpers 纯函数覆盖 (覆盖率门禁 scheduler >=30%)"""
 
     def test_scan_csv_files_flat(self, tmp_path):
         from scheduler import _helpers as H

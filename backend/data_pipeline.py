@@ -117,7 +117,7 @@ def run_pipeline(force: bool = False) -> dict:
 def resolve_stock_pool(pool: list = None, as_of: str = None) -> list:
     """解析股票池：给定池非空用之；否则用系统覆盖股票列表（全量）。
 
-    V5.1 T-5.1.5: as_of 指定时按 PIT 治理幸存者偏差 — 历史时点纳入当时
+    V5.0.1 T-5.0.15: as_of 指定时按 PIT 治理幸存者偏差 — 历史时点纳入当时
     可交易的退市/改名股 (universe_as_of), 避免用现在成分股回溯高估收益。
     """
     if pool:
@@ -219,7 +219,7 @@ def run_daily_pull(pool: list = None, date: str = None) -> dict:
                 f"最新日期 {stats['latest_date']}")
     try:
         from lineage import record_pull
-        record_pull("kline", stats, trigger="scheduler")  # V5.1 T-5.1.6 血缘批次
+        record_pull("kline", stats, trigger="scheduler")  # V5.0.1 T-5.0.16 血缘批次
     except Exception:
         logger.warning("日线血缘批次登记失败", exc_info=True)
     return stats
@@ -295,7 +295,7 @@ def run_financial_pull(pool: list = None) -> dict:
     logger.info(f"📊 财务拉取完成: {stats['pulled']}/{stats['total']} 成功")
     try:
         from lineage import record_pull
-        record_pull("financial", stats, trigger="scheduler")  # V5.1 T-5.1.6 血缘批次
+        record_pull("financial", stats, trigger="scheduler")  # V5.0.1 T-5.0.16 血缘批次
     except Exception:
         logger.warning("财务血缘批次登记失败", exc_info=True)
     return stats

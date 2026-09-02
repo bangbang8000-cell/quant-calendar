@@ -55,7 +55,7 @@ api_router.include_router(feishu_router)
 api_router.include_router(ai_router)
 api_router.include_router(backtest_router)
 api_router.include_router(dashboard_router)
-api_router.include_router(user_config_router, prefix="/user_config")  # V5.9 T-5.9.7: 契约对齐前端 /api/user_config/*
+api_router.include_router(user_config_router, prefix="/user_config")  # V5.0.9 T-5.0.97: 契约对齐前端 /api/user_config/*
 api_router.include_router(watchlist_router)
 api_router.include_router(data_refresh_router)
 api_router.include_router(groups_router)
@@ -76,9 +76,9 @@ api_router.include_router(openapi_router)
 api_router.include_router(openapi_router, prefix="/v2")
 api_router.include_router(strategy_research_router)
 api_router.include_router(reliability_router)
-# V5.4 T-5.4.3: 自定义预警规则
+# V5.0.4 T-5.0.43: 自定义预警规则
 api_router.include_router(alerts_router)
-# V5.5 T-5.5.2/5.5.3: 报表中心
+# V5.0.5 T-5.0.52/5.5.3: 报表中心
 api_router.include_router(reports_router)
 api_router.include_router(quality_router)
 api_router.include_router(data_dict_router)

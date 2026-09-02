@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V5.9 (T-5.9.4): 版本化 schema 迁移引擎
+V5.0.9 (T-5.0.94): 版本化 schema 迁移引擎
 - schema_migrations 表记录已应用版本
 - upgrade: 按版本升序应用待迁移项, 每项单事务 (失败回滚该项, 不污染后续)
 - rollback: 按版本降序回滚已应用项
@@ -127,7 +127,7 @@ def rollback(conn, target=0):
 
 
 def validate(conn) -> dict:
-    """版本一致性校验 (V5.9 T-5.9.5 语义修正):
+    """版本一致性校验 (V5.0.9 T-5.0.95 语义修正):
     已应用集必须是可用版本的合法前缀 {1..current} —
     部分升级/回滚到低版本是正常态 (ok=True); 仅当存在
     外来版本 (extra) 或前缀内空洞 (gap) 时视为不一致 (ok=False)。

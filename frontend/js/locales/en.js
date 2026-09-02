@@ -74,7 +74,7 @@
     'common.search': 'Search',
     'common.empty': 'No data',
     'common.retry': 'Retry',
-    // V5.6 T-5.6.2: standardized empty/error state copy
+    // V5.0.6 T-5.0.62: standardized empty/error state copy
     'common.emptyTitle': 'No data',
     'common.emptyDesc': 'Nothing to show here yet',
     'common.errorTitle': 'Load failed',

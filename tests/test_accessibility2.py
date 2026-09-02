@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.6 (T-5.6.5): 可访问性 2.0 测试 (TEST-PLAN 7.1 test_accessibility2.py)
+"""V5.0.6 (T-5.0.65): 可访问性 2.0 测试 (TEST-PLAN 7.1 test_accessibility2.py)
 
 焦点 / ARIA / 键盘全程可操作 — 静态抽查 (扩展既有 test_accessibility):
 - 焦点: 引导/弹窗 role=dialog + aria-modal; :focus-visible 可见焦点; tabindex

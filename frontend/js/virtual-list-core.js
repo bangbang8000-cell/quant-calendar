@@ -56,7 +56,7 @@
     return index;
   }
 
-  // ─── V5.7 (T-5.7.5): 性能增强 ─────────────────────
+  // ─── V5.0.7 (T-5.0.75): 性能增强 ─────────────────────
   // 动态行高估算: 未知行高时用"样本行高均值"估窗口 (首屏未知行高场景)
   function estimateDynamicRowHeight(items, fallback, sampleSize) {
     var list = items || [];

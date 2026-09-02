@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.4: 数据字典 YAML 单一事实源 (data_dict.py) — 零外部依赖
+"""V5.0.1 T-5.0.14: 数据字典 YAML 单一事实源 (data_dict.py) — 零外部依赖
 
 字段口径 (规范字段/别名/分类/单位) 在 backend/data_dict.yaml 单点维护;
 DataPortal 口径 (FIELD_ALIASES) 与本字典通过 tests/test_data_dict.py 双向对拍。

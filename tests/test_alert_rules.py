@@ -1,4 +1,4 @@
-"""V5.4 T-5.4.3: 自定义预警规则测试 (TEST-PLAN 5.1 test_alert_rules.py)
+"""V5.0.4 T-5.0.43: 自定义预警规则测试 (TEST-PLAN 5.1 test_alert_rules.py)
 
 价格突破/跌破/涨跌幅/异动(量比)/入池 命中与未命中边界 (>= 命中)。
 """

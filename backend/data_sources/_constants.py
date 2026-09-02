@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): data_sources 常量与初始化 (拆自 data_sources.py 头)"""
+"""V5.0.9 (T-5.0.93): data_sources 常量与初始化 (拆自 data_sources.py 头)"""
 import os
 import sys
 import logging
@@ -13,7 +13,7 @@ __all__ = [
 
 # V4.0 删除条件①: sxsc-tushare 从仓库 libs/ 加载 (家目录只读无法 editable 重装;
 # sys.path 优先于 site-packages .pth, 保证任意启动方式都不再 import /home/evergreen/量化程序/sxsc-tushare)
-# V5.9 (T-5.9.3): 文件已移至 data_sources/, __file__ 上提一级回到 backend/ 再取 ../libs
+# V5.0.9 (T-5.0.93): 文件已移至 data_sources/, __file__ 上提一级回到 backend/ 再取 ../libs
 _LIBS_SXSC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'libs', 'sxsc_tushare'))
 if os.path.isdir(_LIBS_SXSC_DIR) and _LIBS_SXSC_DIR not in sys.path:
     sys.path.insert(0, _LIBS_SXSC_DIR)

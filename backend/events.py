@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.4 T-5.4.2: 事件引擎 2.0 (events.py)
+"""V5.0.4 T-5.0.42: 事件引擎 2.0 (events.py)
 
 事件→订阅→通道 闭环 + 重试/去重 + 投递日志:
 - make_event: 事件构造 (id/dedup_key/created_at)
@@ -35,7 +35,7 @@ def _ts():
 
 def make_event(event_type, title, content, payload=None, dedup_key=None):
     """构造事件: {id, type, title, content, payload, created_at, dedup_key}
-    V5.8 (T-5.8.5): 构造后派发到插件 SDK 事件钩子 (emit, 钩子异常隔离)"""
+    V5.0.8 (T-5.0.85): 构造后派发到插件 SDK 事件钩子 (emit, 钩子异常隔离)"""
     event_id = uuid.uuid4().hex
     if not dedup_key:
         raw = f"{event_type}|{title}|{content}"

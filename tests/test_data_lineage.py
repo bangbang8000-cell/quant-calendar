@@ -1,4 +1,4 @@
-"""V5.1 T-5.1.6: 数据血缘与刷新批次测试 (TEST-PLAN 2.1 test_data_lineage.py)
+"""V5.0.1 T-5.0.16: 数据血缘与刷新批次测试 (TEST-PLAN 2.1 test_data_lineage.py)
 
 批次号 / 刷新审计 / 可追溯: 每次数据刷新有唯一 batch_id, 状态/来源/行数可回溯。
 """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 代码/列名映射辅助 (拆自 data_sources.py)"""
+"""V5.0.9 (T-5.0.93): 代码/列名映射辅助 (拆自 data_sources.py)"""
 from ._constants import *  # noqa: F401,F403
 
 

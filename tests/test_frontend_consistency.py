@@ -1086,7 +1086,7 @@ def test_lazy_history_pagination_params():
     ai_api = _read_backend("api/v1/ai.py")
     assert "offset: int = 0" in ai_api, "后端 /api/ai/history 应支持 offset 参数"
     assert '"total": total' in ai_api, "后端应返回 total 供前端判断是否还有更多"
-    # V5.9 (T-5.9.1): ai_evaluator.py 拆分为 ai_eval/ 子包, count_history 位于 ai_eval/_history.py
+    # V5.0.9 (T-5.0.91): ai_evaluator.py 拆分为 ai_eval/ 子包, count_history 位于 ai_eval/_history.py
     ai_eval = _read_backend("ai_eval/_history.py")
     assert "def count_history" in ai_eval, "ai_evaluator 应提供 count_history (ai_eval/_history.py)"
 
@@ -1501,11 +1501,11 @@ def test_v492_execution_locales_present():
 
 
 # ----------------------------------------------------------------------
-# V5.9.1 (fix: 日/周/月/年视图无股票列表) 回归
+# V5.0.10 (fix: 日/周/月/年视图无股票列表) 回归
 #----------------------------------------------------------------------
 
 def test_calendar_page_template_no_undefined_state_ref():
-    """V5.9.1-fix: calendar-page 模板不得引用未定义的顶层 state.
+    """V5.0.10-fix: calendar-page 模板不得引用未定义的顶层 state.
 
     根因: setup() 返回 {...state, pullRefreshing, ...} 展开注入字段, 不包含名为
     'state' 的键; 而模板曾写 v-if="state.viewNote", 渲染时 state 为 undefined
@@ -1522,10 +1522,10 @@ def test_calendar_page_template_no_undefined_state_ref():
 
 
 
-# V5.9.1 (fix: onboarding UMD 双写) 回归
+# V5.0.10 (fix: onboarding UMD 双写) 回归
 
 def test_onboarding_core_umd_double_write():
-    """V5.9.1-fix: onboarding-core UMD 必须无条件设置浏览器全局.
+    """V5.0.10-fix: onboarding-core UMD 必须无条件设置浏览器全局.
 
     Vite/Rollup 构建后 module 被模拟为对象, 原 if/else 只走 exports 分支,
     window.QuantOnboarding 未设置 → onboarding 组件 setup 抛 TypeError。
@@ -1538,10 +1538,10 @@ def test_onboarding_core_umd_double_write():
 
 
 
-# V5.9.2 (fix: 执行看板 execRateClass 未导出) 回归
+# V5.0.11 (fix: 执行看板 execRateClass 未导出) 回归
 
 def test_page_components_template_calls_resolve():
-    """V5.9.2-fix: 页面组件模板调用的标识符必须能被解析。
+    """V5.0.11-fix: 页面组件模板调用的标识符必须能被解析。
 
     回归: strategies-page 模板调用 execRateClass() 但 setup 返回对象漏导出该函数
     (V4.9.5 引入) -> 执行看板子页渲染抛 TypeError 内容空白。
@@ -1578,10 +1578,10 @@ def test_page_components_template_calls_resolve():
 
 
 
-# V5.9.2 (fix: sub.datadict 菜单英文) 回归
+# V5.0.11 (fix: sub.datadict 菜单英文) 回归
 
 def test_i18n_sub_datadict_in_all_locales():
-    """V5.9.2-fix: 系统配置 sub.datadict 菜单曾显示英文 key。
+    """V5.0.11-fix: 系统配置 sub.datadict 菜单曾显示英文 key。
 
     t() 对缺失 key 返回 key 本身且 truthy, 原 subTabLabel 的 || 中文兜底失效。
 
@@ -1597,10 +1597,10 @@ def test_i18n_sub_datadict_in_all_locales():
 
 
 
-# V5.9.2 (feature: 策略回测移入策略研究) 回归
+# V5.0.11 (feature: 策略回测移入策略研究) 回归
 
 def test_backtest_moved_to_research_menu():
-    """V5.9.2: 策略回测从策略总览移入策略研究。
+    """V5.0.11: 策略回测从策略总览移入策略研究。
 
     策略总览 subPages 不再含 backtest; 策略研究含 backtest+backtest-history;
 
@@ -1618,10 +1618,10 @@ def test_backtest_moved_to_research_menu():
 
 
 
-# V5.9.2 (feature: 评估历史拆分为 评估历史/评估分析) 回归
+# V5.0.11 (feature: 评估历史拆分为 评估历史/评估分析) 回归
 
 def test_ai_history_split_evaluation_analysis():
-    """V5.9.2: 智能评估-评估历史拆成两个二级菜单。
+    """V5.0.11: 智能评估-评估历史拆成两个二级菜单。
 
     评估历史(history)只关注评估股票历史; 评估分析(evaluation-analysis)关注命中率。
 

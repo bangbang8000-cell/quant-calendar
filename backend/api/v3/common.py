@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 公共 — 分页/过滤/错误码契约 (api/v3)
+"""V5.0.8 (T-5.0.83): API v3 公共 — 分页/过滤/错误码契约 (api/v3)
 
 统一契约:
 - 成功: {"success": true, "data": {items, page, page_size, total, pages}}

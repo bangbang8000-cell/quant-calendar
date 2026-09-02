@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 错误码契约 — 统一错误信封 {success:false, error:{code,message,status}}"""
+"""V5.0.8 (T-5.0.83): API v3 错误码契约 — 统一错误信封 {success:false, error:{code,message,status}}"""
 from fastapi.responses import JSONResponse
 
 ERROR_CODES = {

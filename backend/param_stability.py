@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.4: 参数稳定性分析 (param_stability.py)
+"""V5.0.2 T-5.0.24: 参数稳定性分析 (param_stability.py)
 
 参数高原可视化数据 + SENSITIVITY_SPREAD_RATIO 过拟合诊断。
 - plateau_analysis: 一维参数扫描中, 落在最优值 ±tolerance 内的参数区间 (高原)

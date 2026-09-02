@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.1 T-5.1.2: 数据质量规则引擎 (data_quality.py)
+"""V5.0.1 T-5.0.12: 数据质量规则引擎 (data_quality.py)
 
 规则集: 缺数 / 异常值 / 复权一致 / 停牌 / 交易日对齐。
 - check_series(rows, expected_trade_dates) -> issues (每项: rule/severity/detail/date)

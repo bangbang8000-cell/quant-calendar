@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.6 (T-5.6.2): 空态/错误态体系化测试 (TEST-PLAN 7.1 test_empty_error_states.py)
+"""V5.0.6 (T-5.0.62): 空态/错误态体系化测试 (TEST-PLAN 7.1 test_empty_error_states.py)
 
 - 文案表: 标准空态/错误态文案键在 5 语 locale 包齐全
 - 组件: qc-empty / qc-error 注册 + 模板结构 (role/aria/重试)
@@ -125,7 +125,7 @@ def test_component_classes_no_hardcode_color():
 
 
 
-# ─── 补充 (V5.6 出口: 达标 +80 用例) ───────────────────────────
+# ─── 补充 (V5.0.6 出口: 达标 +80 用例) ───────────────────────────
 
 def test_error_component_has_retrying_prop():
     """错误态组件支持 retrying 加载态"""

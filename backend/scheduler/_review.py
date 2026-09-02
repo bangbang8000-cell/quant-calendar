@@ -20,7 +20,7 @@ HISTORY_FILE = os.path.join(_m.DATA_DIR, "scheduler_history.json")
 _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
 class SchedulerReviewMixin:
-    """V5.9 (T-5.9.2): Scheduler 拆分 Mixin (_review)"""
+    """V5.0.9 (T-5.0.92): Scheduler 拆分 Mixin (_review)"""
     def run_daily_review(self, today=None):
         """产出当日复盘并判定 (FR-3.18.1): 返回 {report, degraded, reason}。
 

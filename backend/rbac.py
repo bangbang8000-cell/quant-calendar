@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.1): RBAC 2.0 — 权限点 + 内置/自定义角色 + 数据范围 (rbac.py)
+"""V5.0.8 (T-5.0.81): RBAC 2.0 — 权限点 + 内置/自定义角色 + 数据范围 (rbac.py)
 
 纯逻辑 + JSON 持久 (atomic_write_json), 零依赖可单测:
 - PERMISSIONS: 权限点注册表 (代码即契约)

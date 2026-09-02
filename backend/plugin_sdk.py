@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.5): 插件 SDK 2.0 — 事件钩子 + 策略插件注册 (plugin_sdk.py)
+"""V5.0.8 (T-5.0.85): 插件 SDK 2.0 — 事件钩子 + 策略插件注册 (plugin_sdk.py)
 
 纯逻辑, 零依赖可单测:
 - 事件钩子: register_hook(event_type, fn) / emit(event_type, payload)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.3): 批量任务接入队列集成测试 (TEST-PLAN 8.1)
+"""V5.0.7 (T-5.0.73): 批量任务接入队列集成测试 (TEST-PLAN 8.1)
 
 4 类业务任务 (batch_evaluate/backtest_run/data_sync/report_generate) 经 job_tasks 注册,
 昂贵业务调用全部 monkeypatch, 只验证"接线 + 进度 + 结果摘要 + 取消"正确。

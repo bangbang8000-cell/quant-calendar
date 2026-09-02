@@ -1,4 +1,4 @@
-"""V5.1 T-5.1.5: 幸存者偏差治理测试 (TEST-PLAN 2.1 test_survivorship.py)
+"""V5.0.1 T-5.0.15: 幸存者偏差治理测试 (TEST-PLAN 2.1 test_survivorship.py)
 
 退市/改名股票必须按 PIT 纳入历史池 (as_of 时点可交易即纳入), 杜绝幸存者偏差。
 """

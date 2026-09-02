@@ -1,4 +1,4 @@
-"""V5.3 T-5.3.5: 风险预警接入事件总线测试 (TEST-PLAN 4.1 test_risk_events.py)
+"""V5.0.3 T-5.0.35: 风险预警接入事件总线测试 (TEST-PLAN 4.1 test_risk_events.py)
 
 - risk_alerts_to_events: 触发规则 → 事件, 未触发排除
 - RiskEventProvider: 空仓返回 [], 有持仓(假数据)触发事件, 事件字段完整

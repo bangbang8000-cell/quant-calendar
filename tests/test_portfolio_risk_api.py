@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.3 T-5.3.4: 组合风控规则端点 /api/portfolio/risk-rules (TDD)
+"""V5.0.3 T-5.0.34: 组合风控规则端点 /api/portfolio/risk-rules (TDD)
 
 - 空仓: 返回 rules=[] rebalance=None note=暂无持仓
 - 有仓(假行情): 返回 count=1, rules 四类完整, 权重/再平衡可算

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.4): Python SDK 测试 (TEST-PLAN 9.1 test_sdk.py)
+"""V5.0.8 (T-5.0.84): Python SDK 测试 (TEST-PLAN 9.1 test_sdk.py)
 
 - 单元: FakeTransport 注入验证请求构造/错误码映射/分页透传
 - e2e: 若 uvicorn 可用, 起临时服务跑真实 登录+v3 调用 (跳过需显式原因)

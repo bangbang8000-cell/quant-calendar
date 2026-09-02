@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 路由汇总 (prefix=/v3 → /api/v3)"""
+"""V5.0.8 (T-5.0.83): API v3 路由汇总 (prefix=/v3 → /api/v3)"""
 from fastapi import APIRouter
 
 from .watchlist import router as v3_watchlist

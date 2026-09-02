@@ -202,7 +202,7 @@
       });
       watch(query, fetchStocks);
 
-      // ─── V5.6 (T-5.6.3): 全局快捷键 (Ctrl+K 打开面板 + 常用快捷键) ───
+      // ─── V5.0.6 (T-5.0.63): 全局快捷键 (Ctrl+K 打开面板 + 常用快捷键) ───
       function runShortcut(action) {
         if (action === 'toggle-palette') {
           state.commandPaletteVisible.value = !state.commandPaletteVisible.value;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ruff: noqa: F401
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 统一数据源管理器子包 — data_sources.py 拆分
+"""V5.0.9 (T-5.0.93): 统一数据源管理器子包 — data_sources.py 拆分
 常量/健康路由/映射/DataSourceManager 分置 _constants/_health/_mapping/_manager。"""
 from ._constants import *  # noqa: F401,F403
 from ._health import *  # noqa: F401,F403

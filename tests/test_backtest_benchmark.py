@@ -1,4 +1,4 @@
-"""V5.2 T-5.2.2: 基准对比测试 (TEST-PLAN 3.1 test_backtest_benchmark.py)
+"""V5.0.2 T-5.0.22: 基准对比测试 (TEST-PLAN 3.1 test_backtest_benchmark.py)
 
 沪深300/中证500/中证1000/自定义基准 + 超额收益 + IR + alpha/beta/tracking error。
 """

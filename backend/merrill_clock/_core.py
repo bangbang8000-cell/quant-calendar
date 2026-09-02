@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ruff: noqa: F405
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): 美林时钟拆分 Mixin (_core)"""
+"""V5.0.9 (T-5.0.93): 美林时钟拆分 Mixin (_core)"""
 from datetime import datetime, timedelta
 import logging
 from ._constants import *  # noqa: F401,F403
@@ -9,7 +9,7 @@ from ._constants import *  # noqa: F401,F403
 logger = logging.getLogger(__name__)
 
 class ClockCoreMixin:
-    """V5.9 (T-5.9.3): MerrillClock 拆分 Mixin (_core)"""
+    """V5.0.9 (T-5.0.93): MerrillClock 拆分 Mixin (_core)"""
     def determine_stage(self, indicators=None):
         """判断当前经济周期阶段（v2.0 多维度版）"""
         if indicators is None:

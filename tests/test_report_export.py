@@ -1,4 +1,4 @@
-"""V5.5 T-5.5.2: 报表导出 PDF/Excel 测试 (TEST-PLAN 6.1 test_report_export.py)
+"""V5.0.5 T-5.0.52: 报表导出 PDF/Excel 测试 (TEST-PLAN 6.1 test_report_export.py)
 
 导出结构校验 (可打开/含关键数据)。零外部依赖: xlsx 手写 zip+XML, pdf 手写最小 PDF。
 """

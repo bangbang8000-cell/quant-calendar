@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.4): 版本化 schema 迁移框架
+"""V5.0.9 (T-5.0.94): 版本化 schema 迁移框架
 用法:
     from migrations import upgrade, rollback, validate, get_current_version, MigrationError
     conn = db.get_conn()

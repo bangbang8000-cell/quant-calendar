@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.2: 基准对比 (benchmark.py)
+"""V5.0.2 T-5.0.22: 基准对比 (benchmark.py)
 
 沪深300/中证500/中证1000/自定义基准 + 超额收益 + IR + alpha/beta/跟踪误差。
 - BENCHMARKS: 内置指数注册表

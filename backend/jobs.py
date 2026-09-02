@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.2): 异步任务队列 (jobs.py)
+"""V5.0.7 (T-5.0.72): 异步任务队列 (jobs.py)
 
 任务表 (持久化 data/jobs.json, 原子写) + 后台 worker 线程 + 进度/取消/结果/失败重试。
 

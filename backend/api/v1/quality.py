@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""质量评分 API (V5.1 T-5.1.2) — 经 DataPortal 2.0 统一取数 → 质量分 (需登录)"""
+"""质量评分 API (V5.0.1 T-5.0.12) — 经 DataPortal 2.0 统一取数 → 质量分 (需登录)"""
 from fastapi import APIRouter, Depends, Query
 
 from auth import get_current_active_user

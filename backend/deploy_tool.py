@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V5.9 (T-5.9.5): 一键升级/回滚工具 (deploy_tool)
+V5.0.9 (T-5.0.95): 一键升级/回滚工具 (deploy_tool)
 流程: 备份 → 迁移 → 验证 → (失败自动回滚)
 子命令:
   backup              — 备份 data/ 到 data/backups/<时间戳>/ (app.db + *.json)

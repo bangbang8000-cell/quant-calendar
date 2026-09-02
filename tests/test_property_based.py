@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.7): property-based 测试 (零外部依赖, 固定种子可复现)
+"""V5.0.9 (T-5.0.97): property-based 测试 (零外部依赖, 固定种子可复现)
 
 每个 property 在固定随机种子下跑 N 次, 断言不变量:
 1. metrics.slo_report: availability/success/error 与原始计数自洽; 延迟在窗口内

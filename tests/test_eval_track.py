@@ -337,7 +337,7 @@ def test_review_tracking_endpoint(monkeypatch):
 
 
 
-# ─── V5.9.2: 命中率持久缓存 ───────────────────────────
+# ─── V5.0.11: 命中率持久缓存 ───────────────────────────
 
 def _cache_user_samples() -> list:
     return [{"stock_code": "000001.SZ", "evaluate_date": "2026-01-10", "direction": 1,
@@ -346,7 +346,7 @@ def _cache_user_samples() -> list:
 
 
 def test_track_cache_hits_within_ttl(monkeypatch, isolated_data_dir):
-    """V5.9.2: 无 kline_getter 时命中率结果走持久缓存, 第二次调用不再重算。
+    """V5.0.11: 无 kline_getter 时命中率结果走持久缓存, 第二次调用不再重算。
     命中率计算需同步拉全量 K 线, 无缓存时每次请求都超时; 缓存后 6h 内秒回。
     """
     import eval_track
@@ -365,7 +365,7 @@ def test_track_cache_hits_within_ttl(monkeypatch, isolated_data_dir):
 
 
 def test_track_cache_degrade_keeps_last_good(monkeypatch, isolated_data_dir):
-    """V5.9.2: 数据源全不可达时保留最近一次成功缓存, 不覆盖为 0 样本。"""
+    """V5.0.11: 数据源全不可达时保留最近一次成功缓存, 不覆盖为 0 样本。"""
     import eval_track
     state = {"mode": "ok"}
     def fake_track(username, kline_getter=None):

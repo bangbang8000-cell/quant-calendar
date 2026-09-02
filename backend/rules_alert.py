@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.4 T-5.4.3: 自定义预警规则 (rules_alert.py)
+"""V5.0.4 T-5.0.43: 自定义预警规则 (rules_alert.py)
 
 价格突破/跌破/涨跌幅/异动(量比)/入池 命中评估 + CRUD (SQLite alert_rules 表, 按用户隔离):
 - validate_rule: 规则合法性
 - check_rule(rule, quote): 纯函数命中判定 (边界 >= 命中)
 - create/list/update/delete_alert_rule: CRUD
 - evaluate_alerts(user, quotes_map): 检查用户启用的规则 → 命中列表
-- hit_to_event: 命中 → 事件引擎事件 (V5.4 T-5.4.2 消费)
+- hit_to_event: 命中 → 事件引擎事件 (V5.0.4 T-5.0.42 消费)
 
 测试: tests/test_alert_rules.py。
 """

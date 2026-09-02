@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.1): RBAC 2.0 权限矩阵测试 (TEST-PLAN 9.1 test_rbac_matrix.py)
+"""V5.0.8 (T-5.0.81): RBAC 2.0 权限矩阵测试 (TEST-PLAN 9.1 test_rbac_matrix.py)
 
 权限矩阵自动化: 内置角色 × 权限点 全枚举断言 + 自定义角色 CRUD + 数据范围 +
 deny-by-default (未知角色/guest → 空权限) + FastAPI 依赖 401/403/200。

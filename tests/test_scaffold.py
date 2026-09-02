@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.7): scaffold 脚手架测试 (TEST-PLAN 10.7)"""
+"""V5.0.9 (T-5.0.97): scaffold 脚手架测试 (TEST-PLAN 10.7)"""
 import os
 import sys
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.2): 协作 — 共享自选组 / 评估备注 / 组合可见性 (collaboration.py)
+"""V5.0.8 (T-5.0.82): 协作 — 共享自选组 / 评估备注 / 组合可见性 (collaboration.py)
 
 纯逻辑 + JSON 持久 (atomic_write_json), 零依赖可单测:
 - 共享自选组: {gid: {name, owner, members: {user: view|edit}, stocks: [{code,name}], created_at}}

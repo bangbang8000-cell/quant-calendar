@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.6 (T-5.6.4): 信息密度偏好测试 (TEST-PLAN 7.1 test_density_pref.py)
+"""V5.0.6 (T-5.0.64): 信息密度偏好测试 (TEST-PLAN 7.1 test_density_pref.py)
 
 - 后端: info_density 偏好键默认/存取 (preferences.json)
 - 前端: preferences.js 键/值枚举 + data-density 应用 + CSS compact 规则

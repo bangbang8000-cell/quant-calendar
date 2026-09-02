@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.7): OpenAPI → 前端 API 契约一致性测试 (TEST-PLAN 10.7)
+"""V5.0.9 (T-5.0.97): OpenAPI → 前端 API 契约一致性测试 (TEST-PLAN 10.7)
 
 契约不变量:
 1. OpenAPI spec 完整性: 版本/标题/全部 operationId 唯一/响应定义

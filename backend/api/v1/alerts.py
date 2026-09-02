@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.4 T-5.4.3: 自定义预警规则 API (/api/alerts)
+"""V5.0.4 T-5.0.43: 自定义预警规则 API (/api/alerts)
 
 - GET/POST /api/alerts/rules: 规则列表 / 创建
 - PUT/DELETE /api/alerts/rules/{id}: 更新 / 删除

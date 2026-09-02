@@ -1,4 +1,4 @@
-"""V5.4 T-5.4.1: 通知通道抽象测试 (TEST-PLAN 5.1 test_notify_channels.py)
+"""V5.0.4 T-5.0.41: 通知通道抽象测试 (TEST-PLAN 5.1 test_notify_channels.py)
 
 - 各通道适配器 (FakeChannel 验证 send 契约) + 失败重试/去重
 - 一个事件多通道投递 + 单通道故障不影响其他通道 (TEST-PLAN 5.2)

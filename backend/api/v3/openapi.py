@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.8 (T-5.8.3): API v3 OpenAPI 摘要 — 供文档站展示 v3 路径与契约"""
+"""V5.0.8 (T-5.0.83): API v3 OpenAPI 摘要 — 供文档站展示 v3 路径与契约"""
 def v3_openapi():
     return {
         "openapi": "3.1.0",

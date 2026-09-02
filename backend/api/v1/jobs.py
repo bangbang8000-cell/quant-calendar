@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.2): 任务队列 API (api.v1.jobs) — 提交/查询/取消/清理 (需登录)"""
+"""V5.0.7 (T-5.0.72): 任务队列 API (api.v1.jobs) — 提交/查询/取消/清理 (需登录)"""
 from fastapi import APIRouter, Depends, HTTPException
 
 from auth import get_current_active_user

@@ -15,7 +15,7 @@ import threading
 from datetime import datetime, timedelta
 
 from paths import DATA_DIR
-import migrations  # V5.9 (T-5.9.4): 版本化 schema 迁移框架
+import migrations  # V5.0.9 (T-5.0.94): 版本化 schema 迁移框架
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_enabled
     ON webhook_subscriptions(enabled);
 """
 
-# V5.4 T-5.4.2: 事件引擎 2.0 — 订阅 / 投递日志 / 去重 (幂等建表)
+# V5.0.4 T-5.0.42: 事件引擎 2.0 — 订阅 / 投递日志 / 去重 (幂等建表)
 EVENTS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS event_subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,7 +178,7 @@ def init_db() -> bool:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
             conn.commit()
-            # V5.9 (T-5.9.4): 版本化迁移 — 失败即拒绝初始化 (启动失败而非带损运行)
+            # V5.0.9 (T-5.0.94): 版本化迁移 — 失败即拒绝初始化 (启动失败而非带损运行)
             migrations.upgrade(conn)
             conn.commit()
             # 校验: 尝试查询 meta 表
@@ -191,7 +191,7 @@ def init_db() -> bool:
 
 
 def apply_migrations() -> None:
-    """V5.9 (T-5.9.4): 在现有库上应用版本化迁移 (幂等; 失败抛 MigrationError → 启动拒绝)"""
+    """V5.0.9 (T-5.0.94): 在现有库上应用版本化迁移 (幂等; 失败抛 MigrationError → 启动拒绝)"""
     with _db_lock:
         conn = get_conn()
         try:
@@ -199,7 +199,7 @@ def apply_migrations() -> None:
             conn.commit()
         finally:
             conn.close()
-    if applied:  # V5.9 (T-5.9.6): 结构化迁移事件
+    if applied:  # V5.0.9 (T-5.0.96): 结构化迁移事件
         try:
             import structured_log
             structured_log.log_event(logger, logging.INFO, "migration_applied",
@@ -209,7 +209,7 @@ def apply_migrations() -> None:
 
 
 def validate_migrations() -> None:
-    """V5.9 (T-5.9.4): 校验版本化迁移一致性; 不通过抛 MigrationError → 启动拒绝"""
+    """V5.0.9 (T-5.0.94): 校验版本化迁移一致性; 不通过抛 MigrationError → 启动拒绝"""
     with _db_lock:
         conn = get_conn()
         try:
@@ -254,24 +254,24 @@ def migrate() -> None:
             conn.executescript(OPENAPI_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: api_keys/webhook_subscriptions 表就绪")
-            # V5.4 (T-5.4.2): 事件引擎 — event_subscriptions/delivery_log/dedup 表 (幂等建表)
+            # V5.0.4 (T-5.0.42): 事件引擎 — event_subscriptions/delivery_log/dedup 表 (幂等建表)
             conn.executescript(EVENTS_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: event_subscriptions/delivery_log/dedup 表就绪")
-            # V5.4 (T-5.4.5): event_delivery_log 补 user 列 (旧库, 幂等)
+            # V5.0.4 (T-5.0.45): event_delivery_log 补 user 列 (旧库, 幂等)
             dlog_cols = [r['name'] for r in conn.execute(
                 "PRAGMA table_info(event_delivery_log)").fetchall()]
             if dlog_cols and 'user' not in dlog_cols:
                 conn.execute("ALTER TABLE event_delivery_log ADD COLUMN user TEXT")
                 conn.commit()
                 logger.info("[db] migrate: event_delivery_log 增加 user 列")
-            # V5.4 (T-5.4.5): 预警静默表 (幂等建表)
+            # V5.0.4 (T-5.0.45): 预警静默表 (幂等建表)
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS alert_silence ("
                 " user TEXT PRIMARY KEY, until_ts REAL NOT NULL )")
             conn.commit()
             logger.info("[db] migrate: alert_silence 表就绪")
-            # V5.5 (T-5.5.3): 报表订阅表 (幂等建表)
+            # V5.0.5 (T-5.0.53): 报表订阅表 (幂等建表)
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS report_subscriptions ("
                 " id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT NOT NULL,"

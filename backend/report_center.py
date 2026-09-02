@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.5 T-5.5.1: 报表模板化 (report_center.py)
+"""V5.0.5 T-5.0.51: 报表模板化 (report_center.py)
 
 区块编排 (周期/策略/异动/评估/风控/组合) + 渲染快照:
 - BLOCK_TYPES: 6 类区块
@@ -205,7 +205,7 @@ def render_report_snapshot(blocks, date, providers=None):
             "content_hash": hashlib.sha256(raw.encode("utf-8")).hexdigest()}
 
 
-# ─── V5.5 T-5.5.5: 今日要点聚合 (首页) ─────────────────────────────
+# ─── V5.0.5 T-5.0.55: 今日要点聚合 (首页) ─────────────────────────────
 
 _HL_BUILDERS = {}
 

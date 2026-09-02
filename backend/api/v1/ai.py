@@ -58,7 +58,7 @@ async def ai_batch_evaluate_stream(req: Dict[str, List[str]], user: Dict = Depen
 
 @router.get("/index-eval/{index_code}")
 async def ai_index_eval_cached(index_code: str, _: dict = Depends(get_non_guest_user)):
-    """V5.9 (T-5.9.7): 读取缓存的指数评估 (当日键, 契约修复: 前端 market.js loadCachedIndexEval)"""
+    """V5.0.9 (T-5.0.97): 读取缓存的指数评估 (当日键, 契约修复: 前端 market.js loadCachedIndexEval)"""
     from datetime import datetime
     today = datetime.now().strftime("%Y-%m-%d")
     result = ai_evaluator._index_eval_cache.get("%s_%s" % (index_code, today))

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.6): 观测性 2.0 测试 (TEST-PLAN 10.6)
+"""V5.0.9 (T-5.0.96): 观测性 2.0 测试 (TEST-PLAN 10.6)
 
 覆盖: SLO 计算 (空窗/全成功/含5xx/延迟分位)/uptime/指标导出含 SLO 块/
 结构化日志 JSON 单行/JsonFormatter/事件字段安全序列化/迁移结构化事件/降级
@@ -207,7 +207,7 @@ def test_install_json_handler_writes_file(tmp_path):
 # ─── 迁移结构化事件 ────────────────────────────────────
 
 def test_lifespan_starts_on_healthy_migrated_db(tmp_path, monkeypatch):
-    """回归守卫 (V5.9 T-5.9.7): 健康且已迁移的库上 TestClient 启动不得崩 —
+    """回归守卫 (V5.0.9 T-5.0.97): 健康且已迁移的库上 TestClient 启动不得崩 —
     曾因 lifespan 里 ok=ok 未绑定 UnboundLocalError 只在实际部署暴露"""
     from fastapi.testclient import TestClient
     import event_alert as _ea

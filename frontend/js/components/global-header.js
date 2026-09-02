@@ -117,7 +117,7 @@
         keyClick: state.keyClick,
         t: state.t,
         subTabLabel: function (menu, sp) {
-            // V5.9.2-fix: t() 对缺失 key 返回 key 本身(truthy), 原 || 中文兜底失效,
+            // V5.0.11-fix: t() 对缺失 key 返回 key 本身(truthy), 原 || 中文兜底失效,
             // 语言包漏配时 sub 菜单显示英文 key(如 sub.datadict)。现显式判 key 回退。
             const qualified = 'sub.' + menu.key + '.' + sp;
             const q = state.t(qualified);

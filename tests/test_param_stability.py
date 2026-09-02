@@ -1,4 +1,4 @@
-"""V5.2 T-5.2.4: 参数稳定性分析测试 (TEST-PLAN 3.1 test_param_stability.py)
+"""V5.0.2 T-5.0.24: 参数稳定性分析测试 (TEST-PLAN 3.1 test_param_stability.py)
 
 SENSITIVITY_SPREAD_RATIO 过拟合诊断 + 参数高原可视化数据。
 """

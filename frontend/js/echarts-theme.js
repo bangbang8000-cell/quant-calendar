@@ -8,7 +8,7 @@
   function getEChartsTheme() {
     return {
       textStyle: { color: getCSSVar('--text-primary') || '#1f2937' },
-      // V5.5 (T-5.5.4): 画布背景令牌 (dark-pro 覆盖为暗色, 明/暗主题切换图表联动)
+      // V5.0.5 (T-5.0.54): 画布背景令牌 (dark-pro 覆盖为暗色, 明/暗主题切换图表联动)
       backgroundColor: getCSSVar('--chart-bg') || 'transparent',
       color: [
         getCSSVar('--primary-color') || '#667eea',

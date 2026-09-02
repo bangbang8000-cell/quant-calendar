@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.6 (T-5.6.1): 新手引导任务流测试 (TEST-PLAN 7.1 test_onboarding.py)
+"""V5.0.6 (T-5.0.61): 新手引导任务流测试 (TEST-PLAN 7.1 test_onboarding.py)
 
 引导状态机 (onboarding-core.js, node 跑 UMD) + 进度持久化 + 跨设备同步
 (后端 user_config preferences 存取)。

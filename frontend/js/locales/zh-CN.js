@@ -75,7 +75,7 @@
     'common.search': '搜索',
     'common.empty': '暂无数据',
     'common.retry': '重试',
-    // V5.6 T-5.6.2: 空态/错误态体系化标准文案
+    // V5.0.6 T-5.0.62: 空态/错误态体系化标准文案
     'common.emptyTitle': '暂无数据',
     'common.emptyDesc': '当前没有可展示的内容',
     'common.errorTitle': '加载失败',

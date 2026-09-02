@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.4): 迁移 0003 — event_delivery_log 补 user 列
-原 db.migrate() 幂等补列 (V5.4 T-5.4.5), 收口为版本化迁移。
+"""V5.0.9 (T-5.0.94): 迁移 0003 — event_delivery_log 补 user 列
+原 db.migrate() 幂等补列 (V5.0.4 T-5.0.45), 收口为版本化迁移。
 回滚: SQLite DROP COLUMN 3.35+ 支持, 最佳努力执行。"""
 
 import logging

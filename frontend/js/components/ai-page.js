@@ -763,7 +763,7 @@
                                 </div>
                             </template>
 
-                            <!-- V5.3 T-5.3.4: 风控 Tab (指标卡/规则/再平衡建议) -->
+                            <!-- V5.0.3 T-5.0.34: 风控 Tab (指标卡/规则/再平衡建议) -->
                             <template v-else-if="portfolioTab === 'risk'">
                                 <qc-state-panel v-if="riskLoading" type="loading"></qc-state-panel>
                                 <div v-else-if="!riskHasData && riskData.rules.length === 0" class="portfolio-chart-empty">{{ riskNote || '暂无风险数据' }}</div>
@@ -899,7 +899,7 @@
       }
       watch(
         function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
-        function (key) { if (key === 'ai/evaluation-analysis') loadTrack(); }, // V5.9.2: 命中率随评估分析子页加载
+        function (key) { if (key === 'ai/evaluation-analysis') loadTrack(); }, // V5.0.11: 命中率随评估分析子页加载
         { immediate: true }
       );
       // v3.17.8 (FR-3.17.5): 组合/模拟持仓域 (工厂模块, 不经 qcState)

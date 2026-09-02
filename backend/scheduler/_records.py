@@ -21,7 +21,7 @@ PULL_ALERT_THRESHOLD = 3
 _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 
 class SchedulerRecordsMixin:
-    """V5.9 (T-5.9.2): Scheduler 拆分 Mixin (_records)"""
+    """V5.0.9 (T-5.0.92): Scheduler 拆分 Mixin (_records)"""
     def __init__(self):
         self.pusher = FeishuPusher()
         self.tasks = {}

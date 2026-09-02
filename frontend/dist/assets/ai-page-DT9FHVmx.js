@@ -754,7 +754,7 @@
                                 </div>
                             </template>
 
-                            <!-- V5.3 T-5.3.4: 风控 Tab (指标卡/规则/再平衡建议) -->
+                            <!-- V5.0.3 T-5.0.34: 风控 Tab (指标卡/规则/再平衡建议) -->
                             <template v-else-if="portfolioTab === 'risk'">
                                 <qc-state-panel v-if="riskLoading" type="loading"></qc-state-panel>
                                 <div v-else-if="!riskHasData && riskData.rules.length === 0" class="portfolio-chart-empty">{{ riskNote || '暂无风险数据' }}</div>

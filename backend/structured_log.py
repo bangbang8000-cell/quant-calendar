@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-V5.9 (T-5.9.6): 结构化日志 (JSON lines) 支持
+V5.0.9 (T-5.0.96): 结构化日志 (JSON lines) 支持
 - log_event(logger, level, event, **fields): 以 JSON 单行输出结构化事件
 - JsonFormatter(logging.Formatter): 把标准 LogRecord 渲染为 JSON 单行
 - install_json_handler(log_dir): 追加 JSON 文件 handler (app.json.log, 按日轮转)

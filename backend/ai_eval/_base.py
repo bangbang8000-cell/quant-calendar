@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 logger = logging.getLogger(__name__)
 
 class AIEvalBase:
-    """V5.9 (T-5.9.1): AIEvaluator 拆分 Mixin (_base)"""
+    """V5.0.9 (T-5.0.91): AIEvaluator 拆分 Mixin (_base)"""
     def __init__(self, config_file: str = None):
         from paths import AI_CONFIG_FILE, AI_EVALUATION_HISTORY_FILE, DATA_DIR
         if config_file is None:

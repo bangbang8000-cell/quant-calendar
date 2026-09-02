@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.3): merrill_clock 常量与阶段定义 (拆自头部)"""
+"""V5.0.9 (T-5.0.93): merrill_clock 常量与阶段定义 (拆自头部)"""
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """

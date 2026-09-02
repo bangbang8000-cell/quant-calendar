@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V5.9 (T-5.9.1): 拆分对拍 (TEST-PLAN 10.1 test_split_parity.py)
+"""V5.0.9 (T-5.0.91): 拆分对拍 (TEST-PLAN 10.1 test_split_parity.py)
 
 ai_evaluator.py (1896 行) 拆分为 ai_eval/ 子包 (Mixin 聚合 + 薄壳兼容)。
 对拍内容:
@@ -274,7 +274,7 @@ def test_coverage_not_lower(tmp_path):
     finally:
         import paths as P
         P.DATA_DIR = old
-# ─── V5.9 (T-5.9.2): Scheduler 拆分对拍 ───────────────────
+# ─── V5.0.9 (T-5.0.92): Scheduler 拆分对拍 ───────────────────
 
 SCHEDULER_CONTRACT = {
     "run_strategy_once", "verify_day_ingest", "scan_csv_files", "detect_csv_changes",
@@ -374,7 +374,7 @@ def test_scheduler_golden_self_heal_patch_routing(tmp_path):
         assert core._m.views_aggregator is va
     with patch("scheduler.DATA_DIR", "/tmp/qc-routing-check"):
         assert core._m.DATA_DIR == "/tmp/qc-routing-check"
-# ─── V5.9 (T-5.9.3): data_sources / merrill_clock 拆分对拍 ───
+# ─── V5.0.9 (T-5.0.93): data_sources / merrill_clock 拆分对拍 ───
 
 DS_MODULE_FUNCS = ("record_call", "get_health_metrics", "reset_health", "get_route_order",
                    "enqueue_alert", "get_alerts", "clear_alerts", "retry_with_backoff",

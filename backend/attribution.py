@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.5: 绩效归因 (attribution.py)
+"""V5.0.2 T-5.0.25: 绩效归因 (attribution.py)
 
 行业归因 (权重×收益汇总) + Brinson 归因 (配置/选择/交互) + 因子归因 + 瀑布图数据。
 - industry_attribution: 逐日 Σ 权重×收益, 按行业分组 (含"未分类")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.7 (T-5.7.1): 两级缓存 (cache.py)
+"""V5.0.7 (T-5.0.71): 两级缓存 (cache.py)
 
 L1 内存 TTL 缓存 (threading-safe, LRU 上限逐出) + L2 磁盘持久缓存 (JSON 原子写) + 统一失效。
 

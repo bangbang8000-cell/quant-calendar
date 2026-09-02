@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.4 T-5.4.4: WS 行情 2.0 组件 (ws_v2.py)
+"""V5.0.4 T-5.0.44: WS 行情 2.0 组件 (ws_v2.py)
 
 - ConnectionManager: 多客户端订阅管理 (注册/注销/订阅读写/计数)
 - compute_quote_delta: 增量计算 (仅返回变化的条目)

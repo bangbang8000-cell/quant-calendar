@@ -26,7 +26,7 @@ import logging  # noqa: E402
 logger = logging.getLogger(__name__)
 
 class AIModelsMixin:
-    """V5.9 (T-5.9.1): AIEvaluator 拆分 Mixin (_models)"""
+    """V5.0.9 (T-5.0.91): AIEvaluator 拆分 Mixin (_models)"""
     def _seed_default_vendors(self) -> List[VendorConfig]:
         """首次加载：从 VENDOR_CATALOG 生成默认厂商。
         默认启用链 = 字节CodingPlan/ark-code-latest + DeepSeek/deepseek-v4-pro（两厂商各一模型）。

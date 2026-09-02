@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2 T-5.2.1: 成本模型 2.0 (cost_model.py) — 可插拔
+"""V5.0.2 T-5.0.21: 成本模型 2.0 (cost_model.py) — 可插拔
 
 A 股交易成本四要素: 印花税(仅卖出) / 佣金(双边) / 滑点 / 冲击成本。
 - CostConfig: 可插拔配置 (default 常规 / conservative 保守), scaled(factor) 成本敏感度缩放
