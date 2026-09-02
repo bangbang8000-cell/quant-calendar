@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
+# ruff: noqa: F405
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.3): 美林时钟拆分 Mixin (_core)"""
-import json
-import os
-import time
 from datetime import datetime, timedelta
-import numpy as np
 import logging
 from ._constants import *  # noqa: F401,F403
 

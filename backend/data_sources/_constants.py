@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.3): data_sources 常量与初始化 (拆自 data_sources.py 头)"""
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-统一数据源管理器
-按优先级 fallback: sxsc-tushare → tushare → akshare
-"""
-import json
 import os
 import sys
-import time
 import logging
 import threading
-import pandas as pd
-from datetime import datetime
 from paths import DATA_DIR
+
+__all__ = [
+    'KLINE_CACHE_TTL','KLINE_CACHE_MAX','DATASOURCE_CONFIG_FILE','DEFAULT_CONFIG','SOURCE_ORDER','AKSHARE_INDEX_COLUMN_MAP','AKSHARE_STOCK_COLUMN_MAP','DEGRADE_THRESHOLD','FRESHNESS_STALE_HOURS','ROUTE_FAIL_THRESHOLD','ROUTE_COOLDOWN_SECONDS','MAX_RETRIES','BACKOFF_BASE_SECONDS','PULL_FAILURE_ALERT_THRESHOLD','ALERT_QUEUE','ALERT_QUEUE_MAX','logger',
+]
 
 # V4.0 删除条件①: sxsc-tushare 从仓库 libs/ 加载 (家目录只读无法 editable 重装;
 # sys.path 优先于 site-packages .pth, 保证任意启动方式都不再 import /home/evergreen/量化程序/sxsc-tushare)

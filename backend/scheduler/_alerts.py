@@ -4,22 +4,14 @@
 定时任务调度器
 """
 
-import asyncio
-import json
 import logging
 import os
-from datetime import datetime, timedelta
-from data_parser import parser
+from datetime import datetime
 from feishu_push import FeishuPusher
-from ai_evaluator import ai_evaluator
-from views_aggregator import views_aggregator
-from paths import EXTERNAL_DATA_DIR, DATA_DIR
-from db import backup_db
-from report_generator import generate_weekly_report
 
 logger = logging.getLogger(__name__)
 
-import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)
+import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)  # noqa: E402
 
 # v3.17.12 (FR-3.17.12): 数据拉取任务连续失败飞书告警阈值
 PULL_ALERT_THRESHOLD = 3
@@ -35,7 +27,6 @@ class SchedulerAlertsMixin:
         """读取飞书 Webhook (data/feishu_config.json), 未配置/读取失败返回空串"""
         try:
             import json
-            from paths import DATA_DIR
             cfg_path = os.path.join(_m.DATA_DIR, "feishu_config.json")
             if os.path.exists(cfg_path):
                 with open(cfg_path, 'r', encoding='utf-8') as f:
@@ -63,7 +54,6 @@ class SchedulerAlertsMixin:
     def _check_disk_alert(self, threshold_percent: float = 10.0):
         """磁盘剩余空间 < 阈值 → 飞书告警 (每日最多一次, FR-3.17.12)"""
         try:
-            from paths import DATA_DIR
             st = os.statvfs(_m.DATA_DIR)
             total = st.f_blocks * st.f_frsize
             free = st.f_bavail * st.f_frsize

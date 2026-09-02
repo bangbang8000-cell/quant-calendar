@@ -2,22 +2,12 @@
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.2): scheduler 模块级函数 — 拆自原 scheduler.py 顶层
 独立模块避免 __init__ 循环导入。"""
-import asyncio
-import json
 import logging
 import os
-from datetime import datetime, timedelta
-from data_parser import parser
-from feishu_push import FeishuPusher
-from ai_evaluator import ai_evaluator
-from views_aggregator import views_aggregator
-from paths import EXTERNAL_DATA_DIR, DATA_DIR
-from db import backup_db
-from report_generator import generate_weekly_report
 
 logger = logging.getLogger(__name__)
 
-import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)
+import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)  # noqa: E402
 
 PULL_ALERT_THRESHOLD = 3
 HISTORY_FILE = os.path.join(_m.DATA_DIR, "scheduler_history.json")

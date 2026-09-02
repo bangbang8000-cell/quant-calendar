@@ -4,14 +4,13 @@
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 
-from auth import get_current_active_user
-import rbac
 from rbac import require_permission
 import collaboration as C
 
 router = APIRouter(prefix='/collab', tags=['协作'])
 
-_username = lambda user: user.get('username') or user.get('sub', '')
+def _username(user):
+    return user.get('username') or user.get('sub', '')
 
 
 # ─── 共享组 ────────────────────────────────────────────────

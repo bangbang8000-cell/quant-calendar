@@ -7,7 +7,6 @@
 - 错误: {"success": false, "error": {code, message, status}}
 - 分页: page>=1, page_size in [1..200], 越界自动钳制
 """
-import json
 
 
 def clamp_page(page):

@@ -11,7 +11,6 @@
 
 测试: tests/test_alert_rules.py。
 """
-import json
 import logging
 import time
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+# ruff: noqa: F405
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.3): 数据源健康/路由/告警 (拆自 data_sources.py)"""
+import time
+from datetime import datetime
+
 from ._constants import *  # noqa: F401,F403
 from ._constants import (_health_lock, _health, _alert_lock, ALERT_QUEUE,
                   _route_lock, _route_state)

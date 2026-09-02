@@ -127,7 +127,7 @@ def _check_env():
     import paths
     p = os.path.join(paths.BASE_DIR, ".env")
     if os.path.exists(p):
-        return _ok("env_config", f".env 存在")
+        return _ok("env_config", ".env 存在")
     return _warn("env_config", ".env 缺失, 使用默认配置")
 
 

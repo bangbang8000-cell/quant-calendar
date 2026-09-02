@@ -56,15 +56,15 @@ def _rule_anomaly(rows):
     for r in rows:
         d = str(r.get("trade_date", ""))[:10]
         try:
-            o, h, l, c = (float(r["open"]), float(r["high"]),
+            o, h, lo, c = (float(r["open"]), float(r["high"]),
                           float(r["low"]), float(r["close"]))
         except (KeyError, TypeError, ValueError):
             continue
-        if h < l:
-            issues.append(_make("anomaly", "medium", f"high({h}) < low({l})", d))
-        if c < l or c > h:
+        if h < lo:
+            issues.append(_make("anomaly", "medium", f"high({h}) < low({lo})", d))
+        if c < lo or c > h:
             issues.append(_make("anomaly", "medium", f"close({c}) 超出 [low,high]", d))
-        if min(o, h, l, c) < 0:
+        if min(o, h, lo, c) < 0:
             issues.append(_make("anomaly", "high", "存在负价格", d))
         if c == 0:
             issues.append(_make("anomaly", "high", "收盘价为 0", d))

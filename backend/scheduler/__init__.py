@@ -2,18 +2,10 @@
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.2): 定时任务调度器子包 — Scheduler 拆分自 scheduler.py
 模块级函数与全局单例 scheduler 一并收口于此 (scheduler.py 薄壳因包同名被遮蔽已删除)。"""
-import asyncio
-import json
 import logging
 import os
-from datetime import datetime, timedelta
-from data_parser import parser
-from feishu_push import FeishuPusher
-from ai_evaluator import ai_evaluator
-from views_aggregator import views_aggregator
-from paths import EXTERNAL_DATA_DIR, DATA_DIR
-from db import backup_db
-from report_generator import generate_weekly_report
+from paths import DATA_DIR
+from views_aggregator import views_aggregator  # noqa: F401  # 薄壳兼容属性
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +13,10 @@ PULL_ALERT_THRESHOLD = 3
 HISTORY_FILE = os.path.join(DATA_DIR, "scheduler_history.json")
 _HISTORY_MAX = 5000
 
-from ._helpers import (run_strategy_once, verify_day_ingest, scan_csv_files,
-                        detect_csv_changes, PULL_ALERT_THRESHOLD, HISTORY_FILE, _HISTORY_MAX)
-from ._records import SchedulerRecordsMixin
-from ._alerts import SchedulerAlertsMixin
-from ._core import SchedulerCoreMixin
-from ._review import SchedulerReviewMixin
+from ._records import SchedulerRecordsMixin  # noqa: E402
+from ._alerts import SchedulerAlertsMixin  # noqa: E402
+from ._core import SchedulerCoreMixin  # noqa: E402
+from ._review import SchedulerReviewMixin  # noqa: E402
 
 class Scheduler(SchedulerReviewMixin, SchedulerCoreMixin, SchedulerAlertsMixin, SchedulerRecordsMixin):
     """定时任务调度器 (拆分后聚合 Mixin, 行为与拆分前一致)"""

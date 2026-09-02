@@ -10,7 +10,7 @@ A 股交易成本四要素: 印花税(仅卖出) / 佣金(双边) / 滑点 / 冲
 
 测试: tests/test_cost_model.py (含成本敏感度, PTrade 对拍语义)。
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
+# ruff: noqa: F405
 # -*- coding: utf-8 -*-
 """V5.9 (T-5.9.3): DataSourceManager (拆自 data_sources.py)"""
 import json
 import os
-import sys
 import time
-import logging
-import threading
 import pandas as pd
 from datetime import datetime
 
 import data_sources as _ds_mod  # 调用期读包级 _ds_mod.DATASOURCE_CONFIG_FILE
 from ._constants import *  # noqa: F401,F403
-from ._health import (record_call, retry_with_backoff, _is_rate_limited, get_health_metrics,
-              reset_health, get_route_order)
+from ._health import (record_call, _is_rate_limited, get_route_order)
 from ._mapping import *  # noqa: F401,F403
 from ._mapping import (_safe_float, _ts_code_to_akshare_index, _ts_code_to_akshare_stock,
               _ts_code_to_sina_symbol, _is_index_code, _map_akshare_columns)

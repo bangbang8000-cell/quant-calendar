@@ -13,7 +13,7 @@ import pandas as pd
 
 from backtest import (compute_period_metrics, overfitting_assessment,
                       sensitivity_analysis, split_insample_outsample)
-from cost_model import CostConfig, CostModel, DEFAULT_CONFIG
+from cost_model import CostConfig, CostModel
 
 logger = logging.getLogger(__name__)
 

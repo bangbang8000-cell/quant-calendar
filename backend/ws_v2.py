@@ -9,7 +9,6 @@
 纯函数/同步组件, 端点层 (api/v1/market_ws.py) 组合使用。
 测试: tests/test_ws_v2.py。
 """
-import time
 
 
 class ConnectionManager:

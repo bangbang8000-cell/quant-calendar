@@ -24,8 +24,6 @@ _Z = {0.95: 1.6448536269514722, 0.99: 2.3263478740408408}
 def _norm_z(level):
     z = _Z.get(round(float(level), 2))
     if z is None:
-        import statistics
-        from math import erf, sqrt
         # 通用: 标准正态分位数近似 (Abramowitz-Stegun)
         p = float(level)
         a = [2.515517, 0.802853, 0.010328]

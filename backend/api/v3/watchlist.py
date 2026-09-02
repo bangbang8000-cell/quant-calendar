@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from auth import get_current_active_user
 from api.v1.watchlist import _load_watchlist, _save_watchlist
-from api.v3.common import paginate, filter_contains, clamp_page, clamp_page_size
+from api.v3.common import paginate, filter_contains
 from api.v3.errors import bad_request, not_found
 
 router = APIRouter(tags=["v3 自选股"])
@@ -25,7 +25,8 @@ async def list_watchlist(page: int = 1, page_size: int = 20, q: str = "",
         for s in name_hits + code_hits:
             k = s.get("code")
             if k not in seen:
-                seen.add(k); dedup.append(s)
+                seen.add(k)
+                dedup.append(s)
         stocks = dedup
     data = paginate(stocks, page, page_size)
     return {"success": True, "data": data}

@@ -213,6 +213,8 @@ def _run_one(job):
                 j['message'] = '已取消'
         _update_store(job['job_id'], _cancel)
     except Exception as e:
+        _err_name = type(e).__name__
+        _err_text = str(e)
         def _err(j):
             if j['status'] != STATUS_RUNNING:
                 return
@@ -222,10 +224,10 @@ def _run_one(job):
                 j['retries'] += 1
                 j['status'] = STATUS_PENDING
                 j['progress'] = 0
-                j['error'] = type(e).__name__ + ': ' + str(e) + ' (将重试 ' + str(j['retries']) + '/' + str(j['max_retries']) + ')'
+                j['error'] = _err_name + ': ' + _err_text + ' (将重试 ' + str(j['retries']) + '/' + str(j['max_retries']) + ')'
             else:
                 j['status'] = STATUS_FAILED
-                j['error'] = type(e).__name__ + ': ' + str(e)
+                j['error'] = _err_name + ': ' + _err_text
                 j['finished_at'] = _now_iso()
         _update_store(job['job_id'], _err)
 

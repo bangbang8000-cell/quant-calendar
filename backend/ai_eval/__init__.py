@@ -5,7 +5,6 @@ from ._base import AIEvalBase
 from ._models import AIModelsMixin
 from ._eval import AIEvalMixin
 from ._history import AIHistoryMixin
-from typing import Optional
 from dataclasses import dataclass
 
 @dataclass(init=False)

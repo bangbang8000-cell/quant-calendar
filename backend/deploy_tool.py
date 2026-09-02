@@ -15,7 +15,6 @@ import argparse
 import json
 import os
 import shutil
-import sqlite3
 import sys
 import time
 
@@ -183,10 +182,13 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="量化日历一键升级/回滚工具")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("backup")
-    u = sub.add_parser("upgrade"); u.add_argument("--dry-run", action="store_true")
-    r = sub.add_parser("rollback"); r.add_argument("--target", type=int, default=0)
+    u = sub.add_parser("upgrade")
+    u.add_argument("--dry-run", action="store_true")
+    r = sub.add_parser("rollback")
+    r.add_argument("--target", type=int, default=0)
     r.add_argument("--dry-run", action="store_true")
-    res = sub.add_parser("restore"); res.add_argument("backup_dir")
+    res = sub.add_parser("restore")
+    res.add_argument("backup_dir")
     sub.add_parser("verify")
     args = p.parse_args(argv)
     try:

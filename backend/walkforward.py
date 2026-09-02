@@ -61,7 +61,6 @@ def evaluate_walkforward(returns, predict_fn, train_frac=0.6, n_folds=3,
     out = {"folds": []}
     for tr, te in folds:
         train_rets = [returns[i] for i in range(*tr.indices(n))]
-        test_rets = [returns[i] for i in range(*te.indices(n))]
         pred = predict_fn(train_rets)
         pred = list(pred) if pred is not None else []
         if len(pred) == 0:

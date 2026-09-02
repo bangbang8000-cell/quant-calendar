@@ -67,7 +67,6 @@ def latest_version() -> int:
 
 def _tx(conn):
     """迁移事务上下文: 显式 BEGIN IMMEDIATE / COMMIT / ROLLBACK (避开驱动隐式事务)"""
-    import sqlite3
     conn.isolation_level = None
     conn.execute("BEGIN IMMEDIATE")
 

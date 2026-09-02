@@ -8,29 +8,20 @@ v1.7.0: 纯大模型体系，支持多 provider fallback
 - 评估历史增强：原始数据 + 原始 LLM 响应
 """
 import json
-import hashlib
 import re
 import os
 import time
-import asyncio
 import requests
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime
-from dataclasses import dataclass
-from ai_indicators import calc_rsi as _calc_rsi, calc_macd as _calc_macd
 from ai_models import ModelProvider, VendorModel, VendorConfig, VENDOR_CATALOG  # V4.5 (FR-4.5.4): 拆分
 
 logger = logging.getLogger(__name__)
 
 # ─── 模型配置管理 ──────────────────────────────────────────────
 
-from typing import Dict, List, Optional
-from dataclasses import dataclass
-import json, os, hashlib, re, time, asyncio, requests, logging
-from datetime import datetime
-from ai_indicators import calc_rsi as _calc_rsi, calc_macd as _calc_macd
-from ai_models import ModelProvider, VendorModel, VendorConfig, VENDOR_CATALOG
+import logging  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

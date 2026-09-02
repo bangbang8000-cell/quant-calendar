@@ -126,7 +126,7 @@ class RiskEventProvider:
 
 def register_risk_provider(username="default", force=False):
     """注册/更新风险事件 provider (幂等, 每个用户名一个)。"""
-    from event_alert import EVENT_PROVIDERS, register_event_provider
+    from event_alert import register_event_provider
     key = f"risk:{username}"
     existing = _risky_providers.get(key)
     if existing is not None and not force:
