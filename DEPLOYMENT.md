@@ -110,6 +110,40 @@ cd quant-calendar-ops
 
 ---
 
+---
+
+## 健康巡检与运维（V5.0+）
+
+V5.0 起内置可靠性工程能力，帮助定位部署环境健康度：
+
+### 启动自检报告（startup-report）
+
+服务启动后可用以下接口查看自检结果（需登录，Bearer Token）：
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/reliability/startup-report
+```
+
+返回 `healthy` 布尔值 + `ok_count / warn_count / fail_count` + 各项检查明细（Python 版本、内部模块导入、数据目录、DB、关键配置等）。部署冒烟金标准：`ok_count=7, warn_count<=1, fail_count=0, healthy=true`。
+
+### 健康巡检与自愈
+
+- `health_check` 定时巡检（数据新鲜度/调度/数据源/备份/磁盘），失败自动触发幂等自愈动作（`reliability/heal.py` 注册表）
+- 数据源不可达自动降级/暂停（sxsc→tushare→akshare），恢复后自动重新启用
+- 告警分级（critical/warning/info）+ 飞书送达（1h 防抖）
+
+### schema 迁移（V5.9）
+
+`backend/migrations/` 提供版本化 schema 迁移：启动时校验版本并执行未应用迁移，失败则**拒绝启动**（避免半迁移状态）；支持回滚。新增字段/表走迁移，勿手工改 SQLite。
+
+### 一键升级 / 回滚（V5.9）
+
+`scripts/` 提供一键升级脚本（备份 → 迁移 → 验证 → 失败自动回滚）与 DryRun 模式；升级前请先备份 `data/`。
+
+### systemd 用户服务（Linux）
+
+双环境可注册为 systemd 用户服务（dev: `quant-calendar-dev.service` :8001 / ops: `quant-calendar-ops.service` :8000），`journalctl --user -u quant-calendar-ops.service -n 50` 查看日志。
+
 ## 数据源配置
 
 ### 三源架构
@@ -295,6 +329,26 @@ quant-calendar-ops/
 ├── .venv/                  # Python 虚拟环境（不入 git）
 ├── backend/                # FastAPI 后端
 │   ├── main_new.py         # 主入口（APP_VERSION 单一来源）
+│   ├── data_sources/       # 多数据源管理（V5.9 拆分子包）
+│   ├── merrill_clock.py    # 美林时钟引擎
+│   ├── ai_eval/            # AI 多模型评估 + 每日复盘（V5.9 拆分子包, ai_evaluator 薄壳）
+│   ├── factor_engine.py    # 多因子引擎
+│   ├── portfolio.py        # 模拟组合/持仓
+│   ├── market_review.py    # AI 每日复盘
+│   ├── scan_engine.py      # 异动扫描
+│   ├── eval_track.py       # 评估胜率追踪（V5.9.2 命中率持久缓存）
+│   ├── backtest.py         # 回测核心
+│   ├── api_keys.py         # 开放 API Key（仅存哈希）
+│   ├── webhook.py          # Webhook 事件订阅
+│   ├── metrics.py          # Prometheus 可观测性
+│   ├── scheduler/          # 定时任务（V5.9 拆分子包）
+│   ├── reliability/        # V5.0 健康巡检/自愈/启动自检/告警分级（startup-report）
+│   ├── jobs.py / cache.py  # V5.7 异步任务队列 / 两级缓存
+│   ├── rbac.py / collaboration.py  # V5.8 权限点注册表 / 协作
+│   ├── plugin_sdk.py       # V5.8 插件 SDK（事件钩子+策略注册）
+│   ├── migrations/         # V5.9 schema 迁移框架（版本化+回滚+失败不启动）
+│   └── api/                # REST API 路由（v1/v2 兼容 + v3 + openapi）
+│   ├── main_new.py         # 主入口（APP_VERSION 单一来源）
 │   ├── data_sources.py     # 多数据源管理
 │   ├── merrill_clock.py    # 美林时钟引擎
 │   ├── ai_evaluator.py     # AI 多模型评估 + 每日复盘
@@ -332,6 +386,18 @@ quant-calendar-ops/
 
 | 版本 | 日期 | 关键变更 |
 |------|------|----------|
+| v5.9.2 | 2026-09 | 执行看板空修复 / 策略回测移入策略研究 / sub.datadict 菜单中文 / 评估历史拆分(评估历史+评估分析, 命中率持久缓存) / 2260 测试全绿 / `APP_VERSION=5.9.0`(未 bump, 补丁级) |
+| v5.9.1 | 2026-09 | 修复日/周/月/年视图无股票列表(模板引用未定义 state + onboarding UMD 双写) + dist 重建 |
+| v5.9.0 | 2026-09 | 架构现代化：后端拆分子包(ai_eval/scheduler/data_sources/merrill_clock) / schema 迁移框架 backend/migrations(启动失败不启动+回滚) / 一键升级回滚脚本(scripts/) / 观测性 2.0(SLO+结构化日志) / 启动回归守卫 / 2251 测试全绿 / 双端 startup-report 7/1/0 healthy |
+| v5.8.0 | 2026-09 | RBAC 2.0 / 协作 / API v3 / Python SDK / 插件 SDK 2.0 / +130 用例 |
+| v5.7.0 | 2026-09 | 两级缓存 / 异步任务队列(jobs) / 全市场分块+LTTB 降采样 / 前端虚拟滚动 / 性能门禁入 CI / +86 用例 |
+| v5.6.0 | 2026-09 | 新手引导 / 空态错误态体系化 / 命令面板+全局快捷键 / 信息密度 / 可访问性 2.0 / +80 用例 |
+| v5.5.0 | 2026-09 | 报表中心：模板化+PDF/Excel 导出+订阅投递 / 首页今日要点聚合卡 |
+| v5.4.0 | 2026-09 | 通知通道抽象(7 通道)+事件引擎 2.0+自定义预警规则 / WS 行情 2.0(增量推送) / 通知中心页 |
+| v5.3.0 | 2026-09 | 组合风险指标 / 仓位建议 / 风控规则引擎 / 风险预警事件总线 |
+| v5.2.0 | 2026-09 | 成本模型 2.0 / 基准对比 / walk-forward 滚动回测 / 参数稳定性 / 绩效归因 / 回测报告导出 |
+| v5.1.0 | 2026-09 | 质量规则引擎 / PIT 防前视+幸存者偏差治理 / 数据血缘(batch_id) / 数据字典子页 |
+| v5.0.0 | 2026-09 | 稳定性基座：健康巡检+自愈 / 启动自检+启动报告 API / 故障注入测试套件 / 写路径原子化 / 健康面板+告警分级 |
 | v4.7.1 | 2026-08 | 并发安全：策略 run-once 异步化(to_thread) / 持仓文件原子写入 / save_state 部分更新保留 universe / 1028 测试全绿 |
 | v4.7.0 | 2026-08 | 数据真实化：引擎全市场批量取数 / 日视图选股池真实轮动 / 年视图性能 32 倍提速 |
 | v3.17 | 2026-08 | 全版交付：AI 复盘/多因子体检/回测/胜率追踪/模拟组合/异动扫描；架构拆分/内联治理/鉴权收敛/可观测性/多用户隔离；移动端 PWA/性能优化/个性化/盘中增强；开放 API（API Key + Swagger + Webhook）/i18n。`APP_VERSION=3.17.3`，719 测试全绿 |
