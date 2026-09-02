@@ -23,6 +23,7 @@ from strategy_custom import (
 )
 from strategy_db import get_def
 from strategy_sdk.registry import registry, StrategyNotFoundError
+from research_store import save_experiment
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +237,20 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
             slippage=body.get('slippage', 0.001),
         )
         # V4.0 M1-2: 数据不可达时透出 data_degraded
+        # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
+        if isinstance(result, dict) and result.get('success', True):
+            _r = result if isinstance(result, dict) else {}
+            _record_experiment(
+                'backtest', sid,
+                {'params': params, 'commission_rate': body.get('commission_rate', 0.0003),
+                 'slippage': body.get('slippage', 0.001)},
+                [start, end],
+                {'total_return': _r.get('total_return'),
+                 'annual_return': _r.get('annual_return'),
+                 'max_drawdown': _r.get('max_drawdown'),
+                 'sharpe_ratio': _r.get('sharpe_ratio'),
+                 'win_rate': _r.get('win_rate')},
+                {'result': result})
         return {'strategy_id': sid, 'params': params, 'data_degraded': not is_real,
                 'result': result}
     except Exception as e:
@@ -283,6 +298,17 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
     except Exception as e2:
         logger.warning('参数稳定性诊断失败: %s', e2)
         resp['param_stability'] = {'verdict': 'unknown', 'note': '诊断不可用'}
+    # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
+    _best = (results[0] if results else {})
+    _ps = resp.get('param_stability') or {}
+    _record_experiment(
+        'sweep', sid,
+        {'param_grid': param_grid, 'metric': metric},
+        [start, end],
+        {'count': len(results), 'best_param': _best.get('params'),
+         'best_' + metric: _best.get(metric),
+         'stability_verdict': _ps.get('verdict')},
+        {'results': results, 'param_stability': _ps})
     return resp
 
 
@@ -426,6 +452,15 @@ async def factor_ic_research(body: Dict[str, Any],
         fv = factor_values[factor_key]
         returns = _future_returns(panel)
         report = evaluate_factor_ic(fv, returns, window_labels={'n1': 'n1'})
+        # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
+        _rpt = (report or {}).get('n1') or {}
+        _record_experiment(
+            'factor_ic', f'{sid}/{factor_key}',
+            {'factor_key': factor_key, 'window': 'n1'},
+            [start_date, end_date],
+            {'ic_mean': _rpt.get('ic_mean'), 'icir': _rpt.get('icir'),
+             'win_rate': _rpt.get('win_rate'), 'grade': _rpt.get('grade')},
+            {'report': report})
         return {'factor_key': factor_key, 'sid': sid, 'report': report,
                 'fields': fields, 'date_range': [start_date, end_date]}
     except Exception as e:
@@ -467,6 +502,14 @@ async def factor_layer_research(body: Dict[str, Any],
         result = layer_backtest(fv, returns, n_layers=n_layers)
         result['factor_key'] = factor_key
         result['sid'] = sid
+        # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
+        _record_experiment(
+            'layer', f'{sid}/{factor_key}',
+            {'factor_key': factor_key, 'n_layers': n_layers},
+            [start_date, end_date],
+            {'layers': result.get('layers'), 'monotonic': result.get('monotonic'),
+             'spread': result.get('spread')},
+            {'result': result})
         return result
     except Exception as e:
         logger.exception('因子分层回测失败: %s', e)
@@ -493,6 +536,34 @@ def _future_returns(panel):
     """由面板收盘价生成次日收益(近似未来收益, 研究演示用)"""
     close = panel['close'].unstack('symbol')
     return close.pct_change().shift(-1)
+
+
+def _record_experiment(etype: str, subject: str, params: dict,
+                       date_range: list, summary: dict, result: dict = None,
+                       app_version: str = '5.1.0') -> str | None:
+    """研究历史持久化 (T-5.1.2 / FR-5.1.0.2): 把一次研究运行写入实验存储。
+
+    静默失败(不阻塞主流程): 存储异常仅记录日志, 不影响研究结果返回。
+    返回实验 id (写入成功) 或 None (跳过)。
+    """
+    try:
+        from backend_info import APP_VERSION as _V  # 运行时取真实版本号
+        _ver = _V
+    except Exception:
+        _ver = app_version
+    try:
+        return save_experiment({
+            'type': etype,
+            'subject': subject,
+            'params': params or {},
+            'date_range': date_range or [],
+            'app_version': _ver,
+            'summary': summary or {},
+            'result': result or {},
+        })
+    except Exception as e:
+        logger.warning('[research_store] 实验记录跳过: %s', e)
+        return None
 
 
 # ---------- 数据门户解析 (FR: 数据层) ----------

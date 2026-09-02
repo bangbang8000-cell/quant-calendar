@@ -1,0 +1,6 @@
+v5.1 (5.1.0-1): 研究历史持久化 (T-5.1.1 数据模型 + T-5.1.2 路由写入)
+
+- 新增 backend/research_store.py: research_experiments 表 (id/type/subject/created_at/data JSON), save/get/list/compare/delete, 类型白名单
+- db.py migrate 幂等建表挂钩
+- strategy_research 4 路由 (IC/layer/sweep/backtest) 成功路径写实验记录 (静默失败不阻塞)
+- tests/test_research_store.py: 15 用例 (CRUD/过滤/对比/删除 + 4 路由写入)

@@ -282,6 +282,11 @@ def migrate() -> None:
                 " last_run_date TEXT, created_at TEXT NOT NULL)")
             conn.commit()
             logger.info("[db] migrate: report_subscriptions 表就绪")
+            # 5.1.0 (T-5.1.1): 研究实验存储表 (幂等建表, 研究历史持久化)
+            from research_store import _SCHEMA as RESEARCH_SCHEMA
+            conn.executescript(RESEARCH_SCHEMA)
+            conn.commit()
+            logger.info("[db] migrate: research_experiments 表就绪")
             # v3.14.2: watchlist 增加 name 列
             cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
             if cols and 'name' not in cols:
