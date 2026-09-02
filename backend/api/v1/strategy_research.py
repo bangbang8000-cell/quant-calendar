@@ -810,3 +810,14 @@ async def research_history_delete(eid: str,
         raise HTTPException(status_code=404, detail=f'实验 {eid} 不存在')
     return {'deleted': True, 'id': eid}
 
+
+@router.put('/research-history/{eid}')
+async def research_history_update(eid: str, body: Dict,
+                                  _: Dict = Depends(get_non_guest_user)):
+    """编辑研究实验 (T-5.1.41): 更新假设/结论/标签/备注。未知键忽略。"""
+    from research_store import update_experiment
+    ok = update_experiment(eid, body)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f'实验 {eid} 不存在')
+    return {'updated': True, 'id': eid}
+

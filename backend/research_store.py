@@ -62,10 +62,33 @@ def _new_id() -> str:
         _id_seq[0] % 10000)
 
 
+# T-5.1.41: 可编辑研究元字段 (白名单, 拒绝未知键)
+META_FIELDS = ('hypothesis', 'conclusion', 'tags', 'notes')
+
+
+def normalize_meta_fields(exp: dict) -> dict:
+    """规范化研究元字段: 假设/结论/标签/备注。
+
+    - tags: 过滤空/None/空白, 保留非空字符串
+    - 其余字段 strip 空白字符串
+    返回新 dict (不就地修改)。仅规范化白名单字段, 其余原样保留。
+    """
+    out = dict(exp or {})
+    tags = out.get('tags') or []
+    out['tags'] = [t.strip() for t in tags if isinstance(t, str) and t.strip()]
+    for key in ('hypothesis', 'conclusion', 'notes'):
+        val = out.get(key)
+        if val is None:
+            out[key] = ''
+        else:
+            out[key] = str(val).strip()
+    return out
+
+
 def save_experiment(exp: dict) -> str:
     """保存一条实验记录, 返回 id。exp 至少含 type; subject/params/date_range/
     app_version/summary/result 可选, 缺失时补默认值。自动注入 created_at。"""
-    exp = dict(exp or {})
+    exp = normalize_meta_fields(exp)
     etype = exp.get('type', '')
     if etype not in VALID_TYPES:
         raise ValueError('未知实验类型: %r (合法: %s)' % (etype, ', '.join(VALID_TYPES)))
@@ -152,6 +175,23 @@ def delete_experiment(eid: str) -> bool:
     deleted = cur.rowcount > 0
     conn.close()
     return deleted
+
+
+def update_experiment(eid: str, fields: dict) -> bool:
+    """编辑实验记录 (T-5.1.41 / FR-5.1.4.1): 更新白名单元字段。
+
+    仅允许 hypothesis/conclusion/tags/notes; 未知键忽略 (deny-by-default)。
+    返回是否找到并更新。
+    """
+    exp = get_experiment(eid)
+    if not exp:
+        return False
+    patch = normalize_meta_fields(
+        {k: v for k, v in (fields or {}).items() if k in META_FIELDS})
+    exp.update(patch)
+    # 重新持久化 (复用 save 的校验/注入)
+    save_experiment(exp)
+    return True
 
 
 def _clear_all_for_test() -> None:

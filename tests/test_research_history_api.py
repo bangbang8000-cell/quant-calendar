@@ -158,3 +158,40 @@ class TestExportAPI:
         lines = [l for l in body.split('\n') if l.strip()]
         assert len(lines) == 1  # 仅表头
         assert lines[0].startswith('id,type')
+
+
+class TestUpdateAPI:
+    """T-5.1.41: 编辑研究实验 (PUT research-history/{eid})"""
+
+    def test_update_meta_fields(self, authed_client):
+        eid = _seed()
+        r = authed_client.put(f'/api/strategies/research-history/{eid}', json={
+            'hypothesis': '动量短持有期有效', 'conclusion': 'ICIR 显著',
+            'tags': ['动量'], 'notes': '样本含牛熊'})
+        assert r.status_code == 200, r.text
+        detail = authed_client.get(f'/api/strategies/research-history/{eid}')
+        exp = detail.json()['experiment']
+        assert exp['hypothesis'] == '动量短持有期有效'
+        assert exp['conclusion'] == 'ICIR 显著'
+        assert exp['tags'] == ['动量']
+        assert exp['notes'] == '样本含牛熊'
+
+    def test_update_unknown_id_404(self, authed_client):
+        r = authed_client.put('/api/strategies/research-history/exp_nonexistent',
+                              json={'notes': 'x'})
+        assert r.status_code == 404
+
+    def test_update_preserves_summary(self, authed_client):
+        eid = _seed(summary={'ic_mean': 0.03})
+        authed_client.put(f'/api/strategies/research-history/{eid}',
+                          json={'tags': ['价值']})
+        detail = authed_client.get(f'/api/strategies/research-history/{eid}').json()
+        exp = detail['experiment']
+        assert exp['summary']['ic_mean'] == 0.03
+        assert exp['tags'] == ['价值']
+
+    def test_update_unauth_401(self):
+        from main_new import app
+        c = TestClient(app)
+        r = c.put('/api/strategies/research-history/exp_x', json={'notes': 'x'})
+        assert r.status_code == 401

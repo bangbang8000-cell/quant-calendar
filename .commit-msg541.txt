@@ -1,0 +1,5 @@
+v5.1 (5.1.4-1): T-5.1.41 实验记录扩展 (假设/结论/标签/备注 + 编辑 API)
+
+- research_store.py: normalize_meta_fields(元字段规范化: tags去空/字符串trim) + update_experiment(白名单更新,未知键忽略)
+- strategy_research.py: PUT /research-history/{eid} 编辑端点 (get_non_guest_user 鉴权, 404)
+- tests: test_research_store_ext.py 7 用例 + test_research_history_api.py +4 用例 (PUT/404/保留/401)
