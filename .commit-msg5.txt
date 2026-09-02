@@ -1,4 +1,0 @@
-v5.1 (5.1.0-5): 修复研究存储两问题 (import + id 碰撞)
-
-- research_store 改 from backend import db → import db (与 conftest/全库一致, 顶层模块实例, 修复 ops 生产启动 ModuleNotFoundError)
-- _new_id 加进程内递增序号 (同毫秒连续 save 不再 id 碰撞被 REPLACE 覆盖)

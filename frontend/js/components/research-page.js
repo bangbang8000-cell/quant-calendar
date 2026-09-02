@@ -1545,7 +1545,8 @@
         return RESEARCH_TYPE_LABELS[type] || type || '—';
       }
       function openResearchHistory() {
-        currentSubPage.value = 'research-history';
+        // currentSubPage 由 qcState provide 注入 (state.currentSubPage), setup 内不可裸用
+        state.currentSubPage.value = 'research-history';
         loadResearchHistory();
       }
       async function loadResearchHistory() {
