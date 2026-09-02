@@ -1,0 +1,4 @@
+v5.1 (5.1.2-5): T-5.1.25 回测可信度清单 (credibility_guard)
+
+- 新增 backend/credibility_guard.py: credibility_check(交易<20/样本<60日/无基准/成本<0.1% 四项警示)/credibility_report(score+grade 可信/基本可信/存疑+checks明细)
+- 新增 tests/test_backtest_credibility.py 10 用例 (TDD 全绿)
