@@ -149,6 +149,57 @@ def list_experiments(type: str | None = None, limit: int = 50) -> list:
     return result
 
 
+# ─── T-5.1.44 / FR-5.1.4.4: 研究日志 (按日期浏览活动) ───
+
+from datetime import datetime, timedelta
+
+
+def _date_of(created_at: str) -> str:
+    """created_at (YYYY-MM-DD[T...]) → 日期 YYYY-MM-DD。"""
+    return str(created_at or '')[:10]
+
+
+def activity_log(days: int = 30, include_experiments: bool = False) -> list:
+    """研究日志: 按日期倒序聚合活动 [{date, count, by_type, experiments?}]。
+
+    days: 回溯天数, 以最近一次实验日期为基准 (保证测试与时间无关)。
+    include_experiments: 附带当日实验简要列表。
+    """
+    exps = list_experiments(limit=500)
+    if not exps:
+        return []
+    # 基准 = 最近实验日期
+    latest = max(_date_of(e.get('created_at', '')) for e in exps)
+    try:
+        cutoff = (datetime.strptime(latest, '%Y-%m-%d') - timedelta(days=int(days)))
+    except ValueError:
+        cutoff = None
+    by_date = {}
+    for e in exps:
+        d = _date_of(e.get('created_at', ''))
+        if not d:
+            continue
+        if cutoff is not None:
+            try:
+                if datetime.strptime(d, '%Y-%m-%d') < cutoff:
+                    continue
+            except ValueError:
+                pass
+        day = by_date.setdefault(d, {'count': 0, 'by_type': {}})
+        day['count'] += 1
+        etype = e.get('type', '')
+        day['by_type'][etype] = day['by_type'].get(etype, 0) + 1
+        if include_experiments:
+            day.setdefault('experiments', []).append({
+                'id': e.get('id'), 'type': etype,
+                'subject': e.get('subject', ''),
+                'created_at': e.get('created_at', ''),
+            })
+    return [{'date': d, 'count': v['count'], 'by_type': v['by_type'],
+             **({'experiments': v.get('experiments', [])} if include_experiments else {})}
+            for d, v in sorted(by_date.items(), reverse=True)]
+
+
 def compare_experiments(ids: list) -> list:
     """对比一组实验: 返回按 ids 顺序对齐的 [{id, type, subject, created_at, summary}],
     缺失的 id 跳过。对比视图前端据此并列展示关键指标。"""
