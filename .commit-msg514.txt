@@ -1,5 +1,0 @@
-v5.1 (5.1.1-4): T-5.1.14 多因子合成 (等权/IC加权/ICIR加权 + 合成后重评价)
-
-- 新增 backend/factor_composite.py: composite_equal_weight/ic_weight/icir_weight(负权重截0, 全非正等权回退)/composite_after_eval(复用 factor_ic 评价)/build_composite_report(三法对比+权重)
-- 新增 tests/test_factor_composite.py 16 用例 (TDD 全绿)
-- 因子研究模块回归 91 passed

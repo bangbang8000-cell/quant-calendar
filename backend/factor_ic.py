@@ -383,3 +383,83 @@ def turnover_analysis(panel: List[Dict], layer: int = 1, rebalance_days: int = 5
         'cost_drag': round(drag, 4),
         'cost_drag_pct': round(drag * 100, 2),
     }
+
+
+# ==================== 多重检验提示 (T-5.1.15 / FR-5.1.1.5) ====================
+
+def ic_t_statistic(ics: List[Optional[float]]) -> Optional[float]:
+    """IC 的 t 统计量 = IC均值 / (IC标准差 / sqrt(n)); 样本 <2 → None。"""
+    valid = [x for x in ics if x is not None]
+    n = len(valid)
+    if n < 2:
+        return None
+    mean = sum(valid) / n
+    var = sum((x - mean) ** 2 for x in valid) / (n - 1)  # 样本方差
+    if var <= 0:
+        return 0.0  # 无变差 → t=0 (无证据)
+    se = (var / n) ** 0.5
+    return mean / se if se > 0 else None
+
+
+def bonferroni_alpha(n_factors: int, alpha: float = 0.05) -> float:
+    """Bonferroni 校正显著性: alpha / n_factors; n<=1 → alpha。"""
+    if n_factors <= 1:
+        return alpha
+    return alpha / n_factors
+
+
+def fdr_alpha(p_values: List[float], alpha: float = 0.05) -> List[float]:
+    """Benjamini-Hochberg FDR 校正: 返回每个 p 对应的拒绝阈值 alpha*i/m。
+
+    p_values 升序输入; 阈值 = alpha * rank / m。
+    """
+    m = len(p_values)
+    if m == 0:
+        return []
+    return [alpha * (i + 1) / m for i in range(m)]
+
+
+def multiple_testing_warning(n_factors: int, t_stats: List[float],
+                             alpha: float = 0.05) -> Dict:
+    """多重检验警示: 试验因子数越多, 名义 t 显著越可疑。
+
+    判定: Bonferroni 校正后的 t 阈值 (t >= ~2 对应 p<0.05, 依自由度)。
+    返回 {n_factors, bonferroni_alpha, n_survive, flagged, note}。
+    """
+    if n_factors <= 0:
+        n_factors = len(t_stats) or 1
+    bonf_alpha = bonferroni_alpha(n_factors, alpha)
+    # 近似: t 统计量 1.96 对应 p≈0.05; 校正阈值按 sqrt 反比粗估
+    t_crit = 1.96 if bonf_alpha >= 0.05 else 1.96 * (0.05 / bonf_alpha) ** 0.5
+    n_survive = sum(1 for t in t_stats if t is not None and abs(t) >= t_crit)
+    flagged = n_factors > 5 and n_survive < len([t for t in t_stats if t is not None])
+    note = ('试验因子数 %d 偏多, 名义显著需按 Bonferroni 校正 (α=%.3f); '
+            '仅 %d 个因子在校正后仍显著' % (n_factors, bonf_alpha, n_survive)) if flagged else            ('试验因子数 %d, 多重检验风险低 (α=%.3f)' % (n_factors, bonf_alpha))
+    return {
+        'n_factors': n_factors,
+        'bonferroni_alpha': round(bonf_alpha, 4),
+        'n_survive': n_survive,
+        'flagged': flagged,
+        'note': note,
+    }
+
+
+def multiple_testing_report(results: Dict[str, Dict], n_factors: int,
+                            alpha: float = 0.05) -> Dict:
+    """综合报告: 每个因子的 t 统计量 + 多重检验校正 + 存活因子。"""
+    t_stats = []
+    for fkey, r in results.items():
+        t = r.get('t_stat')
+        if t is None:
+            t = ic_t_statistic([r.get('ic_mean')] if r.get('ic_mean') is not None else [])
+        t_stats.append(t)
+    warning = multiple_testing_warning(n_factors, t_stats, alpha)
+    survive = []
+    bonf_alpha = warning['bonferroni_alpha']
+    t_crit = 1.96 if bonf_alpha >= 0.05 else 1.96 * (0.05 / bonf_alpha) ** 0.5
+    for fkey, r in results.items():
+        t = r.get('t_stat') or ic_t_statistic([r['ic_mean']] if r.get('ic_mean') is not None else [])
+        survive.append({'factor': fkey, 't_stat': round(t, 3) if t is not None else None,
+                        'survive': t is not None and abs(t) >= t_crit})
+    warning['survive'] = survive
+    return warning
