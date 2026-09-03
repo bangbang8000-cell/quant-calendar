@@ -41,7 +41,7 @@
                                     <div class="stat-label">自定义策略</div>
                                 </div>
                             </div>
-                            <div class="stat-card clickable" @click="currentSubPage = 'market-review'">
+                            <div class="stat-card clickable" @click="goShortterm('market-review')">
                                 <div class="stat-icon">📋</div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ marketReviews.length }}</div>
@@ -91,7 +91,7 @@
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'market-review'">
+                        <div class="consensus-item clickable" @click="goShortterm('market-review')">
                             <div class="consensus-badge">5</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">📋 市场复盘</div>
@@ -99,7 +99,7 @@
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'scan'">
+                        <div class="consensus-item clickable" @click="goShortterm('scan')">
                             <div class="consensus-badge">6</div>
                             <div class="consensus-info">
                                 <div class="consensus-code">⚡ 异动扫描</div>
@@ -1616,6 +1616,11 @@
       function researchTypeLabel(type) {
         return RESEARCH_TYPE_LABELS[type] || type || '—';
       }
+      function goShortterm(sub) {
+        // V5.2.3: 市场复盘/异动扫描移入短线复盘 → 研究页入口跳转过去
+        if (state && state.navigateTo) state.navigateTo('shortterm', sub);
+      }
+
       function openResearchHistory() {
         // currentSubPage 由 qcState provide 注入 (state.currentSubPage), setup 内不可裸用
         state.currentSubPage.value = 'research-history';
@@ -1710,7 +1715,7 @@
         // 5.1.0 (T-5.1.4): 研究历史
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
-        researchTypeLabel, openResearchHistory, loadResearchHistory, researchExportLoading, exportResearchHistory,
+        researchTypeLabel, goShortterm, openResearchHistory, loadResearchHistory, researchExportLoading, exportResearchHistory,
         toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
