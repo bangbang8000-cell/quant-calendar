@@ -17,12 +17,17 @@
 
 数据诚实性: 失败字段为 None(前端标不可用), 空池是合法结果(空数组)。
 """
+import logging
+
 from fastapi import APIRouter, Depends
 
 from auth import get_current_active_user
 from shortterm import fetchers, ladder, lhb, sector_flow, store
 from shortterm import emotion_metrics, market_facts, verification, weekly
-from shortterm.trade_calendar import latest_session, is_settled, last_trade_dates
+from shortterm import analysts, archive, backtest, intraday, reflection, synthesizer
+from shortterm.trade_calendar import latest_session, is_settled, is_trade_day, last_trade_dates
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/shortterm", tags=["短线复盘"])
 
@@ -229,3 +234,99 @@ async def get_overview(date: str = None, custom: str = None,
             'conditions': conditions,
             'summary': verification.summarize(conditions),
             'weekly': weekly.industry_heat(end=d)}
+
+
+# ---------- V5.2.2: AI 多视角复盘与闭环 ----------
+
+def _build_llm_invoke():
+    """生产接线: ai_eval.generate_review(多模型 fallback); 未配置 → None"""
+    try:
+        from ai_eval import AIEvalMixin
+        ai = AIEvalMixin()
+
+        def invoke(prompt):
+            text = ai.generate_review(prompt, system_prompt=None, max_tokens=1500)
+            if not text:
+                raise RuntimeError('AI 返回为空')
+            return text
+        return invoke
+    except Exception as e:  # noqa: BLE001
+        logger.warning('AI 未配置, 复盘生成不可用: %s', e)
+        return None
+
+
+def _review_bundle(date: str) -> dict:
+    """分析师数据包: 情绪/事实/梯队 + 板块资金 + 龙虎榜 + 近5日热度"""
+    bundle = _overview_bundle(date)
+    bundle['sector_flow'] = sector_flow.fetch_sector_flow('今日', '行业资金流')
+    bundle['lhb_rows'] = store.load_pool(date, 'lhb') or []
+    bundle['weekly'] = weekly.industry_heat(end=date)
+    return bundle
+
+
+@router.post("/review")
+async def run_review(date: str = None, user: dict = Depends(get_current_active_user)):
+    """运行多分析师 + 裁判, 产出结构化盘面研判并落盘"""
+    d = date or latest_session()
+    invoke = _build_llm_invoke()
+    if invoke is None:
+        return {'success': True, 'date': d, 'available': False,
+                'reason': '[⚠️ AI 未配置, 复盘生成不可用]', 'reports': {}, 'markdown': ''}
+    bundle = _review_bundle(d)
+    reports = analysts.run_analysts(bundle, invoke)
+    verdict = synthesizer.judge_review(reports, invoke)
+    result = {'date': d, 'reports': reports, **verdict}
+    store.save_pool(d, 'review', [result])
+    return {'success': True, 'date': d, **verdict, 'reports': reports}
+
+
+@router.get("/review")
+async def get_review(date: str = None, user: dict = Depends(get_current_active_user)):
+    """读取已落盘复盘; 无 → None"""
+    d = date or latest_session()
+    rows = store.load_pool(d, 'review')
+    return {'success': True, 'date': d, 'review': rows[0] if rows else None}
+
+
+@router.get("/reflection")
+async def get_reflection(date: str = None, user: dict = Depends(get_current_active_user)):
+    """反思与战绩记分板(昨日 vs 今日三路投票 + 记分)"""
+    d = date or latest_session()
+    out = {'success': True, 'date': d}
+    prev = emotion_metrics.prev_trade_date(d)
+    bundle = _overview_bundle(d)
+    prev_bundle = _overview_bundle(prev) if prev else {}
+    out['vote'] = reflection.vote_direction(prev_bundle, bundle)
+    stored = reflection.load_reflection(d)
+    out['stored'] = stored
+    return out
+
+
+@router.post("/intraday/snapshot")
+async def post_intraday_snapshot(date: str = None,
+                                 user: dict = Depends(get_current_active_user)):
+    """盘中核验快照: 接受判据(过点拒绝/历史不现抓) + 三池情绪快照"""
+    from datetime import datetime
+    d = date or datetime.now().strftime('%Y-%m-%d')
+    ok, reason = intraday.accept_snapshot(d, is_trade_day=is_trade_day(d),
+                                          today=datetime.now().strftime('%Y-%m-%d'))
+    if not ok:
+        return {'success': True, 'date': d, 'accepted': False, 'reason': reason}
+    mood = intraday.snapshot_mood(store.load_pool(d, 'zt'),
+                                  store.load_pool(d, 'zb'),
+                                  store.load_pool(d, 'dt'))
+    return {'success': True, 'date': d, 'accepted': True, 'slot': reason, **mood}
+
+
+@router.get("/backtest")
+async def get_backtest(date: str = None, user: dict = Depends(get_current_active_user)):
+    """涨停样本统计(分情绪环境, 窗口 20/30/60/90)"""
+    d = date or latest_session()
+    return {'success': True, **backtest.sample_stats(d)}
+
+
+@router.get("/drift")
+async def get_drift(date: str = None, user: dict = Depends(get_current_active_user)):
+    """结构漂移(近10天 vs 前20天 中位数)"""
+    d = date or latest_session()
+    return {'success': True, **archive.detect_structure_drift(d)}

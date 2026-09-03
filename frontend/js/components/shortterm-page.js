@@ -21,6 +21,24 @@
                         <qc-state-panel v-if="overviewLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="overviewError" type="error" :title="overviewErrTitle" :desc="overviewErrDesc" @retry="loadOverview"></qc-state-panel>
                         <template v-else-if="overview">
+                            <div class="mb-4">
+                                <div class="flex-c-gap-12 mb-2">
+                                    <div class="text-base-secondary">AI 盘面研判</div>
+                                    <el-button size="small" type="primary" :loading="reviewRunning" @click="runReview">{{ review && review.available ? '重新生成' : '生成' }}</el-button>
+                                </div>
+                                <qc-state-panel v-if="reviewRunning" type="loading"></qc-state-panel>
+                                <div v-else-if="review && review.available" class="card">
+                                    <div class="stat-value" style="font-size:1.05em">{{ review.emotion_level ? '情绪档位: ' + review.emotion_level : '情绪档位: —' }}</div>
+                                    <div class="mt-4">{{ review.summary || '—' }}</div>
+                                    <div v-if="review.active_directions && review.active_directions.length" class="mt-4">
+                                        <div class="text-base-secondary mb-2">活跃方向</div>
+                                        <span v-for="d in review.active_directions" :key="d" class="tag-chip mr-4">{{ d }}</span>
+                                    </div>
+                                    <div v-if="review.risks && review.risks.length" class="mt-4 text-xs-tertiary">风险: {{ review.risks.join('；') }}</div>
+                                </div>
+                                <div v-else-if="review" class="text-xs-tertiary">{{ review.reason || '暂无复盘, 点击生成' }}</div>
+                            </div>
+
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card">
                                     <div class="stat-label">赚钱效应均值</div>
@@ -243,6 +261,8 @@
       const sectorError = ref(false);
       const sectorErrTitle = ref('数据加载失败');
       const sectorErrDesc = ref('请检查服务后重试');
+      const review = ref(null);
+      const reviewRunning = ref(false);
 
       function authHeaders() {
         const t = localStorage.getItem('quant_token') || '';
@@ -443,6 +463,25 @@
         }
       }
 
+      async function loadReview() {
+        try {
+          const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
+          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.success) review.value = res.review || null;
+        } catch (e) { /* 静默 */ }
+      }
+
+      async function runReview() {
+        reviewRunning.value = true;
+        try {
+          const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
+          const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.success) review.value = res;
+        } catch (e) { /* 失败保持原态 */ } finally {
+          reviewRunning.value = false;
+        }
+      }
+
       async function loadDefaults() {
         try {
           const res = await fetch('/api/shortterm/latest-session', { headers: authHeaders() }).then(function (r) { return r.json(); });
@@ -456,6 +495,7 @@
         loadLhb();
         loadOverview();
         loadSectorFlow();
+        loadReview();
       }
 
       onMounted(loadDefaults);
@@ -466,7 +506,9 @@
         lhbDate, lhbRows, lhbLoading, lhbError,
         overviewDate, overview, overviewLoading, overviewError,
         sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError,
-        loadPools, loadLhb, loadOverview, loadSectorFlow, ladderText, fmtAmount, fmtPct,
+        review, reviewRunning,
+        loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
+        ladderText, fmtAmount, fmtPct,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass,
       };

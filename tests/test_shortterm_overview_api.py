@@ -170,3 +170,76 @@ def test_verification_custom_invalid_ignored(client):
     r = client.get('/api/shortterm/verification?date=2026-09-02&custom=not-json')
     assert r.json()['success'] is True
     assert len(r.json()['conditions']) == 6
+
+
+# ---------- V5.2.2: AI 多视角复盘与闭环 ----------
+
+def _fake_llm_invoke(prompt):
+    return ('{"emotion_level": "发酵", "summary": "主线清晰", '
+            '"active_directions": ["存储"], "risks": ["炸板率高"], '
+            '"verify_conditions": ["看1进2"]}')
+
+
+def test_review_run_and_get(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False,
+                                                    'reason': '[⚠️]'})
+    r = client.post('/api/shortterm/review?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True and data['available'] is True
+    assert data['emotion_level'] == '发酵'
+    assert data['markdown'].startswith('# 盘面研判')
+    # 落盘 → GET 可回读
+    g = client.get('/api/shortterm/review?date=2026-09-02').json()
+    assert g['review']['emotion_level'] == '发酵'
+    assert set(g['review']['reports']) == {
+        'sentiment_report', 'capital_report', 'theme_report',
+        'dragon_tiger_report', 'leader_report'}
+
+
+def test_review_no_ai_available(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke', lambda: None)
+    r = client.post('/api/shortterm/review?date=2026-09-02')
+    data = r.json()
+    assert data['available'] is False
+    assert 'AI 未配置' in data['reason']
+
+
+def test_reflection_endpoint(monkeypatch, client):
+    from shortterm import emotion_metrics as em
+    monkeypatch.setattr(em, 'prev_trade_date', lambda d: '2026-09-01')
+    r = client.get('/api/shortterm/reflection?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['vote']['direction'] in ('up', 'down', 'flat')
+
+
+def test_intraday_snapshot_endpoint(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import intraday as iday
+    import datetime as _dt
+    monkeypatch.setattr(iday, 'accept_snapshot',
+                        lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
+    r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
+    data = r.json()
+    assert data['success'] is True and data['accepted'] is True
+    assert 'zt_count' in data
+
+
+def test_backtest_endpoint(client):
+    r = client.get('/api/shortterm/backtest?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert '样本偏差声明' in data['note']
+
+
+def test_drift_endpoint(client):
+    r = client.get('/api/shortterm/drift?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['available'] in (True, False)

@@ -118,6 +118,22 @@
 
 **出口**: 短线专项 136 用例, 全量回归绿, tag v5.2.1 ↔ APP_VERSION 5.2.1。
 
+### 4.6 V5.2.2 AI 多视角复盘与闭环 — 后端核心开发完成(未发版, APP_VERSION 仍 5.2.1)
+
+| 子项 | 交付 |
+|---|---|
+| 多分析师 | roles.py(5 角色注册) + analysts.py(串行编排, 失败 [⚠️] 降级不炸链, prompt 含诚实性约束) |
+| 复盘裁判 | synthesizer.py: pydantic ReviewVerdict 骨架 + JSON 解析(片段提取回退) + markdown 渲染 + 档位归一化 |
+| 反思闭环 | reflection.py: 三路投票(晋级率/赚钱效应中位数/涨停家数) + 战绩记分板 + 落盘/回读 |
+| 盘中核验 | intraday.py: 6 时点快照 + 过点 8 分钟拒绝 + 历史日不现抓 + 盘中值口径标注 |
+| 样本统计 | backtest.py: 涨停样本分情绪环境(20/30/60/90 窗口) + 样本偏差声明 + 无前视 |
+| 归档漂移 | archive.py: 原始归档(raw 标志) + 字段漂移 + 结构漂移(近10 vs 前20 中位数) |
+| API | POST /review(生成+落盘) / GET /review(回读) /reflection /intraday/snapshot /backtest /drift |
+| 前端 | 复盘看板顶部「AI 盘面研判」卡(情绪档位/一句话/活跃方向/风险 + 生成按钮) |
+| scheduler | 16:05 抓取成功后自动跑 AI 复盘落盘(AI 未配置跳过) |
+
+**测试**: 短线专项 +44(ai 15/intraday 8/archive_drift 8/overview_api+6)。**未做**: 追问聊天、复盘历史检索页、盘中核验前端子页、飞书推送/webhook 事件、tushare 兜底。
+
 ### 4.4 V5.2.0 实现差异记录 (对照 PRD/DEV-PLAN, 2026-09-03)
 
 以下为与规划文档的偏差, 功能可达或按诚实性设计, 记录备查:

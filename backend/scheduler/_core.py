@@ -800,7 +800,33 @@ class SchedulerCoreMixin:
             await asyncio.sleep(30 * 60)
             if self.running:
                 await self._run_shortterm_capture(today)
+        # V5.2.2 (T-5.2.29): 盘后自动跑 AI 复盘(失败不中断, 复盘可选)
+        if result and not result.get('skipped') and result.get('ok', 0) >= 2:
+            try:
+                await self._run_shortterm_review(today)
+            except Exception as e:  # noqa: BLE001
+                logger.error("短线 AI 复盘生成失败(%s): %s", today, e)
         return result
+
+    async def _run_shortterm_review(self, today):
+        """多分析师 + 裁判 → 结构化盘面研判落盘 (AI 未配置则跳过)"""
+        try:
+            from api.v1 import shortterm as shortterm_api
+            invoke = shortterm_api._build_llm_invoke()
+            if invoke is None:
+                logger.info("短线 AI 复盘跳过: AI 未配置")
+                return
+            bundle = shortterm_api._review_bundle(today)
+            from shortterm import analysts, synthesizer
+            reports = analysts.run_analysts(bundle, invoke)
+            verdict = synthesizer.judge_review(reports, invoke)
+            from shortterm import store as _store
+            _store.save_pool(today, 'review', [{'date': today, 'reports': reports, **verdict}])
+            self._record_task_run("shortterm_review", verdict.get('available', False),
+                                  f"{today} 情绪档位={verdict.get('emotion_level') or '?'}")
+            logger.info("短线 AI 复盘完成(%s): %s", today, verdict.get('emotion_level'))
+        except Exception as e:  # noqa: BLE001
+            logger.error("短线 AI 复盘异常(%s): %s", today, e)
 
     async def daily_shortterm_capture_task(self):
         """每日 16:05 抓取短线三池/龙虎榜入库 (V5.2.0 T-5.2.10)
