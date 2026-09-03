@@ -127,21 +127,89 @@ def normalize_pool_df(df, column_map: dict) -> list:
     return rows
 
 
+# tushare limit_list_d 列名 → 统一英文键 (涨停/跌停兜底源)
+# ts_code 形如 '002909.SZ'(_zero_pad 去后缀补零); up_stat=连板数; limit_amount=封单金额
+_TUSHARE_MAP = {
+    'zt': {'ts_code': 'ts_code', 'name': 'name', 'pct_chg': 'pct_chg',
+           'close': 'price', 'amount': 'amount', 'float_mv': 'float_mv',
+           'total_mv': 'total_mv', 'turnover_ratio': 'turnover_rate',
+           'limit_amount': 'seal_amount', 'first_time': 'first_seal_time',
+           'last_time': 'last_seal_time', 'open_times': 'break_times',
+           'up_stat': 'boards', 'industry': 'industry'},
+    'dt': {'ts_code': 'ts_code', 'name': 'name', 'pct_chg': 'pct_chg',
+           'close': 'price', 'amount': 'amount', 'float_mv': 'float_mv',
+           'total_mv': 'total_mv', 'turnover_ratio': 'turnover_rate',
+           'limit_amount': 'seal_amount', 'last_time': 'last_seal_time',
+           'open_times': 'break_times', 'industry': 'industry'},
+}
+_TUSHARE_LIMIT = {'zt': 'U', 'dt': 'D'}  # limit_list_d 的 limit 取值
+
+# 各池源链: 按序尝试, 首个可用即用; 全失败 → 降级信封。
+# 炸板池 tushare 无对应源(limit_list_d 不区分炸板), 保持东财单源, 由 [⚠️] 诚实降级。
+# ⚠️ 测试用 monkeypatch 改此表以隔离真实网络/校验降级路径。
+_SOURCE_CHAINS = {
+    'zt': ['akshare.eastmoney', 'tushare'],
+    'dt': ['akshare.eastmoney', 'tushare'],
+    'zb': ['akshare.eastmoney'],
+}
+
+
+def _fetch_akshare_eastmoney(pool_type: str, compact: str, date_str: str) -> dict:
+    """东财涨停/炸板/跌停池 (FR-5.2.0.1 首选源)"""
+    import akshare as ak
+    func = getattr(ak, _AKSHARE_POOL_FUNC[pool_type])
+    df = func(compact)
+    rows = normalize_pool_df(df, _POOL_MAP[pool_type])
+    return {'available': True, 'source': 'akshare.eastmoney',
+            'date': date_str, 'rows': rows}
+
+
+def _fetch_tushare_limit_list(pool_type: str, compact: str, date_str: str) -> dict:
+    """tushare 标准版兜底 (limit_list_d, 需 2000+ 积分; 无 token/无权限 → 抛错交外层降级)"""
+    import tushare as ts
+    from config import settings
+    token = getattr(settings, 'TUSHARE_TOKEN', '') or ''
+    if not token:
+        raise RuntimeError('未配置 TUSHARE_TOKEN, tushare 兜底不可用')
+    pro = ts.pro_api(token)
+    df = pro.limit_list_d(trade_date=compact)
+    if df is None or len(df) == 0:
+        return {'available': True, 'source': 'tushare', 'date': date_str, 'rows': []}
+    limit = _TUSHARE_LIMIT[pool_type]
+    if 'limit' in df.columns:
+        df = df[df['limit'] == limit]
+    rows = normalize_pool_df(df, _TUSHARE_MAP[pool_type])
+    return {'available': True, 'source': 'tushare', 'date': date_str, 'rows': rows}
+
+
 def _fetch_pool(pool_type: str, date: str) -> dict:
-    """抓取三池之一。date 接受 YYYY-MM-DD / YYYYMMDD。"""
+    """抓取三池之一(源链 fallback)。date 接受 YYYY-MM-DD / YYYYMMDD。
+
+    数据诚实性: 全源失败 → available=False + [⚠️] 信封(绝不返回 0 家); 空池合法。
+    """
     compact = _norm_date(date)
     label = _POOL_LABEL[pool_type]
-    try:
-        import akshare as ak
-        func = getattr(ak, _AKSHARE_POOL_FUNC[pool_type])
-        df = func(compact)
-        rows = normalize_pool_df(df, _POOL_MAP[pool_type])
-        return {'available': True, 'source': 'akshare.eastmoney',
-                'date': str(date), 'rows': rows}
-    except Exception as e:  # noqa: BLE001 — 数据源异常统一降级信封
-        logger.warning('短线 %s 抓取失败(%s): %s', label, compact, e)
-        return {'available': False,
-                'reason': f'[⚠️ {label}｜{date} 数据获取失败已降级：{e}]'}
+    date_str = str(date)
+    errs = []
+    for source in _SOURCE_CHAINS.get(pool_type, ['akshare.eastmoney']):
+        try:
+            if source == 'akshare.eastmoney':
+                out = _fetch_akshare_eastmoney(pool_type, compact, date_str)
+            elif source == 'tushare':
+                out = _fetch_tushare_limit_list(pool_type, compact, date_str)
+            else:
+                errs.append(f'{source}: 未知源')
+                continue
+            if out is not None and out.get('available'):
+                return out
+            errs.append(f'{source}: {out and out.get("reason") or "空返回"}')
+        except Exception as e:  # noqa: BLE001 — 单源异常, 试下一源
+            logger.warning('短线 %s %s 源失败(%s): %s', label, source, compact, e)
+            errs.append(f'{source}: {type(e).__name__}: {str(e)[:80]}')
+    reason = '；'.join(errs)
+    logger.warning('短线 %s 全源失败(%s): %s', label, compact, reason)
+    return {'available': False,
+            'reason': f'[⚠️ {label}｜{date} 数据获取失败已降级：{reason}]'}
 
 
 def fetch_zt_pool(date: str) -> dict:

@@ -116,6 +116,8 @@ def test_fetch_zt_pool_ok(monkeypatch):
 
 
 def test_fetch_zt_pool_failure_envelope(monkeypatch):
+    # 钉住单源链, 隔离 tushare 兜底(避免测试打真实网络)
+    monkeypatch.setattr(fetchers, '_SOURCE_CHAINS', {'zt': ['akshare.eastmoney']})
     fake = _FakeAk(exc=RuntimeError('boom'))
     monkeypatch.setitem(sys.modules, 'akshare', fake)
     out = fetchers.fetch_zt_pool('2026-09-02')
@@ -139,3 +141,78 @@ def test_fetch_all_pool_types(monkeypatch):
         out = getter('2026-09-02')
         assert out['available'] is True
         assert out['rows'][0]['ts_code'] == '002909'
+
+
+# ---------- 源链 fallback (东财 → tushare, FR-5.2.0.1 三源兜底) ----------
+
+def _tushare_df():
+    """tushare limit_list_d 返回形状 (涨停 2 行)"""
+    return pd.DataFrame([
+        {'ts_code': '002909.SZ', 'name': '集泰股份', 'pct_chg': 9.97, 'close': 7.28,
+         'amount': 1.9e8, 'float_mv': 2.77e9, 'total_mv': 2.84e9, 'turnover_ratio': 6.94,
+         'limit_amount': 7.4e7, 'first_time': '092500', 'last_time': '092500',
+         'open_times': 0, 'up_stat': 3, 'industry': '化学制品', 'limit': 'U'},
+        {'ts_code': '600000.SH', 'name': '浦发银行', 'pct_chg': 10.01, 'close': 9.0,
+         'amount': 5e7, 'float_mv': 1e9, 'total_mv': 1.1e9, 'turnover_ratio': 1.2,
+         'limit_amount': 1e7, 'first_time': '093000', 'last_time': '093000',
+         'open_times': 1, 'up_stat': 1, 'industry': '银行', 'limit': 'U'},
+    ])
+
+
+def test_tushare_zt_normalization():
+    """tushare limit_list_d 行 → 统一英文键(去后缀补零/时间归一/连板数 int)"""
+    rows = fetchers.normalize_pool_df(_tushare_df(), fetchers._TUSHARE_MAP['zt'])
+    assert len(rows) == 2
+    r = rows[0]
+    assert r['ts_code'] == '002909'          # 去 .SZ 后缀 + 补零
+    assert r['boards'] == 3
+    assert r['first_seal_time'] == '09:25:00'
+    assert r['seal_amount'] == 7.4e7
+    assert r['board'] == '10cm'              # 制度标签(单一实现)
+
+
+def test_fetch_zt_falls_back_to_tushare(monkeypatch):
+    """东财失败 → tushare 兜底成功, source=tushare"""
+    monkeypatch.setitem(sys.modules, 'akshare', _FakeAk(exc=RuntimeError('反爬')))
+    fake_ts = {'available': True, 'source': 'tushare', 'date': '2026-09-02',
+               'rows': [{'ts_code': '002909', 'name': '集泰股份'}]}
+    monkeypatch.setattr(fetchers, '_fetch_tushare_limit_list',
+                        lambda pt, c, ds: fake_ts)
+    out = fetchers.fetch_zt_pool('2026-09-02')
+    assert out['available'] is True
+    assert out['source'] == 'tushare'
+
+
+def test_fetch_all_sources_fail_envelope(monkeypatch):
+    """东财 + tushare 全失败 → [⚠️] 信封, 且原因含两源"""
+    monkeypatch.setitem(sys.modules, 'akshare', _FakeAk(exc=RuntimeError('东财不可达')))
+    monkeypatch.setattr(fetchers, '_fetch_tushare_limit_list',
+                        lambda pt, c, ds: (_ for _ in ()).throw(RuntimeError('积分不足')))
+    out = fetchers.fetch_zt_pool('2026-09-02')
+    assert out['available'] is False
+    assert out['reason'].startswith('[⚠️')
+    assert 'akshare.eastmoney' in out['reason'] and 'tushare' in out['reason']
+
+
+def test_fetch_zb_single_source_no_tushare_fallback(monkeypatch):
+    """炸板池无 tushare 源 → 东财失败即降级, 不尝试 tushare"""
+    monkeypatch.setattr(fetchers, '_SOURCE_CHAINS', {'zb': ['akshare.eastmoney']})
+    monkeypatch.setitem(sys.modules, 'akshare', _FakeAk(exc=RuntimeError('东财不可达')))
+    out = fetchers.fetch_zb_pool('2026-09-02')
+    assert out['available'] is False
+    assert 'tushare' not in out['reason']
+
+
+def test_fetch_tushare_no_token_degrades(monkeypatch):
+    """tushare 兜底无 token → 抛错 → 整体降级信封"""
+    monkeypatch.setitem(sys.modules, 'akshare', _FakeAk(exc=RuntimeError('东财不可达')))
+    import types
+    fake_mod = types.ModuleType('tushare')
+    def fake_pro_api(token):
+        raise RuntimeError('未配置 TUSHARE_TOKEN, tushare 兜底不可用')
+    fake_mod.pro_api = fake_pro_api
+    monkeypatch.setitem(sys.modules, 'tushare', fake_mod)
+    monkeypatch.setattr('config.settings', types.SimpleNamespace(TUSHARE_TOKEN=''))
+    out = fetchers.fetch_zt_pool('2026-09-02')
+    assert out['available'] is False
+    assert out['reason'].startswith('[⚠️')
