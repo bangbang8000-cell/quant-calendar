@@ -187,16 +187,21 @@
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="lhbError" type="error" :title="lhbErrTitle" :desc="lhbErrDesc" @retry="loadLhb"></qc-state-panel>
                         <div v-else-if="lhbRows">
+                            <div class="flex-wrap mb-4">
+                                <div class="stat-card"><div class="stat-icon gold">📊</div><div class="stat-label">上榜家数</div><div class="stat-value">{{ lhbRows.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success">🏦</div><div class="stat-label">机构净买合计</div><div class="stat-value" style="font-size:1.15em">{{ fmtAmount(lhbInstitutionNetBuy) }}</div></div>
+                                <div class="stat-card"><div class="stat-icon warning">🔥</div><div class="stat-label">游资上榜</div><div class="stat-value">{{ lhbHotMoneyCount }}</div></div>
+                            </div>
                             <div class="table-container">
-                                <el-table :data="lhbRows" size="small">
-                                    <el-table-column prop="name" label="名称" width="90"></el-table-column>
+                                <el-table :data="lhbRows" size="small" max-height="560">
+                                    <el-table-column prop="name" label="名称" width="90" fixed></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
-                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
-                                    <el-table-column label="净买额" width="100" align="right"><template #default="s">{{ fmtAmount(s.row.net_buy) }}</template></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="85" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
+                                    <el-table-column label="净买额" width="105" align="right" sortable sort-by="net_buy"><template #default="s"><span :class="riseFall(s.row.net_buy)">{{ fmtAmount(s.row.net_buy) }}</span></template></el-table-column>
                                     <el-table-column label="买入额" width="100" align="right"><template #default="s">{{ fmtAmount(s.row.buy_amount) }}</template></el-table-column>
                                     <el-table-column label="卖出额" width="100" align="right"><template #default="s">{{ fmtAmount(s.row.sell_amount) }}</template></el-table-column>
-                                    <el-table-column label="资金性质" width="120"><template #default="s"><span v-for="(g, i) in (s.row.tags || [])" :key="i" class="tag-chip mr-4">{{ g }}</span><span v-if="!(s.row.tags && s.row.tags.length)" class="text-xs-tertiary">—</span></template></el-table-column>
-                                    <el-table-column prop="reason" label="上榜原因" min-width="220"></el-table-column>
+                                    <el-table-column label="资金性质" width="130"><template #default="s"><span v-for="(g, i) in (s.row.tags || [])" :key="i" class="tag-chip mr-4" :class="tagClass(g)">{{ g }}</span><span v-if="!(s.row.tags && s.row.tags.length)" class="text-xs-tertiary">—</span></template></el-table-column>
+                                    <el-table-column prop="reason" label="上榜原因" min-width="200" show-overflow-tooltip></el-table-column>
                                 </el-table>
                             </div>
                         </div>
@@ -222,15 +227,20 @@
                         <qc-state-panel v-if="sectorLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="sectorError" type="error" :title="sectorErrTitle" :desc="sectorErrDesc" @retry="loadSectorFlow"></qc-state-panel>
                         <div v-else-if="sectorRows && sectorRows.length">
+                            <div class="flex-wrap mb-4">
+                                <div class="stat-card"><div class="stat-icon info">🥇</div><div class="stat-label">净流入榜首</div><div class="stat-value" style="font-size:1.05em">{{ sectorTopName }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info">🗂</div><div class="stat-label">板块数</div><div class="stat-value">{{ sectorRows.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success">💰</div><div class="stat-label">Top 净流入</div><div class="stat-value" style="font-size:1.05em">{{ fmtAmount(sectorTopInflow) }}</div></div>
+                            </div>
                             <div class="table-container">
-                                <el-table :data="sectorRows" size="small">
-                                    <el-table-column prop="name" label="板块" min-width="120"></el-table-column>
-                                    <el-table-column prop="pct_chg" label="涨跌幅" width="90" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
-                                    <el-table-column label="主力净流入" width="120" align="right"><template #default="s">{{ fmtAmount(s.row.main_net_inflow) }}</template></el-table-column>
-                                    <el-table-column label="主力净占比" width="100" align="right"><template #default="s">{{ fmtPct(s.row.main_net_inflow_ratio) }}</template></el-table-column>
+                                <el-table :data="sectorRows" size="small" max-height="560">
+                                    <el-table-column prop="name" label="板块" min-width="120" fixed></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="95" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
+                                    <el-table-column label="主力净流入" width="130" align="right" sortable sort-by="main_net_inflow"><template #default="s"><span :class="riseFall(s.row.main_net_inflow)">{{ fmtAmount(s.row.main_net_inflow) }}</span></template></el-table-column>
+                                    <el-table-column label="主力净占比" width="105" align="right"><template #default="s">{{ fmtPct(s.row.main_net_inflow_ratio) }}</template></el-table-column>
                                 </el-table>
                             </div>
-                            <div class="text-xs-tertiary mt-4">实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
+                            <div class="text-xs-tertiary mt-4">数据源: {{ sectorSource }} · 实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
                         </div>
                         <qc-state-panel v-else type="empty" title="暂无数据" desc="板块资金流暂不可用"></qc-state-panel>
                     </div>
@@ -244,7 +254,14 @@
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
                             </div>
                         </div>
-                        <div class="text-xs-tertiary mb-4">时点: 09:25/09:35/10:00/11:30/14:00/15:00 · 过点 8 分钟拒绝 · 历史日不现抓</div>
+                        <div class="text-xs-tertiary mb-4">快照仅在交易时段 6 个时点前后 8 分钟可采集 · 历史日绝不现抓</div>
+                        <div class="intraday-timeline mb-4">
+                            <div v-for="t in intradaySlots" :key="t" class="intraday-slot" :class="slotClass(t)">
+                                <span class="intraday-dot"></span>{{ t }}
+                            </div>
+                        </div>
+                        <div class="text-xs-tertiary mb-4">{{ intradayStatus }}</div>
+                        <div v-if="intradayMsg" class="mb-4 text-xs-tertiary">{{ intradayMsg }}</div>
                         <qc-state-panel v-if="intradayLoading" type="loading"></qc-state-panel>
                         <div v-else-if="intradaySnapshots && intradaySnapshots.length">
                             <div class="table-container">
@@ -258,7 +275,7 @@
                                 </el-table>
                             </div>
                         </div>
-                        <qc-state-panel v-else type="empty" title="暂无快照" desc="非快照时点或该日未采集"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)"></qc-state-panel>
                     </div>
                 </div>`,
     setup() {
@@ -292,6 +309,7 @@
       const sectorError = ref(false);
       const sectorErrTitle = ref('数据加载失败');
       const sectorErrDesc = ref('请检查服务后重试');
+      const sectorFlowSource = ref('');
       const review = ref(null);
       const reviewRunning = ref(false);
       const intradayDate = ref('');
@@ -407,6 +425,88 @@
         return 'tag-chip mr-4';
       }
 
+      // ─── V5.2.2 UI 增强: 红涨绿跌 / 摘要 / 时间轴 ───
+      function riseFall(v) {
+        if (v == null) return '';
+        return v > 0 ? 'is-rise' : (v < 0 ? 'is-fall' : '');
+      }
+      function tagClass(g) {
+        if (g === '机构') return 'is-institution';
+        if (g === '游资') return 'is-hotmoney';
+        if (g === '主力') return 'is-main';
+        return '';
+      }
+      const lhbInstitutionNetBuy = computed(function () {
+        return (lhbRows.value || []).filter(function (r) { return (r.tags || []).indexOf('机构') >= 0; })
+          .reduce(function (s, r) { return s + (r.net_buy || 0); }, 0);
+      });
+      const lhbHotMoneyCount = computed(function () {
+        return (lhbRows.value || []).filter(function (r) { return (r.tags || []).indexOf('游资') >= 0; }).length;
+      });
+      const sectorTop = computed(function () {
+        const rows = (sectorRows.value || []).filter(function (r) { return r.main_net_inflow != null; });
+        if (!rows.length) return null;
+        return rows.reduce(function (a, b) { return (a.main_net_inflow >= b.main_net_inflow) ? a : b; });
+      });
+      const sectorTopName = computed(function () {
+        const t = sectorTop.value;
+        return t ? t.name : '—';
+      });
+      const sectorTopInflow = computed(function () {
+        const t = sectorTop.value;
+        return t ? t.main_net_inflow : null;
+      });
+      const sectorSource = computed(function () {
+        return sectorFlowSource.value || '东财';
+      });
+      const intradaySlots = ['09:25', '09:35', '10:00', '11:30', '14:00', '15:00'];
+      const intradayCollected = computed(function () {
+        const set = {};
+        (intradaySnapshots.value || []).forEach(function (s) { set[s.slot] = true; });
+        return set;
+      });
+      function slotClass(t) {
+        if (intradayCollected.value[t]) return 'is-done';
+        if (t === intradayNowSlot.value) return 'is-current';
+        return 'is-empty';
+      }
+      const intradayNowSlot = computed(function () {
+        const now = new Date();
+        const hh = (now.getHours() < 10 ? '0' : '') + now.getHours();
+        const mm = (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+        const cur = hh + ':' + mm;
+        for (var i = 0; i < intradaySlots.length; i++) {
+          if (cur === intradaySlots[i]) return intradaySlots[i];
+        }
+        // 过点 8 分钟窗口
+        for (var j = 0; j < intradaySlots.length - 1; j++) {
+          var t = intradaySlots[j];
+          var base = new Date();
+          base.setHours(Number(t.split(':')[0]), Number(t.split(':')[1]), 0, 0);
+          var end = new Date(base.getTime() + 8 * 60000);
+          if (now >= base && now <= end) return t;
+        }
+        return '';
+      });
+      const intradayStatus = computed(function () {
+        const now = new Date();
+        const cur = intradayNowSlot.value;
+        if (cur) return '当前处于快照窗口 ' + cur + ' (前后 8 分钟) — 可采集';
+        // 下一时点
+        const hh = now.getHours(), mm = now.getMinutes();
+        let next = '';
+        for (let i = 0; i < intradaySlots.length; i++) {
+          const parts = intradaySlots[i].split(':');
+          if (Number(parts[0]) > hh || (Number(parts[0]) === hh && Number(parts[1]) > mm)) {
+            next = intradaySlots[i];
+            break;
+          }
+        }
+        return next ? ('下一快照时点 ' + next + ' — 非窗口期不可采集') : '今日快照时点已全部结束';
+      });
+      const intradayMsg = ref('');
+      const intradayMsgType = ref('info');
+
       // V5.2.0 (FR-5.2.0.7): 连板梯队条形图(复用 charts.js 通用简单图模式, 主题切换重绘)
       function renderLadderChart() {
         const tiers = pools.value && pools.value.ladder && pools.value.ladder.tiers;
@@ -479,6 +579,7 @@
           const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success && res.available) {
             sectorRows.value = res.rows || [];
+            sectorFlowSource.value = res.source || (res.note ? '同花顺' : '东财');
           } else if (res && res.reason) {
             sectorError.value = true;
             sectorErrTitle.value = '数据加载失败';
@@ -557,13 +658,20 @@
           const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             if (!res.accepted) {
-              chatAnswer.value = res.reason || '非快照时点';
+              intradayMsg.value = '⏱ ' + (res.reason || '非快照时点');
+              intradayMsgType.value = 'warn';
             } else {
-              chatAnswer.value = '已采集 ' + res.slot + ' 快照';
+              intradayMsg.value = '✅ 已采集 ' + res.slot + ' 快照' +
+                (res.pools_available && !res.pools_available.zt ? ' (池源部分不可用)' : '');
+              intradayMsgType.value = 'ok';
             }
             loadIntraday();
+          } else {
+            intradayMsg.value = '采集失败, 请稍后重试';
           }
-        } catch (e) { /* 保持 */ } finally {
+        } catch (e) {
+          intradayMsg.value = '采集失败, 请稍后重试';
+        } finally {
           intradayCollecting.value = false;
         }
       }
@@ -592,13 +700,15 @@
         poolDate, pools, poolLoading, poolError,
         lhbDate, lhbRows, lhbLoading, lhbError,
         overviewDate, overview, overviewLoading, overviewError,
-        sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError,
+        sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError, sectorFlowSource,
         review, reviewRunning,
         intradayDate, intradaySnapshots, intradayLoading, intradayCollecting,
+        intradaySlots, intradayMsg, slotClass, intradayStatus,
         chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
         sendChat, loadIntraday, collectSnapshot,
-        ladderText, fmtAmount, fmtPct,
+        ladderText, fmtAmount, fmtPct, riseFall, tagClass,
+        lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass,
       };

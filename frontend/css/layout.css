@@ -609,3 +609,24 @@
   background: var(--glass-bg) ;
   border-color: var(--glass-border) ;
 }
+
+/* ─── V5.2.2 短线复盘页 UI 增强 ─── */
+/* 涨跌工具色: A股 涨=红/跌=绿 (与 themes.css market-review 同惯例) */
+.is-rise { color: var(--color-rise); }
+.is-fall { color: var(--color-fall); }
+/* 资金性质 tag 色系 */
+.tag-chip.is-institution { background: var(--badge-gold-bg); color: var(--badge-gold-text); }
+.tag-chip.is-hotmoney { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
+.tag-chip.is-main { background: var(--badge-info-bg); color: var(--badge-info-text); }
+/* 盘中核验 6 时点时间轴 */
+.intraday-timeline { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+.intraday-slot {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: var(--r-full);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-xs); color: var(--text-tertiary);
+}
+.intraday-slot .intraday-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.intraday-slot.is-done { background: var(--badge-success-bg); color: var(--badge-success-text); border-color: transparent; }
+.intraday-slot.is-current { border-color: var(--color-warning); color: var(--color-warning); box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.18); }
+.intraday-slot.is-empty .intraday-dot { background: transparent; border: 1px solid currentColor; }
