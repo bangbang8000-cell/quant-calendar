@@ -70,6 +70,20 @@ async def get_lhb(date: str = None, user: dict = Depends(get_current_active_user
 @router.get("/sector-flow")
 async def get_sector_flow(indicator: str = '今日', sector_type: str = '行业资金流',
                           user: dict = Depends(get_current_active_user)):
+    """板块资金流。V5.2.3: 先读 store 缓存(今日 10min / 5日10日 1h 新鲜度), 命中则秒开;
+    未命中才实时抓(东财→同花顺兜底)并落盘。"""
+    import time
+    _FRESH = {'今日': 600, '5日': 3600, '10日': 3600}
+    cached = store.latest_sector_flow(sector_type, indicator)
+    if cached and cached.get('captured_at'):
+        try:
+            age = time.time() - time.mktime(time.strptime(cached['captured_at'][:19], '%Y-%m-%dT%H:%M:%S'))
+            if age < _FRESH.get(indicator, 600):
+                return {'success': True, 'available': True, 'source': 'cache',
+                        'indicator': indicator, 'sector_type': sector_type,
+                        'rows': cached.get('rows') or []}
+        except Exception:  # noqa: BLE001 — 时间解析失败走实时
+            pass
     out = sector_flow.fetch_sector_flow(indicator, sector_type)
     if out.get('available'):
         store.save_sector_flow(sector_type, indicator, out['rows'])

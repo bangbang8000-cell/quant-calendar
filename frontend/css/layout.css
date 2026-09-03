@@ -630,3 +630,7 @@
 .intraday-slot.is-done { background: var(--badge-success-bg); color: var(--badge-success-text); border-color: transparent; }
 .intraday-slot.is-current { border-color: var(--color-warning); color: var(--color-warning); }
 .intraday-slot.is-empty .intraday-dot { background: transparent; border: 1px solid currentColor; }
+
+/* V5.2.3: 短线个股可点击弹窗详情 */
+.stock-link { color: var(--primary-color); cursor: pointer; }
+.stock-link:hover { text-decoration: underline; }

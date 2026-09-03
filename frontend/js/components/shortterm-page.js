@@ -140,7 +140,7 @@
                             <div class="text-base-secondary mb-2">涨停池 ({{ pools.zt ? pools.zt.length : 0 }})</div>
                             <div class="table-container">
                                 <el-table :data="pools.zt || []" size="small">
-                                    <el-table-column prop="name" label="名称" width="90"></el-table-column>
+                                    <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="boards" label="连板" width="55" align="center"></el-table-column>
                                     <el-table-column label="涨停原因" min-width="180"><template #default="s">{{ s.row.reason || '—' }}</template></el-table-column>
@@ -156,7 +156,7 @@
                             <div class="text-base-secondary mt-8 mb-2">炸板池 ({{ pools.zb ? pools.zb.length : 0 }})</div>
                             <div class="table-container">
                                 <el-table :data="pools.zb || []" size="small">
-                                    <el-table-column prop="name" label="名称" width="90"></el-table-column>
+                                    <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column prop="break_times" label="炸板" width="55" align="center"></el-table-column>
@@ -168,7 +168,7 @@
                             <div class="text-base-secondary mt-8 mb-2">跌停池 ({{ pools.dt ? pools.dt.length : 0 }})</div>
                             <div class="table-container">
                                 <el-table :data="pools.dt || []" size="small">
-                                    <el-table-column prop="name" label="名称" width="90"></el-table-column>
+                                    <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column prop="consec_dt" label="连续跌停" width="80" align="center"></el-table-column>
@@ -197,7 +197,7 @@
                             </div>
                             <div class="table-container">
                                 <el-table :data="lhbRows" size="small" max-height="560">
-                                    <el-table-column prop="name" label="名称" width="90" fixed></el-table-column>
+                                    <el-table-column label="名称" width="90" fixed><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="85" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column label="净买额" width="105" align="right" sortable sort-by="net_buy"><template #default="s"><span :class="riseFall(s.row.net_buy)">{{ fmtAmount(s.row.net_buy) }}</span></template></el-table-column>
@@ -459,6 +459,12 @@
         if (g === '游资') return 'is-hotmoney';
         if (g === '主力') return 'is-main';
         return '';
+      }
+      function openStock(row) {
+        // V5.2.3: 个股点击 → 打开全局详情弹窗(K线/AI评估/问股)
+        if (row && row.ts_code && state && state.showStockDetail) {
+          state.showStockDetail(row.ts_code);
+        }
       }
       const lhbInstitutionNetBuy = computed(function () {
         return (lhbRows.value || []).filter(function (r) { return (r.tags || []).indexOf('机构') >= 0; })
@@ -762,7 +768,7 @@
         chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
         sendChat, loadIntraday, collectSnapshot, refreshCurrent,
-        ladderText, fmtAmount, fmtPct, riseFall, tagClass,
+        ladderText, fmtAmount, fmtPct, riseFall, tagClass, openStock,
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass,

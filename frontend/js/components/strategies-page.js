@@ -1246,10 +1246,13 @@
         }
       }
 
+      // V5.2.3-fix: 执行看板移入系统配置后, 组件在 (system, execution) 下是"新挂载"
+      // (currentSubPage 已是 execution), 无 immediate 的 watch 不会对当前值触发 → 看板空。
+      // immediate 让挂载即按当前子页加载/停止, 对原策略总览路径无副作用。
       Vue.watch(function () { return state.currentSubPage && state.currentSubPage.value; }, function (sub) {
         if (sub === 'execution') { loadExecutionData(); loadExecutionMonitor(); }
         else { _stopExecPoll(); }
-      });
+      }, { immediate: true });
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
