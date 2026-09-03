@@ -752,13 +752,14 @@ class SchedulerCoreMixin:
             await asyncio.sleep(60)  # 避开重复触发
 
     async def _run_shortterm_capture(self, trade_date):
-        """抓取三池+龙虎榜入库; 未收盘不抓(数据诚实性); 单池失败不覆盖已有缓存"""
+        """抓取三池+龙虎榜入库; 未收盘不抓(数据诚实性); 单池失败不覆盖已有缓存。
+        返回 {'ok','total','skipped'} 供重试/错过补偿判定。"""
         from shortterm import fetchers, lhb, store
         from shortterm.trade_calendar import is_settled
         if not is_settled(trade_date):
             logger.info("短线抓取跳过: %s 未收盘", trade_date)
             self._record_task_run("shortterm_capture", False, f"{trade_date} 未收盘")
-            return
+            return {'ok': 0, 'total': 4, 'skipped': True}
         ok = 0
         total = 4
         for pool_type, fn in [('zt', fetchers.fetch_zt_pool),
@@ -771,13 +772,33 @@ class SchedulerCoreMixin:
                 logger.error("短线 %s 抓取异常(%s): %s", pool_type, trade_date, e)
                 continue
             if out.get('available'):
-                store.save_pool(trade_date, pool_type, out['rows'])
+                rows = out['rows']
+                if pool_type == 'zt':
+                    # V5.2.0 (FR-5.2.0.7): 涨停原因/题材串(问财可选, 无则如实不附)
+                    try:
+                        from shortterm import themes
+                        rows, _avail, _err = themes.attach_reasons(rows, trade_date)
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("短线 涨停原因 附加失败(%s): %s", trade_date, e)
+                store.save_pool(trade_date, pool_type, rows)
                 ok += 1
             else:
                 logger.warning("短线 %s 不可用(%s): %s", pool_type, trade_date,
                                out.get('reason'))
         self._record_task_run("shortterm_capture", ok >= 2,
                               f"{trade_date} 入库 {ok}/{total}")
+        return {'ok': ok, 'total': total, 'skipped': False}
+
+    async def _shortterm_capture_with_retry(self, today):
+        """主跑 → 部分失败(ok<total)则 30 分钟后重试一次 (V5.2.0 T-5.2.10 降级重试)"""
+        result = await self._run_shortterm_capture(today)
+        if result and not result.get('skipped') and result.get('ok', 0) < result.get('total', 4):
+            logger.warning("短线抓取部分失败(%s %s/%s), 30 分钟后重试", today,
+                           result.get('ok'), result.get('total'))
+            await asyncio.sleep(30 * 60)
+            if self.running:
+                await self._run_shortterm_capture(today)
+        return result
 
     async def daily_shortterm_capture_task(self):
         """每日 16:05 抓取短线三池/龙虎榜入库 (V5.2.0 T-5.2.10)
@@ -794,8 +815,22 @@ class SchedulerCoreMixin:
                 break
             today = datetime.now().strftime('%Y-%m-%d')
             logger.info("抓取短线复盘数据: %s", today)
-            await self._run_shortterm_capture(today)
+            await self._shortterm_capture_with_retry(today)
             await asyncio.sleep(60)  # 避开重复触发
+
+    async def _catchup_shortterm(self):
+        """V5.2.0 (T-5.2.10) 错过补偿: 启动时若 16:05 已过且当日未抓短线 → 补跑一次"""
+        await asyncio.sleep(3)  # 等调度器就绪
+        try:
+            from shortterm import store
+            from shortterm.trade_calendar import is_settled
+            now = datetime.now()
+            today = now.strftime('%Y-%m-%d')
+            if now.hour >= 16 and is_settled(today) and store.load_pool(today, 'zt') is None:
+                logger.info("[短线错过补偿] %s 已过 16:05 未抓取, 补跑", today)
+                await self._run_shortterm_capture(today)
+        except Exception as e:  # noqa: BLE001
+            logger.error("短线错过补偿异常: %s", e)
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -815,6 +850,8 @@ class SchedulerCoreMixin:
         asyncio.create_task(self.daily_market_review_task())
         # V5.2.0 T-5.2.10: 每日 16:05 短线三池/龙虎榜抓取入库
         asyncio.create_task(self.daily_shortterm_capture_task())
+        # V5.2.0 T-5.2.10: 短线错过补偿(启动时已过 16:05 且当日未抓 → 补跑)
+        asyncio.create_task(self._catchup_shortterm())
         # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
         asyncio.create_task(self._catchup_market_review())
         # v3.18 (FR-3.18.2): 每日事件提醒扫描

@@ -413,13 +413,21 @@
     if (rec && rec.chart) rec.chart.resize();
   }
 
+  // ─── V5.2.0 (FR-5.2.0.7): 通用简单图(柱状/折线) — 复用 portfolio 注册表模式
+  // 任意 option 工厂; 懒加载 echarts + 主题注入 + resize 与 K线/回测同模式管理。
+  const renderSimpleChartTo = renderPortfolioTo;
+  const redrawSimpleChart = redrawPortfolio;
+  const disposeSimpleChart = disposePortfolio;
+  const resizeSimpleChart = resizePortfolio;
+
   const chartsApi = {
     renderKlineChart,
     renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
     renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest,
     renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio,
+    renderSimpleChartTo, redrawSimpleChart, disposeSimpleChart, resizeSimpleChart,
     downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette,
-    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette }; },
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, renderSimpleChartTo, redrawSimpleChart, disposeSimpleChart, resizeSimpleChart, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette }; },
   };
   if (typeof window !== 'undefined') {
     if (!window.__quantModules) window.__quantModules = {};

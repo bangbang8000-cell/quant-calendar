@@ -2,7 +2,7 @@
 // 短线复盘页: 涨停复盘(三池+连板梯队) / 龙虎榜 两子页
 // 数据诚实性: 接口失败字段为 null → 显示"—"而非 0; 空池是合法结果(空表格)
 (function () {
-  const { inject, ref, onMounted, computed } = Vue;
+  const { inject, ref, onMounted, computed, nextTick } = Vue;
 
   window.__quantComponents = window.__quantComponents || {};
 
@@ -30,6 +30,7 @@
                                 <div class="stat-card"><div class="stat-label">跌停</div><div class="stat-value">{{ pools.dt ? pools.dt.length : '—' }} 家</div></div>
                             </div>
                             <div v-if="pools.ladder && pools.ladder.note" class="text-xs-tertiary mb-4">{{ pools.ladder.note }}</div>
+                            <div v-if="pools.ladder && Object.keys(pools.ladder.tiers || {}).length" id="shorttermLadderChart" class="mb-4" style="height:170px;width:100%"></div>
 
                             <div class="text-base-secondary mb-2">涨停池 ({{ pools.zt ? pools.zt.length : 0 }})</div>
                             <div class="table-container">
@@ -37,6 +38,7 @@
                                     <el-table-column prop="name" label="名称" width="90"></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="boards" label="连板" width="55" align="center"></el-table-column>
+                                    <el-table-column label="涨停原因" min-width="180"><template #default="s">{{ s.row.reason || '—' }}</template></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
                                     <el-table-column prop="first_seal_time" label="首封" width="80"></el-table-column>
                                     <el-table-column prop="break_times" label="炸板" width="55" align="center"></el-table-column>
@@ -131,6 +133,7 @@
           const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             pools.value = res;
+            nextTick(renderLadderChart);
           } else if (res && res.detail) {
             // V5.2.0-fix: 未登录/token 过期(401) 时后端返回 {detail}, 提示登录而非笼统"加载失败"
             poolError.value = true;
@@ -183,6 +186,30 @@
         return Object.keys(tiers).sort(function (a, b) { return a - b; })
           .map(function (b) { return b + '板:' + tiers[b]; }).join(' ');
       });
+
+      // V5.2.0 (FR-5.2.0.7): 连板梯队条形图(复用 charts.js 通用简单图模式, 主题切换重绘)
+      function renderLadderChart() {
+        const tiers = pools.value && pools.value.ladder && pools.value.ladder.tiers;
+        if (!tiers || !Object.keys(tiers).length) return;
+        const charts = window.__quantModules && window.__quantModules.charts;
+        if (!charts || !charts.renderSimpleChartTo) return;
+        charts.renderSimpleChartTo('shorttermLadderChart', function () {
+          const boards = Object.keys(tiers).sort(function (a, b) { return Number(a) - Number(b); });
+          return {
+            grid: { left: 8, right: 16, top: 20, bottom: 4, containLabel: true },
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: boards.map(function (b) { return b + '板'; }) },
+            yAxis: { type: 'value', minInterval: 1 },
+            series: [{ type: 'bar', barWidth: '45%',
+                       label: { show: true, position: 'top' },
+                       data: boards.map(function (b) { return tiers[b]; }) }],
+          };
+        }, { key: 'shortterm-ladder' });
+      }
+      if (window.__quantModules && window.__quantModules.echartsTheme
+          && window.__quantModules.echartsTheme.registerChart) {
+        window.__quantModules.echartsTheme.registerChart(renderLadderChart);
+      }
 
       function fmtAmount(v) {
         if (v == null) return '—';
