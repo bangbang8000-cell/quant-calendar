@@ -34,7 +34,7 @@
                                 </div>
                                 <qc-state-panel v-if="reviewRunning" type="loading"></qc-state-panel>
                                 <div v-else-if="review && review.available" class="card">
-                                    <div class="stat-value" style="font-size:1.05em">{{ review.emotion_level ? '情绪档位: ' + review.emotion_level : '情绪档位: —' }}</div>
+                                    <div class="stat-value stat-value-lg">{{ review.emotion_level ? '情绪档位: ' + review.emotion_level : '情绪档位: —' }}</div>
                                     <div class="mt-4">{{ review.summary || '—' }}</div>
                                     <div v-if="review.active_directions && review.active_directions.length" class="mt-4">
                                         <div class="text-base-secondary mb-2">活跃方向 <span class="text-xs-tertiary">(点击跳板块资金)</span></div>
@@ -204,7 +204,7 @@
                                 <div class="stat-card"><div class="stat-icon warning">🔥</div><div class="stat-label">游资上榜</div><div class="stat-value">{{ lhbHotMoneyCount }}</div></div>
                             </div>
                             <div class="table-container">
-                                <el-table :data="lhbRows" size="small" max-height="560">
+                                <el-table :data="lhbPageRows" size="small" max-height="560">
                                     <el-table-column label="名称" width="90" fixed><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="85" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
@@ -214,6 +214,7 @@
                                     <el-table-column label="资金性质" width="130"><template #default="s"><span v-for="(g, i) in (s.row.tags || [])" :key="i" class="tag-chip mr-4" :class="tagClass(g)">{{ g }}</span><span v-if="!(s.row.tags && s.row.tags.length)" class="text-xs-tertiary">—</span></template></el-table-column>
                                     <el-table-column prop="reason" label="上榜原因" min-width="200" show-overflow-tooltip></el-table-column>
                                 </el-table>
+                                <el-pagination v-if="lhbRows && lhbRows.length > 200" small layout="prev, pager, next, total" :total="lhbRows.length" :page-size="PAGE_SIZE" v-model:current-page="lhbPage" class="mt-4"></el-pagination>
                             </div>
                         </div>
                         <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据"></qc-state-panel>
@@ -241,17 +242,18 @@
                         <qc-state-panel v-else-if="sectorError" type="error" :title="sectorErrTitle" :desc="sectorErrDesc" @retry="loadSectorFlow"></qc-state-panel>
                         <div v-else-if="sectorRows && sectorRows.length">
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon info">🥇</div><div class="stat-label">净流入榜首</div><div class="stat-value" style="font-size:1.05em">{{ sectorTopName }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info">🥇</div><div class="stat-label">净流入榜首</div><div class="stat-value stat-value-lg">{{ sectorTopName }}</div></div>
                                 <div class="stat-card"><div class="stat-icon info">🗂</div><div class="stat-label">板块数</div><div class="stat-value">{{ sectorRows.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">💰</div><div class="stat-label">Top 净流入</div><div class="stat-value" style="font-size:1.05em">{{ fmtAmount(sectorTopInflow) }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success">💰</div><div class="stat-label">Top 净流入</div><div class="stat-value stat-value-lg">{{ fmtAmount(sectorTopInflow) }}</div></div>
                             </div>
                             <div class="table-container">
-                                <el-table :data="filteredSectorRows" size="small" max-height="560">
+                                <el-table :data="sectorPageRows" size="small" max-height="560">
                                     <el-table-column prop="name" label="板块" min-width="120" fixed></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="95" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column label="主力净流入" width="130" align="right" sortable sort-by="main_net_inflow"><template #default="s"><span :class="riseFall(s.row.main_net_inflow)">{{ fmtAmount(s.row.main_net_inflow) }}</span></template></el-table-column>
                                     <el-table-column label="主力净占比" width="105" align="right"><template #default="s">{{ fmtPct(s.row.main_net_inflow_ratio) }}</template></el-table-column>
                                 </el-table>
+                                <el-pagination v-if="filteredSectorRows.length > 200" small layout="prev, pager, next, total" :total="filteredSectorRows.length" :page-size="PAGE_SIZE" v-model:current-page="sectorPage" class="mt-4"></el-pagination>
                             </div>
                             <div class="text-xs-tertiary mt-4">数据源: {{ sectorSource }} · 实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
                         </div>
@@ -311,6 +313,15 @@
       const lhbError = ref(false);
       const lhbErrTitle = ref('数据加载失败');
       const lhbErrDesc = ref('请检查服务后重试');
+      // V5.2.4 (T-5.2.54): 长表分页(>200 行启用, 每页 50)
+      const lhbPage = ref(1);
+      const PAGE_SIZE = 50;
+      const lhbPageRows = computed(function () {
+        const rows = lhbRows.value || [];
+        if (rows.length <= 200) return rows;
+        const start = (lhbPage.value - 1) * PAGE_SIZE;
+        return rows.slice(start, start + PAGE_SIZE);
+      });
       const overview = ref(null);
       const overviewLoading = ref(false);
       const overviewError = ref(false);
@@ -320,6 +331,7 @@
       const sectorIndicator = ref('今日');
       const sectorKeyword = ref('');   // V5.2.4 (T-5.2.43): 板块资金搜索/联动预选
       const sectorRows = ref(null);
+      const sectorPage = ref(1);       // V5.2.4 (T-5.2.54): 长表分页
       const sectorLoading = ref(false);
       const sectorError = ref(false);
       const sectorErrTitle = ref('数据加载失败');
@@ -394,6 +406,7 @@
           if (seq !== _reqSeq) return;
           if (res && res.success) {
             lhbRows.value = Array.isArray(res.rows) ? res.rows : null;
+            lhbPage.value = 1;
           } else if (res && res.detail) {
             // V5.2.0-fix: 401 提示登录
             lhbError.value = true;
@@ -533,6 +546,12 @@
         sectorKeyword.value = kw || '';
         if (state && state.currentSubPage) state.currentSubPage.value = 'sector';
       }
+      const sectorPageRows = computed(function () {
+        const rows = filteredSectorRows.value;
+        if (rows.length <= 200) return rows;
+        const start = (sectorPage.value - 1) * PAGE_SIZE;
+        return rows.slice(start, start + PAGE_SIZE);
+      });
       const intradaySlots = ['09:25', '09:35', '10:00', '11:30', '14:00', '15:00'];
       const intradayCollected = computed(function () {
         const set = {};
@@ -675,6 +694,7 @@
           if (res && res.success && res.available) {
             sectorRows.value = res.rows || [];
             sectorFlowSource.value = res.source || (res.note ? '同花顺' : '东财');
+            sectorPage.value = 1;
           } else if (res && res.reason) {
             sectorError.value = true;
             sectorErrTitle.value = '数据加载失败';
@@ -816,10 +836,10 @@
       return {
         currentPage, currentSubPage,
         shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter,
-        lhbRows, lhbLoading, lhbError,
+        lhbRows, lhbLoading, lhbError, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
-        sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorLoading, sectorError, sectorFlowSource,
-        gotoSector,
+        sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorPageRows, sectorPage, sectorLoading, sectorError, sectorFlowSource,
+        PAGE_SIZE, gotoSector,
         review, reviewRunning,
         intradaySnapshots, intradayLoading, intradayCollecting,
         intradaySlots, intradayMsg, slotClass, intradayStatus,

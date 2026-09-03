@@ -634,3 +634,6 @@
 /* V5.2.3: 短线个股可点击弹窗详情 */
 .stock-link { color: var(--primary-color); cursor: pointer; }
 .stock-link:hover { text-decoration: underline; }
+
+/* V5.2.4: 摘要条次级数值(替代内联 font-size) */
+.stat-value-lg { font-size: var(--font-lg); }

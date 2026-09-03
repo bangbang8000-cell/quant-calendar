@@ -124,6 +124,10 @@
                         <qc-state-panel v-else-if="strategiesError" type="error" title="策略加载失败"
                             desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
                         <template v-else>
+                            <div class="flex-wrap mb-4">
+                                <div class="stat-card"><div class="stat-icon info">🔬</div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success">🟢</div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
+                            </div>
                             <!-- 策略列表: 卡片 + 选择 -->
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-220" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
@@ -604,6 +608,10 @@
                             <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="📋" title="暂无市场复盘"
                                 desc="尚未生成任何市场复盘报告"></qc-state-panel>
                             <div v-else class="market-review-list">
+                                <div class="flex-wrap mb-4">
+                                    <div class="stat-card"><div class="stat-icon info">📋</div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
+                                    <div class="stat-card"><div class="stat-icon success">📅</div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
+                                </div>
                                 <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
                                      tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
                                      @click="openMarketReview(item.date)"
@@ -719,7 +727,11 @@
                             desc="请检查数据源后重试" @retry="loadScan"></qc-state-panel>
                         <template v-else-if="scanResult && scanResult.moves && scanResult.moves.length">
                             <div v-if="scanResult.note" class="scan-note">{{ scanResult.note }}</div>
-                            <div class="scan-meta">扫描日期：{{ scanResult.date || '--' }}，异动 {{ scanResult.moves.length }} 只</div>
+                            <div class="flex-wrap mb-4">
+                                <div class="stat-card"><div class="stat-icon warning">⚡</div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info">🗓</div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
+                            </div>
+                            <div class="scan-meta">共 {{ scanResult.moves.length }} 只异动(可点击查看详情)</div>
                             <div v-for="group in scanGroups" :key="group.label" class="scan-group">
                                 <div class="scan-group-title">{{ group.label }}
                                     <span class="scan-group-count">{{ group.moves.length }}</span>
