@@ -750,6 +750,52 @@ class SchedulerCoreMixin:
             logger.info(f"生成每日市场复盘: {today}")
             await self._run_market_review_with_retry(today)
             await asyncio.sleep(60)  # 避开重复触发
+
+    async def _run_shortterm_capture(self, trade_date):
+        """抓取三池+龙虎榜入库; 未收盘不抓(数据诚实性); 单池失败不覆盖已有缓存"""
+        from shortterm import fetchers, lhb, store
+        from shortterm.trade_calendar import is_settled
+        if not is_settled(trade_date):
+            logger.info("短线抓取跳过: %s 未收盘", trade_date)
+            self._record_task_run("shortterm_capture", False, f"{trade_date} 未收盘")
+            return
+        ok = 0
+        total = 4
+        for pool_type, fn in [('zt', fetchers.fetch_zt_pool),
+                              ('zb', fetchers.fetch_zb_pool),
+                              ('dt', fetchers.fetch_dt_pool),
+                              ('lhb', lambda x: lhb.fetch_lhb(x, x))]:
+            try:
+                out = fn(trade_date)
+            except Exception as e:  # noqa: BLE001
+                logger.error("短线 %s 抓取异常(%s): %s", pool_type, trade_date, e)
+                continue
+            if out.get('available'):
+                store.save_pool(trade_date, pool_type, out['rows'])
+                ok += 1
+            else:
+                logger.warning("短线 %s 不可用(%s): %s", pool_type, trade_date,
+                               out.get('reason'))
+        self._record_task_run("shortterm_capture", ok >= 2,
+                              f"{trade_date} 入库 {ok}/{total}")
+
+    async def daily_shortterm_capture_task(self):
+        """每日 16:05 抓取短线三池/龙虎榜入库 (V5.2.0 T-5.2.10)
+        失败仅打日志, 不中断其他定时任务。"""
+        while self.running:
+            now = datetime.now()
+            target = now.replace(hour=16, minute=5, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait = (target - now).total_seconds()
+            await asyncio.sleep(max(wait, 10))
+
+            if not self.running:
+                break
+            today = datetime.now().strftime('%Y-%m-%d')
+            logger.info("抓取短线复盘数据: %s", today)
+            await self._run_shortterm_capture(today)
+            await asyncio.sleep(60)  # 避开重复触发
     async def start(self):
         """启动调度器"""
         self.running = True
@@ -767,6 +813,8 @@ class SchedulerCoreMixin:
         asyncio.create_task(self.health_check_task())
         asyncio.create_task(self.error_alert_task())
         asyncio.create_task(self.daily_market_review_task())
+        # V5.2.0 T-5.2.10: 每日 16:05 短线三池/龙虎榜抓取入库
+        asyncio.create_task(self.daily_shortterm_capture_task())
         # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
         asyncio.create_task(self._catchup_market_review())
         # v3.18 (FR-3.18.2): 每日事件提醒扫描
