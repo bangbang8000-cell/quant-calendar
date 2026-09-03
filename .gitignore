@@ -14,6 +14,7 @@ build/
 !frontend/dist/
 !frontend/dist/**
 node_modules/
+frontend/node_modules
 
 # Virtual environments
 venv/
