@@ -133,3 +133,40 @@ def test_overview_requires_auth():
     c = TestClient(app)
     assert c.get('/api/shortterm/overview?date=2026-09-02').status_code in (401, 403)
     assert c.get('/api/shortterm/emotion?date=2026-09-02').status_code in (401, 403)
+
+
+# ---------- V5.2.1 收尾: 验证条件落盘 / history / 用户自设 ----------
+
+def test_verification_persists_and_history(client):
+    """生成验证条件后落盘, /history 可回读"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02')
+    assert r.json()['success'] is True
+    persisted = store.load_pool('2026-09-02', 'conditions')
+    assert persisted and len(persisted) == 6
+    h = client.get('/api/shortterm/verification/history?date=2026-09-02').json()
+    assert len(h['conditions']) == 6
+    assert h['conditions'][0]['key'] == 'limit_up_count'
+
+
+def test_verification_history_empty_when_none(client):
+    h = client.get('/api/shortterm/verification/history?date=2026-09-10').json()
+    assert h['conditions'] == []
+
+
+def test_verification_custom_override(client):
+    """用户自设条件覆盖基线阈值: 涨停家数阈值设 999 → 当前必证伪"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02&custom=%7B%22limit_up_count%22%3A999%7D')
+    conds = r.json()['conditions']
+    by_key = {c['key']: c for c in conds}
+    assert by_key['limit_up_count']['threshold'] == 999
+    assert by_key['limit_up_count']['verdict'] == '证伪'
+    # 未覆盖的指标仍用基线
+    assert by_key['highest_board']['threshold'] is None or isinstance(
+        by_key['highest_board']['threshold'], (int, float))
+
+
+def test_verification_custom_invalid_ignored(client):
+    """非法 custom 忽略, 不报错"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02&custom=not-json')
+    assert r.json()['success'] is True
+    assert len(r.json()['conditions']) == 6

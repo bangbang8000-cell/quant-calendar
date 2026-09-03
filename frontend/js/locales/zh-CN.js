@@ -48,6 +48,8 @@
     'sub.ztpool': '涨停复盘',
     'sub.lhb': '龙虎榜',
     'sub.shortterm.overview': '复盘看板',
+    'sub.shortterm.sector': '板块资金',
+    'sub.sector': '板块资金',
     'sub.status': '系统状态',
     'sub.autoeval': '自动评估',
     'sub.datasource': '数据源',

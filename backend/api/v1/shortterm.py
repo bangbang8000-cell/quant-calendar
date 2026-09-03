@@ -156,14 +156,48 @@ async def get_market_facts(date: str = None, user: dict = Depends(get_current_ac
     return {'success': True, **market_facts.build_facts(d)}
 
 
-@router.get("/verification")
-async def get_verification(date: str = None, user: dict = Depends(get_current_active_user)):
-    d = date or latest_session()
-    bundle = _overview_bundle(d)
-    baselines = _baselines_from_history(d)
+def _parse_custom(custom: str):
+    """用户自设条件: '{"limit_up_count":70}' → dict; 非法 → None(忽略)"""
+    if not custom:
+        return None
+    try:
+        import json
+        obj = json.loads(custom)
+        return obj if isinstance(obj, dict) else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _build_conditions(date: str, custom: str = None) -> list:
+    """生成验证条件(用户自设覆盖基线阈值) + 落盘供次日核验。"""
+    bundle = _overview_bundle(date)
+    baselines = _baselines_from_history(date)
+    overrides = _parse_custom(custom)
+    if overrides:
+        for k, v in overrides.items():
+            if isinstance(v, (int, float)):
+                baselines[k] = {**baselines.get(k, {}), 'threshold': v}
     conds = verification.build_conditions(bundle, baselines)
+    store.save_pool(date, 'conditions', conds)
+    return conds
+
+
+@router.get("/verification")
+async def get_verification(date: str = None, custom: str = None,
+                           user: dict = Depends(get_current_active_user)):
+    d = date or latest_session()
+    conds = _build_conditions(d, custom)
     return {'success': True, 'date': d,
             'conditions': conds, 'summary': verification.summarize(conds)}
+
+
+@router.get("/verification/history")
+async def get_verification_history(date: str = None,
+                                   user: dict = Depends(get_current_active_user)):
+    """读取某日已落盘的验证条件(供次日核验回看)"""
+    d = date or latest_session()
+    conds = store.load_pool(d, 'conditions') or []
+    return {'success': True, 'date': d, 'conditions': conds}
 
 
 @router.get("/weekly")
@@ -181,11 +215,11 @@ def _overview_bundle(date: str) -> dict:
 
 
 @router.get("/overview")
-async def get_overview(date: str = None, user: dict = Depends(get_current_active_user)):
+async def get_overview(date: str = None, custom: str = None,
+                       user: dict = Depends(get_current_active_user)):
     d = date or latest_session()
     bundle = _overview_bundle(d)
-    baselines = _baselines_from_history(d)
-    conditions = verification.build_conditions(bundle, baselines)
+    conditions = _build_conditions(d, custom)
     return {'success': True, 'date': d,
             'emotion': {k: bundle[k] for k in ('money_effect', 'promotion',
                                                'consec_premium', 'sentiment_cycle')},

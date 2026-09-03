@@ -47,6 +47,8 @@
     'sub.ztpool': 'Limit-up Review',
     'sub.lhb': 'Dragon-Tiger List',
     'sub.shortterm.overview': 'Review Dashboard',
+    'sub.shortterm.sector': 'Sector Flow',
+    'sub.sector': 'Sector Flow',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',

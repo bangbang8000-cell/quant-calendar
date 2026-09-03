@@ -43,6 +43,8 @@
     'sub.ztpool': '상한가 리뷰',
     'sub.lhb': '용호방',
     'sub.shortterm.overview': '복기 대시보드',
+    'sub.shortterm.sector': '섹터 자금흐름',
+    'sub.sector': '섹터 자금흐름',
     'sub.status': '시스템 상태',
     'sub.autoeval': '자동 평가',
     'sub.datasource': '데이터 소스',

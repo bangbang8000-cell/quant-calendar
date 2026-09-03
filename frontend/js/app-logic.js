@@ -114,7 +114,7 @@ const allMenuDefs = [
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
-                    { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'ztpool', 'lhb'] }, // V5.2.0: 涨停复盘+龙虎榜; V5.2.1: 复盘看板(落地页) + 板块资金
+                    { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'ztpool', 'lhb', 'sector'] }, // V5.2.0: 涨停复盘+龙虎榜; V5.2.1: 复盘看板(落地页)+板块资金
                     { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
@@ -336,6 +336,7 @@ const allMenuDefs = [
                     'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
+                    'shortterm.sector': '板块资金', 'sector': '板块资金',
                     'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'user': '用户与权限', 'about': '关于'
                 };
 

@@ -43,6 +43,8 @@
     'sub.ztpool': '漲停復盤',
     'sub.lhb': '龍虎榜',
     'sub.shortterm.overview': '復盤看板',
+    'sub.shortterm.sector': '板塊資金',
+    'sub.sector': '板塊資金',
     'sub.status': '系統状态',
     'sub.autoeval': '自動評估',
     'sub.datasource': '數据源',

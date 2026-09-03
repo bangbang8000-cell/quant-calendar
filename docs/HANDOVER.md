@@ -105,18 +105,18 @@
 
 **测试**: 短线专项 96 用例(limits/ladder/lhb/sector_flow/trade_calendar/migration/api/data_source/themes/scheduler), 模块覆盖率 93%(门禁 ≥70%)。
 
-### 4.5 V5.2.1 派生情绪指标与盘面 — 开发完成(未发版, 随 v5.2.0 代码同仓)
+### 4.5 V5.2.1 派生情绪指标与盘面 — 已发布 (2026-09-03, tag v5.2.1)
 
 | 子项 | 交付 |
 |---|---|
 | 情绪指标 | emotion_metrics.py: 赚钱效应(定稿优先+覆盖率闸门) / 晋级率(1进2/2进3/3板+) / 连板溢价 / 情绪周期(十日相对读数) |
 | 市场事实 | market_facts.py: 封板质量 / 亏钱效应 / 反馈矩阵 / 题材结构(行业口径如实标注) |
-| 验证条件 | verification.py: 固定指标集 + eps + 三态核验(数据不足不算判错) + 基准发生率 |
+| 验证条件 | verification.py: 固定指标集 + eps + 三态核验(数据不足不算判错) + 基准发生率 + **用户自设(custom 覆盖) + 落盘(/verification/history 回读)** |
 | 近5日热度 | weekly.py: 行业热度 + 龙头谱系(客观陈述非推荐) |
-| API | /emotion /market-facts /verification /weekly /overview(复盘看板聚合) |
-| 前端 | 复盘看板 overview 子页(五卡+事实+验证条件+热度, 落地页) + 菜单/i18n 5 语 |
+| API | /emotion /market-facts /verification(+history/custom) /weekly /overview |
+| 前端 | 复盘看板 overview 落地页(五卡+事实+验证条件+热度) + **板块资金子页**(行业/概念,今日/5日/10日) + 菜单/i18n 5 语 |
 
-**未做**: 板块资金子页(sector-flow 已有接口, 前端子页未挂)、情绪周期/验证条件历史落盘表、用户自设条件。APP_VERSION 仍 5.2.0(未发版, 无 tag)。
+**出口**: 短线专项 136 用例, 全量回归绿, tag v5.2.1 ↔ APP_VERSION 5.2.1。
 
 ### 4.4 V5.2.0 实现差异记录 (对照 PRD/DEV-PLAN, 2026-09-03)
 

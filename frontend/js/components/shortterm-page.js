@@ -179,6 +179,38 @@
                         </div>
                         <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据"></qc-state-panel>
                     </div>
+
+                    <!-- 板块资金 (V5.2.1: 行业/概念资金流, 今日/5日/10日窗口) -->
+                    <div v-if="currentSubPage === 'sector'" class="card">
+                        <div class="page-header">
+                            <div class="page-title">板块资金</div>
+                            <div class="flex-c-gap-12">
+                                <el-select v-model="sectorType" size="small" style="width:120px" @change="loadSectorFlow">
+                                    <el-option label="行业资金流" value="行业资金流"></el-option>
+                                    <el-option label="概念资金流" value="概念资金流"></el-option>
+                                </el-select>
+                                <el-select v-model="sectorIndicator" size="small" style="width:90px" @change="loadSectorFlow">
+                                    <el-option label="今日" value="今日"></el-option>
+                                    <el-option label="5日" value="5日"></el-option>
+                                    <el-option label="10日" value="10日"></el-option>
+                                </el-select>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="sectorLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="sectorError" type="error" :title="sectorErrTitle" :desc="sectorErrDesc" @retry="loadSectorFlow"></qc-state-panel>
+                        <div v-else-if="sectorRows && sectorRows.length">
+                            <div class="table-container">
+                                <el-table :data="sectorRows" size="small">
+                                    <el-table-column prop="name" label="板块" min-width="120"></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="90" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
+                                    <el-table-column label="主力净流入" width="120" align="right"><template #default="s">{{ fmtAmount(s.row.main_net_inflow) }}</template></el-table-column>
+                                    <el-table-column label="主力净占比" width="100" align="right"><template #default="s">{{ fmtPct(s.row.main_net_inflow_ratio) }}</template></el-table-column>
+                                </el-table>
+                            </div>
+                            <div class="text-xs-tertiary mt-4">实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
+                        </div>
+                        <qc-state-panel v-else type="empty" title="暂无数据" desc="板块资金流暂不可用"></qc-state-panel>
+                    </div>
                 </div>`,
     setup() {
       const state = inject('qcState');
@@ -204,6 +236,13 @@
       const overviewError = ref(false);
       const overviewErrTitle = ref('数据加载失败');
       const overviewErrDesc = ref('请检查服务后重试');
+      const sectorType = ref('行业资金流');
+      const sectorIndicator = ref('今日');
+      const sectorRows = ref(null);
+      const sectorLoading = ref(false);
+      const sectorError = ref(false);
+      const sectorErrTitle = ref('数据加载失败');
+      const sectorErrDesc = ref('请检查服务后重试');
 
       function authHeaders() {
         const t = localStorage.getItem('quant_token') || '';
@@ -373,6 +412,37 @@
         }
       }
 
+      async function loadSectorFlow() {
+        sectorLoading.value = true;
+        sectorError.value = false;
+        try {
+          const url = '/api/shortterm/sector-flow?indicator=' + encodeURIComponent(sectorIndicator.value)
+            + '&sector_type=' + encodeURIComponent(sectorType.value);
+          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.success && res.available) {
+            sectorRows.value = res.rows || [];
+          } else if (res && res.reason) {
+            sectorError.value = true;
+            sectorErrTitle.value = '数据加载失败';
+            sectorErrDesc.value = String(res.reason).replace(/^\[⚠️[^\]]*\]\s*/, '');
+          } else if (res && res.detail) {
+            sectorError.value = true;
+            sectorErrTitle.value = String(res.detail);
+            sectorErrDesc.value = '请先登录后再查看';
+          } else {
+            sectorError.value = true;
+            sectorErrTitle.value = '数据加载失败';
+            sectorErrDesc.value = '请检查服务后重试';
+          }
+        } catch (e) {
+          sectorError.value = true;
+          sectorErrTitle.value = '数据加载失败';
+          sectorErrDesc.value = '请检查服务后重试';
+        } finally {
+          sectorLoading.value = false;
+        }
+      }
+
       async function loadDefaults() {
         try {
           const res = await fetch('/api/shortterm/latest-session', { headers: authHeaders() }).then(function (r) { return r.json(); });
@@ -385,6 +455,7 @@
         loadPools();
         loadLhb();
         loadOverview();
+        loadSectorFlow();
       }
 
       onMounted(loadDefaults);
@@ -394,7 +465,8 @@
         poolDate, pools, poolLoading, poolError,
         lhbDate, lhbRows, lhbLoading, lhbError,
         overviewDate, overview, overviewLoading, overviewError,
-        loadPools, loadLhb, loadOverview, ladderText, fmtAmount, fmtPct,
+        sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError,
+        loadPools, loadLhb, loadOverview, loadSectorFlow, ladderText, fmtAmount, fmtPct,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass,
       };
