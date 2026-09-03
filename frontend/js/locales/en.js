@@ -17,6 +17,7 @@
     'nav.ai': 'AI Evaluation',
     'nav.research': 'Strategy Research',
     'nav.system': 'System Settings',
+    'nav.shortterm': 'Short-term Review',
     // 二级导航
     'sub.overview': 'Overview',
     'sub.strategies.overview': 'Strategy Overview', 'sub.ai.overview': 'Eval Overview', 'sub.research.research-overview': 'Research Overview',
@@ -43,6 +44,8 @@
     'sub.market-review': 'Market Review',
     'sub.scan': 'Anomaly Scan',
     'sub.custom-write': 'New Strategy',
+    'sub.ztpool': 'Limit-up Review',
+    'sub.lhb': 'Dragon-Tiger List',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',

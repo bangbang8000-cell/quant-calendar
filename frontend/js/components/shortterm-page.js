@@ -20,7 +20,7 @@
                             </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="poolError" type="error" title="数据加载失败" desc="请检查服务后重试" @retry="loadPools"></qc-state-panel>
+                        <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
@@ -80,7 +80,7 @@
                             </div>
                         </div>
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="lhbError" type="error" title="数据加载失败" desc="请检查服务后重试" @retry="loadLhb"></qc-state-panel>
+                        <qc-state-panel v-else-if="lhbError" type="error" :title="lhbErrTitle" :desc="lhbErrDesc" @retry="loadLhb"></qc-state-panel>
                         <div v-else-if="lhbRows">
                             <div class="table-container">
                                 <el-table :data="lhbRows" size="small">
@@ -95,6 +95,7 @@
                                 </el-table>
                             </div>
                         </div>
+                        <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据"></qc-state-panel>
                     </div>
                 </div>`,
     setup() {
@@ -107,10 +108,14 @@
       const pools = ref(null);
       const poolLoading = ref(false);
       const poolError = ref(false);
+      const poolErrTitle = ref('数据加载失败');
+      const poolErrDesc = ref('请检查服务后重试');
       const lhbDate = ref('');
       const lhbRows = ref(null);
       const lhbLoading = ref(false);
       const lhbError = ref(false);
+      const lhbErrTitle = ref('数据加载失败');
+      const lhbErrDesc = ref('请检查服务后重试');
 
       function authHeaders() {
         const t = localStorage.getItem('quant_token') || '';
@@ -126,11 +131,20 @@
           const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             pools.value = res;
+          } else if (res && res.detail) {
+            // V5.2.0-fix: 未登录/token 过期(401) 时后端返回 {detail}, 提示登录而非笼统"加载失败"
+            poolError.value = true;
+            poolErrTitle.value = String(res.detail);
+            poolErrDesc.value = '请先登录后再查看';
           } else {
             poolError.value = true;
+            poolErrTitle.value = '数据加载失败';
+            poolErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
           poolError.value = true;
+          poolErrTitle.value = '数据加载失败';
+          poolErrDesc.value = '请检查服务后重试';
         } finally {
           poolLoading.value = false;
         }
@@ -144,11 +158,20 @@
           const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             lhbRows.value = Array.isArray(res.rows) ? res.rows : null;
+          } else if (res && res.detail) {
+            // V5.2.0-fix: 401 提示登录
+            lhbError.value = true;
+            lhbErrTitle.value = String(res.detail);
+            lhbErrDesc.value = '请先登录后再查看';
           } else {
             lhbError.value = true;
+            lhbErrTitle.value = '数据加载失败';
+            lhbErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
           lhbError.value = true;
+          lhbErrTitle.value = '数据加载失败';
+          lhbErrDesc.value = '请检查服务后重试';
         } finally {
           lhbLoading.value = false;
         }

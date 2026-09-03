@@ -17,6 +17,7 @@
     'nav.ai': '智能评估',
     'nav.research': '策略研究',
     'nav.system': '系统配置',
+    'nav.shortterm': '短线复盘',
     // 二级导航（global-header 子页 tab；组件 subPageNames 保留作回退）
     'sub.overview': '概览',
     'sub.strategies.overview': '策略概览', 'sub.ai.overview': '评估概览', 'sub.research.research-overview': '研究概览',
@@ -44,6 +45,8 @@
     'sub.market-review': '市场复盘',
     'sub.scan': '异动扫描',
     'sub.custom-write': '全新策略',
+    'sub.ztpool': '涨停复盘',
+    'sub.lhb': '龙虎榜',
     'sub.status': '系统状态',
     'sub.autoeval': '自动评估',
     'sub.datasource': '数据源',

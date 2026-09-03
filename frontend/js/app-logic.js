@@ -334,7 +334,7 @@ const allMenuDefs = [
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
                     'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
-                    'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜',
+                    'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'user': '用户与权限', 'about': '关于'
                 };
 

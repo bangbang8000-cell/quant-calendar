@@ -1,4 +1,4 @@
-(function(){const{inject:h,ref:t,onMounted:f,computed:g}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ShorttermPage={name:"qc-shortterm-page",template:`
+(function(){const{inject:y,ref:t,onMounted:_,computed:x}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ShorttermPage={name:"qc-shortterm-page",template:`
                 <div v-if="currentPage === 'shortterm'" key="shortterm">
                     <!-- 涨停复盘 -->
                     <div v-if="currentSubPage === 'ztpool'" class="card">
@@ -10,7 +10,7 @@
                             </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="poolError" type="error" title="数据加载失败" desc="请检查服务后重试" @retry="loadPools"></qc-state-panel>
+                        <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
@@ -70,7 +70,7 @@
                             </div>
                         </div>
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="lhbError" type="error" title="数据加载失败" desc="请检查服务后重试" @retry="loadLhb"></qc-state-panel>
+                        <qc-state-panel v-else-if="lhbError" type="error" :title="lhbErrTitle" :desc="lhbErrDesc" @retry="loadLhb"></qc-state-panel>
                         <div v-else-if="lhbRows">
                             <div class="table-container">
                                 <el-table :data="lhbRows" size="small">
@@ -85,5 +85,6 @@
                                 </el-table>
                             </div>
                         </div>
+                        <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据"></qc-state-panel>
                     </div>
-                </div>`,setup(){const r=h("qcState");if(!r)return{};const w=r.currentPage,y=r.currentSubPage,s=t(""),a=t(null),d=t(!1),n=t(!1),c=t(""),b=t(null),u=t(!1),i=t(!1);function p(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function m(){d.value=!0,n.value=!1;try{const e="/api/shortterm/pools"+(s.value?"?date="+s.value:""),l=await fetch(e,{headers:p()}).then(function(o){return o.json()});l&&l.success?a.value=l:n.value=!0}catch{n.value=!0}finally{d.value=!1}}async function v(){u.value=!0,i.value=!1;try{const e="/api/shortterm/lhb"+(c.value?"?date="+c.value:""),l=await fetch(e,{headers:p()}).then(function(o){return o.json()});l&&l.success?b.value=Array.isArray(l.rows)?l.rows:null:i.value=!0}catch{i.value=!0}finally{u.value=!1}}const _=g(function(){const e=a.value&&a.value.ladder&&a.value.ladder.tiers;return!e||!Object.keys(e).length?"—":Object.keys(e).sort(function(l,o){return l-o}).map(function(l){return l+"板:"+e[l]}).join(" ")});function x(e){if(e==null)return"—";const l=Math.abs(e);return l>=1e8?(e/1e8).toFixed(2)+"亿":l>=1e4?(e/1e4).toFixed(0)+"万":e.toFixed(0)}function z(e){return e==null?"—":(e>=0?"+":"")+e.toFixed(2)+"%"}async function P(){try{const e=await fetch("/api/shortterm/latest-session",{headers:p()}).then(function(l){return l.json()});e&&e.date&&(s.value=e.date,c.value=e.date)}catch{}m(),v()}return f(P),{currentPage:w,currentSubPage:y,poolDate:s,pools:a,poolLoading:d,poolError:n,lhbDate:c,lhbRows:b,lhbLoading:u,lhbError:i,loadPools:m,loadLhb:v,ladderText:_,fmtAmount:x,fmtPct:z}}}})();
+                </div>`,setup(){const i=y("qcState");if(!i)return{};const z=i.currentPage,q=i.currentSubPage,c=t(""),a=t(null),d=t(!1),o=t(!1),u=t("数据加载失败"),p=t("请检查服务后重试"),r=t(""),f=t(null),b=t(!1),s=t(!1),m=t("数据加载失败"),v=t("请检查服务后重试");function h(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function g(){d.value=!0,o.value=!1;try{const e="/api/shortterm/pools"+(c.value?"?date="+c.value:""),l=await fetch(e,{headers:h()}).then(function(n){return n.json()});l&&l.success?a.value=l:l&&l.detail?(o.value=!0,u.value=String(l.detail),p.value="请先登录后再查看"):(o.value=!0,u.value="数据加载失败",p.value="请检查服务后重试")}catch{o.value=!0,u.value="数据加载失败",p.value="请检查服务后重试"}finally{d.value=!1}}async function w(){b.value=!0,s.value=!1;try{const e="/api/shortterm/lhb"+(r.value?"?date="+r.value:""),l=await fetch(e,{headers:h()}).then(function(n){return n.json()});l&&l.success?f.value=Array.isArray(l.rows)?l.rows:null:l&&l.detail?(s.value=!0,m.value=String(l.detail),v.value="请先登录后再查看"):(s.value=!0,m.value="数据加载失败",v.value="请检查服务后重试")}catch{s.value=!0,m.value="数据加载失败",v.value="请检查服务后重试"}finally{b.value=!1}}const P=x(function(){const e=a.value&&a.value.ladder&&a.value.ladder.tiers;return!e||!Object.keys(e).length?"—":Object.keys(e).sort(function(l,n){return l-n}).map(function(l){return l+"板:"+e[l]}).join(" ")});function D(e){if(e==null)return"—";const l=Math.abs(e);return l>=1e8?(e/1e8).toFixed(2)+"亿":l>=1e4?(e/1e4).toFixed(0)+"万":e.toFixed(0)}function E(e){return e==null?"—":(e>=0?"+":"")+e.toFixed(2)+"%"}async function k(){try{const e=await fetch("/api/shortterm/latest-session",{headers:h()}).then(function(l){return l.json()});e&&e.date&&(c.value=e.date,r.value=e.date)}catch{}g(),w()}return _(k),{currentPage:z,currentSubPage:q,poolDate:c,pools:a,poolLoading:d,poolError:o,lhbDate:r,lhbRows:f,lhbLoading:b,lhbError:s,loadPools:g,loadLhb:w,ladderText:P,fmtAmount:D,fmtPct:E}}}})();

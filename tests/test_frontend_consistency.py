@@ -1597,6 +1597,29 @@ def test_i18n_sub_datadict_in_all_locales():
 
 
 
+# V5.2.0 (fix: 短线复盘菜单显示英文 key) 回归
+
+def test_i18n_shortterm_keys_in_all_locales():
+    """V5.2.0-fix: 短线复盘菜单曾显示原始 key(nav.shortterm/ztpool/lhb)。
+
+    根因同 sub.datadict: 语言包缺 nav.shortterm + sub.ztpool/sub.lhb,
+    t() 对缺失 key 返回 key 本身且 truthy, 菜单渲染 nav.* 时 || 中文兜底失效。
+    修复: ① 5 语语言包补键; ② subPageNames 补裸键 ztpool/lhb 供 subTabLabel 回退。
+    """
+    for f in ["zh-CN", "en", "zh-TW", "ja", "ko"]:
+        loc = _read("js/locales/%s.js" % f)
+        assert "nav.shortterm" in loc, "%s 语言包缺 nav.shortterm (菜单显示英文 key)" % f
+        assert "sub.ztpool" in loc, "%s 语言包缺 sub.ztpool" % f
+        assert "sub.lhb" in loc, "%s 语言包缺 sub.lhb" % f
+    app = _read("js/app-logic.js")
+    assert "key: 'shortterm'" in app, "菜单应注册 shortterm"
+    assert "'ztpool': '涨停复盘'" in app and "'lhb': '龙虎榜'", \
+        "subPageNames 应含裸键 ztpool/lhb (subTabLabel 兜底查询)"
+    sp = _read("js/components/shortterm-page.js")
+    assert "lhbErrTitle" in sp, "龙虎榜错误态应区分 401 提示(未登录)与笼统加载失败"
+
+
+
 # V5.0.11 (feature: 策略回测移入策略研究) 回归
 
 def test_backtest_moved_to_research_menu():
