@@ -769,6 +769,8 @@
       const merrillConfigOpen = Vue.ref(false);  // V4.5 (FR-4.5.1): 内联配置展开
       if (!state) return {};
       const { computed } = Vue;
+      // V5.2.8 (T-5.2.53): 竞态防护推广 — 页面级请求序号
+      let _reqSeq = 0;
 
       // ===== v3.11 (FR-3.11.7) 今日一屏: 聚合当日决策要素的派生视图 =====
       const merrill = computed(() => state.merrillData?.value || {});
@@ -1120,6 +1122,7 @@
       }
 
       async function loadExecutionData() {
+        const seq = ++_reqSeq;
         execLoading.value = true;
         execError.value = false;
         try {
@@ -1132,13 +1135,14 @@
             fetch('/api/system/execution-history?' + params.toString(), { headers }).then(function (r) { return r.json(); }),
             fetch('/api/system/execution-summary?days=' + execDays.value, { headers }).then(function (r) { return r.json(); }),
           ]);
+          if (seq !== _reqSeq) return;
           execHistory.value = (histRes && histRes.data) || [];
           execSummary.value = (sumRes && sumRes.data) || null;
         } catch (e) {
           console.error('[execution] 执行数据加载失败:', e);
           execError.value = true;
         } finally {
-          execLoading.value = false;
+          if (seq === _reqSeq) execLoading.value = false;
         }
       }
 
@@ -1197,12 +1201,14 @@
       }
 
       async function loadExecutionMonitor() {
+        const seq = ++_reqSeq;
         try {
           const [planRes, statusRes, resRes] = await Promise.all([
             _execFetch('/api/strategies/execution/plan'),
             _execFetch('/api/strategies/execution/status'),
             _execFetch('/api/strategies/execution/results?days=7'),
           ]);
+          if (seq !== _reqSeq) return;
           execPlan.value = (planRes && planRes.data && planRes.data.plans) || [];
           execStatus.value = (statusRes && statusRes.data) || null;
           execResults.value = (resRes && resRes.data) || null;
@@ -1234,15 +1240,17 @@
 
       async function loadExecutionTrace(date) {
         if (!date) return;
+        const seq = ++_reqSeq;
         execTraceLoading.value = true;
         try {
           const res = await _execFetch('/api/strategies/execution/trace/' + encodeURIComponent(date));
+          if (seq !== _reqSeq) return;
           const data = (res && res.data) || null;
           execTraceSteps.value = (data && data.steps) || [];
         } catch (e) {
           console.error('[execution-trace] 追溯加载失败:', e);
         } finally {
-          execTraceLoading.value = false;
+          if (seq === _reqSeq) execTraceLoading.value = false;
         }
       }
 

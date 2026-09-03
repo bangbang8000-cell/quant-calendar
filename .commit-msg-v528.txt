@@ -1,0 +1,8 @@
+feat(V5.2.8): 竞态防护推广到 research/strategies — 发版 5.2.8
+
+- T-5.2.53: 页面级 _reqSeq 竞态防护推广 (shortterm 已有)
+  research-page: loadMarketReviews/Detail/Scan/Events/Strategies/Runs/Variants/Customs/BtHistory/ResearchHistory 10 个
+  strategies-page: loadExecutionData/Monitor/Trace 3 个
+- 模式: 函数头 const seq=++_reqSeq; await 完成后 if(seq!==_reqSeq) return; finally loading 清除加 seq 检查
+- 验证: node --check 两文件语法 OK; 118 passed; CDP 冒烟研究页无 JS 错误
+- APP_VERSION 5.2.7 → 5.2.8

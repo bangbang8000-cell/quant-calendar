@@ -1,7 +1,0 @@
-chore(V5.2.7): 移动端 375px 适配确认 + 回归守护 — 发版 5.2.7
-
-- T-5.2.51: CDP 实测 (viewport 375x667, ops 访客) 全部一级页面 scrollWidth==375 无横向溢出
-  sub-nav/el-table/hscroll 容器内横向滚动 (设计意图), 触控>=44px, 弹窗内滚, mobile-nav
-- 新增 test_mobile_375_responsive_guard 守护 responsive.css 关键规则 (溢出守卫/底部导航/子导航滚动/44px 触控/弹窗内滚)
-- 已知: ops 后端进程版本号仍为 5.2.4 (serve index 时替换 CSS ?v=), 需重启 ops 更新缓存 key
-- test_frontend_consistency 118 passed; APP_VERSION 5.2.6 → 5.2.7

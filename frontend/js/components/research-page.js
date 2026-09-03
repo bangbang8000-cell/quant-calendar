@@ -806,6 +806,8 @@
       const state = inject('qcState');
       const savingProfile = Vue.ref(false);
       const variantSaving = Vue.ref(false);
+      // V5.2.8 (T-5.2.53): 竞态防护推广 — 页面级请求序号
+      let _reqSeq = 0;
       if (!state) return {};
 
       // ===== v3.17.2 (FR-3.17.2): AI 每日市场复盘 — 列表 + 详情 =====
@@ -818,10 +820,12 @@
       const marketReviewDetailError = ref(false);
 
       async function loadMarketReviews() {
+        const seq = ++_reqSeq;
         marketReviewLoading.value = true;
         marketReviewError.value = false;
         try {
           const res = await fetch('/api/market/reviews?limit=30').then(r => r.json());
+        if (seq !== _reqSeq) return;
           if (res && res.success) {
             marketReviews.value = Array.isArray(res.data) ? res.data : [];
           } else {
@@ -831,7 +835,7 @@
           console.error('[market-review] 复盘列表加载失败:', e);
           marketReviewError.value = true;
         } finally {
-          marketReviewLoading.value = false;
+        if (seq === _reqSeq) marketReviewLoading.value = false;
         }
       }
 
@@ -847,6 +851,7 @@
       }
 
       async function loadMarketReviewDetail(date) {
+        const seq = ++_reqSeq;
         marketReviewDetailLoading.value = true;
         marketReviewDetailError.value = false;
         marketReviewDetail.value = null;
@@ -855,6 +860,7 @@
             ? '/api/market/review?date=' + encodeURIComponent(date)
             : '/api/market/review';
           const res = await fetch(url).then(r => r.json());
+        if (seq !== _reqSeq) return;
           if (res && res.success) {
             marketReviewDetail.value = res.data;
           } else {
@@ -864,7 +870,7 @@
           console.error('[market-review] 复盘详情加载失败:', e);
           marketReviewDetailError.value = true;
         } finally {
-          marketReviewDetailLoading.value = false;
+        if (seq === _reqSeq) marketReviewDetailLoading.value = false;
         }
       }
 
@@ -899,12 +905,14 @@
       const eventsData = ref(null);
 
       async function loadScan() {
+        const seq = ++_reqSeq;
         scanLoading.value = true;
         scanError.value = false;
         try {
           // v3.23: 多选范围 → 逗号并集(如 watchlist,strategies)
           const url = '/api/market/scan?pool=' + encodeURIComponent((scanPool.value || []).join(',') || 'all');
           const res = await fetch(url).then(r => r.json());
+        if (seq !== _reqSeq) return;
           if (res && res.success) {
             scanResult.value = res.data || { moves: [], note: '' };
           } else {
@@ -914,15 +922,17 @@
           console.error('[scan] 异动扫描失败:', e);
           scanError.value = true;
         } finally {
-          scanLoading.value = false;
+        if (seq === _reqSeq) scanLoading.value = false;
         }
       }
 
       async function loadEvents() {
+        const seq = ++_reqSeq;
         eventsLoading.value = true;
         try {
           const url = '/api/market/events?scope=' + encodeURIComponent(eventScope.value);
           const res = await fetch(url).then(r => r.json());
+        if (seq !== _reqSeq) return;
           if (res && res.success) {
             eventsData.value = res.data || { events: [], note: '' };
           } else {
@@ -932,7 +942,7 @@
           console.error('[scan] 事件提醒加载失败:', e);
           eventsData.value = { events: [], note: '事件数据暂不可用' };
         } finally {
-          eventsLoading.value = false;
+        if (seq === _reqSeq) eventsLoading.value = false;
         }
       }
 
@@ -1022,10 +1032,12 @@
       }
 
       async function loadStrategies() {
+        const seq = ++_reqSeq;
         strategiesLoading.value = true;
         strategiesError.value = false;
         try {
           const res = await withAuth('/api/strategies').then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           strategies.value = Array.isArray(res) ? res : [];
           if (strategies.value.length && !activeStrategyId.value) {
             activeStrategyId.value = strategies.value[0].id;
@@ -1035,7 +1047,7 @@
           console.error('[research] 策略列表加载失败:', e);
           strategiesError.value = true;
         } finally {
-          strategiesLoading.value = false;
+        if (seq === _reqSeq) strategiesLoading.value = false;
         }
       }
 
@@ -1182,10 +1194,12 @@
       }
 
       async function loadRuns() {
+        const seq = ++_reqSeq;
         if (!activeStrategyId.value) return;
         try {
           const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/runs?limit=5')
-            .then(function (r) { return r.json(); });
+                    .then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           strategyRuns.value = Array.isArray(res) ? res : [];
         } catch (e) {
           strategyRuns.value = [];
@@ -1336,7 +1350,7 @@
           console.error('[research] 因子IC分析失败:', e);
           alert('因子 IC 分析失败: ' + e.message);
         } finally {
-          factorIcLoading.value = false;
+        if (seq === _reqSeq) factorIcLoading.value = false;
         }
       }
 
@@ -1361,7 +1375,7 @@
           console.error('[research] 分层回测失败:', e);
           alert('分层回测失败: ' + e.message);
         } finally {
-          factorLayerLoading.value = false;
+        if (seq === _reqSeq) factorLayerLoading.value = false;
         }
       }
 
@@ -1390,7 +1404,7 @@
           console.error('[research] 因子详情失败:', e);
           alert('因子详情失败: ' + e.message);
         } finally {
-          factorDetailLoading.value = false;
+        if (seq === _reqSeq) factorDetailLoading.value = false;
         }
       }
 
@@ -1413,8 +1427,10 @@
       }
 
       async function loadVariants() {
+        const seq = ++_reqSeq;
         try {
           const res = await fetch("/api/strategies/variants", { headers: _authHeaders() }).then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           variants.value = (res && res.data && res.data.variants) || [];
         } catch (e) { console.error("[i3a] 加载 variants 失败:", e); }
       }
@@ -1532,8 +1548,10 @@
       }
 
       async function loadCustoms() {
+        const seq = ++_reqSeq;
         try {
           const res = await fetch("/api/strategies/custom", { headers: _customAuthHeaders() }).then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           customs.value = (res && res.data && res.data.customs) || [];
         } catch (e) { console.error("[i3b] 加载自定义策略失败:", e); }
       }
@@ -1608,18 +1626,20 @@
       const btHistoryDays = Vue.ref(30);
 
       async function loadBtHistory() {
+        const seq = ++_reqSeq;
         btHistoryLoading.value = true;
         btHistoryError.value = false;
         try {
           const core = (window.__quantModules && window.__quantModules.core) || {};
           const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
           const res = await fetch('/api/backtest/history?days=' + btHistoryDays.value, { headers }).then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           btHistory.value = (res && res.data) || [];
         } catch (e) {
           console.error('[backtest] 回测历史加载失败:', e);
           btHistoryError.value = true;
         } finally {
-          btHistoryLoading.value = false;
+        if (seq === _reqSeq) btHistoryLoading.value = false;
         }
       }
 
@@ -1652,6 +1672,7 @@
         loadResearchHistory();
       }
       async function loadResearchHistory() {
+        const seq = ++_reqSeq;
         researchHistoryLoading.value = true;
         researchHistoryError.value = false;
         try {
@@ -1659,12 +1680,13 @@
           const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
           const q = researchHistoryType.value ? '?type=' + encodeURIComponent(researchHistoryType.value) : '';
           const res = await fetch('/api/strategies/research-history' + q, { headers }).then(function (r) { return r.json(); });
+        if (seq !== _reqSeq) return;
           researchHistory.value = (res && res.items) || [];
         } catch (e) {
           console.error('[research-history] 加载失败:', e);
           researchHistoryError.value = true;
         } finally {
-          researchHistoryLoading.value = false;
+        if (seq === _reqSeq) researchHistoryLoading.value = false;
         }
       }
       async function exportResearchHistory() {
@@ -1687,7 +1709,7 @@
         } catch (e) {
           console.error('[research-history] 导出失败:', e);
         } finally {
-          researchExportLoading.value = false;
+        if (seq === _reqSeq) researchExportLoading.value = false;
         }
       }
       function toggleResearchSelect(id) {
@@ -1714,7 +1736,7 @@
         } catch (e) {
           console.error('[research-history] 对比失败:', e);
         } finally {
-          researchCompareLoading.value = false;
+        if (seq === _reqSeq) researchCompareLoading.value = false;
         }
       }
       async function deleteResearchHistory(id) {
