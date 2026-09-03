@@ -34,8 +34,10 @@ class Migration:
 
 
 def _load_migrations():
-    from . import _0001_baseline, _0002_alert_silence, _0003_event_user_column
-    mods = (_0001_baseline, _0002_alert_silence, _0003_event_user_column)
+    from . import (_0001_baseline, _0002_alert_silence, _0003_event_user_column,
+                   _0004_shortterm)
+    mods = (_0001_baseline, _0002_alert_silence, _0003_event_user_column,
+            _0004_shortterm)
     ms = [Migration(m.VERSION, m.NAME, m.DESCRIPTION, m.upgrade, m.downgrade) for m in mods]
     ms.sort(key=lambda m: m.version)
     # 版本唯一性校验
