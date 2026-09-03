@@ -90,8 +90,11 @@ def test_fetch_lhb_ok(monkeypatch):
 
 
 def test_fetch_lhb_failure_envelope(monkeypatch):
+    from shortterm import lhb as lhb_mod
     fake = _FakeAk(exc=RuntimeError('boom'))
     monkeypatch.setitem(sys.modules, 'akshare', fake)
+    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
+                        lambda s, e, c: (_ for _ in ()).throw(RuntimeError('也无权限')))
     out = fetch_lhb('2026-09-01', '2026-09-02')
     assert out['available'] is False
     assert out['reason'].startswith('[⚠️')
@@ -103,3 +106,42 @@ def test_fetch_lhb_empty_is_legal(monkeypatch):
     out = fetch_lhb('2026-09-01', '2026-09-02')
     assert out['available'] is True
     assert out['rows'] == []
+
+
+# ---------- V5.2.2-fix: 东财 → tushare top_list 兜底 ----------
+
+def test_fetch_lhb_falls_back_to_tushare(monkeypatch):
+    from shortterm import lhb as lhb_mod
+    fake = _FakeAk(exc=RuntimeError('东财反爬'))
+    monkeypatch.setitem(sys.modules, 'akshare', fake)
+    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
+                        lambda s, e, c: {'available': True, 'source': 'tushare',
+                                         'start_date': s, 'end_date': e,
+                                         'rows': [{'ts_code': '000011', 'name': '深物业A',
+                                                   'tags': [], 'board': '10cm'}]})
+    out = fetch_lhb('2026-09-01', '2026-09-02')
+    assert out['available'] is True and out['source'] == 'tushare'
+
+
+def test_tushare_lhb_normalization():
+    from shortterm import lhb as lhb_mod
+    row = lhb_mod._normalize_tushare_row(
+        {'ts_code': '000011.SZ', 'name': '深物业A', 'pct_change': 10.0,
+         'close': 10.0, 'net_amount': 1.2e8, 'l_buy': 2e8, 'l_sell': 0.8e8,
+         'reason': '日涨幅偏离值达7%', 'amount': 3e8, 'turnover_rate': 5.0})
+    assert row['ts_code'] == '000011'
+    assert row['net_buy'] == 1.2e8
+    assert row['buy_amount'] == 2e8 and row['sell_amount'] == 0.8e8
+    assert row['tags'] == []          # 不编造资金性质
+    assert row['board'] == '10cm'
+
+
+def test_fetch_lhb_all_sources_fail(monkeypatch):
+    from shortterm import lhb as lhb_mod
+    fake = _FakeAk(exc=RuntimeError('东财不可达'))
+    monkeypatch.setitem(sys.modules, 'akshare', fake)
+    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
+                        lambda s, e, c: (_ for _ in ()).throw(RuntimeError('积分不足')))
+    out = fetch_lhb('2026-09-01', '2026-09-02')
+    assert out['available'] is False
+    assert 'tushare' in out['reason'] and 'akshare.eastmoney' in out['reason']

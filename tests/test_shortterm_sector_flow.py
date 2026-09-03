@@ -86,3 +86,40 @@ def test_fetch_sector_flow_today(monkeypatch):
     assert out['available'] is True
     assert out['industry']['rows'][0]['name'] == '银行'
     assert out['concept']['available'] is True
+
+
+# ---------- V5.2.2-fix: 东财 → 同花顺行业资金流兜底 ----------
+
+def test_fetch_sector_falls_back_to_ths(monkeypatch):
+    from shortterm import sector_flow as sf
+    fake = _FakeAk(exc=RuntimeError('东财反爬'))
+    monkeypatch.setitem(sys.modules, 'akshare', fake)
+    monkeypatch.setattr(sf, '_fetch_ths_industry_flow',
+                        lambda i, st: {'available': True, 'source': 'akshare.tonghuashun',
+                                       'indicator': '今日', 'sector_type': '行业资金流',
+                                       'rows': [{'name': '银行', 'pct_chg': 1.23,
+                                                 'main_net_inflow': 1.5e9}]})
+    out = fetch_sector_flow('今日', '行业资金流')
+    assert out['available'] is True and out['source'] == 'akshare.tonghuashun'
+
+
+def test_sector_ths_only_for_industry_today(monkeypatch):
+    from shortterm import sector_flow as sf
+    fake = _FakeAk(exc=RuntimeError('东财反爬'))
+    monkeypatch.setitem(sys.modules, 'akshare', fake)
+    monkeypatch.setattr(sf, '_fetch_ths_industry_flow',
+                        lambda i, st: {'available': True, 'rows': []})
+    # 概念资金流无同花顺兜底 → 降级
+    out = fetch_sector_flow('今日', '概念资金流')
+    assert out['available'] is False
+    # 非今日窗口也无兜底 → 降级
+    out5 = fetch_sector_flow('5日', '行业资金流')
+    assert out5['available'] is False
+
+
+def test_ths_industry_column_mapping():
+    """同花顺列 → 统一英文键映射正确"""
+    from shortterm import sector_flow as sf
+    assert sf._THS_INDUSTRY_MAP['行业'] == 'name'
+    assert sf._THS_INDUSTRY_MAP['净额'] == 'main_net_inflow'
+    assert sf._THS_INDUSTRY_MAP['行业-涨跌幅'] == 'pct_chg'

@@ -283,13 +283,20 @@ def test_review_chat_with_review(monkeypatch, client):
 
 def test_intraday_snapshot_persists_and_lists(monkeypatch, client):
     from api.v1 import shortterm as shortterm_api
+    from shortterm import fetchers
     from shortterm import intraday as iday
     monkeypatch.setattr(iday, 'accept_snapshot',
                         lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
-    store.save_pool('2026-09-03', 'zt', [{'ts_code': 'a'}])
-    store.save_pool('2026-09-03', 'zb', [{'ts_code': 'x'}])
+    # 盘中快照抓实时池子(源链 fallback)
+    monkeypatch.setattr(fetchers, 'fetch_zt_pool',
+                        lambda d: {'available': True, 'rows': [{'ts_code': 'a'}]})
+    monkeypatch.setattr(fetchers, 'fetch_zb_pool',
+                        lambda d: {'available': True, 'rows': [{'ts_code': 'x'}]})
+    monkeypatch.setattr(fetchers, 'fetch_dt_pool',
+                        lambda d: {'available': True, 'rows': []})
     r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
     assert r.json()['accepted'] is True and r.json()['zt_count'] == 1
+    assert r.json()['pools_available'] == {'zt': True, 'zb': True, 'dt': True}
     listed = client.get('/api/shortterm/intraday?date=2026-09-03').json()['snapshots']
     assert len(listed) == 1 and listed[0]['slot'] == '10:00'
 

@@ -347,9 +347,15 @@ async def post_intraday_snapshot(date: str = None,
     if not ok:
         return {'success': True, 'date': d, 'accepted': False, 'reason': reason}
     slot = reason.replace('快照时点 ', '')
-    mood = intraday.snapshot_mood(store.load_pool(d, 'zt'),
-                                  store.load_pool(d, 'zb'),
-                                  store.load_pool(d, 'dt'))
+    # V5.2.2-fix: 抓实时池子(源链 fallback), 而非读收盘 store — 盘中才有意义
+    zt = fetchers.fetch_zt_pool(d)
+    zb = fetchers.fetch_zb_pool(d)
+    dt = fetchers.fetch_dt_pool(d)
+    mood = intraday.snapshot_mood(zt['rows'] if zt.get('available') else None,
+                                  zb['rows'] if zb.get('available') else None,
+                                  dt['rows'] if dt.get('available') else None)
+    mood['pools_available'] = {'zt': zt.get('available'), 'zb': zb.get('available'),
+                               'dt': dt.get('available')}
     store.save_pool(d, 'intraday_' + slot, [mood])   # 落盘供回看
     return {'success': True, 'date': d, 'accepted': True, 'slot': slot, **mood}
 

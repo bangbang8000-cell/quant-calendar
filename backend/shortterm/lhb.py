@@ -69,9 +69,53 @@ def normalize_lhb_df(df) -> list:
     return [_normalize_lhb_row(dict(row)) for _, row in df.iterrows()]
 
 
+# tushare top_list 列 → 统一英文键 (东财反爬兜底源, 单日)
+_TUSHARE_LHB_MAP = {
+    'ts_code': 'ts_code', 'name': 'name', 'pct_change': 'pct_chg',
+    'close': 'close', 'amount': 'amount', 'turnover_rate': 'turnover_rate',
+    'net_amount': 'net_buy', 'l_buy': 'buy_amount', 'l_sell': 'sell_amount',
+    'reason': 'reason',
+}
+
+
+def _normalize_tushare_row(raw: dict) -> dict:
+    out = {}
+    for src, en in _TUSHARE_LHB_MAP.items():
+        v = raw.get(src)
+        if en == 'ts_code':
+            out[en] = _zero_pad(v)
+        elif en in _FLOAT_KEYS:
+            out[en] = _to_float(v)
+        else:
+            out[en] = None if v is None or (isinstance(v, float) and v != v) else v
+    out['board'] = board_of(out.get('ts_code') or '', out.get('name') or '')
+    out['tags'] = []   # tushare 无「解读」字段, 不编造资金性质
+    return out
+
+
+def _fetch_tushare_lhb(start_date: str, end_date: str, s: str) -> dict:
+    """tushare top_list 兜底(单日, 需 2000+ 积分; 无 token/权限 → 抛错交上层降级)"""
+    import tushare as ts
+    from config import settings
+    token = getattr(settings, 'TUSHARE_TOKEN', '') or ''
+    if not token:
+        raise RuntimeError('未配置 TUSHARE_TOKEN, tushare 兜底不可用')
+    pro = ts.pro_api(token)
+    df = pro.top_list(trade_date=s)
+    rows = []
+    for _, r in df.iterrows():
+        rows.append(_normalize_tushare_row(dict(r)))
+    return {'available': True, 'source': 'tushare',
+            'start_date': str(start_date), 'end_date': str(end_date), 'rows': rows}
+
+
 def fetch_lhb(start_date: str, end_date: str) -> dict:
-    """全市场龙虎榜明细。日期 YYYY-MM-DD / YYYYMMDD。"""
+    """全市场龙虎榜明细。日期 YYYY-MM-DD / YYYYMMDD。
+
+    V5.2.2-fix: 源链东财 → tushare top_list 兜底; 全失败 [⚠️] 信封。
+    """
     s, e = _norm_date(start_date), _norm_date(end_date)
+    errs = []
     try:
         import akshare as ak
         df = ak.stock_lhb_detail_em(start_date=s, end_date=e)
@@ -79,7 +123,13 @@ def fetch_lhb(start_date: str, end_date: str) -> dict:
         return {'available': True, 'source': 'akshare.eastmoney',
                 'start_date': str(start_date), 'end_date': str(end_date),
                 'rows': rows}
-    except Exception as exc:  # noqa: BLE001 — 数据源异常统一降级信封
-        logger.warning('龙虎榜抓取失败(%s~%s): %s', s, e, exc)
-        return {'available': False,
-                'reason': f'[⚠️ 龙虎榜｜{start_date}~{end_date} 数据获取失败已降级：{exc}]'}
+    except Exception as exc:  # noqa: BLE001
+        errs.append(f'akshare.eastmoney: {type(exc).__name__}: {str(exc)[:80]}')
+        logger.warning('龙虎榜东财失败(%s~%s), 试 tushare: %s', s, e, exc)
+    try:
+        return _fetch_tushare_lhb(start_date, end_date, s)
+    except Exception as exc:  # noqa: BLE001
+        errs.append(f'tushare: {type(exc).__name__}: {str(exc)[:80]}')
+        logger.warning('龙虎榜 tushare 兜底失败(%s~%s): %s', s, e, exc)
+    return {'available': False,
+            'reason': f'[⚠️ 龙虎榜｜{start_date}~{end_date} 数据获取失败已降级：{"；".join(errs)}]'}
