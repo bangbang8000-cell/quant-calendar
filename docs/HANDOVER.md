@@ -92,6 +92,32 @@
 
 **出口标准**: 全量测试绿 + 双端冒烟 0 pageerror + 数值纪律(≤2 位小数)。规划累计 ~2790 用例(基线 v5.0.11 2304)。
 
+### 4.3 V5.2.0 短线数据基座 — 短线复盘主线第 1 版 (2026-09-03, 30 commits)
+
+| 子项 | 变更 | 收益 |
+|---|---|---|
+| 数据基座 | 三池(涨停/炸板/跌停) + 龙虎榜 + 板块资金 + 交易日历/is_settled + SQLite 迁移 0004 | 短线数据独立入库, 历史可回查 |
+| 源链 fallback | zt/dt 东财→tushare(limit_list_d) 兜底 + [⚠️] 降级信封; zb 东财单源 | 断源不静默 |
+| 单一实现 | limits.py 复用 scan_engine 涨跌幅判定(10/20/30cm/ST) | 口径唯一 |
+| 前端 | 「短线复盘」一级菜单 + 涨停复盘/龙虎榜两子页 + 连板梯队条形图 + 涨停原因列 | 打开即有数据 |
+| 调度 | 每日 16:05 抓取 + 部分失败 30 分钟重试 + 启动错过补偿 | 数据不缺席 |
+| 修复 | 短线菜单 i18n 键缺失(显示 nav.shortterm) + 龙虎榜 401 提示区分 + 空态 | 界面诚实可用 |
+
+**测试**: 短线专项 96 用例(limits/ladder/lhb/sector_flow/trade_calendar/migration/api/data_source/themes/scheduler), 模块覆盖率 93%(门禁 ≥70%)。
+
+### 4.4 V5.2.0 实现差异记录 (对照 PRD/DEV-PLAN, 2026-09-03)
+
+以下为与规划文档的偏差, 功能可达或按诚实性设计, 记录备查:
+
+| 差异 | 规划 | 实际 | 影响/说明 |
+|---|---|---|---|
+| 三源 fallback | 东财→同花顺→tushare | **东财→tushare 两源**(akshare 1.18.63 无同花顺池函数); zb 东财单源(tushare 无炸板源) | 断源有 tushare 兜底, 反爬风险部分缓解; 诚实降级兜底 |
+| 涨停原因/题材串 | 涨停原因(问财可选) | 问财可选架构(themes.py), **需 IWENCAI_API_KEY**; 未配置如实显示"—", 绝不拿行业冒充题材 | PRD 明示"问财可选"; 配密钥即点亮 |
+| 迁移 0004 表 | pools/lhb/sector_flow/reviews + 交易日历表 | **3 表**: pools(含 pool_type='lhb')/sector_flow/reviews; **无交易日历表**(运行时推导) | 功能可达; 若需独立 lhb 明细表后续可加 |
+| 席位归类 | 游资/机构席位 | 东财「解读」文本信号(机构/游资/主力), 非完整买卖席位明细 | 客观归类, 非推荐 |
+| scheduler 文件 | `scheduler/_shortterm.py` | 实现在 `scheduler/_core.py`(混入) | 结构差异, 功能一致 |
+| 子页 key | PRD `pool` | 实际 `ztpool` | 命名差异 |
+
 ## 5. 关键技术要点
 
 ### 5.1 开发流程 (TDD 纪律)
@@ -112,10 +138,12 @@
 - **沙箱**: ~/.local 只读 → WS 依赖 qc_ws_pkgs(workspace) + UV_CACHE_DIR 重定向
 - urllib 沙箱内 502(环境问题), 验证用 curl
 - 前端源码改动必须 vite build(后端 serve dist/), 勿直接改 dist
-- admin 默认口令 admin/admin123(私域部署, 未轮换; 启动自检告警为提示)
-- **误提交的临时文件**: commit `e225bf5` 的跟踪树里含 `.commit-msg551v.txt` / `tmp_survey5.py`(提交信息草稿+调研脚本)。dsh 工作区另有无跟踪 `tmp_start_ops.py`/`tmp_svc_check.py`/`tmp_svc_state.py`。任何 `reset --hard` 会从跟踪树复原前两个 → 建议后续提交剔除(根治), 本地工作区已手工删除。
+- **admin 口令**: dev 为 admin; **ops(:8000) 已轮换**(公网上线 qc.evergreenzhou.com 后, admin/admin123 已失效)。公网实例建议保持轮换 + 密钥加固。
+- **误提交临时文件 (已根治 2026-09-03)**: `.commit-msg551v.txt` / `tmp_survey5.py` 已从跟踪树剔除(提交 5a350eca)。
 - **测试隔离坑 (v3.13 排查确认)**: `tests/test_today_snapshot.py` 顶层 import 使 DATA_FILE 绑死真实路径, 全量 pytest 会污染真实 data/, 与运行中 dev 服务互相污染。跑全量前停 dev 或等根治(未做)。
-- **v5.1.5 发布物未推送**: tag v5.1.5 已打(本地), GitHub release / 群辉 / Docker ghcr.io:5.1.5 尚未推送; README 下载区 zip/tar.gz/Docker 链接仍指向 v5.0.11, 推送后需同步 bump。
+- **锁文件漂移**: `test_lockfile_consistent` 用默认 uv 缓存重编译比对; uv 解析有 CDN 抖动, 漂移时用与测试同条件(默认缓存) `uv pip compile` 重新生成(2026-09-03 曾 anyio 4.14.2→4.15.0)。
+- **v5.2.0 已发布双端**(78dafad7→7f0fe6c1), origin 已推 master + v5 tags; **GitHub release / Docker ghcr.io / README 下载链接仍停 v5.0.11 未同步**(待办)。**synology master+tags 未推**(需授权)。
+- **涨停原因/题材串**: 需配置 `IWENCAI_API_KEY` + 安装 iwencai_client 才出数据, 否则如实"—"(见 §4.4)。
 
 ## 6. 测试体系 (v5.0.11 基线 2304 用例 / 覆盖 71.97%)
 
@@ -127,8 +155,11 @@
 
 ## 7. 下一步 / 待办
 
-- [ ] 推送 v5.1.5: tag + GitHub release + 群辉 + Docker(ghcr.io:5.1.5), 推送后 bump README 下载链接区
-- [ ] 根治误提交临时文件: 从 git 跟踪树剔除 `.commit-msg551v.txt` / `tmp_survey5.py`(含 dsh 工作区 3 个未跟踪 tmp 脚本)
+- [ ] 发布物: v5.2.0 GitHub release + Docker(ghcr.io) + README 下载链接 bump(仍停 v5.0.11)
+- [ ] synology master+tags 推送(需用户授权)
+- [ ] (可选) 配置 IWENCAI_API_KEY 点亮涨停原因/题材串
+- [ ] 观察短线 16:05 抓取: 首日验证三池/龙虎榜入库 + 次日 16:35 重试/错过补偿路径
 - [ ] 观察引擎每日 20:00 持续产持仓(日历 overlay 数据)
-- [ ] 如启用公网: 轮换 admin 密码 + 密钥加固
 - [ ] 新版本发布后: push 群辉 + SKILL §7 快照更新
+- [ ] 测试隔离坑根治(顶层 import 污染 data/), 未做
+- [ ] v5.2.1 派生情绪指标与盘面(按 DEV-PLAN §2, 估 5-7 天)
