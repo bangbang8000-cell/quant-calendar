@@ -1665,3 +1665,29 @@ def test_ai_history_split_evaluation_analysis():
     assert "ai/evaluation-analysis" in page, "loadTrack 应随评估分析子页触发"
     for f in ["zh-CN", "en", "zh-TW", "ja", "ko"]:
         assert "sub.evaluation-analysis" in _read("js/locales/%s.js" % f),             "%s 语言包缺 sub.evaluation-analysis" % f
+
+
+# V5.2.5 (T-5.2.57): 复盘看板永远 loading 修复回归
+
+def test_shortterm_overview_review_independent_race_seq():
+    """V5.2.5-fix: loadOverview/loadReview 并行加载共享 _reqSeq 导致 overview 响应被丢弃、看板永远 loading。
+
+    loadCurrent 的 overview 分支并行调用 loadOverview()+loadReview()，两者若共享同一请求序号，
+    后调用的 loadReview 会覆盖 loadOverview 的序号，overview 响应返回时 seq 已过期 → 提前 return，
+    overviewLoading 永不清除。修复后两个函数必须使用独立序号（_overviewSeq/_reviewSeq）。
+    """
+    page = _read("js/components/shortterm-page.js")
+    # 独立序号必须声明
+    assert "let _overviewSeq = 0;" in page, "应有独立 overview 请求序号"
+    assert "let _reviewSeq = 0;" in page, "应有独立 review 请求序号"
+    # loadOverview 必须用 _overviewSeq（禁止回退共享 _reqSeq）
+    ov = page.split("async function loadOverview(force)")[1].split("async function loadSectorFlow")[0]
+    assert "const seq = ++_overviewSeq;" in ov, "loadOverview 必须用独立 _overviewSeq"
+    assert "seq !== _overviewSeq" in ov, "loadOverview 竞态检查必须用 _overviewSeq"
+    assert "seq === _overviewSeq" in ov, "loadOverview 结束清理必须用 _overviewSeq"
+    assert "++_reqSeq" not in ov, "loadOverview 不得共享 _reqSeq"
+    # loadReview 必须用 _reviewSeq
+    rv = page.split("async function loadReview(force)")[1].split("async function runReview")[0]
+    assert "const seq = ++_reviewSeq;" in rv, "loadReview 必须用独立 _reviewSeq"
+    assert "seq !== _reviewSeq" in rv, "loadReview 竞态检查必须用 _reviewSeq"
+    assert "++_reqSeq" not in rv, "loadReview 不得共享 _reqSeq"

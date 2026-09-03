@@ -356,6 +356,9 @@
       const _cache = {};
       const CACHE_TTL = 60 * 1000;   // 60s 内同 URL 不重拉(切子页/回退秒开)
       let _reqSeq = 0;               // 请求序号: 旧响应丢弃, 防快速切换覆盖新数据
+      // V5.2.5 (T-5.2.57): overview/review 并行加载共享 _reqSeq 会互相覆盖导致看板永远 loading → 独立序号
+      let _overviewSeq = 0;
+      let _reviewSeq = 0;
 
       function cachedGet(url, force) {
         const now = Date.now();
@@ -654,13 +657,13 @@
       }
 
       async function loadOverview(force) {
-        const seq = ++_reqSeq;
+        const seq = ++_overviewSeq;
         overviewLoading.value = true;
         overviewError.value = false;
         try {
           const url = '/api/shortterm/overview' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
-          if (seq !== _reqSeq) return;
+          if (seq !== _overviewSeq) return;
           if (res && res.success) {
             overview.value = res;
           } else if (res && res.detail) {
@@ -673,12 +676,12 @@
             overviewErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
-          if (seq !== _reqSeq) return;
+          if (seq !== _overviewSeq) return;
           overviewError.value = true;
           overviewErrTitle.value = '数据加载失败';
           overviewErrDesc.value = '请检查服务后重试';
         } finally {
-          if (seq === _reqSeq) overviewLoading.value = false;
+          if (seq === _overviewSeq) overviewLoading.value = false;
         }
       }
 
@@ -719,11 +722,11 @@
       }
 
       async function loadReview(force) {
-        const seq = ++_reqSeq;
+        const seq = ++_reviewSeq;
         try {
           const url = '/api/shortterm/review' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
-          if (seq !== _reqSeq) return;
+          if (seq !== _reviewSeq) return;
           if (res && res.success) review.value = res.review || null;
         } catch (e) { /* 静默 */ }
       }
