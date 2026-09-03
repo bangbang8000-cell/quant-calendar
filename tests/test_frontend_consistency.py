@@ -1691,3 +1691,29 @@ def test_shortterm_overview_review_independent_race_seq():
     assert "const seq = ++_reviewSeq;" in rv, "loadReview 必须用独立 _reviewSeq"
     assert "seq !== _reviewSeq" in rv, "loadReview 竞态检查必须用 _reviewSeq"
     assert "++_reqSeq" not in rv, "loadReview 不得共享 _reqSeq"
+
+
+# V5.2.6 (T-5.2.50): 空错态巡检 — 情绪/事实指标降级 reason 可见
+
+def test_shortterm_emotion_facts_degraded_notice():
+    """V5.2.6: emotion/facts 指标降级信封 (available=False + reason) 时前端必须显示 reason。
+
+    修复前: overview.emotion.promotion 等为 {available:False, reason} 时模板仅显示 '—'
+    (stat-value 空占位), reason 静默丢失 → 用户看到空白指标却不知道为何。
+    修复后: emotionNotice/factsNotice computed 汇总 reason, 模板 v-if 提示条展示。
+    """
+    page = _read("js/components/shortterm-page.js")
+    # computed 必须存在
+    assert "const emotionNotice = computed" in page, "应有 emotionNotice computed"
+    assert "const factsNotice = computed" in page, "应有 factsNotice computed"
+    # 必须遍历 4 个指标字段, 识别 available===false + reason
+    for k in ["'money_effect'", "'promotion'", "'consec_premium'", "'sentiment_cycle'"]:
+        assert k in page.split("const emotionNotice = computed")[1].split("const factsNotice = computed")[0], \
+            "emotionNotice 应遍历字段 " + k
+    for k in ["'seal_quality'", "'loss_effect'", "'feedback_matrix'", "'theme_structure'"]:
+        assert k in page.split("const factsNotice = computed")[1].split("function pct")[0], \
+            "factsNotice 应遍历字段 " + k
+    assert "v.available === false && v.reason" in page, "应识别降级信封"
+    # 模板必须渲染提示条
+    assert 'v-if="emotionNotice"' in page, "模板应有 emotionNotice 提示条"
+    assert 'v-if="factsNotice"' in page, "模板应有 factsNotice 提示条"

@@ -50,6 +50,8 @@
                                 <div v-if="chatAnswer" class="mt-4 text-xs-tertiary">{{ chatAnswer }}</div>
                             </div>
 
+                            <!-- V5.2.6 (T-5.2.50): 指标降级时显示 reason, 不静默 — -->
+                            <div v-if="emotionNotice" class="text-xs-tertiary mb-4">⚠️ {{ emotionNotice }}</div>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card">
                                     <div class="stat-label">赚钱效应均值</div>
@@ -79,6 +81,7 @@
                             </div>
 
                             <div class="text-base-secondary mb-2">市场事实</div>
+                            <div v-if="factsNotice" class="text-xs-tertiary mb-4">⚠️ {{ factsNotice }}</div>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card">
                                     <div class="stat-label">封板质量</div>
@@ -465,6 +468,27 @@
         const s = overview.value && overview.value.emotion && overview.value.emotion.sentiment_cycle;
         if (!s || !s.available) return '—';
         return (s.trend || '—') + (s.day_n != null ? ' · 距低谷' + s.day_n + '天' : '');
+      });
+      // V5.2.6 (T-5.2.50): 情绪/事实指标降级信封 reason 汇总(诚实性: 失败原因可见)
+      const emotionNotice = computed(function () {
+        const e = overview.value && overview.value.emotion;
+        if (!e) return '';
+        const reasons = [];
+        for (const k of ['money_effect', 'promotion', 'consec_premium', 'sentiment_cycle']) {
+          const v = e[k];
+          if (v && v.available === false && v.reason) reasons.push(String(v.reason).replace(/^[[^]]*]s*/, ''));
+        }
+        return reasons.join('；');
+      });
+      const factsNotice = computed(function () {
+        const f = overview.value && overview.value.facts;
+        if (!f) return '';
+        const reasons = [];
+        for (const k of ['seal_quality', 'loss_effect', 'feedback_matrix', 'theme_structure']) {
+          const v = f[k];
+          if (v && v.available === false && v.reason) reasons.push(String(v.reason).replace(/^[[^]]*]s*/, ''));
+        }
+        return reasons.join('；');
       });
       function pct(v) {
         if (v == null || isNaN(v)) return '—';

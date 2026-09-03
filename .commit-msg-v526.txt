@@ -1,0 +1,8 @@
+feat(V5.2.6): 空错态巡检 — 情绪/事实指标降级 reason 可见 — 发版 5.2.6
+
+- T-5.2.50: overview emotion/facts 指标降级信封 (available=false + reason) 不再静默
+  新增 emotionNotice/factsNotice computed 汇总 reason, 模板 ⚠️ 提示条展示
+- 巡检: 全部子页空态覆盖 (ztpool/lhb/sector/intraday/market-review/scan/事件提醒)
+  el-table 空文本已中文 (index.html ElementPlus zh-cn locale 配置确认)
+- 回归: test_frontend_consistency 117 passed (新增降级提示用例)
+- APP_VERSION 5.2.5 → 5.2.6
