@@ -1717,3 +1717,33 @@ def test_shortterm_emotion_facts_degraded_notice():
     # 模板必须渲染提示条
     assert 'v-if="emotionNotice"' in page, "模板应有 emotionNotice 提示条"
     assert 'v-if="factsNotice"' in page, "模板应有 factsNotice 提示条"
+
+
+# V5.2.7 (T-5.2.51): 移动端 375px 适配回归守护
+
+def test_mobile_375_responsive_guard():
+    """V5.2.7: 375px 移动端适配关键规则守护 (CDP 实测无横向溢出 + 代码审查确认)。
+
+    实测结论 (viewport 375x667, ops 访客):
+    - 全部一级页面 scrollWidth == clientWidth == 375 (无整体横向滚动条)
+    - sub-nav/el-table/hscroll 容器内横向滚动 (设计意图, 可滑动)
+    - 触控目标 >= 44px, 弹窗内部滚动, mobile-nav 底部导航
+    """
+    resp = _read("css/responsive.css")
+    # 溢出守卫: 移动端禁止整体横向溢出 (v3.17.8 独立 768 媒体块)
+    assert "overflow-x: hidden" in resp, "移动端应有 overflow-x hidden 溢出守卫"
+    assert "max-width: 100vw" in resp, "body 应禁横向溢出"
+    # 底部导航 + 侧边栏隐藏
+    assert ".mobile-nav" in resp, "移动端应有底部导航 mobile-nav"
+    assert "display: none" in resp.rsplit(".sidebar {", 1)[1].split("}")[0], "移动端应隐藏侧边栏"
+    # 子导航横向滚动 (7 个短线复盘子页 375px 装不下)
+    assert ".sub-nav-wrapper" in resp and "overflow-x: auto" in resp, "子导航应允许横向滚动"
+    # 表格容器横向滚动
+    layout = _read("css/layout.css")
+    assert ".table-container" in layout and "overflow-x: auto" in layout, "表格容器应横向滚动"
+    # 触控目标 >= 44px (FR-3.11.5)
+    assert "min-height: 44px" in resp, "移动端按钮应 >= 44px 触控目标"
+    # 弹窗内部滚动 (v3.17.8)
+    assert "max-height: calc(100vh - 20px)" in resp, "移动端弹窗应高度封顶"
+    # small mobile (<480) 紧凑
+    assert "@media (max-width: 480px)" in resp, "应有 480px 断点"
