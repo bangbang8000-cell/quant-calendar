@@ -68,4 +68,5 @@ window.__lazyLoaders = {
   system: () => import('../js/components/system-page.js'),
   ai: () => import('../js/components/ai-page.js'),
   research: () => import('../js/components/research-page.js'),
+  shortterm: () => import('../js/components/shortterm-page.js'),
 };
