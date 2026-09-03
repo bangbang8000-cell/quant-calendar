@@ -145,3 +145,29 @@ def test_fetch_lhb_all_sources_fail(monkeypatch):
     out = fetch_lhb('2026-09-01', '2026-09-02')
     assert out['available'] is False
     assert 'tushare' in out['reason'] and 'akshare.eastmoney' in out['reason']
+
+
+# ---------- V5.2.3-fix: 东财「上榜日」date 对象 → ISO 字符串(防 API 500) ----------
+
+def test_lhb_trade_date_serializable(monkeypatch):
+    """上榜日为 datetime.date → 归一化为 ISO 字符串"""
+    import datetime
+    from shortterm import lhb as lhb_mod
+    raw = {'代码': '000011', '名称': '深物业A', '上榜日': datetime.date(2026, 9, 2),
+           '解读': '机构买入', '涨跌幅': 10.0}
+    row = lhb_mod._normalize_lhb_row(raw)
+    assert row['trade_date'] == '2026-09-02'
+    assert not isinstance(row['trade_date'], (datetime.date, datetime.datetime))
+
+
+def test_lhb_rows_all_json_serializable(monkeypatch):
+    """整批行 JSON 可序列化(含 date 列)"""
+    import datetime
+    import json
+    from shortterm import lhb as lhb_mod
+    raw = {'代码': '000011', '名称': '深物业A', '上榜日': datetime.date(2026, 9, 2),
+           '解读': '', '涨跌幅': 10.0, '上榜后1日': datetime.date(2026, 9, 3),
+           '上榜后2日': datetime.date(2026, 9, 4)}
+    rows = [lhb_mod._normalize_lhb_row(raw)]
+    json.dumps(rows, ensure_ascii=False)   # 不抛 TypeError
+    assert rows[0]['next_1d'] is None      # 日期经 _to_float → None, 不落 date

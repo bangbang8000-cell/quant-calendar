@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """V5.2.0 (T-5.2.04): 龙虎榜数据抓取 + 席位/资金性质归类
 
-- fetch_lhb(start, end): 全市场龙虎榜明细(akshare 东财)
+- fetch_lhb(start, end): 全市场龙虎榜明细(akshare 东财 → tushare top_list 兜底)
 - classify_reading(解读): 从东财「解读」字段抽取 机构/游资/主力 信号(客观归类, 非推荐)
 - 数据诚实性: 失败 available=False + [⚠️] 信封; 空榜是合法结果。
+- V5.2.3-fix: 东财「上榜日」返回 datetime.date → 转 ISO 字符串, 否则 API 序列化 500。
 """
+import datetime
 import logging
 
 from .fetchers import _zero_pad, _to_float, _norm_date
@@ -48,6 +50,15 @@ def classify_reading(reading):
     return tags
 
 
+def _as_serializable(v):
+    """date/datetime → ISO 字符串(防 API 序列化 500); NaN → None"""
+    if isinstance(v, (datetime.date, datetime.datetime)):
+        return v.isoformat()
+    if isinstance(v, float) and v != v:
+        return None
+    return v
+
+
 def _normalize_lhb_row(raw: dict) -> dict:
     out = {}
     for zh, en in _LHB_COLUMN_MAP.items():
@@ -57,7 +68,7 @@ def _normalize_lhb_row(raw: dict) -> dict:
         elif en in _FLOAT_KEYS:
             out[en] = _to_float(v)
         else:
-            out[en] = None if v is None or (isinstance(v, float) and v != v) else v
+            out[en] = _as_serializable(v)
     out['board'] = board_of(out.get('ts_code') or '', out.get('name') or '')
     out['tags'] = classify_reading(out.get('reading'))
     return out
