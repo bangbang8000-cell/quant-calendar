@@ -243,3 +243,57 @@ def test_drift_endpoint(client):
     data = r.json()
     assert data['success'] is True
     assert data['available'] in (True, False)
+
+
+# ---------- V5.2.2 收尾: 历史检索 / 追问 / 盘中核验 / webhook ----------
+
+def test_review_dates_lists_stored(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False, 'reason': '[⚠️]'})
+    assert client.get('/api/shortterm/review/dates').json()['dates'] == []
+    client.post('/api/shortterm/review?date=2026-09-02')
+    dates = client.get('/api/shortterm/review/dates').json()['dates']
+    assert '2026-09-02' in dates
+
+
+def test_review_chat_no_review(client):
+    r = client.post('/api/shortterm/review/chat',
+                    json={'date': '2026-09-02', 'question': '怎么看'})
+    assert r.json()['answer'] == '该日尚无复盘, 请先生成。'
+
+
+def test_review_chat_with_review(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke', lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False, 'reason': '[⚠️]'})
+    client.post('/api/shortterm/review?date=2026-09-02')
+    # 落盘后追问走 mock LLM
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: (lambda p: '基于复盘, 主线是存储。'))
+    r = client.post('/api/shortterm/review/chat',
+                    json={'date': '2026-09-02', 'question': '主线是什么'})
+    assert '存储' in r.json()['answer']
+
+
+def test_intraday_snapshot_persists_and_lists(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import intraday as iday
+    monkeypatch.setattr(iday, 'accept_snapshot',
+                        lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
+    store.save_pool('2026-09-03', 'zt', [{'ts_code': 'a'}])
+    store.save_pool('2026-09-03', 'zb', [{'ts_code': 'x'}])
+    r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
+    assert r.json()['accepted'] is True and r.json()['zt_count'] == 1
+    listed = client.get('/api/shortterm/intraday?date=2026-09-03').json()['snapshots']
+    assert len(listed) == 1 and listed[0]['slot'] == '10:00'
+
+
+def test_shortterm_review_webhook_event_registered():
+    import webhook
+    assert 'shortterm_review_ready' in webhook.WEBHOOK_EVENTS

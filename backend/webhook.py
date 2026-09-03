@@ -20,7 +20,8 @@ import db
 logger = logging.getLogger(__name__)
 
 # 开放 API 支持订阅的事件
-WEBHOOK_EVENTS = ("evaluate_done", "review_ready", "anomaly_scan_done", "market_review_ready")
+WEBHOOK_EVENTS = ("evaluate_done", "review_ready", "anomaly_scan_done",
+                  "market_review_ready", "shortterm_review_ready")
 
 # 单次投递超时 (秒)
 WEBHOOK_TIMEOUT = 5

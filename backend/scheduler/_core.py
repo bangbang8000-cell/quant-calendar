@@ -824,6 +824,14 @@ class SchedulerCoreMixin:
             _store.save_pool(today, 'review', [{'date': today, 'reports': reports, **verdict}])
             self._record_task_run("shortterm_review", verdict.get('available', False),
                                   f"{today} 情绪档位={verdict.get('emotion_level') or '?'}")
+            # V5.2.2 (T-5.2.29): webhook 事件(shortterm_review_ready)
+            try:
+                from webhook import dispatch as webhook_dispatch
+                webhook_dispatch("shortterm_review_ready", {
+                    "date": today, "emotion_level": verdict.get('emotion_level'),
+                    "available": verdict.get('available', False)})
+            except Exception as we:  # noqa: BLE001
+                logger.warning("webhook shortterm_review_ready 投递失败 (忽略): %s", we)
             logger.info("短线 AI 复盘完成(%s): %s", today, verdict.get('emotion_level'))
         except Exception as e:  # noqa: BLE001
             logger.error("短线 AI 复盘异常(%s): %s", today, e)

@@ -49,6 +49,8 @@
     'sub.shortterm.overview': 'Review Dashboard',
     'sub.shortterm.sector': 'Sector Flow',
     'sub.sector': 'Sector Flow',
+    'sub.shortterm.intraday': 'Intraday Check',
+    'sub.intraday': 'Intraday Check',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',

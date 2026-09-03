@@ -37,6 +37,11 @@
                                     <div v-if="review.risks && review.risks.length" class="mt-4 text-xs-tertiary">风险: {{ review.risks.join('；') }}</div>
                                 </div>
                                 <div v-else-if="review" class="text-xs-tertiary">{{ review.reason || '暂无复盘, 点击生成' }}</div>
+                                <div v-if="review && review.available" class="mt-4 flex-c-gap-12">
+                                    <el-input v-model="chatQuestion" size="small" placeholder="追问复盘... (Enter 发送)" @keyup.enter="sendChat"></el-input>
+                                    <el-button size="small" :loading="chatLoading" @click="sendChat">发送</el-button>
+                                </div>
+                                <div v-if="chatAnswer" class="mt-4 text-xs-tertiary">{{ chatAnswer }}</div>
                             </div>
 
                             <div class="flex-wrap mb-4">
@@ -229,6 +234,32 @@
                         </div>
                         <qc-state-panel v-else type="empty" title="暂无数据" desc="板块资金流暂不可用"></qc-state-panel>
                     </div>
+
+                    <!-- 盘中核验 (V5.2.2: 6 时点快照) -->
+                    <div v-if="currentSubPage === 'intraday'" class="card">
+                        <div class="page-header">
+                            <div class="page-title">盘中核验</div>
+                            <div class="flex-c-gap-12">
+                                <el-date-picker v-model="intradayDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
+                                <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
+                            </div>
+                        </div>
+                        <div class="text-xs-tertiary mb-4">时点: 09:25/09:35/10:00/11:30/14:00/15:00 · 过点 8 分钟拒绝 · 历史日不现抓</div>
+                        <qc-state-panel v-if="intradayLoading" type="loading"></qc-state-panel>
+                        <div v-else-if="intradaySnapshots && intradaySnapshots.length">
+                            <div class="table-container">
+                                <el-table :data="intradaySnapshots" size="small">
+                                    <el-table-column prop="slot" label="时点" width="90"></el-table-column>
+                                    <el-table-column prop="zt_count" label="涨停" width="80" align="right"></el-table-column>
+                                    <el-table-column prop="zb_count" label="炸板" width="80" align="right"></el-table-column>
+                                    <el-table-column prop="dt_count" label="跌停" width="80" align="right"></el-table-column>
+                                    <el-table-column label="炸板率" width="90" align="right"><template #default="s">{{ fmtPct(s.row.broken_rate) }}</template></el-table-column>
+                                    <el-table-column label="口径" min-width="140"><template #default="s">{{ s.row.note }}</template></el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
+                        <qc-state-panel v-else type="empty" title="暂无快照" desc="非快照时点或该日未采集"></qc-state-panel>
+                    </div>
                 </div>`,
     setup() {
       const state = inject('qcState');
@@ -263,6 +294,13 @@
       const sectorErrDesc = ref('请检查服务后重试');
       const review = ref(null);
       const reviewRunning = ref(false);
+      const intradayDate = ref('');
+      const intradaySnapshots = ref(null);
+      const intradayLoading = ref(false);
+      const intradayCollecting = ref(false);
+      const chatQuestion = ref('');
+      const chatAnswer = ref('');
+      const chatLoading = ref(false);
 
       function authHeaders() {
         const t = localStorage.getItem('quant_token') || '';
@@ -482,6 +520,54 @@
         }
       }
 
+      async function sendChat() {
+        const q = chatQuestion.value.trim();
+        if (!q) return;
+        chatLoading.value = true;
+        chatAnswer.value = '';
+        try {
+          const url = '/api/shortterm/review/chat';
+          const res = await fetch(url, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ date: overviewDate.value, question: q }),
+          }).then(function (r) { return r.json(); });
+          chatAnswer.value = res.answer || '[无回复]';
+        } catch (e) {
+          chatAnswer.value = '[⚠️ 发送失败]';
+        } finally {
+          chatLoading.value = false;
+        }
+      }
+
+      async function loadIntraday() {
+        intradayLoading.value = true;
+        try {
+          const url = '/api/shortterm/intraday' + (intradayDate.value ? '?date=' + intradayDate.value : '');
+          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.success) intradaySnapshots.value = res.snapshots || [];
+        } catch (e) { /* 保持 */ } finally {
+          intradayLoading.value = false;
+        }
+      }
+
+      async function collectSnapshot() {
+        intradayCollecting.value = true;
+        try {
+          const url = '/api/shortterm/intraday/snapshot' + (intradayDate.value ? '?date=' + intradayDate.value : '');
+          const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
+          if (res && res.success) {
+            if (!res.accepted) {
+              chatAnswer.value = res.reason || '非快照时点';
+            } else {
+              chatAnswer.value = '已采集 ' + res.slot + ' 快照';
+            }
+            loadIntraday();
+          }
+        } catch (e) { /* 保持 */ } finally {
+          intradayCollecting.value = false;
+        }
+      }
+
       async function loadDefaults() {
         try {
           const res = await fetch('/api/shortterm/latest-session', { headers: authHeaders() }).then(function (r) { return r.json(); });
@@ -496,6 +582,7 @@
         loadOverview();
         loadSectorFlow();
         loadReview();
+        loadIntraday();
       }
 
       onMounted(loadDefaults);
@@ -507,7 +594,10 @@
         overviewDate, overview, overviewLoading, overviewError,
         sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError,
         review, reviewRunning,
+        intradayDate, intradaySnapshots, intradayLoading, intradayCollecting,
+        chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
+        sendChat, loadIntraday, collectSnapshot,
         ladderText, fmtAmount, fmtPct,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass,

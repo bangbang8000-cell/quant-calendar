@@ -288,6 +288,40 @@ async def get_review(date: str = None, user: dict = Depends(get_current_active_u
     return {'success': True, 'date': d, 'review': rows[0] if rows else None}
 
 
+@router.get("/review/dates")
+async def get_review_dates(user: dict = Depends(get_current_active_user)):
+    """复盘历史检索: 已落盘复盘日期列表"""
+    dates = [d for d in store.list_dates() if store.load_pool(d, 'review')]
+    return {'success': True, 'dates': dates}
+
+
+@router.post("/review/chat")
+async def review_chat(payload: dict, user: dict = Depends(get_current_active_user)):
+    """追问聊天: 基于已落盘复盘上下文回答(不脑补)"""
+    d = payload.get('date') or latest_session()
+    question = (payload.get('question') or '').strip()
+    if not question:
+        return {'success': True, 'date': d, 'answer': '请输入问题。'}
+    rows = store.load_pool(d, 'review')
+    if not rows:
+        return {'success': True, 'date': d, 'answer': '该日尚无复盘, 请先生成。'}
+    review = rows[0]
+    invoke = _build_llm_invoke()
+    if invoke is None:
+        return {'success': True, 'date': d, 'answer': '[⚠️ AI 未配置, 追问不可用]'}
+    context = (f"复盘({d}): 情绪档位={review.get('emotion_level')}\n"
+               f"一句话={review.get('summary')}\n"
+               f"活跃方向={review.get('active_directions')}\n"
+               f"风险={review.get('risks')}")
+    prompt = (f"基于下列短线复盘上下文回答用户追问, 只陈述上下文里的事实, 不脑补、不推荐个股:\n"
+              f"{context}\n\n用户问题: {question}")
+    try:
+        answer = invoke(prompt)
+        return {'success': True, 'date': d, 'answer': answer}
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'date': d, 'answer': f'[⚠️ 回答失败: {type(e).__name__}]'}
+
+
 @router.get("/reflection")
 async def get_reflection(date: str = None, user: dict = Depends(get_current_active_user)):
     """反思与战绩记分板(昨日 vs 今日三路投票 + 记分)"""
@@ -305,17 +339,32 @@ async def get_reflection(date: str = None, user: dict = Depends(get_current_acti
 @router.post("/intraday/snapshot")
 async def post_intraday_snapshot(date: str = None,
                                  user: dict = Depends(get_current_active_user)):
-    """盘中核验快照: 接受判据(过点拒绝/历史不现抓) + 三池情绪快照"""
+    """盘中核验快照: 接受判据(过点拒绝/历史不现抓) + 三池情绪快照 + 落盘"""
     from datetime import datetime
     d = date or datetime.now().strftime('%Y-%m-%d')
     ok, reason = intraday.accept_snapshot(d, is_trade_day=is_trade_day(d),
                                           today=datetime.now().strftime('%Y-%m-%d'))
     if not ok:
         return {'success': True, 'date': d, 'accepted': False, 'reason': reason}
+    slot = reason.replace('快照时点 ', '')
     mood = intraday.snapshot_mood(store.load_pool(d, 'zt'),
                                   store.load_pool(d, 'zb'),
                                   store.load_pool(d, 'dt'))
-    return {'success': True, 'date': d, 'accepted': True, 'slot': reason, **mood}
+    store.save_pool(d, 'intraday_' + slot, [mood])   # 落盘供回看
+    return {'success': True, 'date': d, 'accepted': True, 'slot': slot, **mood}
+
+
+@router.get("/intraday")
+async def get_intraday(date: str = None, user: dict = Depends(get_current_active_user)):
+    """某日已采集的盘中快照列表(按时点排序)"""
+    from datetime import datetime
+    d = date or datetime.now().strftime('%Y-%m-%d')
+    snapshots = []
+    for slot in intraday.SNAPSHOT_TIMES:
+        rows = store.load_pool(d, 'intraday_' + slot)
+        if rows and rows[0]:
+            snapshots.append({'slot': slot, **rows[0]})
+    return {'success': True, 'date': d, 'snapshots': snapshots}
 
 
 @router.get("/backtest")

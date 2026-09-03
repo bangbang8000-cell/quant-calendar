@@ -45,6 +45,8 @@
     'sub.shortterm.overview': '復盤看板',
     'sub.shortterm.sector': '板塊資金',
     'sub.sector': '板塊資金',
+    'sub.shortterm.intraday': '盤中核驗',
+    'sub.intraday': '盤中核驗',
     'sub.status': '系統状态',
     'sub.autoeval': '自動評估',
     'sub.datasource': '數据源',
