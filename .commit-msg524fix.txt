@@ -1,0 +1,4 @@
+fix(5.2.4): backend typing — benchmark/walkforward 的 Dict 注解缺 typing import
+
+- backend/benchmark.py / backend/walkforward.py 补 from typing import Dict
+- 修复 pytest collection 4 errors (NameError: Dict), 全量 2768 passed

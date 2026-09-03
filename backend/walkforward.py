@@ -12,6 +12,7 @@
 测试: tests/test_walkforward.py (无前视断言 + 稳定性, TEST-PLAN 3.2)。
 """
 import logging
+from typing import Dict
 
 import numpy as np
 
