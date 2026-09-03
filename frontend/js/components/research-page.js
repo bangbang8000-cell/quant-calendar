@@ -1230,12 +1230,12 @@
             loadVariants();
             loadCustoms();
           }
-          // 进入研究页「市场复盘」且未停留在详情时加载列表
-          if (key === 'research/market-review' && !selectedReviewDate.value) {
+          // 进入「市场复盘」且未停留在详情时加载列表 (V5.2.3: 移入短线复盘后 key=shortterm/market-review)
+          if ((key === 'research/market-review' || key === 'shortterm/market-review') && !selectedReviewDate.value) {
             loadMarketReviews();
           }
-          // 进入研究页「异动扫描」时刷新扫描与事件提醒
-          if (key === 'research/scan') {
+          // 进入「异动扫描」时刷新扫描与事件提醒 (V5.2.3: 移入短线复盘后 key=shortterm/scan)
+          if (key === 'research/scan' || key === 'shortterm/scan') {
             loadScan();
             loadEvents();
           }
