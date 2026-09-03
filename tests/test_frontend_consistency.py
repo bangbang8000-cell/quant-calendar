@@ -736,11 +736,14 @@ def test_scan_subpage_endpoint_invoked():
 
 
 def test_scan_subpage_registered():
-    """FR-3.17.7: 研究页菜单应注册 scan 子页（subPages + subPageNames）"""
+    """V5.2.3: 市场复盘/异动扫描已移入短线复盘(shortterm subPages 含 scan/market-review)"""
     app = _read("js/app-logic.js")
-    m = re.search(r"\{ key: 'research'.*?\}", app)
-    assert m and "'scan'" in m.group(0), "research 菜单 subPages 应含 'scan'"
-    assert "'market-review'" in m.group(0), "research 菜单 subPages 应含 'market-review'(FR-3.17.2)"
+    r = re.search(r"\{ key: 'research'.*?\}", app)
+    assert r and "'scan'" not in r.group(0), "research 菜单不应再含 'scan'(已移入短线复盘)"
+    assert "'market-review'" not in r.group(0), "research 菜单不应再含 'market-review'"
+    s = re.search(r"\{ key: 'shortterm'.*?\}", app)
+    assert s and "'scan'" in s.group(0), "shortterm 菜单 subPages 应含 'scan'"
+    assert "'market-review'" in s.group(0), "shortterm 菜单 subPages 应含 'market-review'"
     assert "'scan': '异动扫描'" in app, "subPageNames 应映射 'scan' → 异动扫描"
     assert "'market-review': '市场复盘'" in app, "subPageNames 应映射 'market-review' → 市场复盘"
 

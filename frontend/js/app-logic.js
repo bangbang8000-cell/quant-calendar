@@ -110,12 +110,12 @@
                 const groupsConfig = ref(null);
 
 const allMenuDefs = [
-                    { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'execution', 'merrill', 'market', 'consensus'] }, // V5.0.11: 策略回测移入策略研究
+                    { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
                     { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页
-                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'market-review', 'scan', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] },
-                    { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.0: 涨停复盘+龙虎榜; V5.2.1: 复盘看板+板块资金; V5.2.2: 盘中核验
-                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'usage', 'about'], guestSubPages: ['status', 'about'] }
+                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
+                    { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
+                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'execution', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -291,6 +291,11 @@ const allMenuDefs = [
                 // <component :is> 每次渲染重新解析组件名, 懒加载 chunk 注册后即可命中
                 const pageComp = computed(() => {
                     const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', shortterm: 'qc-shortterm-page', system: 'qc-system-page' };
+                    // V5.2.3: 市场复盘/异动扫描移入短线复盘, 执行看板移入系统配置 —
+                    // 组件按顶层菜单选, 子页归属变化时路由到原组件(复用渲染, 避免复制模板)
+                    const _sp = currentSubPage.value;
+                    if (currentPage.value === 'shortterm' && (_sp === 'market-review' || _sp === 'scan')) return 'qc-research-page';
+                    if (currentPage.value === 'system' && _sp === 'execution') return 'qc-strategies-page';
                     return _map[currentPage.value] || '';
                 });
                 const showUserMenu = ref(false);

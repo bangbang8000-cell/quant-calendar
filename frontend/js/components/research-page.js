@@ -9,9 +9,10 @@
   window.__quantComponents.ResearchPage = {
     name: 'qc-research-page',
     template: `
-                <div v-if="currentPage === 'research'" key="research">
-                    <!-- v3.16 (16.8): 功能未开启时的统一占位 -->
-                    <qc-state-panel v-if="!researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
+                <!-- V5.2.3: 市场复盘/异动扫描移入短线复盘 → 本组件在 shortterm 下也渲染这两个子页 -->
+                <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && (currentSubPage === 'market-review' || currentSubPage === 'scan'))" key="research">
+                    <!-- v3.16 (16.8): 功能未开启时的统一占位 (仅策略研究菜单下生效, 短线复盘托管不受研究开关影响) -->
+                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <!-- V4.9 (P2): 研究概览子页 -->

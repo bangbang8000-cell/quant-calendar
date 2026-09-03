@@ -9,7 +9,8 @@
   window.__quantComponents.StrategiesPage = {
     name: 'qc-strategies-page',
     template: `
-                <div v-if="currentPage === 'strategies'" key="strategies">
+                <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system+execution 下也渲染 -->
+                <div v-if="currentPage === 'strategies' || (currentPage === 'system' && currentSubPage === 'execution')" key="strategies">
                     <div v-if="currentSubPage === 'overview'">
 <div class="page-header">
                         <div class="page-title">{{ t('strategies.title') }}</div>
