@@ -621,8 +621,8 @@
 /* 盘中核验 6 时点时间轴 */
 .intraday-timeline { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
 .intraday-slot {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border-radius: var(--r-full);
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full);
   border: 1px solid var(--border-color);
   font-size: var(--font-xs); color: var(--text-tertiary);
 }
