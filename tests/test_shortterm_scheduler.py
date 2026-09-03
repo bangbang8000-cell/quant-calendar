@@ -16,6 +16,7 @@ class TestShorttermCapture:
 
     def test_capture_settled_saves_pools(self):
         from scheduler import Scheduler
+        from shortterm import emotion_metrics
         s = Scheduler()
         s._record_task_run = lambda *a, **k: None
         with patch('shortterm.trade_calendar.is_settled', return_value=True), \
@@ -26,10 +27,13 @@ class TestShorttermCapture:
              patch.object(fetchers, 'fetch_dt_pool',
                           return_value={'available': True, 'rows': []}), \
              patch.object(lhb, 'fetch_lhb',
-                          return_value={'available': True, 'rows': []}):
+                          return_value={'available': True, 'rows': []}), \
+             patch.object(emotion_metrics, 'fetch_prev_pool',
+                          return_value={'available': True, 'rows': [{'ts_code': '002909', 'ret': 5.0}]}):
             self._run(s, '2026-09-02')
         rows = store.load_pool('2026-09-02', 'zt')
         assert rows[0]['ts_code'] == '002909'
+        assert store.load_pool('2026-09-02', 'prev_zt')[0]['ret'] == 5.0
 
     def test_capture_unsettled_skips(self):
         from scheduler import Scheduler
@@ -43,6 +47,7 @@ class TestShorttermCapture:
 
     def test_capture_partial_failure_keeps_ok(self):
         from scheduler import Scheduler
+        from shortterm import emotion_metrics
         s = Scheduler()
         recorded = {}
         s._record_task_run = lambda name, ok, msg: recorded.update({name: (ok, msg)})
@@ -54,15 +59,17 @@ class TestShorttermCapture:
              patch.object(fetchers, 'fetch_dt_pool',
                           return_value={'available': False, 'reason': '[⚠️ boom]'}), \
              patch.object(lhb, 'fetch_lhb',
-                          return_value={'available': True, 'rows': []}):
+                          return_value={'available': True, 'rows': []}), \
+             patch.object(emotion_metrics, 'fetch_prev_pool',
+                          return_value={'available': False, 'reason': '[⚠️ boom]'}):
             self._run(s, '2026-09-03')
         # 成功的两个入库
         assert store.load_pool('2026-09-03', 'zt')[0]['ts_code'] == '002909'
         assert store.load_pool('2026-09-03', 'zb') is None   # 失败不覆盖/不写
-        # 记录: 2/4 成功 (ok>=2 → True)
+        # 记录: 2/5 成功 (ok>=2 → True)
         name, (ok, msg) = list(recorded.items())[0]
         assert ok is True
-        assert '2/4' in msg
+        assert '2/5' in msg
 
 
 class TestShorttermRetryAndCatchup:
@@ -70,15 +77,18 @@ class TestShorttermRetryAndCatchup:
 
     def test_capture_returns_summary(self):
         from scheduler import Scheduler
+        from shortterm import emotion_metrics
         s = Scheduler()
         s._record_task_run = lambda *a, **k: None
         with patch('shortterm.trade_calendar.is_settled', return_value=True), \
              patch.object(fetchers, 'fetch_zt_pool', return_value={'available': True, 'rows': []}), \
              patch.object(fetchers, 'fetch_zb_pool', return_value={'available': True, 'rows': []}), \
              patch.object(fetchers, 'fetch_dt_pool', return_value={'available': True, 'rows': []}), \
-             patch.object(lhb, 'fetch_lhb', return_value={'available': True, 'rows': []}):
+             patch.object(lhb, 'fetch_lhb', return_value={'available': True, 'rows': []}), \
+             patch.object(emotion_metrics, 'fetch_prev_pool',
+                          return_value={'available': True, 'rows': []}):
             result = asyncio.run(s._run_shortterm_capture('2026-09-02'))
-        assert result == {'ok': 4, 'total': 4, 'skipped': False}
+        assert result == {'ok': 5, 'total': 5, 'skipped': False}
 
     def test_partial_failure_retries_once(self):
         from scheduler import Scheduler

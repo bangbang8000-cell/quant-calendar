@@ -46,6 +46,7 @@
     'sub.custom-write': 'New Strategy',
     'sub.ztpool': 'Limit-up Review',
     'sub.lhb': 'Dragon-Tiger List',
+    'sub.shortterm.overview': 'Review Dashboard',
     'sub.status': 'System Status',
     'sub.autoeval': 'Auto Eval',
     'sub.datasource': 'Data Source',

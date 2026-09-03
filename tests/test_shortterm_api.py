@@ -101,11 +101,17 @@ def test_sector_flow(monkeypatch, client):
 
 # ---------- capture / store / dates ----------
 
+def _fake_prev(date):
+    return {'available': True, 'rows': [{'ts_code': '002909', 'ret': 10.0,
+                                         'prev_boards': 3}]}
+
+
 def test_capture_persists(monkeypatch, client):
     for fn in (fetchers.fetch_zt_pool, fetchers.fetch_zb_pool,
                fetchers.fetch_dt_pool):
         monkeypatch.setattr(fetchers, fn.__name__, _fake_pool)
     monkeypatch.setattr(lhb, 'fetch_lhb', _fake_lhb)
+    monkeypatch.setattr('shortterm.emotion_metrics.fetch_prev_pool', _fake_prev)
     r = client.post('/api/shortterm/capture?date=2026-09-02')
     data = r.json()
     assert data['captured']['zt'] == 1
@@ -119,6 +125,7 @@ def test_dates_lists_captured(monkeypatch, client):
                fetchers.fetch_dt_pool):
         monkeypatch.setattr(fetchers, fn.__name__, _fake_pool)
     monkeypatch.setattr(lhb, 'fetch_lhb', _fake_lhb)
+    monkeypatch.setattr('shortterm.emotion_metrics.fetch_prev_pool', _fake_prev)
     client.post('/api/shortterm/capture?date=2026-09-02')
     r = client.get('/api/shortterm/dates')
     assert '2026-09-02' in r.json()['dates']
@@ -131,6 +138,7 @@ def test_capture_failure_marks_null(monkeypatch, client):
     monkeypatch.setattr(fetchers, 'fetch_zb_pool', _fake_pool)
     monkeypatch.setattr(fetchers, 'fetch_dt_pool', _fake_pool)
     monkeypatch.setattr(lhb, 'fetch_lhb', _fake_lhb)
+    monkeypatch.setattr('shortterm.emotion_metrics.fetch_prev_pool', _fake_prev)
     r = client.post('/api/shortterm/capture?date=2026-09-02')
     assert r.json()['captured']['zt'] is None
     assert r.json()['captured']['lhb'] == 1

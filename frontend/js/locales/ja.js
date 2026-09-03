@@ -42,6 +42,7 @@
     'sub.custom-write': '新規戦略',
     'sub.ztpool': 'ストップ高レビュー',
     'sub.lhb': '竜虎榜',
+    'sub.shortterm.overview': '振り返りダッシュボード',
     'sub.status': 'システム状態',
     'sub.autoeval': '自動評価',
     'sub.datasource': 'データソース',

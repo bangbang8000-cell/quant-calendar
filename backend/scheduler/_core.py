@@ -754,18 +754,20 @@ class SchedulerCoreMixin:
     async def _run_shortterm_capture(self, trade_date):
         """抓取三池+龙虎榜入库; 未收盘不抓(数据诚实性); 单池失败不覆盖已有缓存。
         返回 {'ok','total','skipped'} 供重试/错过补偿判定。"""
-        from shortterm import fetchers, lhb, store
+        from shortterm import emotion_metrics, fetchers, lhb, store
         from shortterm.trade_calendar import is_settled
         if not is_settled(trade_date):
             logger.info("短线抓取跳过: %s 未收盘", trade_date)
             self._record_task_run("shortterm_capture", False, f"{trade_date} 未收盘")
-            return {'ok': 0, 'total': 4, 'skipped': True}
+            return {'ok': 0, 'total': 5, 'skipped': True}
         ok = 0
-        total = 4
+        total = 5
         for pool_type, fn in [('zt', fetchers.fetch_zt_pool),
                               ('zb', fetchers.fetch_zb_pool),
                               ('dt', fetchers.fetch_dt_pool),
-                              ('lhb', lambda x: lhb.fetch_lhb(x, x))]:
+                              ('lhb', lambda x: lhb.fetch_lhb(x, x)),
+                              # V5.2.1: 昨日涨停股当日表现(定稿记录), 16:05 收盘后抓 → 赚钱效应可落盘
+                              ('prev_zt', emotion_metrics.fetch_prev_pool)]:
             try:
                 out = fn(trade_date)
             except Exception as e:  # noqa: BLE001

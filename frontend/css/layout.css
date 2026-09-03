@@ -57,6 +57,11 @@
   color: var(--text-tertiary);
   margin-top: var(--sp-1);
 }
+.stat-card .stat-sub {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--sp-1);
+}
 
 /* ─── Table Container ─── */
 .table-container {
