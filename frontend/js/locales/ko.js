@@ -119,6 +119,7 @@
     'detail.tabFactor': '멀티팩터 점검',
     'detail.evaluate': '💡 Evaluate',
     'detail.reevaluate': '🔄 Re-evaluate',
+    'detail.gotoCalendar': '캘린더 열기',
     'detail.addWatch': '⭐ Add to Watchlist',
     'detail.inWatch': '★ In Watchlist',
     'detail.retry': '🔄 Retry',

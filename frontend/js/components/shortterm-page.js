@@ -15,13 +15,18 @@
                         <div class="page-header">
                             <div class="page-title">复盘看板</div>
                             <div class="flex-c-gap-12">
-                                <el-date-picker v-model="overviewDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
+                                <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
                                 <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="overviewLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="overviewError" type="error" :title="overviewErrTitle" :desc="overviewErrDesc" @retry="loadOverview"></qc-state-panel>
                         <template v-else-if="overview">
+                            <!-- V5.2.4 (T-5.2.46): 数据新鲜度状态条 -->
+                            <div class="flex-c-gap-12 mb-4">
+                                <span class="text-xs-tertiary">数据日期: {{ overview.date }}</span>
+                                <span class="tag-chip" :class="sessionStatusClass">{{ sessionStatusText }}</span>
+                            </div>
                             <div class="mb-4">
                                 <div class="flex-c-gap-12 mb-2">
                                     <div class="text-base-secondary">AI 盘面研判</div>
@@ -119,7 +124,7 @@
                         <div class="page-header">
                             <div class="page-title">涨停复盘</div>
                             <div class="flex-c-gap-12">
-                                <el-date-picker v-model="poolDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
+                                <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
                                 <el-button size="small" @click="refreshCurrent">🔄</el-button>
                                 <span class="text-xs-tertiary" v-if="pools && pools.settled === false">⚠️ 未收盘, 数据可能不完整</span>
                             </div>
@@ -183,7 +188,7 @@
                         <div class="page-header">
                             <div class="page-title">龙虎榜</div>
                             <div class="flex-c-gap-12">
-                                <el-date-picker v-model="lhbDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
+                                <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
                                 <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
@@ -254,7 +259,7 @@
                         <div class="page-header">
                             <div class="page-title">盘中核验</div>
                             <div class="flex-c-gap-12">
-                                <el-date-picker v-model="intradayDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
+                                <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
                                 <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
@@ -289,19 +294,18 @@
       const currentPage = state.currentPage;
       const currentSubPage = state.currentSubPage;
 
-      const poolDate = ref('');
+      // V5.2.4 (T-5.2.41): 7 子页共享同一「交易日」(原 poolDate/lhbDate/overviewDate/intradayDate 合并)
+      const shortDate = ref('');
       const pools = ref(null);
       const poolLoading = ref(false);
       const poolError = ref(false);
       const poolErrTitle = ref('数据加载失败');
       const poolErrDesc = ref('请检查服务后重试');
-      const lhbDate = ref('');
       const lhbRows = ref(null);
       const lhbLoading = ref(false);
       const lhbError = ref(false);
       const lhbErrTitle = ref('数据加载失败');
       const lhbErrDesc = ref('请检查服务后重试');
-      const overviewDate = ref('');
       const overview = ref(null);
       const overviewLoading = ref(false);
       const overviewError = ref(false);
@@ -317,7 +321,6 @@
       const sectorFlowSource = ref('');
       const review = ref(null);
       const reviewRunning = ref(false);
-      const intradayDate = ref('');
       const intradaySnapshots = ref(null);
       const intradayLoading = ref(false);
       const intradayCollecting = ref(false);
@@ -349,7 +352,7 @@
         poolLoading.value = true;
         poolError.value = false;
         try {
-          const url = '/api/shortterm/pools' + (poolDate.value ? '?date=' + poolDate.value : '');
+          const url = '/api/shortterm/pools' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;   // 竞态: 已切换到新请求, 丢弃
           if (res && res.success) {
@@ -380,7 +383,7 @@
         lhbLoading.value = true;
         lhbError.value = false;
         try {
-          const url = '/api/shortterm/lhb' + (lhbDate.value ? '?date=' + lhbDate.value : '');
+          const url = '/api/shortterm/lhb' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;
           if (res && res.success) {
@@ -460,6 +463,23 @@
         if (g === '主力') return 'is-main';
         return '';
       }
+      const sessionStatusText = computed(function () {
+        const st = overview.value && overview.value.session_status;
+        if (!st) return '—';
+        const d = overview.value.date;
+        if (d === st.latest_session && st.settled) return '✅ 已收盘';
+        if (d === st.today && st.is_trade_day && !st.settled) return '⏳ 盘中 · 未收盘';
+        return '📅 历史交易日';
+      });
+      const sessionStatusClass = computed(function () {
+        const st = overview.value && overview.value.session_status;
+        if (!st) return '';
+        const d = overview.value.date;
+        if (d === st.latest_session && st.settled) return 'is-institution';
+        if (d === st.today && st.is_trade_day && !st.settled) return 'is-main';
+        return '';
+      });
+
       function openStock(row) {
         // V5.2.3: 个股点击 → 打开全局详情弹窗(K线/AI评估/问股)
         if (row && row.ts_code && state && state.showStockDetail) {
@@ -579,7 +599,7 @@
         overviewLoading.value = true;
         overviewError.value = false;
         try {
-          const url = '/api/shortterm/overview' + (overviewDate.value ? '?date=' + overviewDate.value : '');
+          const url = '/api/shortterm/overview' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;
           if (res && res.success) {
@@ -641,7 +661,7 @@
       async function loadReview(force) {
         const seq = ++_reqSeq;
         try {
-          const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
+          const url = '/api/shortterm/review' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;
           if (res && res.success) review.value = res.review || null;
@@ -651,7 +671,7 @@
       async function runReview() {
         reviewRunning.value = true;
         try {
-          const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
+          const url = '/api/shortterm/review' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             review.value = res;
@@ -685,7 +705,7 @@
         const seq = ++_reqSeq;
         intradayLoading.value = true;
         try {
-          const url = '/api/shortterm/intraday' + (intradayDate.value ? '?date=' + intradayDate.value : '');
+          const url = '/api/shortterm/intraday' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;
           if (res && res.success) intradaySnapshots.value = res.snapshots || [];
@@ -697,7 +717,7 @@
       async function collectSnapshot() {
         intradayCollecting.value = true;
         try {
-          const url = '/api/shortterm/intraday/snapshot' + (intradayDate.value ? '?date=' + intradayDate.value : '');
+          const url = '/api/shortterm/intraday/snapshot' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             if (!res.accepted) {
@@ -723,10 +743,7 @@
         // 仅首次进入拉一次最近已收盘交易日(缓存), 之后切子页秒开
         return cachedGet('/api/shortterm/latest-session', false).then(function (res) {
           if (res && res.date) {
-            if (!poolDate.value) poolDate.value = res.date;
-            if (!lhbDate.value) lhbDate.value = res.date;
-            if (!overviewDate.value) overviewDate.value = res.date;
-            if (!intradayDate.value) intradayDate.value = res.date;
+            if (!shortDate.value) shortDate.value = res.date;
           }
         }).catch(function () { /* 默认空, 让用户选 */ });
       }
@@ -758,12 +775,12 @@
 
       return {
         currentPage, currentSubPage,
-        poolDate, pools, poolLoading, poolError,
-        lhbDate, lhbRows, lhbLoading, lhbError,
-        overviewDate, overview, overviewLoading, overviewError,
+        shortDate, pools, poolLoading, poolError,
+        lhbRows, lhbLoading, lhbError,
+        overview, overviewLoading, overviewError,
         sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError, sectorFlowSource,
         review, reviewRunning,
-        intradayDate, intradaySnapshots, intradayLoading, intradayCollecting,
+        intradaySnapshots, intradayLoading, intradayCollecting,
         intradaySlots, intradayMsg, slotClass, intradayStatus,
         chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
@@ -771,7 +788,7 @@
         ladderText, fmtAmount, fmtPct, riseFall, tagClass, openStock,
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
-        pct, fmtCond, verdictClass,
+        pct, fmtCond, verdictClass, sessionStatusText, sessionStatusClass,
       };
     },
   };

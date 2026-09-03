@@ -119,6 +119,7 @@
     'detail.tabFactor': 'マルチ因子診断',
     'detail.evaluate': '💡 Evaluate',
     'detail.reevaluate': '🔄 Re-evaluate',
+    'detail.gotoCalendar': 'カレンダーへ',
     'detail.addWatch': '⭐ Add to Watchlist',
     'detail.inWatch': '★ In Watchlist',
     'detail.retry': '🔄 Retry',

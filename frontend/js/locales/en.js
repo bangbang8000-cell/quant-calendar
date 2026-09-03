@@ -129,6 +129,7 @@
     'detail.tabFactor': 'Factor Checkup',
     'detail.evaluate': '💡 Evaluate',
     'detail.reevaluate': '🔄 Re-evaluate',
+    'detail.gotoCalendar': 'Open Calendar',
     'detail.addWatch': '⭐ Add to Watchlist',
     'detail.inWatch': '★ In Watchlist',
     'detail.retry': '🔄 Retry',

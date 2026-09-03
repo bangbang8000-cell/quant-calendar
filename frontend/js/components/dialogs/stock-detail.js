@@ -52,6 +52,7 @@
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
                             {{ t('detail.evaluate') }}
                         </el-button>
+                        <el-button size="small" @click="gotoCalendar">📅 {{ t('detail.gotoCalendar') }}</el-button>
                         <el-button size="small" @click="toggleWatchlist(stockDetail.stock, stockDetail.name)" :type="watchlistCodes.has(stockDetail.stock) ? 'success' : 'primary'">
                             {{ watchlistCodes.has(stockDetail.stock) ? t('detail.inWatch') : t('detail.addWatch') }}
                         </el-button>
@@ -481,7 +482,16 @@
         const icir = (r.n5.icir != null) ? 'ICIR ' + r.n5.icir : 'ICIR —';
         return r.n5.grade + ' (' + icir + ')';
       }
-      return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade };
+      // V5.2.4 (T-5.2.42): 弹窗内「跳转日历」— 该股当日日历联动
+      function gotoCalendar() {
+        if (!state) return;
+        if (stockDetail.value && stockDetail.value.date && state.selectedDate) {
+          state.selectedDate.value = stockDetail.value.date;
+        }
+        if (state.navigateTo) state.navigateTo('calendar', 'daily');
+        if (state.stockDetailVisible) state.stockDetailVisible.value = false;
+      }
+      return { ...state, gotoCalendar, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade };
     },
   };
 })();

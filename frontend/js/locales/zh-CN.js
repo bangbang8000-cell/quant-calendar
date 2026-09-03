@@ -130,6 +130,7 @@
     'detail.tabFactor': '多因子体检',
     'detail.evaluate': '💡 智能评估',
     'detail.reevaluate': '🔄 重新评估',
+    'detail.gotoCalendar': '跳转日历',
     'detail.addWatch': '⭐ 加入自选',
     'detail.inWatch': '★ 已自选',
     'detail.retry': '🔄 重试',

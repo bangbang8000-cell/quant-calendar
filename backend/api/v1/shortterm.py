@@ -219,6 +219,33 @@ async def get_verification_history(date: str = None,
     return {'success': True, 'date': d, 'conditions': conds}
 
 
+@router.get("/verification/verify")
+async def verify_conditions(source_date: str = None, target_date: str = None,
+                            user: dict = Depends(get_current_active_user)):
+    """V5.2.4 (T-5.2.44): 次日核验 — 用 source 日落盘条件阈值, 对 target 日实际值三态核验。
+
+    结果落盘 source 日 reflection(记分板累计)。数据不足=None 不算判错。
+    """
+    src = source_date or latest_session()
+    tgt = target_date or latest_session()
+    conds = store.load_pool(src, 'conditions') or []
+    if not conds:
+        return {'success': True, 'source_date': src, 'target_date': tgt,
+                'verified': [], 'summary': {'total': 0, 'hit': 0, 'miss': 0, 'unknown': 0}}
+    bundle = _cached_bundle(tgt)
+    results = []
+    for c in conds:
+        cur = verification.metric_value(bundle, c['key'])
+        verdict = verification._direction(c.get('direction', '>='), cur, c.get('threshold'))
+        results.append({**c, 'current': cur, 'verdict': verdict})
+    summary = verification.summarize(results)
+    # 记分板: 落盘到 source 日(该日预测在 target 日的核验结果)
+    reflection.save_reflection(src, {'source_date': src, 'target_date': tgt,
+                                     'verified': results, 'summary': summary})
+    return {'success': True, 'source_date': src, 'target_date': tgt,
+            'verified': results, 'summary': summary}
+
+
 @router.get("/weekly")
 async def get_weekly(end: str = None, user: dict = Depends(get_current_active_user)):
     return {'success': True, **weekly.industry_heat(end=end)}
@@ -233,13 +260,40 @@ def _overview_bundle(date: str) -> dict:
     return {**metrics, **facts}
 
 
+# V5.2.4 (T-5.2.52): /overview 服务端 TTL 缓存 — 今日 10min / 历史日 1h
+_overview_cache = {}
+_OVERVIEW_TTL = {'today': 600, 'hist': 3600}
+
+
+def _cached_bundle(date: str, refresh: bool = False) -> dict:
+    """读/写 overview bundle 缓存(数据落盘后秒开)。refresh=True 强制重算。"""
+    import time
+    now = time.time()
+    ttl = (_OVERVIEW_TTL['today'] if str(date) == latest_session()
+           else _OVERVIEW_TTL['hist'])
+    hit = _overview_cache.get(str(date))
+    if not refresh and hit and now - hit['ts'] < ttl:
+        return hit['bundle']
+    bundle = _overview_bundle(date)
+    _overview_cache[str(date)] = {'ts': now, 'bundle': bundle}
+    return bundle
+
+
 @router.get("/overview")
-async def get_overview(date: str = None, custom: str = None,
+async def get_overview(date: str = None, custom: str = None, refresh: int = 0,
                        user: dict = Depends(get_current_active_user)):
+    from datetime import datetime
     d = date or latest_session()
-    bundle = _overview_bundle(d)
+    bundle = _cached_bundle(d, refresh=bool(refresh))
     conditions = _build_conditions(d, custom)
+    # V5.2.4 (T-5.2.46): 数据新鲜度状态条(已收盘/盘中/历史)
+    today = datetime.now().strftime('%Y-%m-%d')
+    session_status = {
+        'today': today, 'is_trade_day': is_trade_day(today),
+        'settled': is_settled(today), 'latest_session': latest_session(),
+    }
     return {'success': True, 'date': d,
+            'session_status': session_status,
             'emotion': {k: bundle[k] for k in ('money_effect', 'promotion',
                                                'consec_premium', 'sentiment_cycle')},
             'facts': {k: bundle[k] for k in ('seal_quality', 'loss_effect',

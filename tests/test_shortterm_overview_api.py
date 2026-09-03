@@ -304,3 +304,49 @@ def test_intraday_snapshot_persists_and_lists(monkeypatch, client):
 def test_shortterm_review_webhook_event_registered():
     import webhook
     assert 'shortterm_review_ready' in webhook.WEBHOOK_EVENTS
+
+
+# ---------- V5.2.4: /overview 缓存 (T-5.2.52) + 验证条件次日核验 (T-5.2.44) ----------
+
+def test_overview_cached_bundle(client):
+    """同一日期二次取 bundle 命中缓存(同一对象, 不重算)"""
+    from api.v1 import shortterm as shortterm_api
+    b1 = shortterm_api._cached_bundle('2026-09-02')
+    assert shortterm_api._overview_cache.get('2026-09-02') is not None
+    b2 = shortterm_api._cached_bundle('2026-09-02')
+    assert b2 is b1
+    # refresh 强制重算
+    b3 = shortterm_api._cached_bundle('2026-09-02', refresh=True)
+    assert b3 is not b1
+
+
+def test_verify_conditions_endpoint(client):
+    """次日核验: 用 source 日条件阈值对 target 日实际值三态核验 + reflection 落盘"""
+    store.save_pool('2026-09-01', 'conditions', [
+        {'key': 'limit_up_count', 'label': '涨停家数', 'direction': '>=', 'threshold': 60},
+        {'key': 'money_median', 'label': '赚钱效应中位数', 'direction': '>=', 'threshold': 10},
+    ])
+    r = client.get('/api/shortterm/verification/verify'
+                   '?source_date=2026-09-01&target_date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['source_date'] == '2026-09-01' and data['target_date'] == '2026-09-02'
+    assert data['summary']['total'] == 2
+    by = {v['key']: v for v in data['verified']}
+    assert by['limit_up_count']['verdict'] in ('成立', '证伪', '数据不足')
+    assert by['money_median']['verdict'] in ('成立', '证伪', '数据不足')
+    assert by['money_median']['current'] == 6.0
+    # 记分板: 落盘到 source 日
+    from shortterm import reflection
+    stored = reflection.load_reflection('2026-09-01')
+    assert stored['target_date'] == '2026-09-02'
+    assert stored['summary']['total'] == 2
+
+
+def test_verify_conditions_no_source_conditions(client):
+    """source 日无落盘条件 → 空核验结果"""
+    r = client.get('/api/shortterm/verification/verify'
+                   '?source_date=2026-09-05&target_date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['verified'] == [] and data['summary']['total'] == 0

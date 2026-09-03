@@ -119,6 +119,7 @@
     'detail.tabFactor': '多因子体檢',
     'detail.evaluate': '💡 智能評估',
     'detail.reevaluate': '🔄 重新評估',
+    'detail.gotoCalendar': '跳轉日曆',
     'detail.addWatch': '⭐ 加入自選',
     'detail.inWatch': '★ 已自選',
     'detail.retry': '🔄 重試',
