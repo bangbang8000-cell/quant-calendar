@@ -9,6 +9,8 @@
 """
 import logging
 
+from .limits import board_of
+
 logger = logging.getLogger(__name__)
 
 # 涨停/炸板/跌停池 列名映射 (akshare 东财中文列 → 统一英文键)
@@ -110,6 +112,8 @@ def _normalize_row(raw: dict, column_map: dict) -> dict:
             out[en] = _to_float(v)
         else:
             out[en] = None if v is None or (isinstance(v, float) and v != v) else v
+    # 涨跌幅制度标签(复用 scan_engine 单一实现)
+    out['board'] = board_of(out.get('ts_code') or '', out.get('name') or '')
     return out
 
 
