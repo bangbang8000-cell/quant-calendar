@@ -110,7 +110,7 @@ shortterm_pools / shortterm_lhb / shortterm_sector_flow 等表，JSON 列存归�
 
 | # | 任务 | 内容 | 验收 |
 |---|---|---|---|
-| A1 | T-5.2.49 统一页面头 | 短线复盘 7 子页 page-header 风格统一（标题/日期选择/刷新按钮布局对齐既有页面） | 视觉一致，无 style 漂移 |
+| A1 | T-5.2.49 统一页面头 | 短线复盘 7 子页 page-header 风格统一（标题/日期选择/刷新按钮布局对齐既有页面） | ✅ 5.2.5 完成：market-review/scan 补 page-header（返回/刷新），其余 5 子页已有 |
 | A2 | T-5.2.50 空错态巡检 | 全子页空态/错误态用 qc-state-panel 统一（已部分覆盖，补全 ztpool/intraday/scan 边界） | 空数据/失败显示一致 |
 | A3 | T-5.2.51 移动端 375px | shortterm-page 响应式适配（卡片/表格/弹性布局在 375px 无溢出） | e2e 信息性 + 手测 |
 | A4 | T-5.2.53 竞态防护推广 | 将 shortterm-page 的 _reqSeq 模式推广到 research/strategies 页面 | 快速切换不覆盖旧数据 |

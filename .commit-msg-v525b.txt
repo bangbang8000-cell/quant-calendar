@@ -1,0 +1,7 @@
+feat(V5.2.5): 复盘看板 loading 修复 + 统一页面头 — 发版 5.2.5
+
+- T-5.2.57: loadOverview/loadReview 独立竞态序号 (_overviewSeq/_reviewSeq)，复盘看板不再永远 loading
+  (ops 已同步并 CDP 访客验证: 8 指标卡齐全)
+- T-5.2.49: market-review/scan 子页统一 page-header (标题+刷新, 详情态返回按钮)，与短线复盘其他子页一致
+- 回归: test_frontend_consistency 116 passed (新增独立序号用例); 全量 2769 passed
+- APP_VERSION 5.2.4 → 5.2.5
