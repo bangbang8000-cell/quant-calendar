@@ -16,6 +16,7 @@
                             <div class="page-title">复盘看板</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="overviewDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
+                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="overviewLoading" type="loading"></qc-state-panel>
@@ -119,6 +120,7 @@
                             <div class="page-title">涨停复盘</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="poolDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
+                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
                                 <span class="text-xs-tertiary" v-if="pools && pools.settled === false">⚠️ 未收盘, 数据可能不完整</span>
                             </div>
                         </div>
@@ -126,11 +128,11 @@
                         <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
-                                <div class="stat-card"><div class="stat-label">梯队</div><div class="stat-value">{{ ladderText }}</div></div>
-                                <div class="stat-card"><div class="stat-label">涨停</div><div class="stat-value">{{ pools.zt ? pools.zt.length : '—' }} 家</div></div>
-                                <div class="stat-card"><div class="stat-label">炸板</div><div class="stat-value">{{ pools.zb ? pools.zb.length : '—' }} 家</div></div>
-                                <div class="stat-card"><div class="stat-label">跌停</div><div class="stat-value">{{ pools.dt ? pools.dt.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon gold">🏔</div><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info">🪜</div><div class="stat-label">梯队</div><div class="stat-value">{{ ladderText }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success">🚀</div><div class="stat-label">涨停</div><div class="stat-value">{{ pools.zt ? pools.zt.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon warning">💥</div><div class="stat-label">炸板</div><div class="stat-value">{{ pools.zb ? pools.zb.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon danger">📉</div><div class="stat-label">跌停</div><div class="stat-value">{{ pools.dt ? pools.dt.length : '—' }} 家</div></div>
                             </div>
                             <div v-if="pools.ladder && pools.ladder.note" class="text-xs-tertiary mb-4">{{ pools.ladder.note }}</div>
                             <div v-if="pools.ladder && Object.keys(pools.ladder.tiers || {}).length" id="shorttermLadderChart" class="mb-4" style="height:170px;width:100%"></div>
@@ -142,7 +144,7 @@
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="boards" label="连板" width="55" align="center"></el-table-column>
                                     <el-table-column label="涨停原因" min-width="180"><template #default="s">{{ s.row.reason || '—' }}</template></el-table-column>
-                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column prop="first_seal_time" label="首封" width="80"></el-table-column>
                                     <el-table-column prop="break_times" label="炸板" width="55" align="center"></el-table-column>
                                     <el-table-column label="封单" width="90" align="right"><template #default="s">{{ fmtAmount(s.row.seal_amount) }}</template></el-table-column>
@@ -156,7 +158,7 @@
                                 <el-table :data="pools.zb || []" size="small">
                                     <el-table-column prop="name" label="名称" width="90"></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
-                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column prop="break_times" label="炸板" width="55" align="center"></el-table-column>
                                     <el-table-column prop="first_seal_time" label="首封" width="80"></el-table-column>
                                     <el-table-column prop="industry" label="行业"></el-table-column>
@@ -168,7 +170,7 @@
                                 <el-table :data="pools.dt || []" size="small">
                                     <el-table-column prop="name" label="名称" width="90"></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
-                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s">{{ fmtPct(s.row.pct_chg) }}</template></el-table-column>
+                                    <el-table-column prop="pct_chg" label="涨跌幅" width="80" align="right"><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column prop="consec_dt" label="连续跌停" width="80" align="center"></el-table-column>
                                     <el-table-column prop="industry" label="行业"></el-table-column>
                                 </el-table>
@@ -182,6 +184,7 @@
                             <div class="page-title">龙虎榜</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="lhbDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
+                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
@@ -222,6 +225,7 @@
                                     <el-option label="5日" value="5日"></el-option>
                                     <el-option label="10日" value="10日"></el-option>
                                 </el-select>
+                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="sectorLoading" type="loading"></qc-state-panel>
@@ -252,6 +256,7 @@
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="intradayDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
+                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <div class="text-xs-tertiary mb-4">快照仅在交易时段 6 个时点前后 8 分钟可采集 · 历史日绝不现抓</div>
@@ -326,12 +331,27 @@
                  : { 'Content-Type': 'application/json' };
       }
 
-      async function loadPools() {
+      // ─── V5.2.3 高效加载: 客户端 TTL 缓存 + 竞态防护 ───
+      const _cache = {};
+      const CACHE_TTL = 60 * 1000;   // 60s 内同 URL 不重拉(切子页/回退秒开)
+      let _reqSeq = 0;               // 请求序号: 旧响应丢弃, 防快速切换覆盖新数据
+
+      function cachedGet(url, force) {
+        const now = Date.now();
+        const hit = _cache[url];
+        if (!force && hit && now - hit.ts < CACHE_TTL) return Promise.resolve(hit.data);
+        return fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); })
+          .then(function (data) { _cache[url] = { ts: Date.now(), data: data }; return data; });
+      }
+
+      async function loadPools(force) {
+        const seq = ++_reqSeq;
         poolLoading.value = true;
         poolError.value = false;
         try {
           const url = '/api/shortterm/pools' + (poolDate.value ? '?date=' + poolDate.value : '');
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;   // 竞态: 已切换到新请求, 丢弃
           if (res && res.success) {
             pools.value = res;
             nextTick(renderLadderChart);
@@ -346,20 +366,23 @@
             poolErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
+          if (seq !== _reqSeq) return;
           poolError.value = true;
           poolErrTitle.value = '数据加载失败';
           poolErrDesc.value = '请检查服务后重试';
         } finally {
-          poolLoading.value = false;
+          if (seq === _reqSeq) poolLoading.value = false;
         }
       }
 
-      async function loadLhb() {
+      async function loadLhb(force) {
+        const seq = ++_reqSeq;
         lhbLoading.value = true;
         lhbError.value = false;
         try {
           const url = '/api/shortterm/lhb' + (lhbDate.value ? '?date=' + lhbDate.value : '');
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;
           if (res && res.success) {
             lhbRows.value = Array.isArray(res.rows) ? res.rows : null;
           } else if (res && res.detail) {
@@ -373,11 +396,12 @@
             lhbErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
+          if (seq !== _reqSeq) return;
           lhbError.value = true;
           lhbErrTitle.value = '数据加载失败';
           lhbErrDesc.value = '请检查服务后重试';
         } finally {
-          lhbLoading.value = false;
+          if (seq === _reqSeq) lhbLoading.value = false;
         }
       }
 
@@ -544,12 +568,14 @@
         return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
       }
 
-      async function loadOverview() {
+      async function loadOverview(force) {
+        const seq = ++_reqSeq;
         overviewLoading.value = true;
         overviewError.value = false;
         try {
           const url = '/api/shortterm/overview' + (overviewDate.value ? '?date=' + overviewDate.value : '');
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;
           if (res && res.success) {
             overview.value = res;
           } else if (res && res.detail) {
@@ -562,21 +588,24 @@
             overviewErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
+          if (seq !== _reqSeq) return;
           overviewError.value = true;
           overviewErrTitle.value = '数据加载失败';
           overviewErrDesc.value = '请检查服务后重试';
         } finally {
-          overviewLoading.value = false;
+          if (seq === _reqSeq) overviewLoading.value = false;
         }
       }
 
-      async function loadSectorFlow() {
+      async function loadSectorFlow(force) {
+        const seq = ++_reqSeq;
         sectorLoading.value = true;
         sectorError.value = false;
         try {
           const url = '/api/shortterm/sector-flow?indicator=' + encodeURIComponent(sectorIndicator.value)
             + '&sector_type=' + encodeURIComponent(sectorType.value);
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;
           if (res && res.success && res.available) {
             sectorRows.value = res.rows || [];
             sectorFlowSource.value = res.source || (res.note ? '同花顺' : '东财');
@@ -594,18 +623,21 @@
             sectorErrDesc.value = '请检查服务后重试';
           }
         } catch (e) {
+          if (seq !== _reqSeq) return;
           sectorError.value = true;
           sectorErrTitle.value = '数据加载失败';
           sectorErrDesc.value = '请检查服务后重试';
         } finally {
-          sectorLoading.value = false;
+          if (seq === _reqSeq) sectorLoading.value = false;
         }
       }
 
-      async function loadReview() {
+      async function loadReview(force) {
+        const seq = ++_reqSeq;
         try {
           const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;
           if (res && res.success) review.value = res.review || null;
         } catch (e) { /* 静默 */ }
       }
@@ -615,7 +647,10 @@
         try {
           const url = '/api/shortterm/review' + (overviewDate.value ? '?date=' + overviewDate.value : '');
           const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
-          if (res && res.success) review.value = res;
+          if (res && res.success) {
+            review.value = res;
+            _cache[url] = { ts: Date.now(), data: res };   // 生成后刷新缓存
+          }
         } catch (e) { /* 失败保持原态 */ } finally {
           reviewRunning.value = false;
         }
@@ -640,14 +675,16 @@
         }
       }
 
-      async function loadIntraday() {
+      async function loadIntraday(force) {
+        const seq = ++_reqSeq;
         intradayLoading.value = true;
         try {
           const url = '/api/shortterm/intraday' + (intradayDate.value ? '?date=' + intradayDate.value : '');
-          const res = await fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); });
+          const res = await cachedGet(url, force);
+          if (seq !== _reqSeq) return;
           if (res && res.success) intradaySnapshots.value = res.snapshots || [];
         } catch (e) { /* 保持 */ } finally {
-          intradayLoading.value = false;
+          if (seq === _reqSeq) intradayLoading.value = false;
         }
       }
 
@@ -676,24 +713,42 @@
         }
       }
 
-      async function loadDefaults() {
-        try {
-          const res = await fetch('/api/shortterm/latest-session', { headers: authHeaders() }).then(function (r) { return r.json(); });
+      function setSessionDates() {
+        // 仅首次进入拉一次最近已收盘交易日(缓存), 之后切子页秒开
+        return cachedGet('/api/shortterm/latest-session', false).then(function (res) {
           if (res && res.date) {
-            poolDate.value = res.date;
-            lhbDate.value = res.date;
-            overviewDate.value = res.date;
+            if (!poolDate.value) poolDate.value = res.date;
+            if (!lhbDate.value) lhbDate.value = res.date;
+            if (!overviewDate.value) overviewDate.value = res.date;
+            if (!intradayDate.value) intradayDate.value = res.date;
           }
-        } catch (e) { /* 默认空, 让用户选 */ }
-        loadPools();
-        loadLhb();
-        loadOverview();
-        loadSectorFlow();
-        loadReview();
-        loadIntraday();
+        }).catch(function () { /* 默认空, 让用户选 */ });
       }
 
-      onMounted(loadDefaults);
+      function loadCurrent() {
+        // V5.2.3 高效加载: 按当前子页懒加载, 不再一 mount 全量并行拉 6 组
+        const sp = currentSubPage.value;
+        if (sp === 'ztpool') loadPools();
+        else if (sp === 'lhb') loadLhb();
+        else if (sp === 'overview') { loadOverview(); loadReview(); }
+        else if (sp === 'sector') loadSectorFlow();
+        else if (sp === 'intraday') loadIntraday();
+      }
+
+      function refreshCurrent() {
+        // 强制绕过 TTL 缓存重拉当前子页
+        const sp = currentSubPage.value;
+        if (sp === 'ztpool') loadPools(true);
+        else if (sp === 'lhb') loadLhb(true);
+        else if (sp === 'overview') { loadOverview(true); loadReview(true); }
+        else if (sp === 'sector') loadSectorFlow(true);
+        else if (sp === 'intraday') loadIntraday(true);
+      }
+
+      onMounted(function () { setSessionDates(); loadCurrent(); });
+      Vue.watch(function () { return currentSubPage.value; }, function (sp) {
+        loadCurrent();
+      });
 
       return {
         currentPage, currentSubPage,
@@ -706,7 +761,7 @@
         intradaySlots, intradayMsg, slotClass, intradayStatus,
         chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
-        sendChat, loadIntraday, collectSnapshot,
+        sendChat, loadIntraday, collectSnapshot, refreshCurrent,
         ladderText, fmtAmount, fmtPct, riseFall, tagClass,
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
