@@ -350,3 +350,32 @@ def test_verify_conditions_no_source_conditions(client):
     data = r.json()
     assert data['success'] is True
     assert data['verified'] == [] and data['summary']['total'] == 0
+
+
+# V5.2.9 (T-5.2.55): 诚实性护栏补测 — 降级信封 / 缺失显示 —
+
+def test_promotion_degraded_envelope(monkeypatch, client):
+    """T-5.2.55: 数据源缺失时晋级率返回 {available:False, reason:[⚠️...]} 信封, 不静默填充 0。"""
+    monkeypatch.setattr(store, 'load_pool', lambda date, pool: None)
+    r = client.get('/api/shortterm/emotion?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['promotion']['available'] is False
+    assert '[⚠️' in data['promotion']['reason'], "降级信封必须带 [⚠️ 原因"
+
+
+def test_overview_degraded_envelope(monkeypatch, client):
+    """T-5.2.55: overview 聚合层透传降级信封 — 指标不可用时不冒充, 前端可读 reason。"""
+    monkeypatch.setattr(store, 'load_pool', lambda date, pool: None)
+    # 用不同日期避开 _overview_cache TTL 缓存 (前一测试可能缓存了 09-02 的 bundle)
+    r = client.get('/api/shortterm/overview?date=2026-09-03')
+    data = r.json()
+    assert data['success'] is True
+    # emotion.promotion 应带 available=False + reason (前端 emotionNotice 依赖此字段)
+    p = data['emotion']['promotion']
+    assert p.get('available') is False
+    assert p.get('reason'), "promotion 降级必须带 reason"
+    # ladder 用 highest:null + 空 tiers 表达空 (前端显示 —, 不冒充 0)
+    ladder = data.get('ladder') or {}
+    assert ladder.get('highest') is None, "ladder 空时 highest 应为 null (前端显示 —)"
+    assert ladder.get('tiers') == {}, "ladder 空时 tiers 应为空"

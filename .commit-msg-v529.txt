@@ -1,0 +1,8 @@
+feat(V5.2.9): 诚实性护栏补测 + 降级信封统一 — 发版 5.2.9
+
+- T-5.2.55: 降级 reason 统一 [⚠️ 前缀 (emotion_metrics 9 处 + market_facts 4 处)
+  此前仅数据源抓取失败带前缀, 纯计算降级(涨停池缺失/定稿不可用/覆盖率不足)无前缀 → 不一致
+- 补测: test_promotion_degraded_envelope (降级信封) / test_overview_degraded_envelope
+  (overview 层透传, 用 09-03 避开 _overview_cache TTL 污染) / test_frontend_fmt_honest_missing (前端 —)
+- 验证: 全量 2774 passed (+5); 现有 reason 子串断言均兼容前缀
+- APP_VERSION 5.2.8 → 5.2.9

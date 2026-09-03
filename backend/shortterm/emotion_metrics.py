@@ -116,19 +116,19 @@ def _money_effect_realtime(date, prev) -> dict:
     from .trade_calendar import is_settled, latest_session
     if not (str(date) == latest_session() and is_settled(date)):
         return {'available': False,
-                'reason': '非最近已收盘场次, 实时行情不冒充定稿记录'}
+                'reason': '[⚠️ 非最近已收盘场次, 实时行情不冒充定稿记录]'}
     prev_zt = store.load_pool(prev, 'zt')
     if prev_zt is None:
-        return {'available': False, 'reason': f'{prev} 涨停池未入库'}
+        return {'available': False, 'reason': f'[⚠️ {prev} 涨停池未入库]'}
     codes = [r['ts_code'] for r in prev_zt if r.get('ts_code')]
     if not codes:
-        return {'available': False, 'reason': f'{prev} 涨停池为空'}
+        return {'available': False, 'reason': f'[⚠️ {prev} 涨停池为空]'}
     pct = _spot_pct_map()
     vals = [pct[c] for c in codes if c in pct and pct[c] is not None]
     cov = _coverage(len(vals), len(codes))
     if not vals or (cov['coverage_rate'] is not None and cov['coverage_rate'] < _COVERAGE_MIN):
         return {'available': False,
-                'reason': f'实时行情覆盖率不足({len(vals)}/{len(codes)}), 样本不足以代表全体', **cov}
+                'reason': f'[⚠️ 实时行情覆盖率不足({len(vals)}/{len(codes)}), 样本不足以代表全体]', **cov}
     today_zt = store.load_pool(date, 'zt')
     today_codes = {r['ts_code'] for r in today_zt} if today_zt else None
     return {
@@ -164,7 +164,7 @@ def promotion_rates(date: str, prev: str = None) -> dict:
     prev_zt = store.load_pool(prev, 'zt')
     today_zt = store.load_pool(date, 'zt')
     if prev_zt is None or today_zt is None:
-        return {'available': False, 'reason': f'涨停池缺失({prev} 或 {date})'}
+        return {'available': False, 'reason': f'[⚠️ 涨停池缺失({prev} 或 {date})]'}
     today_codes = {r['ts_code'] for r in today_zt}
     buckets = {'1进2': [], '2进3': [], '3板以上晋级': []}
     for r in prev_zt:
@@ -201,7 +201,7 @@ def consec_premium(date: str, prev: str = None) -> dict:
         return {'available': True, 'prev_date': prev, 'date': str(date),
                 'sample': 0, 'avg': None, 'median': None,
                 'note': '昨日无 2 板以上个股'}
-    return {'available': False, 'reason': '定稿记录不可用'}
+    return {'available': False, 'reason': '[⚠️ 定稿记录不可用]'}
 
 
 # ---------- 情绪周期 (十日窗口相对读数) ----------
@@ -253,7 +253,7 @@ def sentiment_cycle(date: str, lookback: int = 10) -> dict:
     dates = last_trade_dates(lookback, date) or [date]
     if len(dates) < 3:
         return {'available': False, 'note': '十日窗口相对读数',
-                'reason': f'可用交易日不足 3 天({len(dates)})'}
+                'reason': f'[⚠️ 可用交易日不足 3 天({len(dates)})]'}
     series = []
     for d in dates:
         s = _day_emotion(d)
@@ -261,7 +261,7 @@ def sentiment_cycle(date: str, lookback: int = 10) -> dict:
             series.append(s)
     if len(series) < 3:
         return {'available': False, 'note': '十日窗口相对读数',
-                'reason': f'涨停池可用天数不足({len(series)}/3)'}
+                'reason': f'[⚠️ 涨停池可用天数不足({len(series)}/3)]'}
     n_zt = _minmax([float(s['limit_up']) for s in series])
     n_hc = _minmax([float(s['highest_consec']) for s in series])
     brs = [s['broken_rate'] for s in series]

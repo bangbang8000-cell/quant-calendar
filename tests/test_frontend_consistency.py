@@ -1747,3 +1747,15 @@ def test_mobile_375_responsive_guard():
     assert "max-height: calc(100vh - 20px)" in resp, "移动端弹窗应高度封顶"
     # small mobile (<480) 紧凑
     assert "@media (max-width: 480px)" in resp, "应有 480px 断点"
+
+
+# V5.2.9 (T-5.2.55): 前端诚实性渲染守护
+
+def test_frontend_fmt_honest_missing():
+    """V5.2.9: 缺失指标前端渲染 '—' 而非 0 (诚实性: 空≠0)。"""
+    page = _read("js/components/shortterm-page.js")
+    # fmtPct/pct 对 null/NaN 返回 '—'
+    assert "if (v == null || isNaN(v)) return '—';" in page, "fmtPct/pct 缺失应显示 —"
+    assert "return (v * 100).toFixed(0) + '%';" in page, "pct 有值时格式化"
+    # ladder 空时显示 — 而非 0 板
+    assert "pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—'" in page, "ladder 空时显示 —"

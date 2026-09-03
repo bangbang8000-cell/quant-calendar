@@ -24,7 +24,7 @@ def seal_quality(date: str) -> dict:
     """封板质量: 早盘封板占比(<10:00)/炸板率/封板资金中位数"""
     zt, zb, _dt = _today_pools(date)
     if zt is None:
-        return {'available': False, 'reason': f'{date} 涨停池未入库'}
+        return {'available': False, 'reason': f'[⚠️ {date} 涨停池未入库]'}
     zt_n = len(zt)
     early = [r for r in zt
              if r.get('first_seal_time') and str(r['first_seal_time']) < '10:00:00']
@@ -47,13 +47,13 @@ def feedback_matrix(date: str, prev: str = None) -> dict:
     prev = prev or prev_trade_date(date)
     settled = fetch_prev_pool(date)
     if not (settled.get('available') and settled['rows']):
-        return {'available': False, 'reason': '定稿记录不可用'}
+        return {'available': False, 'reason': '[⚠️ 定稿记录不可用]'}
     rows = settled['rows']
     today_codes = {r['ts_code'] for r in store.load_pool(date, 'zt') or []}
     dt_codes = {r['ts_code'] for r in store.load_pool(date, 'dt') or []}
     n = len(rows)
     if not n:
-        return {'available': False, 'reason': '昨日涨停池为空'}
+        return {'available': False, 'reason': '[⚠️ 昨日涨停池为空]'}
     return {
         'available': True, 'prev_date': prev, 'sample': n, 'source': 'settled',
         'relimit': round(sum(1 for r in rows if r['ts_code'] in today_codes) / n, 3),
@@ -88,7 +88,7 @@ def theme_structure(date: str, prev: str = None) -> dict:
     if not rows:
         rows = store.load_pool(prev, 'zt')
     if not rows:
-        return {'available': False, 'reason': '无可用样本'}
+        return {'available': False, 'reason': '[⚠️ 无可用样本]'}
     counts = {}
     for r in rows:
         ind = r.get('industry')
