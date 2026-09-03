@@ -16,33 +16,30 @@ DESCRIPTION = "短线复盘: 三池/龙虎榜/板块资金流/复盘报告表"
 
 
 def upgrade(conn):
-    conn.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS shortterm_pools (
-            trade_date  TEXT NOT NULL,
-            pool_type   TEXT NOT NULL,        -- zt / zb / dt / lhb
-            payload     TEXT NOT NULL,        -- 归一化行 JSON 数组
-            updated_at  TEXT NOT NULL,
-            PRIMARY KEY (trade_date, pool_type)
-        );
-        CREATE TABLE IF NOT EXISTS shortterm_sector_flow (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            captured_at TEXT NOT NULL,        -- 抓取时间(实时口径)
-            sector_type TEXT NOT NULL,        -- 行业资金流 / 概念资金流
-            indicator   TEXT NOT NULL,        -- 今日 / 5日 / 10日
-            payload     TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS shortterm_reviews (
-            trade_date  TEXT PRIMARY KEY,
-            generated_at TEXT NOT NULL,
-            data        TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_shortterm_pools_date
-            ON shortterm_pools (trade_date);
-        CREATE INDEX IF NOT EXISTS idx_shortterm_sector_captured
-            ON shortterm_sector_flow (captured_at);
-        """
-    )
+    # 注意: 禁用 executescript — 它会隐式 COMMIT, 破坏 runner 的 BEGIN/COMMIT 事务管理
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS shortterm_pools ("
+        " trade_date TEXT NOT NULL,"
+        " pool_type TEXT NOT NULL,"      # zt / zb / dt / lhb
+        " payload TEXT NOT NULL,"        # 归一化行 JSON 数组
+        " updated_at TEXT NOT NULL,"
+        " PRIMARY KEY (trade_date, pool_type))")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS shortterm_sector_flow ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " captured_at TEXT NOT NULL,"    # 抓取时间(实时口径)
+        " sector_type TEXT NOT NULL,"    # 行业资金流 / 概念资金流
+        " indicator TEXT NOT NULL,"      # 今日 / 5日 / 10日
+        " payload TEXT NOT NULL)")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS shortterm_reviews ("
+        " trade_date TEXT PRIMARY KEY,"
+        " generated_at TEXT NOT NULL,"
+        " data TEXT NOT NULL)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_shortterm_pools_date"
+                 " ON shortterm_pools (trade_date)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_shortterm_sector_captured"
+                 " ON shortterm_sector_flow (captured_at)")
     logger.info("[migrate:0004] 短线复盘表已创建")
 
 

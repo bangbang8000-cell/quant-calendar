@@ -113,7 +113,7 @@ def test_upgrade_target_beyond_latest_raises(conn):
 def test_rollback_partial(conn):
     upgrade(conn)
     rolled = rollback(conn, target=2)
-    assert rolled == [3]
+    assert rolled == [4, 3]   # V5.2.0: 从 4 回滚到 2
     assert get_current_version(conn) == 2
     # 0003 的 user 列已回滚 (SQLite DROP COLUMN 或最佳努力)
     cols = [r[1] for r in conn.execute("PRAGMA table_info(event_delivery_log)").fetchall()]
@@ -123,7 +123,7 @@ def test_rollback_partial(conn):
 def test_rollback_all(conn):
     upgrade(conn)
     rolled = rollback(conn, target=0)
-    assert rolled == [3, 2, 1]
+    assert rolled == [4, 3, 2, 1]   # V5.2.0: 含 0004 shortterm
     assert get_current_version(conn) == 0
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     assert "report_subscriptions" not in tables
@@ -142,7 +142,7 @@ def test_rollback_roundtrip_reupgrade(conn):
     upgrade(conn)
     rollback(conn, target=0)
     applied = upgrade(conn)
-    assert applied == [1, 2, 3]
+    assert applied == [1, 2, 3, 4]   # V5.2.0: 0004 shortterm
     assert validate(conn)["ok"] is True
 
 
@@ -160,7 +160,7 @@ def test_validate_partial_upgrade_is_ok_prefix(conn):
     upgrade(conn, target=1)
     v = validate(conn)
     assert v["ok"] is True
-    assert v["missing"] == [2, 3]
+    assert v["missing"] == [2, 3, 4]   # V5.2.0: 含 0004 shortterm
     assert v["current"] == 1
 
 
@@ -215,8 +215,8 @@ def test_failing_upgrade_raises_and_rolls_back(conn, monkeypatch):
     # 失败迁移的事务已回滚: partial_table 不应存在
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     assert "partial_table" not in tables
-    # 版本记录不残留 50; 仍停留在原最新版本 3
-    assert get_current_version(conn) == 3
+    # 版本记录不残留 50; 仍停留在原最新版本 4 (V5.2.0: 0004 shortterm)
+    assert get_current_version(conn) == 4
 
 
 def test_failing_downgrade_raises(conn, monkeypatch):
