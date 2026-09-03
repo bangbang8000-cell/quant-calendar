@@ -37,8 +37,8 @@
                                     <div class="stat-value" style="font-size:1.05em">{{ review.emotion_level ? '情绪档位: ' + review.emotion_level : '情绪档位: —' }}</div>
                                     <div class="mt-4">{{ review.summary || '—' }}</div>
                                     <div v-if="review.active_directions && review.active_directions.length" class="mt-4">
-                                        <div class="text-base-secondary mb-2">活跃方向</div>
-                                        <span v-for="d in review.active_directions" :key="d" class="tag-chip mr-4">{{ d }}</span>
+                                        <div class="text-base-secondary mb-2">活跃方向 <span class="text-xs-tertiary">(点击跳板块资金)</span></div>
+                                        <span v-for="d in review.active_directions" :key="d" class="tag-chip mr-4 stock-link" @click="gotoSector(d)">{{ d }}</span>
                                     </div>
                                     <div v-if="review.risks && review.risks.length" class="mt-4 text-xs-tertiary">风险: {{ review.risks.join('；') }}</div>
                                 </div>
@@ -142,9 +142,12 @@
                             <div v-if="pools.ladder && pools.ladder.note" class="text-xs-tertiary mb-4">{{ pools.ladder.note }}</div>
                             <div v-if="pools.ladder && Object.keys(pools.ladder.tiers || {}).length" id="shorttermLadderChart" class="mb-4" style="height:170px;width:100%"></div>
 
-                            <div class="text-base-secondary mb-2">涨停池 ({{ pools.zt ? pools.zt.length : 0 }})</div>
+                            <div class="flex-c-gap-12 mb-2">
+                                <div class="text-base-secondary">涨停池 ({{ (pools.zt || []).length }} 家)</div>
+                                <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span style="cursor:pointer" @click="clearBoardFilter">✕</span></span>
+                            </div>
                             <div class="table-container">
-                                <el-table :data="pools.zt || []" size="small">
+                                <el-table :data="filteredZt" size="small">
                                     <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="boards" label="连板" width="55" align="center"></el-table-column>
@@ -230,6 +233,7 @@
                                     <el-option label="5日" value="5日"></el-option>
                                     <el-option label="10日" value="10日"></el-option>
                                 </el-select>
+                                <el-input v-model="sectorKeyword" size="small" placeholder="搜索板块..." clearable style="width:130px"></el-input>
                                 <el-button size="small" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
@@ -242,7 +246,7 @@
                                 <div class="stat-card"><div class="stat-icon success">💰</div><div class="stat-label">Top 净流入</div><div class="stat-value" style="font-size:1.05em">{{ fmtAmount(sectorTopInflow) }}</div></div>
                             </div>
                             <div class="table-container">
-                                <el-table :data="sectorRows" size="small" max-height="560">
+                                <el-table :data="filteredSectorRows" size="small" max-height="560">
                                     <el-table-column prop="name" label="板块" min-width="120" fixed></el-table-column>
                                     <el-table-column prop="pct_chg" label="涨跌幅" width="95" align="right" sortable><template #default="s"><span :class="riseFall(s.row.pct_chg)">{{ fmtPct(s.row.pct_chg) }}</span></template></el-table-column>
                                     <el-table-column label="主力净流入" width="130" align="right" sortable sort-by="main_net_inflow"><template #default="s"><span :class="riseFall(s.row.main_net_inflow)">{{ fmtAmount(s.row.main_net_inflow) }}</span></template></el-table-column>
@@ -301,6 +305,7 @@
       const poolError = ref(false);
       const poolErrTitle = ref('数据加载失败');
       const poolErrDesc = ref('请检查服务后重试');
+      const ztBoardFilter = ref(null);   // V5.2.4 (T-5.2.45): 梯队图点击选中的连板档
       const lhbRows = ref(null);
       const lhbLoading = ref(false);
       const lhbError = ref(false);
@@ -313,6 +318,7 @@
       const overviewErrDesc = ref('请检查服务后重试');
       const sectorType = ref('行业资金流');
       const sectorIndicator = ref('今日');
+      const sectorKeyword = ref('');   // V5.2.4 (T-5.2.43): 板块资金搜索/联动预选
       const sectorRows = ref(null);
       const sectorLoading = ref(false);
       const sectorError = ref(false);
@@ -414,6 +420,13 @@
         return Object.keys(tiers).sort(function (a, b) { return a - b; })
           .map(function (b) { return b + '板:' + tiers[b]; }).join(' ');
       });
+      // V5.2.4 (T-5.2.45): 涨停池按梯队选中档过滤(点击梯队图切换)
+      const filteredZt = computed(function () {
+        const rows = (pools.value && pools.value.zt) || [];
+        if (!ztBoardFilter.value) return rows;
+        return rows.filter(function (r) { return r.boards === ztBoardFilter.value; });
+      });
+      function clearBoardFilter() { ztBoardFilter.value = null; }
 
       // V5.2.1 复盘看板: 派生展示值(硬指标, 数据诚实性: 缺失显示—)
       const moneySource = computed(function () {
@@ -509,6 +522,17 @@
       const sectorSource = computed(function () {
         return sectorFlowSource.value || '东财';
       });
+      // V5.2.4 (T-5.2.43): 板块资金按关键词过滤(联动预选)
+      const filteredSectorRows = computed(function () {
+        const kw = (sectorKeyword.value || '').trim();
+        const rows = sectorRows.value || [];
+        if (!kw) return rows;
+        return rows.filter(function (r) { return r.name && String(r.name).indexOf(kw) >= 0; });
+      });
+      function gotoSector(kw) {
+        sectorKeyword.value = kw || '';
+        if (state && state.currentSubPage) state.currentSubPage.value = 'sector';
+      }
       const intradaySlots = ['09:25', '09:35', '10:00', '11:30', '14:00', '15:00'];
       const intradayCollected = computed(function () {
         const set = {};
@@ -563,18 +587,34 @@
         if (!tiers || !Object.keys(tiers).length) return;
         const charts = window.__quantModules && window.__quantModules.charts;
         if (!charts || !charts.renderSimpleChartTo) return;
-        charts.renderSimpleChartTo('shorttermLadderChart', function () {
+        const sel = ztBoardFilter.value;
+        const chart = charts.renderSimpleChartTo('shorttermLadderChart', function () {
           const boards = Object.keys(tiers).sort(function (a, b) { return Number(a) - Number(b); });
           return {
             grid: { left: 8, right: 16, top: 20, bottom: 4, containLabel: true },
             tooltip: { trigger: 'axis' },
             xAxis: { type: 'category', data: boards.map(function (b) { return b + '板'; }) },
             yAxis: { type: 'value', minInterval: 1 },
+            // V5.2.4 (T-5.2.45): 选中档高亮
             series: [{ type: 'bar', barWidth: '45%',
                        label: { show: true, position: 'top' },
+                       itemStyle: { color: function (p) {
+                           return sel && Number(boards[p.dataIndex]) === sel
+                             ? 'var(--color-accent)' : 'var(--chart-split)';
+                       } },
                        data: boards.map(function (b) { return tiers[b]; }) }],
           };
         }, { key: 'shortterm-ladder' });
+        // 点击梯队档 → 三池表格过滤(再点取消)
+        if (chart && chart.off) {
+          chart.off('click');
+          chart.on('click', function (params) {
+            if (!params || !params.name) return;
+            const b = parseInt(params.name, 10);
+            if (isNaN(b)) return;
+            ztBoardFilter.value = (ztBoardFilter.value === b) ? null : b;
+          });
+        }
       }
       if (window.__quantModules && window.__quantModules.echartsTheme
           && window.__quantModules.echartsTheme.registerChart) {
@@ -775,10 +815,11 @@
 
       return {
         currentPage, currentSubPage,
-        shortDate, pools, poolLoading, poolError,
+        shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter,
         lhbRows, lhbLoading, lhbError,
         overview, overviewLoading, overviewError,
-        sectorType, sectorIndicator, sectorRows, sectorLoading, sectorError, sectorFlowSource,
+        sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorLoading, sectorError, sectorFlowSource,
+        gotoSector,
         review, reviewRunning,
         intradaySnapshots, intradayLoading, intradayCollecting,
         intradaySlots, intradayMsg, slotClass, intradayStatus,
