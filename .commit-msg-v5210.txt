@@ -1,0 +1,6 @@
+feat(V5.2.10): 无障碍打磨 — 发版 5.2.10
+
+- T-5.2.56: shortterm-page 6 处 icon-only 按钮补 aria-label (5 个 🔄 刷新 + ✕ 清除筛选)
+  ✕ 清除筛选加 role=button + tabindex + Enter/Space 键盘触发
+- 新增 test_shortterm_a11y_icon_buttons (120 passed)
+- APP_VERSION 5.2.9 → 5.2.10

@@ -16,7 +16,7 @@
                             <div class="page-title">复盘看板</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
-                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="overviewLoading" type="loading"></qc-state-panel>
@@ -128,7 +128,7 @@
                             <div class="page-title">涨停复盘</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
-                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
                                 <span class="text-xs-tertiary" v-if="pools && pools.settled === false">⚠️ 未收盘, 数据可能不完整</span>
                             </div>
                         </div>
@@ -147,7 +147,7 @@
 
                             <div class="flex-c-gap-12 mb-2">
                                 <div class="text-base-secondary">涨停池 ({{ (pools.zt || []).length }} 家)</div>
-                                <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span style="cursor:pointer" @click="clearBoardFilter">✕</span></span>
+                                <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span role="button" tabindex="0" aria-label="清除筛选" style="cursor:pointer" @click="clearBoardFilter" @keydown.enter.prevent="clearBoardFilter" @keydown.space.prevent="clearBoardFilter">✕</span></span>
                             </div>
                             <div class="table-container">
                                 <el-table :data="filteredZt" size="small">
@@ -195,7 +195,7 @@
                             <div class="page-title">龙虎榜</div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
-                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
@@ -238,7 +238,7 @@
                                     <el-option label="10日" value="10日"></el-option>
                                 </el-select>
                                 <el-input v-model="sectorKeyword" size="small" placeholder="搜索板块..." clearable style="width:130px"></el-input>
-                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="sectorLoading" type="loading"></qc-state-panel>
@@ -270,7 +270,7 @@
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
-                                <el-button size="small" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
                             </div>
                         </div>
                         <div class="text-xs-tertiary mb-4">快照仅在交易时段 6 个时点前后 8 分钟可采集 · 历史日绝不现抓</div>

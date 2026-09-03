@@ -1759,3 +1759,20 @@ def test_frontend_fmt_honest_missing():
     assert "return (v * 100).toFixed(0) + '%';" in page, "pct 有值时格式化"
     # ladder 空时显示 — 而非 0 板
     assert "pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—'" in page, "ladder 空时显示 —"
+
+
+# V5.2.10 (T-5.2.56): 短线复盘无障碍 — icon-only 按钮 aria-label
+
+def test_shortterm_a11y_icon_buttons():
+    """V5.2.10: 短线复盘页 icon-only 按钮 (🔄 刷新/✕ 清除) 必须有 aria-label 且可键盘触发。
+
+    屏幕阅读器读 emoji 无意义, icon-only 按钮必须带 aria-label 描述动作。
+    """
+    page = _read("js/components/shortterm-page.js")
+    # 5 个子页刷新按钮 (icon-only 🔄) 必须有 aria-label
+    assert page.count('aria-label="刷新数据"') == 5, "5 个子页刷新按钮应有 aria-label"
+    # 清除筛选 ✕ 可键盘触发 (role=button + Enter/Space)
+    assert 'aria-label="清除筛选"' in page, "清除筛选应有 aria-label"
+    assert 'role="button"' in page, "清除筛选应有 role=button"
+    assert '@keydown.enter.prevent="clearBoardFilter"' in page, "清除筛选应可 Enter 触发"
+    assert '@keydown.space.prevent="clearBoardFilter"' in page, "清除筛选应可 Space 触发"
