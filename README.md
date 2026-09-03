@@ -219,11 +219,11 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
 | 项 | 链接 |
 |----|------|
-| 最新版本 | **v5.2.2**（短线复盘·AI 多视角复盘与闭环;GitHub/ghcr 发布物待推送后更新） |
+| 最新版本 | **v5.2.3**（短线复盘·数据源兜底修复 + 三页 UI 优化） |
 | Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
-| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.0.11.zip |
-| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.0.11.tar.gz |
-| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.0.11 |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.2.3.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.2.3.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.2.3 |
 
 > 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
 
@@ -294,6 +294,7 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v5.2.3 | 2026-09 | 短线复盘·数据源兜底修复 + 三页 UI 优化：板块资金 东财→同花顺兜底 / 龙虎榜 东财→tushare top_list 兜底 / 盘中核验改抓实时池 / 三页摘要条+红涨绿跌+排序+badge 色系+6 时点时间轴 |
 | v5.2.2 | 2026-09 | 短线复盘·AI 多视角复盘与闭环：多分析师(情绪/资金/题材/龙虎榜/龙头, 失败降级不炸链) / 复盘裁判(JSON 骨架+pydantic+markdown) / 反思闭环(三路投票+战绩记分板) / 盘中核验(6 时点快照+过点拒绝) / 涨停样本统计(分情绪环境+无前视) / 归档与结构漂移 / 复盘历史检索+追问聊天 / 前端 AI 盘面研判卡+盘中核验子页 / scheduler 盘后自动跑+webhook |
 | v5.2.1 | 2026-09 | 短线复盘·派生情绪指标与盘面：复盘看板落地页(五卡) / 赚钱效应(定稿优先+覆盖率闸门) / 晋级率(1进2/2进3/3板+) / 连板溢价 / 情绪周期(十日相对读数) / 市场事实(封板质量/亏钱效应/反馈矩阵) / 明日验证条件(三态核验+基准+用户自设+落盘) / 近5日热度与龙头 / 板块资金子页(行业/概念,今日/5日/10日) |
 | v5.2.0 | 2026-09 | 短线复盘·数据基座：一级菜单「短线复盘」/ 涨停·炸板·跌停三池 + 连板梯队断层 / 龙虎榜(资金性质归类) / 板块资金流 / 交易日历+定稿判据 / 涨跌幅制度感知(10cm/20cm/北交所/ST) / SQLite 迁移 0004 / 6 端点 API / 盘后 16:05 自动入库 / 三池源链 fallback / 涨停原因(问财可选) / 连板梯队条形图 / 抓取重试+错过补偿 |
