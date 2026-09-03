@@ -40,6 +40,7 @@ from .lineage import router as lineage_router
 from .jobs import router as jobs_router
 from .rbac import router as rbac_router
 from .collab import router as collab_router
+from .shortterm import router as shortterm_router
 from api.v3.router import router as v3_router
 
 # 创建 v1 路由汇总
@@ -86,6 +87,7 @@ api_router.include_router(lineage_router)
 api_router.include_router(jobs_router)
 api_router.include_router(rbac_router)
 api_router.include_router(collab_router)
+api_router.include_router(shortterm_router)
 api_router.include_router(v3_router)
 
 __all__ = ["api_router"]
