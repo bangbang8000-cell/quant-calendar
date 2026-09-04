@@ -98,6 +98,12 @@
                             <div class="text-sm-tertiary mb-12" v-else>启动自检报告尚未生成（服务重启后自动生成）</div>
 
                             <!-- 数据新鲜度 -->
+<!-- 数据新鲜度 -->
+                            <!-- V5.3.0 (T-5.3.6.2): 数据旧了 告警条 -->
+                            <div v-if="staleAssetCount > 0" class="health-stale-banner">
+                                ⚠ 数据已过期: {{ staleAssetCount }} 项资产 (点击刷新数据源)
+                                <el-button size="small" class="ml-8" @click="refreshHealth">重新检查</el-button>
+                            </div>
                             <div class="health-section-title">📅 数据新鲜度</div>
                             <el-table :data="freshnessData.items" size="small" v-loading="healthLoading" style="width:100%">
                                 <el-table-column prop="name" label="资产" min-width="150" />
@@ -1451,6 +1457,11 @@
       function statusLabel(st) {
         return { fresh: '正常', stale: '过期', missing: '缺失', unknown: '未知' }[st] || st;
       }
+      // V5.3.0 (T-5.3.6.2): 数据旧了 告警 — stale/missing 资产计数
+      const staleAssetCount = Vue.computed(() => {
+        const items = freshnessData.value ? (freshnessData.value.items || []) : [];
+        return items.filter(it => it.status === 'stale' || it.status === 'missing').length;
+      });
       // V5.0.4 T-5.0.45: 通知中心 (规则/投递历史/通道状态+静默) — 本地状态
       const ncTab = Vue.ref('rules');
       const ncRules = Vue.ref([]);
@@ -1695,6 +1706,8 @@
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,
+        // V5.3.0 (T-5.3.6.2): 数据旧了告警
+        staleAssetCount,
         // V5.3.0 (T-5.3.3.5): 任务队列
         jobQueue, loadJobQueue, cancelJob, jobStatusText,
         auditLogs, auditLoading, loadAuditLogs,

@@ -382,6 +382,80 @@ quant-calendar-ops/
 
 ---
 
+
+---
+
+## 公网隧道方案 (T-5.3.6.3 / FR-5.3.6.3)
+
+本应用部署于内网主机, 公网访问需隧道。两种方案:
+
+### 方案 A: Quick 临时隧道 (演示/调试, 5 分钟)
+
+- 工具: cloudflared quick tunnel (无需注册/域名)
+- 用法:
+  ```bash
+  cloudflared tunnel --url http://127.0.0.1:8000
+  ```
+- 输出 https://xxx.trycloudflare.com 即公网地址 (随机域名, 进程退出即失效)
+- 适用: 临时给他人看效果、快速验证公网可达性
+- 注意: 地址随机、无认证 → 仅短期使用, 勿持久化
+
+### 方案 B: 固定域名隧道 (长期使用)
+
+- 工具: cloudflared 命名隧道 + 自有域名 (或 frp + 云服务器)
+- 步骤:
+  1. cloudflared tunnel login → 绑定 Cloudflare 账户
+  2. cloudflared tunnel create quant-calendar → 得 Tunnel ID
+  3. DNS 记录: CNAME 指向 <Tunnel-ID>.cfargotunnel.com
+  4. 配置 config.yml: ingress 到 http://localhost:8000
+  5. 以 systemd 服务常驻运行 (开机自启)
+- 前置: 域名托管于 Cloudflare (需 0 元域名也可)
+- 安全: 配合本应用已有登录鉴权 + API Key 双重保护
+
+### 决策建议
+
+- 演示/评估阶段 → 方案 A (零成本快速)
+- 生产长期对外 → 方案 B (固定域名 + 可上 HTTPS)
+- 若无法使用 Cloudflare → frp 内网穿透 (需一台云服务器做中转)
+
+---
+
+## 升级与回滚演练 (T-5.3.6.4 / FR-5.3.6.4)
+
+### 标准升级流程
+
+```bash
+cd ~/quant-calendar-ops
+git pull --ff-only          # 拉取最新
+bash scripts/upgrade.sh     # 备份 + 迁移 + 重启 (systemd user)
+curl -sf http://127.0.0.1:8000/api/health   # 健康检查
+```
+
+### 回滚流程
+
+```bash
+cd ~/quant-calendar-ops
+git log --oneline -3                        # 确认回滚目标 commit
+git reset --hard <前一版本 commit>
+bash scripts/rollback.sh                    # 自动备份当前 + 恢复上一版本
+curl -sf http://127.0.0.1:8000/api/health   # 健康检查
+```
+
+### 数据库回滚 (迁移 0006 演示)
+
+迁移框架支持版本化回滚:
+```bash
+/usr/bin/python3 -c "from migrations import upgrade, rollback; import db; c=db.get_conn(); rollback(c, 5); c.commit()"
+```
+- 回滚仅撤销 schema 变更 (索引/表), 业务数据保留
+- 降级场景: 新版本有问题 → 回滚代码 + 回滚迁移版本到匹配基线
+
+### SLO 归档
+
+- 升级目标: 10 分钟内完成 (含备份/迁移/验证)
+- 回滚目标: 5 分钟内恢复到上一可用版本
+- 每次发布: git tag v5.3.N ↔ APP_VERSION 一致, CI 版本纪律门禁强制
+
 ## 版本历史
 
 | 版本 | 日期 | 关键变更 |
