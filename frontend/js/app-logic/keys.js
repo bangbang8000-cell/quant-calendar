@@ -36,7 +36,20 @@
             const stocks = data.results.map(function(r) {
               return { value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
             });
-            cb(localHits.concat(stocks));
+            // V5.3.0 (T-5.3.3.3): 分组消费 — 板块/策略/菜单并入建议 (图标+子标签区分)
+            const grouped = [];
+            (data.groups || []).forEach(function (g) {
+              (g.items || []).forEach(function (it) {
+                if (it.type === 'sector') {
+                  grouped.push({ value: '🏷 ' + it.name + ' · ' + it.subLabel, type: 'sector', name: it.name, label: it.name, subLabel: '板块', icon: '🏷' });
+                } else if (it.type === 'strategy') {
+                  grouped.push({ value: '🧭 ' + it.name + ' · 策略', type: 'strategy', id: it.id, name: it.name, label: it.name, subLabel: '策略', icon: '🧭' });
+                } else if (it.type === 'menu') {
+                  grouped.push({ value: '📄 ' + it.name, type: 'menu', menuKey: it.menuKey, name: it.name, label: it.name, subLabel: it.subLabel || '页面', icon: '📄' });
+                }
+              });
+            });
+            cb(localHits.concat(stocks, grouped));
           } else { cb(localHits); }
         } catch(e) { console.warn('[searchStocks] fetch failed:', e); cb(localHits); }
       }
@@ -46,6 +59,8 @@
         if (!item) return null;
         if (item.type === 'menu') return { action: 'menu', menuKey: item.menuKey, subPage: item.subPage };
         if (item.type === 'command') return { action: 'command', key: item.key };
+        if (item.type === 'sector') return { action: 'sector', name: item.name };
+        if (item.type === 'strategy') return { action: 'strategy', id: item.id, name: item.name };
         if (item.type === 'stock' || (item.code && item.name)) return { action: 'stock', code: item.code, name: item.name };
         return null;
       }
@@ -56,6 +71,16 @@
         if (!d) return;
         if (d.action === 'menu') { navigateTo(d.menuKey, d.subPage); return; }
         if (d.action === 'command') { runGlobalCommand(d.key); return; }
+        // V5.3.0 (T-5.3.3.3): 板块→跳短线复盘板块流; 策略→跳策略研究
+        if (d.action === 'sector') {
+          navigateTo('shortterm', 'overview');
+          if (typeof showSectorDetail === 'function') showSectorDetail(d.name);
+          return;
+        }
+        if (d.action === 'strategy') {
+          navigateTo('research', 'overview');
+          return;
+        }
         if (d.action === 'stock' && typeof showStockDetail === 'function') {
           showStockDetail(d.code, d.name);
         }

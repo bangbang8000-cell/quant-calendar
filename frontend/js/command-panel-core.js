@@ -161,6 +161,9 @@
     if (!item) return null;
     if (item.type === 'menu') return { action: 'menu', menuKey: item.menuKey, subPage: item.subPage };
     if (item.type === 'command') return { action: 'command', key: item.key };
+    // V5.3.0 (T-5.3.3.3): 板块/策略域分派
+    if (item.type === 'sector') return { action: 'sector', name: item.name };
+    if (item.type === 'strategy') return { action: 'strategy', id: item.id, name: item.name };
     if (item.type === 'stock' || (item.code && item.name)) return { action: 'stock', code: item.code, name: item.name };
     return null;
   }
