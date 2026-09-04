@@ -133,7 +133,7 @@ def test_verify_migration_mismatch(env):
 
 def test_upgrade_fresh(env_schema):
     out = cmd_upgrade(backup_root=env_schema["backup_root"])
-    assert out["applied"] == [1, 2, 3, 4]   # V5.2.0: 0004 shortterm
+    assert out["applied"] == [m.version for m in migrations.MIGRATIONS]  # 全量迁移
     assert out["verify"]["ok"] is True
     assert os.path.isdir(out["backup"])
 
@@ -173,7 +173,7 @@ def test_upgrade_auto_restore_on_verify_failure(env_schema, monkeypatch):
 def test_rollback(env_schema):
     cmd_upgrade(backup_root=env_schema["backup_root"])
     out = cmd_rollback(target=2, backup_root=env_schema["backup_root"])
-    assert out["rolled"] == [4, 3]   # V5.2.0: 从 4 回滚到 2
+    assert out["rolled"] == [5, 4, 3]   # V5.3.0: 从 5 回滚到 2
     assert migrations.get_current_version(db.get_conn()) == 2
     assert out["verify"]["ok"] is True
 
@@ -189,7 +189,7 @@ def test_rollback_dry_run_no_writes(env):
     n_backups_before = len(os.listdir(env["backup_root"]))
     out = cmd_rollback(target=2, dry_run=True, backup_root=env["backup_root"])
     assert out["dry_run"] is True and out["planned"]
-    assert migrations.get_current_version(db.get_conn()) == 4  # V5.2.0: 全量=4
+    assert migrations.get_current_version(db.get_conn()) == migrations.latest_version()  # 全量=最新
     assert len(os.listdir(env["backup_root"])) == n_backups_before
 
 
@@ -197,7 +197,7 @@ def test_rollback_target_beyond_current_noop(env_schema):
     cmd_upgrade(backup_root=env_schema["backup_root"])
     out = cmd_rollback(target=5, backup_root=env_schema["backup_root"])
     assert out["rolled"] == []
-    assert migrations.get_current_version(db.get_conn()) == 4  # V5.2.0: 全量=4
+    assert migrations.get_current_version(db.get_conn()) == migrations.latest_version()  # 全量=最新
 
 
 # ─── CLI ───────────────────────────────────────────────

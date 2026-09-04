@@ -126,7 +126,7 @@ def test_zh_matches_original():
     zh = _locale_values(ZH_PATH)
     assert zh["nav.calendar"] == "量化日历", "zh nav.calendar 应为 量化日历"
     assert zh["nav.system"] == "系统配置", "zh nav.system 应为 系统配置"
-    assert zh["login.title"] == "量化选股日历"
+    assert zh["login.title"] == "量化日历"  # V5.2.11 品牌统一
     assert zh["calendar.poolTitle"] == "策略共识度股票池"
     assert zh["detail.factorTitle"] == "多因子体检"
     assert zh["ai.evalHitRate"] == "评估命中率"
@@ -183,6 +183,46 @@ def test_zh_values_nonempty():
     zh = _locale_values(ZH_PATH)
     empty = [k for k, v in zh.items() if not v.strip()]
     assert not empty, f"zh 语言包存在空值: {empty}"
+
+
+# V5.3.0 (T-5.3.1.5): 5 语缺词守卫 — 全语种 key 严格一一对应
+_ALL_LOCALES = ("zh-CN", "en", "ja", "ko", "zh-TW")
+_LOCALE_PATHS = {"zh-CN": ZH_PATH, "en": EN_PATH, "ja": JA_PATH,
+                 "ko": KO_PATH, "zh-TW": TW_PATH}
+
+
+def test_all_locales_same_key_set_strict():
+    """5 语 key 集合严格相等（任意语种缺词/多词都失败）"""
+    sets = {loc: _locale_keys(_LOCALE_PATHS[loc]) for loc in _ALL_LOCALES}
+    base = sets["zh-CN"]
+    for loc in _ALL_LOCALES:
+        missing = sorted(base - sets[loc])
+        extra = sorted(sets[loc] - base)
+        assert not missing and not extra, \
+            f"{loc} 与 zh-CN key 不一致: missing={missing} extra={extra}"
+
+
+def test_all_locales_t_literals_defined():
+    """全前端 t('xxx') 字面量 key 在全部 5 语中均有定义"""
+    t_keys = _all_t_literals()
+    assert t_keys
+    dynamic_prefixes = sorted(k for k in t_keys if k.endswith('.'))
+    static_keys = {k for k in t_keys if not k.endswith('.')}
+    for loc in _ALL_LOCALES:
+        keys = _locale_keys(_LOCALE_PATHS[loc])
+        missing = sorted(k for k in static_keys if k not in keys)
+        assert not missing, f"t() 调用在 {loc} 包中缺定义: {missing}"
+        for prefix in dynamic_prefixes:
+            assert any(k.startswith(prefix) for k in keys), \
+                f"动态 key 前缀 {prefix} 在 {loc} 包中无对应 key"
+
+
+def test_all_locales_values_nonempty():
+    """5 语所有值均非空（防止任一语种空串缺词）"""
+    for loc in _ALL_LOCALES:
+        values = _locale_values(_LOCALE_PATHS[loc])
+        empty = [k for k, v in values.items() if not v.strip()]
+        assert not empty, f"{loc} 语言包存在空值: {empty}"
 
 
 # ─── 真实 t()/setLocale 语义（Node 执行）────────────────────────

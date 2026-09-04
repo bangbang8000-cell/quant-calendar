@@ -111,3 +111,4 @@ frontend/_extract_modules.py
 frontend/static/test.html
 
 frontend/api-docs.html
+.shot-collapsed.png

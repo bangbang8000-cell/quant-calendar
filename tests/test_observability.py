@@ -238,5 +238,6 @@ def test_apply_migrations_emits_structured_event(tmp_path, monkeypatch, caplog):
         db.apply_migrations()
     events = [json.loads(r.getMessage()[len("EVENT "):])
               for r in caplog.records if r.getMessage().startswith("EVENT ")]
-    assert any(e["event"] == "migration_applied" and e["versions"] == [1, 2, 3, 4]
+    assert any(e["event"] == "migration_applied"
+               and e["versions"] == [m.version for m in migrations.MIGRATIONS]
                for e in events)

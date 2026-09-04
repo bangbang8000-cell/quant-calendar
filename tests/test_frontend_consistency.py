@@ -960,8 +960,11 @@ def test_rate_limiter_backend_abstraction():
 def test_db_chat_ownership_migration():
     """FR-3.17.13: db.py 提供存量归属迁移函数 migrate_chat_ownership + username 列增量迁移"""
     src = _read_backend("db.py")
+    mig_src = _read_backend("migrations/_0005_legacy_columns.py")
     assert "def migrate_chat_ownership" in src, "应提供存量归属迁移函数 migrate_chat_ownership"
-    assert "ADD COLUMN username" in src, "migrate 应含 chat_history.username 列增量迁移"
+    # V5.3.0 (T-5.3.0.5): username 补列已从 db.migrate() 收归迁移 0005
+    assert "chat_history" in mig_src and "username" in mig_src, \
+        "0005 迁移应含 chat_history.username 补列"
 
 
 def test_storage_convergence_no_json_double_write():

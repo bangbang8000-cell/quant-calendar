@@ -92,7 +92,7 @@
     'common.export': 'Export',
     'common.searchPlaceholder': 'Search stock code or name...',
     'common.view': 'View',
-    'common.unitStock': '',
+    'common.unitStock': ' stocks',
     // 日历页
     'calendar.poolTitle': 'Consensus Stock Pool',
     'calendar.poolManage': 'Stock Pool Management',

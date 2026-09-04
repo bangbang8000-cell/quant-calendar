@@ -203,11 +203,11 @@ class TestChatOwnershipMigration:
             conn.close()
             cols = [r['name'] for r in db.get_conn().execute("PRAGMA table_info(chat_history)").fetchall()]
             assert 'username' not in cols
-            db.migrate()
+            db.apply_migrations()  # V5.3.0 (T-5.3.0.5): 补列已收归迁移 0005
             cols = [r['name'] for r in db.get_conn().execute("PRAGMA table_info(chat_history)").fetchall()]
             assert 'username' in cols
-            # 幂等: 重复 migrate 不报错、不加重复列
-            db.migrate()
+            # 幂等: 重复 apply 不报错、不加重复列
+            db.apply_migrations()
             cols = [r['name'] for r in db.get_conn().execute("PRAGMA table_info(chat_history)").fetchall()]
             assert cols.count('username') == 1
         finally:

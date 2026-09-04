@@ -48,7 +48,8 @@ def _rebuild_views():
 
 def _rerun_migrations():
     import db
-    db.migrate()  # 幂等 (仅补缺失表/列)
+    db.migrate()          # 幂等建表/补列 (历史兼容入口)
+    db.apply_migrations()  # V5.3.0 (T-5.3.0.5): 版本化迁移 (补列已收归 0005)
     ok = db.schema_ok()
     return ok, "数据库迁移已重跑" if ok else "迁移重跑后 schema 仍异常"
 
