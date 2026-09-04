@@ -201,9 +201,11 @@ async def openapi_review(date: Optional[str] = None, _key: dict = Depends(_requi
 
 def _winrate_summary(window: Optional[str] = None) -> dict:
     """内部数据获取: AI 评估胜率追踪"""
-    from eval_track import compute_stats, track_evaluations
+    from eval_track import compute_stats, compute_trend, track_evaluations
     samples = track_evaluations()
     stats = compute_stats(samples)
+    # V5.3.0 (T-5.3.5.3): 胜率趋势 (按周分桶) + 样本量
+    stats["trend"] = compute_trend(samples, window='n5')
     if window:
         from eval_track import _normalize_window, _filter_stats_window
         wkey = _normalize_window(window)

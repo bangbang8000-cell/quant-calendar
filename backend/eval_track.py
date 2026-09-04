@@ -136,6 +136,42 @@ def compute_stats(records: List[Dict]) -> Dict:
     return {"overall": overall, "by_model": by_model, "by_level": by_level}
 
 
+def compute_trend(records: List[Dict], window: str = 'n5', bucket: str = 'week') -> Dict:
+    """V5.3.0 (T-5.3.5.3 / FR-5.3.5.3): 评估分析深化 — 胜率趋势
+
+    按时间桶聚合窗口命中率折线 + 样本量标注。
+    bucket: 'week' (ISO 周) | 'day'。
+    返回 {"buckets": [{"key", "rate", "hit", "total"}], "window": window, "available": bool}
+    """
+    import datetime
+    wkey = window if window in TRACK_WINDOWS else 'n5'
+    buckets = {}
+    for r in records:
+        dt = r.get("evaluate_time") or r.get("created_at")
+        if not dt:
+            continue
+        try:
+            day = datetime.datetime.strptime(str(dt)[:10], "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if bucket == 'week':
+            key = day.strftime("%Y-W%W")
+        else:
+            key = day.isoformat()
+        buckets.setdefault(key, []).append(r.get("hit_" + wkey))
+    if not buckets:
+        return {"buckets": [], "window": wkey, "available": False}
+    out = []
+    for key in sorted(buckets):
+        hits = [h for h in buckets[key] if h is not None]
+        if not hits:
+            continue
+        total = len(hits)
+        out.append({"key": key, "rate": round(sum(hits) / total * 100, 1), "hit": sum(hits), "total": total})
+    return {"buckets": out, "window": wkey, "available": True}
+
+
+
 # ─── 数据获取 ───────────────────────────────────────────────────
 
 def _normalize_date(s) -> str:
