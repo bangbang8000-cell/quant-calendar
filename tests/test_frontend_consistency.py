@@ -1776,3 +1776,19 @@ def test_shortterm_a11y_icon_buttons():
     assert 'role="button"' in page, "清除筛选应有 role=button"
     assert '@keydown.enter.prevent="clearBoardFilter"' in page, "清除筛选应可 Enter 触发"
     assert '@keydown.space.prevent="clearBoardFilter"' in page, "清除筛选应可 Space 触发"
+
+
+# V5.2.11 (FIX-1): 品牌名统一 + 收起态 emoji 修复守卫
+
+def test_brand_quant_calendar_unified():
+    """V5.2.11: 品牌名统一为「量化日历」— 左上角不再出现「量化选股日历」;
+    收起态 sidebar-logo 不再有 ::after 📊 emoji 伪元素 (logo+emoji 双图标问题)。
+    """
+    zh = _read("js/locales/zh-CN.js")
+    assert "'login.title': '量化日历'" in zh, "zh-CN 品牌应为 量化日历"
+    assert "量化选股日历" not in zh, "不应残留旧品牌名"
+    en = _read("js/locales/en.js")
+    assert "'login.title': 'Quant Calendar'" in en, "en 品牌应同步缩短"
+    # 收起态 sidebar-logo 不再有 ::after emoji 伪元素 (logo 与 emoji 双图标问题)
+    css = _read("css/themes.css")
+    assert "sidebar-logo::after" not in css, "收起态不应有 emoji 伪元素"

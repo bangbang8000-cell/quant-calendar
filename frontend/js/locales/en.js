@@ -64,7 +64,7 @@
     'view.month': 'Monthly',
     'view.year': 'Yearly',
     // 登录页
-    'login.title': 'Quant Stock Calendar',
+    'login.title': 'Quant Calendar',
     'login.subtitle': 'QuantCalendar · All-A-Share Smart Quant Research Platform',
     'login.desc': 'Strategy consensus · AI evaluation · Daily quant calendar at a glance',
     'login.username': 'Username',

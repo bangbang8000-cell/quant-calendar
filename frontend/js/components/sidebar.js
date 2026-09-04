@@ -10,7 +10,7 @@
     template: `
       <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-logo">
-          <svg class="sidebar-logo-img" viewBox="0 0 100 100" width="26" height="26" aria-label="量化选股日历 logo" role="img">
+          <svg class="sidebar-logo-img" viewBox="0 0 100 100" width="26" height="26" aria-label="量化日历 logo" role="img">
             <!-- v3.22-logo: 蓝黄红三柱 + 背景/边框随主题 -->
             <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
             <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>

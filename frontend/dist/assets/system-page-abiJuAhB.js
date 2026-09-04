@@ -1137,7 +1137,7 @@
                     <div v-else-if="currentSubPage === 'about'">
                         <div class="card">
                             <div class="about-logo-row">
-                                <svg class="about-logo-img" viewBox="0 0 100 100" width="44" height="44" aria-label="量化选股日历 logo" role="img">
+                                <svg class="about-logo-img" viewBox="0 0 100 100" width="44" height="44" aria-label="量化日历 logo" role="img">
                                     <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
                                     <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>
                                     <line x1="20" y1="78" x2="82" y2="78" stroke="var(--logo-border)" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>

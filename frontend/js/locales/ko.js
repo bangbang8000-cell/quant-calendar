@@ -58,7 +58,7 @@
     'view.week': '주별 보기',
     'view.month': '월별 보기',
     'view.year': '연별 보기',
-    'login.title': '퀀트 주식 캘린더',
+    'login.title': '퀀트 캘린더',
     'login.subtitle': 'QuantCalendar · All-A-Share Smart Quant Research Platform',
     'login.desc': 'Strategy consensus · AI evaluation · Daily quant calendar at a glance',
     'login.username': '사용자명',

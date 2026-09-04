@@ -58,7 +58,7 @@
     'view.week': '周視圖',
     'view.month': '月視圖',
     'view.year': '年視圖',
-    'login.title': '量化選股日歷',
+    'login.title': '量化日曆',
     'login.subtitle': 'QuantCalendar · 全 A 股智能量化研究平臺',
     'login.desc': '策略共識 · AI 評估 · 每日量化日歷，一键掌握',
     'login.username': '用户名',

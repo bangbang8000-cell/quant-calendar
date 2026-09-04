@@ -3927,7 +3927,7 @@ text {
 .sidebar.collapsed .nav-item > span:not(.nav-icon) { display: none !important; }
 .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; gap: 0; }
 .sidebar.collapsed .sidebar-logo { text-align: center; padding: 16px 8px 8px 8px; }
-.sidebar.collapsed .sidebar-logo::after { content: '📊'; font-size: var(--font-xl); display: block; }
+/* V5.2.11 (FIX-1): 移除收起态 sidebar-logo 的 ::after 📊 emoji 伪元素 — 只保留 SVG logo (用户反馈收起后左上角 logo+emoji 双图标) */
 .sidebar.collapsed .sidebar-nav { padding: 0 4px; }
 .sidebar.collapsed .sidebar-footer { padding: 16px 4px; text-align: center; }
 /* v3.2.0-T11: 快捷键帮助面板 */

@@ -58,7 +58,7 @@
     'view.week': '週ビュー',
     'view.month': '月ビュー',
     'view.year': '年ビュー',
-    'login.title': '量化選股カレンダー',
+    'login.title': '量化カレンダー',
     'login.subtitle': 'QuantCalendar · All-A-Share Smart Quant Research Platform',
     'login.desc': 'Strategy consensus · AI evaluation · Daily quant calendar at a glance',
     'login.username': 'ユーザー名',
