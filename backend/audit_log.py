@@ -8,8 +8,10 @@
 import json
 import logging
 import os
+import re
 import sqlite3
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 
 from paths import DATA_DIR
@@ -17,7 +19,49 @@ from paths import DATA_DIR
 AUDIT_LOG_FILE = os.path.join(DATA_DIR, "audit.log")
 AUDIT_DB_FILE = os.path.join(DATA_DIR, "audit_logs.db")
 
+# V5.3.0 (T-5.3.0.6): 归档保留天数 (默认 30 天, 可用环境变量覆盖)
+AUDIT_RETENTION_DAYS = int(os.environ.get("AUDIT_RETENTION_DAYS", "30"))
+_AUDIT_ARCHIVE_RE = re.compile(r"^audit\.log\.(\d{4}-\d{2}-\d{2})$")
+
 _logger = None
+
+
+def _cleanup_old_archives(retention_days: int = None) -> int:
+    """启动清理: 删除超过保留天数的按日归档文件 (audit.log.YYYY-MM-DD)
+
+    - 仅处理符合 audit.log.YYYY-MM-DD 命名的归档, 不动当前 audit.log
+    - 幂等: 无归档/已清理过均返回 0, 不抛异常
+    - 返回删除的文件数
+    """
+    # 调用时动态读取环境变量 (支持运行期覆盖), 默认 AUDIT_RETENTION_DAYS
+    if retention_days is None:
+        retention_days = int(os.environ.get("AUDIT_RETENTION_DAYS",
+                                            str(AUDIT_RETENTION_DAYS)))
+    removed = 0
+    log_dir = os.path.dirname(AUDIT_LOG_FILE)
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        # 按归档文件名日期比较 (精确语义: 超过 N 天的归档删除), 而非 mtime
+        # (mtime 受备份/同步/时区影响, 且边界文件因毫秒误差可能被误删)
+        cutoff_date = datetime.now().date() - timedelta(days=retention_days)
+        for name in os.listdir(log_dir):
+            m = _AUDIT_ARCHIVE_RE.match(name)
+            if not m:
+                continue
+            try:
+                arch_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+            except ValueError:
+                continue  # 日期非法, 跳过
+            if arch_date < cutoff_date:
+                path = os.path.join(log_dir, name)
+                try:
+                    os.remove(path)
+                    removed += 1
+                except OSError:
+                    continue  # 文件被并发删除等, 幂等跳过
+    except OSError:
+        return 0
+    return removed
 
 
 def _get_logger() -> logging.Logger:
@@ -25,6 +69,8 @@ def _get_logger() -> logging.Logger:
     global _logger
     if _logger is None:
         os.makedirs(DATA_DIR, exist_ok=True)
+        # V5.3.0 (T-5.3.0.6): 启动主动清理超期归档 (基于日期保留, 非文件数)
+        _cleanup_old_archives()
         _logger = logging.getLogger("audit")
         _logger.setLevel(logging.INFO)
         _logger.propagate = False

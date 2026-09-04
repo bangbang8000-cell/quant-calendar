@@ -258,13 +258,7 @@ def migrate() -> None:
             conn.executescript(EVENTS_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: event_subscriptions/delivery_log/dedup 表就绪")
-            # V5.0.4 (T-5.0.45): event_delivery_log 补 user 列 (旧库, 幂等)
-            dlog_cols = [r['name'] for r in conn.execute(
-                "PRAGMA table_info(event_delivery_log)").fetchall()]
-            if dlog_cols and 'user' not in dlog_cols:
-                conn.execute("ALTER TABLE event_delivery_log ADD COLUMN user TEXT")
-                conn.commit()
-                logger.info("[db] migrate: event_delivery_log 增加 user 列")
+            # V5.3.0 (T-5.3.0.5): event_delivery_log.user 补列已收归迁移 0005 (幂等)
             # V5.0.4 (T-5.0.45): 预警静默表 (幂等建表)
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS alert_silence ("
@@ -287,25 +281,9 @@ def migrate() -> None:
             conn.executescript(RESEARCH_SCHEMA)
             conn.commit()
             logger.info("[db] migrate: research_experiments 表就绪")
-            # v3.14.2: watchlist 增加 name 列
-            cols = [r['name'] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
-            if cols and 'name' not in cols:
-                conn.execute("ALTER TABLE watchlist ADD COLUMN name TEXT NOT NULL DEFAULT ''")
-                conn.commit()
-                logger.info("[db] migrate: watchlist 增加 name 列")
-            # v3.15: chat_history 增加 stock_name 列 (问股历史缺股票名)
-            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
-            if chat_cols and 'stock_name' not in chat_cols:
-                conn.execute("ALTER TABLE chat_history ADD COLUMN stock_name TEXT NOT NULL DEFAULT ''")
-                conn.commit()
-                logger.info("[db] migrate: chat_history 增加 stock_name 列")
-            # v3.17.13 (FR-3.17.13): chat_history 增加 username 列 (历史旧库补列, 幂等)
-            # 新库 SCHEMA 已含 username; 仅对旧库 (chat_history 建于按用户隔离前) 补列
-            chat_cols = [r['name'] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
-            if chat_cols and 'username' not in chat_cols:
-                conn.execute("ALTER TABLE chat_history ADD COLUMN username TEXT NOT NULL DEFAULT 'default'")
-                conn.commit()
-                logger.info("[db] migrate: chat_history 增加 username 列")
+            # V5.3.0 (T-5.3.0.5): watchlist.name 补列已收归迁移 0005 (幂等)
+            # V5.3.0 (T-5.3.0.5): chat_history.stock_name 补列已收归迁移 0005 (幂等)
+            # V5.3.0 (T-5.3.0.5): chat_history.username 补列已收归迁移 0005 (幂等)
             conn.close()
     except Exception as e:
         logger.error(f"[db] migrate 失败: {e}")

@@ -7,7 +7,7 @@
 import os
 from typing import List
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # 加载环境变量
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -66,9 +66,8 @@ class Settings(BaseSettings):
         """解析 CORS 源列表"""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # V5.3.0 (T-5.3.0.1): Pydantic V2 官方写法 — SettingsConfigDict 替代 class-based Config
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 # 全局配置实例

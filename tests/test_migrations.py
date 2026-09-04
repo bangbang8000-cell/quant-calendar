@@ -113,7 +113,7 @@ def test_upgrade_target_beyond_latest_raises(conn):
 def test_rollback_partial(conn):
     upgrade(conn)
     rolled = rollback(conn, target=2)
-    assert rolled == [4, 3]   # V5.2.0: 从 4 回滚到 2
+    assert rolled == [5, 4, 3]   # V5.3.0: 从 5 回滚到 2
     assert get_current_version(conn) == 2
     # 0003 的 user 列已回滚 (SQLite DROP COLUMN 或最佳努力)
     cols = [r[1] for r in conn.execute("PRAGMA table_info(event_delivery_log)").fetchall()]
@@ -123,7 +123,7 @@ def test_rollback_partial(conn):
 def test_rollback_all(conn):
     upgrade(conn)
     rolled = rollback(conn, target=0)
-    assert rolled == [4, 3, 2, 1]   # V5.2.0: 含 0004 shortterm
+    assert rolled == [5, 4, 3, 2, 1]   # V5.3.0: 含 0004 shortterm / 0005 legacy
     assert get_current_version(conn) == 0
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     assert "report_subscriptions" not in tables
@@ -142,7 +142,7 @@ def test_rollback_roundtrip_reupgrade(conn):
     upgrade(conn)
     rollback(conn, target=0)
     applied = upgrade(conn)
-    assert applied == [1, 2, 3, 4]   # V5.2.0: 0004 shortterm
+    assert applied == [1, 2, 3, 4, 5]   # V5.3.0: 含 0004 shortterm / 0005 legacy
     assert validate(conn)["ok"] is True
 
 
@@ -160,7 +160,7 @@ def test_validate_partial_upgrade_is_ok_prefix(conn):
     upgrade(conn, target=1)
     v = validate(conn)
     assert v["ok"] is True
-    assert v["missing"] == [2, 3, 4]   # V5.2.0: 含 0004 shortterm
+    assert v["missing"] == [2, 3, 4, 5]   # V5.3.0: 含 0004 shortterm / 0005 legacy
     assert v["current"] == 1
 
 
@@ -215,8 +215,8 @@ def test_failing_upgrade_raises_and_rolls_back(conn, monkeypatch):
     # 失败迁移的事务已回滚: partial_table 不应存在
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     assert "partial_table" not in tables
-    # 版本记录不残留 50; 仍停留在原最新版本 4 (V5.2.0: 0004 shortterm)
-    assert get_current_version(conn) == 4
+    # 版本记录不残留 50; 仍停留在原最新版本 5 (V5.3.0: 0005 legacy)
+    assert get_current_version(conn) == 5
 
 
 def test_failing_downgrade_raises(conn, monkeypatch):
@@ -359,3 +359,66 @@ def test_init_db_failure_when_migration_broken(tmp_path, monkeypatch):
     bad = BadMigration(50, "bad", "损坏迁移", bad_upgrade, lambda c: None)
     monkeypatch.setattr(migrations.runner, "MIGRATIONS", MIGRATIONS + [bad])
     assert db.init_db() is False
+
+# ─── V5.3.0 (T-5.3.0.5): 迁移 0005 遗留补列收口 ─────────────────
+
+def _mk_legacy_db(conn):
+    """模拟旧库: 三张核心表无新列 (0005 之前的历史结构)"""
+    conn.executescript("""
+        CREATE TABLE event_delivery_log (id INTEGER PRIMARY KEY, event TEXT);
+        CREATE TABLE watchlist (username TEXT NOT NULL, stock_code TEXT NOT NULL,
+            added_at TEXT NOT NULL, PRIMARY KEY (username, stock_code));
+        CREATE TABLE chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL, stock_code TEXT NOT NULL, role TEXT NOT NULL,
+            content TEXT NOT NULL, created_at TEXT NOT NULL);
+    """)
+    conn.commit()
+
+
+def test_0005_upgrade_adds_legacy_columns(conn):
+    """旧库升级: 0005 补齐 event_delivery_log.user / watchlist.name / chat_history.stock_name (username 已在旧库 SCHEMA)"""
+    _mk_legacy_db(conn)
+    upgrade(conn, target=5)
+    d = [r[1] for r in conn.execute("PRAGMA table_info(event_delivery_log)").fetchall()]
+    assert 'user' in d
+    w = [r[1] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
+    assert 'name' in w
+    c = [r[1] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+    assert 'stock_name' in c
+
+
+def test_0005_skips_when_columns_present(conn):
+    """新库/已升级库: 0005 幂等跳过, 不报错"""
+    # 新库结构 (0005 前已含全部列)
+    conn.executescript("""
+        CREATE TABLE event_delivery_log (id INTEGER PRIMARY KEY, user TEXT);
+        CREATE TABLE watchlist (username TEXT, stock_code TEXT, name TEXT NOT NULL DEFAULT '');
+        CREATE TABLE chat_history (id INTEGER PRIMARY KEY, username TEXT, stock_name TEXT NOT NULL DEFAULT '');
+    """)
+    conn.commit()
+    upgrade(conn, target=5)  # 不炸
+    upgrade(conn, target=5)  # 二次幂等
+
+
+def test_0005_downgrade_drops_columns(conn):
+    """回滚: 0005 移除新增列 (SQLite 3.35+ DROP COLUMN)"""
+    _mk_legacy_db(conn)
+    upgrade(conn, target=5)
+    rollback(conn, target=4)
+    c = [r[1] for r in conn.execute("PRAGMA table_info(watchlist)").fetchall()]
+    assert 'name' not in c
+    c2 = [r[1] for r in conn.execute("PRAGMA table_info(chat_history)").fetchall()]
+    assert 'stock_name' not in c2
+
+
+def test_0005_upgrade_preserves_data(conn):
+    """升级不丢数据 (旧库已有记录)"""
+    _mk_legacy_db(conn)
+    conn.execute("INSERT INTO watchlist (username, stock_code, added_at) VALUES ('u','600000','2026-01-01')")
+    conn.execute("INSERT INTO chat_history (username, stock_code, role, content, created_at) VALUES ('u','600000','user','hi','2026-01-01')")
+    conn.commit()
+    upgrade(conn, target=5)
+    row = conn.execute("SELECT stock_code FROM watchlist WHERE username='u'").fetchone()
+    assert row and row[0] == '600000'
+    row2 = conn.execute("SELECT content FROM chat_history WHERE stock_code='600000'").fetchone()
+    assert row2 and row2[0] == 'hi'

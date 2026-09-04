@@ -40,6 +40,7 @@ STATUS_CANCELLED = 'cancelled'
 _registry = {}
 _lock = threading.RLock()
 _worker = None
+_worker_stop = threading.Event()  # V5.3.0 (T-5.3.0.4): worker 停机事件 (测试隔离)
 _worker_cond = threading.Condition(_lock)
 
 
@@ -255,8 +256,11 @@ class _TaskCtx:
 
 
 def _worker_loop():
-    while True:
+    while not _worker_stop.is_set():
         with _lock:
+            # 停机事件置位后不再取新任务
+            if _worker_stop.is_set():
+                break
             jobs = _read()
             job = None
             for j in jobs.values():
@@ -279,14 +283,40 @@ def _worker_loop():
 def _wake_worker():
     global _worker
     if _worker is None or not _worker.is_alive():
+        _worker_stop.clear()
         _worker = threading.Thread(target=_worker_loop, daemon=True, name='qc-jobs-worker')
         _worker.start()
     _worker_cond.notify_all()
 
 
+def _stop_worker(timeout: float = 2.0) -> None:
+    """V5.3.0 (T-5.3.0.4): 停机 worker 线程 (测试隔离/优雅退出)
+
+    - 设置停机事件并唤醒, 等 worker 收敛退出 (最长 timeout 秒)
+    - 幂等: 无 worker / 已停均安全
+    - 生产路径不受影响 (仅测试与显式调用触发)
+    """
+    global _worker
+    w = _worker
+    if w is None or not w.is_alive():
+        return
+    _worker_stop.set()
+    with _lock:
+        _worker_cond.notify_all()
+    w.join(timeout=timeout)
+    if not w.is_alive():
+        _worker = None
+
+
 def reset_jobs():
     with _lock:
         _write({})
+
+
+def shutdown():
+    """V5.3.0 (T-5.3.0.4): 应用/测试收尾 — 停止 worker 线程并复位"""
+
+    _stop_worker()
 
 
 def clear_registry():

@@ -12,9 +12,6 @@ import re
 
 import pytest
 
-from data_sources import record_call, get_health_metrics, reset_health
-from api.v1.system import get_metrics
-
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 REQUIRED_HEALTH_FIELDS = [
@@ -24,23 +21,44 @@ REQUIRED_HEALTH_FIELDS = [
 
 
 @pytest.fixture(autouse=True)
+def _isolated_business_modules():
+    """V5.3.0 (T-5.3.0.3): 隔离坑根治 — 业务模块延迟加载。
+
+    原实现顶层 import data_sources/api.v1.system，在 collection 阶段
+    （conftest 数据重定向 fixture 生效前）即触发写入真实 data/。
+    改为 fixture 内延迟 import，确保在数据重定向之后加载。
+    """
+    from data_sources import record_call, get_health_metrics, reset_health
+    from api.v1.system import get_metrics
+    yield {
+        'record_call': record_call,
+        'get_health_metrics': get_health_metrics,
+        'reset_health': reset_health,
+        'get_metrics': get_metrics,
+    }
+    reset_health()
+
+
+@pytest.fixture(autouse=True)
 def _clean_health():
     """每个用例前清空数据源健康记录，避免跨用例污染"""
+    from data_sources import reset_health
     reset_health()
     yield
     reset_health()
 
 
-def test_metrics_data_sources_fields_complete():
+def test_metrics_data_sources_fields_complete(_isolated_business_modules):
     """数据源健康指标字段完整（成功率/degraded/延迟/次数）"""
-    record_call('sxsc_tushare', True, 120)
-    record_call('sxsc_tushare', True, 180)
+    m = _isolated_business_modules
+    m['record_call']('sxsc_tushare', True, 120)
+    m['record_call']('sxsc_tushare', True, 180)
     # tushare 连续 3 次失败 → degraded
-    record_call('tushare', False, 300)
-    record_call('tushare', False, 310)
-    record_call('tushare', False, 290)
+    m['record_call']('tushare', False, 300)
+    m['record_call']('tushare', False, 310)
+    m['record_call']('tushare', False, 290)
 
-    metrics = get_metrics()
+    metrics = m['get_metrics']()
     sources = metrics['data_sources']
     assert len(sources) == 2, f'应含 2 个数据源健康记录: {sources}'
 
@@ -62,9 +80,9 @@ def test_metrics_data_sources_fields_complete():
     assert x['avg_latency_ms'] == 150.0
 
 
-def test_metrics_no_calls_returns_empty_sources():
+def test_metrics_no_calls_returns_empty_sources(_isolated_business_modules):
     """无任何数据源调用时返回空列表（前端显示暂无记录）"""
-    metrics = get_metrics()
+    metrics = _isolated_business_modules['get_metrics']()
     assert metrics['data_sources'] == []
 
 

@@ -24,6 +24,7 @@ def job_env(tmp_path, monkeypatch):
     jobs.reset_jobs()
     yield jobs
     jobs.reset_jobs()
+    jobs.shutdown()  # V5.3.0 (T-5.3.0.4): 停机 worker, 防跨测试线程残留
 
 
 def _wait(jobs, job_id, timeout=6.0):

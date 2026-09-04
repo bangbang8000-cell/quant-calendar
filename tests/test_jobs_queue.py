@@ -46,6 +46,7 @@ def jobs(tmp_path, monkeypatch):
     jobs._registry.clear()
     jobs._registry.update(_saved_registry)
     jobs.reset_jobs()
+    jobs.shutdown()  # V5.3.0 (T-5.3.0.4): 停机 worker, 防跨测试线程残留
 
 
 def _wait(jobs, job_id, timeout=5.0):
@@ -220,6 +221,26 @@ def test_progress_clamped(jobs):
     j = _wait(jobs, jid)
     assert 0 <= j["progress"] <= 100
 
+
+
+# ─── V5.3.0 (T-5.3.0.4): worker 停机隔离 ────────────────────────────
+
+def test_shutdown_stops_worker(jobs):
+    """shutdown 后旧 worker 线程真正退出 (不残留跨测试执行)"""
+    jobs.shutdown()
+    assert jobs._worker is None, "shutdown 后 _worker 应置空"
+    # 提交任务会经 _wake_worker 重启新 worker; 此处验证重启行为正常
+    jid = jobs.create_task("test-echo", {})
+    j = _wait(jobs, jid, timeout=5)
+    assert j["status"] == "success", f"重启后任务应完成: {j['status']}"
+
+
+def test_wake_worker_after_shutdown(jobs):
+    """shutdown 后再次提交任务 → _wake_worker 重启 worker, 任务可完成"""
+    jobs.shutdown()
+    jid = jobs.create_task("test-echo", {})
+    j = _wait(jobs, jid, timeout=5)
+    assert j["status"] == "success", f"重启后任务应完成: {j['status']}"
 
 
 # ═══════════════════ V5.0.7 (T-5.0.72): API 集成 ═══════════════════
