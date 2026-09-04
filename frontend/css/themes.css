@@ -3998,15 +3998,15 @@ text {
 /* V5.3.0 (T-5.3.5.2): 今日一屏 机会/风险信号角标条 */
 .today-signals { display: flex; gap: 8px; margin-bottom: 12px; }
 .today-signal-chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 999px; cursor: pointer;
     font-size: var(--font-xs); border: 1px solid var(--border-light);
     transition: opacity 0.2s var(--easing-standard);
 }
 .today-signal-chip:hover { opacity: 0.85; }
 .today-signal-chip.sig-opp { color: var(--sem-opportunity); background: color-mix(in srgb, var(--sem-opportunity) 10%, transparent); border-color: color-mix(in srgb, var(--sem-opportunity) 30%, transparent); }
 .today-signal-chip.sig-risk { color: var(--sem-risk); background: color-mix(in srgb, var(--sem-risk) 10%, transparent); border-color: color-mix(in srgb, var(--sem-risk) 30%, transparent); }
-.today-signal-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.today-signal-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .today-signal-text { line-height: 1.2; }
 .today-cell {
     background: var(--bg-card-header);
