@@ -1795,3 +1795,17 @@ def test_brand_quant_calendar_unified():
     # 收起态 sidebar-logo 不再有 ::after emoji 伪元素 (logo 与 emoji 双图标问题)
     css = _read("css/themes.css")
     assert "sidebar-logo::after" not in css, "收起态不应有 emoji 伪元素"
+
+
+# V5.3.0 (T-5.3.1.1): 页面头全站统一守卫
+
+def test_all_main_pages_have_unified_page_header():
+    """5 个主页面组件根级均含统一 .page-header + .page-title (与 5.2.5 基线一致)。
+
+    守卫: 未来新页面/重构不得偏离统一页头模式; 页面标题来自 i18n (t('...')) 或既有文案。
+    """
+    for rel in ["research-page.js", "strategies-page.js", "shortterm-page.js",
+                "ai-page.js", "calendar-page.js", "system-page.js"]:
+        src = _read("js/components/" + rel)
+        assert 'class="page-header"' in src, f"{rel} 缺统一 .page-header (T-5.3.1.1)"
+        assert 'class="page-title"' in src, f"{rel} 缺 .page-title (T-5.3.1.1)"

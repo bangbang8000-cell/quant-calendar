@@ -18,10 +18,13 @@
 
                     <!-- 日/周/月/年视图 -->
                     <template v-if="currentSubPage !== 'pool'">
-                        <!-- 快捷导航按钮 -->
-                        <div class="cal-nav flex-c-gap-12-mb16-wrap">
-                            <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« {{ t('calendar.prev') }}{{ viewUnit }}</el-button>
-                            <el-button size="small" @click="navigateDate(1)" :disabled="!canNavNext">{{ t('calendar.next') }}{{ viewUnit }} »</el-button>
+                        <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
+                        <div class="page-header">
+                            <div class="page-title">{{ t('nav.calendar') }}</div>
+                            <div class="flex-c-gap-12">
+                                <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« {{ t('calendar.prev') }}{{ viewUnit }}</el-button>
+                                <el-button size="small" @click="navigateDate(1)" :disabled="!canNavNext">{{ t('calendar.next') }}{{ viewUnit }} »</el-button>
+                            </div>
                         </div>
 
                         <div class="card">

@@ -10,6 +10,10 @@
     name: 'qc-system-page',
     template: `
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
+                    <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
+                    <div class="page-header">
+                        <div class="page-title">{{ t('nav.system') }}</div>
+                    </div>
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">
                             <span>{{ t('system.title') }}</span>
