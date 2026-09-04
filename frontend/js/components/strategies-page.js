@@ -31,6 +31,16 @@
                                 <span class="today-hero-status">{{ tradingStatus }}</span>
                             </div>
                         </div>
+                        <!-- V5.3.0 (T-5.3.5.2): 机会/风险信号角标条 (纯计算) -->
+                        <div v-if="todaySignals.length" class="today-signals mt-8">
+                            <div v-for="(sg, i) in todaySignals" :key="i"
+                                 class="today-signal-chip"
+                                 :class="sg.kind === 'opportunity' ? 'sig-opp' : 'sig-risk'"
+                                 @click="sg.action">
+                                <span class="today-signal-dot"></span>
+                                <span class="today-signal-text">{{ sg.source }}·{{ sg.text }}</span>
+                            </div>
+                        </div>
                         <div class="today-grid">
                             <!-- 美林时钟 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'merrill'">
@@ -853,6 +863,28 @@
           });
         }
         return items;
+      });
+
+      // V5.3.0 (T-5.3.5.2 / FR-5.3.5.2): 今日一屏信号化 — 机会/风险角标 (纯计算, 不经过 AI)
+      const todaySignals = computed(() => {
+        const signals = [];
+        const mName = merrill.value.name || '';
+        const timing = merrill.value.timing || {};
+        const bullStages = ['复苏', '成长', '过热'];
+        const bearStages = ['滞胀', '衰退'];
+        if (bullStages.some(s => mName.includes(s))) signals.push({ kind: 'opportunity', source: '美林', text: mName + ' 顺势', action: () => { state.currentSubPage.value = 'merrill'; } });
+        if (bearStages.some(s => mName.includes(s))) signals.push({ kind: 'risk', source: '美林', text: mName + ' 防守', action: () => { state.currentSubPage.value = 'merrill'; } });
+        if (timing.progress_percent && timing.progress_percent > 100) signals.push({ kind: 'risk', source: '美林', text: '阶段超期', action: () => { state.currentSubPage.value = 'merrill'; } });
+        const pc = dashboard.value.pool_changes || {};
+        const net = (pc.new_count || 0) - (pc.out_count || 0);
+        if (net >= 3) signals.push({ kind: 'opportunity', source: '池变动', text: '净入池 +' + net, action: () => { state.statusFilter.value = 'new'; state.currentPage.value = 'calendar'; state.currentSubPage.value = 'pool'; } });
+        else if (net <= -3) signals.push({ kind: 'risk', source: '池变动', text: '净出池 ' + net, action: () => { state.currentSubPage.value = 'consensus'; } });
+        const sent = market.value.market_sentiment;
+        const st = (sent && sent.text) || '';
+        if (st.includes('乐观') || st.includes('积极') || st.includes('亢奋')) signals.push({ kind: 'opportunity', source: '情绪', text: st, action: () => { state.currentSubPage.value = 'market'; } });
+        if (st.includes('悲观') || st.includes('恐慌') || st.includes('低迷')) signals.push({ kind: 'risk', source: '情绪', text: st, action: () => { state.currentSubPage.value = 'market'; } });
+        for (const s of health.value.filter(x => x.degraded)) signals.push({ kind: 'risk', source: '数据', text: healthName(s.name) + ' 降级', action: () => { if (window.__quantGoPage) window.__quantGoPage('system', ''); else { state.currentPage.value = 'system'; } } });
+        return signals;
       });
 
       // v3.22-I4: 美林时间轴 (显式解包 ref)
