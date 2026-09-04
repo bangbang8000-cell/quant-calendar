@@ -5053,6 +5053,12 @@ text {
 [data-density="compact"] .today-highlight-item { gap: 8px; font-size: var(--font-xs); }
 [data-density="compact"] .stat-label { font-size: var(--font-xs); }
 [data-density="compact"] .onboarding-card { padding: 16px 20px; }
+/* V5.3.0 (T-5.3.2.4): 信息密度 spacious — 放宽卡片间距 (宽松档) */
+[data-density="spacious"] .card { padding: 24px 28px; }
+[data-density="spacious"] .card-title { margin-bottom: 16px; }
+[data-density="spacious"] .stat-label { font-size: var(--font-base); }
+[data-density="spacious"] .today-highlight-item { gap: 16px; font-size: var(--font-base); }
+[data-density="spacious"] .onboarding-card { padding: 28px 32px; }
 .portfolio-rule-type { font-weight: var(--font-semibold); color: var(--text-primary); min-width: 90px; }
 .portfolio-rule-msg { color: var(--text-secondary); }
 

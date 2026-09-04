@@ -66,3 +66,30 @@ def test_frontend_applies_data_density():
 def test_css_has_compact_density_rules():
     css = _read(os.path.join("css", "themes.css"))
     assert '[data-density="compact"]' in css
+
+
+# ═════════════════ V5.3.0 (T-5.3.2.4 / FR-5.3.2.4): 三档信息密度 ═════════════════
+
+def test_backend_allows_spacious(prefs_backend):
+    """三档: 后端接受 spacious (宽松档)"""
+    assert prefs_backend.save_user_preferences("alice", {"info_density": "spacious"})
+    assert prefs_backend.get_user_preferences("alice")["info_density"] == "spacious"
+
+
+def test_backend_allowed_values_include_three(prefs_backend):
+    """PREFERENCE_ALLOWED_VALUES 三档齐备"""
+    allowed = prefs_backend.PREFERENCE_ALLOWED_VALUES["info_density"]
+    assert {"compact", "comfortable", "spacious"} <= set(allowed), \
+        f"info_density 应为三档, 实际: {allowed}"
+
+
+def test_frontend_density_three_values():
+    """前端 PREFERENCE_VALUES 含 spacious"""
+    src = _read(os.path.join("js", "preferences.js"))
+    assert "spacious" in src, "前端应支持 spacious 宽松档"
+
+
+def test_css_has_spacious_density_rules():
+    """CSS 含 [data-density=spacious] 规则 (宽松档生效)"""
+    css = _read(os.path.join("css", "themes.css"))
+    assert '[data-density="spacious"]' in css, "CSS 应含 spacious 密度规则"

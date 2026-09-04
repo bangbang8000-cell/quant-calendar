@@ -226,7 +226,7 @@ PREFERENCE_ALLOWED_VALUES = {
     "theme": {"light", "dark", "system"},
     "chart_period": {"daily", "weekly", "monthly"},
     "language": {"zh-CN", "en", "ja", "ko", "zh-TW"},
-    "info_density": {"comfortable", "compact"},
+    "info_density": {"comfortable", "compact", "spacious"},  # V5.3.0 (T-5.3.2.4): 三档
 }
 
 
