@@ -1034,6 +1034,34 @@
                             <div class="text-sm-tertiary" v-else>暂无调度任务运行记录（服务刚重启时为空，随定时任务自动填充）</div>
                         </div>
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
+                        <!-- V5.3.0 (T-5.3.3.5 / FR-5.3.3.5): 任务队列面板 (批量任务进度可见可取消) -->
+                        <div class="section-block-top">
+                            <div class="section-title-base flex-between">
+                                <span>🗂 任务队列</span>
+                                <el-button size="small" text @click="loadJobQueue">刷新</el-button>
+                            </div>
+                            <div class="sys-health-grid" v-if="jobQueue.length">
+                                <div class="sys-health-card" v-for="j in jobQueue" :key="j.job_id">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ j.task_type }}</span>
+                                        <span :class="j.status === 'completed' ? 'chip-success' : (j.status === 'running' || j.status === 'pending') ? 'chip-info' : 'chip-danger'">{{ jobStatusText(j.status) }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">进度</span>
+                                        <el-progress :percentage="Number(j.progress) || 0" :stroke-width="10" :status="j.status === 'failed' ? 'exception' : (j.status === 'completed' ? 'success' : '')" style="width: 160px"></el-progress>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.message">
+                                        <span class="text-sm-tertiary">状态</span>
+                                        <span class="sys-health-meta">{{ j.message }}</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.status === 'running' || j.status === 'pending'">
+                                        <el-button size="small" type="danger" text @click="cancelJob(j.job_id)">取消任务</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无队列任务（批量评估/回测等长任务会出现在这里）</div>
+                        </div>
+                        <!-- V5.3.0 (T-5.3.3.5): 任务队列面板 代码结束 -->
                         <!-- v3.17.12: 备份与磁盘 -->
                         <!-- v3.17.6: 立即备份按钮 (createBackup 复用 feature 子页逻辑) -->
                         <div class="section-block-top">
@@ -1324,6 +1352,30 @@
       const healthLoading = Vue.ref(false);
       const healthError = Vue.ref(null);
       const healthUpdatedAt = Vue.ref(null);
+      // V5.3.0 (T-5.3.3.5 / FR-5.3.3.5): 任务队列 — 批量任务进度可见可取消
+      const jobQueue = Vue.ref([]);
+      const jobQueueTimer = Vue.ref(null);
+      function jobStatusText(s) {
+        return s === 'completed' ? '完成' : s === 'running' ? '运行中' : s === 'pending' ? '排队中' : s === 'cancelled' ? '已取消' : '失败';
+      }
+      async function loadJobQueue() {
+        try {
+          const res = await fetch('/api/jobs?limit=20');
+          const data = await res.json();
+          if (data && data.success) jobQueue.value = (data.data && data.data.tasks) || [];
+        } catch (e) { console.warn('[system] 加载任务队列失败:', e); }
+      }
+      async function cancelJob(jobId) {
+        try {
+          await fetch('/api/jobs/' + jobId + '/cancel', { method: 'POST' });
+          ElementPlus.ElMessage.success('已请求取消任务');
+          loadJobQueue();
+        } catch (e) { console.warn('[system] 取消任务失败:', e); }
+      }
+      function _startJobQueuePolling() {
+        loadJobQueue();
+        jobQueueTimer.value = window.setInterval(loadJobQueue, 15000);
+      }
       const freshnessData = Vue.ref({ items: [] });
       const healHistory = Vue.ref([]);
       const startupReport = Vue.ref(null);
@@ -1617,6 +1669,9 @@
       const VIEW_OFF_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
       function viewIcon(revealed) { return revealed ? VIEW_OFF_ICON : VIEW_ICON; }
 
+      // V5.3.0 (T-5.3.3.5): 进入系统页即轮询任务队列 (15s 刷新, 批量长任务进度可见)
+      _startJobQueuePolling();
+
       return {
         ...state,
         analyticsMaxViews,
@@ -1627,6 +1682,8 @@
         openApiKeys, openApiKeyName, openApiKeyRole, newOpenApiKey, openApiLoading,
         loadOpenApiKeys, generateOpenApiKey, copyOpenApiKey, revokeOpenApiKey,
         healthRows, healthClass, fmtAge,
+        // V5.3.0 (T-5.3.3.5): 任务队列
+        jobQueue, loadJobQueue, cancelJob, jobStatusText,
         auditLogs, auditLoading, loadAuditLogs,
         // V5.0 T-5.0.6: 健康与可靠性面板
         healthLoading, healthError, healthUpdatedAt,
