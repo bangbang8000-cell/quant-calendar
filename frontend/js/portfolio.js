@@ -202,6 +202,18 @@
 
       // ─── 收益曲线 (ECharts 折线, 复用 charts.js 渲染模式) ────
       const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+      // V5.3.0 (T-5.3.2.3 / FR-5.3.2.3): 逐日回撤序列 (peak-to-trough, % 负值)
+      function computeDrawdown(nav) {
+        if (!nav || !nav.length) return [];
+        let peak = nav[0] || 0;
+        const out = [];
+        for (let i = 0; i < nav.length; i++) {
+          const v = nav[i] || 0;
+          if (v > peak) peak = v;
+          out.push(peak > 0 ? Math.round(((v - peak) / peak) * 1000) / 10 : 0);
+        }
+        return out;
+      }
       // qc-allow-hardcode: 以下 #hex 为 ECharts 运行时兜底字面量, 非静态硬编码
       function buildEquityOption() {
         const themeColors = {
@@ -230,9 +242,13 @@
               return s;
             }
           },
-          grid: { left: 48, right: 20, top: 20, bottom: 30 },
+          grid: { left: 48, right: 48, top: 20, bottom: 30 },
           xAxis: { type: 'category', data: d.dates, boundaryGap: false, axisLabel: { fontSize: 10, color: themeColors.textSecondary }, axisLine: { lineStyle: { color: themeColors.border } } },
-          yAxis: { type: 'value', scale: true, axisLabel: { fontSize: 10, color: themeColors.textSecondary }, splitLine: { lineStyle: { color: themeColors.border, type: 'dashed' } } },
+          yAxis: [
+            { type: 'value', scale: true, name: '净值', axisLabel: { fontSize: 10, color: themeColors.textSecondary }, splitLine: { lineStyle: { color: themeColors.border, type: 'dashed' } } },
+            // V5.3.0 (T-5.3.2.3): 回撤副轴 (右侧, %) — 净值+回撤双轴专业图
+            { type: 'value', name: '回撤%', axisLabel: { fontSize: 10, color: themeColors.down, formatter: '{value}%' }, splitLine: { show: false } },
+          ],
           series: [{
             name: '组合净值',
             type: 'line',
@@ -242,6 +258,16 @@
             lineStyle: { color: themeColors.primary, width: 2 },
             itemStyle: { color: themeColors.primary },
             areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: getCSSVar('--primary-rgb') ? 'rgba(' + getCSSVar('--primary-rgb') + ',0.25)' : 'rgba(37,99,235,0.25)' }, { offset: 1, color: getCSSVar('--primary-rgb') ? 'rgba(' + getCSSVar('--primary-rgb') + ',0.02)' : 'rgba(37,99,235,0.02)' }]) },
+          }, {
+            name: '回撤',
+            type: 'line',
+            yAxisIndex: 1,
+            data: computeDrawdown(d.equity),
+            smooth: true,
+            showSymbol: false,
+            lineStyle: { color: themeColors.down, width: 1.5 },
+            itemStyle: { color: themeColors.down },
+            areaStyle: { color: 'rgba(46,125,50,0.15)' },
           }],
         };
       }

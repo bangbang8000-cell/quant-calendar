@@ -420,21 +420,106 @@
   const disposeSimpleChart = disposePortfolio;
   const resizeSimpleChart = resizePortfolio;
 
+  // ─── V5.3.0 (T-5.3.2.3 / FR-5.3.2.3): 专业图表 option 工厂 (纯函数, node 可测) ───
+  // 组合净值 + 回撤双轴: 主轴净值(折线) + 副轴回撤(面积, 0% 基准以下)。
+  // nav 与 drawdown 数组等长; drawdown 以 % 计 (负值向下)。
+  function buildNavDrawdownOption(nav, drawdown, dates, opts) {
+    opts = opts || {};
+    const ddColor = opts.drawdownColor || '#C62828';
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: [opts.navLabel || '净值', opts.ddLabel || '回撤'] },
+      grid: { left: 48, right: 48, top: 32, bottom: 28 },
+      xAxis: { type: 'category', data: dates || [], boundaryGap: false },
+      yAxis: [
+        { type: 'value', scale: true, name: opts.navName || '净值', axisLabel: { formatter: '{value}' } },
+        { type: 'value', name: opts.ddName || '回撤%', axisLabel: { formatter: '{value}%' } },
+      ],
+      series: [
+        { name: opts.navLabel || '净值', type: 'line', data: nav || [], showSymbol: false,
+          smooth: true, lineStyle: { width: 2 } },
+        { name: opts.ddLabel || '回撤', type: 'line', yAxisIndex: 1, data: drawdown || [],
+          showSymbol: false, areaStyle: { opacity: 0.25, color: ddColor },
+          lineStyle: { color: ddColor, type: 'solid', width: 1.5 } },
+      ],
+    };
+  }
+
+  // 因子 IC 分位区间带: 中位线 + 25/75 分位上下界 (两线围成 band)。
+  // data: { dates, median[], q25[], q75[] }
+  function buildIcBandOption(data, opts) {
+    opts = opts || {};
+    const bandColor = opts.bandColor || '#1976d2';
+    const dates = (data && data.dates) || [];
+    const median = (data && data.median) || [];
+    const q25 = (data && data.q25) || [];
+    const q75 = (data && data.q75) || [];
+    // ECharts 分位带: 用 q25 为下沿 + q75-q25 为 band (stack)。
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: [opts.medianLabel || '中位IC', opts.bandLabel || '25–75分位'] },
+      grid: { left: 48, right: 32, top: 32, bottom: 28 },
+      xAxis: { type: 'category', data: dates, boundaryGap: false },
+      yAxis: { type: 'value', name: 'IC', axisLabel: { formatter: '{value}' } },
+      series: [
+        { name: opts.medianLabel || '中位IC', type: 'line', data: median,
+          showSymbol: false, lineStyle: { width: 2, color: bandColor } },
+        { name: opts.bandLabel || '25–75分位', type: 'line', data: q25,
+          showSymbol: false, lineStyle: { opacity: 0 }, stack: 'ic-band',
+          areaStyle: { color: bandColor, opacity: 0.12 } },
+        { name: '_bandH', type: 'line', data: q75.map(function (v, i) { return v - (q25[i] || 0); }),
+          showSymbol: false, lineStyle: { opacity: 0 }, stack: 'ic-band',
+          areaStyle: { color: bandColor, opacity: 0.12 } },
+      ],
+    };
+  }
+
+  // 情绪周期趋势带: 情绪值中轴 + 上/下界 (band), markLine 标过热/冰点分界。
+  // data: { dates, value[], upper[], lower[] }
+  function buildSentimentBandOption(data, opts) {
+    opts = opts || {};
+    const color = opts.color || '#7c3aed';
+    const dates = (data && data.dates) || [];
+    const value = (data && data.value) || [];
+    const upper = (data && data.upper) || [];
+    const lower = (data && data.lower) || [];
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: [opts.valueLabel || '情绪', opts.bandLabel || '过热/冰点带'] },
+      grid: { left: 48, right: 32, top: 32, bottom: 28 },
+      xAxis: { type: 'category', data: dates, boundaryGap: false },
+      yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}' } },
+      series: [
+        { name: opts.valueLabel || '情绪', type: 'line', data: value,
+          showSymbol: false, smooth: true, lineStyle: { width: 2.5, color: color } },
+        { name: opts.bandLabel || '过热/冰点带', type: 'line', data: upper,
+          showSymbol: false, lineStyle: { opacity: 0 }, stack: 'senti-band',
+          areaStyle: { color: color, opacity: 0.1 } },
+        { name: '_bandL', type: 'line', data: lower.map(function (v, i) { return (upper[i] || 0) - v; }),
+          showSymbol: false, lineStyle: { opacity: 0 }, stack: 'senti-band',
+          areaStyle: { color: color, opacity: 0.1 } },
+      ],
+    };
+  }
+
   const chartsApi = {
     renderKlineChart,
     renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart,
     renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest,
     renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio,
     renderSimpleChartTo, redrawSimpleChart, disposeSimpleChart, resizeSimpleChart,
+    buildNavDrawdownOption, buildIcBandOption, buildSentimentBandOption,
     downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette,
-    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, renderSimpleChartTo, redrawSimpleChart, disposeSimpleChart, resizeSimpleChart, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette }; },
+    init() { return { renderKlineChart, renderKlineTo, disposeKline, resizeKline, zoomKline, redrawKline, getKlineChart, renderBacktestTo, redrawBacktest, disposeBacktest, resizeBacktest, renderPortfolioTo, redrawPortfolio, disposePortfolio, resizePortfolio, renderSimpleChartTo, redrawSimpleChart, disposeSimpleChart, resizeSimpleChart, buildNavDrawdownOption, buildIcBandOption, buildSentimentBandOption, downsampleSeries, ensureEcharts, KLINE_MAX_RENDER_POINTS, chartPalette }; },
   };
   if (typeof window !== 'undefined') {
     if (!window.__quantModules) window.__quantModules = {};
     window.__quantModules.charts = chartsApi;
   }
   // v3.17.9: 降采样纯函数供 Node/pytest 单测（tests/test_performance.py）
+  // V5.3.0 (T-5.3.2.3): 专业图表 option 工厂亦导出供 node 单测
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { downsampleSeries, KLINE_MAX_RENDER_POINTS };
+    module.exports = { downsampleSeries, KLINE_MAX_RENDER_POINTS,
+                       buildNavDrawdownOption, buildIcBandOption, buildSentimentBandOption };
   }
 })();
