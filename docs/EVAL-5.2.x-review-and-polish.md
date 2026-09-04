@@ -1,8 +1,8 @@
 # 5.2.x 短线复盘主线 — 检查·打磨·优化 评估报告与计划
 
-> 版本：v5.2.4（086bb61）｜ 评估人：DSH 开发会话 ｜ 日期：2026-09-04
+> 版本：v5.2.4（086bb61）→ **v5.2.10（26f8f91）** ｜ 评估人：DSH 开发会话 ｜ 评估日期：2026-09-04 ｜ 打磨完成日期：2026-09-04
 > 范围：另一会话开发的 5.2.0~5.2.4 短线复盘主线（backend/shortterm/ 24 模块 + API 455 行 + 前端 shortterm-page 856 行 + 16 测试文件）
-> 状态：**评估完成，等待用户批准后开发+测试**
+> 状态：**评估完成 ✅ 打磨完成 ✅ 出口完成 ✅** — 6 项 HANDOVER 待办全部落地（5.2.5~5.2.10），全量测试 2775 passed，双端（dev/ops）冒烟 0 pageerror，synology/GitHub 同步到位。详见 §六/§七。
 
 ---
 
@@ -11,6 +11,21 @@
 5.2.x 短线复盘主线**质量评级：良**。架构清晰、数据诚实性哲学贯彻到位（空≠0/失败信封/覆盖率闸门/定稿优先）、测试覆盖扎实（16 文件 187 用例 + 全量 2768 绿）、与原始程序模式一致（CSS 令牌/组件约定/i18n 5语/emoji 图标惯例/数值≤2位）。
 
 发现的待打磨点**无数据级错误**，主要是：**官方 HANDOVER 已承认的 6 项剩余打磨**（T-5.2.49/50/51/53/55/56）+ 少量一致性细节。详见 §五。
+
+### ✅ 完成情况（2026-09-04 更新）
+
+本周期（5.2.5~5.2.10，用户请求「版本从 5.2.5 开始到 5.2.10 结束 + 解决复盘看板无法加载数据的问题」）**已全部完成**：
+
+| 版本 | 落地任务 | 提交 |
+|---|---|---|
+| 5.2.5 | **T-5.2.57 复盘看板 loading 修复**（根因：overview/review 并行加载共享竞态序号互相覆盖）+ **T-5.2.49 统一页面头** | f3895ed + 1bc3eb6 |
+| 5.2.6 | T-5.2.50 空错态巡检（emotion/facts 降级 reason 可见） | 362e8bd |
+| 5.2.7 | T-5.2.51 移动端 375px 适配确认 + 回归守护 | b688736 |
+| 5.2.8 | T-5.2.53 竞态防护推广（research 10 + strategies 3 函数 seq 序号） | 04149d0 |
+| 5.2.9 | T-5.2.55 诚实性护栏补测 + 降级信封统一（13 处 [⚠️ 前缀） | a958fa4 |
+| 5.2.10 | T-5.2.56 无障碍（icon 按钮 aria-label + 键盘可达） | 7a587d9 |
+
+质量门禁：**全量 2775 passed**（基线 2768，+7）、frontend_consistency **120 passed**（基线 115，+5）、shortterm 专项 **189 用例**（基线 187，+2）。ops/dev 双端重启后 CDP 冒烟 **0 pageerror**（ops 看板 8 卡 / dev loading none）。synology + GitHub 同步 086bb61..26f8f91。出口详见 §六阶段 D。
 
 ---
 
@@ -111,51 +126,51 @@ shortterm_pools / shortterm_lhb / shortterm_sector_flow 等表，JSON 列存归�
 | # | 任务 | 内容 | 验收 |
 |---|---|---|---|
 | A1 | T-5.2.49 统一页面头 | 短线复盘 7 子页 page-header 风格统一（标题/日期选择/刷新按钮布局对齐既有页面） | ✅ 5.2.5 完成：market-review/scan 补 page-header（返回/刷新），其余 5 子页已有 |
-| A2 | T-5.2.50 空错态巡检 | 全子页空态/错误态用 qc-state-panel 统一（已部分覆盖，补全 ztpool/intraday/scan 边界） | 空数据/失败显示一致 |
-| A3 | T-5.2.51 移动端 375px | shortterm-page 响应式适配（卡片/表格/弹性布局在 375px 无溢出） | e2e 信息性 + 手测 |
-| A4 | T-5.2.53 竞态防护推广 | 将 shortterm-page 的 _reqSeq 模式推广到 research/strategies 页面 | 快速切换不覆盖旧数据 |
-| A5 | T-5.2.55 诚实性护栏补测 | 补数据诚实性测试（空≠0/失败信封/partial 标注）到 §5.8 全场景 | 测试资产增加 |
-| A6 | T-5.2.56 无障碍 | 对比度 ≥4.5:1、键盘焦点、aria 标注 | 审计清单过 |
+| A2 | T-5.2.50 空错态巡检 | 全子页空态/错误态用 qc-state-panel 统一（已部分覆盖，补全 ztpool/intraday/scan 边界） | ✅ 5.2.6 完成：emotionNotice/factsNotice 降级 reason 可见，接口失败不再静默 — |
+| A3 | T-5.2.51 移动端 375px | shortterm-page 响应式适配（卡片/表格/弹性布局在 375px 无溢出） | ✅ 5.2.7 完成：responsive.css 3-tier + CDP 375px 实测无横向溢出 + 回归守护 |
+| A4 | T-5.2.53 竞态防护推广 | 将 shortterm-page 的 _reqSeq 模式推广到 research/strategies 页面 | ✅ 5.2.8 完成：research 10 + strategies 3 加载函数加 seq 序号（node --check OK） |
+| A5 | T-5.2.55 诚实性护栏补测 | 补数据诚实性测试（空≠0/失败信封/partial 标注）到 §5.8 全场景 | ✅ 5.2.9 完成：降级信封统一 13 处 [⚠️ 前缀 + 3 个诚实性测试（降级/overview 透传/前端 —） |
+| A6 | T-5.2.56 无障碍 | 对比度 ≥4.5:1、键盘焦点、aria 标注 | ✅ 5.2.10 完成：6 处 icon 按钮 aria-label + ✕ 键盘可达（Enter/Space）+ 无障碍守卫测试 |
 
 ### 阶段 B：效率与健壮性（P2，审计问题驱动）
 
 | # | 任务 | 内容 |
 |---|---|---|
-| B1 | 缓存一致性 | 确认 sector-flow TTL 缓存与 16:05 定稿入库不冲突；overview/emotion 服务端缓存新鲜度 |
-| B2 | 数据源健壮性 | 核对东财反爬兜底链（stock_sector_fund_flow_rank → 同花顺）超时/重试设置 |
-| B3 | 大 JSON 传输 | 龙虎榜/板块资金 200+ 行分页已是前端分页；确认后端无全量重复计算 |
+| B1 | 缓存一致性 | ✅ 审计确认：overview 服务端 TTL 今日 600s/历史 3600s（V5.2.4 已实现）；sector-flow 无独立 TTL 缓存 → 与 16:05 定稿无冲突 |
+| B2 | 数据源健壮性 | ✅ 审计确认：东财→同花顺兜底链 V5.2.2 已有（stock_sector_fund_flow_rank → stock_fund_flow_industry） |
+| B3 | 大 JSON 传输 | ✅ 审计确认：龙虎榜/板块资金前端分页已有（4 处），无全量重复计算 |
 
-### 阶段 C：测试资产与门禁（P2）
+### 阶段 C：测试资产与门禁（P2）— ✅ 完成
 
-- 5.2.x 已有 16 文件 187 用例 + 全量 2768 绿；打磨新增测试对应各任务
-- 联动守卫/风格统一守卫/缓存守卫/竞态守卫/移动端（TEST-PLAN-v5.2.4 §1 门禁增量）逐一补静态/集成测试
+- 5.2.x 专项：16 文件 **189** 用例（基线 187，+2）；全量 **2775** passed（基线 2768，+7）；frontend_consistency **120** passed（基线 115，+5）
+- 新增门禁：竞态守卫（overview/review 独立序号）、移动端 375 守卫、诚实性降级信封、前端 — 渲染、无障碍 aria 守卫——全部 TDD（先失败→实现→绿）
 
-### 阶段 D：出口（P1，全部完成后）
+### 阶段 D：出口（P1，全部完成后）— ✅ 完成（2026-09-04）
 
-1. 全量测试（-m "not e2e"）全绿 + test_frontend_consistency 115 passed
-2. npm run build → dist 入库
-3. 双端（dev/ops）重启 + 冒烟 0 pageerror（金标准）
-4. 同步：dev → synology → ops → GitHub（用户批准后）
-5. 可选：bump 版本 + push tag（v5.2.5）触发 Docker（待用户确认）
+1. ✅ 全量测试（-m "not e2e"）全绿 **2775 passed** + test_frontend_consistency **120 passed**
+2. ✅ npm run build → dist 入库（每次 build 新 hash 入库）
+3. ✅ 双端（dev/ops）重启 + 冒烟 0 pageerror（金标准）：ops 看板 8 卡全绿 / dev loading none
+4. ✅ 同步：dev → synology → ops → GitHub（用户批准后）086bb61..26f8f91 三处全部到位
+5. ⬜ 可选：Docker push tag（v5.2.5）→ **未执行**（报告标记「待用户确认」，用户未要求，不阻塞）
 
 ---
 
 ## 七、测试与验收
 
-### 7.1 基线（已确认）
-- 全量测试：2768 passed, 2 skipped（-m "not e2e"）
-- test_frontend_consistency：115 passed（含 shortterm 类定义守护 10 处）
-- 5.2.x 专项：16 文件 187 用例全绿
+### 7.1 基线（已确认）→ 打磨后现状（2026-09-04）
+- 全量测试：2768 → **2775 passed**, 2 skipped（-m "not e2e"）
+- test_frontend_consistency：115 → **120 passed**（含 shortterm 类定义守护 10 处）
+- 5.2.x 专项：16 文件 187 → **189 用例全绿**
 
 ### 7.2 打磨测试策略（每项 TDD）
 - 后端改动：先写失败测试 → 实现 → 跑通 + commit（Conventional Commits + v5.2 前缀）
 - 前端改动：改后 npm run build → dist 入库 → test_frontend_consistency（金标准）
 - 门禁增量（TEST-PLAN-v5.2.4 §1）：联动守卫/风格统一守卫/缓存守卫/竞态守卫/移动端逐一补测试
 
-### 7.3 出口标准（全部完成后）
-1. 全量测试全绿 + 前端一致性 115 passed
-2. npm run build 成功 + dist 入库
-3. 双端（dev/ops）重启 + 冒烟 0 pageerror
+### 7.3 出口标准（全部完成后）— ✅ 全部达标（2026-09-04）
+1. ✅ 全量测试全绿 2775 + 前端一致性 120 passed
+2. ✅ npm run build 成功 + dist 入库
+3. ✅ 双端（dev/ops）重启 + 冒烟 0 pageerror（ops PID 3964330 / dev PID 3986705）
 4. 同步：dev → synology → ops → GitHub（用户批准）
 5. 可选：bump v5.2.5 + push tag → Docker（用户确认）
 
@@ -166,4 +181,6 @@ shortterm_pools / shortterm_lhb / shortterm_sector_flow 等表，JSON 列存归�
 - 本报告基于第一手源码审计（backend/shortterm/ 核心模块 + API + scheduler + 前端 shortterm-page + 文档 + 测试全绿确认）
 - 曾启动两个专项 subagent 深化审计（后端数据链路/前端一致性），因运行超时未返回完整报告，已中断；本报告结论以第一手审计为准，未依赖 subagent 输出
 - 待打磨项与 HANDOVER 官方「下一步/待办」（T-5.2.49/50/51/53/55/56 + Docker 镜像）交叉核对一致
+- 本周期实际落地 6 项全部完成 + 额外完成 **T-5.2.57 复盘看板 loading 修复**（用户最高优先级，根因=loadOverview/loadReview 共享竞态序号互相覆盖，V5.2.3 高效加载引入）与 **dev 服务配置修正**（.openclaw 旧副本 → dsh-workspace 工作树，发现并修复 systemd 行尾注释陷阱）
+- 遗留（非缺口）：Docker 镜像推送待用户确认；ops admin 口令建议保持轮换
 
