@@ -94,7 +94,7 @@
 
 ### 5.1 开发流程 (TDD 纪律)
 1. 先写门禁测试 → 跑红 → 改源码 → 跑绿
-2. 前端改动: `cd frontend && npm_config_cache=/home/evergreen/dsh-workspace/npm_cache npx vite build`
+2. 前端改动: 零构建 SPA — 直接改 frontend/ 源码, 后端 serve 源码实时生效 (无需 vite build)
 3. 后端改动: `systemctl --user restart quant-calendar-dev.service quant-calendar-ops.service`(无 --reload)
 4. 浏览器强刷(Ctrl+Shift+R) + 冒烟
 5. 全量回归: `cd .../quant-calendar-dev && pytest -q -m 'not e2e'`(注意 cwd 必须 dev 根, 否则误收 workspace 其他 tests)
@@ -114,10 +114,11 @@
 - **测试隔离坑 (未根治)**: test_today_snapshot.py 顶层 import 污染真实 data/; 全量跑前停 dev 或接受(近期全量未受影响)
 - **锁文件漂移**: test_lockfile_consistent 用默认 uv 缓存重编译比对; 漂移时用同条件 `uv pip compile` 重新生成
 - **jobs_queue 测试偶发失败**: 全量顺序敏感(单独跑过), 与功能无关
-- **数据源**: akshare 东财 `stock_sector_fund_flow_rank` 持续反爬 → 同花顺兜底(行业/今日); `stock_lhb_detail_em` 返回 date 对象已归一化; 涨停原因需 `IWENCAI_API_KEY`(未配如实"—")
+- **v5.3 全版本完成**: 5.3.0 工程卫生 / 5.3.1 体验统一 / 5.3.2 视觉设计系统 / 5.3.3 导航效率 / 5.3.4 性能容量 / 5.3.5 智能决策 / 5.3.6 运维发布 — 全部 tag v5.3.N ↔ APP_VERSION + 双端推送
+- **数据源**: akshare 东财
 - **v4.6/v4.7 旧 tag**: 群辉浅克隆拒绝推送(预存问题, 不影响 v5 tags)
 
-## 6. 测试体系 (v5.2.4 基线 2768 用例)
+## 6. 测试体系 (v5.3.6 基线 2896 用例)
 
 - 门禁: test_tokens_defined / contrast / accessibility / spacing_grid(4px) / typography / theme_contrast / tokens_no_hardcode / **market_review/scan 无内联样式** / 版本纪律 / 覆盖率门禁(短线模块 93%)
 - 前端一致性: test_frontend_consistency(令牌/类/注入/i18n/menu) + deps_audit + lockfile
@@ -127,7 +128,7 @@
 ## 7. 下一步 / 待办
 
 - [ ] **v5.2.4 剩余打磨**(低风险巡检, 可作 v5.2.5 或日常消化): T-5.2.49 统一页面头 / T-5.2.50 空错态巡检 / T-5.2.51 移动端 375px / T-5.2.53 竞态防护推广 research/strategies / T-5.2.55 诚实性护栏 5.8 补测 / T-5.2.56 无障碍
-- [ ] **Docker ghcr.io 镜像未推**(v5.2.3/v5.2.4 均未推, 需 CI 或手动 build+push)
+- [ ] **Docker ghcr.io 镜像实际推送**: docker-publish.yml 已就绪 (tag 触发 latest+semver), 但 v5.3.x 未实际跑过 — 下个 tag 验证
 - [ ] (可选) 配置 IWENCAI_API_KEY 点亮涨停原因/题材串
 - [ ] 观察短线 16:05 抓取: 每日验证三池/龙虎榜/prev_zt 入库 + AI 复盘生成
 - [ ] 测试隔离坑根治(顶层 import 污染 data/)
