@@ -854,7 +854,47 @@ class SchedulerCoreMixin:
             await self._shortterm_capture_with_retry(today)
             await asyncio.sleep(60)  # 避开重复触发
 
+    async def intraday_snapshot_task(self):
+        """盘中核验自动采集 (BUG-FIX-2): 交易日在快照时点窗口内自动采三池情绪.
+        每 60s 轮询 intraday.current_snapshot_slot; 已采时点跳过; 非交易日跳过;
+        异常仅打日志不中断其他定时任务。"""
+        while self.running:
+            try:
+                await self._run_intraday_snapshot()
+            except Exception as e:  # noqa: BLE001
+                logger.error("盘中快照自动采集异常: %s", e)
+            await asyncio.sleep(60)
+
+    async def _run_intraday_snapshot(self):
+        """单个轮询周期: 判定是否应采 + 采集落盘。返回 slot 或 None。"""
+        from datetime import datetime
+        from shortterm import intraday, fetchers, store
+        from shortterm.trade_calendar import is_trade_day
+        now = datetime.now()
+        today = now.strftime('%Y-%m-%d')
+        if not is_trade_day(today):
+            return None
+        slot = intraday.current_snapshot_slot(now)
+        if not slot:
+            return None
+        # 已采时点不重复采集
+        if store.load_pool(today, 'intraday_' + slot):
+            return None
+        logger.info("盘中快照自动采集: %s %s", today, slot)
+        zt = fetchers.fetch_zt_pool(today)
+        zb = fetchers.fetch_zb_pool(today)
+        dt_p = fetchers.fetch_dt_pool(today)
+        mood = intraday.snapshot_mood(
+            zt['rows'] if zt.get('available') else None,
+            zb['rows'] if zb.get('available') else None,
+            dt_p['rows'] if dt_p.get('available') else None)
+        mood['pools_available'] = {'zt': zt.get('available'), 'zb': zb.get('available'),
+                                   'dt': dt_p.get('available')}
+        store.save_pool(today, 'intraday_' + slot, [mood])
+        logger.info("盘中快照已落盘: %s %s", today, slot)
+        return slot
     async def _catchup_shortterm(self):
+
         """V5.2.0 (T-5.2.10) 错过补偿: 启动时若 16:05 已过且当日未抓短线 → 补跑一次"""
         await asyncio.sleep(3)  # 等调度器就绪
         try:
@@ -886,6 +926,9 @@ class SchedulerCoreMixin:
         asyncio.create_task(self.daily_market_review_task())
         # V5.2.0 T-5.2.10: 每日 16:05 短线三池/龙虎榜抓取入库
         asyncio.create_task(self.daily_shortterm_capture_task())
+        # BUG-FIX-2: 盘中核验自动采集 (交易日快照时点窗口内)
+        asyncio.create_task(self.intraday_snapshot_task())
+
         # V5.2.0 T-5.2.10: 短线错过补偿(启动时已过 16:05 且当日未抓 → 补跑)
         asyncio.create_task(self._catchup_shortterm())
         # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
