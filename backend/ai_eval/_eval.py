@@ -484,6 +484,100 @@ class AIEvalMixin:
             logger.info(f"决策校准 {stock_code}: {'; '.join(calibrations)}")
 
         return result
+
+    # V5.3.0 (T-5.3.5.1 / FR-5.3.5.1): AI 评估归因 — 纯计算因子归因
+    # 基于 market_data 计算命中/未命中因子清单 + 模型一致性提示; 不经过 LLM, 空数据诚实降级
+    @staticmethod
+    def _build_attribution(market_data: Dict, result: Dict) -> Dict:
+        hits, misses = [], []
+        if not market_data:
+            return {"hits": [], "misses": [], "consistency_note": "数据不足, 归因不可用 [⚠️]", "available": False}
+        md = market_data or {}
+        latest = md.get("latest") or {}
+        price_position = None
+        pr = md.get("price_range") or {}
+        close = pr.get("close") or latest.get("close") or 0
+        mx, mn = pr.get("max60"), pr.get("min60")
+        if mx and mn and mx != mn and close:
+            price_position = round((close - mn) / (mx - mn) * 100, 1)
+
+        def _add(flag: str, label: str, note: str):
+            # flag: 'bull' | 'bear' | 'neutral' → 机会/风险/中性因子
+            if flag == "bull":
+                hits.append({"factor": label, "signal": "opportunity", "note": note})
+            elif flag == "bear":
+                misses.append({"factor": label, "signal": "risk", "note": note})
+            else:
+                hits.append({"factor": label, "signal": "neutral", "note": note})
+
+        # 因子: 均线排列
+        align = md.get("ma_alignment")
+        if align == "多头排列":
+            _add("bull", "均线多头排列", "MA5>MA10>MA20, 趋势向上")
+        elif align == "空头排列":
+            _add("bear", "均线空头排列", "MA5<MA10<MA20, 趋势向下")
+        elif align:
+            _add("neutral", "均线缠绕", align)
+
+        # 因子: RSI
+        rsi = md.get("rsi")
+        if rsi is not None:
+            if rsi >= 70:
+                _add("bear", "RSI过热", f"RSI={rsi:.1f} ≥70, 短期超买风险")
+            elif rsi <= 30:
+                _add("bull", "RSI超卖", f"RSI={rsi:.1f} ≤30, 短期超卖机会")
+            else:
+                _add("neutral", "RSI健康", f"RSI={rsi:.1f} 中性区间")
+
+        # 因子: MACD
+        macd = md.get("macd") or {}
+        if macd.get("dif") is not None and macd.get("dea") is not None:
+            if macd["dif"] > macd["dea"]:
+                _add("bull", "MACD金叉", f"DIF {macd['dif']:.2f} > DEA {macd['dea']:.2f}")
+            else:
+                _add("bear", "MACD死叉", f"DIF {macd['dif']:.2f} < DEA {macd['dea']:.2f}")
+
+        # 因子: 涨跌幅
+        pct = latest.get("pct_chg")
+        if pct is not None:
+            if pct >= 3:
+                _add("bull", "当日强势", f"涨 {pct}%")
+            elif pct <= -3:
+                _add("bear", "当日弱势", f"跌 {pct}%")
+
+        # 因子: 价格位置 (60日区间)
+        if price_position is not None:
+            if price_position >= 80:
+                _add("bear", "高位", f"位于60日区间 {price_position:.0f}% 高位")
+            elif price_position <= 20:
+                _add("bull", "低位", f"位于60日区间 {price_position:.0f}% 低位")
+
+        # 因子: 量能
+        va = md.get("volume_analysis") or {}
+        vr = va.get("vol_ratio")
+        if vr is not None and pct is not None and pct > 0:
+            if vr >= 1.5:
+                _add("bull", "放量上涨", f"量比 {vr:.1f}")
+            elif vr <= 0.7:
+                _add("neutral", "缩量", f"量比 {vr:.1f}")
+
+        # 模型一致性提示: 对比 AI 结论与因子倾向
+        consistency_note = None
+        level = (result or {}).get("level", "")
+        bull_n, bear_n = len([h for h in hits if h["signal"] == "opportunity"]),                          len([m for m in misses if m["signal"] == "risk"])
+        if not hits and not misses:
+            consistency_note = "数据不足, 无法归因 [⚠️]"
+        else:
+            if "看涨" in level or "买入" in level or "机会" in level:
+                consistency_note = f"AI 看多, 因子归因 {bull_n} 多 / {bear_n} 空" + (
+                    " — 一致" if bull_n >= bear_n else " — 因子偏空, 注意分歧")
+            elif "看跌" in level or "卖出" in level or "风险" in level:
+                consistency_note = f"AI 看空, 因子归因 {bull_n} 多 / {bear_n} 空" + (
+                    " — 一致" if bear_n >= bull_n else " — 因子偏多, 注意分歧")
+            else:
+                consistency_note = f"因子归因 {bull_n} 多 / {bear_n} 空 (中性观望)"
+        return {"hits": hits, "misses": misses, "consistency_note": consistency_note, "available": True}
+
     def _build_data_prompt(self, data: Dict) -> str:
         """将 market_data 转为 LLM 可读的文本"""
         lines = ["## 真实行情数据"]
@@ -1065,7 +1159,9 @@ class AIEvalMixin:
                 "rsi": market_data.get("rsi"),
                 "macd": market_data.get("macd"),
                 "ma_alignment": market_data.get("ma_alignment"),
-            }
+            },
+            # V5.3.0 (T-5.3.5.1 / FR-5.3.5.1): AI 评估归因 — 命中/未命中因子清单 + 模型一致性提示
+            "attribution": self._build_attribution(market_data, result),
         }
         history = self._load_history_for(username)
         history.insert(0, record)

@@ -111,6 +111,13 @@
                                         <span :style="{background:item.result.level_color+'20',color:item.result.level_color,padding:'2px 8px',borderRadius:'10px',fontSize:'var(--font-xs)'}">{{ item.result.level }}</span>
                                         <span class="text-xs-tertiary">{{ (item.evaluate_time||'').split('T')[0] }}</span>
                                     </div>
+                                    <!-- V5.3.0 (T-5.3.5.1): 归因徽标 — 机会/风险因子计数 + 一致性提示 -->
+                                    <div v-if="item.attribution && item.attribution.available" class="flex-gap-8-c mt-4">
+                                        <span v-if="(item.attribution.hits||[]).filter(h=>h.signal==='opportunity').length" class="text-xs" style="color:#16a34a">{{ (item.attribution.hits||[]).filter(h=>h.signal==='opportunity').length }} 机</span>
+                                        <span v-if="(item.attribution.misses||[]).filter(m=>m.signal==='risk').length" class="text-xs" style="color:#dc2626">{{ (item.attribution.misses||[]).filter(m=>m.signal==='risk').length }} 险</span>
+                                        <span class="text-xs-tertiary" v-if="item.attribution.consistency_note">{{ item.attribution.consistency_note }}</span>
+                                    </div>
+                                    <div v-else-if="item.attribution && !item.attribution.available" class="text-xs-tertiary mt-4">归因数据不足 [⚠️]</div>
                                 </div>
                             </div>
                         </div>
