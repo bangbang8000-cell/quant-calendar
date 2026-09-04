@@ -194,6 +194,67 @@ def markdown_to_rows(md):
             rows.append([plain, ""])
     return rows
 
+def _md_to_html(markdown: str) -> str:
+    """极简 Markdown → HTML: 标题/表格/段落 (自包含, 无外部依赖)"""
+    import html as _html
+    lines = markdown.split(chr(10))
+    out = []
+    in_table = False
+    for raw in lines:
+        line = raw.rstrip()
+        if not line:
+            in_table = False
+            out.append("")
+            continue
+        h = re.match(r'^(#{1,4})\s+(.+)', line)
+        if h:
+            in_table = False
+            lvl = len(h.group(1))
+            out.append(f"<h{lvl}>{_html.escape(h.group(2))}</h{lvl}>")
+            continue
+        if line.startswith("> "):
+            in_table = False
+            out.append(f"<blockquote>{_html.escape(line[2:])}</blockquote>")
+            continue
+        if line.startswith("- "):
+            in_table = False
+            out.append(f"<li>{_html.escape(line[2:])}</li>")
+            continue
+        if line.startswith("|") and line.endswith("|"):
+            cells = [c.strip().strip("`") for c in line.strip("|").split("|")]
+            if all(c in ("", "---", "----", "-----", "------") for c in cells):
+                continue
+            if not in_table:
+                out.append("<table>")
+                in_table = True
+            out.append("<tr>" + "".join(f"<td>{_html.escape(c)}</td>" for c in cells) + "</tr>")
+            continue
+        in_table = False
+        plain = re.sub(r'[*_`>#-]', "", line).strip()
+        if plain:
+            out.append(f"<p>{_html.escape(plain)}</p>")
+    if in_table:
+        out.append("</table>")
+    return chr(10).join(out)
+
+
+def export_html(path, markdown, title="量化日历报表"):
+    """V5.3.0 (T-5.3.5.5 / FR-5.3.5.5): 报表 HTML 导出 — 自包含文件, 可浏览器直接打开"""
+    import html as _h
+    body = _md_to_html(markdown)
+    doc = (
+        '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<title>'
+        + _h.escape(title) + '</title>\n<style>\n'
+        + "body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px; color: #1f2937; line-height: 1.6; }\n"
+        + "h1 { font-size: 22px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }\nh2 { font-size: 18px; margin-top: 24px; }\nh3 { font-size: 15px; }\n"
+        + "table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }\nth, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }\nth { background: #f9fafb; }\n"
+        + "blockquote { border-left: 3px solid #d1d5db; margin: 8px 0; padding: 4px 12px; color: #6b7280; }\np, li { font-size: 14px; }\n"
+        + '</style>\n</head>\n<body>\n' + body + '\n</body>\n</html>'
+    )
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(doc)
+    return {"format": "html", "path": path}
+
 
 def export_report(markdown, fmt, path):
     fmt = (fmt or "").lower()
@@ -202,6 +263,8 @@ def export_report(markdown, fmt, path):
         return export_excel(path, sheets)
     if fmt == "pdf":
         return export_pdf(path, markdown.split("\n"))
+    if fmt == "html":
+        return export_html(path, markdown)
     if fmt in ("md", "markdown"):
         with open(path, "w", encoding="utf-8") as f:
             f.write(markdown)

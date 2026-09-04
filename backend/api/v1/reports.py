@@ -103,7 +103,8 @@ async def export(format: str = "pdf", date: str = "",
         date = datetime.now().strftime("%Y-%m-%d")
     out = render_report("量化选股日报", ["period", "strategy", "evaluate"], date)
     fmt = (format or "pdf").lower()
-    fname = f"report_{date}.{('pdf' if fmt == 'pdf' else 'xlsx')}"
+    _ext = 'pdf' if fmt == 'pdf' else ('html' if fmt == 'html' else 'xlsx')
+    fname = f"report_{date}.{_ext}"
     path = os.path.join(DATA_DIR, fname)
     try:
         export_report(out["content"], fmt, path)
@@ -111,4 +112,5 @@ async def export(format: str = "pdf", date: str = "",
         raise HTTPException(status_code=400, detail=str(e))
     return FileResponse(path, filename=fname, media_type=(
         "application/pdf" if fmt == "pdf" else
+        "text/html; charset=utf-8" if fmt == "html" else
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

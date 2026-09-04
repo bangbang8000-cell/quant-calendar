@@ -202,7 +202,36 @@
         } catch (e) { ElementPlus.ElMessage.error('备份失败'); }
         finally { backupCreating.value = false; }
       }
+      // V5.3.0 (T-5.3.5.5): 报表导出 (PDF/Excel/HTML)
+      const reportExporting = ref("");
+      const reportExportMsg = ref("");
+      async function exportReport(fmt) {
+        reportExporting.value = fmt;
+        reportExportMsg.value = "";
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === "function") ? core.authHeaders() : {};
+          const res = await fetch("/api/reports/export?format=" + encodeURIComponent(fmt), { headers });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          const date = new Date().toISOString().slice(0, 10);
+          a.download = "report_" + date + "." + fmt;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          reportExportMsg.value = "报表已导出 (" + fmt.toUpperCase() + ")";
+        } catch (e) {
+          reportExportMsg.value = "报表导出失败: " + (e.message || e);
+        } finally {
+          reportExporting.value = "";
+        }
+      }
       async function restoreBackup(name) {
+
         try {
           await ElementPlus.ElMessageBox.confirm(
             `确定要从备份 ${name} 恢复吗？当前数据将被覆盖。`,
@@ -283,6 +312,7 @@
         reviewTriggering, triggerMarketReview,
         factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
         backups, backupCreating, loadBackups, createBackup, restoreBackup,
+        reportExporting, reportExportMsg, exportReport,
         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
         feedbackText, feedbackSubmitting, submitFeedback,
       };

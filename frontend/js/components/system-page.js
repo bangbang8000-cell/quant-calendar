@@ -582,6 +582,19 @@
                         </div>
                         <div class="text-sm-tertiary" v-else>暂无备份</div>
                     </div>
+                    <!-- V5.3.0 (T-5.3.5.5): 报表导出 (PDF/Excel/HTML) -->
+                    <div class="card mt-4">
+                        <div class="card-title">📄 报表导出</div>
+                        <div class="flex-between-mb12">
+                            <span class="text-base-secondary">量化选股日报 (当日) · 可导出 PDF / Excel / HTML</span>
+                            <div class="flex-c-gap-8">
+                                <el-button size="small" :loading="reportExporting === "pdf"" @click="exportReport("pdf")">PDF</el-button>
+                                <el-button size="small" :loading="reportExporting === "excel"" @click="exportReport("excel")">Excel</el-button>
+                                <el-button size="small" type="primary" :loading="reportExporting === "html"" @click="exportReport("html")">HTML</el-button>
+                            </div>
+                        </div>
+                        <div class="text-sm-tertiary" v-if="reportExportMsg">{{ reportExportMsg }}</div>
+                    </div>
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card mt-4">
                         <div class="card-title">⏱️ 美林时钟</div>

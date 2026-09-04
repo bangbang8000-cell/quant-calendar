@@ -578,6 +578,7 @@ const allMenuDefs = [
                         reviewTriggering, triggerMarketReview,
                         factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
                         backups, backupCreating, loadBackups, createBackup, restoreBackup,
+                        reportExporting, reportExportMsg, exportReport,
                         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
                         feedbackText, feedbackSubmitting, submitFeedback } = __ops;
                 // v3.17.11.1: 视图/日期导航域 (js/app-logic/nav.js)
@@ -930,6 +931,7 @@ const allMenuDefs = [
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
+                    reportExporting, reportExportMsg, exportReport,
                     sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
                     healthDetail, loadHealthDetail,
                     reviewTriggering, triggerMarketReview,
