@@ -339,8 +339,9 @@
 
                     <!-- Tab: 多因子体检 -->
                     <div v-if="stockDetailTab === 'factor'">
-                        <div v-if="factorLoading" class="factor-empty">{{ t('detail.factorLoading') }}</div>
-                        <div v-else-if="factorError || !factorGroups.length" class="factor-empty">{{ t('detail.factorEmpty') }}</div>
+                        <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
+                        <qc-state-panel v-if="factorLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="factorError || !factorGroups.length" type="empty" icon="🧬" :title="t('detail.factorEmpty')"></qc-state-panel>
                         <div v-else>
                             <div v-if="factorSummary && factorSummary.available" class="factor-summary">
                                 <span class="factor-summary-count">{{ t('detail.factorCount', { count: factorSummary.available }) }}</span>

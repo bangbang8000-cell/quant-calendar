@@ -493,8 +493,9 @@ def test_factor_panel_endpoint_invoked():
     zh = _read("js/locales/zh-CN.js")
     assert "正在加载体检数据" in zh, "zh 语言包应保留加载中提示（detail.factorLoading）"
     assert "无数据" in zh, "zh 语言包应保留无数据占位（detail.factorNoData）"
-    assert "detail.factorLoading" in src and "detail.factorNoData" in src, \
-        "体检面板应经 t() 渲染加载/无数据文案"
+    # V5.3.0 (T-5.3.1.2): 状态收敛到 qc-state-panel, 空态文案经 :title=t() 传入
+    assert "qc-state-panel" in src and "detail.factorEmpty" in src, \
+        "体检面板状态应收敛到统一状态面板（空态文案 t('detail.factorEmpty')）"
 
 
 def test_factor_panel_no_inline_style():

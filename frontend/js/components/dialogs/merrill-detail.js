@@ -116,7 +116,7 @@
                 <!-- 无历史记录 -->
                 <div v-else-if="!merrillDetailData._isCurrent && !merrillDetailData._lastPeriod" class="detail-section mt-1">
                     <div class="section-title">📅 历史轮次</div>
-                    <div class="text-center-tertiary-pad20x0">暂无历史记录</div>
+                    <qc-state-panel type="empty" icon="📅" title="暂无历史记录"></qc-state-panel>
                 </div>
 
                 <!-- 经济特征 -->

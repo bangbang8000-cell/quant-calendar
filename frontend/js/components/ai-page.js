@@ -175,8 +175,9 @@
                         <!-- v3.17.6 (FR-3.17.6): 评估命中率（决策复盘） -->
                         <div class="card eval-track-card">
                             <div class="card-title">{{ t('ai.evalHitRate') }} <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
-                            <div v-if="trackLoading" class="eval-track-state">{{ t('ai.hitRateLoading') }}</div>
-                            <div v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" class="eval-track-state">{{ t('ai.insufficientSamples') }}</div>
+                            <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
+                            <qc-state-panel v-if="trackLoading" type="loading"></qc-state-panel>
+                            <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="📊" :title="t('ai.insufficientSamples')"></qc-state-panel>
                             <template v-else>
                                 <div class="eval-track-overall">
                                     <div v-for="w in trackWindows" :key="w.key" class="eval-track-stat">

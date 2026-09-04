@@ -71,9 +71,7 @@
                         >{{ m }}</button>
                         <span class="ma-toggle-hint">十字线读价：悬停或点击图表</span>
                     </div>
-                    <div v-if="indexKlineLoading" class="kline-loading">
-                        <el-icon class="is-loading"><Loading /></el-icon> 加载K线数据中...
-                    </div>
+                    <qc-state-panel v-if="indexKlineLoading" type="loading"></qc-state-panel>
                 </div>
 
                 <!-- AI评估结果 -->
