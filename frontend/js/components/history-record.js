@@ -51,7 +51,7 @@
           </div>
         </div>
         <div class="history-actions">
-          <el-button size="small" type="danger" text @click.stop="remove">🗑</el-button>
+          <el-button size="small" type="danger" text @click.stop="remove" aria-label="删除记录">🗑</el-button>
         </div>
       </div>
     `,

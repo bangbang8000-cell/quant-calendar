@@ -145,3 +145,39 @@ def test_onboarding_actions_keyboard_reachable():
     src = _read(os.path.join("js", "onboarding.js"))
     assert "@click=\"next\"" in src and "@click=\"finish\"" in src
     assert "@click=\"skip\"" in src
+
+
+# ═════════════════ V5.3.0 (T-5.3.1.4): 无障碍收尾守卫 ═════════════════
+
+_ICON_EMOJI = set("🔄⚙📊▶⏸⭐📋📈💎🎨🖥🚦📤📥💾🖼🗑✏🔍➕➖✖✔⏭⏮🔁🔃")
+
+
+def test_icon_only_buttons_have_aria_label():
+    """纯图标按钮 (emoji 且无可见文字) 必须带 aria-label — 屏幕阅读器可辨识。
+
+    T-5.3.1.4 收尾: 巡检全站 components + dialogs, 禁绝无标签图标按钮。
+    """
+    import glob as _glob
+    files = (_glob.glob(os.path.join(FRONTEND, "js", "components", "*.js"))
+             + _glob.glob(os.path.join(FRONTEND, "js", "components", "dialogs", "*.js")))
+    bad = []
+    for f in files:
+        src = open(f, encoding="utf-8").read()
+        rel = os.path.relpath(f, FRONTEND)
+        for i, line in enumerate(src.splitlines(), 1):
+            if "el-button" not in line or "aria-label" in line:
+                continue
+            stripped = re.sub(r"<[^>]+>", "", line).strip()
+            if stripped and all(c in _ICON_EMOJI or c.isspace() for c in stripped):
+                bad.append(f"{rel}:{i}: {line.strip()}")
+    assert not bad, "纯图标按钮缺 aria-label:\n" + "\n".join(bad)
+
+
+def test_shortterm_tour_dialog_aria():
+    """短线复盘 3 步引导弹窗须满足 dialog 焦点语义 (与全局 onboarding 一致)"""
+    src = _read(os.path.join("js", "components", "shortterm-page.js"))
+    assert 'role="dialog"' in src and 'aria-modal="true"' in src
+    assert 'aria-labelledby="shortterm-tour-title"' in src
+    assert 'id="shortterm-tour-title"' in src
+    # 跳过/下一步/开始使用均带可辨识文案 (非纯 emoji)
+    assert "aria-label=\"跳过短线引导\"" in src

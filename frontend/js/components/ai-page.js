@@ -618,7 +618,7 @@
                                         <div class="watchlist-actions">
                                             <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
                                             <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
-                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)">🗑</el-button>
+                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)" aria-label="从自选删除">🗑</el-button>
                                         </div>
                                         </div>
                                         <div class="swipe-reveal-actions">

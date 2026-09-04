@@ -603,7 +603,7 @@
                             <div class="page-title">{{ t('research.marketReview') }}</div>
                             <div class="flex-c-gap-12">
                                 <el-button v-if="selectedReviewDate" size="small" @click="selectedReviewDate = ''">← 返回列表</el-button>
-                                <el-button size="small" @click="loadMarketReviews">🔄</el-button>
+                                <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘">🔄</el-button>
                             </div>
                         </div>
 
@@ -719,7 +719,7 @@
                         <div class="page-header">
                             <div class="page-title">异动扫描</div>
                             <div class="flex-c-gap-12">
-                                <el-button size="small" :loading="scanLoading" @click="loadScan">🔄</el-button>
+                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描">🔄</el-button>
                             </div>
                         </div>
 
