@@ -166,12 +166,20 @@
   }
 
   // ─── 默认指令定义（命令面板与全局搜索共享，TC-11.4）──
+  // V5.3.0 (T-5.3.3.1 / FR-5.3.3.1): 指令集扩展 — 覆盖全部子页入口 + 高频动作
   const DEFAULT_COMMANDS = [
     { key: 'refresh', label: '刷新当前页数据', icon: '🔄', keywords: 'reload refresh 刷新' },
     { key: 'export', label: '导出当前 CSV', icon: '📥', keywords: 'csv export 导出' },
     { key: 'batch', label: '批量 AI 评估', icon: '🤖', keywords: 'batch eval 批量 评估' },
     { key: 'ai', label: '打开 AI 问股', icon: '💬', keywords: 'chat ask 问股' },
     { key: 'sidebar', label: '折叠/展开侧边栏', icon: '📁', keywords: 'sidebar nav 侧边栏' },
+    { key: 'today', label: '今日一屏', icon: '📅', keywords: 'today 今日 一屏 看板' },
+    { key: 'add-portfolio', label: '加入组合', icon: '📊', keywords: 'portfolio 组合 加入 持仓' },
+    { key: 'open-system', label: '打开系统设置', icon: '🖥', keywords: 'system 系统 设置 配置' },
+    { key: 'refresh-data-source', label: '刷新数据源', icon: '📡', keywords: 'datasource 数据源 刷新 tushare akshare' },
+    { key: 'open-shortterm', label: '打开短线复盘', icon: '⚡', keywords: 'shortterm 短线 复盘 涨停' },
+    { key: 'open-research', label: '打开策略研究', icon: '🔬', keywords: 'research 策略 研究 回测' },
+    { key: 'open-calendar', label: '打开量化日历', icon: '🗓', keywords: 'calendar 日历 股票池' },
   ];
 
   // ─── V5.0.6 T-5.0.63: 注册制 + 全局快捷键 ─────────────────────
@@ -278,6 +286,10 @@
     reg.register('F5', 'refresh', '刷新当前页');
     reg.register('Ctrl+B', 'toggle-sidebar', '折叠/展开侧边栏');
     reg.register('Ctrl+J', 'open-ai', '打开 AI 问股');
+    // V5.3.0 (T-5.3.3.1 / FR-5.3.3.1): 高频动作快捷键
+    reg.register('Ctrl+D', 'open-today', '今日一屏');
+    reg.register('Ctrl+E', 'batch-eval', '批量 AI 评估');
+    reg.register('Ctrl+G', 'add-portfolio', '加入组合');
     return reg;
   }
 

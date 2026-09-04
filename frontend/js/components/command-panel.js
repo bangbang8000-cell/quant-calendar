@@ -184,6 +184,20 @@
           state.openAiFab();
         } else if (key === 'sidebar') {
           state.toggleSidebar();
+        } else if (key === 'today') {
+          state.navigateTo('strategies', 'overview');
+        } else if (key === 'add-portfolio') {
+          state.currentPage.value = 'ai'; state.currentSubPage.value = 'portfolio';
+        } else if (key === 'open-system') {
+          state.navigateTo('system', 'status');
+        } else if (key === 'open-shortterm') {
+          state.navigateTo('shortterm', 'overview');
+        } else if (key === 'open-research') {
+          state.navigateTo('research', 'overview');
+        } else if (key === 'open-calendar') {
+          state.navigateTo('calendar', '');
+        } else if (key === 'refresh-data-source') {
+          state.navigateTo('system', 'datasource');
         } else if (key.indexOf('theme:') === 0) {
           state.changeTheme(key.slice(6));
         }
@@ -212,6 +226,12 @@
           state.openAiFab();
         } else if (action === 'refresh') {
           runCommand('refresh');
+        } else if (action === 'open-today') {
+          runCommand('today');
+        } else if (action === 'batch-eval') {
+          runCommand('batch');
+        } else if (action === 'add-portfolio') {
+          runCommand('add-portfolio');
         }
       }
       function onGlobalKeydown(ev) {

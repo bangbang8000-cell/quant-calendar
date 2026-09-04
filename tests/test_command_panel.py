@@ -453,3 +453,44 @@ def test_shortcut_defaults_present():
     assert any(s['action'] == 'toggle-palette' for s in out)
     assert any(s['combo'] == 'Ctrl+K' for s in out)
 
+
+# ═════════════════ V5.3.0 (T-5.3.3.1 / FR-5.3.3.1): 命令面板动作注册扩展 ═════════════════
+
+def test_default_commands_cover_high_frequency_actions():
+    """高频动作注册: 今日一屏/加入组合/打开系统/刷新数据源/导出 均在默认指令中"""
+    out = _run_js("return QCP.DEFAULT_COMMANDS.map(c => c.key);")
+    keys = set(out)
+    required = {"today", "add-portfolio", "open-system", "refresh-data-source", "export"}
+    assert required <= keys, f"默认指令缺高频动作: {required - keys}"
+
+
+def test_default_commands_unique_keys():
+    """默认指令 key 全局唯一 (无重复注册冲突)"""
+    out = _run_js("""
+        const reg = QCP.createCommandRegistry();
+        QCP.DEFAULT_COMMANDS.forEach(c => reg.register(c));
+        return { count: reg.count(), total: QCP.DEFAULT_COMMANDS.length };
+    """)
+    assert out["count"] == out["total"], "DEFAULT_COMMANDS 存在重复 key"
+
+
+def test_default_commands_all_have_keywords():
+    """每条指令含关键词 (多语言可检索: 中/英)"""
+    out = _run_js("""
+        const bad = QCP.DEFAULT_COMMANDS.filter(c => !c.keywords);
+        return bad.map(c => c.key);
+    """)
+    assert not out, f"缺关键词指令: {out}"
+
+
+def test_default_shortcuts_cover_high_frequency():
+    """快捷键覆盖: 今日一屏 Ctrl+D / 评估 Ctrl+E / 加入组合 Ctrl+G (不冲突)"""
+    out = _run_js("""
+        const reg = QCP.createDefaultShortcuts();
+        return reg.list().map(s => ({ combo: s.combo, action: s.action }));
+    """)
+    combos = [s["combo"] for s in out]
+    assert "Ctrl+D" in combos, "缺 Ctrl+D (今日一屏)"
+    assert "Ctrl+E" in combos, "缺 Ctrl+E (评估)"
+    assert "Ctrl+G" in combos, "缺 Ctrl+G (加入组合)"
+
