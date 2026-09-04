@@ -159,6 +159,25 @@ jobs:
       - name: PIT 防前视断言 (end<=as_of 四路径)
         run: python -m pytest tests/test_pit_no_lookahead.py -v --tb=short
 
+  performance-gate:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    # V5.3.0 (T-5.3.4.5 / FR-5.3.4.5): 性能基准入 CI 门禁 — 必跑, 退化即红
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install -r requirements.lock -r requirements-dev.lock
+      - name: 性能回归 (降采样/分页/骨架屏)
+        run: python -m pytest tests/test_performance.py -v --tb=short
+      - name: "前端体积预算门禁 (T-5.3.4.1: 主逻辑 ≤80KB, 源码 JS 总量 ≤1.3MB)"
+        run: python -m pytest tests/test_bundle_budget_v534.py -v --tb=short
+      - name: "虚拟滚动覆盖守护 (T-5.3.4.2: 长表虚拟滚动/分页)"
+        run: python -m pytest tests/test_virtual_scope_v534.py -v --tb=short
+
+
   e2e-visual:
     runs-on: ubuntu-latest
     continue-on-error: true

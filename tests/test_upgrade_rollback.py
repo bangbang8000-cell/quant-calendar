@@ -173,7 +173,7 @@ def test_upgrade_auto_restore_on_verify_failure(env_schema, monkeypatch):
 def test_rollback(env_schema):
     cmd_upgrade(backup_root=env_schema["backup_root"])
     out = cmd_rollback(target=2, backup_root=env_schema["backup_root"])
-    assert out["rolled"] == [5, 4, 3]   # V5.3.0: 从 5 回滚到 2
+    assert out["rolled"] == list(range(migrations.latest_version(), 2, -1))  # 动态: 从最新回滚到 2
     assert migrations.get_current_version(db.get_conn()) == 2
     assert out["verify"]["ok"] is True
 
@@ -195,7 +195,7 @@ def test_rollback_dry_run_no_writes(env):
 
 def test_rollback_target_beyond_current_noop(env_schema):
     cmd_upgrade(backup_root=env_schema["backup_root"])
-    out = cmd_rollback(target=5, backup_root=env_schema["backup_root"])
+    out = cmd_rollback(target=migrations.latest_version(), backup_root=env_schema["backup_root"])  # 目标=当前, noop
     assert out["rolled"] == []
     assert migrations.get_current_version(db.get_conn()) == migrations.latest_version()  # 全量=最新
 

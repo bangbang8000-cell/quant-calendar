@@ -111,6 +111,16 @@ def run_pipeline(force: bool = False) -> dict:
     except Exception as e:
         result["steps"].append({"step": "解析器刷新", "ok": False, "detail": str(e)})
 
+    # V5.3.0 (T-5.3.4.3 / FR-5.3.4.3): 数据刷新后主动失效缓存 —
+    # 统一失效 L1/L2, 保证各页不读陈旧缓存 (刷新后失效语义)
+    try:
+        from cache import invalidate_stale
+        invalidate_stale('daily')
+        invalidate_stale('consensus')
+        result["steps"].append({"step": "缓存失效", "ok": True, "detail": "daily/consensus 缓存已失效"})
+    except Exception as e:
+        result["steps"].append({"step": "缓存失效", "ok": False, "detail": str(e)})
+
     return result
 
 
