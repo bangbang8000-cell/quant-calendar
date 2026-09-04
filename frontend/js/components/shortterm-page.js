@@ -12,6 +12,24 @@
                 <div v-if="currentPage === 'shortterm'" key="shortterm">
                     <!-- 复盘看板 (V5.2.1 落地页: 硬指标卡 + 市场事实 + 验证条件 + 近5日热度) -->
                     <div v-if="currentSubPage === 'overview'" class="card">
+                        <!-- V5.3.0 (T-5.3.1.3): 短线复盘 3 步新手引导 (首次进入, 可跳过) -->
+                        <div v-if="shorttermTourVisible" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="shortterm-tour-title">
+                            <div class="onboarding-card">
+                                <div class="onboarding-head">
+                                    <div class="onboarding-step-badge">{{ shorttermTourState.stepIndex + 1 }} / 3</div>
+                                    <div class="onboarding-progress-track" aria-hidden="true">
+                                        <div class="onboarding-progress-fill" :style="{ width: shorttermTourProg.pct + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div class="onboarding-title" id="shortterm-tour-title">{{ shorttermTourStep.title }}</div>
+                                <div class="onboarding-desc">{{ shorttermTourStep.desc }}</div>
+                                <div class="onboarding-actions">
+                                    <el-button size="small" text @click="shorttermTourSkip" aria-label="跳过短线引导">跳过</el-button>
+                                    <el-button v-if="!shorttermTourIsLast" size="small" type="primary" @click="shorttermTourNext">下一步</el-button>
+                                    <el-button v-else size="small" type="primary" @click="shorttermTourFinish">开始使用</el-button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="page-header">
                             <div class="page-title">复盘看板</div>
                             <div class="flex-c-gap-12">
@@ -855,10 +873,74 @@
         else if (sp === 'intraday') loadIntraday(true);
       }
 
-      onMounted(function () { setSessionDates(); loadCurrent(); });
+      onMounted(function () { setSessionDates(); loadCurrent(); maybeShowShorttermTour(); });
       Vue.watch(function () { return currentSubPage.value; }, function (sp) {
         loadCurrent();
+        if (sp === 'overview') maybeShowShorttermTour();
       });
+
+      // V5.3.0 (T-5.3.1.3): 短线复盘 3 步新手引导 (首次进入 overview 触发)
+      const OC = window.QuantOnboarding;
+      const shorttermTourVisible = ref(false);
+      const shorttermTourState = ref(OC ? OC.createShorttermTourState() : { stepIndex: 0, completed: false, dismissed: false, updatedAt: 0 });
+      const shorttermTourStep = computed(function () {
+        return (OC && OC.shorttermTourSteps()[shorttermTourState.value.stepIndex]) || { key: '', title: '', desc: '' };
+      });
+      const shorttermTourProg = computed(function () {
+        return OC ? OC.shorttermTourProgress(shorttermTourState.value) : { done: 0, total: 3, pct: 0 };
+      });
+      const shorttermTourIsLast = computed(function () {
+        return shorttermTourState.value.stepIndex >= 2;
+      });
+
+      function _loadShorttermTourState() {
+        if (!OC) return;
+        var saved = null;
+        try { saved = localStorage.getItem('qc_shortterm_tour'); } catch (e) { /* ignore */ }
+        if (saved) {
+          var parsed = OC.parseState(saved);
+          if (parsed) shorttermTourState.value = parsed;
+        }
+      }
+
+      function _saveShorttermTourState() {
+        if (!OC) return;
+        var payload = JSON.stringify(shorttermTourState.value);
+        try { localStorage.setItem('qc_shortterm_tour', payload); } catch (e) { /* ignore */ }
+        try {
+          fetch('/api/user_config/preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preferences: { shortterm_tour: payload } }),
+          }).catch(function () { /* 离线忽略 */ });
+        } catch (e) { /* ignore */ }
+      }
+
+      function maybeShowShorttermTour() {
+        if (!OC) return;
+        if (currentSubPage.value !== 'overview') return;
+        _loadShorttermTourState();
+        if (OC.shorttermTourShouldShow(shorttermTourState.value)) {
+          shorttermTourVisible.value = true;
+        }
+      }
+
+      function shorttermTourNext() {
+        shorttermTourState.value = OC.shorttermTourNext(shorttermTourState.value);
+        _saveShorttermTourState();
+      }
+
+      function shorttermTourFinish() {
+        shorttermTourState.value = OC.shorttermTourComplete(shorttermTourState.value);
+        _saveShorttermTourState();
+        shorttermTourVisible.value = false;
+      }
+
+      function shorttermTourSkip() {
+        shorttermTourState.value = OC.shorttermTourDismiss(shorttermTourState.value);
+        _saveShorttermTourState();
+        shorttermTourVisible.value = false;
+      }
 
       return {
         currentPage, currentSubPage,
@@ -877,6 +959,9 @@
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass, sessionStatusText, sessionStatusClass,
+        // V5.3.0 (T-5.3.1.3): 短线复盘 3 步引导
+        shorttermTourVisible, shorttermTourState, shorttermTourStep, shorttermTourProg, shorttermTourIsLast,
+        shorttermTourNext, shorttermTourFinish, shorttermTourSkip,
       };
     },
   };

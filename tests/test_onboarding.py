@@ -195,3 +195,75 @@ def test_prefs_per_user_isolated(backend_prefs):
     uc = backend_prefs
     uc.save_user_preferences("alice", {"onboarding_progress": "A"})
     assert uc.get_user_preferences("bob")["onboarding_progress"] == ""
+# ═════════════════ V5.3.0 (T-5.3.1.3): 短线复盘 3 步引导 ═════════════════
+
+@NEEDS_NODE
+def test_shortterm_tour_has_three_steps():
+    """短线复盘引导固定 3 步: 看硬指标 → 读 AI 研判 → 核验验证条件"""
+    out = _run_js("return OC.shorttermTourSteps().map(s => s.key);")
+    assert len(out) == 3
+    assert out[0].startswith("hard_metric")
+    assert out[1].startswith("ai_read")
+    assert out[2].startswith("verify")
+
+
+@NEEDS_NODE
+def test_shortterm_tour_initial_state():
+    out = _run_js("return OC.createShorttermTourState();")
+    assert out["stepIndex"] == 0
+    assert out["completed"] is False
+    assert out["dismissed"] is False
+
+
+@NEEDS_NODE
+def test_shortterm_tour_next_advances():
+    out = _run_js(
+        "const s = OC.createShorttermTourState();"
+        "const s2 = OC.shorttermTourNext(s);"
+        "return [s2.stepIndex, s.stepIndex];")
+    assert out == [1, 0]
+
+
+@NEEDS_NODE
+def test_shortterm_tour_complete_sets_flag():
+    out = _run_js("return OC.shorttermTourComplete(OC.createShorttermTourState());")
+    assert out["completed"] is True
+
+
+@NEEDS_NODE
+def test_shortterm_tour_dismiss_sets_flag():
+    out = _run_js("return OC.shorttermTourDismiss(OC.createShorttermTourState());")
+    assert out["dismissed"] is True
+
+
+@NEEDS_NODE
+def test_shortterm_tour_progress_total_three():
+    out = _run_js(
+        "const s = OC.shorttermTourNext(OC.createShorttermTourState());"
+        "return OC.shorttermTourProgress(s);")
+    assert out["total"] == 3
+    assert out["done"] == 1
+
+
+@NEEDS_NODE
+def test_shortterm_tour_should_show_when_not_done():
+    out = _run_js(
+        "const s = OC.createShorttermTourState();"
+        "return OC.shorttermTourShouldShow(s);")
+    assert out is True
+
+
+@NEEDS_NODE
+def test_shortterm_tour_should_hide_when_completed():
+    out = _run_js(
+        "const s = OC.shorttermTourComplete(OC.createShorttermTourState());"
+        "return OC.shorttermTourShouldShow(s);")
+    assert out is False
+
+
+@NEEDS_NODE
+def test_shortterm_tour_should_hide_when_dismissed():
+    out = _run_js(
+        "const s = OC.shorttermTourDismiss(OC.createShorttermTourState());"
+        "return OC.shorttermTourShouldShow(s);")
+    assert out is False

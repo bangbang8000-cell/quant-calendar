@@ -26,6 +26,66 @@
   ];
   var STEP_COUNT = ONBOARDING_STEPS.length;
 
+  // V5.3.0 (T-5.3.1.3): 短线复盘工作流 3 步引导 (独立于全局 5 步)
+  // 首次进入短线复盘 overview 时触发: 看硬指标 → 读 AI 研判 → 核验验证条件
+  var SHORTTERM_TOUR_STEPS = [
+    { key: 'hard_metric', title: '看硬指标', target: 'overview-metrics',
+      desc: '先看涨停/连板/炸板/晋级率等硬指标, 把握当日情绪与强度' },
+    { key: 'ai_read', title: '读 AI 研判', target: 'overview-ai',
+      desc: '再看多视角 AI 复盘, 了解题材、龙头与潜在风险' },
+    { key: 'verify', title: '核验验证条件', target: 'overview-verify',
+      desc: '最后核验验证条件是否成立, 确认你的观察得到印证' },
+  ];
+  var SHORTTERM_TOUR_COUNT = SHORTTERM_TOUR_STEPS.length;
+
+  function createShorttermTourState() {
+    return { stepIndex: 0, completed: false, dismissed: false, updatedAt: 0 };
+  }
+
+  function shorttermTourSteps() {
+    return SHORTTERM_TOUR_STEPS.slice();
+  }
+
+  function _clampTour(idx) {
+    if (idx < 0) return 0;
+    if (idx >= SHORTTERM_TOUR_COUNT) return SHORTTERM_TOUR_COUNT - 1;
+    return idx;
+  }
+
+  function _copyTour(s) {
+    return { stepIndex: s.stepIndex, completed: !!s.completed,
+             dismissed: !!s.dismissed, updatedAt: s.updatedAt || 0 };
+  }
+
+  function shorttermTourNext(state) {
+    return _copyTour(Object.assign({}, state, {
+      stepIndex: _clampTour((state.stepIndex || 0) + 1),
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function shorttermTourComplete(state) {
+    return _copyTour(Object.assign({}, state, {
+      completed: true, dismissed: false, updatedAt: Date.now(),
+    }));
+  }
+
+  function shorttermTourDismiss(state) {
+    return _copyTour(Object.assign({}, state, {
+      dismissed: true, completed: false, updatedAt: Date.now(),
+    }));
+  }
+
+  function shorttermTourProgress(state) {
+    var done = Math.min((state && state.stepIndex) || 0, SHORTTERM_TOUR_COUNT);
+    return { done: done, total: SHORTTERM_TOUR_COUNT,
+             pct: Math.round(done / SHORTTERM_TOUR_COUNT * 100) };
+  }
+
+  function shorttermTourShouldShow(state) {
+    return !!(state && !state.completed && !state.dismissed);
+  }
+
   function createOnboardingState() {
     return { stepIndex: 0, completed: false, dismissed: false, updatedAt: 0 };
   }
@@ -131,5 +191,14 @@
     progress: progress,
     persistState: persistState,
     parseState: parseState,
+    // V5.3.0 (T-5.3.1.3): 短线复盘 3 步引导
+    SHORTTERM_TOUR_STEPS: SHORTTERM_TOUR_STEPS,
+    shorttermTourSteps: shorttermTourSteps,
+    createShorttermTourState: createShorttermTourState,
+    shorttermTourNext: shorttermTourNext,
+    shorttermTourComplete: shorttermTourComplete,
+    shorttermTourDismiss: shorttermTourDismiss,
+    shorttermTourProgress: shorttermTourProgress,
+    shorttermTourShouldShow: shorttermTourShouldShow,
   };
 });
