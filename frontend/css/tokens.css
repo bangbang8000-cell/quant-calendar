@@ -48,9 +48,17 @@
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
 
   /* ─── Transitions ─── */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 400ms ease;
+  /* V5.3.0 (T-5.3.2.5 / FR-5.3.2.5): 动效令牌族 — 时长 + 缓动 (单一来源) */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --easing-standard: ease;
+  --easing-enter: cubic-bezier(0.22, 1, 0.36, 1);   /* easeOutQuint — 进入轻盈 */
+  --easing-exit: cubic-bezier(0.36, 0, 0.66, -0.56); /* easeInBack — 退出利落 */
+  /* 过渡别名 (向后兼容) — 统一引用动效令牌 */
+  --transition-fast: var(--duration-fast) var(--easing-standard);
+  --transition-base: var(--duration-base) var(--easing-standard);
+  --transition-slow: var(--duration-slow) var(--easing-standard);
   --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */

@@ -4,7 +4,7 @@
 /* ─── Page Transitions ─── */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: opacity var(--transition-base), transform var(--transition-base);
+  transition: opacity var(--duration-base) var(--easing-standard), transform var(--duration-base) var(--easing-standard);
 }
 .fade-slide-enter-from {
   opacity: 0;
@@ -17,7 +17,7 @@
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity var(--transition-base);
+  transition: opacity var(--duration-base) var(--easing-standard);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -26,7 +26,7 @@
 
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: opacity var(--transition-base), transform var(--transition-base);
+  transition: opacity var(--duration-base) var(--easing-standard), transform var(--duration-base) var(--easing-standard);
 }
 .slide-left-enter-from {
   opacity: 0;
@@ -99,10 +99,10 @@
   gap: var(--sp-2);
   min-width: 200px;
   max-width: 400px;
-  animation: toast-in var(--transition-base) ease forwards;
+  animation: toast-in var(--duration-base) var(--easing-standard) forwards;
 }
 .toast.leaving {
-  animation: toast-out var(--transition-fast) ease forwards;
+  animation: toast-out var(--duration-fast) var(--easing-standard) forwards;
 }
 .toast-success { background: var(--color-success); }
 .toast-warning { background: var(--color-warning); }
@@ -119,20 +119,20 @@
 
 /* ─── Micro-interactions ─── */
 .hover-lift {
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--duration-fast) var(--easing-standard), box-shadow var(--duration-fast) var(--easing-standard);
 }
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 .hover-scale {
-  transition: transform var(--transition-fast);
+  transition: transform var(--duration-fast) var(--easing-standard);
 }
 .hover-scale:hover {
   transform: scale(1.02);
 }
 .hover-glow {
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--duration-fast) var(--easing-standard);
 }
 .hover-glow:hover {
   box-shadow: var(--shadow-lg);
@@ -162,14 +162,9 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .slide-up {
-  animation: slide-up var(--transition-base) ease forwards;
+  animation: slide-up var(--duration-base) var(--easing-standard) forwards;
 }
 
 /* v3.8.14: prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms ;
-    animation-iteration-count: 1 ;
-    transition-duration: 0.01ms ;
-  }
-}
