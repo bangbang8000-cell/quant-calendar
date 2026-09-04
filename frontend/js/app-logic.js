@@ -168,6 +168,13 @@ const allMenuDefs = [
                     // v3.16 (16.5): 帮助面板与 handleGlobalKeydown 实现同步（补齐方向键）
                     { keys: '← / →', desc: '日历页：上一 / 下一交易日' },
                     { keys: '↑ / ↓', desc: '日历页：切换 日/周/月/年 视图' },
+                    // V5.3.0 (T-5.3.3.2 / FR-5.3.3.2): 5.3.3 新增高频快捷键
+                    { keys: 'Ctrl+D', desc: '今日一屏 (直接跳转)' },
+                    { keys: 'Ctrl+E', desc: '批量 AI 评估' },
+                    { keys: 'Ctrl+G', desc: '加入组合 (跳转组合持仓)' },
+                    { keys: 'F5', desc: '刷新当前页 (同 R)' },
+                    { keys: 'Ctrl+B', desc: '折叠/展开侧边栏' },
+                    { keys: 'Ctrl+J', desc: '打开 AI 问股' },
                 ];
                 // v3.8.2: 统一导航入口
                 function navigateTo(page, subPage = '') {

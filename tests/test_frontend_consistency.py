@@ -170,11 +170,11 @@ def test_shortcut_help_synced():
     src = _read("js/app-logic.js")
     # 帮助面板须含方向键条目（实现支持 ←/→/↑/↓ 日历导航）
     assert "← / →" in src and "↑ / ↓" in src, "帮助面板应补齐 ←/→/↑/↓ 方向键说明"
-    # 面板条目数 = 6（Ctrl+K / Ctrl+/ / 1-5 / R / 左右 / 上下）
+    # 面板条目数 = 12（V5.3.3.2 扩展: +Ctrl+D/E/G/F5/Ctrl+B/Ctrl+J 高频快捷键）
     m = re.search(r"const shortcutHelpItems = \[([\s\S]*?)\];", src)
     assert m, "shortcutHelpItems 未找到"
     count = len(re.findall(r"\{ keys:", m.group(1)))
-    assert count == 6, f"帮助面板应含 6 条快捷键，当前 {count} 条"
+    assert count == 12, f"帮助面板应含 12 条快捷键 (T-5.3.3.2)，当前 {count} 条"
 
 
 # ─── v3.16 (16.6 / FR-3.16.4) 无障碍回归 ────────────────────────────────
