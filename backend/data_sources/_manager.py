@@ -36,6 +36,18 @@ class DataSourceManager:
         self._kline_cache = {}  # (ts_code, period, limit) -> (fetch_time, result)
         self._init_clients()
 
+    @staticmethod
+    def _is_valid_token(token) -> bool:
+        """V5.3.9 (BUG-FIX): 识别占位符/假 token 而非仅空值
+
+        真实 tushare/sxsc token 为 32-64 位十六进制; 占位符如 'new-token-zzz'/
+        'sxsc-real-token-456' 含连字符与非 hex 字符 → 视为无效, 触发回退 .env。
+        """
+        if not isinstance(token, str) or not token:
+            return False
+        return len(token) >= 32 and len(token) <= 64 and all(
+            c in '0123456789abcdefABCDEF' for c in token)
+
     def _load_config(self):
         if os.path.exists(_ds_mod.DATASOURCE_CONFIG_FILE):
             try:
@@ -61,7 +73,7 @@ class DataSourceManager:
                 from sxsc_tushare import get_api
                 token = sxsc.get('token', '')
                 # v1.8: 回退到 config.py 的 SXSC_TUSHARE_TOKEN
-                if not token:
+                if not self._is_valid_token(token):
                     try:
                         from config import settings
                         token = getattr(settings, 'SXSC_TUSHARE_TOKEN', '')
@@ -83,7 +95,7 @@ class DataSourceManager:
                 import tushare as ts
                 token = ts_cfg.get('token', '')
                 # 回退到 config.py 的 TUSHARE_TOKEN
-                if not token:
+                if not self._is_valid_token(token):
                     try:
                         from config import settings
                         token = getattr(settings, 'TUSHARE_TOKEN', '')

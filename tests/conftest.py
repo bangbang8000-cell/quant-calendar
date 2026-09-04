@@ -45,7 +45,17 @@ def patch_data_dir():
             setattr(paths, _key, os.path.join(tmp, os.path.basename(_old)))
     # 关键修复: db 模块在导入时即捕获 DATA_DIR/DB_FILE (db.py:18),
     # 若不重定向, 测试会读写真实 data/app.db 造成跨测试/跨会话污染
+    # BUG-FIX (v5.3.9): 重定向 datasource_config.json — 此前漏掉, 测试 save_datasource_config
+    # 会把占位符 token 写进真实 data/datasource_config.json, 污染 dev 运行配置
+    try:
+        import data_sources as _ds
+        _old_dsc = getattr(_ds, 'DATASOURCE_CONFIG_FILE', None)
+        if _old_dsc:
+            _ds.DATASOURCE_CONFIG_FILE = os.path.join(tmp, 'datasource_config.json')
+    except Exception:
+        _old_dsc = None
     old_db_data_dir = db.DATA_DIR
+
     old_db_file = db.DB_FILE
     db.DATA_DIR = tmp
     db.DB_FILE = os.path.join(tmp, 'app.db')
@@ -57,6 +67,13 @@ def patch_data_dir():
     _sdb.DB_FILE = os.path.join(tmp, 'strategy.db')
     yield
     paths.DATA_DIR = old_data
+    try:
+        if _old_dsc is not None:
+            import data_sources as _ds2
+            _ds2.DATASOURCE_CONFIG_FILE = _old_dsc
+    except Exception:
+        pass
+
     for _key, _val in _saved.items():
         setattr(paths, _key, _val)
     db.DATA_DIR = old_db_data_dir
