@@ -178,6 +178,28 @@ async def upsert_position(req: dict, user: dict = Depends(get_current_active_use
     return {"success": True, "message": "持仓已更新"}
 
 
+@router.post("/positions/batch")
+async def batch_add_positions(req: dict, user: dict = Depends(get_current_active_user)):
+    """V5.3.0 (T-5.3.3.4 / FR-5.3.3.4): 批量加入组合 (评估→组合一键化).
+
+    允许零价登记 (cost_price/quantity=0 仅加代码/名称占位, 用户后补),
+    已存在持仓保持原成本/数量不被覆盖。
+    """
+    stocks = req.get("stocks") or []
+    if not isinstance(stocks, list) or not stocks:
+        raise HTTPException(status_code=400, detail="stocks 不能为空")
+    added = 0
+    for s in stocks:
+        stock_code = (s.get("stock_code") or "").strip()
+        if not stock_code:
+            raise HTTPException(status_code=400, detail="股票代码不能为空")
+        stock_name = (s.get("stock_name") or "").strip()
+        db.portfolio_upsert_position(user["username"], stock_code, stock_name, 0, 0)
+        added += 1
+    _audit("portfolio_batch_add", user["username"], {"count": added})
+    return {"success": True, "count": added, "message": f"已登记 {added} 只到组合"}
+
+
 @router.delete("/positions/{stock_code}")
 async def delete_position(stock_code: str, user: dict = Depends(get_current_active_user)):
     """删除持仓"""

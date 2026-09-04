@@ -169,6 +169,33 @@ class TestPortfolioApi:
         assert data['count'] == 1
         assert data['positions'][0]['stock_code'] == '000001.SZ'
 
+    # ─── V5.3.0 (T-5.3.3.4 / FR-5.3.3.4): 批量加入组合 (评估→组合一键化) ───
+    def test_api_batch_add_positions(self, client):
+        """批量端点: 零价登记 (用户后补成本/数量)"""
+        r = client.post('/portfolio/positions/batch', json={
+            'stocks': [
+                {'stock_code': '000001.SZ', 'stock_name': '平安银行'},
+                {'stock_code': '600519.SH', 'stock_name': '贵州茅台'},
+            ]})
+        assert r.json()['success'] is True
+        data = client.get('/portfolio').json()
+        assert data['count'] == 2
+
+    def test_api_batch_add_requires_code(self, client):
+        r = client.post('/portfolio/positions/batch', json={'stocks': [{'stock_name': '无名'}]})
+        assert r.status_code == 400
+
+    def test_api_batch_add_preserves_existing(self, client):
+        client.post('/portfolio/positions', json={
+            'stock_code': '000001.SZ', 'stock_name': '平安银行', 'cost_price': 10, 'quantity': 100})
+        r = client.post('/portfolio/positions/batch', json={
+            'stocks': [{'stock_code': '000001.SZ', 'stock_name': '平安银行'}]})
+        assert r.json()['success'] is True
+        # 已存在持仓不应被零价覆盖 (保留原成本)
+        pos = client.get('/portfolio').json()['positions'][0]
+        assert pos['quantity'] == 100
+        assert abs(pos['cost_price'] - 10) < 1e-6
+
     def test_api_same_code_accumulates(self, client):
         client.post('/portfolio/positions', json={
             'stock_code': '000001.SZ', 'stock_name': '平安银行', 'cost_price': 10, 'quantity': 100})

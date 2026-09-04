@@ -262,6 +262,7 @@
                                     <el-button size="small" @click="selectAllHistory">{{ selectedHistoryIds.length === aiHistory.length ? '取消全选' : '全选' }}</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="batchReevaluateHistory">🔄 再次评估</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" type="success" @click="batchAddToWatchlist">⭐ 加入自选</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="warning" @click="batchAddToPortfolio">📊 加入组合</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" type="danger" @click="deleteSelectedHistory">🗑 批量删除</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="clearSelection">取消选择</el-button>
                                 </div>
@@ -742,6 +743,8 @@
                                                     <span v-else class="portfolio-na">--</span>
                                                 </td>
                                                 <td>
+                                                    <!-- V5.3.0 (T-5.3.3.4): 详情按钮 — 打开股票详情弹窗 (含跳转日历) -->
+                                                    <el-button size="small" @click="showStockDetail(p.stock_code)">详情</el-button>
                                                     <el-button size="small" @click="openTradeForm(p.stock_code, p.stock_name)">调仓</el-button>
                                                     <el-button size="small" type="danger" text @click="removePosition(p.stock_code)">删除</el-button>
                                                 </td>

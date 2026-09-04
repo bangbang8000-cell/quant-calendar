@@ -398,7 +398,33 @@ async function batchAddToWatchlist() {
     if (added > 0) ElementPlus.ElMessage.success(`已加入 ${added} 只股票到自选`);
     else ElementPlus.ElMessage.info('所选股票已在自选中');
 }
-
+// V5.3.0 (T-5.3.3.4 / FR-5.3.3.4): 评估历史批量加入组合 — 评估→组合一键化
+// 选中记录 → 去重 → 调 /api/portfolio/positions/batch 一次登记 (零价占位, 后补成本)
+async function batchAddToPortfolio() {
+    const ids = selectedHistoryIds.value;
+    if (ids.length === 0) return;
+    const stocks = aiHistory.value.filter(h => ids.includes(h.id));
+    const unique = [...new Map(stocks.map(s => [s.stock_code, s])).values()];
+    try {
+        const res = await fetch('/api/portfolio/positions/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stocks: unique.map(s => ({ stock_code: s.stock_code, stock_name: s.stock_name || '' })),
+            }),
+        });
+        const data = await res.json();
+        if (data && data.success) {
+            ElementPlus.ElMessage.success(`已登记 ${data.count || unique.length} 只到组合，请在组合页补充成本与数量`);
+        } else {
+            ElementPlus.ElMessage.error((data && data.detail) || '批量加入组合失败');
+        }
+    } catch (e) {
+        console.warn('batchAddToPortfolio failed:', e);
+        ElementPlus.ElMessage.error('批量加入组合失败，请稍后重试');
+    }
+    if (typeof loadPortfolio === 'function') loadPortfolio();
+}
 async function batchRemoveWatchlist() {
     if (selectedWatchlistCodes.value.length === 0) return;
     try {
@@ -1163,7 +1189,7 @@ async function doBatchEvaluate() {
         aiHistoryTotal, aiHistoryLoadingMore, hasMoreAiHistory, loadMoreAiHistory,
         watchlistLoading,
         doAiEvaluate, loadAiHistory, deleteSingleHistory, toggleSelectHistory, clearSelection,
-        clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchRemoveWatchlist,
+        clearWatchlistSelection, batchReevaluateHistory, batchAddToWatchlist, batchAddToPortfolio, batchRemoveWatchlist,
         toggleSelectWatchlist, selectAllHistory, selectAllWatchlist, deleteSelectedHistory,
         loadAutoEvaluateConfig, saveAutoEvaluateConfig, loadWatchlist, addToWatchlist,
         removeFromWatchlist, clearWatchlist, toggleWatchlist, showStockKline, preloadingKline,
