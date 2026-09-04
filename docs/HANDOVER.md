@@ -128,7 +128,7 @@
 ## 7. 下一步 / 待办
 
 - [ ] **v5.2.4 剩余打磨**(低风险巡检, 可作 v5.2.5 或日常消化): T-5.2.49 统一页面头 / T-5.2.50 空错态巡检 / T-5.2.51 移动端 375px / T-5.2.53 竞态防护推广 research/strategies / T-5.2.55 诚实性护栏 5.8 补测 / T-5.2.56 无障碍
-- [ ] **Docker ghcr.io 镜像实际推送**: docker-publish.yml 已就绪 (tag 触发 latest+semver), 但 v5.3.x 未实际跑过 — 下个 tag 验证
+- [x] **Docker ghcr.io 镜像实际推送 (v5.3.7 验证完成)**: tag v5.3.6 推送自动触发 CI 构建, ghcr.io/bangbang8000-cell/quant-calendar:v5.3.6 + latest 已可拉取并运行健康 (version 5.3.6)
 - [ ] (可选) 配置 IWENCAI_API_KEY 点亮涨停原因/题材串
 - [ ] 观察短线 16:05 抓取: 每日验证三池/龙虎榜/prev_zt 入库 + AI 复盘生成
 - [ ] 测试隔离坑根治(顶层 import 污染 data/)
