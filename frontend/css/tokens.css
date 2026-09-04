@@ -70,6 +70,16 @@
   --color-rise:    var(--color-up);    /* 行情涨跌专用：涨=红 */
   --color-fall:    var(--color-down);  /* 行情涨跌专用：跌=绿 */
   --color-neutral: #43a047;
+  /* V5.3.0 (T-5.3.2.2 / FR-5.3.2.2): 涨跌强弱分档 (视觉可区分, 数值级差越强色越深) */
+  --color-up-strong:    #C62828;  /* 大涨/强机会 — 深红 */
+  --color-up-weak:      #F5A0A6;  /* 小涨/弱机会 — 浅红 */
+  --color-down-strong:  #1B5E20;  /* 大跌/强风险 — 深绿 */
+  --color-down-weak:    #81C784;  /* 小跌/弱风险 — 浅绿 */
+  /* V5.3.0 (T-5.3.2.2 / FR-5.3.2.2): 语义配色 — 机会/风险/中性/警示 (决策语义) */
+  --sem-opportunity: var(--color-up);   /* 机会 → 涨(红) */
+  --sem-risk:        var(--color-down); /* 风险 → 跌(绿) */
+  --sem-neutral:     var(--color-neutral);
+  --sem-warning:     var(--color-warning);
   /* v3.11 (FR-3.11.6): 补齐缺失语义色令牌 */
   --color-ai:      #6366f1;  /* AI 品牌紫/靛蓝系（评估/模型徽标） */
   --white:         #ffffff;  /* 强调色/渐变上的文字、白底 */

@@ -31,6 +31,17 @@
 | --color-success | 成功 | 成功提示 |
 | --color-gold | 金色 | 收藏/特殊标记 |
 | --color-neutral | 中性 | 无方向性数据 |
+| --color-up-strong | 大涨/强机会 | 深红, 强正向幅度 |
+| --color-up-weak | 小涨/弱机会 | 浅红, 弱正向幅度 |
+| --color-down-strong | 大跌/强风险 | 深绿, 强负向幅度 |
+| --color-down-weak | 小跌/弱风险 | 浅绿, 弱负向幅度 |
+| --sem-opportunity | 机会 | 决策语义 → var(--color-up) |
+| --sem-risk | 风险 | 决策语义 → var(--color-down) |
+| --sem-neutral | 中性 | 无方向决策 |
+| --sem-warning | 警示 | → var(--color-warning) |
+
+> V5.3.2 (T-5.3.2.2): 语义令牌用于决策表达(机会/风险/警示), 强弱分档用于行情幅度分级。
+> 一律引用令牌, 禁止硬编码色值。
 
 ## 3. 主题变量 (themes.css 定义, 7 套)
 
