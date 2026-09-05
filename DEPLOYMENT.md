@@ -150,6 +150,8 @@ curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/reliability/st
 
 查询优先级：`sxsc-tushare → tushare → akshare`，自动 fallback。
 
+> **V5.3.10~13 数据源行为**: ①sxsc-tushare 优先调度覆盖 K线/指数/个股资金流/涨停跌停池/龙虎榜/业绩预告快报(短线三池须用 `limit_list_d`); ②6 位代码(如 `000813`)自动补交易所后缀(`_normalize_ts_code`), 无需手动加 .SH/.SZ; ③未配置 Token 的源(客户端缺失)自动跳过且不计失败, 不触发冷却(健康面板干净); ④空数据计一次失败, 连续 3 次冷却 300 秒后自动恢复。
+
 | 数据源 | 是否需要 Token | 安装方式 | 备注 |
 |--------|:---:|------|------|
 | sxsc-tushare | 是 | 离线安装（见下方） | 券商版，优先级最高 |
