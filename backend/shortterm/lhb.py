@@ -120,6 +120,23 @@ def _fetch_tushare_lhb(start_date: str, end_date: str, s: str) -> dict:
             'start_date': str(start_date), 'end_date': str(end_date), 'rows': rows}
 
 
+def _fetch_sxsc_lhb(start_date: str, end_date: str, s: str) -> dict:
+    """V5.3.10: sxsc(山证Tushare)龙虎榜 — top_list (与 tushare 同协议, 含 reason)
+
+    优先级最高(券商网关, 功能和实效性更高)。dev 无 sxsc token → 客户端缺失 → 抛错回落。
+    """
+    from data_sources import data_source_manager
+    api = data_source_manager._clients.get('sxsc_tushare')
+    if api is None:
+        raise RuntimeError('sxsc 客户端未初始化(dev 未配置 SXSC_TUSHARE_TOKEN)')
+    df = api.query('top_list', trade_date=s)
+    rows = []
+    for _, r in df.iterrows():
+        rows.append(_normalize_tushare_row(dict(r)))
+    return {'available': True, 'source': 'sxsc_tushare',
+            'start_date': str(start_date), 'end_date': str(end_date), 'rows': rows}
+
+
 def fetch_lhb(start_date: str, end_date: str) -> dict:
     """全市场龙虎榜明细。日期 YYYY-MM-DD / YYYYMMDD。
 
@@ -127,6 +144,11 @@ def fetch_lhb(start_date: str, end_date: str) -> dict:
     """
     s, e = _norm_date(start_date), _norm_date(end_date)
     errs = []
+    try:
+        return _fetch_sxsc_lhb(start_date, end_date, s)
+    except Exception as exc:  # noqa: BLE001
+        errs.append(f'sxsc_tushare: {type(exc).__name__}: {str(exc)[:80]}')
+        logger.warning('龙虎榜 sxsc 失败(%s~%s), 试东财: %s', s, e, exc)
     try:
         import akshare as ak
         df = ak.stock_lhb_detail_em(start_date=s, end_date=e)

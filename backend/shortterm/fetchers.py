@@ -148,8 +148,8 @@ _TUSHARE_LIMIT = {'zt': 'U', 'dt': 'D'}  # limit_list_d 的 limit 取值
 # 炸板池 tushare 无对应源(limit_list_d 不区分炸板), 保持东财单源, 由 [⚠️] 诚实降级。
 # ⚠️ 测试用 monkeypatch 改此表以隔离真实网络/校验降级路径。
 _SOURCE_CHAINS = {
-    'zt': ['akshare.eastmoney', 'tushare'],
-    'dt': ['akshare.eastmoney', 'tushare'],
+    'zt': ['sxsc_tushare', 'akshare.eastmoney', 'tushare'],
+    'dt': ['sxsc_tushare', 'akshare.eastmoney', 'tushare'],
     'zb': ['akshare.eastmoney'],
 }
 
@@ -182,6 +182,43 @@ def _fetch_tushare_limit_list(pool_type: str, compact: str, date_str: str) -> di
     return {'available': True, 'source': 'tushare', 'date': date_str, 'rows': rows}
 
 
+def _fetch_sxsc_limit_list(pool_type: str, compact: str, date_str: str) -> dict:
+    """V5.3.10: sxsc(山证Tushare)涨停/跌停池 — limit_list_d
+
+    优先级最高(券商网关, 功能和实效性更高)。经 data_source_manager 的 sxsc
+    客户端调用; dev 无 sxsc token → 客户端缺失 → 抛错交外层回落 akshare。
+
+    ⚠️ 券商网关列格式与 tushare 标准版不同 (V5.3.10 实测):
+    - up_stat 为 'X/Y' 字符串 (连板数X/累计炸板Y), 如 '4/4' = 4连板;
+      需解析 X 为 boards, Y 为 break_times (U 类专用, D 类为 NaN)
+    - limit_amount: U 类全 NaN (券商不填封单), D 类有值 → 如实保留
+    """
+    from data_sources import data_source_manager
+    api = data_source_manager._clients.get('sxsc_tushare')
+    if api is None:
+        raise RuntimeError('sxsc 客户端未初始化(dev 未配置 SXSC_TUSHARE_TOKEN)')
+    df = api.query('limit_list_d', trade_date=compact)
+    if df is None or len(df) == 0:
+        return {'available': True, 'source': 'sxsc_tushare', 'date': date_str, 'rows': []}
+    limit = _TUSHARE_LIMIT[pool_type]
+    if 'limit' in df.columns:
+        df = df[df['limit'] == limit]
+    if pool_type == 'zt' and 'up_stat' in df.columns:
+        # 'X/Y' → X=连板数, Y=累计炸板; 兼容纯数字/NaN
+        def _parse_up_stat(v):
+            if v is None or (isinstance(v, float) and v != v):
+                return None
+            s = str(v)
+            if '/' in s:
+                x, y = s.split('/')[:2]
+                xi = _to_int(x) if x else None
+                return xi
+            return _to_int(v)
+        df['up_stat'] = df['up_stat'].map(_parse_up_stat)
+    rows = normalize_pool_df(df, _TUSHARE_MAP[pool_type])
+    return {'available': True, 'source': 'sxsc_tushare', 'date': date_str, 'rows': rows}
+
+
 def _fetch_pool(pool_type: str, date: str) -> dict:
     """抓取三池之一(源链 fallback)。date 接受 YYYY-MM-DD / YYYYMMDD。
 
@@ -193,7 +230,9 @@ def _fetch_pool(pool_type: str, date: str) -> dict:
     errs = []
     for source in _SOURCE_CHAINS.get(pool_type, ['akshare.eastmoney']):
         try:
-            if source == 'akshare.eastmoney':
+            if source == 'sxsc_tushare':
+                out = _fetch_sxsc_limit_list(pool_type, compact, date_str)
+            elif source == 'akshare.eastmoney':
                 out = _fetch_akshare_eastmoney(pool_type, compact, date_str)
             elif source == 'tushare':
                 out = _fetch_tushare_limit_list(pool_type, compact, date_str)
