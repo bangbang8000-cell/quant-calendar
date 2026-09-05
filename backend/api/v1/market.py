@@ -97,6 +97,67 @@ async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
         return {"success": False, "message": f"重评估失败: {str(e)}"}
 
 
+@router.get("/performance/{ts_code}")
+async def get_performance(ts_code: str, user: dict = Depends(get_current_active_user)):
+    """V5.3.10: 个股业绩预告/快报 (sxsc 优先: forecast/express)
+
+    返回 {'success', 'ts_code', 'forecast': [...], 'express': [...]} —
+    forecast: 业绩预告 (预告类型/净利润变动区间/上年同期净利)
+    express:  业绩快报 (营收/营业利润/净利润)
+    sxsc 客户端缺失或接口失败 → 各自降级为空列表 (诚实性)。
+    """
+    from data_sources import data_source_manager
+    from typing import List
+    api = data_source_manager._clients.get('sxsc_tushare')
+    out = {'forecast': [], 'express': []}
+    if api is None:
+        return {'success': True, 'ts_code': ts_code, **out}
+    try:
+        df = api.query('forecast', ts_code=ts_code, limit=5)
+        if df is not None and len(df):
+            cols = list(df.columns)
+            for _, r in df.head(5).iterrows():
+                d = dict(r)
+                out['forecast'].append({
+                    'ann_date': _fmt(d.get('ann_date')), 'end_date': _fmt(d.get('end_date')),
+                    'type': d.get('type'), 'p_change_min': d.get('p_change_min'),
+                    'p_change_max': d.get('p_change_max'),
+                    'net_profit_min': d.get('net_profit_min'), 'net_profit_max': d.get('net_profit_max'),
+                    'last_parent_net': d.get('last_parent_net'),
+                })
+    except Exception as e:  # noqa: BLE001
+        logger.warning('performance forecast(%s) 失败: %s', ts_code, e)
+    try:
+        df = api.query('express', ts_code=ts_code, limit=5)
+        if df is not None and len(df):
+            for _, r in df.head(5).iterrows():
+                d = dict(r)
+                out['express'].append({
+                    'ann_date': _fmt(d.get('ann_date')), 'end_date': _fmt(d.get('end_date')),
+                    'revenue': d.get('revenue'), 'operate_profit': d.get('operate_profit'),
+                    'total_profit': d.get('total_profit'), 'n_income': d.get('n_income'),
+                })
+    except Exception as e:  # noqa: BLE001
+        logger.warning('performance express(%s) 失败: %s', ts_code, e)
+    return {'success': True, 'ts_code': ts_code, **out}
+
+
+def _fmt(v):
+    """YYYYMMDD int → YYYY-MM-DD str; 其余原样"""
+    if isinstance(v, (int, float)) and v and not (isinstance(v, float) and v != v):
+        s = str(int(v))
+        if len(s) == 8 and s.isdigit():
+            return f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    if v is None or (isinstance(v, float) and v != v):  # None / NaN → None (JSON 安全)
+        return None
+    if isinstance(v, (int, float)):
+        f = float(v)
+        if f != f or f in (float('inf'), float('-inf')):
+            return None
+    return v
+
+
+
 @router.get("/kline/{ts_code}")
 async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
     """获取K线数据（支持股票和指数）

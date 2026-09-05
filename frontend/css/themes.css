@@ -2784,6 +2784,17 @@ text {
 .factor-group {
     margin-bottom: 16px;
 }
+.perf-block {
+    margin-bottom: 16px;
+}
+.perf-block-title {
+    font-size: var(--font-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    padding-left: 8px;
+    border-left: 3px solid var(--primary-color);
+}
 .factor-group-title {
     font-size: var(--font-base);
     font-weight: var(--font-semibold);

@@ -48,6 +48,9 @@
                         <el-button size="small" :type="stockDetailTab === 'factor' ? 'primary' : ''" @click="stockDetailTab = 'factor'">
                             {{ t('detail.tabFactor') }}
                         </el-button>
+                        <el-button size="small" :type="stockDetailTab === 'performance' ? 'primary' : ''" @click="stockDetailTab = 'performance'">
+                            {{ t('detail.tabPerformance') }}
+                        </el-button>
                         <div class="flex-1"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
                             {{ t('detail.evaluate') }}
@@ -371,6 +374,47 @@
                             </div>
                         </div>
                     </div>  <!-- close factor tab -->
+                    <div v-if="stockDetailTab === 'performance'">
+                        <!-- V5.3.10: 业绩预告/快报 (sxsc forecast/express) -->
+                        <qc-state-panel v-if="perfLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="perfError" type="empty" icon="📊" :title="t('detail.perfEmpty')"></qc-state-panel>
+                        <div v-else-if="perfForecast.length || perfExpress.length">
+                            <div v-if="perfForecast.length" class="perf-block">
+                                <div class="perf-block-title">{{ t('detail.perfForecast') }}</div>
+                                <el-table :data="perfForecast" size="small" border>
+                                    <el-table-column prop="ann_date" :label="t('detail.perfAnnDate')" width="100"></el-table-column>
+                                    <el-table-column prop="end_date" :label="t('detail.perfEndDate')" width="100"></el-table-column>
+                                    <el-table-column prop="type" :label="t('detail.perfType')" width="80"></el-table-column>
+                                    <el-table-column :label="t('detail.perfChange')">
+                                        <template #default="{ row }">
+                                            <span v-if="row.p_change_min != null">{{ row.p_change_min }}% ~ {{ row.p_change_max }}%</span>
+                                            <span v-else>—</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="t('detail.perfNetProfit')">
+                                        <template #default="{ row }">
+                                            <span v-if="row.net_profit_min != null">{{ fmtY(row.net_profit_min) }} ~ {{ fmtY(row.net_profit_max) }}</span>
+                                            <span v-else>—</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <div v-if="perfExpress.length" class="perf-block">
+                                <div class="perf-block-title">{{ t('detail.perfExpress') }}</div>
+                                <el-table :data="perfExpress" size="small" border>
+                                    <el-table-column prop="ann_date" :label="t('detail.perfAnnDate')" width="100"></el-table-column>
+                                    <el-table-column prop="end_date" :label="t('detail.perfEndDate')" width="100"></el-table-column>
+                                    <el-table-column prop="revenue" :label="t('detail.perfRevenue')">
+                                        <template #default="{ row }"><span v-if="row.revenue != null">{{ fmtY(row.revenue) }}</span><span v-else>—</span></template>
+                                    </el-table-column>
+                                    <el-table-column prop="n_income" :label="t('detail.perfIncome')">
+                                        <template #default="{ row }"><span v-if="row.n_income != null">{{ fmtY(row.n_income) }}</span><span v-else>—</span></template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
+                        <qc-state-panel v-else type="empty" icon="📊" :title="t('detail.perfEmpty')"></qc-state-panel>
+                    </div>
                 </div>
             </div>
         </el-dialog>
@@ -492,6 +536,41 @@
         if (state.navigateTo) state.navigateTo('calendar', 'daily');
         if (state.stockDetailVisible) state.stockDetailVisible.value = false;
       }
+// V5.3.10: 业绩预告/快报 (sxsc forecast/express) — 组件内自管理
+      const perfLoading = ref(false);
+      const perfError = ref(false);
+      const perfForecast = ref([]);
+      const perfExpress = ref([]);
+      function fmtY(v) {
+        if (v == null) return '—';
+        const n = Number(v);
+        if (Number.isNaN(n)) return '—';
+        if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(2) + '亿';
+        if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(1) + '万';
+        return String(n);
+      }
+      async function loadPerformance() {
+        const code = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
+        if (!code) return;
+        perfLoading.value = true;
+        perfError.value = false;
+        try {
+          const res = await fetch('/api/market/performance/' + encodeURIComponent(code)).then(r => r.json());
+          if (res && res.success) {
+            perfForecast.value = res.forecast || [];
+            perfExpress.value = res.express || [];
+          } else {
+            perfError.value = true;
+          }
+        } catch (e) {
+          perfError.value = true;
+        } finally {
+          perfLoading.value = false;
+        }
+      }
+      watch(state.stockDetailTab, (tab) => {
+        if (tab === 'performance') loadPerformance();
+      });
       return { ...state, gotoCalendar, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade };
     },
   };

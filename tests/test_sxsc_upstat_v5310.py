@@ -22,7 +22,7 @@ def test_zt_up_stat_parsed(monkeypatch):
     class _FakeApi:
         def query(self, name, **kw):
             return df
-    data_source_manager._clients['sxsc_tushare'] = _FakeApi()
+    monkeypatch.setattr(data_source_manager, '_clients', {'sxsc_tushare': _FakeApi()})
     out = fetchers._fetch_sxsc_limit_list('zt', '20260903', '2026-09-03')
     rows = {r['ts_code']: r for r in out['rows']}
     assert rows['000001']['boards'] == 4, "'4/4' → boards=4"
@@ -41,6 +41,6 @@ def test_zt_up_stat_nan_kept_none(monkeypatch):
     class _FakeApi:
         def query(self, name, **kw):
             return df
-    data_source_manager._clients['sxsc_tushare'] = _FakeApi()
+    monkeypatch.setattr(data_source_manager, '_clients', {'sxsc_tushare': _FakeApi()})
     out = fetchers._fetch_sxsc_limit_list('zt', '20260903', '2026-09-03')
     assert out['rows'][0]['boards'] is None
