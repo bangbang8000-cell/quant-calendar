@@ -341,6 +341,7 @@ class DataSourceManager:
     def _fetch_daily_basic_series(self, src_name, ts_code, limit):
         """各数据源获取基本面历史序列（旧→新）
         tushare 系(标准版/券商版)走 daily_basic 多日; akshare 无历史接口返回单元素快照"""
+        ts_code = _normalize_ts_code(ts_code)  # V5.3.11: 6位无后缀→带后缀
         if src_name in ('sxsc_tushare', 'tushare'):
             api = self._clients.get(src_name)
             if not api:
@@ -410,6 +411,7 @@ class DataSourceManager:
 
     def _fetch_kline(self, src_name, ts_code, period, limit):
         """各数据源获取K线 DataFrame"""
+        ts_code = _normalize_ts_code(ts_code)  # V5.3.11: 6位无后缀→带后缀
         is_index = _is_index_code(ts_code)
 
         if src_name == 'sxsc_tushare':
@@ -472,6 +474,7 @@ class DataSourceManager:
         字段: roe / netprofit_yoy / grossprofit_margin / debt_to_assets
         (tushare fina_indicator 最近一期)
         """
+        ts_code = _normalize_ts_code(ts_code)  # V5.3.11: 6位无后缀→带后缀
         try:
             if src_name in ('sxsc_tushare', 'tushare'):
                 api = self._clients.get(src_name)
@@ -547,6 +550,7 @@ class DataSourceManager:
 
     def _fetch_moneyflow(self, src_name, ts_code, limit):
         """各数据源获取资金流向（仅支持 tushare 系；akshare 不可达返回 None → 因子降级）"""
+        ts_code = _normalize_ts_code(ts_code)  # V5.3.11: 6位无后缀→带后缀
         if src_name == 'sxsc_tushare':
             api = self._clients.get('sxsc_tushare')
             if not api:
@@ -650,6 +654,7 @@ class DataSourceManager:
 
     def _fetch_daily_basic(self, src_name, ts_code, limit):
         """各数据源获取基本面数据"""
+        ts_code = _normalize_ts_code(ts_code)  # V5.3.11: 6位无后缀→带后缀
         if src_name == 'sxsc_tushare':
             api = self._clients.get('sxsc_tushare')
             if not api:

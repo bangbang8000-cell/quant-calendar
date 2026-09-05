@@ -3,6 +3,9 @@
 """V5.0.9 (T-5.0.93): 代码/列名映射辅助 (拆自 data_sources.py)"""
 from ._constants import *  # noqa: F401,F403
 
+__all__ = ['_normalize_ts_code']
+
+
 
 def _safe_float(value, default=None):
     """安全转 float, 无法转换返回 default"""
@@ -33,6 +36,26 @@ def _ts_code_to_sina_symbol(ts_code):
     suffix = ts_code.split('.')[-1].upper()
     prefix = 'sh' if suffix == 'SH' else 'sz' if suffix == 'SZ' else ''
     return prefix + code
+
+def _normalize_ts_code(ts_code):
+    """V5.3.11: 6 位无后缀代码 → 自动补 .SH/.SZ/.BJ 后缀 (sxsc/tushare 接口要求)
+
+    - 60/68/51/58/90/11/13 → .SH (沪: 主板/科创/基金/国债/B股)
+    - 00/30/20/12/15/16/18 → .SZ (深: 主板/创业/三板/基金/指数/可转债)
+    - 83/87/88/92/43/82/92 → .BJ (北交所)
+    - 已带后缀 → 原样返回; 指数(000xxx.SH/399xxx.SZ)后缀保留
+    """
+    if not ts_code or '.' in str(ts_code):
+        return ts_code
+    s = str(ts_code).strip().zfill(6)
+    if s[0] in ('6', '5', '9', '1') or s.startswith('90'):
+        return f"{s}.SH"
+    if s[0] in ('0', '3', '2') or s.startswith(('12', '15', '16', '18')):
+        return f"{s}.SZ"
+    if s.startswith(('83', '87', '88', '43', '82', '92', '4')):
+        return f"{s}.BJ"
+    return ts_code
+
 
 def _is_index_code(ts_code):
     """判断是否为指数代码"""
