@@ -9,7 +9,7 @@ router = APIRouter(prefix="/data-dict", tags=["数据字典"])
 
 
 @router.get("")
-async def data_dict(category: str = Query(None, description="按分类过滤: kline/daily_basic/financial/calendar/quality"),
+async def data_dict(category: str = Query(None, description="按分类过滤: kline/daily_basic/financial/calendar/quality/shortterm/lhb/sector_flow/moneyflow/performance/snapshot"),
                     user: dict = Depends(get_current_active_user)):
     """数据字典: 全部字段或按分类过滤 (字段口径单点维护的只读视图)。"""
     from data_dict import load_dict, list_fields

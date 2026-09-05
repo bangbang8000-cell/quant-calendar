@@ -243,3 +243,415 @@ fields:
     source: internal
     aliases: [grade]
     description: A/B/C/D 质量等级
+
+  # ── 短线三池 (shortterm: 涨停/炸板/跌停池, v5.2/v5.3 sxsc优先) ──
+  - key: name
+    label: 证券名称
+    category: shortterm
+    type: string
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [名称, 股票名]
+    description: 证券简称, 如 平安银行
+  - key: pct_chg
+    label: 涨跌幅
+    category: shortterm
+    type: number
+    unit: "%"
+    frequency: daily
+    source: 三源
+    aliases: [pct_change, 涨跌幅]
+    description: 当日涨跌幅 (%)
+  - key: price
+    label: 最新价
+    category: shortterm
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [close, 最新价]
+    description: 当日最新/收盘价
+  - key: seal_amount
+    label: 封单金额
+    category: shortterm
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [limit_amount, 封板资金, 封单资金]
+    description: 涨停/跌停封单金额 (sxsc U 类网关不填 → 如实为空)
+  - key: first_seal_time
+    label: 首封时间
+    category: shortterm
+    type: time
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [first_time]
+    description: 首次封板时间, HH:MM:SS
+  - key: last_seal_time
+    label: 末封时间
+    category: shortterm
+    type: time
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [last_time]
+    description: 最后封板时间, HH:MM:SS
+  - key: break_times
+    label: 开板次数
+    category: shortterm
+    type: number
+    unit: 次
+    frequency: daily
+    source: 三源
+    aliases: [open_times, 炸板次数]
+    description: 涨停期间打开涨停板次数
+  - key: boards
+    label: 连板数
+    category: shortterm
+    type: number
+    unit: 板
+    frequency: daily
+    source: 三源
+    aliases: [up_stat, 连板数]
+    description: 连续涨停板数; sxsc up_stat 'X/Y' 解析 X
+  - key: industry
+    label: 所属行业
+    category: shortterm
+    type: string
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [行业, 板块]
+    description: 申万/东财行业分类 (涨停原因归因)
+  - key: zt_stat
+    label: 涨停统计
+    category: shortterm
+    type: string
+    unit: ""
+    frequency: daily
+    source: akshare
+    aliases: [涨停统计]
+    description: 东财涨停统计口径 (连板梯队)
+  - key: limit_price
+    label: 涨跌停价
+    category: shortterm
+    type: number
+    unit: 元
+    frequency: daily
+    source: sxsc
+    aliases: [stk_limit, 涨跌停价]
+    description: 当日涨/跌停板价格
+  # ── 龙虎榜 (lhb, v5.2.3+ sxsc top_list 优先) ──
+  - key: net_buy
+    label: 龙虎榜净买入
+    category: lhb
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [net_amount, 净买入额]
+    description: 龙虎榜当日净买入金额
+  - key: buy_amount
+    label: 买入金额
+    category: lhb
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [l_buy, 买入额]
+    description: 龙虎榜买方总金额
+  - key: sell_amount
+    label: 卖出金额
+    category: lhb
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [l_sell, 卖出额]
+    description: 龙虎榜卖方总金额
+  - key: reason
+    label: 上榜原因
+    category: lhb
+    type: string
+    unit: ""
+    frequency: daily
+    source: 三源
+    aliases: [上榜原因, explain]
+    description: 龙虎榜上榜原因 (sxsc/tushare top_list)
+  - key: amount_ratio
+    label: 成交占比
+    category: lhb
+    type: number
+    unit: "%"
+    frequency: daily
+    source: akshare
+    aliases: [成交占比]
+    description: 龙虎榜成交额占个股成交额比例
+  - key: net_buy_ratio
+    label: 净买占比
+    category: lhb
+    type: number
+    unit: "%"
+    frequency: daily
+    source: akshare
+    aliases: [净买占比]
+    description: 净买入占个股成交额比例
+  - key: reading
+    label: 龙虎榜解读
+    category: lhb
+    type: string
+    unit: ""
+    frequency: daily
+    source: akshare
+    aliases: [解读]
+    description: 东财龙虎榜解读 (机构/游资/主力客观归类)
+  - key: next_1d
+    label: 次日涨跌幅
+    category: lhb
+    type: number
+    unit: "%"
+    frequency: daily
+    source: akshare
+    aliases: [next_1d]
+    description: 上榜次日涨跌幅 (样本外表现跟踪)
+  - key: board
+    label: 涨跌停制度
+    category: lhb
+    type: string
+    unit: ""
+    frequency: daily
+    source: internal
+    aliases: [板别, board_limit]
+    description: 10cm/20cm/30cm 涨跌幅制度标签
+  # ── 板块资金流 (sector_flow, v5.2.3+ akshare 同花顺/东财) ──
+  - key: sector_name
+    label: 板块名称
+    category: sector_flow
+    type: string
+    unit: ""
+    frequency: daily
+    source: akshare
+    aliases: [板块名称, 行业名称]
+    description: 行业/概念板块名称
+  - key: main_net_inflow
+    label: 主力净流入
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [主力净流入, net_inflow]
+    description: 板块主力资金净流入
+  - key: main_net_inflow_ratio
+    label: 主力净占比
+    category: sector_flow
+    type: number
+    unit: "%"
+    frequency: daily
+    source: akshare
+    aliases: [主力净占比]
+    description: 主力净流入占板块成交额比例
+  - key: super_net_inflow
+    label: 超大单净流入
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [超大单净流入]
+    description: 超大单资金净流入
+  - key: large_net_inflow
+    label: 大单净流入
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [大单净流入]
+    description: 大单资金净流入
+  - key: mid_net_inflow
+    label: 中单净流入
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [中单净流入]
+    description: 中单资金净流入
+  - key: small_net_inflow
+    label: 小单净流入
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [小单净流入]
+    description: 小单资金净流入
+  - key: inflow
+    label: 板块流入资金
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [流入资金]
+    description: 同花顺口径板块流入资金
+  - key: outflow
+    label: 板块流出资金
+    category: sector_flow
+    type: number
+    unit: 元
+    frequency: daily
+    source: akshare
+    aliases: [流出资金]
+    description: 同花顺口径板块流出资金
+  - key: stock_count
+    label: 成分股数量
+    category: sector_flow
+    type: number
+    unit: 家
+    frequency: daily
+    source: akshare
+    aliases: [公司家数]
+    description: 板块成分股数量
+  # ── 个股资金流 (moneyflow, v5.3.10 sxsc 优先) ──
+  - key: net_mf_amount
+    label: 主力净流入额
+    category: moneyflow
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [net_mf, 主力净流入]
+    description: 个股主力资金净流入 (负值=净流出)
+  - key: buy_elg_amount
+    label: 超大单买入
+    category: moneyflow
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [buy_elg_amount]
+    description: 超大单主动买入金额
+  - key: sell_elg_amount
+    label: 超大单卖出
+    category: moneyflow
+    type: number
+    unit: 元
+    frequency: daily
+    source: 三源
+    aliases: [sell_elg_amount]
+    description: 超大单主动卖出金额
+  # ── 业绩预告/快报 (performance, v5.3.10 sxsc forecast/express) ──
+  - key: p_change_min
+    label: 净利变动下限
+    category: performance
+    type: number
+    unit: "%"
+    frequency: quarterly
+    source: sxsc
+    aliases: [p_change_min]
+    description: 业绩预告净利润变动区间下限 (%)
+  - key: p_change_max
+    label: 净利变动上限
+    category: performance
+    type: number
+    unit: "%"
+    frequency: quarterly
+    source: sxsc
+    aliases: [p_change_max]
+    description: 业绩预告净利润变动区间上限 (%)
+  - key: net_profit_min
+    label: 预告净利下限
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [net_profit_min]
+    description: 预告净利润区间下限
+  - key: net_profit_max
+    label: 预告净利上限
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [net_profit_max]
+    description: 预告净利润区间上限
+  - key: last_parent_net
+    label: 上年同期净利
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [last_parent_net]
+    description: 上年同期归母净利润 (预告同比基准)
+  - key: operate_profit
+    label: 营业利润
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [operate_profit]
+    description: 业绩快报营业利润
+  - key: total_profit
+    label: 利润总额
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [total_profit]
+    description: 业绩快报利润总额
+  - key: n_income
+    label: 净利润
+    category: performance
+    type: number
+    unit: 万元
+    frequency: quarterly
+    source: sxsc
+    aliases: [n_income, 归母净利]
+    description: 业绩快报归母净利润
+  # ── 盘中情绪快照 (snapshot, v5.3.8+ 盘中核验) ──
+  - key: zt_count
+    label: 涨停家数
+    category: snapshot
+    type: number
+    unit: 家
+    frequency: intraday
+    source: 三源
+    aliases: [涨停家数]
+    description: 当前时点涨停家数 (盘中值口径)
+  - key: zb_count
+    label: 炸板家数
+    category: snapshot
+    type: number
+    unit: 家
+    frequency: intraday
+    source: 三源
+    aliases: [炸板家数]
+    description: 当前时点炸板家数 (盘中值口径)
+  - key: dt_count
+    label: 跌停家数
+    category: snapshot
+    type: number
+    unit: 家
+    frequency: intraday
+    source: 三源
+    aliases: [跌停家数]
+    description: 当前时点跌停家数 (盘中值口径)
+  - key: broken_rate
+    label: 炸板率
+    category: snapshot
+    type: number
+    unit: "%"
+    frequency: intraday
+    source: 三源
+    aliases: [炸板率]
+    description: 炸板率 = 炸板/(涨停+炸板), 盘中情绪指标

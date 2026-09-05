@@ -19,7 +19,8 @@ import os
 logger = logging.getLogger(__name__)
 
 DICT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_dict.yaml")
-FIELD_CATEGORIES = ("kline", "daily_basic", "financial", "calendar", "quality")
+FIELD_CATEGORIES = ("kline", "daily_basic", "financial", "calendar", "quality",
+                 "shortterm", "lhb", "sector_flow", "moneyflow", "performance", "snapshot")
 
 
 class DataDictError(Exception):
