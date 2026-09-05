@@ -118,6 +118,19 @@ class DataSourceManager:
 
     def _get_source_config(self, source_name):
         return self.config.get('sources', {}).get(source_name, {})
+    def _source_client_ready(self, source_name):
+        """V5.3.13: 数据源客户端是否就绪 (路由遍历跳过未初始化源)。
+
+        sxsc_tushare/tushare 需要 _clients 中的客户端对象; 客户端缺失
+        (如 dev 未配置 SXSC_TUSHARE_TOKEN) → False, 遍历跳过且不记失败,
+        避免假失败触发冷却 + 污染健康统计。akshare 按需 import → True。
+        """
+        if source_name in ('sxsc_tushare', 'tushare'):
+            return source_name in self._clients and self._clients.get(source_name) is not None
+        return True
+
+
+
 
     def get_config(self):
         """获取数据源配置（不含 token）"""
@@ -175,6 +188,8 @@ class DataSourceManager:
     def get_index_daily(self, ts_code, trade_date=None):
         """获取指数日线数据（带 fallback）"""
         for src_name in SOURCE_ORDER:
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -216,6 +231,8 @@ class DataSourceManager:
             # v3.22: preferred 优先 — 高并发场景(异动扫描)先走 tushare 绕开 sxsc 20次/秒限流
             route = [preferred] + [s for s in get_route_order() if s != preferred] if preferred else get_route_order()
             for src_name in route:
+                if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                    continue
                 src_cfg = self._get_source_config(src_name)
                 if not src_cfg.get('enabled', True):
                     continue
@@ -255,6 +272,8 @@ class DataSourceManager:
         monthly_limit = limit * 12  # 季度需要3x月线，年度需要12x
         monthly_data = None
         for src_name in SOURCE_ORDER:
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -300,6 +319,8 @@ class DataSourceManager:
     def get_daily_basic(self, ts_code, limit=5):
         """获取基本面数据（带 fallback）"""
         for src_name in get_route_order():
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -322,6 +343,8 @@ class DataSourceManager:
         """获取基本面历史序列（旧→新列表, 用于因子分位计算）— v3.21
         优先 tushare 标准版(多日); sxsc 券商版返回格式不兼容跳过; akshare 单元素快照"""
         for src_name in ('tushare', 'sxsc_tushare', 'akshare'):
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -509,6 +532,8 @@ class DataSourceManager:
     def get_financial_data(self, ts_code):
         """获取财务指标（带 fallback）— FR-3.12.1 财务数据拉取"""
         for src_name in SOURCE_ORDER:
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue
@@ -531,6 +556,8 @@ class DataSourceManager:
         """获取个股主力资金流向（带 fallback）— v3.17 / FR-3.17.3 资金面因子
         返回 [{trade_date, net_mf_amount}, ...]（旧→新）或 None"""
         for src_name in get_route_order():
+            if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
+                continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
             if not src_cfg.get('enabled', True):
                 continue

@@ -102,6 +102,8 @@ def test_success_revives_and_records_switch():
 def _make_manager(monkeypatch):
     mgr = ds.DataSourceManager()
     monkeypatch.setattr(mgr, '_get_source_config', lambda s: {'enabled': True})
+    # V5.3.13: 客户端就绪 (failover 是接口失败场景, 非客户端缺失)
+    monkeypatch.setattr(mgr, '_clients', {'sxsc_tushare': object(), 'tushare': object()})
 
     def fake_fetch(src, code, date=None):
         if src == 'sxsc_tushare':

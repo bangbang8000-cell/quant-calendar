@@ -212,6 +212,8 @@ def test_get_financial_data_fallback_success(monkeypatch):
     import data_sources as ds_mod
     from data_sources import data_source_manager as mgr
     ds_mod.reset_health()
+    # V5.3.13: 客户端就绪 (fallback 是接口失败场景, 非客户端缺失)
+    monkeypatch.setattr(mgr, '_clients', {'sxsc_tushare': object(), 'tushare': object()})
 
     real_fetch = mgr._fetch_financial
     def fake_fetch(src, ts_code):

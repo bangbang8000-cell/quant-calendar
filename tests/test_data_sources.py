@@ -74,6 +74,7 @@ def test_timed_record_reraises_and_records():
 def test_get_index_daily_records_success(monkeypatch):
     mgr = ds.DataSourceManager()
     monkeypatch.setattr(mgr, '_get_source_config', lambda s: {'enabled': True})
+    monkeypatch.setattr(mgr, '_clients', {'sxsc_tushare': object(), 'tushare': object()})  # V5.3.13 客户端就绪
     monkeypatch.setattr(mgr, '_fetch_index_daily',
                         lambda src, code, date: {'close': 1.0, 'trade_date': '20260101'})
     result = mgr.get_index_daily('000001.SH')
@@ -89,6 +90,7 @@ def test_get_index_daily_all_fail_degraded(monkeypatch):
 
     mgr = ds.DataSourceManager()
     monkeypatch.setattr(mgr, '_get_source_config', lambda s: {'enabled': True})
+    monkeypatch.setattr(mgr, '_clients', {'sxsc_tushare': object(), 'tushare': object()})  # V5.3.13 客户端就绪
     monkeypatch.setattr(mgr, '_fetch_index_daily', down)
     assert mgr.get_index_daily('000001.SH') is None
     h = {m['name']: m for m in ds.get_health_metrics()}
