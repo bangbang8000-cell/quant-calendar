@@ -29,6 +29,7 @@
     'sub.watchlist': 'マイ自選',
     'sub.history': '評価履歴',
     'sub.evaluation-analysis': '評価分析',
+    'sub.focus': '重点追跡',
     'sub.datadict': 'データ辞書',
     'sub.chat_history': '質問履歴',
     'sub.portfolio': 'ポートフォリオ',

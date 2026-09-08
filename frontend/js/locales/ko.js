@@ -29,6 +29,7 @@
     'sub.watchlist': '내 관심목록',
     'sub.history': '평가 이력',
     'sub.evaluation-analysis': '평가 분석',
+    'sub.focus': '중점 추적',
     'sub.datadict': '데이터 사전',
     'sub.chat_history': '문의 이력',
     'sub.portfolio': '포트폴리오',

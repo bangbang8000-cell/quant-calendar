@@ -33,6 +33,7 @@
     'sub.watchlist': 'My Watchlist',
     'sub.history': 'Eval History',
     'sub.evaluation-analysis': 'Evaluation Analysis',
+    'sub.focus': 'Focus Tracking',
     'sub.datadict': 'Data Dictionary',
     'sub.chat_history': 'Chat History',
     'sub.portfolio': 'Portfolio',

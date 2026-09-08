@@ -29,6 +29,7 @@
     'sub.watchlist': '我的自選',
     'sub.history': '評估歷史',
     'sub.evaluation-analysis': '評估分析',
+    'sub.focus': '重點追蹤',
     'sub.datadict': '數據字典',
     'sub.chat_history': '問股歷史',
     'sub.portfolio': '組合持仓',

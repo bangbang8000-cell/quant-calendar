@@ -33,6 +33,7 @@
     'sub.watchlist': '我的自选',
     'sub.history': '评估历史',
     'sub.evaluation-analysis': '评估分析',
+    'sub.focus': '重点跟踪',
 
     'sub.datadict': '数据字典',
     'sub.chat_history': '问股历史',

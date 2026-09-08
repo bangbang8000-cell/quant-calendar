@@ -112,7 +112,7 @@
 const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页
+                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history', 'focus'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
                     { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
                     { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'execution', 'usage', 'about'], guestSubPages: ['status', 'about'] }
@@ -346,7 +346,7 @@ const allMenuDefs = [
                 const subPageNames = {
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
-                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
+                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪',
                     'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
