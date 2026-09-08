@@ -89,6 +89,21 @@ async def get_focus_history(
     }}
 
 
+@router.get("/stock/{stock_code}")
+async def get_focus_stock_history(
+    stock_code: str,
+    limit: int = Query(30, description="返回条数上限"),
+    user: dict = Depends(get_current_user),
+):
+    """单股历史评估 (日期倒序) — 同一股票不同时点/日期变化对比。"""
+    import focus_store
+    rows = focus_store.query_by_stock(stock_code, limit=limit)
+    return {"success": True, "data": {
+        "stock_code": stock_code, "total": len(rows), "rows": rows,
+        "user": user["username"] if user else None,
+    }}
+
+
 @router.post("/push")
 async def push_focus_digest(req: dict, user: dict = Depends(get_current_user)):
     """推送 digest (text+卡片双模) — 动作按请求用户持仓派生。"""

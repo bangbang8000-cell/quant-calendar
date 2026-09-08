@@ -113,6 +113,19 @@ def test_history_groups_by_session(client):
     assert data['sessions'] == {'pre_open': 1, 'after_close': 2}
 
 
+def test_stock_history(client):
+    _seed()
+    focus_store.upsert_eval(focus_store.build_record(
+        trade_date="2026-09-07", session="after_close", stock_code="601985.SH",
+        stock_name="中国核电", total_score=63.0, level="推荐", model_provider="mock", model_used="m"))
+    r = client.get('/api/focus/stock/601985.SH')
+    assert r.status_code == 200
+    data = r.json()['data']
+    assert data['total'] == 2
+    dates = [row['trade_date'] for row in data['rows']]
+    assert dates == sorted(dates, reverse=True)   # 日期倒序
+
+
 def test_push_rejects_without_data(client):
     r = client.post('/api/focus/push', json={'date': '2026-09-08'}, headers=_auth('admin'))
     assert r.status_code == 200
