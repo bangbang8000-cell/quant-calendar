@@ -75,6 +75,7 @@ jobs:
           python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_factor_ic.py tests/test_fact_check.py tests/test_eval_track.py \
+            tests/test_factor_ic_detail.py \
             --cov=factor_ic --cov=fact_check --cov=eval_track --cov-report=term --cov-fail-under=70 -m "not e2e"
           # 数据源自愈门禁含既有 data_sources 测试 (test_data_sources/test_data_sources_fetch),
           # 否则仅路由测试对 data_sources 覆盖不足 (40% < 60%), CI 恒红
