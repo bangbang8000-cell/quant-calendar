@@ -126,3 +126,30 @@
 - 依赖：eval_track / watchlist / views_aggregator / portfolio_positions / FeishuPusher / jobs 队列——全部既有，本版零新增第三方依赖
 - 风险：AI 评估延迟（180s 超时 + 网络重试已修）→ 规则快评兜底；盘中时点成本 → 开关默认关；持仓数据缺失 → 默认未持仓并在界面/推送提示
 - 边界：本版不做 5.4.1 准确性面板与 5.4.2 分钟数据管道（另行规划）
+
+
+---
+
+## 5. 5.4.1 修复段（R1~R5，用户评审通过 2026-09-09，已完成 R1-R3）
+
+> 背景：v5.4.0 三条补充需求（FR-5.4.8/5.4.9/5.4.10）实现后评审发现 2 处生产可用性问题
+> （分钟K线 live 失败、入池历史恒空）。用户问卷确认先修 P0 再发版 5.4.1。
+
+| # | 任务 | 改动 | 状态 |
+|---|------|------|------|
+| R1 | 分钟K线 live 可用化：券商版优先(可配置 minute.priority) + 同源限频冷却(60s) + 列名归一化(trade_time/中文→trade_date) + 全源失败降级日线(degraded_from) + 前端 el-alert 提示 | data_sources/_constants.py, _manager.py, api/v1/market.py, app-logic.js, stock-detail.js, test_kline_minute_v540.py | ✅ 37aab87 + 3c4d08d |
+| R2 | 修复 load_pool_history 接线（import 模块→from import 单例实例）+ 非 mock 接线集成测试 | focus_pool_history.py, test_focus_pool_history.py | ✅ f7e0149 |
+| R3 | 界面视觉增强：5档动作分布堆叠条+图例 / K线详情图标按钮 / 弹窗入池历史区块 | focus-view.js, stock-detail.js, layout.css | ✅ 82c68bb |
+| R4 | 文档同步（本文 + PRD §10 回填 FR-5.4.8/9/10 + EVAL-5.4.0-plan-review.md） | docs/*.md | 🔄 本文档 |
+| R5 | bump 5.4.1 + 全量回归 + ruff + 覆盖率门禁 + 双端重启冒烟 + push + tag v5.4.1 | main_new.py | ⏳ |
+
+**已锁定的分钟数据源配置（用户 Q2）**：
+```json
+"minute": {
+  "priority": ["sxsc_tushare", "tushare", "akshare"],
+  "interval_seconds": 60,
+  "degrade_to_daily": true
+}
+```
+可在系统页数据源配置中修改 priority（券商版 tushare 默认优先），保存后即时生效（重启后仍保留）。
+

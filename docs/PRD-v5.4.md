@@ -246,3 +246,32 @@ focus_evals 表（migration _0007，SQLite WAL；**只存客观评估事实**）
 7. 准确性：n5/10/20 命中率 + 分桶置信度 + 样本量 + 免责 如实展示
 8. 测试：守护符号一致性/清单计算/调度/存储/5 档派生/命中率口径；既有 eval_track 测试零回归
 9. 合规：全站措辞不出现投顾式承诺
+
+---
+
+## 10. 补充需求：FR-5.4.8 / 5.4.9 / 5.4.10（用户评审通过，2026-09-09 问卷确认）
+
+> 基线 5.4.0 三条用户补充要求，已在 commit be9eac3（v5.4.0）实现，并在 v5.4.1（R1/R2/R3）修复生产可用性问题。详见 EVAL-5.4.0-plan-review.md。
+
+### FR-5.4.8 分钟级 K 线（打开弹窗按需加载，不预加载）
+- 周期：**15min / 30min / 60min** 三档（用户 Q2 决策：全档保留；1min/5min 不做策略信号，仅可能纯展示）
+- 数据源：三源热备（sxsc-tushare 券商版 stk_mins / tushare pro_bar / akshare min_em），**券商版默认优先**，可在项目数据源配置切换优先级（datasource_config.json minute.priority）
+- 加载策略：**不预加载** — 打开股票详情弹窗时按需拉取（懒加载），单股单次请求
+- 限频：tushare stk_mins 公开限 **1 次/分钟** → 进程内同源冷却（默认 60s），冷却期跳过该源
+- 降级：全分钟源失败/冷却 → **降级日线并标记 degraded_from**，前端 el-alert 提示「分钟数据(X)暂不可用, 已降级展示日线」
+- 列名归一化：tushare 系 trade_time / akshare 中文列 → 标准 trade_date（YYYYMMDD）
+
+### FR-5.4.9 重点跟踪股票弹窗 + 自选/入池状态 + 入池历史
+- 弹窗：重点跟踪行「📈」按钮 → 全局股票详情弹窗（K线/AI/问股/因子/业绩 多 Tab）
+- 状态徽标：⭐自选 / 🆕入池 / 持仓（行内 + 弹窗均展示）
+- 入池历史（**按日入池算**）：从 views_aggregator.daily_data 回溯单股在池区间
+  - first_appear（首次入池日）/ last_appear（最近在池日）/ pooled_days（累计在池天数）
+  - pool_entries[]：连续在池日合并为一段区间 {start, end, days}，间断另起新段
+- 端点：GET /api/focus/stock/{code}/pool（自选按用户隔离，入池为全局池口径）
+- 修复记录：v5.4.0 原实现 load_pool_history 引模块而非单例实例 → 恒空；v5.4.1 R2 修复为实例引用并补非 mock 接线测试
+
+### FR-5.4.10 重点跟踪界面美化（主题令牌驱动）
+- focus-row 卡片化：surface 背景 + 边框 + 圆角 + 阴影 + hover 提亮 + 展开高亮
+- 全部使用设计系统令牌（--surface / --border-color / --r-md / --shadow-sm / --primary-color-dark / --bg-tertiary 等），7 套主题自动适配
+- v5.4.1 R3 增强：5 档动作分布**堆叠条 + 图例**（主题语义色）、K线详情**图标按钮**、弹窗内**入池历史区块**
+
