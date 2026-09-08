@@ -149,6 +149,26 @@ class FeishuPusher:
 
         return card
 
+    def build_focus_digest(self, date, session, rows, holdings=None,
+                            max_rows=20, card=False) -> Dict:
+        """重点跟踪 digest (text 或 interactive 卡片) — 与 focus_digest 同源同口径。
+
+        rows: focus_evals 记录列表; holdings: 该用户持仓代码集合 (派生动作输入)。
+        """
+        from focus_digest import enrich_actions, build_digest_text, build_focus_card
+        enriched = enrich_actions(rows, holdings=holdings)
+        if card:
+            return build_focus_card(date, session, enriched, max_rows=max_rows)
+        return {"msg_type": "text",
+                "content": {"text": build_digest_text(date, session, enriched,
+                                                      max_rows=max_rows)}}
+
+    def send_focus_digest(self, date, session, rows, holdings=None,
+                          max_rows=20, card=False) -> bool:
+        """发送重点跟踪 digest。"""
+        return self._send_message(self.build_focus_digest(
+            date, session, rows, holdings=holdings, max_rows=max_rows, card=card))
+
     def send_daily_report(self, date: str = None) -> bool:
         """发送每日选股报告"""
         if date is None:
