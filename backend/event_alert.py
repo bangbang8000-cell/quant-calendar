@@ -300,14 +300,17 @@ class DataSourceEventProvider:
         return self._cached_pro
 
     def fetch_events(self, code: str) -> list:
+        # V5.4.0 FIX: tushare pro 优先 (稳定/快/有 token), akshare 兜底。
+        # akshare 外部接口无 socket 超时, 挂起会占满线程池拖垮整个 API (实测 ops);
+        # tushare pro 实测可用 (dividend 秒回)。两源均失败才抛错由上层降级。
         try:
-            return self._akshare_fetcher(code) or []
+            return self._tushare_fetcher(code) or []
         except Exception as e1:
-            logger.warning('akshare 事件源不可达 %s: %s', code, e1)
+            logger.warning('tushare 事件源不可达 %s: %s', code, e1)
             try:
-                return self._tushare_fetcher(code) or []
+                return self._akshare_fetcher(code) or []
             except Exception as e2:
-                logger.warning('tushare 事件源不可达 %s: %s', code, e2)
+                logger.warning('akshare 事件源不可达 %s: %s', code, e2)
                 raise
 
     @staticmethod

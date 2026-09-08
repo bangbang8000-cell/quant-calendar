@@ -86,15 +86,38 @@ def test_tushare_pro_fallback_via_pro_client():
     assert fake.dividend_calls and fake.dividend_calls[0] == '000001.SZ'
 
 
-def test_build_events_uses_tushare_pro_when_akshare_fails():
-    """akshare 不可达 → 回退 pro client 事件, note 不误报未接入"""
+def test_build_events_uses_tushare_pro_first():
+    """tushare pro 优先 (稳定源), akshare 兜底 — 不误报未接入"""
     fake = _FakePro()
+    calls = []
 
     def _boom_ak(code):
+        calls.append('ak')
         raise RuntimeError('akshare down')
 
     prov = DataSourceEventProvider(akshare_fetcher=_boom_ak, pro_client=fake)
     prov._tushare_fetcher = prov._default_tushare
     result = build_events(['000001.SZ'], providers=[prov])
-    assert result['events'], 'akshare 失败应回退 tushare pro'
+    assert result['events'], 'tushare pro 优先应返回事件'
+    assert 'ak' not in calls, 'tushare pro 成功时不应触发 akshare'
     assert result['note'] is None or '未接入' not in result['note']
+
+
+def test_build_events_akshare_fallback_when_tushare_fails():
+    """tushare 不可达 → 回退 akshare (有超时护栏), 事件页按时返回"""
+    def _boom_pro(code):
+        raise RuntimeError('pro down')
+
+    class _FakeAK:
+        def __init__(self):
+            self.called = False
+
+        def __call__(self, code):
+            self.called = True
+            return [{'type': '分红', 'title': 'ak事件', 'date': '2026-07-15', 'name': 'x'}]
+
+    fake_ak = _FakeAK()
+    prov = DataSourceEventProvider(akshare_fetcher=fake_ak, tushare_fetcher=_boom_pro)
+    result = build_events(['000001.SZ'], providers=[prov])
+    assert fake_ak.called, 'tushare 失败应回退 akshare'
+    assert result['events'] and result['events'][0]['source'] == 'tushare_akshare'
