@@ -77,17 +77,30 @@ def load_new_pool_codes(date):
 
 
 def load_focus_list(username, date, scope='all'):
-    """登录用户视角: 本人自选 ∪ 当日新入池。"""
+    """登录用户视角: 本人自选 ∪ 当日新入池 (成员补真实中文名)。"""
     wl = load_watchlist_codes(username)
     np_ = load_new_pool_codes(date)
-    return compute_focus_list(wl, np_, scope)
+    return _enrich_member_names(compute_focus_list(wl, np_, scope))
 
 
 def load_focus_list_anonymous(date, scope='all'):
-    """匿名视角: 全用户自选 ∪ 当日新入池。"""
+    """匿名视角: 全用户自选 ∪ 当日新入池 (成员补真实中文名)。"""
     wl = load_all_watchlist_codes()
     np_ = load_new_pool_codes(date)
-    return compute_focus_list(wl, np_, scope)
+    return _enrich_member_names(compute_focus_list(wl, np_, scope))
+
+
+def _enrich_member_names(result):
+    """V5.4.1 (fix): 给清单成员补真实中文名 (stock_info 单例, 缺失回退代码)。
+
+    用户反馈: 重点跟踪今日概览只有股票代码无中文名 — 根因是
+    compute_focus_list 的 member 无 name 字段, 导致评估落库 stock_name 回退为代码。
+    在此 (加载器层) 补名, 保持 compute_focus_list 纯函数不变。
+    """
+    for m in result.get('members', []):
+        code = m.get('code', '')
+        m['name'] = stock_manager.get_name(code) if code else ''
+    return result
 
 
 def today_str():
@@ -96,3 +109,4 @@ def today_str():
 
 # 延迟导入避免循环依赖 (views_aggregator 较重)
 from views_aggregator import views_aggregator  # noqa: E402
+from stock_info import stock_manager  # noqa: E402  (V5.4.1: 成员中文名来源)

@@ -153,3 +153,20 @@ def test_api_list_scope_param(client):
 def test_api_list_invalid_scope_400(client):
     r = client.get('/api/focus/list', params={'date': '2026-09-08', 'scope': 'bogus'})
     assert r.status_code == 400
+
+
+# ─── V5.4.1 (fix): 清单成员补真实中文名 (用户反馈: 今日概览只有代码无中文名) ───
+def test_load_focus_list_enriches_stock_names(monkeypatch):
+    """V5.4.1 (fix): 加载器应给成员补中文名, 使未来评估落库真实名称。"""
+    db.watchlist_set('admin', '601985.SH', '中国核电')
+
+    class FakeSM:
+        def get_name(self, code):
+            return {'601985.SH': '中国核电', '000063.SZ': '中兴通讯'}.get(code, code)
+
+    monkeypatch.setattr(fl, 'stock_manager', FakeSM())
+    r = fl.load_focus_list('admin', '2026-09-08', scope='watchlist')
+    assert r['total'] >= 1
+    m = next(x for x in r['members'] if x['code'] == '601985.SH')
+    assert m.get('name') == '中国核电', '成员应含中文名, 实得 %r' % m
+

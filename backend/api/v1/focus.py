@@ -44,6 +44,28 @@ async def get_focus_list(
     return {"success": True, "data": result}
 
 
+def _backfill_stock_names(rows):
+    """V5.4.1 (fix): 历史记录 stock_name 缺失/等于代码时, 回填真实中文名 (不改 DB)。
+
+    根因: v5.4.0 落库时 member 无 name 字段, stock_name 回退为代码
+    (如 '603993.SH'), 前端今日概览只有代码无中文名。读取端兜底补名。
+    """
+    if not rows:
+        return rows
+    try:
+        from stock_info import stock_manager
+    except Exception:
+        return rows
+    for r in rows:
+        code = r.get("stock_code", "")
+        name = r.get("stock_name") or ""
+        if not code:
+            continue
+        if not name or name == code:
+            r["stock_name"] = stock_manager.get_name(code) or code
+    return rows
+
+
 @router.get("/results")
 async def get_focus_results(
     date: str = Query(None, description="交易日期 YYYY-MM-DD, 缺省今天"),
@@ -57,6 +79,7 @@ async def get_focus_results(
     from focus_action_map import ACTION_ORDER
     d = date or fl.today_str()
     rows = focus_store.query_by_date(d, session=session)
+    _backfill_stock_names(rows)
     holdings = _load_holdings(user["username"]) if user else []
     enriched = focus_digest.enrich_actions(rows, holdings=holdings)
     counts = {a: 0 for a in ACTION_ORDER}
@@ -98,6 +121,7 @@ async def get_focus_stock_history(
     """单股历史评估 (日期倒序) — 同一股票不同时点/日期变化对比。"""
     import focus_store
     rows = focus_store.query_by_stock(stock_code, limit=limit)
+    _backfill_stock_names(rows)
     return {"success": True, "data": {
         "stock_code": stock_code, "total": len(rows), "rows": rows,
         "user": user["username"] if user else None,

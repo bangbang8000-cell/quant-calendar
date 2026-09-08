@@ -202,3 +202,27 @@ def test_stock_pool_status_watchlist_source(client):
                    params={'date': '2026-09-08'}, headers=_auth('admin'))
     data = r.json()['data']
     assert 'watchlist' in data['sources'], '自选股应标 watchlist 来源'
+
+
+# ─── V5.4.1 (fix): results 回填历史 stock_name (历史记录落库时 stock_name==code) ───
+def test_results_backfills_historical_stock_name(client, monkeypatch):
+    """V5.4.1 (fix): 历史记录 stock_name==code 时, results 应回填真实中文名 (不改 DB)。"""
+    focus_store.upsert_eval(focus_store.build_record(
+        trade_date="2026-09-08", session="after_close", stock_code="601985.SH",
+        stock_name="601985.SH", total_score=80, level="推荐", direction="买入"))
+    import stock_info
+
+    class FakeSM:
+        def get_name(self, code):
+            return {'601985.SH': '中国核电'}.get(code, code)
+
+    monkeypatch.setattr(stock_info, 'stock_manager', FakeSM())
+    r = client.get('/api/focus/results',
+                   params={'date': '2026-09-08', 'session': 'after_close'},
+                   headers=_auth('admin'))
+    assert r.status_code == 200
+    rows = r.json()['data']['rows']
+    assert len(rows) >= 1
+    row = next(x for x in rows if x['stock_code'] == '601985.SH')
+    assert row['stock_name'] == '中国核电', '应回填中文名, 实得 %r' % row.get('stock_name')
+
