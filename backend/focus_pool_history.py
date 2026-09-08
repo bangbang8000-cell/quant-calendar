@@ -41,7 +41,6 @@ def compute_pool_history(daily_data, all_dates, stock_code):
         stocks = daily_data.get(d) or []
         if any(_code_of(s) == stock_code for s in stocks):
             pooled_dates.append(d)
-    pooled_set = set(pooled_dates)
     first = pooled_dates[0] if pooled_dates else None
     last = pooled_dates[-1] if pooled_dates else None
     # 入池区间: 连续在池日合并 (按日期序列连续性), 间断另起新段
