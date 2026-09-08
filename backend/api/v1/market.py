@@ -166,6 +166,18 @@ async def get_kline(ts_code: str, period: str = "daily", limit: int = 60):
         limit: 返回条数
     """
     import asyncio
+    # V5.4.1 (R1 / FR-5.4.8 可用化): 分钟数据降级日线时透传 degraded_from, 前端展示提示
+    from data_sources import data_source_manager as _dsm
+    result = await asyncio.to_thread(_dsm.get_kline_data, ts_code, period, limit)
+    if result and result.get('data'):
+        resp = {"success": True, "data": result["data"], "period": period,
+                "data_source": result.get("data_source")}
+        if result.get('degraded_from'):
+            resp['degraded_from'] = result['degraded_from']
+            resp['period'] = 'daily'  # 实际展示周期为日线
+            resp['message'] = f'分钟数据({result["degraded_from"]})暂不可用, 已降级展示日线'
+        return resp
+    # 兼容旧路径: 直接调用 get_kline_data (部分调用方)
     data = await asyncio.to_thread(get_kline_data, ts_code, period, limit)
     if data:
         return {"success": True, "data": data, "period": period}

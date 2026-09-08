@@ -4,6 +4,7 @@
 """V5.0.9 (T-5.0.93): DataSourceManager (拆自 data_sources.py)"""
 import json
 import os
+import threading
 import time
 import pandas as pd
 from datetime import datetime
@@ -20,6 +21,57 @@ MINUTE_PERIODS = ('15min', '30min', '60min')
 MINUTE_PERIOD_TO_FREQ = {'15min': '15min', '30min': '30min', '60min': '60min'}
 # akshare 分钟接口 period 参数: 15min→'15', 30min→'30', 60min→'60'
 MINUTE_PERIOD_TO_AKSHARE = {'15min': '15', '30min': '30', '60min': '60'}
+
+# V5.4.1 (R1 / FR-5.4.8 可用化): 分钟接口限频器 — tushare stk_mins 公开限 1 次/分钟
+# 同源冷却期内跳过 (不阻塞请求), 全部冷却则走降级逻辑。线程安全。
+_MINUTE_LOCK = threading.Lock()
+_MINUTE_LAST_CALL = {}  # source -> last call timestamp
+_MINUTE_COOLDOWN_OVERRIDE = None  # 测试注入: {'source': timestamp} 覆盖冷却判断
+
+
+def _minute_default_interval():
+    """分钟限频间隔 (秒), 从 config minute.interval_seconds 读取, 缺省 60。"""
+    from data_sources import data_source_manager
+    try:
+        return int((data_source_manager.config or {}).get('minute', {}).get('interval_seconds', 60))
+    except Exception:
+        return 60
+
+
+def reset_minute_rate_limiter():
+    """清空分钟限频状态 (测试隔离用)。"""
+    global _MINUTE_LAST_CALL
+    with _MINUTE_LOCK:
+        _MINUTE_LAST_CALL = {}
+
+
+def _minute_source_in_cooldown(source, now=None):
+    """判断数据源是否在分钟限频冷却期 (60s 内已调用过 → True)。"""
+    now_f = now if now is not None else time.time()
+    if _MINUTE_COOLDOWN_OVERRIDE is not None:
+        ts = _MINUTE_COOLDOWN_OVERRIDE.get(source)
+        return ts is not None and (now_f - ts) < _minute_default_interval()
+    with _MINUTE_LOCK:
+        ts = _MINUTE_LAST_CALL.get(source)
+        return ts is not None and (now_f - ts) < _minute_default_interval()
+
+
+def _minute_mark_called(source, now=None):
+    """记录数据源分钟调用时间 (调用成功后调用)。"""
+    now_f = now if now is not None else time.time()
+    with _MINUTE_LOCK:
+        _MINUTE_LAST_CALL[source] = now_f
+
+
+def _minute_lock_acquire(source):
+    """测试用: 手动标记某源已调用 (进入冷却)。"""
+    _minute_mark_called(source)
+
+
+def _minute_lock_release(source):
+    """测试用: 清除某源冷却 (等价复位)。"""
+    with _MINUTE_LOCK:
+        _MINUTE_LAST_CALL.pop(source, None)
 
 
 class DataSourceManager:
@@ -218,10 +270,15 @@ class DataSourceManager:
     def get_kline_data(self, ts_code, period='daily', limit=60, preferred=None):
         """获取K线数据（带 fallback + MA计算）
 
-        支持 period: daily, weekly, monthly, quarterly, yearly
+        支持 period: daily, weekly, monthly, quarterly, yearly + 分钟级 15min/30min/60min
         quarterly/yearly 使用月线数据聚合
         preferred: 优先数据源(如 'tushare'); 用于高并发场景(如异动扫描)绕开
                    sxsc 20次/秒限流 — 指定时先试 preferred, 失败再按路由顺序 fallback
+
+        V5.4.1 (R1 / FR-5.4.8 可用化):
+        - 分钟 period: 按 config minute.priority 路由 (券商版 sxsc 默认优先, 可配置切换)
+        - 分钟限频: 同源 interval_seconds(默认60s) 冷却期内跳过, 不阻塞请求
+        - 降级: 全分钟源失败/冷却 → 降级日线并标记 degraded_from (前端展示提示)
         """
         # v3.8.1: 内存 TTL 缓存 — 同股票同周期短时间重复请求直接命中
         key = (ts_code, period, limit)
@@ -230,18 +287,29 @@ class DataSourceManager:
         if cached and now - cached[0] < KLINE_CACHE_TTL:
             return cached[1]
 
-        # quarterly/yearly: 用月线数据聚合
+        is_minute = period in MINUTE_PERIODS
         result = None
+        degraded_from = None
+
+        # quarterly/yearly: 用月线数据聚合
         if period in ('quarterly', 'yearly'):
             result = self._get_resampled_kline(ts_code, period, limit)
         else:
             # v3.22: preferred 优先 — 高并发场景(异动扫描)先走 tushare 绕开 sxsc 20次/秒限流
-            route = [preferred] + [s for s in get_route_order() if s != preferred] if preferred else get_route_order()
+            # V5.4.1: 分钟 period 用 minute.priority (券商版优先, 可配置); 非分钟沿用既有路由
+            if is_minute:
+                route = self._minute_priority()
+            else:
+                route = [preferred] + [s for s in get_route_order() if s != preferred] if preferred else get_route_order()
+
             for src_name in route:
                 if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
                     continue
                 src_cfg = self._get_source_config(src_name)
                 if not src_cfg.get('enabled', True):
+                    continue
+                # V5.4.1: 分钟源冷却跳过 (同源 60s 内不重复拉, 尊重 stk_mins 1次/分钟)
+                if is_minute and _minute_source_in_cooldown(src_name, now):
                     continue
                 _t0 = time.monotonic()
                 try:
@@ -250,6 +318,8 @@ class DataSourceManager:
                     if df is not None and len(df) > 0:
                         result = self._build_kline_response(df, src_name)
                         record_call(src_name, True, _elapsed)
+                        if is_minute:
+                            _minute_mark_called(src_name, time.time())
                         break
                     record_call(src_name, False, _elapsed)  # 空数据记为一次失败
                 except Exception as e:
@@ -257,11 +327,23 @@ class DataSourceManager:
                     self._errors[src_name] = str(e)
                     record_call(src_name, False, (time.monotonic() - _t0) * 1000, rate_limited=_is_rate_limited(e))
 
+        # V5.4.1: 分钟全源失败/冷却 → 降级日线 (degrade_to_daily 开关, 默认开)
+        if is_minute and not result:
+            cfg_minute = (self.config or {}).get('minute', {})
+            if cfg_minute.get('degrade_to_daily', True):
+                daily = self.get_kline_data(ts_code, period='daily', limit=limit)
+                if daily and daily.get('data'):
+                    result = dict(daily)
+                    degraded_from = period
+                    logger.info("[kline] %s %s 分钟数据不可用, 降级日线展示", ts_code, period)
+
         if result:
+            if degraded_from:
+                result['degraded_from'] = degraded_from
             # v3.22: 仅缓存 data 非空的结果 — 空数据(如数据源限流/无行)不落缓存,
             # 避免"坏缓存"污染后续请求(曾导致异动扫描 78/80 只读到空 K 线)
             if isinstance(result, dict):
-                _cacheable = bool(result.get('data'))
+                _cacheable = bool(result.get('data')) and not degraded_from
             else:
                 _cacheable = bool(result)
             if _cacheable:
@@ -450,8 +532,9 @@ class DataSourceManager:
                 return None
             if period in MINUTE_PERIODS:
                 # V5.4.0 (FR-5.4.8): 券商版 tushare 分钟线走 stk_mins (freq=60min/30min/15min)
+                # V5.4.1 (R1): 列名归一化 (trade_time → trade_date) — stk_mins 返回 trade_time
                 df = api.query('stk_mins', ts_code=ts_code, freq=period, limit=limit)
-                return df
+                return self._normalize_minute_df(df) if df is not None else None
             api_name_map = {'daily': 'daily', 'weekly': 'weekly', 'monthly': 'monthly'}
             api_name = api_name_map.get(period, 'daily')
             if is_index:
@@ -465,9 +548,10 @@ class DataSourceManager:
                 return None
             if period in MINUTE_PERIODS:
                 # V5.4.0 (FR-5.4.8): tushare 分钟线走 pro_bar(freq=60min/30min/15min)
+                # V5.4.1 (R1): 列名归一化 (trade_time → trade_date)
                 import tushare as ts
                 df = ts.pro_bar(ts_code=ts_code, freq=period, adj='qfq', limit=limit)
-                return df
+                return self._normalize_minute_df(df) if df is not None else None
             if is_index:
                 if period == 'weekly':
                     df = pro.index_weekly(ts_code=ts_code, limit=limit)
@@ -493,9 +577,13 @@ class DataSourceManager:
                 return df.tail(limit)
             elif period in MINUTE_PERIODS:
                 # V5.4.0 (FR-5.4.8): akshare 分钟线 stock_zh_a_hist_min_em(period='60'/'30'/'15')
+                # V5.4.1 (R1): 中文列归一化 (时间/开盘→trade_date/open)
                 symbol = _ts_code_to_akshare_stock(ts_code)
                 ak_period = MINUTE_PERIOD_TO_AKSHARE.get(period, '60')
                 df = ak.stock_zh_a_hist_min_em(symbol=symbol, period=ak_period, adjust="qfq")
+                if df is None:
+                    return None
+                df = self._normalize_minute_df(df)
                 return df.tail(limit)
             else:
                 # v3.20.1 (网络修复): 东财源反爬拦截时 fallback 到新浪源
@@ -761,6 +849,60 @@ class DataSourceManager:
         return None
 
     # ==================== K线响应构建 ====================
+
+    # ==================== V5.4.1 (R1 / FR-5.4.8 可用化): 分钟级支持 ====================
+
+    def _minute_priority(self):
+        """分钟数据源优先级 — 从配置 minute.priority 读取, 缺省 SOURCE_ORDER (券商版优先)。"""
+        try:
+            prio = (self.config or {}).get('minute', {}).get('priority')
+            if prio:
+                # 过滤: 只保留已知源且去重, 保持用户配置顺序
+                seen, out = set(), []
+                for s in prio:
+                    if s in SOURCE_ORDER and s not in seen:
+                        seen.add(s)
+                        out.append(s)
+                if out:
+                    return out
+        except Exception:
+            pass
+        return list(SOURCE_ORDER)
+
+    def _minute_interval(self):
+        try:
+            return int((self.config or {}).get('minute', {}).get('interval_seconds', 60))
+        except Exception:
+            return 60
+
+    def _normalize_minute_df(self, df):
+        """分钟源 DataFrame 列归一化 → 标准 trade_date 列 (YYYYMMDD)。
+
+        - tushare/sxsc stk_mins 返回 trade_time('YYYY-MM-DD HH:MM:SS')
+        - akshare min_em 返回中文列 (时间/开盘/收盘/最高/最低/成交量/成交额)
+        统一: 产出 trade_date (YYYYMMDD), 并补齐 open/high/low/close/vol/amount 标准列。
+        """
+        df = df.copy()
+        if 'trade_time' in df.columns:
+            df['trade_date'] = df['trade_time'].astype(str).str[:10].str.replace('-', '')
+        elif '时间' in df.columns:
+            df['trade_date'] = df['时间'].astype(str).str[:10].str.replace('-', '')
+        elif '日期' in df.columns:
+            df['trade_date'] = df['日期'].astype(str).str[:10].str.replace('-', '')
+        elif 'datetime' in df.columns:
+            df['trade_date'] = df['datetime'].astype(str).str[:10].str.replace('-', '')
+        # 中文列 → 标准列 (akshare)
+        zh_map = {'开盘': 'open', '收盘': 'close', '最高': 'high', '最低': 'low',
+                  '成交量': 'vol', '成交额': 'amount'}
+        for zh, en in zh_map.items():
+            if zh in df.columns and en not in df.columns:
+                df[en] = df[zh]
+        # 兜底: 若仍无 trade_date 但有 trade_time, 保底取首列
+        if 'trade_date' not in df.columns:
+            first_col = df.columns[0] if len(df.columns) else None
+            if first_col is not None:
+                df['trade_date'] = df[first_col].astype(str).str[:10].str.replace('-', '')
+        return df
 
     def _build_kline_response(self, df, source_name):
         """将 DataFrame 构建为前端 K 线数组格式，含 MA 计算"""

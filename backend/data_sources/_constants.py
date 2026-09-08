@@ -51,6 +51,15 @@ DEFAULT_CONFIG = {
         "akshare": {
             "enabled": True
         }
+    },
+    # V5.4.1 (R1 / FR-5.4.8 可用化): 分钟级 K线 配置
+    # - priority: 分钟数据源优先级 (用户 Q2 决策: 券商版 tushare 优先, 可在项目配置切换)
+    # - interval_seconds: 分钟接口限频间隔 (tushare stk_mins 公开限 1 次/分钟 → 进程内串行冷却)
+    # - degrade_to_daily: 全分钟源失败时降级日线并标记 degraded_from
+    "minute": {
+        "priority": ["sxsc_tushare", "tushare", "akshare"],
+        "interval_seconds": 60,
+        "degrade_to_daily": True
     }
 }
 
