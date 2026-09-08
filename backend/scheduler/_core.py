@@ -882,7 +882,7 @@ class SchedulerCoreMixin:
                 today = now.strftime('%Y-%m-%d')
                 session, reason = decide_session(
                     now.strftime('%H:%M'),
-                    trading_day=is_trading_day(today),
+                    trading_day=is_trading_day(now),  # 期望 date/datetime 对象
                     intraday_enabled=load_intraday_enabled(),
                 )
                 if session and not query_by_date(today, session):

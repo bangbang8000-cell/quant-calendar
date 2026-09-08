@@ -59,3 +59,14 @@ def test_focus_eval_task_skip_when_already_done():
     # 任务体内: if session and not query_by_date(today, session) — 已有记录即短路
     assert not (sess and False), "已落库 → 短路不执行"
     assert sess and True, "未落库 → 执行"
+
+
+def test_focus_eval_task_passes_datetime_to_is_trading_day():
+    """防回归: 发布冒烟发现 is_trading_day 期望 date 对象, 传字符串会
+    AttributeError ('str' object has no attribute 'weekday') — 断言任务体内
+    传 datetime.now() 而非 strftime 字符串。"""
+    import inspect
+    from scheduler._core import SchedulerCoreMixin
+    src = inspect.getsource(SchedulerCoreMixin.focus_eval_task)
+    assert "is_trading_day(now)" in src
+    assert "is_trading_day(today)" not in src
