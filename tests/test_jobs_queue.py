@@ -142,6 +142,8 @@ def test_retry_exhausted_failed(jobs):
 
 def test_cancel_pending_task(jobs, monkeypatch):
     monkeypatch.setattr(jobs, "POLL_INTERVAL", 0.02)
+    # 阻止 worker 唤醒, 确保任务停留在 pending (否则 CI 快速机器上 worker 可能先置 RUNNING, 竞态 flaky)
+    monkeypatch.setattr(jobs, "_wake_worker", lambda: None)
     jid = jobs.create_task("test-echo", {})
     jobs.cancel_task(jid)
     assert jobs.get_task(jid)["status"] == "cancelled"
