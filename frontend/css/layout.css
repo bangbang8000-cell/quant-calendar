@@ -442,7 +442,7 @@
 .tl-click-card {
   position: relative;
   max-width: 460px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border-radius: var(--r-lg);
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 150%));
@@ -464,7 +464,7 @@
   color: var(--text-tertiary);
   font-size: var(--font-sm);
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 0px 6px;
   border-radius: var(--r-sm);
   transition: color 0.2s ease;
 }
@@ -479,8 +479,8 @@
 .tl-click-title { font-weight: var(--font-semibold, 600); font-size: var(--font-md); }
 .tl-click-meta { color: var(--text-secondary); font-size: var(--font-xs); }
 .tl-click-brief {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-light);
   color: var(--text-primary);
   font-weight: var(--font-medium, 500);
@@ -489,11 +489,11 @@
 .tl-click-indicators {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 .tl-click-ind-card {
-  padding: 2px 8px;
+  padding: 0px 8px;
   border-radius: var(--r-sm);
   background: rgba(var(--primary-rgb), 0.1);
   color: var(--text-primary);
@@ -503,7 +503,7 @@
 .tl-click-highlight { margin-top: 8px; color: var(--text-secondary); }
 .tl-click-label {
   display: inline-block;
-  margin-right: 6px;
+  margin-right: 8px;
   padding: 0 5px;
   line-height: 16px;
   border-radius: var(--r-sm);
@@ -668,7 +668,7 @@
 .focus-row-score { color: var(--text-disabled); font-size: var(--font-sm); }
 .focus-row-dir {
   font-size: var(--font-sm);
-  padding: 2px var(--sp-2);
+  padding: 0px var(--sp-2);
   border-radius: var(--r-full);
   background: var(--bg-tertiary);
 }
@@ -696,7 +696,7 @@
 .focus-action-bar-wrap { margin-top: var(--sp-2); }
 .focus-action-bar {
   display: flex;
-  height: 10px;
+  height: 12px;
   width: 100%;
   border-radius: var(--r-full);
   overflow: hidden;
@@ -718,7 +718,7 @@
 .focus-action-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   font-size: var(--font-sm);
   color: var(--text-secondary);
 }

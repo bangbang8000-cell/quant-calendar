@@ -2995,7 +2995,7 @@ text {
 /* V5.0 (T-5.0.6): 健康与可靠性面板 */
 .health-badge {
     display: inline-block;
-    padding: 2px 10px;
+    padding: 0px 10px;
     border-radius: var(--r-full);
     font-size: var(--font-xs);
     font-weight: var(--font-semibold);
@@ -3028,8 +3028,8 @@ text {
 .heal-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 4px;
+    gap: 8px;
+    padding: 8px 4px;
     border-bottom: 1px solid var(--border-light);
 }
 .heal-row:last-child { border-bottom: none; }
@@ -4325,7 +4325,7 @@ text {
     gap: 8px;
 }
 .ic-decay-chip {
-    padding: 3px 10px;
+    padding: 4px 10px;
     border: 1px solid var(--border-base);
     border-radius: 12px;
     background: var(--bg-card-header);
@@ -4511,7 +4511,7 @@ text {
 
 /* V4.6: 核心功能单行紧凑列表(名称加粗 + 描述, 无图标) */
 .about-ul { list-style: none; padding-left: 0; margin: 8px 0 0; }
-.about-ul li { padding: 3px 0; font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5; }
+.about-ul li { padding: 4px 0; font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.5; }
 .about-ul li strong, .about-item-name { font-weight: var(--font-semibold); color: var(--text-primary); }
 
 }
@@ -4527,7 +4527,7 @@ text {
 .border-left-warning { border-left: 4px solid var(--color-warning); }
 .cal-count-badge { background: var(--primary-color); color: white; border-radius: var(--r-lg); padding: 4px 8px; font-size: var(--font-xs); font-weight: var(--font-semibold); min-width: 20px; text-align: center; }
 .cal-note-box { margin-bottom: 12px; padding: 8px 12px; background: var(--bg-card-header); border-radius: var(--r-md); border: 1px solid var(--border-light); }
-.cal-view-note { margin-bottom: 12px; padding: 6px 10px; font-size: var(--font-xs); color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 8%, transparent); border-left: 3px solid var(--color-warning); border-radius: var(--r-sm); line-height: 1.5; }
+.cal-view-note { margin-bottom: 12px; padding: 8px 10px; font-size: var(--font-xs); color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 8%, transparent); border-left: 3px solid var(--color-warning); border-radius: var(--r-sm); line-height: 1.5; }
 .cal-compare-section { margin-bottom: 12px; }
 .cal-compare-title { font-size: var(--font-sm); font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
 .cal-compare-codes { font-size: var(--font-xs); line-height: 1.6; color: var(--text-secondary); word-break: break-all; }
@@ -5041,14 +5041,14 @@ text {
 .portfolio-risk-panel { display: flex; flex-direction: column; gap: 4px; }
 .portfolio-risk-section { margin-bottom: 8px; }
 .portfolio-risk-section-title { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); margin: 8px 0 10px; }
-.portfolio-risk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.portfolio-risk-metric { background: var(--bg-card-header); border-radius: var(--r-md); padding: 10px 12px; }
-.portfolio-risk-label { font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 6px; }
+.portfolio-risk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.portfolio-risk-metric { background: var(--bg-card-header); border-radius: var(--r-md); padding: 8px 12px; }
+.portfolio-risk-label { font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 8px; }
 .portfolio-risk-value { font-size: var(--font-md); font-weight: var(--font-semibold); color: var(--text-primary); }
 .portfolio-risk-sub { font-size: var(--font-xs); color: var(--text-secondary); font-weight: var(--font-normal); }
-.portfolio-rule-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border-light); border-radius: var(--r-md); margin-bottom: 6px; font-size: var(--font-sm); }
+.portfolio-rule-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border-light); border-radius: var(--r-md); margin-bottom: 8px; font-size: var(--font-sm); }
 .portfolio-rule-warn { border-color: var(--color-danger); background: var(--bg-card-header); }
-.portfolio-rule-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: var(--font-xs); font-weight: var(--font-medium); }
+.portfolio-rule-badge { display: inline-block; padding: 0px 8px; border-radius: 10px; font-size: var(--font-xs); font-weight: var(--font-medium); }
 .portfolio-rule-badge-ok { background: var(--badge-success-bg); color: var(--el-success); }
 .portfolio-rule-badge-warn { background: var(--badge-danger-bg); color: var(--color-danger); }
 
