@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "updated": "2026-09-01",
+  "description": "退市/改名股票 PIT 注册表 (幸存者偏差治理种子). 运维可用 data/survivorship_registry.json 覆盖/扩充.",
+  "stocks": {
+    "300104.SZ": {
+      "list_date": "2010-08-12",
+      "delist_date": "2020-07-20",
+      "delisted": true,
+      "name_history": [
+        {"date": "2010-08-12", "name": "乐视网"},
+        {"date": "2020-06-05", "name": "乐视退"}
+      ]
+    },
+    "002680.SZ": {
+      "list_date": "2012-06-15",
+      "delist_date": "2019-11-27",
+      "delisted": true,
+      "name_history": [
+        {"date": "2012-06-15", "name": "长生生物"},
+        {"date": "2019-02-01", "name": "*ST长生"}
+      ]
+    },
+    "600069.SH": {
+      "list_date": "1997-01-01",
+      "delist_date": "2021-08-16",
+      "delisted": true,
+      "name_history": [
+        {"date": "1997-01-01", "name": "银鸽投资"},
+        {"date": "2020-06-01", "name": "*ST银鸽"}
+      ]
+    },
+    "600687.SH": {
+      "list_date": "1996-01-01",
+      "delist_date": "2021-07-15",
+      "delisted": true,
+      "name_history": [
+        {"date": "1996-01-01", "name": "刚泰控股"},
+        {"date": "2021-01-01", "name": "*ST刚泰"}
+      ]
+    },
+    "000001.SZ": {
+      "list_date": "1991-04-03",
+      "delist_date": null,
+      "delisted": false,
+      "name_history": [
+        {"date": "1991-04-03", "name": "深发展A"},
+        {"date": "2012-07-02", "name": "平安银行"}
+      ]
+    },
+    "000503.SZ": {
+      "list_date": "1993-01-01",
+      "delist_date": null,
+      "delisted": false,
+      "name_history": [
+        {"date": "1993-01-01", "name": "海虹控股"},
+        {"date": "2018-03-01", "name": "国新健康"}
+      ]
+    },
+    "600008.SH": {
+      "list_date": "2000-04-01",
+      "delist_date": null,
+      "delisted": false,
+      "name_history": [
+        {"date": "2000-04-01", "name": "首创股份"},
+        {"date": "2021-12-15", "name": "首创环保"}
+      ]
+    },
+    "000728.SZ": {
+      "list_date": "1997-01-01",
+      "delist_date": null,
+      "delisted": false,
+      "name_history": [
+        {"date": "1997-01-01", "name": "北京化二"},
+        {"date": "2007-12-01", "name": "国元证券"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,490 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+量化策略持仓数据解析器
+"""
+import os
+import csv
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from collections import defaultdict
+from stock_info import stock_manager
+
+from paths import EXTERNAL_DATA_DIR as DATA_DIR
+
+logger = logging.getLogger(__name__)
+
+# V4.9.3: 日历前向填充 — 最新持仓填充到"今天"的最大间隔(天), 防止数据长期陈旧时伪造日期掩盖缺口
+CARRY_FORWARD_MAX_GAP_DAYS = 10
+
+STRATEGY_CONFIG = {
+    'multifactor': {
+        'name': '多因子策略',
+        'files': ['多因子策略持仓-剔除ST.csv', '多因子策略持仓.csv'],
+        'use_st_filtered': True
+    },
+    'industry_rotation': {
+        'name': '行业轮动策略',
+        'files': ['行业轮动策略持仓-剔除ST.csv', '行业轮动策略持仓.csv'],
+        'use_st_filtered': True
+    },
+    'index_enhance': {
+        'name': '指数增强策略',
+        'files': ['指数增强策略持仓-剔除ST.csv', '指数增强策略持仓.csv'],
+        'use_st_filtered': True
+    },
+    'money_flow': {
+        'name': '资金流策略',
+        'files': ['资金流策略持仓文件-剔除ST.csv', '资金流策略持仓文件.csv'],
+        'use_st_filtered': True
+    }
+}
+
+
+class DataParser:
+    def __init__(self):
+        self.holdings_data = {}  # strategy -> {date -> set(stocks)}
+        self.date_list = []
+        self.carried_dates = []  # V4.9.3: 前向填充日期(最新持仓继承, 支持"今天"可选可看)
+        self.stock_info = defaultdict(lambda: {'strategies': set(), 'hold_days': defaultdict(int)})
+        self._load_all_data()
+
+    def _load_all_data(self):
+        """加载所有策略数据"""
+        logger.info("📊 开始加载策略数据...")
+
+        all_dates = set()
+
+        for strategy_id, config in STRATEGY_CONFIG.items():
+            # 尝试所有可能的文件名，找到第一个存在的
+            filepath = None
+            found_file = None
+            for filename in config['files']:
+                test_path = os.path.join(DATA_DIR, filename)
+                if os.path.exists(test_path):
+                    filepath = test_path
+                    found_file = filename
+                    break
+
+            if not filepath:
+                logger.warning(f"⚠️ 找不到 {config['name']} 的任何数据文件，已尝试: {config['files']}")
+                continue
+
+            logger.info(f"✅ 加载: {found_file}")
+
+            self.holdings_data[strategy_id] = {}
+
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                headers = next(reader)[1:]  # 跳过第一列空列
+
+                for row in reader:
+                    if not row or not row[0]:
+                        continue
+
+                    date = row[0].strip()
+                    stocks = set()
+
+                    for idx, value in enumerate(row[1:]):
+                        if idx < len(headers) and value and float(value) > 0:
+                            stock_code = headers[idx].strip()
+                            stocks.add(stock_code)
+                            self.stock_info[stock_code]['strategies'].add(strategy_id)
+                            self.stock_info[stock_code]['hold_days'][strategy_id] += 1
+
+                    if stocks:
+                        self.holdings_data[strategy_id][date] = stocks
+                        all_dates.add(date)
+
+        self.date_list = sorted(all_dates)
+        # V4.0 M3: 完全体闭环 — 加载引擎持仓 overlay
+        self._load_engine_overlay()
+        # V4.9.3: 前向填充到今天(周一/节假日次日可查看上一交易日持仓)
+        self._carry_forward_to_today()
+        logger.info(f"✅ 数据加载完成: {len(self.get_available_dates())}个交易日, {len(self.stock_info)}只股票")
+
+    # V4.0 M3: data_parser 侧 sid → SDK/governance 侧 sid(名称不同)
+    _PARSER_TO_SDK_SID = {
+        'multifactor': 'multi_factor',
+        'industry_rotation': 'sector_rotation',
+        'index_enhance': 'index_enhance',
+        'money_flow': 'capital_flow',
+    }
+
+    def _overlay_sid(self, stem: str) -> Optional[str]:
+        """引擎持仓文件名(如 多因子策略持仓) → 策略 sid; 派生策略按存储名称查 defs"""
+        for sid, cfg in STRATEGY_CONFIG.items():
+            if cfg['name'] == stem:
+                return sid
+        try:
+            from strategy_db import list_defs
+            for d in list_defs() or []:
+                if d.get('name') == stem:
+                    return d['id']
+        except Exception:
+            logger.warning('data_parser:118 静默异常 (Exception)')
+        return None
+
+    def _merge_overlay_file(self, sid: str, path: str) -> None:
+        """合并单份引擎持仓矩阵(与 qresult 同格式: 表头=股票代码, 行=日期, 值=1持有)"""
+        try:
+            with open(path, 'r', encoding='utf-8-sig') as f:
+                reader = csv.reader(f)
+                headers = next(reader)[1:]
+                if sid not in self.holdings_data:
+                    self.holdings_data[sid] = {}
+                for row in reader:
+                    if not row or not row[0]:
+                        continue
+                    date = row[0].strip()
+                    # V4.6: 引擎持仓日期 20260824 -> 2026-08-24(与 qresult 格式一致, 否则日视图不可选)
+                    if len(date) == 8 and date.isdigit():
+                        date = date[:4] + '-' + date[4:6] + '-' + date[6:8]
+                    stocks = set()
+                    for idx, value in enumerate(row[1:]):
+                        if idx < len(headers) and value and float(value) > 0:
+                            stocks.add(headers[idx].strip())
+                    if stocks:
+                        # 引擎优先: 覆盖 qresult 同日期(完全体闭环, 内置引擎持仓进日历)
+                        self.holdings_data[sid][date] = stocks
+        except Exception as e:
+            logger.warning('引擎持仓 overlay 读取失败 %s: %s', path, e)
+
+    def _load_engine_overlay(self) -> None:
+        """V4.0 M3 完全体闭环: 加载引擎持仓 data/holdings/{date}/*.csv, 按 show_in_calendar 过滤进日历
+        运行时动态读 paths.DATA_DIR(测试 conftest 重定向后仍正确, 不受模块导入时机影响)"""
+        import paths as _paths
+        holdings_root = os.path.join(_paths.DATA_DIR, 'holdings')
+        if not os.path.isdir(holdings_root):
+            return
+        gov_state = {}
+        try:
+            import strategy_governance as _gov
+            gov_state = _gov.get_state()
+        except Exception:
+            logger.warning('data_parser:158 静默异常 (Exception)')
+        for date_dir in sorted(os.listdir(holdings_root)):
+            dpath = os.path.join(holdings_root, date_dir)
+            if not os.path.isdir(dpath):
+                continue
+            for fn in sorted(os.listdir(dpath)):
+                if not fn.endswith('.csv'):
+                    continue
+                stem = fn[:-4]
+                if stem.endswith('持仓'):
+                    stem = stem[:-2]
+                sid = self._overlay_sid(stem)
+                if sid is None:
+                    continue
+                # V4.0 M3: 内置策略用 SDK/governance 侧 sid 查 show_in_calendar
+                gov_sid = self._PARSER_TO_SDK_SID.get(sid, sid)
+                if gov_sid in gov_state:
+                    if not gov_state[gov_sid].get('show_in_calendar', True):
+                        continue
+                else:
+                    try:
+                        from strategy_db import get_def
+                        d = get_def(gov_sid) or {}
+                        if not (d.get('params') or {}).get('__show_in_calendar__', False):
+                            continue
+                    except Exception:
+                        logger.debug('data_parser:184 跳过 (Exception)')
+                        continue
+                logger.info('🔗 引擎持仓 overlay: %s (%s)', stem, date_dir)
+                self._merge_overlay_file(sid, os.path.join(dpath, fn))
+        # V4.6: 引擎持仓日期合并进 date_list(此前只进 holdings_data, 导致日视图 8 月日期不可选)
+        engine_dates = set()
+        for _s, m in self.holdings_data.items():
+            for d in m:
+                engine_dates.add(d)
+        if engine_dates:
+            self.date_list = sorted(set(self.date_list) | engine_dates)
+
+    def reload(self) -> dict:
+        """重新加载所有策略数据（原子替换，失败不回滚旧数据）"""
+        # 构建临时数据
+        temp_holdings = {}
+        temp_stock_info = defaultdict(lambda: {'strategies': set(), 'hold_days': defaultdict(int)})
+        temp_date_list = []
+        all_dates = set()
+
+        for strategy_id, config in STRATEGY_CONFIG.items():
+            filepath = None
+            found_file = None
+            for filename in config['files']:
+                test_path = os.path.join(DATA_DIR, filename)
+                if os.path.exists(test_path):
+                    filepath = test_path
+                    found_file = filename
+                    break
+
+            if not filepath:
+                logger.warning(f"⚠️ 找不到 {config['name']} 的任何数据文件")
+                continue
+
+            logger.info(f"✅ 加载: {found_file}")
+            temp_holdings[strategy_id] = {}
+
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                headers = next(reader)[1:]
+                for row in reader:
+                    if not row or not row[0]:
+                        continue
+                    date = row[0].strip()
+                    stocks = set()
+                    for idx, value in enumerate(row[1:]):
+                        if idx < len(headers) and value and float(value) > 0:
+                            stock_code = headers[idx].strip()
+                            stocks.add(stock_code)
+                            temp_stock_info[stock_code]['strategies'].add(strategy_id)
+                            temp_stock_info[stock_code]['hold_days'][strategy_id] += 1
+                    if stocks:
+                        temp_holdings[strategy_id][date] = stocks
+                        all_dates.add(date)
+
+        temp_date_list = sorted(all_dates)
+
+        # 原子替换
+        self.holdings_data = temp_holdings
+        self.stock_info = temp_stock_info
+        self.date_list = temp_date_list
+        self.carried_dates = []
+
+        # V4.0 M3: 完全体闭环 — 重新加载引擎持仓 overlay(引擎数据并入 holdings_data)
+        self._load_engine_overlay()
+        # V4.9.3: 前向填充到今天
+        self._carry_forward_to_today()
+        _avail = self.get_available_dates()
+        stats = {
+            "dates_count": len(_avail),
+            "stocks_count": len(self.stock_info),
+            "latest_date": _avail[-1] if _avail else None
+        }
+        logger.info(f"✅ 数据刷新完成: {stats['dates_count']}个交易日, {stats['stocks_count']}只股票")
+        return stats
+
+    def get_available_dates(self) -> List[str]:
+        """获取所有可用日期 (真实交易日 + V4.9.3 前向填充日期)"""
+        if not self.carried_dates:
+            return self.date_list
+        return sorted(set(self.date_list) | set(self.carried_dates))
+
+    # ─── V4.9.3: 前向填充 (次日按此调仓语义: 收盘生成 → 下一交易日持有) ───
+    def _carry_forward_to_today(self, today: Optional[str] = None) -> None:
+        """把最新持仓前向填充到 today(含), 工作日(Mon-Fri)且无自身数据的日期继承最近一日持仓.
+
+        让日历在周一/节假日次日即可选中并查看"今天应持有的持仓矩阵",
+        而不是因最新持仓只到最近收盘日而无法选择今天.
+        限制最大间隔 CARRY_FORWARD_MAX_GAP_DAYS, 避免数据长期陈旧时伪造大量日期.
+        """
+        self.carried_dates = []
+        if not self.date_list:
+            return
+        try:
+            if today is None:
+                today = datetime.now().strftime('%Y-%m-%d')
+            last_d = datetime.strptime(self.date_list[-1], '%Y-%m-%d').date()
+            today_d = datetime.strptime(today, '%Y-%m-%d').date()
+            if today_d <= last_d:
+                return
+            if (today_d - last_d).days > CARRY_FORWARD_MAX_GAP_DAYS:
+                return
+            known = set(self.date_list)
+            # V5.3.14 (T-SP.P1.3): 用交易日判断识别法定节假日(周末+休市日均不填充)
+            try:
+                import stock_calendar as _sc
+                _sc.seed_known_trade_days(self.date_list)
+                _is_td = _sc.is_trade_date_str
+            except Exception:
+                def _is_td(ds: str) -> bool:
+                    return datetime.strptime(ds, '%Y-%m-%d').weekday() < 5
+            carried = []
+            d = last_d + timedelta(days=1)
+            while d <= today_d:
+                ds = d.strftime('%Y-%m-%d')
+                if _is_td(ds) and ds not in known:
+                    carried.append(ds)
+                d += timedelta(days=1)
+            self.carried_dates = sorted(carried)
+            if self.carried_dates:
+                logger.info("🔁 前向填充 %d 个日期至 %s: %s", len(self.carried_dates), today,
+                            ','.join(self.carried_dates))
+        except Exception as e:
+            logger.warning('data_parser: 前向填充失败: %s', e)
+
+    def _nearest_prior(self, strategy_id: str, date: str) -> Optional[str]:
+        """返回该策略在 date 之前最近的"真实"持仓日期(供前沿日期继承).
+
+        陈旧上限: 间隔 > CARRY_FORWARD_MAX_GAP_DAYS 时返回 None(不把数周前持仓当今天).
+        """
+        best = None
+        for dd in self.date_list:
+            if dd < date:
+                best = dd
+            else:
+                break
+        hd = self.holdings_data.get(strategy_id, {})
+        while best is not None:
+            if best in hd:
+                try:
+                    gap = (datetime.strptime(date, '%Y-%m-%d')
+                           - datetime.strptime(best, '%Y-%m-%d')).days
+                except Exception:
+                    gap = 0
+                if gap <= CARRY_FORWARD_MAX_GAP_DAYS:
+                    return best
+                return None
+            prev = None
+            for dd in self.date_list:
+                if dd < best:
+                    prev = dd
+                else:
+                    break
+            best = prev
+        return None
+
+    def _resolve_holdings_date(self, strategy_id: str, date: str) -> Optional[str]:
+        """返回该策略在 date 实际使用的持仓日期.
+
+        优先自身持仓; 命中"已可查看"日期集合(真实交易日 ∪ 前向填充日, 即日历可选日期)且
+        该策略缺当日数据 → 继承最近前一持仓日. 覆盖:
+        1) 前向填充日(8/31 周一, 全局最新仅到 8/28);
+        2) 部分策略未生成当日(某策略覆盖到 8/31, 其余策略滞后/失败 → 继承其最近持仓).
+        不在可选集合的日期(未来/非工作日)不伪造数据.
+        """
+        hd = self.holdings_data.get(strategy_id, {})
+        if date in hd:
+            return date
+        if date in self.get_available_dates_set():
+            return self._nearest_prior(strategy_id, date)
+        return None
+
+    def get_available_dates_set(self) -> set:
+        """日历可选日期集合(真实交易日 ∪ 前向填充日)"""
+        return set(self.get_available_dates())
+
+    def get_holdings_by_date(self, date: str, strategy: Optional[str] = None) -> Dict:
+        """获取指定日期的持仓 (V4.9.3: 前向填充日期回退到最近前一真实持仓日)"""
+        result = {}
+
+        if strategy:
+            strategies = [strategy] if strategy in STRATEGY_CONFIG else []
+        else:
+            strategies = list(STRATEGY_CONFIG.keys())
+
+        for s in strategies:
+            src = self._resolve_holdings_date(s, date)
+            if src is None:
+                continue
+            stocks_list = []
+            for code in sorted(list(self.holdings_data[s][src])):
+                stocks_list.append({
+                    'code': code,
+                    'name': stock_manager.get_name(code)
+                })
+            # V5.3.14 (T-SP.P2.6): 部分策略滞后降级提示 — 继承时标注 inherited_from
+            entry = {
+                'name': STRATEGY_CONFIG[s]['name'],
+                'stocks': stocks_list,
+                'count': len(stocks_list)
+            }
+            if src != date:
+                entry['inherited_from'] = src
+            result[s] = entry
+
+        return result
+
+    def get_strategy_consensus(self, date: str) -> Dict:
+        """获取指定日期的策略共识度分析 (V4.9.3: 支持前向填充日期)"""
+        stock_counts = defaultdict(list)
+
+        for strategy_id in STRATEGY_CONFIG.keys():
+            src = self._resolve_holdings_date(strategy_id, date)
+            if src is None:
+                continue
+            for stock in self.holdings_data[strategy_id][src]:
+                stock_counts[stock].append(strategy_id)
+
+        consensus = []
+        for stock, strategies in stock_counts.items():
+            consensus.append({
+                'stock': stock,
+                'name': stock_manager.get_name(stock),
+                'strategy_count': len(strategies),
+                'strategies': strategies,
+                'consensus_level': len(strategies) / len(STRATEGY_CONFIG)
+            })
+
+        return sorted(consensus, key=lambda x: -x['strategy_count'])
+
+    def get_stock_history(self, stock_code: str) -> Dict:
+        """获取单只股票的持仓历史"""
+        history = []
+
+        for strategy_id in STRATEGY_CONFIG.keys():
+            strategy_data = self.holdings_data.get(strategy_id, {})
+            hold_dates = []
+
+            for date in self.get_available_dates():
+                src = self._resolve_holdings_date(strategy_id, date)
+                if src is not None and stock_code in strategy_data.get(src, set()):
+                    hold_dates.append(date)
+
+            if hold_dates:
+                history.append({
+                    'strategy': strategy_id,
+                    'strategy_name': STRATEGY_CONFIG[strategy_id]['name'],
+                    'hold_dates': hold_dates,
+                    'hold_count': len(hold_dates)
+                })
+
+        return {
+            'stock': stock_code,
+            'name': stock_manager.get_name(stock_code),
+            'total_days': sum(h['hold_count'] for h in history),
+            'history': history
+        }
+
+    def get_date_summary(self, date: str) -> Dict:
+        """获取某日的汇总数据"""
+        holdings = self.get_holdings_by_date(date)
+
+        all_stocks = set()
+        strategy_counts = {}
+
+        for s, data in holdings.items():
+            # stocks 现在是字典列表: [{code, name}]
+            stock_codes = set(stock['code'] for stock in data['stocks'])
+            all_stocks.update(stock_codes)
+            strategy_counts[s] = len(stock_codes)
+
+        # 计算交集
+        if holdings:
+            stock_sets = [set(stock['code'] for stock in data['stocks']) for data in holdings.values()]
+            intersection = set.intersection(*stock_sets) if stock_sets else set()
+        else:
+            intersection = set()
+
+        return {
+            'date': date,
+            'total_unique_stocks': len(all_stocks),
+            'strategy_counts': strategy_counts,
+            'full_consensus_stocks': sorted(list(intersection)),
+            'consensus_count': len(intersection)
+        }
+
+
+# 全局单例
+parser = DataParser()
+
+
+if __name__ == '__main__':
+    # 测试
+    latest_date = parser.get_available_dates()[-1]
+    logger.info(f"最新日期: {latest_date}")
+    summary = parser.get_date_summary(latest_date)
+    logger.info(f"当日汇总: {summary}")
+    consensus = parser.get_strategy_consensus(latest_date)[:10]
+    logger.info(f"前10只高共识股票: {consensus}")

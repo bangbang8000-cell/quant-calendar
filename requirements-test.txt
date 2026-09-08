@@ -1,0 +1,5 @@
+# 量化选股日历 v3.16 测试依赖（仅测试环境，非应用运行依赖）
+# 视觉回归 harness (tests/e2e/visual_regression.py) 需要 Pillow + playwright。
+# 本机开发: pip install -r requirements-test.txt；CI e2e job 另执行 playwright install chromium。
+playwright>=1.40.0
+Pillow>=10.0.0

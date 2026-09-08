@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 背景: 固定白底(2026-08-20: 统一白底, 与内联 logo 一致) -->
+  <rect width="100" height="100" rx="20" fill="#ffffff"/>
+  <!-- 边框: 深灰(白底上可见) -->
+  <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="#1e293b" stroke-width="3" opacity="0.85"/>
+  <!-- 基准线 -->
+  <line x1="20" y1="78" x2="82" y2="78" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
+  <!-- 三根渐升柱: 蓝 / 黄 / 红 -->
+  <rect x="22" y="58" width="15" height="20" rx="3.5" fill="#2563eb" opacity="0.95"/>
+  <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="#eab308" opacity="0.95"/>
+  <rect x="63" y="26" width="15" height="52" rx="3.5" fill="#dc2626"/>
+  <!-- 顶柱高光(白底上用浅灰) -->
+  <rect x="63" y="26" width="15" height="14" rx="3.5" fill="#e2e8f0" opacity="0.8"/>
+  <!-- 上升趋势箭头 -->
+  <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="#1e293b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>

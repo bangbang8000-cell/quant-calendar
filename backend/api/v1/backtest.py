@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+策略回测 API 路由 (v3.9.10: 归因看板端点)
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Dict, Any
+
+from backtest import backtest_engine, save_backtest_result, get_backtest_history
+from auth import get_non_guest_user, get_current_active_user
+
+router = APIRouter(prefix="/backtest", tags=["策略回测"])
+
+
+@router.post("/export")
+async def export_backtest_report(body: Dict[str, Any],
+                                 user: dict = Depends(get_current_active_user)):
+    """回测报告导出 (V5.0.2 T-5.0.26): {result: {...}, fmt: 'csv'|'html'} → 文件落盘
+    零依赖: CSV(UTF-8 BOM Excel 兼容) / 自包含 HTML(浏览器打印 PDF)。"""
+    from backtest_report import save_report
+    result = body.get("result") or {}
+    fmt = body.get("fmt") or "csv"
+    if not result:
+        raise HTTPException(status_code=400, detail="result 不能为空")
+    out = save_report(result, fmt)
+    if not out.get("success"):
+        raise HTTPException(status_code=400, detail=out.get("message", "导出失败"))
+    return {"success": True, "filename": out["filename"],
+            "path": out["path"], "bytes": out["bytes"]}
+
+
+@router.post("/{strategy_id}")
+async def run_strategy_backtest(
+    strategy_id: str,
+    params: Dict[str, Any],
+    _: Dict = Depends(get_non_guest_user)
+):
+    """
+    运行单策略回测
+
+    Args:
+        strategy_id: 策略ID
+        params: 回测参数
+            - start_date: 开始日期 (YYYY-MM-DD)
+            - end_date: 结束日期 (YYYY-MM-DD)
+            - initial_capital: 初始资金
+            - commission_rate: 手续费率
+            - slippage: 滑点率
+    """
+    try:
+        result = backtest_engine.run_backtest(
+            strategy_id=strategy_id,
+            start_date=params.get("start_date"),
+            end_date=params.get("end_date"),
+            initial_capital=params.get("initial_capital", 100000.0),
+            commission_rate=params.get("commission_rate", 0.0003),
+            slippage=params.get("slippage", 0.001)
+        )
+
+        summary = backtest_engine.get_backtest_summary(result)
+        # V4.9 (P3): 保存回测结果到历史
+        save_backtest_result(strategy_id, summary, {
+            "start_date": params.get("start_date"),
+            "end_date": params.get("end_date"),
+            "initial_capital": params.get("initial_capital", 100000.0),
+        })
+        return {
+            "success": result.success,
+            "summary": summary,
+            "equity_curve": result.equity_curve,
+            "monthly_returns": result.monthly_returns,
+            "trade_history": result.trade_history,
+            "message": result.message
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"回测失败: {e}")
+
+
+@router.post("/multi")
+async def run_multi_strategy_backtest(
+    params: Dict[str, Any],
+    _: Dict = Depends(get_non_guest_user)
+):
+    """
+    运行多策略组合回测
+
+    Args:
+        params: 回测参数
+            - strategy_ids: 策略ID列表
+            - start_date: 开始日期
+            - end_date: 结束日期
+            - weights: 权重字典 (可选)
+    """
+    try:
+        result = backtest_engine.run_multi_strategy_backtest(
+            strategy_ids=params.get("strategy_ids", []),
+            start_date=params.get("start_date"),
+            end_date=params.get("end_date"),
+            weights=params.get("weights")
+        )
+        return {"success": True, "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"多策略回测失败: {e}")
+
+
+# ─── v3.9.10: 策略归因看板 ─────────────────────────────────────
+
+@router.get("/attribution/{strategy_id}")
+async def get_strategy_attribution(
+    strategy_id: str,
+    _: Dict = Depends(get_non_guest_user)
+):
+    """
+    策略归因分析 — 收益拆解 + 月度热力图数据
+
+    Returns:
+        - monthly_returns: 各月收益 (用于热力图)
+        - equity_curve: 净值曲线
+        - risk_metrics: 风险指标汇总
+        - trade_analysis: 交易统计分析
+    """
+    try:
+        import numpy as np
+
+        # 运行回测获取数据
+        result = backtest_engine.run_backtest(strategy_id=strategy_id)
+        if not result.success:
+            return {"success": False, "message": result.message}
+
+        # 归因分析
+        monthly = result.monthly_returns
+        equity = result.equity_curve
+
+        # 月度热力图数据: [{year, month, return}]
+        heatmap_data = []
+        for k, v in sorted(monthly.items()):
+            parts = k.split('-')
+            heatmap_data.append({
+                "year": int(parts[0]),
+                "month": int(parts[1]) if len(parts) > 1 else 0,
+                "return": round(v * 100, 2)
+            })
+
+        # 净值曲线摘要 (按季度采样)
+        equity_sampled = equity[::max(1, len(equity) // 60)]
+
+        # 交易分析
+        trades = result.trade_history or []
+        win_trades = [t for t in trades if t.get("return", 0) > 0]
+        lose_trades = [t for t in trades if t.get("return", 0) <= 0]
+
+        trade_analysis = {
+            "total": len(trades),
+            "wins": len(win_trades),
+            "losses": len(lose_trades),
+            "win_rate": round(result.win_rate * 100, 2),
+            "profit_loss_ratio": round(result.profit_loss_ratio, 2) if result.profit_loss_ratio else 0,
+            "avg_win_return": round(np.mean([t.get("return", 0) for t in win_trades]) * 100, 2) if win_trades else 0,
+            "avg_loss_return": round(np.mean([t.get("return", 0) for t in lose_trades]) * 100, 2) if lose_trades else 0,
+            "turnover_rate": round(result.turnover_rate * 100, 2) if result.turnover_rate else 0,
+        }
+
+        return {
+            "success": True,
+            "data": {
+                "strategy_id": strategy_id,
+                "period": f"{result.start_date} ~ {result.end_date}",
+                "summary": backtest_engine.get_backtest_summary(result),
+                "heatmap_data": heatmap_data,
+                "equity_sampled": equity_sampled,
+                "trade_analysis": trade_analysis,
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"归因分析失败: {e}")
+
+
+# ─── V5.0.2 T-5.0.22: 基准对比 — 可用基准列表 ───
+
+@router.get("/benchmarks")
+async def list_benchmarks(user: dict = Depends(get_current_active_user)):
+    """可用回测基准 (沪深300/中证500/中证1000 + 自定义指数代码)。"""
+    from benchmark import BENCHMARKS
+    return {"success": True, "data": {
+        "benchmarks": [
+            {"key": k, "code": v["code"], "label": v["label"]}
+            for k, v in BENCHMARKS.items()
+        ],
+        "custom": "可直接传指数代码作为自定义基准 (如 000688.SH)",
+    }}
+
+
+# ─── V4.9 (P3): 回测历史列表 ───
+
+@router.get("/history")
+async def list_backtest_history(
+    days: int = 30,
+    sid: str = '',
+    limit: int = 100,
+    user: dict = Depends(get_current_active_user),
+):
+    """V4.9 (P3): 回测历史记录列表"""
+    history = get_backtest_history(days=days, sid=sid, limit=limit)
+    return {"success": True, "data": history, "count": len(history)}

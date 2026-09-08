@@ -1,0 +1,18 @@
+量化评估 {stock_name}({stock_code})，严格基于下方数据：{strategy_hint}{phase_note}
+
+{data_section}
+
+## 输出要求（JSON）
+1. 9维度评分(0-100)，加权计算 total_score
+2. level: 强烈推荐/推荐/谨慎推荐/中性/观望
+3. level_color: #67c23a/#85ce61/#e6a23c/#909399/#f56c6c
+4. analysis: strengths/weaknesses/suggestions 各1-3条，每条≤12字
+5. detailed_report: ≤100字凝练综述
+6. sniper_points: 根据支撑/压力位给出 {{ideal_buy, stop_loss, take_profit}} 三个具体价格
+7. position_advice: 分持仓建议 {{no_position, has_position}} 各≤25字
+8. signal_attribution: 各因素贡献度 {{technical(0-100), technical_driver(""), fundamentals(0-100), fundamental_driver(""), capital_flow(0-100), capital_flow_driver(""), strongest_bullish, strongest_bearish}}
+9. data_quality_note: 感知数据时效性的一句话（如有缓存数据请注明）
+
+权重：趋势15% 均线10% 成交量15% 动能风险10% 量价关系12% 中期趋势10% 指标共振12% 稳定性8% 位置8%
+
+严格JSON：{{{{"total_score":85.2,"level":"推荐","level_color":"#67c23a","dimensions":{{{{"趋势强度":90,"均线排列":85}}}},"analysis":{{{{"strengths":["量价配合好"],"weaknesses":["RSI偏高"],"suggestions":["回踩5日线介入"],"sniper_points":{{{{"ideal_buy":"32.50","stop_loss":"30.80","take_profit":"36.00"}}}},"position_advice":{{{{"no_position":"32.50附近建仓3成","has_position":"持有止损上移32元"}}}}}}}},"signal_attribution":{{{{"technical":60,"technical_driver":"均线多头排列","fundamentals":25,"fundamental_driver":"低估值安全边际","capital_flow":15,"capital_flow_driver":"成交量温和放大","strongest_bullish":"均线多头排列","strongest_bearish":"成交量萎缩"}}}},"data_quality_note":"K线为实时数据","detailed_report":"80字综述"}}}}""

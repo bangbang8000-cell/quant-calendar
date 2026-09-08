@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+用户管理模块
+"""
+import json
+import logging
+import os
+from typing import List, Dict, Optional
+import bcrypt
+
+from paths import USERS_FILE as DATA_FILE
+
+logger = logging.getLogger(__name__)
+
+# 七套主题配置 (v3.13: 名称与前端 themes.js 对齐；dark-pro 补齐, 供顶部主题切换菜单)
+THEMES = {
+    "tech-blue": {
+        "name": "科技蓝",
+        "primary": "#1d4ed8",
+        "secondary": "#60a5fa",
+        "gradient": "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%)"
+    },
+    "rose-red": {
+        "name": "玫瑰红",
+        "primary": "#E63946",
+        "secondary": "#C1121F",
+        "gradient": "linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%)"
+    },
+    "vibrant-orange": {
+        "name": "活力金",
+        "primary": "#D4A843",
+        "secondary": "#F0C75E",
+        "gradient": "linear-gradient(135deg, #B8860B 0%, #D4A843 50%, #F0C75E 100%)"
+    },
+
+    "classic-white": {
+        "name": "经典白",
+        "primary": "#2563eb",
+        "secondary": "#60a5fa",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #2563eb 55%)"
+    },
+    "classic-red": {
+        "name": "经典红",
+        "primary": "#dc2626",
+        "secondary": "#f87171",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #dc2626 55%)"
+    },
+    "classic-gold": {
+        "name": "经典金",
+        "primary": "#b8922a",
+        "secondary": "#e6c450",
+        "gradient": "linear-gradient(135deg, #ffffff 45%, #b8922a 55%)"
+    },
+    "dark-pro": {
+        "name": "暗色专业",
+        "primary": "#64ffda",
+        "secondary": "#45e0bc",
+        "gradient": "linear-gradient(135deg, #0f0f23 0%, #1e2a4a 50%, #64ffda 100%)"
+    },
+
+}
+
+
+class UserManager:
+    def __init__(self):
+        self.users = {}
+        self._load_users()
+
+    def _load_users(self):
+        """加载用户数据 (v3.3.0: 优先 SQLite, 回退 JSON)"""
+        # 尝试从 SQLite 加载
+        try:
+            import db
+            if db.schema_ok():
+                db_users = db.kv_all('users')
+                if db_users:
+                    self.users = db_users
+                    return
+        except Exception:
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
+            pass
+        # 回退 JSON
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                self.users = json.load(f)
+            # v1.7.5: 确保访客账户始终存在
+            if "guest" not in self.users:
+                self.users["guest"] = {
+                    "username": "guest",
+                    "password": self._hash_password("guest"),
+                    "role": "guest",
+                    "theme": "vibrant-orange",
+                    "enabled": True,
+                    "locked": True,
+                    "created_at": "2026-05-15",
+                    "token_version": 1
+                }
+                self._save_users()
+        else:
+            # 初始化默认用户
+            self.users = {
+                "admin": {
+                    "username": "admin",
+                    "password": self._hash_password("admin"),
+                    "role": "admin",
+                    "theme": "vibrant-orange",
+                    "created_at": "2026-01-01",
+                    "token_version": 1
+                }
+            }
+            # v1.7.5: 自动创建访客账户
+            self.users["guest"] = {
+                "username": "guest",
+                "password": self._hash_password("guest"),
+                "role": "guest",
+                "theme": "vibrant-orange",
+                "enabled": True,
+                "locked": True,
+                "created_at": "2026-05-15"
+            }
+            self._save_users()
+
+    def _save_users(self):
+        """保存用户数据 (v3.17.13: SQLite 为主, JSON 不再双写; JSON 仅保留兼容读取)"""
+        try:
+            import db
+            if db.schema_ok():
+                for username, data in self.users.items():
+                    db.kv_set('users', username, data)
+        except Exception:
+            logger.warning("[warn] 操作异常 (v3.4.0-T8)")
+
+    def _hash_password(self, password: str) -> str:
+        """密码哈希 (使用 bcrypt 强加密)"""
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
+
+    def verify_password(self, username: str, password: str) -> bool:
+        """验证密码 (使用 bcrypt 安全验证)"""
+        if username not in self.users:
+            return False
+        stored_hash = self.users[username]["password"]
+        # 兼容旧的 MD5 哈希（用于迁移）
+        if len(stored_hash) == 32:  # MD5 长度
+            import hashlib
+            if stored_hash == hashlib.md5(password.encode()).hexdigest():
+                # 迁移到 bcrypt
+                self.users[username]["password"] = self._hash_password(password)
+                self._save_users()
+                return True
+            return False
+        # 使用 bcrypt 验证
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
+        except Exception:
+            return False
+
+    def get_user(self, username: str) -> Optional[Dict]:
+        """获取用户信息"""
+        if username in self.users:
+            user = self.users[username].copy()
+            del user["password"]
+            user.setdefault("token_version", 1)  # V4.1: 旧数据兼容
+            return user
+        return None
+
+    def list_users(self) -> List[Dict]:
+        """列出所有用户（不含密码）"""
+        users = []
+        for u in self.users.values():
+            user = u.copy()
+            del user["password"]
+            users.append(user)
+        return users
+
+    def is_default_password(self, username: str) -> bool:
+        """V4.1: 是否仍为默认/弱口令 (admin / admin123), 用于强制改密"""
+        for guess in ("admin", "admin123"):
+            if self.verify_password(username, guess):
+                return True
+        return False
+
+    def add_user(self, username: str, password: str, role: str = "user", theme: str = "vibrant-orange", group: str = None) -> bool:
+        """添加用户"""
+        if username in self.users:
+            return False
+        if theme not in THEMES:
+            theme = "vibrant-orange"
+        self.users[username] = {
+            "username": username,
+            "password": self._hash_password(password),
+            "role": role,
+            "theme": theme,
+            "created_at": "2026-05-15",
+            "token_version": 1
+        }
+        # group 字段：默认与 role 同名
+        if group:
+            self.users[username]["group"] = group
+        else:
+            self.users[username]["group"] = role
+        self._save_users()
+        return True
+
+    def update_user(self, username: str, password: str = None, role: str = None, theme: str = None, group: str = None) -> bool:
+        """更新用户信息"""
+        if username not in self.users:
+            return False
+        # v1.7.5: guest 角色不可变更
+        if username == "guest" and role and role != "guest":
+            return False
+        if password:
+            self.users[username]["password"] = self._hash_password(password)
+        if role:
+            self.users[username]["role"] = role
+        if password or role:
+            # V4.1: 改密/降权后使旧令牌失效 (令牌版本号递增)
+            self.users[username]["token_version"] = self.users[username].get("token_version", 1) + 1
+        if theme:
+            self.users[username]["theme"] = theme
+        if group:
+            self.users[username]["group"] = group
+        self._save_users()
+        return True
+
+    def delete_user(self, username: str) -> bool:
+        """删除用户"""
+        if username not in self.users or username in ("admin", "guest"):
+            return False  # 不允许删除admin/guest
+        del self.users[username]
+        self._save_users()
+        return True
+
+    def get_themes(self) -> Dict:
+        """获取所有主题配置"""
+        return THEMES
+
+
+user_manager = UserManager()

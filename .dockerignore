@@ -1,0 +1,60 @@
+# Docker
+# 注意: Dockerfile 与 docker-entrypoint.sh 会被构建过程直接读取/COPY，不能排除
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# Secrets (绝不进镜像)
+.env
+*.env.local
+*.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Data (volume 挂载)
+data/
+
+# Git
+.git/
+.gitignore
+
+# Archives
+*.tar.gz
+*.zip
+releases/
+versions/
+
+# Dev scripts
+dev.sh
+dev.bat
+start.sh
+start.bat
+release.sh
+PLAN.md
+
+# Misc
+.hermes/
+.pytest_cache/
+.ruff_cache/
+.coverage
+*.bak
+*.backup*
+*.log
+node_modules/

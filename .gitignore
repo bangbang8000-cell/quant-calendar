@@ -1,0 +1,114 @@
+# ==========================================
+# 量化选股日历 - Git 忽略规则
+# ==========================================
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+# V4.3 (方案A): 前端构建产物入库 (Docker/ops 无需 Node 构建) - 仅 frontend/dist 例外
+!frontend/dist/
+!frontend/dist/**
+node_modules/
+frontend/node_modules
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Environment files (secrets)
+.env
+*.env.local
+*.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# User data (generated at runtime)
+quant-calendar-ops/data/
+data/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Archives & releases
+*.tar.gz
+*.zip
+quant-calendar-ops/releases/
+quant-calendar-ops/versions/
+
+# Backup files
+*.backup*
+*.bak
+*.original*
+*_bak*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dev scripts (local only)
+quant-calendar-ops/dev.sh
+quant-calendar-ops/dev.bat
+quant-calendar-ops/start.sh
+quant-calendar-ops/start.bat
+quant-calendar-ops/release.sh
+
+# Dev plans
+.hermes/
+PLAN.md
+
+# Pytest cache
+.pytest_cache/
+
+# qresult CSV source (tracked via Git LFS or direct, decide per release)
+
+# Coverage output
+.coverage
+htmlcov/
+
+# Visual regression (FR-3.11.9 / TC-11.14): 本次运行截图与报告为生成产物, 不入库
+# 仅入库基线 baseline/ (参考截图)
+tests/e2e/screenshots/current/
+tests/e2e/reports/
+
+# V4.6: 归档文档(旧版本) 本地保留, 不同步 GitHub
+docs/archive/
+
+# V4.8.2 精简: 运行产物与历史审计截图本地归档, 不入库
+qresult/
+screenshots/
+assets/screenshots/audit-*/
+assets/screenshots/*.jpg
+
+reports/
+
+docs/audits/
+
+docs/superpowers/
+
+docs/reports/
+
+.task-state.json
+
+frontend/_new_script.html
+
+frontend/_extract_modules.py
+
+frontend/static/test.html
+
+frontend/api-docs.html
+.shot-collapsed.png

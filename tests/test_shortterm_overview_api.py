@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""V5.2.1 (T-5.2.17): 派生情绪/事实/验证/热度 API 测试
+
+- 最小 FastAPI app 只挂 shortterm 路由 + 覆写鉴权
+- fetch_prev_pool / 交易日历 均 monkeypatch, 零真实网络
+"""
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from auth import get_current_active_user
+from api.v1.shortterm import router as shortterm_router
+from shortterm import store, emotion_metrics
+
+
+def _make_client():
+    app = FastAPI()
+    app.include_router(shortterm_router, prefix="/api")
+    app.dependency_overrides[get_current_active_user] = \
+        lambda: {"username": "admin", "role": "admin"}
+    return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _clean_store():
+    import db as _db
+
+    def _wipe():
+        try:
+            with _db._db_lock:
+                conn = _db.get_conn()
+                try:
+                    conn.execute("DELETE FROM shortterm_pools")
+                    conn.commit()
+                finally:
+                    conn.close()
+        except Exception:
+            pass
+
+    _wipe()
+    yield
+    _wipe()
+
+
+@pytest.fixture()
+def client(monkeypatch):
+    # 定稿记录与交易日历全部 mock, 零网络
+    monkeypatch.setattr(
+        emotion_metrics, 'fetch_prev_pool',
+        lambda d: {'available': True, 'rows': [
+            {'ts_code': '002909', 'ret': 10.0, 'prev_boards': 3, 'industry': '化学制品'},
+            {'ts_code': '600000', 'ret': 2.0, 'prev_boards': 1, 'industry': '银行'},
+        ]})
+    monkeypatch.setattr(emotion_metrics, 'prev_trade_date', lambda d: '2026-09-01')
+    monkeypatch.setattr(emotion_metrics, 'last_trade_dates',
+                        lambda n, end=None: ['2026-09-02', '2026-09-01', '2026-08-29'])
+    store.save_pool('2026-09-02', 'zt', [
+        {'ts_code': '002909', 'boards': 4, 'first_seal_time': '09:25:00',
+         'seal_amount': 1e8, 'industry': '化学制品'},
+        {'ts_code': '600000', 'boards': 1, 'first_seal_time': '13:00:00',
+         'seal_amount': 5e7, 'industry': '银行'},
+    ])
+    store.save_pool('2026-09-02', 'zb', [{'ts_code': 'x'}])
+    store.save_pool('2026-09-02', 'dt', [{'ts_code': '000001'}])
+    store.save_pool('2026-09-01', 'zt', [
+        {'ts_code': 'a', 'boards': 1, 'industry': '半导体'},
+        {'ts_code': 'b', 'boards': 2, 'industry': '半导体'},
+    ])
+    store.save_pool('2026-08-29', 'zt', [
+        {'ts_code': 'c', 'boards': 1, 'industry': '半导体'},
+    ])
+    return _make_client()
+
+
+def test_emotion_endpoint(client):
+    r = client.get('/api/shortterm/emotion?date=2026-09-02')
+    assert r.status_code == 200
+    data = r.json()
+    assert data['success'] is True
+    assert data['money_effect']['available'] is True
+    assert data['money_effect']['source'] == 'settled'
+    assert data['promotion']['available'] is True
+    assert data['consec_premium']['available'] is True
+    assert data['sentiment_cycle']['available'] is True
+    assert data['ladder']['highest'] == 4
+
+
+def test_market_facts_endpoint(client):
+    r = client.get('/api/shortterm/market-facts?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['seal_quality']['broken_rate'] == round(1 / 3, 3)
+    assert data['feedback_matrix']['available'] is True
+    assert data['theme_structure']['available'] is True
+
+
+def test_verification_endpoint(client):
+    r = client.get('/api/shortterm/verification?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    conds = data['conditions']
+    assert len(conds) == 6
+    by_key = {c['key']: c for c in conds}
+    assert by_key['limit_up_count']['verdict'] in ('成立', '证伪', '数据不足')
+    assert 'summary' in data
+
+
+def test_weekly_endpoint(client):
+    r = client.get('/api/shortterm/weekly?end=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['top'][0]['industry'] in ('半导体', '化学制品', '银行')
+    assert '行业口径近似题材' in data['note']
+
+
+def test_overview_endpoint(client):
+    r = client.get('/api/shortterm/overview?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert 'emotion' in data and 'facts' in data
+    assert 'conditions' in data and 'summary' in data
+    assert 'weekly' in data
+    assert data['emotion']['money_effect']['available'] is True
+
+
+def test_overview_anonymous_allowed():
+    """V5.3.15 (T-MR.3): 复盘看板/情绪为市场级只读数据, 匿名可访问(不再 401)."""
+    app = FastAPI()
+    app.include_router(shortterm_router, prefix="/api")
+    c = TestClient(app)
+    r1 = c.get('/api/shortterm/overview?date=2026-09-02')
+    assert r1.status_code != 401, r1.status_code
+    r2 = c.get('/api/shortterm/emotion?date=2026-09-02')
+    assert r2.status_code != 401, r2.status_code
+
+
+# ---------- V5.2.1 收尾: 验证条件落盘 / history / 用户自设 ----------
+
+def test_verification_persists_and_history(client):
+    """生成验证条件后落盘, /history 可回读"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02')
+    assert r.json()['success'] is True
+    persisted = store.load_pool('2026-09-02', 'conditions')
+    assert persisted and len(persisted) == 6
+    h = client.get('/api/shortterm/verification/history?date=2026-09-02').json()
+    assert len(h['conditions']) == 6
+    assert h['conditions'][0]['key'] == 'limit_up_count'
+
+
+def test_verification_history_empty_when_none(client):
+    h = client.get('/api/shortterm/verification/history?date=2026-09-10').json()
+    assert h['conditions'] == []
+
+
+def test_verification_custom_override(client):
+    """用户自设条件覆盖基线阈值: 涨停家数阈值设 999 → 当前必证伪"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02&custom=%7B%22limit_up_count%22%3A999%7D')
+    conds = r.json()['conditions']
+    by_key = {c['key']: c for c in conds}
+    assert by_key['limit_up_count']['threshold'] == 999
+    assert by_key['limit_up_count']['verdict'] == '证伪'
+    # 未覆盖的指标仍用基线
+    assert by_key['highest_board']['threshold'] is None or isinstance(
+        by_key['highest_board']['threshold'], (int, float))
+
+
+def test_verification_custom_invalid_ignored(client):
+    """非法 custom 忽略, 不报错"""
+    r = client.get('/api/shortterm/verification?date=2026-09-02&custom=not-json')
+    assert r.json()['success'] is True
+    assert len(r.json()['conditions']) == 6
+
+
+# ---------- V5.2.2: AI 多视角复盘与闭环 ----------
+
+def _fake_llm_invoke(prompt):
+    return ('{"emotion_level": "发酵", "summary": "主线清晰", '
+            '"active_directions": ["存储"], "risks": ["炸板率高"], '
+            '"verify_conditions": ["看1进2"]}')
+
+
+def test_review_run_and_get(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False,
+                                                    'reason': '[⚠️]'})
+    r = client.post('/api/shortterm/review?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True and data['available'] is True
+    assert data['emotion_level'] == '发酵'
+    assert data['markdown'].startswith('# 盘面研判')
+    # 落盘 → GET 可回读
+    g = client.get('/api/shortterm/review?date=2026-09-02').json()
+    assert g['review']['emotion_level'] == '发酵'
+    assert set(g['review']['reports']) == {
+        'sentiment_report', 'capital_report', 'theme_report',
+        'dragon_tiger_report', 'leader_report'}
+
+
+def test_review_no_ai_available(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke', lambda: None)
+    r = client.post('/api/shortterm/review?date=2026-09-02')
+    data = r.json()
+    assert data['available'] is False
+    assert 'AI 未配置' in data['reason']
+
+
+def test_reflection_endpoint(monkeypatch, client):
+    from shortterm import emotion_metrics as em
+    monkeypatch.setattr(em, 'prev_trade_date', lambda d: '2026-09-01')
+    r = client.get('/api/shortterm/reflection?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['vote']['direction'] in ('up', 'down', 'flat')
+
+
+def test_intraday_snapshot_endpoint(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import intraday as iday
+    import datetime as _dt
+    monkeypatch.setattr(iday, 'accept_snapshot',
+                        lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
+    r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
+    data = r.json()
+    assert data['success'] is True and data['accepted'] is True
+    assert 'zt_count' in data
+
+
+def test_backtest_endpoint(client):
+    r = client.get('/api/shortterm/backtest?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert '样本偏差声明' in data['note']
+
+
+def test_drift_endpoint(client):
+    r = client.get('/api/shortterm/drift?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['available'] in (True, False)
+
+
+# ---------- V5.2.2 收尾: 历史检索 / 追问 / 盘中核验 / webhook ----------
+
+def test_review_dates_lists_stored(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False, 'reason': '[⚠️]'})
+    assert client.get('/api/shortterm/review/dates').json()['dates'] == []
+    client.post('/api/shortterm/review?date=2026-09-02')
+    dates = client.get('/api/shortterm/review/dates').json()['dates']
+    assert '2026-09-02' in dates
+
+
+def test_review_chat_no_review(client):
+    r = client.post('/api/shortterm/review/chat',
+                    json={'date': '2026-09-02', 'question': '怎么看'})
+    assert r.json()['answer'] == '该日尚无复盘, 请先生成。'
+
+
+def test_review_chat_with_review(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import sector_flow as sf
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke', lambda: _fake_llm_invoke)
+    monkeypatch.setattr(sf, 'fetch_sector_flow',
+                        lambda i='今日', s='行业资金流': {'available': False, 'reason': '[⚠️]'})
+    client.post('/api/shortterm/review?date=2026-09-02')
+    # 落盘后追问走 mock LLM
+    monkeypatch.setattr(shortterm_api, '_build_llm_invoke',
+                        lambda: (lambda p: '基于复盘, 主线是存储。'))
+    r = client.post('/api/shortterm/review/chat',
+                    json={'date': '2026-09-02', 'question': '主线是什么'})
+    assert '存储' in r.json()['answer']
+
+
+def test_intraday_snapshot_persists_and_lists(monkeypatch, client):
+    from api.v1 import shortterm as shortterm_api
+    from shortterm import fetchers
+    from shortterm import intraday as iday
+    monkeypatch.setattr(iday, 'accept_snapshot',
+                        lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
+    # 盘中快照抓实时池子(源链 fallback)
+    monkeypatch.setattr(fetchers, 'fetch_zt_pool',
+                        lambda d: {'available': True, 'rows': [{'ts_code': 'a'}]})
+    monkeypatch.setattr(fetchers, 'fetch_zb_pool',
+                        lambda d: {'available': True, 'rows': [{'ts_code': 'x'}]})
+    monkeypatch.setattr(fetchers, 'fetch_dt_pool',
+                        lambda d: {'available': True, 'rows': []})
+    r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
+    assert r.json()['accepted'] is True and r.json()['zt_count'] == 1
+    assert r.json()['pools_available'] == {'zt': True, 'zb': True, 'dt': True}
+    listed = client.get('/api/shortterm/intraday?date=2026-09-03').json()['snapshots']
+    assert len(listed) == 1 and listed[0]['slot'] == '10:00'
+
+
+def test_shortterm_review_webhook_event_registered():
+    import webhook
+    assert 'shortterm_review_ready' in webhook.WEBHOOK_EVENTS
+
+
+# ---------- V5.2.4: /overview 缓存 (T-5.2.52) + 验证条件次日核验 (T-5.2.44) ----------
+
+def test_overview_cached_bundle(client):
+    """同一日期二次取 bundle 命中缓存(同一对象, 不重算)"""
+    from api.v1 import shortterm as shortterm_api
+    b1 = shortterm_api._cached_bundle('2026-09-02')
+    assert shortterm_api._overview_cache.get('2026-09-02') is not None
+    b2 = shortterm_api._cached_bundle('2026-09-02')
+    assert b2 is b1
+    # refresh 强制重算
+    b3 = shortterm_api._cached_bundle('2026-09-02', refresh=True)
+    assert b3 is not b1
+
+
+def test_verify_conditions_endpoint(client):
+    """次日核验: 用 source 日条件阈值对 target 日实际值三态核验 + reflection 落盘"""
+    store.save_pool('2026-09-01', 'conditions', [
+        {'key': 'limit_up_count', 'label': '涨停家数', 'direction': '>=', 'threshold': 60},
+        {'key': 'money_median', 'label': '赚钱效应中位数', 'direction': '>=', 'threshold': 10},
+    ])
+    r = client.get('/api/shortterm/verification/verify'
+                   '?source_date=2026-09-01&target_date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['source_date'] == '2026-09-01' and data['target_date'] == '2026-09-02'
+    assert data['summary']['total'] == 2
+    by = {v['key']: v for v in data['verified']}
+    assert by['limit_up_count']['verdict'] in ('成立', '证伪', '数据不足')
+    assert by['money_median']['verdict'] in ('成立', '证伪', '数据不足')
+    assert by['money_median']['current'] == 6.0
+    # 记分板: 落盘到 source 日
+    from shortterm import reflection
+    stored = reflection.load_reflection('2026-09-01')
+    assert stored['target_date'] == '2026-09-02'
+    assert stored['summary']['total'] == 2
+
+
+def test_verify_conditions_no_source_conditions(client):
+    """source 日无落盘条件 → 空核验结果"""
+    r = client.get('/api/shortterm/verification/verify'
+                   '?source_date=2026-09-05&target_date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['verified'] == [] and data['summary']['total'] == 0
+
+
+# V5.2.9 (T-5.2.55): 诚实性护栏补测 — 降级信封 / 缺失显示 —
+
+def test_promotion_degraded_envelope(monkeypatch, client):
+    """T-5.2.55: 数据源缺失时晋级率返回 {available:False, reason:[⚠️...]} 信封, 不静默填充 0。"""
+    monkeypatch.setattr(store, 'load_pool', lambda date, pool: None)
+    r = client.get('/api/shortterm/emotion?date=2026-09-02')
+    data = r.json()
+    assert data['success'] is True
+    assert data['promotion']['available'] is False
+    assert '[⚠️' in data['promotion']['reason'], "降级信封必须带 [⚠️ 原因"
+
+
+def test_overview_degraded_envelope(monkeypatch, client):
+    """T-5.2.55: overview 聚合层透传降级信封 — 指标不可用时不冒充, 前端可读 reason。"""
+    monkeypatch.setattr(store, 'load_pool', lambda date, pool: None)
+    # 用不同日期避开 _overview_cache TTL 缓存 (前一测试可能缓存了 09-02 的 bundle)
+    r = client.get('/api/shortterm/overview?date=2026-09-03')
+    data = r.json()
+    assert data['success'] is True
+    # emotion.promotion 应带 available=False + reason (前端 emotionNotice 依赖此字段)
+    p = data['emotion']['promotion']
+    assert p.get('available') is False
+    assert p.get('reason'), "promotion 降级必须带 reason"
+    # ladder 用 highest:null + 空 tiers 表达空 (前端显示 —, 不冒充 0)
+    ladder = data.get('ladder') or {}
+    assert ladder.get('highest') is None, "ladder 空时 highest 应为 null (前端显示 —)"
+    assert ladder.get('tiers') == {}, "ladder 空时 tiers 应为空"

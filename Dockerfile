@@ -1,0 +1,59 @@
+# 量化选股日历 Docker 镜像
+# 构建: cd <仓库目录> && docker build -t quant-calendar:4.0.0 .
+# 不包含任何 Token/密钥，所有配置通过 Web UI 在容器启动后设置
+
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="quant-calendar"
+LABEL org.opencontainers.image.description="基于美林时钟的量化选股日历系统"
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非 root 用户
+RUN useradd --create-home --shell /bin/bash appuser
+
+# 工作目录
+WORKDIR /app
+
+# 安装 Python 依赖（先复制锁文件以利用 Docker 缓存层；v3.10 起使用锁定版本保证可复现）
+COPY requirements.lock .
+RUN pip install --no-cache-dir -r requirements.lock --break-system-packages
+
+# 复制应用代码
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
+COPY tests/ ./tests/
+COPY docs/ ./docs/
+COPY libs/ ./libs/
+
+# 策略数据目录（V4.8.2 起 qresult 不再入库，由 volume 挂载/应用生成；空目录保证 QUANT_DATA_DIR 存在）
+RUN mkdir -p /data/qresult && chown -R appuser:appuser /data
+
+# 安装本地包（非 PyPI 发布）
+RUN pip install --no-cache-dir ./libs/sxsc_tushare/ --break-system-packages
+
+# 设置权限
+RUN mkdir -p /app/data && \
+    chown -R appuser:appuser /app /data
+
+# 复制入口脚本
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
+
+# 环境变量
+ENV QUANT_DATA_DIR=/data/qresult
+ENV HOST=0.0.0.0
+ENV PORT=8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+EXPOSE 8000
+
+USER appuser
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["python", "backend/main_new.py", "--port", "8000"]

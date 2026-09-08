@@ -1,0 +1,11 @@
+{
+  "name": "quant-calendar-frontend",
+  "private": true,
+  "description": "V4.3 方案A: Vite 构建层 — 全部业务 JS 打包为单一 chunk, 首屏哈希缓存破坏",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.4.21"
+  }
+}

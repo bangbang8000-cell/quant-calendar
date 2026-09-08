@@ -1,0 +1,126 @@
+/* ===== Design Tokens v3.1 ===== */
+/* Single source of truth: Layer 1 Raw | Layer 2 Semantic | Layer 3 Component */
+
+:root {
+  /* ─── Spacing Scale ─── */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
+  /* ─── Border Radius ─── */
+  --r-sm: 6px;   --r-md: 8px;   --r-lg: 12px;  --r-xl: 16px;  --r-full: 9999px;
+
+  /* ─── Typography: Font Family ─── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+
+  /* ─── Typography: Font Size (Major Third 1.25) ─── */
+  --font-xs: 11px;
+  --font-2xs: 9px;   --font-icon: 44px;   --font-hero: 64px;  /* V4.6 排版补全 */   --font-sm: 12px;   --font-base: 14px;  --font-md: 16px;
+  --font-lg: 18px;   --font-xl: 22px;   --font-2xl: 26px;   --font-3xl: 36px;
+
+  /* ─── Typography: Font Weight ─── */
+  --font-normal: 400;    --font-medium: 500;
+  --font-semibold: 600;  --font-bold: 700;
+
+  /* ─── Typography: Line Height ─── */
+  --lh-tight: 1.2;   --lh-normal: 1.5;   --lh-relaxed: 1.8;
+
+  /* ─── Shadows ─── */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* V4.1: 全局边框强调色与 chip 固定深字(原 layout.css 内联 fallback 提为令牌, 满足令牌纪律门禁) */
+  --border-strong: #d9dee8;
+  /* V4.8.2 (D4): ECharts 网格线/轴线令牌 (dark 由 themes.css 覆盖) */
+  --chart-split: #e2e8f0;   /* 图表网格线(弱) */
+  --chart-axis:  #cbd5e1;   /* 图表轴线(中) */
+  /* V5.5 (T-5.0.54): 图表画布背景令牌 (dark 由 themes.css 覆盖) */
+  --chart-bg:     #ffffff;  /* 图表画布背景(亮) */
+  --text-on-chip:  #1f2937;
+  /* V4.4 (FR-4.4.1): 补全被使用但未定义的令牌(默认亮色值, dark 由 themes.css 覆盖) */
+  --border-color: #d9dee8;        /* 通用边框色(layout 使用) */
+  --surface: #ffffff;              /* 表面色(代码块等) */
+  --bg-code: #f6f8fa;              /* 代码块背景 */
+  --bg-tertiary: #f1f5f9;          /* 三级背景(kbd/标签) */
+  --primary-color-dark: #2563eb;   /* 主色深(渐变端点) */
+  --text-disabled: #9ca3af;        /* 禁用态文本(EP 覆盖) */
+  --radius-2: 10px;                /* 中等圆角(卡片) */
+  --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);  /* 底部固定工具栏向上投影 */
+
+  /* ─── Transitions ─── */
+  /* V5.3.0 (T-5.3.2.5 / FR-5.3.2.5): 动效令牌族 — 时长 + 缓动 (单一来源) */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --easing-standard: ease;
+  --easing-enter: cubic-bezier(0.22, 1, 0.36, 1);   /* easeOutQuint — 进入轻盈 */
+  --easing-exit: cubic-bezier(0.36, 0, 0.66, -0.56); /* easeInBack — 退出利落 */
+  /* 过渡别名 (向后兼容) — 统一引用动效令牌 */
+  --transition-fast: var(--duration-fast) var(--easing-standard);
+  --transition-base: var(--duration-base) var(--easing-standard);
+  --transition-slow: var(--duration-slow) var(--easing-standard);
+  --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */
+  --glass-blur: 12px;
+  --glass-saturate: 150%;
+  --glass-bg: rgba(255, 255, 255, 0.72);        /* 浅色浮层半透明底 */
+  --glass-border: rgba(255, 255, 255, 0.35);    /* 顶部受光描边 */
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+
+  /* ─── Semantic Colors (global, not theme-dependent) ─── */
+  --color-success: #4CAF50;  --color-warning: #FF9800;
+  --color-danger:  #C62828;  --color-info:    #1976d2;
+  /* V5.5 (T-5.0.54): 图表强调色令牌 (原 charts/echarts-theme/backtest 使用未定义) */
+  --color-accent:  #F59E0B;
+  /* v3.16 (16.5): 行情涨跌语义 — 统一"红涨绿跌"，跌由原蓝(#457B9D)改绿 */
+  --color-up:      #E63946;  --color-down:    #2E7D32;
+  --color-rise:    var(--color-up);    /* 行情涨跌专用：涨=红 */
+  --color-fall:    var(--color-down);  /* 行情涨跌专用：跌=绿 */
+  --color-neutral: #43a047;
+  /* V5.3.0 (T-5.3.2.2 / FR-5.3.2.2): 涨跌强弱分档 (视觉可区分, 数值级差越强色越深) */
+  --color-up-strong:    #C62828;  /* 大涨/强机会 — 深红 */
+  --color-up-weak:      #F5A0A6;  /* 小涨/弱机会 — 浅红 */
+  --color-down-strong:  #1B5E20;  /* 大跌/强风险 — 深绿 */
+  --color-down-weak:    #81C784;  /* 小跌/弱风险 — 浅绿 */
+  /* V5.3.0 (T-5.3.2.2 / FR-5.3.2.2): 语义配色 — 机会/风险/中性/警示 (决策语义) */
+  --sem-opportunity: var(--color-up);   /* 机会 → 涨(红) */
+  --sem-risk:        var(--color-down); /* 风险 → 跌(绿) */
+  --sem-neutral:     var(--color-neutral);
+  --sem-warning:     var(--color-warning);
+  /* v3.11 (FR-3.11.6): 补齐缺失语义色令牌 */
+  --color-ai:      #6366f1;  /* AI 品牌紫/靛蓝系（评估/模型徽标） */
+  --white:         #ffffff;  /* 强调色/渐变上的文字、白底 */
+
+  /* ─── Badge / Label Colors ─── */
+  --badge-success-bg:   #E8F5E9;  --badge-success-text: #2E7D32;
+  --badge-warning-bg:   #FFF3E0;  --badge-warning-text: #E65100;
+  --badge-danger-bg:    #FFEBEE;  --badge-danger-text:  #C62828;
+  --badge-info-bg:      #E3F2FD;  --badge-info-text:    #1976D2;
+  --badge-gold-bg:      #FFF8E1;
+  --color-gold:         #D4AF37;  --gold-light: #E8D5B7;  --gold-bg: #FFFDF5;
+
+  /* ─── 固定装饰色（不随主题的组件变体） ─── */
+  --avatar-dark-bg:     #1E293B;  --avatar-dark-text: #E2E8F0;
+
+  /* ─── Element Plus Override Colors ─── */
+  --el-success: #4CAF50;  --el-warning: #FF9800;
+  --el-danger:  #C62828;  --el-info:    #1976D2;
+
+  /* ─── Component Tokens ─── */
+  --sidebar-width:          220px;
+  --sidebar-collapsed-width: 56px;
+  --header-height:           48px;
+  --card-padding:            16px;
+  --card-radius:             12px;
+  --dialog-radius:           16px;
+  --nav-item-height:         40px;
+  --mobile-nav-height:       56px;
+}
+
+/* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
+[v-cloak] { display: none !important; }
+
+
+/* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */
+.num-tabular { font-variant-numeric: tabular-nums; }
