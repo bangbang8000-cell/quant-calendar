@@ -68,10 +68,11 @@ def test_filter_new_events():
 # ==================== DataSourceEventProvider 回退链 ====================
 
 
-def test_provider_akshare_reachable():
+def test_provider_tushare_primary():
+    """V5.4.0: tushare pro 优先 — tushare 返回事件即用, akshare 不触发"""
     prov = ea.DataSourceEventProvider(
-        akshare_fetcher=lambda code: [_ev(type_='分红', title='10派30元')],
-        tushare_fetcher=lambda code: (_ for _ in ()).throw(RuntimeError('不应调用')),
+        akshare_fetcher=lambda code: (_ for _ in ()).throw(RuntimeError('不应调用')),
+        tushare_fetcher=lambda code: [_ev(type_='分红', title='10派30元')],
     )
     assert prov.fetch_events('600519.SH')[0]['title'] == '10派30元'
 
@@ -100,7 +101,7 @@ def test_provider_both_fail_raises():
 def test_build_events_reachable(monkeypatch):
     prov = ea.DataSourceEventProvider(
         akshare_fetcher=lambda code: [_ev(type_='解禁', title='限售解禁')],
-        tushare_fetcher=lambda code: [],
+        tushare_fetcher=lambda code: [_ev(type_='解禁', title='限售解禁')],
     )
     res = ea.build_events(['600519.SH'], today='2026-08-18', providers=[prov])
     assert len(res['events']) == 1
@@ -125,7 +126,7 @@ def test_build_events_all_unavailable():
 def test_run_event_scan_pushes_and_dedup(monkeypatch):
     prov = ea.DataSourceEventProvider(
         akshare_fetcher=lambda code: [_ev(type_='业绩预告', title='预计净利润增长50%')],
-        tushare_fetcher=lambda code: [],
+        tushare_fetcher=lambda code: [_ev(type_='业绩预告', title='预计净利润增长50%')],
     )
     monkeypatch.setattr(ea, 'get_alertable_codes',
                         lambda username, scope: [{'code': '600519.SH', 'name': '贵州茅台'}])
