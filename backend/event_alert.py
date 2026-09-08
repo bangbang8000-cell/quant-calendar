@@ -24,6 +24,64 @@ EVENT_TYPES = ['业绩预告', '解禁', '分红', '龙虎榜', '两融异动']
 # FR-3.18.2: 同一股票同一事件 24h 内不重复推送（防刷屏）
 DEDUP_WINDOW_HOURS = 24
 
+# V5.4.0 FIX: 事件源拉取超时（秒）— akshare 等外部接口挂起时
+# 不得拖垮事件页; 超时降级为不可达并如实标注
+EVENT_FETCH_TIMEOUT = 6.0
+
+
+def _pro_rows(df, limit: int = 3):
+    """把 tushare pro 结果 (pandas DataFrame) 或 list[dict] 归一为 dict 行序列"""
+    if df is None:
+        return []
+    try:
+        import pandas as pd
+        if isinstance(df, pd.DataFrame):
+            return [dict(r) for _, r in df.head(limit).iterrows()]
+    except Exception:
+        pass
+    return list(df)[:limit]
+
+
+def _tushare_token() -> str:
+    """读取 tushare token (datasource_config.json, 与 data_sources 一致)"""
+    try:
+        import json
+        import os
+        from paths import DATA_DIR
+        path = os.path.join(DATA_DIR, 'datasource_config.json')
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                cfg = json.load(f) or {}
+            src = (cfg.get('sources') or {}).get('tushare') or {}
+            return str(src.get('token', '') or '')
+    except Exception:
+        logger.debug('event_alert token 读取失败 (Exception)')
+    return ''
+
+
+def _run_with_timeout(fn, timeout: float):
+    """daemon 线程执行 fn, 超时抛 TimeoutError (不阻塞解释器退出)。
+
+    build_events 对每个 provider.fetch_events 施加硬超时:
+    挂起源降级为不可达, 页面按时返回; daemon 线程被遗弃无害。
+    """
+    result = {}
+
+    def _worker():
+        try:
+            result['value'] = fn()
+        except Exception as e:  # noqa: BLE001 - 透传上游异常给超时层
+            result['error'] = e
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        raise TimeoutError('事件源拉取超时')
+    if 'error' in result:
+        raise result['error']
+    return result.get('value')
+
 
 class _UnavailableEventProvider:
     """默认事件源占位：标记不可达，返回空事件列表"""
@@ -89,7 +147,9 @@ def build_events(stock_codes: List[str], today: Optional[str] = None,
                 unavailable.append(name)
                 continue
             try:
-                found = provider.fetch_events(code) or []
+                # V5.4.0 FIX: 硬超时 — 外部事件源挂起时降级为不可达, 不拖垮页面
+                found = _run_with_timeout(
+                    lambda: provider.fetch_events(code), EVENT_FETCH_TIMEOUT) or []
             except Exception as e:
                 logger.warning('事件源 %s 拉取失败 %s: %s', name, code, e)
                 unavailable.append(name)
@@ -223,9 +283,21 @@ class DataSourceEventProvider:
     available = True
     reason = 'akshare/tushare 事件接口均不可达（网络或数据源限流）'
 
-    def __init__(self, akshare_fetcher=None, tushare_fetcher=None):
+    def __init__(self, akshare_fetcher=None, tushare_fetcher=None, pro_client=None):
         self._akshare_fetcher = akshare_fetcher or self._default_akshare
         self._tushare_fetcher = tushare_fetcher or self._default_tushare
+        self._pro_client = pro_client  # 注入 pro client (测试/稳定源)
+        self._cached_pro = None
+
+    def _pro(self):
+        """tushare pro client (惰性构建, token 来自 datasource_config)"""
+        if self._pro_client is not None:
+            return self._pro_client
+        if self._cached_pro is None:
+            import tushare as ts
+            token = _tushare_token()
+            self._cached_pro = ts.pro_api(token) if token else ts.pro_api()
+        return self._cached_pro
 
     def fetch_events(self, code: str) -> list:
         try:
@@ -260,22 +332,36 @@ class DataSourceEventProvider:
                 continue
         return events
 
-    @staticmethod
-    def _default_tushare(code: str) -> list:
-        """tushare 公告/限售/分红 回退源（无 token 亦可尝试; 失败抛错由上层降级）"""
-        import tushare as ts
+    def _default_tushare(self, code: str) -> list:
+        """tushare pro 事件回退 (dividend 分红 / top_list 龙虎榜)。
+
+        V5.4.0 FIX: 原实现用不存在的 ts.stk_announcements (死代码),
+        改为 ts.pro_api(token).dividend/top_list (实测可用, 稳定源)。
+        每个接口独立 try, 单个失败不影响其它。
+        """
         events: List[dict] = []
+        pro = self._pro()
         try:
-            df = ts.stk_announcements(ts_code=code, limit=5) if hasattr(ts, 'stk_announcements') else None
-            if df is not None and len(df):
-                for _, row in df.head(3).iterrows():
-                    events.append({
-                        'type': '公告',
-                        'title': str(row.get('title', '') or ''),
-                        'date': str(row.get('ann_date', '') or ''),
-                    })
+            df = pro.dividend(ts_code=code, limit=3)
+            for row in _pro_rows(df, 3):
+                title = '每10股派' + str(row.get('cash_div_tax', ''))
+                events.append({
+                    'type': '分红',
+                    'title': title,
+                    'date': str(row.get('end_date', '') or ''),
+                })
         except Exception:
-            raise
+            logger.debug('event_alert tushare dividend 跳过 (Exception)')
+        try:
+            df = pro.top_list(ts_code=code, limit=3)
+            for row in _pro_rows(df, 3):
+                events.append({
+                    'type': '龙虎榜',
+                    'title': str(row.get('name', '') or ''),
+                    'date': str(row.get('trade_date', '') or ''),
+                })
+        except Exception:
+            logger.debug('event_alert tushare top_list 跳过 (Exception)')
         return events
 
 
