@@ -149,6 +149,8 @@
                             </el-button>
                         </div>
                         <div v-if="stockKlineLoaded" class="kline-chart" id="stockKlineChart"></div>
+                        <!-- V5.4.1 (R1): 分钟数据降级日线提示 -->
+                        <el-alert v-if="klineDegradeNote" :title="klineDegradeNote" type="warning" :closable="false" class="mt-8" />
                         <!-- v3.11 (FR-3.11.8): 均线开关（与图表图例双向联动） -->
                         <div v-if="stockKlineLoaded" class="ma-toggle-row">
                             <span class="ma-toggle-label">{{ t('detail.maLabel') }}</span>

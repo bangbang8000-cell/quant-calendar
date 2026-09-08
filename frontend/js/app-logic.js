@@ -436,6 +436,8 @@ const allMenuDefs = [
                     } catch (e) { /* 偏好不可用则保持默认 daily */ }
                 })();
                 const klineLoading = ref(false);
+                // V5.4.1 (R1): 分钟数据降级日线提示 (degraded_from)
+                const klineDegradeNote = ref('');
                 const indexKlineLoading = ref(false);
                 const stockKlineLoaded = ref(false);
                 // v3.11 (FR-3.11.8): 均线开关状态（与图表图例选中态双向同步，供弹窗按钮高亮）
@@ -457,6 +459,9 @@ const allMenuDefs = [
                         const res = await fetch(`/api/market/kline/${stockDetail.value.stock}?period=${period}&limit=60`);
                         const data = await res.json();
                         if (!data.success || !data.data) throw new Error(data.message || '数据获取失败');
+                        // V5.4.1 (R1): 分钟数据降级日线 → 展示提示 (degraded_from)
+                        klineDegradeNote.value = data.degraded_from
+                            ? ('分钟数据(' + data.degraded_from + ')暂不可用, 已降级展示日线') : '';
                         markKlineLoaded(stockDetail.value.stock);
                         // 过期请求丢弃(快速切 tab 时的并发保护)
                         if (seq !== _klineReqSeq) return false;
@@ -480,6 +485,7 @@ const allMenuDefs = [
                         console.error('[kline] 加载失败:', stockDetail.value && stockDetail.value.stock, period, e);
                         if (stockDetailTab.value === 'kline') {
                             stockKlineLoaded.value = false;  // 复位, 保持"加载K线"按钮可点
+                            klineDegradeNote.value = '';
                             // V4.2 (FR-4.2.6): 失败态显示原因, 支持重试
                             ElementPlus.ElMessage.error('K线加载失败: ' + (e && e.message ? e.message : '数据源不可达，请重试'));
                         }
@@ -965,6 +971,7 @@ const allMenuDefs = [
                     indexDetailVisible, indexDetail, indexAiResult, indexAiLoading, loadCachedIndexEval,
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
+                    klineDegradeNote,
                     loadStockKline, switchKlinePeriod, loadIndexKline, switchIndexKlinePeriod,
                     zoomKlineRange,
                     // v3.11 (FR-3.11.8): MA 图例开关
