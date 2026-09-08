@@ -198,7 +198,9 @@ def test_run_scan_date_filter():
 
     result = scan_engine.run_scan(date='2026-07-13', pool=['000001.SZ'], manager=FakeManager())
     assert len(result['moves']) == 1
-    assert result['moves'][0]['date'] == '20260713'
+    # V5.4.0 FIX: 输出日期统一 YYYY-MM-DD (全站约定)
+    assert result['moves'][0]['date'] == '2026-07-13'
+    assert result['date'] == '2026-07-13'
     assert scan_engine.LABEL_LIMIT_UP in result['moves'][0]['labels']
 
 

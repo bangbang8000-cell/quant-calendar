@@ -80,6 +80,23 @@ def _normalize_date_key(d):
     return str(d).replace('-', '').replace('/', '')[:8]
 
 
+def _iso_date(d) -> Optional[str]:
+    """输出日期归一化为 YYYY-MM-DD (全站约定)。
+
+    kline 源常给 '20260714' (8 位数字), 前端与下游按 '2026-07-14' 展示/解析。
+    已带分隔符 (YYYY-MM-DD / YYYY/MM/DD) 原样归一化; 无法解析返回 None。
+    """
+    if d is None:
+        return None
+    s = str(d).strip()
+    if len(s) == 8 and s.isdigit():
+        return f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    s2 = s.replace('/', '-')
+    if len(s2) == 10 and s2[4] == '-' and s2[7] == '-':
+        return s2
+    return s
+
+
 def _limit_ratio(code: str = '', name: str = '') -> float:
     """按市场/ST 返回涨停幅度比例（供涨停/跌停/连板判定）"""
     if name and 'ST' in str(name).upper():
@@ -270,7 +287,7 @@ def _build_move(code: str, rows: List[dict], labels: List[str]) -> dict:
         'pct_chg': _safe_float(last.get('pct_chg')),
         'amount': _safe_float(last.get('amount')),
         'volume_ratio': round(vol_ratio, 2) if vol_ratio is not None else None,
-        'date': last.get('date'),
+        'date': _iso_date(last.get('date')),   # V5.4.0 FIX: YYYYMMDD → YYYY-MM-DD
     }
 
 
@@ -422,10 +439,12 @@ def run_scan(date: Optional[str] = None, pool: Optional[List[str]] = None,
             note = f'{failed}/{len(codes)} 只股票数据不可达'
         moves.sort(key=lambda m: (-len(m.get('labels') or []), -(m.get('pct_chg') or 0)))
         result_date = date or (moves[0].get('date') if moves else None)
-        result = {'date': result_date, 'moves': moves, 'note': note}
+        result = {'date': _iso_date(result_date), 'moves': moves, 'note': note}
 
-    # 写入缓存(仅成功/非空结果, 失败不缓存避免 TTL 内一直返回旧空)
-    _scan_cache[cache_key] = (now, result)
+    # 写入缓存(仅成功/非空结果; 全量数据不可达不缓存 —
+    # 瞬时数据源故障不应让 TTL 内一直返回旧空, V5.4.0 FIX)
+    if not (not moves and failed >= len(codes)):
+        _scan_cache[cache_key] = (now, result)
     if len(_scan_cache) > 64:  # 防无限增长
         expired = [k for k, v in _scan_cache.items() if now - v[0] > SCAN_RESULT_TTL * 2]
         for k in expired:
