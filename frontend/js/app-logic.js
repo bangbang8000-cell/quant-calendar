@@ -112,7 +112,7 @@
 const allMenuDefs = [
                     { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
                     { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'watchlist', 'history', 'evaluation-analysis', 'chat_history', 'focus'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页
+                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
                     { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
                     { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
                     { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'execution', 'usage', 'about'], guestSubPages: ['status', 'about'] }
