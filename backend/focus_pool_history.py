@@ -83,7 +83,8 @@ def load_pool_history(stock_code):
     global views_aggregator
     try:
         if views_aggregator is None:
-            import views_aggregator
+            from views_aggregator import views_aggregator as _singleton
+            views_aggregator = _singleton
     except Exception as e:  # noqa: BLE001
         logger.warning("[focus] views_aggregator 不可用: %s", e)
         return _empty(stock_code)

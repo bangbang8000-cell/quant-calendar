@@ -76,3 +76,45 @@ def test_load_pool_history_uses_aggregator(monkeypatch):
     h = fph.load_pool_history('600519.SH')
     assert h['first_appear'] == '2026-09-01'
     assert len(h['pool_entries']) == 2
+
+# ==================== V5.4.1 (R2): load_pool_history 接线修复 ====================
+# 原 bug: load_pool_history 用 import views_aggregator(模块) + getattr(模块,'daily_data')
+#   → daily_data 是单例实例的实例属性, 模块本身没有 → 恒返回空 (生产实测入池历史全空)
+# 修复: 改 from views_aggregator import views_aggregator (拿单例实例, 同 focus_list)
+# 本测试不 mock fph.views_aggregator, 走真实接线路径 → 必须能拿到实例的 daily_data
+
+
+def test_load_pool_history_real_wiring_uses_singleton_instance(monkeypatch):
+    """非 mock 接线: load_pool_history 首次调用应解析到单例实例并读取其 daily_data。
+
+    模拟: 真实模块单例 views_aggregator.views_aggregator 指向带数据的实例;
+          复位 fph.views_aggregator=None → 走 from views_aggregator import ... 路径。
+    """
+    import views_aggregator as va_mod
+    import focus_pool_history as fph
+
+    class FakeAgg:
+        daily_data = {
+            '2026-09-01': [{'code': '600519.SH'}, {'code': '000001.SZ'}],
+            '2026-09-02': [{'code': '600519.SH'}],
+            '2026-09-03': [],                      # 600519 出池
+            '2026-09-04': [{'code': '600519.SH'}],  # 重新入池
+        }
+        all_dates = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04']
+
+    # 让真实模块的单例指向带数据的假实例
+    monkeypatch.setattr(va_mod, 'views_aggregator', FakeAgg())
+    # 复位惰性注入 → 触发真实接线 (from views_aggregator import views_aggregator)
+    monkeypatch.setattr(fph, 'views_aggregator', None)
+
+    h = fph.load_pool_history('600519.SH')
+    assert h['first_appear'] == '2026-09-01', '接线修复后应读到实例 daily_data, 实得 %r' % h
+    assert h['last_appear'] == '2026-09-04'
+    assert h['pooled_days'] == 3
+    assert h['is_current'] is True
+    # 两段入池区间: 09-01~09-02 + 09-04 (中间 09-03 出池)
+    entries = h['pool_entries']
+    assert len(entries) == 2, '应有两段入池区间, 实得 %r' % entries
+    assert entries[0]['start'] == '2026-09-01' and entries[0]['end'] == '2026-09-02'
+    assert entries[1]['start'] == '2026-09-04' and entries[1]['end'] == '2026-09-04'
+
