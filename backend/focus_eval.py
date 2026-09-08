@@ -10,7 +10,6 @@
     * ai_available=False → 全部规则快评
 - 幂等: focus_store 复合主键 INSERT OR REPLACE (同 日期+时段+股票 不重复)
 """
-import asyncio
 import logging
 
 import focus_store
@@ -73,8 +72,11 @@ def rule_quick_eval(stock_code, kline=None, stock_name=""):
         return dict(base, total_score=50, level="中性", direction="震荡",
                     data_quality_note="行情数据不足, 规则快评中性")
     win = closes[-20:]
-    ma = lambda n: sum(win[-n:]) / n
-    ma5, ma10, ma20 = ma(5), ma(10), ma(20)
+
+    def _ma(n: int) -> float:
+        return sum(win[-n:]) / n
+
+    ma5, ma10, ma20 = _ma(5), _ma(10), _ma(20)
     last = closes[-1]
     if ma5 > ma10 > ma20:
         score = 70 if last >= ma5 else 62

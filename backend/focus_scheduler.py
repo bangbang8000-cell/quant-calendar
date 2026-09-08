@@ -65,3 +65,21 @@ def is_eligible_date(target_date, today=None):
     """历史日 / 未来日拒绝 (历史日绝不现抓)。"""
     today = today or datetime.now().strftime("%Y-%m-%d")
     return target_date == today
+
+
+def load_intraday_enabled() -> bool:
+    """读取盘中可选时点开关 (V5.4.0 决策: 可选默认关)。
+
+    配置文件 data/focus_config.json: {"intraday_enabled": true|false}
+    缺省 / 损坏 → False (保守: 不开盘中)。
+    """
+    import db
+    import json
+    import os
+    try:
+        p = os.path.join(db.DATA_DIR, "focus_config.json")
+        with open(p, encoding="utf-8") as f:
+            cfg = json.load(f)
+        return bool(cfg.get("intraday_enabled", False))
+    except Exception:
+        return False

@@ -27,8 +27,20 @@ def _db_schema():
 
 @pytest.fixture(autouse=True)
 def _clean_focus_evals():
+    # 共享临时 DB 防污染: 清理 focus_evals + watchlist (自选清单入池测试跨模块残留)
+    import db as _db
     focus_store.delete_by_date("2026-09-08")
     focus_store.delete_by_date("2026-09-07")
+    try:
+        with _db._db_lock:
+            conn = _db.get_conn()
+            try:
+                conn.execute("DELETE FROM watchlist")
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception:
+        pass
     yield
     focus_store.delete_by_date("2026-09-08")
     focus_store.delete_by_date("2026-09-07")

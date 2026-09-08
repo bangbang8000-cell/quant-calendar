@@ -54,10 +54,11 @@ def test_migration_0006_creates_indexes(db_env):
 
 
 def test_migration_latest_is_6():
-    """最新迁移版本 = 6 (0006 热点索引)"""
+    """最新迁移版本 = 7 (v5.4.0 新增 0007 focus_evals; 0006 热点索引仍在)"""
     from migrations import latest_version, MIGRATIONS
-    assert latest_version() == 6
+    assert latest_version() == 7
     assert any(m.version == 6 and m.name == "hotspot_indexes" for m in MIGRATIONS)
+    assert any(m.version == 7 and m.name == "focus_evals" for m in MIGRATIONS)
 
 
 def test_trades_query_covered_by_migration():
@@ -73,7 +74,9 @@ def test_downgrade_drops_indexes(db_env):
     conn = db.get_conn()
     migrations.upgrade(conn)
     conn.commit()
-    migrations.rollback(conn, target=migrations.latest_version() - 1)
+    # 回滚到 0006 之前 (最新已是 0007; target 取 <6 的最大版本, 避免随新迁移漂移)
+    target = max(m.version for m in migrations.MIGRATIONS if m.version < 6)
+    migrations.rollback(conn, target=target)
     conn.commit()
     idxs = _idxs(conn)
     assert not (EXPECTED_INDEXES & idxs), f"回滚后索引应删除: {EXPECTED_INDEXES & idxs}"

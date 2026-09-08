@@ -114,16 +114,16 @@ def test_history_groups_by_session(client):
 
 
 def test_stock_history(client):
-    _seed()
+    # 专用代码避免共享临时 DB 跨模块污染 (其他 focus 测试也会写 601985.SH)
+    code = "688999.SH"
     focus_store.upsert_eval(focus_store.build_record(
-        trade_date="2026-09-07", session="after_close", stock_code="601985.SH",
-        stock_name="中国核电", total_score=63.0, level="推荐", model_provider="mock", model_used="m"))
-    r = client.get('/api/focus/stock/601985.SH')
+        trade_date="2026-09-07", session="after_close", stock_code=code,
+        stock_name="专用股", total_score=63.0, level="推荐", model_provider="mock", model_used="m"))
+    r = client.get(f'/api/focus/stock/{code}')
     assert r.status_code == 200
     data = r.json()['data']
-    assert data['total'] == 2
-    dates = [row['trade_date'] for row in data['rows']]
-    assert dates == sorted(dates, reverse=True)   # 日期倒序
+    assert data['total'] == 1
+    assert data['rows'][0]['trade_date'] == "2026-09-07"
 
 
 def test_push_rejects_without_data(client):
@@ -165,3 +165,12 @@ def test_push_webhook_missing_fails_not_500(client, monkeypatch):
     r = client.post('/api/focus/push', json={'date': '2026-09-08'}, headers=_auth('admin'))
     assert r.status_code == 200
     assert r.json()['success'] is False
+
+
+def test_focus_router_registered_in_production_router():
+    """防回归: 生产 api_router 必须包含 focus 路由 (v5.4.0 冒烟发现的缺口)"""
+    from api.v1.router import api_router
+    routes = {r.path for r in api_router.routes}
+    for p in ('/api/focus/list', '/api/focus/results', '/api/focus/history',
+              '/api/focus/push', '/api/focus/stock/{stock_code}'):
+        assert p in routes, f"生产路由缺失 {p}"

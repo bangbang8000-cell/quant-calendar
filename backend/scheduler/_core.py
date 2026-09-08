@@ -865,6 +865,41 @@ class SchedulerCoreMixin:
                 logger.error("盘中快照自动采集异常: %s", e)
             await asyncio.sleep(60)
 
+    # ─── V5.4.0 (FR-5.4.2): 重点跟踪多时点评估 ─────────────────────────
+    async def focus_eval_task(self):
+        """重点跟踪多时点评估 (盘前09:00/盘后20:00 必做; 盘中10:30/14:00 可选默认关).
+
+        每 60s 轮询: decide_session 门禁 (交易日+窗口+可选开关) → 已评估
+        (当日该时段已有落库) 跳过 (重启幂等, 不重复消耗 AI); 异常仅打日志。
+        """
+        while self.running:
+            try:
+                from focus_scheduler import decide_session, load_intraday_enabled
+                from focus_eval import run_session
+                from focus_store import query_by_date
+                from market_data import is_trading_day
+                now = datetime.now()
+                today = now.strftime('%Y-%m-%d')
+                session, reason = decide_session(
+                    now.strftime('%H:%M'),
+                    trading_day=is_trading_day(today),
+                    intraday_enabled=load_intraday_enabled(),
+                )
+                if session and not query_by_date(today, session):
+                    logger.info("🎯 重点跟踪评估触发: %s %s", today, session)
+                    try:
+                        out = await run_session(today, session)
+                        logger.info(
+                            "重点跟踪评估完成: %s %s 评估 %s 只 (ai=%s rule=%s degraded=%s)",
+                            today, session, out.get('evaluated'), out.get('ai_count'),
+                            out.get('rule_count'), out.get('degraded'),
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        logger.error("重点跟踪评估执行异常: %s", e)
+            except Exception as e:  # noqa: BLE001
+                logger.error("重点跟踪调度异常: %s", e)
+            await asyncio.sleep(60)
+
     async def _run_intraday_snapshot(self):
         """单个轮询周期: 判定是否应采 + 采集落盘。返回 slot 或 None。"""
         from datetime import datetime
@@ -928,6 +963,8 @@ class SchedulerCoreMixin:
         asyncio.create_task(self.daily_shortterm_capture_task())
         # BUG-FIX-2: 盘中核验自动采集 (交易日快照时点窗口内)
         asyncio.create_task(self.intraday_snapshot_task())
+        # V5.4.0 (FR-5.4.2): 重点跟踪多时点评估 (盘前/盘后必做, 盘中可选)
+        asyncio.create_task(self.focus_eval_task())
 
         # V5.2.0 T-5.2.10: 短线错过补偿(启动时已过 16:05 且当日未抓 → 补跑)
         asyncio.create_task(self._catchup_shortterm())

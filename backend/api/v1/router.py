@@ -41,6 +41,7 @@ from .jobs import router as jobs_router
 from .rbac import router as rbac_router
 from .collab import router as collab_router
 from .shortterm import router as shortterm_router
+from .focus import router as focus_router
 from api.v3.router import router as v3_router
 
 # 创建 v1 路由汇总
@@ -67,6 +68,7 @@ api_router.include_router(feedback_router)
 api_router.include_router(backup_router)
 api_router.include_router(export_router)
 api_router.include_router(audit_router)
+api_router.include_router(focus_router)  # V5.4.0: 重点跟踪评估 (清单/结果/历史/推送)
 api_router.include_router(system_router)
 api_router.include_router(analytics_router)
 api_router.include_router(portfolio_router)

@@ -20,6 +20,32 @@ from focus_store import (upsert_eval, query_by_date, query_by_stock,
                          delete_by_date, count_by_date, build_record)
 
 
+@pytest.fixture(autouse=True)
+def _clean_focus_evals():
+    """共享临时 DB 防污染: 每用例前后清空 focus_evals (任意用例顺序可跑)"""
+    try:
+        with db._db_lock:
+            conn = db.get_conn()
+            try:
+                conn.execute("DELETE FROM focus_evals")
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception:
+        pass
+    yield
+    try:
+        with db._db_lock:
+            conn = db.get_conn()
+            try:
+                conn.execute("DELETE FROM focus_evals")
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception:
+        pass
+
+
 @pytest.fixture
 def conn(tmp_path):
     """迁移测试独立临时库"""
