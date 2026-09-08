@@ -50,9 +50,24 @@
             </div>
             <div class="color-secondary">共 {{ results.total }} 只 · 按当前登记持仓派生</div>
           </div>
-          <div class="flex-gap-8">
+          <!-- V5.4.1 (R3): 5档动作分布可视化 — 堆叠条 + 图例 (主题令牌色) -->
+          <div v-if="results.total > 0" class="focus-action-bar-wrap">
+            <div class="focus-action-bar">
+              <div v-for="a in ACTION_ORDER" :key="a"
+                   class="focus-action-seg" :class="'focus-action-' + a"
+                   :style="{ width: actionPct(a) }"
+                   :title="EMOJI[a] + ' ' + a + ': ' + (results.actions[a] || 0)"></div>
+            </div>
+            <div class="focus-action-legend">
+              <span v-for="a in ACTION_ORDER" :key="a" class="focus-action-legend-item">
+                <span class="focus-action-dot" :class="'focus-action-' + a"></span>
+                {{ EMOJI[a] }} {{ a }} <b>{{ results.actions[a] || 0 }}</b>
+              </span>
+            </div>
+          </div>
+          <div v-else class="flex-gap-8">
             <el-tag v-for="a in ACTION_ORDER" :key="a" :type="tagType(a)" size="small" effect="light">
-              {{ EMOJI[a] }} {{ a }}: {{ results.actions[a] || 0 }}
+              {{ EMOJI[a] }} {{ a }}: 0
             </el-tag>
           </div>
         </div>
@@ -86,8 +101,10 @@
               <el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag>
               <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
               <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
-              <el-button size="small" text type="primary" class="focus-row-open"
-                @click.stop="openStockDetail(row.stock_code)">K线详情</el-button>
+              <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
+              <el-button size="small" circle text type="primary" class="focus-row-open"
+                @click.stop="openStockDetail(row.stock_code)"
+                :title="'打开 ' + row.stock_code + ' 详情'">📈</el-button>
               <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
               <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
                 <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
@@ -176,6 +193,14 @@
         if (s === null || s === undefined) return '—';
         const f = Number(s);
         return f === Math.floor(f) ? String(f) : f.toFixed(1);
+      }
+      // V5.4.1 (R3): 动作分布堆叠条宽度百分比
+      function actionPct(a) {
+        const total = results.value.total || 0;
+        const n = (results.value.actions || {})[a] || 0;
+        if (!total) return '0%';
+        const pct = (n / total) * 100;
+        return pct > 0 && pct < 4 ? '4%' : pct.toFixed(1) + '%';  // 保底 4% 使小份额可见
       }
       function tagType(a) {
         return { '买入': 'success', '持有': 'warning', '观望': 'info', '减仓': 'danger', '卖出': 'danger' }[a] || 'info';
@@ -300,7 +325,7 @@
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
                TRACK_WINDOWS, EMOJI, sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,
-               loadStockHistory, loadAll, poolStatus, openStockDetail };
+               loadStockHistory, loadAll, poolStatus, openStockDetail, actionPct };
     },
   };
 })();

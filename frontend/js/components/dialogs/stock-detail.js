@@ -34,6 +34,23 @@
                     </div>
                 </div>
                 <div class="detail-content">
+                    <!-- V5.4.1 (R3): 自选/入池状态 + 入池历史 (重点跟踪弹窗信息) -->
+                    <div v-if="poolInfo" class="detail-pool-row">
+                        <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'watchlist'"
+                            size="small" type="warning" effect="light">⭐ 自选</el-tag>
+                        <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'new_pool'"
+                            size="small" type="success" effect="light">🆕 入池</el-tag>
+                        <el-tag v-if="poolInfo.holding" size="small" type="danger" effect="light">持仓</el-tag>
+                        <span v-if="poolInfo.pool_history && poolInfo.pool_history.first_appear"
+                              class="detail-pool-history">
+                            入池历史: 首入 <b>{{ poolInfo.pool_history.first_appear }}</b>
+                            · 最近在池 <b>{{ poolInfo.pool_history.last_appear }}</b>
+                            · 累计 <b>{{ poolInfo.pool_history.pooled_days }}</b> 天
+                            <span v-if="poolInfo.pool_history.pool_entries.length > 1"
+                                  class="color-secondary">· {{ poolInfo.pool_history.pool_entries.length }} 段</span>
+                        </span>
+                        <span v-else-if="poolInfo.pool_history" class="detail-pool-history color-secondary">从未入池</span>
+                    </div>
                     <!-- Tab 切换 -->
                     <div class="flex-gap-6-mb16-wrap">
                         <el-button size="small" :type="stockDetailTab === 'kline' ? 'primary' : ''" @click="stockDetailTab = 'kline'">
@@ -563,8 +580,29 @@
       watch(state.stockDetailTab, (tab) => {
         if (tab === 'performance') loadPerformance();
       });
+      // V5.4.1 (R3): 自选/入池状态 + 入池历史 (重点跟踪弹窗信息, FR-5.4.9)
+      const poolInfo = ref(null);
+      async function loadPoolInfo() {
+        const code = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
+        if (!code) { poolInfo.value = null; return; }
+        try {
+          const res = await fetch('/api/focus/stock/' + encodeURIComponent(code) + '/pool').then(r => r.json());
+          poolInfo.value = (res && res.success && res.data) ? res.data : null;
+        } catch (e) {
+          poolInfo.value = null;
+        }
+      }
+      // 弹窗打开/切换股票时加载池状态 (弹窗复用, 每次打开刷新)
+      watch(() => state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock, (code) => {
+        if (code && state.stockDetailVisible.value) loadPoolInfo();
+        else poolInfo.value = null;
+      });
+      watch(() => state.stockDetailVisible.value, (vis) => {
+        if (vis) loadPoolInfo();
+        else poolInfo.value = null;
+      });
       return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade,
-        perfLoading, perfError, perfForecast, perfExpress, fmtY, loadPerformance };
+        perfLoading, perfError, perfForecast, perfExpress, fmtY, loadPerformance, poolInfo, loadPoolInfo };
     },
   };
 })();

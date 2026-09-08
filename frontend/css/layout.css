@@ -691,3 +691,66 @@
   border-bottom: 1px dashed var(--border-color);
 }
 
+
+/* ===== V5.4.1 (R3): 重点跟踪 界面视觉增强 (动作分布可视化 + 弹窗入池历史) ===== */
+.focus-action-bar-wrap { margin-top: var(--sp-2); }
+.focus-action-bar {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  border-radius: var(--r-full);
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+.focus-action-seg { height: 100%; transition: opacity var(--transition-fast); }
+.focus-action-seg:hover { opacity: 0.75; }
+.focus-action-买入 { background: var(--el-success); }
+.focus-action-持有 { background: var(--el-warning); }
+.focus-action-观望 { background: var(--el-info); }
+.focus-action-减仓 { background: var(--el-danger); }
+.focus-action-卖出 { background: var(--el-danger); opacity: 0.85; }
+.focus-action-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.focus-action-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+.focus-action-legend-item b { color: var(--text-primary); font-weight: var(--font-semibold); }
+.focus-action-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  display: inline-block;
+}
+.focus-action-dot.focus-action-买入 { background: var(--el-success); }
+.focus-action-dot.focus-action-持有 { background: var(--el-warning); }
+.focus-action-dot.focus-action-观望 { background: var(--el-info); }
+.focus-action-dot.focus-action-减仓 { background: var(--el-danger); }
+.focus-action-dot.focus-action-卖出 { background: var(--el-danger); opacity: 0.85; }
+
+/* 弹窗内 自选/入池/入池历史 行 */
+.detail-pool-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-color);
+}
+.detail-pool-history {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-left: var(--sp-1);
+}
+.detail-pool-history b { color: var(--text-primary); font-weight: var(--font-semibold); }
+
