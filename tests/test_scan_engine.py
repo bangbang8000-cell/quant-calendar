@@ -207,8 +207,16 @@ def test_run_scan_date_filter():
 # ─── build_events（默认源不可达降级 + 可扩展 provider） ─────
 
 def test_build_events_default_unavailable():
-    """默认 provider 不可达 → events 空 + note 注明不可达"""
-    result = event_alert.build_events(['000001.SZ', '600519.SH'])
+    """全部 provider 不可达 → events 空 + note 注明不可达 (V5.4.0: 显式注入)"""
+    class FakeUnavailable:
+        name = 'x'
+        available = False
+        reason = '测试源不可达'
+
+        def fetch_events(self, code):
+            return []
+
+    result = event_alert.build_events(['000001.SZ', '600519.SH'], providers=[FakeUnavailable()])
     assert result['events'] == []
     assert result['note'] and '不可达' in result['note']
 
@@ -223,17 +231,14 @@ def test_build_events_with_available_provider():
         def fetch_events(self, code):
             return [{'type': '业绩预告', 'title': '预增', 'date': '2026-07-15', 'name': '平安银行'}]
 
-    event_alert.EVENT_PROVIDERS.append(FakeProvider())
-    try:
-        result = event_alert.build_events(['000001.SZ'])
-        assert len(result['events']) == 1
-        ev = result['events'][0]
-        assert ev['code'] == '000001.SZ'
-        assert ev['type'] == '业绩预告'
-        assert ev['source'] == 'fake'
-        assert 'default' in result['note']
-    finally:
-        event_alert.EVENT_PROVIDERS.pop()
+    # V5.4.0: 默认源已是真实源 (不触网), 此处显式注入 fake 验证 provider 机制
+    result = event_alert.build_events(['000001.SZ'], providers=[FakeProvider()])
+    assert len(result['events']) == 1
+    ev = result['events'][0]
+    assert ev['code'] == '000001.SZ'
+    assert ev['type'] == '业绩预告'
+    assert ev['source'] == 'fake'
+    assert result['note'] is None or '近期无事件' in result['note']
 
 
 # ─── get_alertable_codes（按用户，fake db） ───────────────

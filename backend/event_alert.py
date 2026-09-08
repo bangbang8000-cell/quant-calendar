@@ -35,7 +35,11 @@ class _UnavailableEventProvider:
         return []
 
 
-EVENT_PROVIDERS: List[object] = [_UnavailableEventProvider()]
+# V5.4.0 FIX: 默认事件源接入真实源 (akshare→tushare 回退)。
+# 环境已具备 akshare/tushare + tushare token, 不再用占位 provider 误报「未接入」;
+# 真实源全部不可达时由 build_events 如实降级 (note 标注 tushare_akshare)。
+# DataSourceEventProvider 定义在本模块后部, 延迟到类定义后完成初始化 (见模块尾部)。
+EVENT_PROVIDERS: List[object] = []
 
 
 def register_event_provider(provider) -> None:
@@ -217,7 +221,7 @@ class DataSourceEventProvider:
 
     name = 'tushare_akshare'
     available = True
-    reason = ''
+    reason = 'akshare/tushare 事件接口均不可达（网络或数据源限流）'
 
     def __init__(self, akshare_fetcher=None, tushare_fetcher=None):
         self._akshare_fetcher = akshare_fetcher or self._default_akshare
@@ -331,3 +335,12 @@ def run_event_scan(username: str = 'default', scope: str = 'watchlist',
     result['new_count'] = len(new_events)
     result['pushed'] = pushed
     return result
+
+
+# ==================== 默认事件源初始化 (V5.4.0 FIX) ====================
+# DataSourceEventProvider 定义在上方, 此处完成默认注册:
+# 真实事件源 (akshare→tushare 回退) 成为默认, 取代不可达占位 provider,
+# 避免事件页误报「事件数据源未接入」。真实源不可达时由 build_events 如实降级。
+if not EVENT_PROVIDERS:
+    EVENT_PROVIDERS.append(DataSourceEventProvider())
+    logger.info('默认事件源已接入: %s', EVENT_PROVIDERS[0].name)
