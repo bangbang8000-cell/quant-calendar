@@ -22,9 +22,10 @@
     chart_period: 'daily',
     language: 'zh-CN',
     info_density: 'comfortable',
+    kline_show_minutes: 'hide',  // V5.4.1 (用户要求): 分钟级K线默认隐藏, 系统设置可开启
   };
 
-  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language', 'info_density'];
+  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language', 'info_density', 'kline_show_minutes'];
 
   const PREFERENCE_VALUES = {
     default_view: ['strategies', 'calendar', 'ai', 'research', 'system'],
@@ -32,6 +33,7 @@
     chart_period: ['daily', 'weekly', 'monthly'],
     language: ['zh-CN', 'en', 'ja', 'ko', 'zh-TW'],
     info_density: ['comfortable', 'compact', 'spacious'],  // V5.3.0 (T-5.3.2.4): 三档
+    kline_show_minutes: ['hide', 'show'],
   };
 
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）

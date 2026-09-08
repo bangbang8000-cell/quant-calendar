@@ -414,17 +414,39 @@ const allMenuDefs = [
                 }
 
                 // ===== v3.16 (16.4): K线渲染状态与编排（护栏片段保留: onLegend 回调接线）=====
-                const klinePeriods = [
-                    // V5.4.0 (FR-5.4.8): 分钟级 K线 — 打开弹窗按需加载(不预加载), 后端三源支持
-                    {label: '60分钟', value: '60min'},
-                    {label: '30分钟', value: '30min'},
-                    {label: '15分钟', value: '15min'},
-                    {label: '日线', value: 'daily'},
-                    {label: '周线', value: 'weekly'},
-                    {label: '月线', value: 'monthly'},
-                    {label: '季线', value: 'quarterly'},
-                    {label: '年线', value: 'yearly'}
-                ];
+                // V5.4.1 (用户要求): 分钟级K线默认隐藏 — kline_show_minutes 偏好控制
+                // (hide/show), 系统设置可开启; 后端分钟能力保留 (MINUTE_PERIODS/stk_mins 可用)。
+                const klineShowMinutes = ref((function () {
+                    try {
+                        const __p = (window.__quantModules && window.__quantModules.preferences)
+                            ? window.__quantModules.preferences.getLocal() : {};
+                        return __p.kline_show_minutes === 'show';
+                    } catch (e) { return false; }
+                })());
+                function toggleKlineShowMinutes(v) {
+                    klineShowMinutes.value = !!v;
+                    try {
+                        if (window.__quantModules && window.__quantModules.preferences) {
+                            window.__quantModules.preferences.setPreference('kline_show_minutes', v ? 'show' : 'hide');
+                        }
+                    } catch (e) { /* 偏好持久化不可用则仅本会话生效 */ }
+                }
+                const klinePeriods = computed(() => {
+                    const base = [
+                        {label: '日线', value: 'daily'},
+                        {label: '周线', value: 'weekly'},
+                        {label: '月线', value: 'monthly'},
+                        {label: '季线', value: 'quarterly'},
+                        {label: '年线', value: 'yearly'}
+                    ];
+                    if (!klineShowMinutes.value) return base;
+                    return [
+                        {label: '60分钟', value: '60min'},
+                        {label: '30分钟', value: '30min'},
+                        {label: '15分钟', value: '15min'},
+                        ...base
+                    ];
+                });
                 const currentKlinePeriod = ref('daily');
                 // v3.17.10 (FR-3.17.10): 图表默认周期应用用户偏好（chart_period: 日/周/月）
                 (function () {
@@ -972,6 +994,7 @@ const allMenuDefs = [
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
                     klineDegradeNote,
+                    klineShowMinutes, toggleKlineShowMinutes,
                     loadStockKline, switchKlinePeriod, loadIndexKline, switchIndexKlinePeriod,
                     zoomKlineRange,
                     // v3.11 (FR-3.11.8): MA 图例开关

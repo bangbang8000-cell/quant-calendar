@@ -218,6 +218,8 @@ PREFERENCE_DEFAULTS = {
     "onboarding_progress": "",
     # V5.0.6 (T-5.0.64): 信息密度 (comfortable/compact)
     "info_density": "comfortable",
+    # V5.4.1 (用户要求): 分钟级K线显示开关 (hide/show, 默认隐藏 — 股票弹窗不展示 60/30/15min)
+    "kline_show_minutes": "hide",
 }
 PREFERENCE_KEYS = set(PREFERENCE_DEFAULTS)
 # 各偏好键合法取值（后端仅做键校验，值合法性由前端偏好模块约束）
@@ -227,6 +229,7 @@ PREFERENCE_ALLOWED_VALUES = {
     "chart_period": {"daily", "weekly", "monthly"},
     "language": {"zh-CN", "en", "ja", "ko", "zh-TW"},
     "info_density": {"comfortable", "compact", "spacious"},  # V5.3.0 (T-5.3.2.4): 三档
+    "kline_show_minutes": {"hide", "show"},
 }
 
 

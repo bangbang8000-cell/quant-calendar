@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 479, f"qcState 唯一键数异常: {len(set(keys))} (期望 479; V5.4.1 R1 +1: klineDegradeNote(分钟数据降级日线提示))"
+    assert len(set(keys)) == 481, f"qcState 唯一键数异常: {len(set(keys))} (期望 481; V5.4.1 R1 +1: klineDegradeNote(分钟数据降级日线提示); +2: klineShowMinutes/toggleKlineShowMinutes(分钟级K线显示开关))"
 
 
 def test_watch_currentpage_single():

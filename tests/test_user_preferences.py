@@ -65,6 +65,7 @@ class TestUserPreferences:
             'language': 'zh-CN',
             'info_density': 'comfortable',  # V5.0.6 T-5.0.64
             'onboarding_progress': '',      # V5.0.6 T-5.0.61
+            'kline_show_minutes': 'hide',   # V5.4.1: 分钟级K线默认隐藏
         }
 
     def test_set_single_preference(self, pref):
@@ -87,6 +88,7 @@ class TestUserPreferences:
             'language': 'zh-CN',
             'info_density': 'comfortable',  # V5.0.6 T-5.0.64
             'onboarding_progress': '',      # V5.0.6 T-5.0.61
+            'kline_show_minutes': 'hide',   # V5.4.1: 分钟级K线默认隐藏
         }
 
     def test_restart_keep_new_client(self, pref):

@@ -202,6 +202,16 @@
                         </div>
                     </div>
 
+                    <!-- V5.4.1 (用户要求): 分钟级K线显示开关（默认隐藏, 可在此开启） -->
+                    <div class="card">
+                        <div class="card-title">📈 K线显示</div>
+                        <div class="flex-c-gap-12-wrap">
+                            <el-switch :model-value="klineShowMinutes" @change="toggleKlineShowMinutes"
+                                active-text="显示分钟级K线" inactive-text="隐藏分钟级K线" />
+                            <span class="text-sm-tertiary-ml4">股票/指数弹窗默认隐藏 60/30/15 分钟K线（数据源受限时可在此开启）</span>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-title">🎯 图标系统</div>
                         <div class="theme-list">
