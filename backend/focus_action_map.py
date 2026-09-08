@@ -7,11 +7,11 @@
 - derive_action(score, level, holding): 5 档 买入/持有/观望/减仓/卖出
 - EMOJI / ACTION_ORDER: digest 渲染与统计统一符号
 
-派生表 (PRD-v5.4 §1 FR-5.4.7):
-  强烈推荐 / 推荐(score>=60) × 未持仓 → 买入; × 已持仓 → 持有
-  谨慎推荐 / 中性(40<=score<60) × 未持仓 → 观望; × 已持仓 → 持有
-  看空/弱(30<=score<40) × 未持仓 → 观望; × 已持仓 → 减仓
-  深看空(score<30) × 未持仓 → 观望; × 已持仓 → 卖出
+派生 (PRD-v5.4 §1 FR-5.4.7, 评分驱动 + level 方向修正):
+  score>=60 (或看多声明) × 未持仓 → 买入; × 已持仓 → 持有
+  40<=score<60 × 未持仓 → 观望; × 已持仓 → 持有
+  30<=score<40 × 未持仓 → 观望; × 已持仓 → 减仓
+  score<30 (或看空声明) × 未持仓 → 观望; × 已持仓 → 卖出
 """
 import logging
 
@@ -38,7 +38,8 @@ EMOJI = {
 # level → 方向: 看空系优先 (避免「不推荐」等被看多词误判)
 _BEARISH_KEYWORDS = ("看空", "看跌", "卖出", "减持", "回避", "弱势", "减仓", "规避")
 _BULLISH_KEYWORDS = ("强烈推荐", "推荐", "看多", "看涨", "买入", "增持", "强势", "加仓")
-_NEGATION_PREFIXES = ("不", "非", "无")
+# 谨慎/否定修饰: 「谨慎推荐」不应按「推荐」判看多
+_NEGATION_PREFIXES = ("不", "非", "无", "谨慎")
 
 
 def _negated(s, idx):
@@ -67,18 +68,24 @@ def direction_from_level(level) -> str:
 
 
 def derive_action(score, level, holding=False) -> str:
-    """评分 × level × 持仓 → 5 档动作 (PRD FR-5.4.7 派生表)。"""
+    """评分 × level × 持仓 → 5 档动作 (PRD FR-5.4.7 派生表)。
+
+    评分驱动: score 是连续真值; level 仅修正方向 (看空声明直接进减仓/卖出系)。
+    """
+    s = float(score) if score is not None else 50.0
     d = direction_from_level(level)
-    if d == "看多":
-        # 强烈推荐直接买入级; 推荐需 score>=60 (不足则按谨慎档观望)
-        if "强烈推荐" in str(level) or (score is not None and score >= 60):
-            return ACTION_HOLD if holding else ACTION_BUY
-        return ACTION_HOLD if holding else ACTION_WATCH
-    if d == "看空":
-        if score is not None and score < 30:
+    if d == "看空" or s < 30:
+        # 深看空: score<30 (或看空声明且低分) → 卖出; 看空声明/弱 → 减仓
+        if s < 30:
             return ACTION_SELL if holding else ACTION_WATCH
         return ACTION_REDUCE if holding else ACTION_WATCH
-    # 震荡 (谨慎推荐/中性/观望)
+    if s < 40:
+        # 看空/弱档 (30<=score<40)
+        return ACTION_REDUCE if holding else ACTION_WATCH
+    if s >= 60:
+        # 推荐档 (强烈推荐/推荐)
+        return ACTION_HOLD if holding else ACTION_BUY
+    # 谨慎推荐/中性档 (40<=score<60)
     return ACTION_HOLD if holding else ACTION_WATCH
 
 
