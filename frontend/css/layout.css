@@ -637,3 +637,36 @@
 
 /* V5.2.4: 摘要条次级数值(替代内联 font-size) */
 .stat-value-lg { font-size: var(--font-lg); }
+
+
+/* ===== V5.4.0 (FR-5.4.4): 重点跟踪视图 ===== */
+.focus-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2, 8px);
+  padding: var(--sp-2, 8px) 0;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  cursor: pointer;
+}
+.focus-row:hover { background: var(--bg-hover, #f5f5f5); }
+.focus-row-emoji { font-size: 15px; width: 20px; }
+.focus-row-name { font-weight: 500; min-width: 140px; }
+.focus-row-score { color: var(--color-secondary, #6b7280); font-size: var(--font-sm, 13px); }
+.focus-row-dir { font-size: var(--font-sm, 13px); }
+.focus-row-toggle { margin-left: auto; color: var(--color-tertiary, #9ca3af); font-size: 12px; }
+.focus-detail {
+  width: 100%;
+  margin-top: var(--sp-2, 8px);
+  padding: var(--sp-2, 8px) var(--sp-3, 12px);
+  background: var(--bg-subtle, #fafafa);
+  border-radius: var(--radius-sm, 6px);
+}
+.focus-detail-line { font-size: var(--font-sm, 13px); color: var(--color-secondary, #6b7280); margin-bottom: 4px; }
+.focus-row-sm {
+  font-size: var(--font-sm, 13px);
+  color: var(--color-text, #1f2937);
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border-color, #e5e7eb);
+}
+

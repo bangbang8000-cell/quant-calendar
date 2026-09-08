@@ -56,6 +56,14 @@
                                     <div class="stat-label">{{ t('ai.portfolio') }}</div>
                                 </div>
                             </div>
+                            <!-- v5.4.0 (FR-5.4.4): 重点跟踪入口 -->
+                            <div class="stat-card stat-card-info-border" @click="currentSubPage = 'focus'" tabindex="0" role="button" aria-label="重点跟踪" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
+                                <div class="stat-icon stat-icon-info-hover">🎯</div>
+                                <div class="stat-content">
+                                    <div class="stat-value">5 档</div>
+                                    <div class="stat-label">重点跟踪</div>
+                                </div>
+                            </div>
                             <div class="stat-card stat-card-warning" @click="showAutoEvaluateSettings = true" tabindex="0" role="button" aria-label="自动评估设置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
                                 <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--badge-gold-bg)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
                                     {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
@@ -637,6 +645,11 @@
                                 </qc-virtual-list>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- v5.4.0 (FR-5.4.4): 重点跟踪视图 -->
+                    <div v-else-if="currentSubPage === 'focus'">
+                        <qc-focus-view></qc-focus-view>
                     </div>
 
                     <!-- v3.17.8 (FR-3.17.5): 组合/模拟持仓视图 代码起点 -->
