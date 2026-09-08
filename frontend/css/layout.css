@@ -640,21 +640,42 @@
 
 
 /* ===== V5.4.0 (FR-5.4.4): 重点跟踪视图 ===== */
+/* V5.4.0 (FR-5.4.10): 卡片化行 + 主题切合 (令牌驱动, 亮暗主题自动适配) */
 .focus-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  padding: var(--sp-2) 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--sp-3) var(--sp-3);
+  margin-bottom: var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
   cursor: pointer;
 }
-.focus-row:hover { background: var(--bg-hover); }
-.focus-row-emoji { font-size: var(--font-base); width: var(--sp-5); }
+.focus-row:hover {
+  border-color: var(--primary-color-dark);
+  box-shadow: var(--shadow-md);
+}
+.focus-row-expanded {
+  border-color: var(--primary-color-dark);
+  background: var(--bg-tertiary);
+}
+.focus-row-emoji { font-size: var(--font-base); width: var(--sp-5); text-align: center; }
 .focus-row-name { font-weight: var(--font-medium); min-width: 140px; }
 .focus-row-score { color: var(--text-disabled); font-size: var(--font-sm); }
-.focus-row-dir { font-size: var(--font-sm); }
-.focus-row-toggle { margin-left: auto; color: var(--text-disabled); font-size: var(--font-xs); }
+.focus-row-dir {
+  font-size: var(--font-sm);
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-full);
+  background: var(--bg-tertiary);
+}
+.focus-row-open { margin-left: var(--sp-1); }
+.focus-row-toggle { color: var(--text-disabled); font-size: var(--font-xs); }
+.focus-row-badges { margin-left: var(--sp-2); vertical-align: middle; }
+.focus-badge { margin-right: var(--sp-1); }
 .focus-detail {
   width: 100%;
   margin-top: var(--sp-2);

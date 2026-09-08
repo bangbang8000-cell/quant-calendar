@@ -3,7 +3,7 @@
 // 数据: /api/focus/results|history|stock/{code} + /api/ai/track (效果块)
 // 动作已由后端按当前用户持仓派生 (5 档: 买入/持有/观望/减仓/卖出)
 (function () {
-  const { ref, onMounted } = Vue;
+  const { ref, onMounted, inject } = Vue;
   window.__quantComponents = window.__quantComponents || {};
 
   const EMOJI = { '买入': '🟢', '持有': '🟡', '观望': '⚪', '减仓': '🟠', '卖出': '🔴' };
@@ -68,15 +68,26 @@
           </div>
           <div v-else>
             <div v-for="row in results.rows" :key="row.stock_code" class="focus-row"
+              :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
               @click="toggle(row.stock_code)" tabindex="0" role="button"
               @keydown.enter.prevent="toggle(row.stock_code)">
               <span class="focus-row-emoji">{{ EMOJI[row.action] || '·' }}</span>
               <span class="focus-row-name">{{ row.stock_name }}
                 <span class="color-secondary">({{ row.stock_code }})</span>
+                <!-- V5.4.0 (FR-5.4.9): 自选/入池状态徽标 -->
+                <span v-if="poolStatus[row.stock_code]" class="focus-row-badges">
+                  <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'watchlist'"
+                    size="small" type="warning" effect="light" class="focus-badge">⭐ 自选</el-tag>
+                  <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'new_pool'"
+                    size="small" type="success" effect="light" class="focus-badge">🆕 入池</el-tag>
+                  <el-tag v-if="poolStatus[row.stock_code].holding" size="small" type="danger" effect="light" class="focus-badge">持仓</el-tag>
+                </span>
               </span>
               <el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag>
               <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
               <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
+              <el-button size="small" text type="primary" class="focus-row-open"
+                @click.stop="openStockDetail(row.stock_code)">K线详情</el-button>
               <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
               <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
                 <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
@@ -86,6 +97,17 @@
                 <div class="focus-detail-line" v-if="detailOf(row).data_quality_note">数据时效: {{ detailOf(row).data_quality_note }}</div>
                 <div class="focus-detail-line" v-if="detailOf(row).sniper_points">买卖点参考: {{ detailOf(row).sniper_points }}</div>
                 <div class="focus-detail-line" v-if="detailOf(row).signal_attribution">信号归因: {{ detailOf(row).signal_attribution }}</div>
+                <!-- V5.4.0 (FR-5.4.9): 入池历史 -->
+                <div class="focus-detail-line" v-if="poolStatus[row.stock_code] && poolStatus[row.stock_code].pool_history">
+                  <span class="color-secondary">入池:</span>
+                  <template v-if="poolStatus[row.stock_code].pool_history.first_appear">
+                    首入 {{ poolStatus[row.stock_code].pool_history.first_appear }} · 最近在池 {{ poolStatus[row.stock_code].pool_history.last_appear }}
+                    <span v-if="poolStatus[row.stock_code].pool_history.pool_entries.length > 1" class="color-secondary">
+                      · {{ poolStatus[row.stock_code].pool_history.pool_entries.length }} 段
+                    </span>
+                  </template>
+                  <span v-else class="color-secondary">从未入池</span>
+                </div>
               </div>
             </div>
           </div>
@@ -133,6 +155,7 @@
         </div>
       </div>`,
     setup() {
+      const state = inject('qcState');
       const curDate = ref(toLocalDate());
       const session = ref('after_close');
       const results = ref({ rows: [], actions: {}, total: 0 });
@@ -145,6 +168,9 @@
       const stockCode = ref('');
       const stockHistory = ref(null);
       const detailCache = {};
+      // V5.4.0 (FR-5.4.9): 自选/入池状态缓存 (code -> poolStatus)
+      const poolStatus = ref({});
+      let poolLoadSeq = 0;
 
       function fmtScore(s) {
         if (s === null || s === undefined) return '—';
@@ -187,12 +213,44 @@
         try {
           const res = await apiFetch('/api/focus/results?date=' + curDate.value + '&session=' + session.value);
           results.value = (res && res.success && res.data) || { rows: [], actions: {}, total: 0 };
+          loadPoolStatuses((results.value.rows || []).map(function (r) { return r.stock_code; }));
         } catch (e) {
           console.warn('[focus] 结果加载失败:', e);
           results.value = { rows: [], actions: {}, total: 0 };
         } finally {
           loading.value = false;
         }
+      }
+      // V5.4.0 (FR-5.4.9): 批量加载自选/入池状态 (逐股 pool 端点, 缓存)
+      async function loadPoolStatuses(codes) {
+        const seen = poolStatus.value || {};
+        const pending = (codes || []).filter(function (c) { return c && !seen[c]; });
+        if (!pending.length) return;
+        const seq = ++poolLoadSeq;
+        const tasks = pending.map(function (code) {
+          return apiFetch('/api/focus/stock/' + encodeURIComponent(code) + '/pool?date=' + curDate.value)
+            .then(function (res) {
+              if (res && res.success && res.data) {
+                seen[code] = res.data;
+              } else {
+                seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_history: null };
+              }
+            })
+            .catch(function () {
+              seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_history: null };
+            });
+        });
+        try { await Promise.all(tasks); } catch (e) { /* 单股失败已兜底 */ }
+        if (seq === poolLoadSeq) poolStatus.value = Object.assign({}, seen);
+      }
+      // V5.4.0 (FR-5.4.9): 打开股票详情弹窗 (K线/评估/问股)
+      function openStockDetail(code) {
+        const sd = state && state.showStockDetail;
+        if (typeof sd === 'function') { sd(code); return; }
+        // 兜底: 无弹窗能力时仅提示
+        const ep = (window.__quantModules && window.__quantModules.element) || {};
+        const msg = ep.Message || (window.ElementPlus && window.ElementPlus.ElMessage);
+        if (msg) msg.info('请从其他页面打开股票详情: ' + code);
       }
       async function loadHistory() {
         try {
@@ -242,7 +300,7 @@
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
                TRACK_WINDOWS, EMOJI, sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,
-               loadStockHistory, loadAll };
+               loadStockHistory, loadAll, poolStatus, openStockDetail };
     },
   };
 })();

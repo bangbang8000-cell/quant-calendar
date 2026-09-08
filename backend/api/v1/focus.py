@@ -104,6 +104,52 @@ async def get_focus_stock_history(
     }}
 
 
+@router.get("/stock/{stock_code}/pool")
+async def get_focus_stock_pool_status(
+    stock_code: str,
+    date: str = Query(None, description="基准日期 YYYY-MM-DD, 缺省今天"),
+    user: dict = Depends(get_current_user),
+):
+    """V5.4.0 (FR-5.4.9): 股票入池状态 + 自选状态 (弹窗信息).
+
+    返回: 入池历史(first_appear/last_appear/pool_entries, 按日入池算) +
+          当日清单来源(watchlist/new_pool/both/无) + 持仓状态。
+    """
+    import focus_list as fl
+    import focus_pool_history as fph
+    d = date or fl.today_str()
+    # 自选状态
+    sources = []
+    if user:
+        wl = fl.load_watchlist_codes(user["username"])
+        if stock_code in wl:
+            sources.append('watchlist')
+    else:
+        wl = fl.load_all_watchlist_codes()
+        if stock_code in wl:
+            sources.append('watchlist')
+    # 当日是否新入池
+    try:
+        np_ = fl.load_new_pool_codes(d)
+        if stock_code in np_:
+            sources.append('new_pool')
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[focus] 新入池判断失败 %s: %s", stock_code, e)
+    source = 'both' if len(sources) == 2 else (sources[0] if sources else 'none')
+    # 入池历史 (按日入池回溯)
+    hist = fph.load_pool_history(stock_code)
+    holdings = _load_holdings(user["username"]) if user else []
+    return {"success": True, "data": {
+        "stock_code": stock_code,
+        "date": d,
+        "source": source,
+        "sources": sources,
+        "holding": stock_code in holdings,
+        "pool_history": hist,
+        "user": user["username"] if user else None,
+    }}
+
+
 @router.post("/push")
 async def push_focus_digest(req: dict, user: dict = Depends(get_current_user)):
     """推送 digest (text+卡片双模) — 动作按请求用户持仓派生。"""

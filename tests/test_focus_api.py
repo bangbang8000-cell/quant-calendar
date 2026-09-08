@@ -172,5 +172,33 @@ def test_focus_router_registered_in_production_router():
     from api.v1.router import api_router
     routes = {r.path for r in api_router.routes}
     for p in ('/api/focus/list', '/api/focus/results', '/api/focus/history',
-              '/api/focus/push', '/api/focus/stock/{stock_code}'):
+              '/api/focus/push', '/api/focus/stock/{stock_code}',
+              '/api/focus/stock/{stock_code}/pool'):
         assert p in routes, f"生产路由缺失 {p}"
+
+
+def test_stock_pool_status_anonymous(client, monkeypatch):
+    """V5.4.0 (FR-5.4.9): 单股入池状态 — 匿名视角, 自选/新入池/入池历史。"""
+    import focus_pool_history as fph
+    fake = {'stock_code': '601985.SH', 'first_appear': '2026-09-01',
+            'last_appear': '2026-09-08', 'pooled_days': 3, 'is_current': True,
+            'pool_entries': [{'start': '2026-09-01', 'end': '2026-09-08', 'days': 3}],
+            'pooled_dates': []}
+    monkeypatch.setattr(fph, 'views_aggregator', type('A', (), {
+        'daily_data': {}, 'all_dates': ['2026-09-08']})())
+    r = client.get('/api/focus/stock/601985.SH/pool', params={'date': '2026-09-08'})
+    assert r.status_code == 200
+    data = r.json()['data']
+    assert data['stock_code'] == '601985.SH'
+    assert 'source' in data and 'sources' in data
+    assert 'pool_history' in data and data['pool_history']['pooled_days'] >= 0
+    assert 'holding' in data
+
+
+def test_stock_pool_status_watchlist_source(client):
+    """自选股票 → source 含 watchlist。"""
+    db.watchlist_set('admin', '601985.SH', '中国核电')
+    r = client.get('/api/focus/stock/601985.SH/pool',
+                   params={'date': '2026-09-08'}, headers=_auth('admin'))
+    data = r.json()['data']
+    assert 'watchlist' in data['sources'], '自选股应标 watchlist 来源'

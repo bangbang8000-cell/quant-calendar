@@ -415,6 +415,10 @@ const allMenuDefs = [
 
                 // ===== v3.16 (16.4): K线渲染状态与编排（护栏片段保留: onLegend 回调接线）=====
                 const klinePeriods = [
+                    // V5.4.0 (FR-5.4.8): 分钟级 K线 — 打开弹窗按需加载(不预加载), 后端三源支持
+                    {label: '60分钟', value: '60min'},
+                    {label: '30分钟', value: '30min'},
+                    {label: '15分钟', value: '15min'},
                     {label: '日线', value: 'daily'},
                     {label: '周线', value: 'weekly'},
                     {label: '月线', value: 'monthly'},

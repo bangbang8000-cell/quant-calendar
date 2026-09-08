@@ -15,6 +15,13 @@ from ._mapping import *  # noqa: F401,F403
 from ._mapping import (_safe_float, _ts_code_to_akshare_index, _ts_code_to_akshare_stock,
               _ts_code_to_sina_symbol, _is_index_code, _map_akshare_columns)
 
+# V5.4.0 (FR-5.4.8): 分钟级 K线周期白名单 — 打开股票弹窗按需加载(不预加载)
+MINUTE_PERIODS = ('15min', '30min', '60min')
+MINUTE_PERIOD_TO_FREQ = {'15min': '15min', '30min': '30min', '60min': '60min'}
+# akshare 分钟接口 period 参数: 15min→'15', 30min→'30', 60min→'60'
+MINUTE_PERIOD_TO_AKSHARE = {'15min': '15', '30min': '30', '60min': '60'}
+
+
 class DataSourceManager:
     """统一数据源管理器 — 模块级单例"""
 
@@ -441,6 +448,10 @@ class DataSourceManager:
             api = self._clients.get('sxsc_tushare')
             if not api:
                 return None
+            if period in MINUTE_PERIODS:
+                # V5.4.0 (FR-5.4.8): 券商版 tushare 分钟线走 stk_mins (freq=60min/30min/15min)
+                df = api.query('stk_mins', ts_code=ts_code, freq=period, limit=limit)
+                return df
             api_name_map = {'daily': 'daily', 'weekly': 'weekly', 'monthly': 'monthly'}
             api_name = api_name_map.get(period, 'daily')
             if is_index:
@@ -452,6 +463,11 @@ class DataSourceManager:
             pro = self._clients.get('tushare')
             if not pro:
                 return None
+            if period in MINUTE_PERIODS:
+                # V5.4.0 (FR-5.4.8): tushare 分钟线走 pro_bar(freq=60min/30min/15min)
+                import tushare as ts
+                df = ts.pro_bar(ts_code=ts_code, freq=period, adj='qfq', limit=limit)
+                return df
             if is_index:
                 if period == 'weekly':
                     df = pro.index_weekly(ts_code=ts_code, limit=limit)
@@ -474,6 +490,12 @@ class DataSourceManager:
                 symbol = _ts_code_to_akshare_index(ts_code)
                 df = ak.stock_zh_index_daily(symbol=symbol)
                 df = _map_akshare_columns(df, AKSHARE_INDEX_COLUMN_MAP)
+                return df.tail(limit)
+            elif period in MINUTE_PERIODS:
+                # V5.4.0 (FR-5.4.8): akshare 分钟线 stock_zh_a_hist_min_em(period='60'/'30'/'15')
+                symbol = _ts_code_to_akshare_stock(ts_code)
+                ak_period = MINUTE_PERIOD_TO_AKSHARE.get(period, '60')
+                df = ak.stock_zh_a_hist_min_em(symbol=symbol, period=ak_period, adjust="qfq")
                 return df.tail(limit)
             else:
                 # v3.20.1 (网络修复): 东财源反爬拦截时 fallback 到新浪源
