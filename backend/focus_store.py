@@ -129,6 +129,27 @@ def query_by_stock(stock_code, limit=60):
             conn.close()
 
 
+def query_latest_eval():
+    """V5.4.2 (FR): 最近一次评估 (日期+时段) — 供前端默认加载"最近的一次"。
+
+    trade_date DESC + 时段权重 DESC (pre_open<盘中<after_close)。无数据返回 (None, None)。
+    """
+    _ensure_table()
+    with db._db_lock:
+        conn = db.get_conn()
+        try:
+            row = conn.execute(
+                "SELECT trade_date, session FROM focus_evals "
+                "ORDER BY trade_date DESC, "
+                "CASE session WHEN 'pre_open' THEN 0 WHEN 'intraday_1' THEN 1"
+                " WHEN 'intraday_2' THEN 2 WHEN 'after_close' THEN 3 END DESC "
+                "LIMIT 1"
+            ).fetchone()
+            return (row["trade_date"], row["session"]) if row else (None, None)
+        finally:
+            conn.close()
+
+
 def query_latest_session(trade_date):
     """最近一个已评估时段 (用于推送/展示默认)。无则 None。"""
     _ensure_table()

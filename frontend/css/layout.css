@@ -735,6 +735,22 @@
 .focus-action-dot.focus-action-减仓 { background: var(--el-danger); }
 .focus-action-dot.focus-action-卖出 { background: var(--el-danger); opacity: 0.85; }
 
+/* ===== V5.4.2 (FR): 重点跟踪 按推荐档位归类 — 档位标题 (主题令牌驱动) ===== */
+.focus-tier-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-1);
+  margin-top: var(--sp-2);
+  margin-bottom: var(--sp-2);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+.focus-tier-emoji { font-size: var(--font-base); }
+.focus-tier-name { font-size: var(--font-base); }
+.focus-tier-header .color-secondary { font-size: var(--font-sm); font-weight: var(--font-normal); }
+
 /* 弹窗内 自选/入池/入池历史 行 */
 .detail-pool-row {
   display: flex;

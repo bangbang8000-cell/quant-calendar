@@ -84,3 +84,27 @@ def test_focus_view_no_termlogy_regression():
     """术语统一: 不出现「评股」"""
     fv = _read("js/components/focus-view.js")
     assert "评股" not in fv
+
+
+# ==================== V5.4.2: 默认加载最近一次 / 档位归类 / 入池状态 ====================
+
+def test_focus_view_defaults_to_latest_eval():
+    """V5.4.2 (FR): 重点跟踪默认加载最近一次评估 — 挂载时先解析 /api/focus/latest。"""
+    fv = _read("js/components/focus-view.js")
+    assert "/api/focus/latest" in fv, "应请求 /api/focus/latest 解析最近一次评估"
+    assert "最近一次" in fv, "应展示最近一次评估提示文案"
+
+
+def test_focus_view_tier_group_rendering():
+    """V5.4.2 (FR): 按推荐档位归类渲染 — groups 迭代 + 档位标题。"""
+    fv = _read("js/components/focus-view.js")
+    assert "results.groups" in fv, "应迭代 results.groups 按档位分组渲染"
+    assert "强烈推荐" in fv, "应含推荐档位文案 (强烈推荐)"
+
+
+def test_focus_view_pool_state_badges():
+    """V5.4.2 (FR): 入池状态徽标 — 新入池/在池/已出池。"""
+    fv = _read("js/components/focus-view.js")
+    for s in ("新入池", "在池", "已出池"):
+        assert s in fv, "应含入池状态徽标 " + s
+    assert "pool_state" in fv, "应读取后端 pool_state 字段"

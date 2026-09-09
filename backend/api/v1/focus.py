@@ -4,7 +4,8 @@
 
 - GET /api/focus/list?scope=all|watchlist|new_pool&date=YYYY-MM-DD
   匿名: 全用户自选 ∪ 新入池; 登录: 本人自选 ∪ 新入池
-- GET /api/focus/results?date&session  当日评估结果 + 按当前用户持仓派生动作
+- GET /api/focus/results?date&session  当日评估结果 + 按当前用户持仓派生动作 (按推荐档位排序/归类)
+- GET /api/focus/latest               最近一次评估 (日期+时段), 前端默认加载
 - GET /api/focus/history?date          历史记录 (时段分组)
 - POST /api/focus/push {date, session, card}  digest 推送 (text+卡片双模)
 """
@@ -72,24 +73,50 @@ async def get_focus_results(
     session: str = Query(None, description="时段 pre_open/intraday_1/intraday_2/after_close"),
     user: dict = Depends(get_current_user),
 ):
-    """当日评估结果 + 按当前用户持仓派生的 5 档动作 (匿名无持仓口径)。"""
+    """当日评估结果 + 按当前用户持仓派生的 5 档动作 (匿名无持仓口径)。
+
+    V5.4.2 (FR): 缺省 level 由评分回填 + 按推荐档位排序 (强烈推荐→观望, 组内评分降序)
+    + groups 按推荐档位归类, 供前端分组渲染。
+    """
     import focus_list as fl
     import focus_store
     import focus_digest
     from focus_action_map import ACTION_ORDER
+    from focus_eval import score_to_level
     d = date or fl.today_str()
     rows = focus_store.query_by_date(d, session=session)
     _backfill_stock_names(rows)
     holdings = _load_holdings(user["username"]) if user else []
     enriched = focus_digest.enrich_actions(rows, holdings=holdings)
-    counts = {a: 0 for a in ACTION_ORDER}
+    # V5.4.2: 缺省 level 由评分回填 (历史/规则记录 level 可能为空)
     for r in enriched:
+        if not (r.get("level") or ""):
+            r["level"] = score_to_level(r.get("total_score"))
+    sorted_rows = focus_digest.sort_rows_by_level(enriched)
+    groups = focus_digest.group_rows_by_level(sorted_rows)
+    counts = {a: 0 for a in ACTION_ORDER}
+    for r in sorted_rows:
         counts[r.get("action")] = counts.get(r.get("action"), 0) + 1
     return {"success": True, "data": {
-        "date": d, "session": session, "total": len(rows),
-        "actions": counts, "rows": enriched,
+        "date": d, "session": session, "total": len(sorted_rows),
+        "actions": counts, "rows": sorted_rows, "groups": groups,
         "user": user["username"] if user else None,
         "holdings_count": len(holdings),
+    }}
+
+
+@router.get("/latest")
+async def get_focus_latest(user: dict = Depends(get_current_user)):
+    """V5.4.2 (FR): 最近一次重点跟踪评估 (日期+时段) — 前端默认加载"最近的一次"。
+
+    若当天尚无评估 (调度未跑/非交易日), 前端进入重点跟踪即回退到最近有数据的日期。
+    """
+    import focus_store
+    d, s = focus_store.query_latest_eval()
+    total = focus_store.count_by_date(d) if d else 0
+    return {"success": True, "data": {
+        "date": d, "session": s, "total": total,
+        "user": user["username"] if user else None,
     }}
 
 
@@ -163,11 +190,15 @@ async def get_focus_stock_pool_status(
     # 入池历史 (按日入池回溯)
     hist = fph.load_pool_history(stock_code)
     holdings = _load_holdings(user["username"]) if user else []
+    # V5.4.2 (FR): 入池状态派生 — 当日新入池 > 当前在池 > 已出池 > 从未入池
+    pool_state = fph.derive_pool_state(sources, hist)
     return {"success": True, "data": {
         "stock_code": stock_code,
         "date": d,
         "source": source,
         "sources": sources,
+        "pool_state": pool_state,
+        "pool_state_label": fph.POOL_STATE_LABELS.get(pool_state, pool_state),
         "holding": stock_code in holdings,
         "pool_history": hist,
         "user": user["username"] if user else None,
