@@ -212,3 +212,10 @@
   font-weight: var(--qc-font-weight-medium);
   color: var(--qc-foreground);
 }
+
+/* ─── §4 动效补充 (D3): 弹窗 scale 0.96→1 / 按钮点击 scale 0.98 (克制) ── */
+.el-dialog { transform-origin: center; }
+.dialog-fade-enter-active .el-dialog { transition: transform var(--duration-base) var(--easing-enter); }
+.dialog-fade-enter-from .el-dialog { transform: scale(0.96); }
+.dialog-fade-leave-to .el-dialog { transform: scale(0.98); }
+.el-button:not(:disabled):not(.is-loading):active { transform: scale(0.98); }
