@@ -66,9 +66,10 @@
   --qc-nav-item-default: var(--qc-neutral-600);
   --qc-nav-item-hover: var(--qc-neutral-900);
   --qc-nav-item-hover-bg: var(--qc-neutral-100);
-  /* V6.0.1 (B1/B2): 对比度修复 — 分组标签 400→500；选中项背景提亮 + 文字加深 */
+  /* V6.0.1 (B1/B2): 对比度修复 — 分组标签 400→500；选中项背景提亮 + 文字加深
+     V6.0.1: 选中项背景改 var(--qc-primary-50) 随主题 (原硬编码 #fdfaf3 不随主题) */
   --qc-nav-item-active: var(--qc-primary-800);
-  --qc-nav-item-active-bg: #fdfaf3;
+  --qc-nav-item-active-bg: var(--qc-primary-50);
   --qc-nav-item-active-border: var(--qc-primary-500);
   --qc-nav-group-label: var(--qc-neutral-500);
   --qc-nav-badge-bg: var(--qc-primary-100);

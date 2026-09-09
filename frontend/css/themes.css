@@ -69,8 +69,9 @@
             /* V6.0: qc 导航主色随主题 */
             --qc-primary: #1d4ed8;
             --qc-primary-50: #eff6ff; --qc-primary-100: #dbeafe;
+            --qc-primary-200: #bfdbfe; --qc-primary-300: #93c5fd; --qc-primary-400: #60a5fa; /* V6.0.1: 补全 200/300/400/900 — focus 环/图表色板随主题 */
             --qc-primary-500: #3b82f6; --qc-primary-600: #2563eb;
-            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af;
+            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af; --qc-primary-900: #1e3a8a;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%);
             --card-border: #bfdbfe;
@@ -108,8 +109,9 @@
             /* V6.0: qc 导航主色随主题 */
             --qc-primary: #e63946;
             --qc-primary-50: #fef2f2; --qc-primary-100: #fee2e2;
+            --qc-primary-200: #fecaca; --qc-primary-300: #fca5a5; --qc-primary-400: #f87171; /* V6.0.1: 补全 200/300/400/900 */
             --qc-primary-500: #ef4444; --qc-primary-600: #e63946;
-            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b;
+            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b; --qc-primary-900: #7f1d1d;
             --secondary-color: #FF6B6B;
             --gradient: linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%);
             --card-border: #fecaca;
@@ -199,8 +201,9 @@
             /* V6.0: qc 导航主色随主题 */
             --qc-primary: #2563eb;
             --qc-primary-50: #eff6ff; --qc-primary-100: #dbeafe;
+            --qc-primary-200: #bfdbfe; --qc-primary-300: #93c5fd; --qc-primary-400: #60a5fa; /* V6.0.1: 补全 200/300/400/900 */
             --qc-primary-500: #3b82f6; --qc-primary-600: #2563eb;
-            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af;
+            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af; --qc-primary-900: #1e3a8a;
             --bg-page: #ffffff;
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
@@ -228,8 +231,9 @@
             /* V6.0: qc 导航主色随主题 */
             --qc-primary: #dc2626;
             --qc-primary-50: #fef2f2; --qc-primary-100: #fee2e2;
+            --qc-primary-200: #fecaca; --qc-primary-300: #fca5a5; --qc-primary-400: #f87171; /* V6.0.1: 补全 200/300/400/900 */
             --qc-primary-500: #ef4444; --qc-primary-600: #dc2626;
-            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b;
+            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b; --qc-primary-900: #7f1d1d;
             --bg-page: #fafafa;
             --primary-rgb: 220, 38, 38;
             --secondary-color: #f87171;
