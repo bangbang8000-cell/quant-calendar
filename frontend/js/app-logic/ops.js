@@ -256,6 +256,7 @@
       }
 
       // v3.2.0-T22: 首次使用引导
+      // V5.4.2 (FR): 向导弹窗机制取消 — 默认不再自动弹出; 保留组件与状态机供未来手动入口 (全局开关 __quantGuideModalsEnabled=true 时恢复)
       const tourVisible = ref(false);
       const tourStep = ref(0);
       const tourSteps = [
@@ -264,6 +265,8 @@
         { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
       ];
       function maybeShowTour() {
+        // V5.4.2: 向导弹窗默认取消 — 未显式开启全局引导开关则不再弹出
+        if (window.__quantGuideModalsEnabled !== true) return;
         if (localStorage.getItem('quant_tour_done') === '1') return;
         setTimeout(() => { tourStep.value = 0; tourVisible.value = true; }, 800);
       }

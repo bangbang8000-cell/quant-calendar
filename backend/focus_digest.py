@@ -48,6 +48,38 @@ def sort_rows(rows):
                                        -(r.get("total_score") or 0)))
 
 
+# V5.4.2 (FR): 推荐档位 (level) 分级 — 强烈推荐 > 推荐 > 谨慎推荐 > 中性 > 观望
+# 与 focus_eval.SCORE_LEVEL_MAP 的分档文案一致 (80/60/40/30 阈值)。
+LEVEL_ORDER = ("强烈推荐", "推荐", "谨慎推荐", "中性", "观望")
+LEVEL_EMOJI = {
+    "强烈推荐": "🔥", "推荐": "🟢", "谨慎推荐": "🟡",
+    "中性": "⚪", "观望": "🔵",
+}
+
+
+def level_bucket_key(level) -> int:
+    """推荐档位 → 序号 (越小越优先)。未知档位排最后。"""
+    try:
+        return LEVEL_ORDER.index(level or "")
+    except ValueError:
+        return len(LEVEL_ORDER)
+
+
+def sort_rows_by_level(rows):
+    """推荐档位降序 (强烈推荐>…>观望) + 组内评分降序 (重点跟踪面板排序)。"""
+    return sorted(rows, key=lambda r: (level_bucket_key(r.get("level")),
+                                       -(r.get("total_score") or 0)))
+
+
+def group_rows_by_level(rows):
+    """按推荐档位归类: {level: [rows]} — 各档内部已按评分降序, 档序强烈推荐→观望。"""
+    groups = {}
+    for r in sort_rows_by_level(rows):
+        lv = r.get("level") or "未评级"
+        groups.setdefault(lv, []).append(r)
+    return groups
+
+
 def _fmt_score(score):
     if score is None:
         return "—"

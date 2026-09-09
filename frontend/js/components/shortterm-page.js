@@ -917,6 +917,8 @@
       }
 
       function maybeShowShorttermTour() {
+        // V5.4.2 (FR): 向导弹窗机制取消 — 短线复盘引导默认不再自动弹出 (全局开关可恢复)
+        if (window.__quantGuideModalsEnabled !== true) return;
         if (!OC) return;
         if (currentSubPage.value !== 'overview') return;
         _loadShorttermTourState();

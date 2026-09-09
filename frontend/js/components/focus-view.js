@@ -1,13 +1,17 @@
 // quant-calendar: FocusView 组件 (v5.4.0 T-5.4.0.7/8 / FR-5.4.4)
-// 重点跟踪视图: 今日概览 / 当日多时点 / 历史记录 / 效果块
-// 数据: /api/focus/results|history|stock/{code} + /api/ai/track (效果块)
+// 重点跟踪视图: 今日概览 / 当日多时点结果 / 历史记录 / 效果块
+// V5.4.2 (FR): ① 默认加载最近一次评估(/api/focus/latest) ② 按推荐档位(level)排序+归类渲染
+//              ③ 入池状态徽标: 新入池/在池/已出池/从未入池 (后端 pool_state 派生)
+// 数据: /api/focus/results|history|latest|stock/{code} + /api/ai/track (效果块)
 // 动作已由后端按当前用户持仓派生 (5 档: 买入/持有/观望/减仓/卖出)
 (function () {
-  const { ref, onMounted, inject } = Vue;
+  const { ref, computed, onMounted, inject } = Vue;
   window.__quantComponents = window.__quantComponents || {};
 
   const EMOJI = { '买入': '🟢', '持有': '🟡', '观望': '⚪', '减仓': '🟠', '卖出': '🔴' };
   const ACTION_ORDER = ['买入', '持有', '观望', '减仓', '卖出'];
+  // V5.4.2 (FR): 推荐档位 (level) 符号 — 与后端 focus_digest.LEVEL_EMOJI 同口径
+  const TIER_EMOJI = { '强烈推荐': '🔥', '推荐': '🟢', '谨慎推荐': '🟡', '中性': '⚪', '观望': '🔵' };
   const SESSIONS = [
     { v: 'pre_open', l: '盘前 09:00' },
     { v: 'intraday_1', l: '盘中 10:30' },
@@ -39,7 +43,9 @@
       <div>
         <!-- 今日概览卡 -->
         <div class="card mb-4">
-          <div class="card-title">🎯 重点跟踪 · 今日概览</div>
+          <div class="card-title">🎯 重点跟踪 · 今日概览
+            <span class="card-title-hint" v-if="latestNote">{{ latestNote }}</span>
+          </div>
           <div class="flex-between mb-8">
             <div class="flex-gap-8">
               <el-date-picker v-model="curDate" type="date" size="small"
@@ -82,51 +88,65 @@
             该日期/时段暂无评估结果（多时点评估由调度执行, 盘前 09:00 / 盘后 20:00 必做）
           </div>
           <div v-else>
-            <div v-for="row in results.rows" :key="row.stock_code" class="focus-row"
-              :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
-              @click="toggle(row.stock_code)" tabindex="0" role="button"
-              @keydown.enter.prevent="toggle(row.stock_code)">
-              <span class="focus-row-emoji">{{ EMOJI[row.action] || '·' }}</span>
-              <span class="focus-row-name">{{ row.stock_name }}
-                <span class="color-secondary">({{ row.stock_code }})</span>
-                <!-- V5.4.0 (FR-5.4.9): 自选/入池状态徽标 -->
-                <span v-if="poolStatus[row.stock_code]" class="focus-row-badges">
-                  <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'watchlist'"
-                    size="small" type="warning" effect="light" class="focus-badge">⭐ 自选</el-tag>
-                  <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'new_pool'"
-                    size="small" type="success" effect="light" class="focus-badge">🆕 入池</el-tag>
-                  <el-tag v-if="poolStatus[row.stock_code].holding" size="small" type="danger" effect="light" class="focus-badge">持仓</el-tag>
+            <!-- V5.4.2 (FR): 按推荐档位归类 (强烈推荐→观望), 组内评分降序 — 后端 results.groups 已就绪 -->
+            <template v-for="(rows, lv) in displayGroups" :key="lv">
+              <div class="focus-tier-header">
+                <span class="focus-tier-emoji">{{ TIER_EMOJI[lv] || '·' }}</span>
+                <span class="focus-tier-name">{{ lv }}</span>
+                <span class="color-secondary">({{ rows.length }})</span>
+              </div>
+              <div v-for="row in rows" :key="row.stock_code" class="focus-row"
+                :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
+                @click="toggle(row.stock_code)" tabindex="0" role="button"
+                @keydown.enter.prevent="toggle(row.stock_code)">
+                <span class="focus-row-emoji">{{ EMOJI[row.action] || '·' }}</span>
+                <span class="focus-row-name">{{ row.stock_name }}
+                  <span class="color-secondary">({{ row.stock_code }})</span>
+                  <!-- V5.4.2 (FR): 入池状态徽标 — 新入池/在池/已出池 + 自选/持仓 -->
+                  <span v-if="poolStatus[row.stock_code]" class="focus-row-badges">
+                    <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'watchlist'"
+                      size="small" type="warning" effect="light" class="focus-badge">⭐ 自选</el-tag>
+                    <el-tag v-if="poolStatus[row.stock_code].pool_state === 'new_pool'"
+                      size="small" type="success" effect="light" class="focus-badge">🆕 新入池</el-tag>
+                    <el-tag v-else-if="poolStatus[row.stock_code].pool_state === 'in_pool'"
+                      size="small" type="primary" effect="light" class="focus-badge">📍 在池</el-tag>
+                    <el-tag v-else-if="poolStatus[row.stock_code].pool_state === 'exited'"
+                      size="small" type="warning" effect="light" class="focus-badge">🚪 已出池</el-tag>
+                    <el-tag v-if="poolStatus[row.stock_code].holding" size="small" type="danger" effect="light" class="focus-badge">持仓</el-tag>
+                  </span>
                 </span>
-              </span>
-              <el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag>
-              <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
-              <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
-              <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
-              <el-button size="small" circle text type="primary" class="focus-row-open"
-                @click.stop="openStockDetail(row.stock_code)"
-                :title="'打开 ' + row.stock_code + ' 详情'">📈</el-button>
-              <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
-              <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
-                <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
-                  <span v-if="row.model_provider === 'rule'" class="color-secondary">（规则快评降级）</span>
-                </div>
-                <div class="focus-detail-line" v-if="detailOf(row).level">评级: {{ detailOf(row).level }}</div>
-                <div class="focus-detail-line" v-if="detailOf(row).data_quality_note">数据时效: {{ detailOf(row).data_quality_note }}</div>
-                <div class="focus-detail-line" v-if="detailOf(row).sniper_points">买卖点参考: {{ detailOf(row).sniper_points }}</div>
-                <div class="focus-detail-line" v-if="detailOf(row).signal_attribution">信号归因: {{ detailOf(row).signal_attribution }}</div>
-                <!-- V5.4.0 (FR-5.4.9): 入池历史 -->
-                <div class="focus-detail-line" v-if="poolStatus[row.stock_code] && poolStatus[row.stock_code].pool_history">
-                  <span class="color-secondary">入池:</span>
-                  <template v-if="poolStatus[row.stock_code].pool_history.first_appear">
-                    首入 {{ poolStatus[row.stock_code].pool_history.first_appear }} · 最近在池 {{ poolStatus[row.stock_code].pool_history.last_appear }}
-                    <span v-if="poolStatus[row.stock_code].pool_history.pool_entries.length > 1" class="color-secondary">
-                      · {{ poolStatus[row.stock_code].pool_history.pool_entries.length }} 段
-                    </span>
-                  </template>
-                  <span v-else class="color-secondary">从未入池</span>
+                <el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag>
+                <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
+                <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
+                <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
+                <el-button size="small" circle text type="primary" class="focus-row-open"
+                  @click.stop="openStockDetail(row.stock_code)"
+                  :title="'打开 ' + row.stock_code + ' 详情'">📈</el-button>
+                <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
+                <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
+                  <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
+                    <span v-if="row.model_provider === 'rule'" class="color-secondary">（规则快评降级）</span>
+                  </div>
+                  <div class="focus-detail-line" v-if="detailOf(row).level">评级: {{ detailOf(row).level }}</div>
+                  <div class="focus-detail-line" v-if="detailOf(row).data_quality_note">数据时效: {{ detailOf(row).data_quality_note }}</div>
+                  <div class="focus-detail-line" v-if="detailOf(row).sniper_points">买卖点参考: {{ detailOf(row).sniper_points }}</div>
+                  <div class="focus-detail-line" v-if="detailOf(row).signal_attribution">信号归因: {{ detailOf(row).signal_attribution }}</div>
+                  <!-- V5.4.0 (FR-5.4.9): 入池历史 -->
+                  <div class="focus-detail-line" v-if="poolStatus[row.stock_code] && poolStatus[row.stock_code].pool_history">
+                    <span class="color-secondary">入池:</span>
+                    <template v-if="poolStatus[row.stock_code].pool_history.first_appear">
+                      首入 {{ poolStatus[row.stock_code].pool_history.first_appear }} · 最近在池 {{ poolStatus[row.stock_code].pool_history.last_appear }}
+                      <span v-if="poolStatus[row.stock_code].pool_state === 'exited'" class="color-secondary"> · 已出池</span>
+                      <span v-else-if="poolStatus[row.stock_code].pool_state === 'in_pool'" class="color-secondary"> · 当前在池</span>
+                      <span v-if="poolStatus[row.stock_code].pool_history.pool_entries.length > 1" class="color-secondary">
+                        · {{ poolStatus[row.stock_code].pool_history.pool_entries.length }} 段
+                      </span>
+                    </template>
+                    <span v-else class="color-secondary">从未入池</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
 
@@ -175,7 +195,7 @@
       const state = inject('qcState');
       const curDate = ref(toLocalDate());
       const session = ref('after_close');
-      const results = ref({ rows: [], actions: {}, total: 0 });
+      const results = ref({ rows: [], actions: {}, total: 0, groups: {} });
       const history = ref({ sessions: {}, total: 0 });
       const track = ref(null);
       const trackLoading = ref(false);
@@ -188,6 +208,25 @@
       // V5.4.0 (FR-5.4.9): 自选/入池状态缓存 (code -> poolStatus)
       const poolStatus = ref({});
       let poolLoadSeq = 0;
+      // V5.4.2 (FR): 最近一次评估信息 (/api/focus/latest) — 默认加载最近的一次
+      const latestInfo = ref(null);
+
+      // V5.4.2: 按推荐档位归类的展示分组 (后端 groups 已排序; 兼容旧返回回退单组)
+      const displayGroups = computed(function () {
+        const g = (results.value && results.value.groups) || {};
+        if (Object.keys(g).length) return g;
+        if (results.value && results.value.rows && results.value.rows.length) {
+          return { '全部': results.value.rows };
+        }
+        return {};
+      });
+      // V5.4.2: 当前展示是否为最近一次评估 (提示文案)
+      const latestNote = computed(function () {
+        const li = latestInfo.value;
+        if (!li || !li.date) return '';
+        if (li.date !== curDate.value) return '';
+        return '已加载最近一次评估: ' + li.date + ' · ' + (SESSION_LABELS[li.session] || li.session);
+      });
 
       function fmtScore(s) {
         if (s === null || s === undefined) return '—';
@@ -233,15 +272,29 @@
         detailCache[row.stock_code + row.session + row.trade_date] = d;
         return d;
       }
+      // V5.4.2 (FR): 解析最近一次评估 (日期+时段) — 默认加载最近的一次
+      async function resolveLatest() {
+        try {
+          const res = await apiFetch('/api/focus/latest');
+          const d = res && res.success && res.data;
+          if (d && d.date) {
+            latestInfo.value = d;
+            curDate.value = d.date;
+            if (d.session) session.value = d.session;
+          }
+        } catch (e) {
+          console.warn('[focus] 最近一次评估解析失败:', e);
+        }
+      }
       async function loadResults() {
         loading.value = true;
         try {
           const res = await apiFetch('/api/focus/results?date=' + curDate.value + '&session=' + session.value);
-          results.value = (res && res.success && res.data) || { rows: [], actions: {}, total: 0 };
+          results.value = (res && res.success && res.data) || { rows: [], actions: {}, total: 0, groups: {} };
           loadPoolStatuses((results.value.rows || []).map(function (r) { return r.stock_code; }));
         } catch (e) {
           console.warn('[focus] 结果加载失败:', e);
-          results.value = { rows: [], actions: {}, total: 0 };
+          results.value = { rows: [], actions: {}, total: 0, groups: {} };
         } finally {
           loading.value = false;
         }
@@ -258,11 +311,11 @@
               if (res && res.success && res.data) {
                 seen[code] = res.data;
               } else {
-                seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_history: null };
+                seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_state: 'never', pool_history: null };
               }
             })
             .catch(function () {
-              seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_history: null };
+              seen[code] = { stock_code: code, source: 'none', sources: [], holding: false, pool_state: 'never', pool_history: null };
             });
         });
         try { await Promise.all(tasks); } catch (e) { /* 单股失败已兜底 */ }
@@ -320,10 +373,16 @@
         await loadHistory();
         await loadTrack();
       }
-      onMounted(loadAll);
+      // V5.4.2 (FR): 默认加载最近的一次评估 — 先解析 /api/focus/latest, 再拉数据
+      onMounted(async function () {
+        await resolveLatest();
+        await loadAll();
+      });
+      // V5.4.2 (fix): SESSION_LABELS 需经 setup 暴露, 模板才能访问 (Vue 模板仅见实例绑定)
       return { curDate, session, results, history, track, trackLoading, trackNote,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
-               TRACK_WINDOWS, EMOJI, sessionLabel, fmtScore, tagType, rateTagType,
+               TRACK_WINDOWS, EMOJI, TIER_EMOJI, SESSION_LABELS, displayGroups, latestNote,
+               sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,
                loadStockHistory, loadAll, poolStatus, openStockDetail, actionPct };
     },

@@ -98,6 +98,32 @@ def load_pool_history(stock_code):
         return _empty(stock_code)
 
 
+# V5.4.2 (FR): 入池状态派生 — 当日新入池 > 当前在池 > 已出池 > 从未入池
+POOL_STATE_NEW = "new_pool"
+POOL_STATE_IN = "in_pool"
+POOL_STATE_EXITED = "exited"
+POOL_STATE_NEVER = "never"
+POOL_STATE_LABELS = {
+    POOL_STATE_NEW: "新入池",
+    POOL_STATE_IN: "在池",
+    POOL_STATE_EXITED: "已出池",
+    POOL_STATE_NEVER: "从未入池",
+}
+
+
+def derive_pool_state(sources, pool_history) -> str:
+    """入池状态: sources 含 new_pool(当日新入池) 优先; 否则 is_current → 在池;
+    有入池历史 → 已出池; 其余 → 从未入池。"""
+    if "new_pool" in (sources or []):
+        return POOL_STATE_NEW
+    hist = pool_history or {}
+    if hist.get("is_current"):
+        return POOL_STATE_IN
+    if hist.get("first_appear"):
+        return POOL_STATE_EXITED
+    return POOL_STATE_NEVER
+
+
 def _empty(stock_code):
     return {'stock_code': stock_code, 'first_appear': None, 'last_appear': None,
             'pooled_days': 0, 'is_current': False, 'pool_entries': [],

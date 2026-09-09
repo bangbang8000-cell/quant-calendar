@@ -130,7 +130,8 @@
   function saveToBackend(prefs) {
     if (typeof fetch === 'undefined') return;
     try {
-      fetch('/api/user/preferences', {
+      // V5.4.2 (fix): 契约对齐 — 后端实际路由为 /api/user_config/preferences (原 /api/user/preferences 404)
+      fetch('/api/user_config/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferences: prefs }),
@@ -144,7 +145,7 @@
     if (!_isLoggedIn()) return merged;
     if (typeof fetch === 'undefined') return merged;
     try {
-      const res = await fetch('/api/user/preferences');
+      const res = await fetch('/api/user_config/preferences');
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.preferences) {
