@@ -172,3 +172,43 @@
   animation: qc-pulse 1.6s ease-in-out infinite;
 }
 @keyframes qc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ─── §3.1 KPI 大卡区 (策略总览 Dashboard 化, D2) ─────── */
+/* 收敛既有 .dashboard-grid .stat-card 为克制 KPI 卡: 边框优先 + 28px 数值 + 次级标签,
+   保留各状态左边界语义色 (info/success/gold/warning) */
+.dashboard-grid .stat-card {
+  background: var(--qc-card);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  padding: var(--qc-space-4);
+  box-shadow: var(--qc-shadow-sm);
+  transition: box-shadow var(--duration-base), border-color var(--duration-base);
+}
+.dashboard-grid .stat-card:hover { box-shadow: var(--qc-shadow-md); border-color: var(--qc-neutral-300); }
+.dashboard-grid .stat-value {
+  font-size: 28px;
+  font-weight: var(--qc-font-weight-bold);
+  color: var(--qc-foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.dashboard-grid .stat-label {
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+  margin-top: var(--qc-space-1);
+}
+.dashboard-grid .stat-trend { font-size: var(--qc-font-size-sm); font-weight: var(--qc-font-weight-medium); font-variant-numeric: tabular-nums; }
+/* 保留各状态左边界语义色 (components.css 后加载会覆盖 border 简写, 需重挂) */
+.dashboard-grid .stat-card.info    { border-left: 3px solid var(--el-info); }
+.dashboard-grid .stat-card.success { border-left: 3px solid var(--el-success); }
+.dashboard-grid .stat-card.gold    { border-left: 3px solid var(--color-gold); }
+.dashboard-grid .stat-card.warning { border-left: 3px solid var(--el-warning); }
+
+/* ─── §3.1 今日一屏状态点 (● 交易中/休市 — 文本已含 ●, 仅统一字重/色) ── */
+.today-hero-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  color: var(--qc-foreground);
+}
