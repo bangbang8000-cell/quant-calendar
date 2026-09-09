@@ -240,34 +240,7 @@
   --content-max-width:       var(--qc-content-max-width);
 }
 
-/* V6.0: 暗色模式 --qc-* 覆盖（qc token 的 dark 由 themes.css 中 .dark 统一处理，此处仅声明基础） */
-.dark {
-  --qc-background: #1a1814;
-  --qc-foreground: #f7f4ee;
-  --qc-card: #26231e;
-  --qc-card-foreground: #f7f4ee;
-  --qc-popover: #26231e;
-  --qc-popover-foreground: #f7f4ee;
-  --qc-primary: #ffd166;
-  --qc-primary-foreground: #1a1814;
-  --qc-muted: #332f2a;
-  --qc-muted-foreground: #a8a095;
-  --qc-border: #3d3831;
-  --qc-input: #3d3831;
-  --qc-ring: #e6cf86;
-  --qc-nav-bg: #26231e;
-  --qc-nav-border: #3d3831;
-  --qc-nav-item-default: #a8a095;
-  --qc-nav-item-hover: #f7f4ee;
-  --qc-nav-item-hover-bg: #332f2a;
-  --qc-nav-item-active: #ffd166;
-  --qc-nav-item-active-bg: #3d3422;
-  --qc-nav-item-active-border: #ffd166;
-  --qc-nav-group-label: #8f8679;
-  --qc-nav-badge-bg: #3d3422;
-  --qc-nav-badge-text: #ffd166;
-  --qc-overlay: rgba(0, 0, 0, 0.6);
-}
+/* V6.0.1: 删除死代码 — 原 .dark {} 块从不触发 (实际暗色由 themes.css [data-theme="dark-pro"] 驱动) */
 
 /* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
 [v-cloak] { display: none !important; }

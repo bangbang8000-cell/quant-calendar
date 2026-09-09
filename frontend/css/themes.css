@@ -308,12 +308,18 @@
         [data-theme="dark-pro"] {
             --primary-color: #64ffda;
             --primary-rgb: 100, 255, 218;
-            /* V6.0: qc 暗色导航 token 覆盖 (与 tokens.css .dark 一致) */
+            /* V6.0: qc 暗色导航 token 覆盖 (V6.0.1: 原 .dark 死代码已删除, 暗色统一由本 data-theme 块驱动) */
             --qc-background: #0f0f23; --qc-foreground: #e6f1ff;
             --qc-card: #1a1a3e; --qc-card-foreground: #e6f1ff;
             --qc-popover: #1a1a3e; --qc-popover-foreground: #e6f1ff;
             --qc-primary: #ffd166;
             --qc-primary-foreground: #1a1814;
+            /* V6.0.1: 补全 dark-pro 金色 scale — 暗底适配 (50-300 深金底 / 400-900 亮金主色与文字) */
+            --qc-primary-50: #2b2314; --qc-primary-100: #3d3422;
+            --qc-primary-200: #4a3d1a; --qc-primary-300: #5c4c1e;
+            --qc-primary-400: #a68a35; --qc-primary-500: #d4b352;
+            --qc-primary-600: #ffd166; --qc-primary-700: #ffd166;
+            --qc-primary-800: #e6cf86; --qc-primary-900: #f0e2b3;
             --qc-muted: #1e2a4a; --qc-muted-foreground: #8892b0;
             --qc-border: #2e4162; --qc-input: #2e4162; --qc-ring: #e6cf86;
             --qc-nav-bg: #141431; --qc-nav-border: #2e4162;
