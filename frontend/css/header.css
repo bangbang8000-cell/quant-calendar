@@ -1,0 +1,237 @@
+/* ===== header.css V6.0 ===== */
+/* 顶部 Header 样式 (PRD-6.0 FR-6.0.2) — 全部基于 --qc-* token */
+
+.qc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qc-space-4);
+  height: var(--qc-header-height);
+  padding: 0 var(--qc-space-4);
+  background: var(--qc-card);
+  border-bottom: 1px solid var(--qc-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* 左区 */
+.qc-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-3);
+  min-width: 0;
+}
+.qc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--qc-radius-medium);
+  background: transparent;
+  color: var(--qc-nav-item-default);
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+.qc-icon-btn:hover { background: var(--qc-muted); color: var(--qc-foreground); }
+.qc-icon-btn:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-has-dot::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-state-error);
+  border: 1.5px solid var(--qc-card);
+}
+
+/* 面包屑 */
+.qc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-1);
+  font-size: var(--qc-font-size-base);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.qc-breadcrumb-item {
+  color: var(--qc-nav-item-default);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qc-breadcrumb-item:not(.is-current):hover { color: var(--qc-nav-item-hover); }
+.qc-breadcrumb-item.is-current {
+  color: var(--qc-foreground);
+  font-weight: var(--qc-font-weight-semibold);
+}
+.qc-breadcrumb-sep {
+  display: inline-flex;
+  color: var(--qc-nav-item-default);
+  opacity: 0.7;
+}
+
+/* 中区搜索 */
+.qc-header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 520px;
+  margin: 0 var(--qc-space-4);
+}
+.qc-header-search {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  width: 100%;
+  max-width: 320px;
+  height: 36px;
+  padding: 0 var(--qc-space-3);
+  background: var(--qc-muted);
+  border-radius: var(--qc-radius-full);
+  color: var(--qc-muted-foreground);
+  transition: box-shadow var(--duration-fast);
+}
+.qc-header-search:focus-within {
+  box-shadow: 0 0 0 2px var(--qc-ring);
+}
+.qc-header-search-icon { flex-shrink: 0; }
+.qc-header-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-base);
+}
+.qc-header-search-input::placeholder { color: var(--qc-muted-foreground); }
+.qc-header-search-kbd {
+  flex-shrink: 0;
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-muted-foreground);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-small);
+  padding: 1px 6px;
+  background: var(--qc-card);
+}
+
+/* 右区 */
+.qc-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-3);
+}
+
+/* 用户菜单 */
+.qc-user-menu { position: relative; }
+.qc-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--qc-primary);
+  color: var(--qc-primary-foreground);
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--qc-font-weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter var(--duration-fast);
+}
+.qc-user-avatar:hover { filter: brightness(0.94); }
+.qc-user-avatar:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: 2px;
+}
+.qc-user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  min-width: 220px;
+  background: var(--qc-popover);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  box-shadow: var(--qc-shadow-lg);
+  padding: var(--qc-space-2);
+}
+.qc-user-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-bottom: 1px solid var(--qc-border);
+  margin-bottom: var(--qc-space-1);
+}
+.qc-user-dropdown-name {
+  font-weight: var(--qc-font-weight-medium);
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-base);
+}
+.qc-user-dropdown-chip {
+  font-size: var(--qc-font-size-xs);
+  padding: 1px 8px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-muted);
+  color: var(--qc-muted-foreground);
+}
+.qc-user-dropdown-title {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  padding: var(--qc-space-2) var(--qc-space-3) var(--qc-space-1);
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+}
+.qc-user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-radius: var(--qc-radius-medium);
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-base);
+  cursor: pointer;
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+.qc-user-dropdown-item:hover { background: var(--qc-nav-item-hover-bg); color: var(--qc-nav-item-hover); }
+.qc-user-dropdown-item:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-user-dropdown-item.is-danger { color: var(--qc-state-error); }
+.qc-user-dropdown-item.is-danger:hover { background: var(--qc-state-error-bg); color: var(--qc-state-error); }
+.qc-user-dropdown-divider {
+  height: 1px;
+  background: var(--qc-border);
+  margin: var(--qc-space-1) 0;
+}
+.qc-theme-row { justify-content: flex-start; }
+.qc-theme-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--qc-radius-full);
+  flex-shrink: 0;
+  border: 1px solid var(--qc-border);
+}
+.qc-theme-name { flex: 1; }
+.qc-theme-check { color: var(--qc-primary); }
+
+/* 移动端 */
+@media (max-width: 767px) {
+  .qc-header-center { display: none; }
+  .qc-header {
+    padding: 0 var(--qc-space-3);
+  }
+  .qc-breadcrumb-item:first-child { display: none; }
+}

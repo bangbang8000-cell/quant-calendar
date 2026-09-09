@@ -16,16 +16,17 @@
     <meta http-equiv="Expires" content="0">
     <!-- v3.17.9 (FR-3.17.9): 关键 CSS 提前于脚本加载（render-blocking 但并行下载，保证首屏样式先就绪）；
          脚本全部 defer（并行下载、按序执行于 DOM 解析后），首屏 DOM + 启动骨架屏先渲染 -->
-    <script nonce="{{NONCE}}" defer src="/static/lib/vue.global.prod.min.js"></script>
+    <!-- V6.0 (PRD-6.0 D1): 弃 CDN vue/element-plus/zh-cn script — 改由 src/globals.js 经 npm 依赖挂载全局 (window.Vue/window.ElementPlus) -->
     <link rel="stylesheet" href="/static/lib/element-plus.css">
-    <script nonce="{{NONCE}}" defer src="/static/lib/element-plus.min.js"></script>
     <!-- v3.17.9 (FR-3.17.9): echarts 改为按需懒加载（非首屏，见 charts.js ensureEcharts），不再同步阻塞首屏 -->
-    <script nonce="{{NONCE}}" defer src="/static/lib/zh-cn.min.js"></script>
     <link rel="stylesheet" href="/static/css/tokens.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/themes.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/layout.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/animations.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/responsive.css?v={{APP_VERSION}}">
+    <!-- V6.0 (PRD-6.0): 导航系统样式 -->
+    <link rel="stylesheet" href="/static/css/nav.css?v={{APP_VERSION}}">
+    <link rel="stylesheet" href="/static/css/header.css?v={{APP_VERSION}}">
 
     <!-- Module JS (v3.17.9: 全部 defer, 按文档顺序执行, 依赖通过 window.__quantModules 全局保持) -->
     <!-- v3.17.10 (FR-3.17.10): 个性化与搜索纯模块（拼音/偏好/最近查看/i18n，早于 app-logic 装配） -->
@@ -118,31 +119,27 @@
 
         <!-- 主界面 --><template v-else>
             <div :class="'icon-system-' + iconSystem">
-            <!-- 桌面端左侧导航 (v3.6.0-T3: 组件化) -->
+            <!-- V6.0 (PRD-6.0): 一级侧边栏 SFC 化 (qc-sidebar) -->
             <qc-sidebar></qc-sidebar>
 
             <!-- 主内容区 -->
             <div class="main-content" :class="{ expanded: sidebarCollapsed }" @touchstart="onTouchStart" @touchend="onTouchEnd">
 
-                <!-- v3.6.0-T3: 全局 Header + 面包屑 (组件化) -->
-                <qc-global-header></qc-global-header>
-
-                <!-- V4.3-S3: 页面组件动态渲染 — pageComp 映射 currentPage -> 组件名 -->
-                <!-- 懒加载组件(chunk)注册后, :is 每次渲染重新 resolveComponent 即命中 -->
-                <Transition name="fade-slide" mode="out-in">
-                <KeepAlive>
-                <component :is="pageComp"></component>
-                </KeepAlive>
-                </Transition>
+                <!-- V6.0 (PRD-6.0): 顶部 Header 三区 (面包屑/搜索/工具区) + 页面级二级导航 SubNav 包内容 -->
+                <qc-header></qc-header>
+                <qc-subnav>
+                    <!-- V4.3-S3: 页面组件动态渲染 — pageComp 映射 currentPage -> 组件名 -->
+                    <!-- 懒加载组件(chunk)注册后, :is 每次渲染重新 resolveComponent 即命中 -->
+                    <Transition name="fade-slide" mode="out-in">
+                    <KeepAlive>
+                    <component :is="pageComp"></component>
+                    </KeepAlive>
+                    </Transition>
+                </qc-subnav>
             </div>
 
-            <!-- 移动端底部导航 -->
-            <div class="mobile-nav">
-                <div v-for="menu in menus" :key="menu.key" class="mobile-nav-item" :class="{active: currentPage === menu.key}" @click="navigateTo(menu.key, menu.subPages[0] || '')" tabindex="0" role="button" :aria-label="menu.name" @keydown.enter.prevent="navigateTo(menu.key, menu.subPages[0] || '')" @keydown.space.prevent="navigateTo(menu.key, menu.subPages[0] || '')">
-                    <div class="mobile-nav-icon" v-html="sanitizeHtml(menu.icon)"></div>
-                    <div class="mobile-nav-label">{{ menu.name }}</div>
-                </div>
-            </div>
+            <!-- V6.0 (PRD-6.0): 移动端底部 TabBar + 抽屉 (qc-mobile-nav) -->
+            <qc-mobile-nav></qc-mobile-nav>
             </div>
 
             <!-- v3.11 (FR-3.11.1): 智能命令面板 (Ctrl+K) -->

@@ -110,12 +110,14 @@
                 const groupsConfig = ref(null);
 
 const allMenuDefs = [
-                    { key: 'strategies', name: '策略总览', icon: '📈', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
-                    { key: 'calendar', name: '量化日历', icon: '🗓', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', icon: '🤖', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
-                    { key: 'research', name: '策略研究', icon: '🔬', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
-                    { key: 'shortterm', name: '短线复盘', icon: '⚡', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
-                    { key: 'system', name: '系统配置', icon: '⚙', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'execution', 'usage', 'about'], guestSubPages: ['status', 'about'] }
+                    // V6.0 (PRD-6.0 FR-6.0.1): 新增 group(一级分组) + iconName(Lucide 图标) 字段
+                    // 分组: research=量化投研 / platform=平台管理
+                    { key: 'strategies', name: '策略总览', icon: '📈', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
+                    { key: 'calendar', name: '量化日历', icon: '🗓', iconName: 'calendar', group: 'research', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
+                    { key: 'ai', name: '智能评估', icon: '🤖', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
+                    { key: 'research', name: '策略研究', icon: '🔬', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
+                    { key: 'shortterm', name: '短线复盘', icon: '⚡', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
+                    { key: 'system', name: '系统配置', icon: '⚙', iconName: 'settings', group: 'platform', subPages: ['status', 'autoeval', 'datasource', 'feature', 'datadict', 'user', 'execution', 'usage', 'about'], guestSubPages: ['status', 'about'] }
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';

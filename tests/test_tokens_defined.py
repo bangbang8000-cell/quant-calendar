@@ -33,7 +33,7 @@ def _used_tokens():
             if not (n.endswith(".css") or n.endswith(".js")):
                 continue
             p = os.path.join(root, n)
-            if "dist" in p or "lib" in p:
+            if "dist" in p or "lib" in p or "node_modules" in p:
                 continue
             src = open(p, encoding="utf-8").read()
             for m in VAR_USE_RE.finditer(src):

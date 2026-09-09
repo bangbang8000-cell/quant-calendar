@@ -158,6 +158,8 @@ def test_no_native_confirm():
             if not fn.endswith(".js") or fn.endswith(".min.js"):
                 continue
             p = os.path.join(root, fn)
+            if "node_modules" in p or "dist" in p or "lib" in p:
+                continue  # V6.0: node_modules 第三方源码不入自有代码扫描
             with open(p, encoding="utf-8") as f:
                 for i, line in enumerate(f, 1):
                     if re.search(r"\bconfirm\(", line) and "ElMessageBox" not in line:
@@ -194,6 +196,8 @@ def test_all_vhtml_sanitized():
             if not (fn.endswith(".js") or fn == "index.html") or fn.endswith(".min.js"):
                 continue
             p = os.path.join(root, fn)
+            if "node_modules" in p or "dist" in p or "lib" in p:
+                continue  # V6.0: node_modules 第三方源码不入自有代码扫描
             with open(p, encoding="utf-8") as f:
                 for i, line in enumerate(f, 1):
                     if line.lstrip().startswith("//"):
@@ -362,10 +366,10 @@ def test_inline_style_governance():
 # ─── v3.16 (16.10 / FR-3.16.8) 质量护栏回归 ─────────────────────────────
 
 def test_seven_themes_defined():
-    """FR-3.16.8 (16.10): 主题数量应为 7（前端 themes.css 数据主题块）"""
+    """FR-3.16.8 (16.10) + V6.0 (PRD-6.0 FR-6.0.6): 主题数量 8（V6.0 新增 gold 默认主题）"""
     css = _read("css/themes.css")
     themes = re.findall(r'data-theme="([^"]+)"', css)
-    assert len(set(themes)) == 7, f"应恰有 7 个主题，当前 {len(set(themes))}: {sorted(set(themes))}"
+    assert len(set(themes)) == 8, f"应恰有 8 个主题，当前 {len(set(themes))}: {sorted(set(themes))}"
 
 
 def test_state_panel_four_states():
@@ -1034,12 +1038,13 @@ def test_index_all_external_scripts_deferred():
     """FR-3.17.9: index.html 全部外链 <script src> 均带 defer（并行下载、按序执行，首屏不被阻塞）；
     非首屏大组件同样以 defer 在首屏清单注册（避免挂载后注册触发 KeepAlive 重建错误）"""
     # V4.3 (方案A): 业务 JS 由 src/main.js 经 Vite 打包为单一 chunk (defer 语义天然满足)
+    # V6.0 (PRD-6.0 D1): 弃 CDN vue/element-plus script, 外部脚本收敛为 /src/main.js (module)
     idx = _read("index.html")
     src_tags = re.findall(r'<script[^>]*src="([^"]+)"[^>]*>', idx)
     for m in re.finditer(r'<script[^>]*src="[^"]+"[^>]*>', idx):
         tag = m.group(0)
         assert "defer" in tag or 'type="module"' in tag, f"脚本未加 defer/module: {tag}"
-    assert len(src_tags) >= 4, f"脚本数量异常: {len(src_tags)}"
+    assert len(src_tags) >= 1, f"脚本数量异常: {len(src_tags)}"
     assert "/src/main.js" in idx, "应引用构建入口 main.js (V4.3)"
     main = _read("src/main.js")
     assert "components/dialogs/stock-detail.js" in main, "对话框组件应在构建入口 (V4.3)"

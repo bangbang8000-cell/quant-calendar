@@ -7,6 +7,7 @@
 (function() {
 
   // 7 theme definitions (for UI picker)
+  // V6.0 (PRD-6.0 FR-6.0.6): 新增 gold 主题并设为默认（保留用户已保存主题优先）
   const themes = {
     'tech-blue':       { name: '科技蓝', icon: '🔵', color: '#1d4ed8' },
     'rose-red':        { name: '玫瑰红', icon: '🔴', color: '#E63946' },
@@ -15,6 +16,7 @@
     'classic-red':     { name: '经典红', icon: '💗', color: '#dc2626' },
     'classic-gold':    { name: '经典金', icon: '🟨', color: '#b8922a' },
     'dark-pro':        { name: '暗色专业', icon: '🌙', color: '#64ffda' },
+    'gold':            { name: '金色', icon: '🌟', color: '#b8922a' },
   };
 
   // 唯一权威实现：设置 data-theme 属性 + 持久化到 localStorage
@@ -26,8 +28,9 @@
   }
 
   // Apply saved theme on load (启动兜底：优先恢复本地已保存主题)
+  // V6.0 (FR-6.0.6): 默认主题改为 gold（新用户见金色，老用户偏好保留）
   const saved = localStorage.getItem('quant_theme');
-  applyTheme(saved || 'vibrant-orange');
+  applyTheme(saved || 'gold');
 
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.themes = {

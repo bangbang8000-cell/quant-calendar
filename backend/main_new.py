@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
 # v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破; 3.17.5: 数据源延迟趋势+数据健康度移入用量统计
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
-APP_VERSION = "5.4.1"  # V5.4.1: 重点跟踪修复段 — 分钟K线可用化(券商版优先+限频+降级日线) + 入池历史接线修复 + 界面视觉增强; 基线 5.4.0
+APP_VERSION = "6.0.0"  # V6.0 (PRD-6.0): 导航与菜单系统重构 — 一级侧边栏分组/折叠/子菜单 + Header三区(面包屑/搜索/工具区) + 页面级二级导航(顶部Tab/左侧子导航) + 移动端TabBar/抽屉; 金色默认主题; 弃CDN改npm(SFC化); 基线 5.4.1
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404

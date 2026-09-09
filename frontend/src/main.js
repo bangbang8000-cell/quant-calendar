@@ -1,6 +1,9 @@
 // V4.3 (方案A) 构建入口: 按 index.html 原始 script 顺序副作用导入全部业务 JS
 // 由 gen_mainjs.py 生成, 顺序改动需同步 index.html 与本题
+// V6.0 (PRD-6.0 FR-6.0.7): 首行引入 globals.js — 挂载 window.Vue/window.ElementPlus
+//   (npm 依赖替代原 CDN script), 业务模块执行前全局就绪
 
+import './globals.js'
 import '../js/themes.js'
 import '../js/i18n.js'
 import '../js/locales/zh-CN.js'
@@ -26,6 +29,17 @@ import '../js/backtest.js'
 import '../js/merrill.js'
 import '../js/echarts-theme.js'
 import '../js/components/sidebar.js'
+// V6.0 (PRD-6.0): 导航组件 SFC 化 — 接管 qc-sidebar(覆盖旧组件) / qc-header / qc-subnav / qc-mobile-nav
+// 注册: SFC 默认导出为对象字面量(plugin-vue 可靠合并 template render), import 后写入 __quantComponents
+import SidebarV6 from './components/Sidebar.vue'
+import HeaderV6 from './components/Header.vue'
+import SubNavV6 from './components/SubNav.vue'
+import MobileNavV6 from './components/MobileNav.vue'
+if (!window.__quantComponents) window.__quantComponents = {}
+window.__quantComponents.Sidebar = SidebarV6
+window.__quantComponents.Header = HeaderV6
+window.__quantComponents.SubNav = SubNavV6
+window.__quantComponents.MobileNav = MobileNavV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

@@ -66,6 +66,11 @@
         [data-theme="tech-blue"] {
             --primary-color: #1d4ed8;
             --primary-rgb: 29, 78, 216;
+            /* V6.0: qc 导航主色随主题 */
+            --qc-primary: #1d4ed8;
+            --qc-primary-50: #eff6ff; --qc-primary-100: #dbeafe;
+            --qc-primary-500: #3b82f6; --qc-primary-600: #2563eb;
+            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #60a5fa 100%);
             --card-border: #bfdbfe;
@@ -100,6 +105,11 @@
         [data-theme="rose-red"] {
             --primary-color: #E63946;
             --primary-rgb: 230, 57, 70;
+            /* V6.0: qc 导航主色随主题 */
+            --qc-primary: #e63946;
+            --qc-primary-50: #fef2f2; --qc-primary-100: #fee2e2;
+            --qc-primary-500: #ef4444; --qc-primary-600: #e63946;
+            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b;
             --secondary-color: #FF6B6B;
             --gradient: linear-gradient(135deg, #780000 0%, #E63946 50%, #FF6B6B 100%);
             --card-border: #fecaca;
@@ -133,6 +143,11 @@
         [data-theme="vibrant-orange"] {
             --primary-color: #a07a20;
             --primary-rgb: 184, 146, 42;
+            /* V6.0: qc 导航主色随主题 (金色系) */
+            --qc-primary: #b8922a;
+            --qc-primary-50: #fcf9f0; --qc-primary-100: #f8f0d8;
+            --qc-primary-500: #c49b2e; --qc-primary-600: #b8922a;
+            --qc-primary-700: #8f6f1f; --qc-primary-800: #6d5218;
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%);
             --card-border: #e8d5a3;
@@ -181,6 +196,11 @@
         /* ⚪ 经典白 - 纯净白底+蓝色点缀 */
         [data-theme="classic-white"] {
             --primary-color: #2563eb;
+            /* V6.0: qc 导航主色随主题 */
+            --qc-primary: #2563eb;
+            --qc-primary-50: #eff6ff; --qc-primary-100: #dbeafe;
+            --qc-primary-500: #3b82f6; --qc-primary-600: #2563eb;
+            --qc-primary-700: #1d4ed8; --qc-primary-800: #1e40af;
             --bg-page: #ffffff;
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
@@ -205,6 +225,11 @@
         /* ⚪ 经典红 — 白底+红色点缀 */
         [data-theme="classic-red"] {
             --primary-color: #dc2626;
+            /* V6.0: qc 导航主色随主题 */
+            --qc-primary: #dc2626;
+            --qc-primary-50: #fef2f2; --qc-primary-100: #fee2e2;
+            --qc-primary-500: #ef4444; --qc-primary-600: #dc2626;
+            --qc-primary-700: #b91c1c; --qc-primary-800: #991b1b;
             --bg-page: #fafafa;
             --primary-rgb: 220, 38, 38;
             --secondary-color: #f87171;
@@ -229,6 +254,11 @@
         /* ⚪ 经典金 — 白底+金色点缀 */
         [data-theme="classic-gold"] {
             --primary-color: #a07a20;
+            /* V6.0: qc 导航主色随主题 (金色系) */
+            --qc-primary: #b8922a;
+            --qc-primary-50: #fcf9f0; --qc-primary-100: #f8f0d8;
+            --qc-primary-500: #c49b2e; --qc-primary-600: #b8922a;
+            --qc-primary-700: #8f6f1f; --qc-primary-800: #6d5218;
             --bg-page: #fdfaf3;
             --primary-rgb: 184, 146, 42;
             --secondary-color: #e6c450;
@@ -274,6 +304,22 @@
         [data-theme="dark-pro"] {
             --primary-color: #64ffda;
             --primary-rgb: 100, 255, 218;
+            /* V6.0: qc 暗色导航 token 覆盖 (与 tokens.css .dark 一致) */
+            --qc-background: #0f0f23; --qc-foreground: #e6f1ff;
+            --qc-card: #1a1a3e; --qc-card-foreground: #e6f1ff;
+            --qc-popover: #1a1a3e; --qc-popover-foreground: #e6f1ff;
+            --qc-primary: #ffd166;
+            --qc-primary-foreground: #1a1814;
+            --qc-muted: #1e2a4a; --qc-muted-foreground: #8892b0;
+            --qc-border: #2e4162; --qc-input: #2e4162; --qc-ring: #e6cf86;
+            --qc-nav-bg: #141431; --qc-nav-border: #2e4162;
+            --qc-nav-item-default: #8892b0; --qc-nav-item-hover: #e6f1ff;
+            --qc-nav-item-hover-bg: #1e2a4a;
+            --qc-nav-item-active: #ffd166; --qc-nav-item-active-bg: #1e2a3a;
+            --qc-nav-item-active-border: #ffd166;
+            --qc-nav-group-label: #64748b;
+            --qc-nav-badge-bg: #1e2a4a; --qc-nav-badge-text: #ffd166;
+            --qc-overlay: rgba(0, 0, 0, 0.6);
             --secondary-color: #5e6ad2;
             --gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #233554 100%);
             --card-border: #233554;
@@ -324,6 +370,44 @@
             --btn-primary-plain-bg: rgba(100,255,218,0.08); --btn-primary-plain-border: rgba(100,255,218,0.25); --btn-primary-plain-color: #64ffda;
             --btn-primary-plain-hover-bg: rgba(100,255,218,0.15); --btn-primary-plain-hover-border: #64ffda;
             --btn-primary-text-color: #64ffda;
+        }
+        /* 🟠 V6.0 金色主题 (PRD-6.0 FR-6.0.6) — 默认主题, 对齐 colors_and_type.css 金色 scale */
+        [data-theme="gold"] {
+            --primary-color: #a07a20;
+            --primary-rgb: 184, 146, 42;
+            /* V6.0: qc 导航主色 = 金色默认 */
+            --qc-primary: #b8922a;
+            --qc-primary-50: #fcf9f0; --qc-primary-100: #f8f0d8;
+            --qc-primary-500: #c49b2e; --qc-primary-600: #b8922a;
+            --qc-primary-700: #8f6f1f; --qc-primary-800: #6d5218;
+            --secondary-color: #e6c450;
+            --gradient: linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%);
+            --card-border: #e8d5a3;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847;
+            --text-link: #8b6914;
+            --bg-page: #fdfaf3; --bg-card: #fff;
+            --bg-card-header: #fdf8ec;
+            --bg-sidebar: rgba(255,255,255,0.95);
+            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
+            --bg-dialog: rgba(255,255,255,0.95);
+            --bg-input: #fff; --bg-hover: #fef5e0;
+            --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
+            --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
+            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.08);
+            --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
+            --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
+            --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
+            --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
+            --badge-warning-bg: #fffbeb; --badge-warning-text: #b45309;
+            --badge-danger-bg: #fef2f2; --badge-danger-text: #b91c1c;
+            --badge-info-bg: #eff6ff; --badge-info-text: #1d4ed8;
+            --el-success: #16a34a; --el-warning: #f59e0b; --el-danger: #dc2626; --el-info: #1d4ed8;
+            --btn-primary-bg: #b8922a; --btn-primary-border: #b8922a; --btn-primary-color: #fff;
+            --btn-primary-hover-bg: #9a7a1e; --btn-primary-hover-border: #9a7a1e;
+            --btn-primary-active-bg: #8b6914; --btn-primary-active-border: #8b6914;
+            --btn-primary-plain-bg: rgba(184,146,42,0.08); --btn-primary-plain-border: rgba(184,146,42,0.25); --btn-primary-plain-color: #b8922a;
+            --btn-primary-plain-hover-bg: rgba(184,146,42,0.15); --btn-primary-plain-hover-border: #b8922a;
+            --btn-primary-text-color: #b8922a;
         }
         /* 🌙 暗色专业版 - 默认按钮 */
         [data-theme="dark-pro"] .el-button--default {
