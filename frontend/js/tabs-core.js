@@ -86,3 +86,13 @@
     keyOf: keyOf,
   };
 });
+// V6.1: 统一注册到 __quantModules (与其它前端模块一致; UMD 默认挂 window.QuantTabsCore)
+if (typeof window !== 'undefined') {
+  if (!window.__quantModules) window.__quantModules = {};
+  var _tabsCore = (typeof module === 'object' && module.exports)
+    ? module.exports
+    : (typeof self !== 'undefined' && self.QuantTabsCore)
+      ? self.QuantTabsCore
+      : (window.QuantTabsCore || null);
+  if (_tabsCore) window.__quantModules.tabsCore = _tabsCore;
+}
