@@ -1,0 +1,174 @@
+/* ===== components.css v1.0 ===== */
+/* DS-6.0 §2 基础组件统一视觉 (D1)
+   克制专业 + 金色点缀: 静态卡边框优先 / EP 变量级覆盖收敛 / 状态点 / 空态 / 骨架
+   全部颜色经 --qc-* token (硬编码仅限 qc-allow-hardcode 行) */
+
+/* ─── §2.1 卡片 ─────────────────────────────────────── */
+.qc-card {
+  background: var(--qc-card);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  padding: var(--qc-space-4);
+  min-width: 0;
+}
+.qc-card + .qc-card { margin-top: var(--qc-space-4); }
+/* hover 仅轻阴影, 不上浮 (克制) */
+.qc-card-hover { transition: box-shadow var(--duration-base), border-color var(--duration-base); }
+.qc-card-hover:hover { box-shadow: var(--qc-shadow-sm); border-color: var(--qc-neutral-300); }
+
+/* D1: 既有 .card 收敛到 DS-6.0 克制视觉 — 边框优先 + 轻阴影 (与 .qc-card 同源, 4 大高频页即得统一) */
+.card {
+  border: 1px solid var(--qc-border);
+  box-shadow: var(--qc-shadow-sm);
+}
+
+/* KPI 数据卡 */
+.qc-kpi { display: flex; flex-direction: column; gap: var(--qc-space-1); }
+.qc-kpi-label { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); font-weight: var(--qc-font-weight-medium); }
+.qc-kpi-value {
+  font-size: 30px;
+  font-weight: var(--qc-font-weight-bold);
+  color: var(--qc-foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.qc-kpi-trend { font-size: var(--qc-font-size-sm); display: inline-flex; align-items: center; gap: var(--qc-space-1); font-variant-numeric: tabular-nums; }
+.qc-kpi-trend.is-up { color: var(--qc-market-up); }
+.qc-kpi-trend.is-down { color: var(--qc-market-down); }
+.qc-kpi-trend.is-flat { color: var(--qc-muted-foreground); }
+
+/* ─── §2.2 表格 (Element Plus CSS 变量覆盖, 全站收敛) ── */
+/* 注: EP 将 --el-table-* 变量声明于 .el-table 作用域, 覆盖必须挂在 .el-table 上 (:root 会被遮蔽) */
+.el-table {
+  --el-table-border-color: var(--qc-border);
+  --el-table-header-bg-color: var(--qc-muted);
+  --el-table-header-text-color: var(--qc-muted-foreground);
+  --el-table-text-color: var(--qc-foreground);
+  --el-table-bg-color: var(--qc-card);
+  --el-table-tr-bg-color: var(--qc-card);
+  --el-table-row-hover-bg-color: var(--qc-nav-item-hover-bg);
+}
+.el-table th.el-table__cell {
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+}
+.el-table .el-table__row { height: 44px; }
+/* 数字列等宽 (量化指标) */
+.el-table .cell { font-variant-numeric: tabular-nums; }
+
+/* 状态点列: 8px 圆点 + 语义色 (借鉴 QuantDinger) */
+.qc-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.qc-status-dot.is-success { background: var(--qc-state-success); }
+.qc-status-dot.is-warning { background: var(--qc-state-warning); }
+.qc-status-dot.is-danger  { background: var(--qc-state-error); }
+.qc-status-dot.is-info    { background: var(--qc-state-info); }
+.qc-status-dot.is-running { background: var(--qc-primary-500); }
+.qc-status-cell { display: inline-flex; align-items: center; gap: var(--qc-space-2); }
+
+/* ─── §2.3 按钮 (Element Plus 变量级覆盖) ────────────── */
+/* 注: 主按钮/次按钮已由 themes.css --btn-primary-* 全量 token 化 (gold 主题对齐 §2.3),
+   此处仅补充字重统一 + 危险/文本变体对齐 DS-6.0 语义色 */
+.el-button { font-weight: var(--qc-font-weight-medium); }
+/* 危险按钮 */
+.el-button--danger {
+  --el-button-bg-color: var(--qc-state-error);
+  --el-button-border-color: var(--qc-state-error);
+  --el-button-text-color: var(--qc-neutral-0);
+  --el-button-hover-bg-color: var(--qc-state-error);
+  --el-button-hover-border-color: var(--qc-state-error);
+  --el-button-active-bg-color: var(--qc-state-error);
+  --el-button-active-border-color: var(--qc-state-error);
+}
+/* 文本按钮: 金色文字 */
+.el-button--text { color: var(--qc-primary-700); }
+.el-button--text:hover { color: var(--qc-primary-600); }
+
+/* ─── §2.4 表单 (Element Plus 变量级覆盖) ────────────── */
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--qc-input) inset;
+  transition: box-shadow var(--duration-fast);
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px var(--qc-ring) inset !important;
+}
+.el-select .el-select__wrapper { box-shadow: 0 0 0 1px var(--qc-input) inset; }
+.el-select .el-select__wrapper.is-focused { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
+.el-textarea__inner { box-shadow: 0 0 0 1px var(--qc-input) inset; }
+.el-textarea__inner:focus { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
+.el-form-item__label { font-size: 13px; color: var(--qc-muted-foreground); }
+.el-switch.is-checked { --el-switch-on-color: var(--qc-primary); }
+.el-checkbox__input.is-checked .el-checkbox__inner { background: var(--qc-primary); border-color: var(--qc-primary); }
+.el-radio__input.is-checked .el-radio__inner { background: var(--qc-primary); border-color: var(--qc-primary); }
+.el-radio__input.is-checked + .el-radio__label { color: var(--qc-primary-700); }
+
+/* ─── §2.5 弹窗 / 抽屉 / 下拉 ─────────────────────────── */
+.el-dialog {
+  border-radius: var(--qc-radius-xl);
+  box-shadow: var(--qc-shadow-lg);
+}
+.el-overlay { background-color: var(--qc-overlay); }
+.el-drawer { border-radius: var(--qc-radius-large) 0 0 var(--qc-radius-large); }
+.el-dropdown-menu, .el-popper.is-light { border-radius: var(--qc-radius-large); box-shadow: var(--qc-shadow-md); }
+
+/* ─── §2.7 徽标 / chip ───────────────────────────────── */
+/* 金色徽标 pill (导航徽标同源) */
+.qc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--qc-space-2);
+  height: 20px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-nav-badge-bg);
+  color: var(--qc-nav-badge-text);
+  font-size: var(--qc-font-size-xs);
+  font-weight: var(--qc-font-weight-semibold);
+  line-height: 1;
+}
+/* 语义 chip: 12px 圆角 full, 沿用 --badge-* 体系 */
+.qc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--qc-space-2);
+  border-radius: var(--qc-radius-full);
+  font-size: var(--qc-font-size-sm);
+  line-height: 1.4;
+}
+.qc-chip.is-success { background: var(--badge-success-bg); color: var(--badge-success-text); }
+.qc-chip.is-warning { background: var(--badge-warning-bg); color: var(--badge-warning-text); }
+.qc-chip.is-danger  { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
+.qc-chip.is-info    { background: var(--badge-info-bg); color: var(--badge-info-text); }
+.qc-chip.is-gold    { background: var(--qc-primary-100); color: var(--qc-primary-800); }
+
+/* ─── §2.8 空态 / 错误态 / 骨架 ───────────────────────── */
+.qc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qc-space-10) var(--qc-space-6);
+  text-align: center;
+  color: var(--qc-muted-foreground);
+}
+.qc-empty-icon { font-size: 40px; line-height: 1; opacity: 0.6; }
+.qc-empty-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
+.qc-empty-desc { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); margin-top: var(--qc-space-1); }
+.qc-empty-action { margin-top: var(--qc-space-4); }
+
+.qc-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qc-space-10) var(--qc-space-6);
+  text-align: center;
+}
+.qc-error-icon { font-size: 40px; line-height: 1; opacity: 0.7; }
+.qc-error-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
+.qc-error-action { margin-top: var(--qc-space-4); }
+
+.qc-skeleton {
+  background: var(--qc-muted);
+  border-radius: var(--qc-radius-medium);
+  animation: qc-pulse 1.6s ease-in-out infinite;
+}
+@keyframes qc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }

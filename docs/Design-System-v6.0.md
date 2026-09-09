@@ -226,10 +226,13 @@
 
 ## 8. 待办清单（含上轮 V6.0 遗留修复）
 
-- [ ] A1 `.qc-subnav-tab` 补透明底（灰底缺陷）
-- [ ] A2 补 `.qc-page-title` 18px/600
-- [ ] B1 分组标签 `--qc-neutral-500`
-- [ ] B2 选中项背景 #fdfaf3 + 文字 800
-- [ ] C1 `.qc-subnav-body` padding-top 16px
-- [ ] C3 折叠 Tooltip 延迟
-- [ ] D0-D3 里程碑开发
+- [x] A1 `.qc-subnav-tab` 补透明底（灰底缺陷）✅ D0
+- [x] A2 补 `.qc-page-title` 18px/600 ✅ D0
+- [x] B1 分组标签 `--qc-neutral-500` ✅ D0
+- [x] B2 选中项背景 #fdfaf3 + 文字 800 ✅ D0
+- [x] C1 `.qc-subnav-body` padding-top 16px ✅ D0
+- [x] C3 折叠 Tooltip 延迟 ✅ D0
+- [x] D0 设计地基：tokens 补全 + themes 统一 + ECharts 色板金化 ✅ 提交 a459de35
+- [x] D1 基础组件：components.css 组件层 + EP 覆盖收敛 + 状态点/空态/骨架 + 门禁 ✅
+- [ ] D2 页面编排：策略总览 Dashboard 化 + 日历/智能评估/系统配置布局落地
+- [ ] D3 收尾：策略研究/短线复盘 + 动效/响应式/无障碍 + 回归 + 6.0.1 出口
