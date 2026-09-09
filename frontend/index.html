@@ -120,16 +120,22 @@
         </div>
 
         <!-- 主界面 --><template v-else>
-            <div :class="'icon-system-' + iconSystem">
+            <div>
             <!-- V6.0 (PRD-6.0): 一级侧边栏 SFC 化 (qc-sidebar) -->
             <qc-sidebar></qc-sidebar>
 
-            <!-- 主内容区 -->
+            <!-- V6.1 (PRD-6.1 F1): 中栏二级导航 — 独立常驻, 不再包含页面内容 slot -->
+            <qc-subnav></qc-subnav>
+
+            <!-- 主内容区 (工作区) -->
             <div class="main-content" :class="{ expanded: sidebarCollapsed }" @touchstart="onTouchStart" @touchend="onTouchEnd">
 
-                <!-- V6.0 (PRD-6.0): 顶部 Header 三区 (面包屑/搜索/工具区) + 页面级二级导航 SubNav 包内容 -->
+                <!-- V6.0 (PRD-6.0): 顶部 Header 三区 (面包屑/搜索/工具区) -->
                 <qc-header></qc-header>
-                <qc-subnav>
+                <!-- V6.1 (PRD-6.1 F1): 工作区内容独立容器 — 页面组件仅渲染自身内容 -->
+                <div class="qc-work-area-content">
+                    <!-- V6.1 (PRD-6.1 F8): 动态页签栏 — 已打开的二级页面留存 -->
+                    <qc-dynamic-tabs></qc-dynamic-tabs>
                     <!-- V4.3-S3: 页面组件动态渲染 — pageComp 映射 currentPage -> 组件名 -->
                     <!-- 懒加载组件(chunk)注册后, :is 每次渲染重新 resolveComponent 即命中 -->
                     <Transition name="fade-slide" mode="out-in">
@@ -137,7 +143,7 @@
                     <component :is="pageComp"></component>
                     </KeepAlive>
                     </Transition>
-                </qc-subnav>
+                </div>
             </div>
 
             <!-- V6.0 (PRD-6.0): 移动端底部 TabBar + 抽屉 (qc-mobile-nav) -->

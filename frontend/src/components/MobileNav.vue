@@ -23,11 +23,24 @@ export default {
     if (!state) return {}
     const drawerOpen = ref(false)
     const drawerFocusRef = ref(null)
+    // V6.1 (PRD-6.1 F1): 抽屉内二级展开状态 (key -> bool)
+    const drawerExpanded = ref({})
 
     const menus = computed(() => (state.menus && state.menus.value) || [])
     const currentPage = computed(() => (state.currentPage && state.currentPage.value) || '')
     const GROUP_LABELS = { research: '量化投研', platform: '平台管理' }
     const GROUPS = ['research', 'platform']
+
+    // V6.1: 二级可达 — 一级项展开/收起二级子页
+    function hasSub(menu) { return Array.isArray(menu.subPages) && menu.subPages.length > 0 }
+    function toggleDrawerMenu(menu) {
+      if (!hasSub(menu)) return
+      drawerExpanded.value[menu.key] = !drawerExpanded.value[menu.key]
+    }
+    function isDrawerSubActive(menu, sp) {
+      return currentPage.value === menu.key && state.currentSubPage && state.currentSubPage.value === sp
+    }
+    function subLabel(sp) { return (state.subPageNames && state.subPageNames[sp]) || sp }
 
     async function goTab(tab) {
       const menu = menus.value.find((m) => m.key === tab.key)
@@ -65,8 +78,9 @@ export default {
     })
 
     return {
-      state, TABS, menus, currentPage, drawerOpen, drawerFocusRef,
+      state, TABS, menus, currentPage, drawerOpen, drawerFocusRef, drawerExpanded,
       GROUP_LABELS, GROUPS,
+      hasSub, toggleDrawerMenu, isDrawerSubActive, subLabel,
       goTab, goMenu, openDrawer, closeDrawer,
     }
   },
@@ -93,14 +107,16 @@ export default {
     <div v-if="drawerOpen" class="qc-drawer" role="dialog" aria-modal="true" aria-label="导航抽屉">
       <div class="qc-drawer-header">
         <div class="qc-drawer-brand">
-          <svg class="qc-logo-mark" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
-            <!-- P2-7: 单主色 var(--qc-primary-600) + opacity 表现 K 线高低 (handover 4.1) -->
-            <rect x="4" y="7" width="4" height="10" rx="1" fill="var(--qc-primary-600)"/>
-            <line x1="6" y1="4" x2="6" y2="20" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
-            <rect x="10" y="11" width="4" height="6" rx="1" fill="var(--qc-primary-600)" opacity="0.7"/>
-            <line x1="12" y1="5" x2="12" y2="19" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
-            <rect x="16" y="4" width="4" height="13" rx="1" fill="var(--qc-primary-600)" opacity="0.85"/>
-            <line x1="18" y1="3" x2="18" y2="21" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+          <!-- V6.1 (PRD-6.1 F6): 还原彩色 K 线 Logo — 与桌面/登录页一致 -->
+          <svg class="qc-logo-mark" viewBox="0 0 100 100" width="26" height="26" aria-label="量化日历 logo">
+            <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
+            <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>
+            <line x1="20" y1="78" x2="82" y2="78" stroke="var(--logo-border)" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
+            <rect x="22" y="58" width="15" height="20" rx="3.5" fill="var(--logo-blue)" opacity="0.95"/>
+            <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="var(--logo-yellow)" opacity="0.95"/>
+            <rect x="63" y="26" width="15" height="52" rx="3.5" fill="var(--logo-red)"/>
+            <rect x="63" y="26" width="15" height="14" rx="3.5" fill="var(--logo-white)" opacity="0.35"/>
+            <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="var(--logo-border)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
           </svg>
           <span>{{ state.t('login.title') }}</span>
         </div>
@@ -112,22 +128,49 @@ export default {
         <template v-for="group in GROUPS" :key="group">
           <div v-if="menus.some((m) => m.group === group)">
             <div class="qc-nav-group-label">{{ GROUP_LABELS[group] }}</div>
-            <a
+            <div
               v-for="menu in menus.filter((m) => m.group === group)" :key="menu.key"
-              class="qc-sidebar-item" :class="{ 'is-active': currentPage === menu.key }"
-              :href="'#' + menu.key"
-              :aria-current="currentPage === menu.key ? 'page' : null"
-              @click.prevent="goMenu(menu)"
+              class="qc-drawer-menu"
             >
-              <AppIcon :name="menu.iconName || ''" :size="18" />
-              <span class="qc-sidebar-label">{{ menu.name }}</span>
-            </a>
+              <div class="qc-drawer-menu-row" :class="{ 'is-active': currentPage === menu.key }">
+                <!-- V6.1: 一级项 — 有二级时展开/收起, 无二级直接跳转 -->
+                <a
+                  class="qc-sidebar-item" :class="{ 'is-active': currentPage === menu.key }"
+                  :href="'#' + menu.key"
+                  :aria-current="currentPage === menu.key ? 'page' : null"
+                  @click.prevent="hasSub(menu) ? toggleDrawerMenu(menu) : goMenu(menu)"
+                >
+                  <AppIcon :name="menu.iconName || ''" :size="18" />
+                  <span class="qc-sidebar-label">{{ menu.name }}</span>
+                </a>
+                <button
+                  v-if="hasSub(menu)"
+                  class="qc-sidebar-chevron" :class="{ 'is-open': drawerExpanded[menu.key] }"
+                  :aria-expanded="!!drawerExpanded[menu.key]" aria-label="展开子菜单"
+                  @click="toggleDrawerMenu(menu)"
+                >
+                  <AppIcon name="chevron-down" :size="14" />
+                </button>
+              </div>
+              <!-- V6.1: 抽屉内二级子页 -->
+              <div v-if="drawerExpanded[menu.key]" class="qc-drawer-children">
+                <a
+                  v-for="sp in menu.subPages" :key="sp"
+                  class="qc-subnav-item" :class="{ 'is-active': isDrawerSubActive(menu, sp) }"
+                  :href="'#' + menu.key + '/' + sp"
+                  @click.prevent="goMenu(menu, sp)"
+                >
+                  <span>{{ subLabel(sp) }}</span>
+                </a>
+              </div>
+            </div>
           </div>
         </template>
       </div>
       <div class="qc-drawer-footer">
-        <button class="qc-icon-btn" :title="state.currentTheme?.value === 'dark-pro' ? '切换亮色主题' : '切换暗色主题'" @click="state.changeTheme && state.changeTheme(state.currentTheme?.value === 'dark-pro' ? 'gold' : 'dark-pro')">
-          <AppIcon :name="state.currentTheme?.value === 'dark-pro' ? 'sun' : 'moon'" :size="18" />
+        <!-- V6.1 (PRD-6.1 F5): 明/暗模式快捷切换 -->
+        <button class="qc-icon-btn" :title="state.currentTheme?.value === 'dark' ? '切换亮色主题' : '切换暗色主题'" @click="state.changeThemeMode && state.changeThemeMode(state.currentTheme?.value === 'dark' ? 'light' : 'dark')">
+          <AppIcon :name="state.currentTheme?.value === 'dark' ? 'sun' : 'moon'" :size="18" />
         </button>
         <button class="qc-icon-btn" title="退出登录" @click="state.handleLogout && state.handleLogout()">
           <AppIcon name="log-out" :size="18" />

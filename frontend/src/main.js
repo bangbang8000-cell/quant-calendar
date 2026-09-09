@@ -14,8 +14,9 @@ import '../js/locales/zh-TW.js'
 import '../js/pinyin.js'
 import '../js/preferences.js'
 import '../js/recent.js'
-import '../js/icons.js'
 import '../js/core.js'
+// V6.1 (PRD-6.1 F8): 动态页签状态机纯函数 (挂载 __quantModules.tabsCore)
+import '../js/tabs-core.js'
 import '../js/charts.js'
 import '../js/ai.js'
 import '../js/system.js'
@@ -35,11 +36,14 @@ import SidebarV6 from './components/Sidebar.vue'
 import HeaderV6 from './components/Header.vue'
 import SubNavV6 from './components/SubNav.vue'
 import MobileNavV6 from './components/MobileNav.vue'
+// V6.1 (PRD-6.1 F8): 动态页签栏
+import DynamicTabsV6 from './components/DynamicTabs.vue'
 if (!window.__quantComponents) window.__quantComponents = {}
 window.__quantComponents.Sidebar = SidebarV6
 window.__quantComponents.Header = HeaderV6
 window.__quantComponents.SubNav = SubNavV6
 window.__quantComponents.MobileNav = MobileNavV6
+window.__quantComponents.DynamicTabs = DynamicTabsV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

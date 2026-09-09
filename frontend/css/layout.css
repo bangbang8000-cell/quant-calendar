@@ -19,6 +19,15 @@
   align-items: center;
   gap: var(--sp-2);
 }
+/* V6.1 (PRD-6.1 F3): 页面组件去重后的轻量操作工具栏 — 替代原 .page-header 标题区 */
+.qc-page-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
 
 /* ─── Card Grid ─── */
 .card-grid {

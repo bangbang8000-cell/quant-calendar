@@ -1,13 +1,12 @@
 <script>
 // V6.0 (PRD-6.0 FR-6.0.3): 页面级二级导航 SFC — 双形态
-// - top-tab  (strategies/calendar/ai/shortterm): 顶部 Tab
-// - left-subnav (research/system): 左侧子导航 (system 含 4 组三级)
-// 页面内容经默认 slot 渲染 (left-subnav 模式下内容在右侧)
+// V6.1 (PRD-6.1 F1): 收敛为「中栏二级常驻」单一形态 — 移除 top-tab/left-subnav 双形态,
+//   页面内容不再经 slot 渲染 (已由 index.html 的 .qc-work-area-content 独立承载)
+//   - system: 分组三级 (SYSTEM_GROUPS)
+//   - 其他一级页: 平铺二级
 // 对象字面量导出, 注册由 main.js 完成
 import { inject, ref, computed } from 'vue'
 import AppIcon from './common/AppIcon.vue'
-
-const TOP_TAB_PAGES = ['strategies', 'calendar', 'ai', 'shortterm']
 
 // 系统配置左侧子导航分组 (PRD 1.2.3)
 // V6.0 (P1-3): 每个叶节点独立 subPage key (status/health/schedule/autoeval/usage/guard),
@@ -38,13 +37,12 @@ const SYSTEM_GROUPS = [
 export default {
   name: 'qc-subnav',
   components: { AppIcon },
-  setup(props, { slots }) {
+  setup() {
     const state = inject('qcState')
-    if (!state) return { slots, mode: 'top-tab' }
+    if (!state) return {}
 
     const currentPage = computed(() => (state.currentPage && state.currentPage.value) || '')
     const currentSubPage = computed(() => (state.currentSubPage && state.currentSubPage.value) || '')
-    const mode = computed(() => TOP_TAB_PAGES.includes(currentPage.value) ? 'top-tab' : 'left-subnav')
     const collapsedGroups = ref({})
 
     const menus = computed(() => (state.menus && state.menus.value) || [])
@@ -58,27 +56,18 @@ export default {
     const subLabel = (sp) => (state.subPageNames && state.subPageNames[sp]) || sp
     const isSubActive = (sp) => currentSubPage.value === sp
 
+    // V6.1 (PRD-6.1 F8): 中栏点击 → 打开/激活动态页签 (经 openTab 走 navigateTo)
     function goSub(sp) {
-      if (state.currentSubPage) state.currentSubPage.value = sp
+      if (state.openTab) state.openTab(currentPage.value, sp)
+      else if (state.currentSubPage) state.currentSubPage.value = sp
       try { localStorage.setItem('quant_last_subpage', sp) } catch (e) {}
     }
     function goSystemItem(item) {
-      if (state.currentSubPage) state.currentSubPage.value = item.key
+      if (state.openTab) state.openTab(currentPage.value, item.key)
+      else if (state.currentSubPage) state.currentSubPage.value = item.key
       try { localStorage.setItem('quant_last_subpage', item.key) } catch (e) {}
     }
     function toggleGroup(label) { collapsedGroups.value[label] = !collapsedGroups.value[label] }
-
-    // 日历页操作区 (从 global-header 迁移): 日期选择 + 刷新 + 导出
-    const isCalendar = computed(() => currentPage.value === 'calendar')
-    const calType = computed(() => {
-      const map = { daily: 'date', weekly: 'week', monthly: 'month', yearly: 'year' }
-      return map[currentSubPage.value] || 'date'
-    })
-    // v-model 需可赋值变量 (可选链不可直接赋值)
-    const selectedDate = computed({
-      get: () => (state.selectedDate && state.selectedDate.value) || '',
-      set: (v) => { if (state.selectedDate) state.selectedDate.value = v },
-    })
 
     // 策略研究左侧子导航图标
     const SUB_ICONS = {
@@ -89,68 +78,21 @@ export default {
     const subIcon = (sp) => SUB_ICONS[sp] || 'circle-dot'
 
     return {
-      state, slots, mode, currentPage, currentSubPage, subPages, currentMenu,
+      state, currentPage, currentSubPage, subPages, currentMenu,
       collapsedGroups, pageTitle, subLabel, isSubActive,
-      goSub, goSystemItem, toggleGroup, SYSTEM_GROUPS,
-      isCalendar, calType, subIcon, selectedDate,
+      goSub, goSystemItem, toggleGroup, SYSTEM_GROUPS, subIcon,
     }
   },
 }
 </script>
 
 <template>
-  <!-- 顶部 Tab 式 -->
-  <div v-if="mode === 'top-tab'" class="qc-subnav qc-subnav-top">
-    <div class="qc-page-title-row">
-      <h1 class="qc-page-title">{{ pageTitle }}</h1>
-      <div v-if="isCalendar" class="qc-page-actions">
-        <el-date-picker
-          v-if="calType === 'date'" v-model="selectedDate" type="date"
-          format="YYYY-MM-DD" value-format="YYYY-MM-DD" :placeholder="state.t('calendar.selectDate')"
-          :disabled-date="state.disabledDate" size="small" @change="state.onDateChange"
-        ></el-date-picker>
-        <el-date-picker
-          v-else-if="calType === 'week'" v-model="selectedDate" type="week"
-          format="YYYY 第w周" value-format="YYYY-MM-DD" :placeholder="state.t('calendar.selectWeek')"
-          :disabled-date="state.disabledDate" size="small" @change="state.onDateChange"
-        ></el-date-picker>
-        <el-date-picker
-          v-else-if="calType === 'month'" v-model="selectedDate" type="month"
-          format="YYYY-MM" value-format="YYYY-MM-DD" :placeholder="state.t('calendar.selectMonth')"
-          :disabled-date="state.disabledDate" size="small" @change="state.onDateChange"
-        ></el-date-picker>
-        <el-date-picker
-          v-else v-model="selectedDate" type="year"
-          format="YYYY" value-format="YYYY-MM-DD" :placeholder="state.t('calendar.selectYear')"
-          :disabled-date="state.disabledDate" size="small" @change="state.onDateChange"
-        ></el-date-picker>
-        <el-button class="ml-8px" size="small" :loading="state.loading?.value" :title="state.t('calendar.refreshData')" @click="state.refreshCalendarData">
-          <AppIcon name="refresh" :size="14" /> {{ state.t('common.refresh') }}
-        </el-button>
-        <el-button class="ml-4px" size="small" :title="state.t('calendar.exportCsv')" @click="state.exportCSV">
-          <AppIcon name="download" :size="14" /> {{ state.t('common.export') }}
-        </el-button>
-        <span class="qc-subnav-lastload" v-if="state.lastLoadTime?.value">{{ state.lastLoadTime.value }}</span>
-      </div>
+  <!-- V6.1 (PRD-6.1 F1): 中栏二级导航 — 固定常驻, 顶部显示当前一级页面名 -->
+  <aside class="qc-subnav-column" aria-label="二级导航">
+    <div class="qc-subnav-column-header">
+      <span class="qc-subnav-current-label">{{ pageTitle }}</span>
     </div>
-    <div class="qc-subnav-tabs" role="tablist">
-      <button
-        v-for="sp in subPages" :key="sp"
-        class="qc-subnav-tab" :class="{ 'is-active': isSubActive(sp) }"
-        role="tab" :aria-selected="isSubActive(sp) ? 'true' : 'false'"
-        @click="goSub(sp)"
-      >
-        {{ subLabel(sp) }}
-      </button>
-    </div>
-    <div class="qc-subnav-body">
-      <slot />
-    </div>
-  </div>
-
-  <!-- 左侧子导航式 -->
-  <div v-else class="qc-subnav qc-subnav-left">
-    <div class="qc-subnav-left-nav">
+    <div class="qc-subnav-column-body">
       <!-- 系统配置: 分组三级 -->
       <template v-if="currentPage === 'system'">
         <div v-for="group in SYSTEM_GROUPS" :key="group.label" class="qc-subnav-group">
@@ -160,7 +102,7 @@ export default {
           </div>
           <template v-if="!collapsedGroups[group.label]">
             <a
-              v-for="item in group.items" :key="item.label"
+              v-for="item in group.items" :key="item.key"
               class="qc-subnav-item" :class="{ 'is-active': isSubActive(item.key) }"
               :href="'#' + item.key"
               @click.prevent="goSystemItem(item)"
@@ -171,7 +113,7 @@ export default {
           </template>
         </div>
       </template>
-      <!-- 策略研究: 平铺二级 -->
+      <!-- 其他一级页: 平铺二级 -->
       <template v-else>
         <a
           v-for="sp in subPages" :key="sp"
@@ -184,11 +126,5 @@ export default {
         </a>
       </template>
     </div>
-    <div class="qc-subnav-left-content">
-      <div class="qc-page-title-row">
-        <h1 class="qc-page-title">{{ pageTitle }}</h1>
-      </div>
-      <slot />
-    </div>
-  </div>
+  </aside>
 </template>

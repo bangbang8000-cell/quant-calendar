@@ -30,8 +30,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="page-header">
-                            <div class="page-title">复盘看板</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
                                 <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
@@ -142,8 +142,8 @@
 
                     <!-- 涨停复盘 -->
                     <div v-if="currentSubPage === 'ztpool'" class="card">
-                        <div class="page-header">
-                            <div class="page-title">涨停复盘</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
                                 <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
@@ -209,8 +209,8 @@
 
                     <!-- 龙虎榜 -->
                     <div v-if="currentSubPage === 'lhb'" class="card">
-                        <div class="page-header">
-                            <div class="page-title">龙虎榜</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
                                 <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
@@ -243,8 +243,8 @@
 
                     <!-- 板块资金 (V5.2.1: 行业/概念资金流, 今日/5日/10日窗口) -->
                     <div v-if="currentSubPage === 'sector'" class="card">
-                        <div class="page-header">
-                            <div class="page-title">板块资金</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-select v-model="sectorType" size="small" style="width:120px" @change="loadSectorFlow">
                                     <el-option label="行业资金流" value="行业资金流"></el-option>
@@ -283,8 +283,8 @@
 
                     <!-- 盘中核验 (V5.2.2: 6 时点快照) -->
                     <div v-if="currentSubPage === 'intraday'" class="card">
-                        <div class="page-header">
-                            <div class="page-title">盘中核验</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>

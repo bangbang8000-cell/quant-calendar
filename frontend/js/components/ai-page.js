@@ -9,10 +9,7 @@
     name: 'qc-ai-page',
     template: `
                 <div v-if="currentPage === 'ai'" key="ai">
-                    <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
-                    <div class="page-header">
-                        <div class="page-title">{{ t('nav.ai') }}</div>
-                    </div>
+                    <!-- V6.1 (PRD-6.1 F3): 移除页内标题 (由中栏/面包屑承载) -->
 
                     <!-- overview: 概览统计 + 快捷操作 -->
                     <div v-if="currentSubPage === 'overview'">

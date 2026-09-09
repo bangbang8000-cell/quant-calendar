@@ -12,15 +12,15 @@
                 <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system+execution 下也渲染 -->
                 <div v-if="currentPage === 'strategies' || (currentPage === 'system' && currentSubPage === 'execution')" key="strategies">
                     <div v-if="currentSubPage === 'overview'">
-<div class="page-header">
-                        <div class="page-title">{{ t('strategies.title') }}</div>
-                        <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
-                        <button type="button" class="bt-entry-btn" @click="navigateTo('research', 'backtest')">回测工作台</button> <!-- V5.0.11: 回测移入策略研究, 入口跳转 -->
-                        <div class="flex-c-gap-12">
-                            <span class="text-base-secondary">{{ t('strategies.latestTradeDay') }}{{ dashboardData.latest_date || '-' }}</span>
-                            <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 (回测入口 + 交易日信息) -->
+                        <div class="qc-page-tools">
+                            <!-- v3.17.4 (FR-3.17.4): 回测工作台入口 -->
+                            <button type="button" class="bt-entry-btn" @click="navigateTo('research', 'backtest')">回测工作台</button> <!-- V5.0.11: 回测移入策略研究, 入口跳转 -->
+                            <div class="flex-c-gap-12">
+                                <span class="text-base-secondary">{{ t('strategies.latestTradeDay') }}{{ dashboardData.latest_date || '-' }}</span>
+                                <span class="text-xs-tertiary" v-if="timeSinceRefresh">{{ timeSinceRefresh }}</span>
+                            </div>
                         </div>
-                    </div>
 
                     <!-- v3.11 (FR-3.11.7): 今日一屏 — 聚合当日决策要素（美林/情绪/池变动/健康/重点） -->
                     <div v-if="!(loading && loadingView === 'overview')" class="today-hero card">
@@ -450,11 +450,9 @@
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->
                     <div v-else-if="currentSubPage === 'backtest'" class="backtest-workbench">
-                        <div class="page-header">
-                            <div class="page-title">回测工作台</div>
-                            <div class="page-header-right">
-                                <button type="button" class="bt-back-btn" @click="currentSubPage = 'overview'">返回策略总览</button>
-                            </div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留返回操作 -->
+                        <div class="qc-page-tools">
+                            <button type="button" class="bt-back-btn" @click="currentSubPage = 'overview'">返回策略总览</button>
                         </div>
 
                         <!-- 参数表单 -->

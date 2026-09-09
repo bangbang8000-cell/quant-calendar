@@ -598,9 +598,8 @@
                     </div>
                     <!-- v3.17.2 FR-3.17.2 市场复盘代码起点 -->
                     <div v-else-if="currentSubPage === 'market-review'" class="card market-review-card">
-                        <!-- V5.2.5 (T-5.2.49): 统一页面头 — 与短线复盘其他子页 page-header 一致 -->
-                        <div class="page-header">
-                            <div class="page-title">{{ t('research.marketReview') }}</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作 (返回/刷新) -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-button v-if="selectedReviewDate" size="small" @click="selectedReviewDate = ''">← 返回列表</el-button>
                                 <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘">🔄</el-button>
@@ -715,9 +714,8 @@
                     </div>
                     <!-- v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒 代码起点 -->
                     <div v-else-if="currentSubPage === 'scan'" class="card scan-card">
-                        <!-- V5.2.5 (T-5.2.49): 统一页面头 -->
-                        <div class="page-header">
-                            <div class="page-title">异动扫描</div>
+                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留刷新操作 -->
+                        <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描">🔄</el-button>
                             </div>

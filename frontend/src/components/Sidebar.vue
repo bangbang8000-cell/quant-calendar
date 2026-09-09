@@ -75,14 +75,16 @@ export default {
   <nav class="qc-sidebar" :class="{ 'is-collapsed': sidebarCollapsed }" aria-label="主导航">
     <!-- Logo 区 -->
     <div class="qc-sidebar-logo">
-      <svg class="qc-logo-mark" viewBox="0 0 24 24" width="32" height="32" fill="none" aria-hidden="true">
-        <!-- P2-7: 单主色 var(--qc-primary-600) + opacity 表现 K 线高低 (handover 4.1) -->
-        <rect x="4" y="7" width="4" height="10" rx="1" fill="var(--qc-primary-600)"/>
-        <line x1="6" y1="4" x2="6" y2="20" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
-        <rect x="10" y="11" width="4" height="6" rx="1" fill="var(--qc-primary-600)" opacity="0.7"/>
-        <line x1="12" y1="5" x2="12" y2="19" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
-        <rect x="16" y="4" width="4" height="13" rx="1" fill="var(--qc-primary-600)" opacity="0.85"/>
-        <line x1="18" y1="3" x2="18" y2="21" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+      <!-- V6.1 (PRD-6.1 F6): 还原彩色 K 线 Logo — 与登录页一致, 固定品牌色不随主题变化 -->
+      <svg class="qc-logo-mark" viewBox="0 0 100 100" width="32" height="32" aria-label="量化日历 logo">
+        <rect width="100" height="100" rx="20" fill="var(--logo-bg)"/>
+        <rect x="2" y="2" width="96" height="96" rx="18" fill="none" stroke="var(--logo-border)" stroke-width="3" opacity="0.85"/>
+        <line x1="20" y1="78" x2="82" y2="78" stroke="var(--logo-border)" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
+        <rect x="22" y="58" width="15" height="20" rx="3.5" fill="var(--logo-blue)" opacity="0.95"/>
+        <rect x="42.5" y="42" width="15" height="36" rx="3.5" fill="var(--logo-yellow)" opacity="0.95"/>
+        <rect x="63" y="26" width="15" height="52" rx="3.5" fill="var(--logo-red)"/>
+        <rect x="63" y="26" width="15" height="14" rx="3.5" fill="var(--logo-white)" opacity="0.35"/>
+        <path d="M24 70 L42 56 L58 46 L74 34" fill="none" stroke="var(--logo-border)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
       </svg>
       <span v-if="!sidebarCollapsed" class="qc-logo-text">{{ state.t('login.title') }}</span>
     </div>

@@ -88,10 +88,8 @@
                 const merrill = useMerrillClock();
                 const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh } = merrill;
 
-                // v3.0: 图标系统映射 — 使用外部模块
-                const ICON_MAPS = window.__quantModules.icons.ICON_MAPS;
-                const { iconSystem } = window.__quantModules.icons.init();
-                const switchIconSystem = window.__quantModules.icons.switchIconSystem;
+                // V6.1 (PRD-6.1 F4): 图标系统统一 — 移除 emoji/ink/edge/crystal 四套冗余映射 (原 js/icons.js)
+                // 图标仅经 AppIcon.vue (lucide) 渲染, 菜单数据只保留 iconName
 
                 // v3.0: 侧边栏折叠
                 const sidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === '1');
@@ -111,25 +109,25 @@
 
 const allMenuDefs = [
                     // V6.0 (PRD-6.0 FR-6.0.1): 新增 group(一级分组) + iconName(Lucide 图标) 字段
+                    // V6.1 (PRD-6.1 F4): 移除 icon(emoji) 字段 — 图标仅经 iconName + AppIcon 渲染
                     // 分组: research=量化投研 / platform=平台管理
-                    { key: 'strategies', name: '策略总览', icon: '📈', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
-                    { key: 'calendar', name: '量化日历', icon: '🗓', iconName: 'calendar', group: 'research', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', icon: '🤖', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
-                    { key: 'research', name: '策略研究', icon: '🔬', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
-                    { key: 'shortterm', name: '短线复盘', icon: '⚡', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
-                    { key: 'system', name: '系统配置', icon: '⚙', iconName: 'settings', group: 'platform', subPages: ['status', 'health', 'schedule', 'autoeval', 'usage', 'guard', 'datasource', 'feature', 'datadict', 'user', 'execution', 'about'], guestSubPages: ['status', 'about'] } // V6.0 (P1-3): health/schedule/guard 独立子页
+                    { key: 'strategies', name: '策略总览', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
+                    { key: 'calendar', name: '量化日历', iconName: 'calendar', group: 'research', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
+                    { key: 'ai', name: '智能评估', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
+                    { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
+                    { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'health', 'schedule', 'autoeval', 'usage', 'guard', 'datasource', 'feature', 'datadict', 'user', 'execution', 'about'], guestSubPages: ['status', 'about'] } // V6.0 (P1-3): health/schedule/guard 独立子页
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
                     const groupId = currentUser.value?.group || role;
                     const group = groupsConfig.value?.[groupId] || null;
-                    const icons = ICON_MAPS[iconSystem.value] || ICON_MAPS.emoji;
                     let items = allMenuDefs.map(m => {
                         // group-based visibility (default: show if no group config)
                         if (group && group.visible_menus && m.key in group.visible_menus) {
                             if (!group.visible_menus[m.key]) return null;
                         }
-                        const item = { ...m, name: t('nav.' + m.key) || m.name, icon: icons[m.key] || m.icon };
+                        const item = { ...m, name: t('nav.' + m.key) || m.name };
                         // Filter subPages by group config
                         if (group?.visible_sub_pages) {
                             item.subPages = m.subPages.filter(sp => {
@@ -357,9 +355,95 @@ const allMenuDefs = [
                     'status': '系统状态', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': '自动评估', 'usage': 'AI 用量', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'user': '用户与权限', 'about': '关于' // V6.0 (P1-3): health/schedule/guard 独立子页
                 };
 
-                // ===== 主题 =====
-                const themes = ref({});
-                const currentTheme = ref('tech-blue');
+                // ===== V6.1 (PRD-6.1 F8): 动态页签状态 =====
+                // tabGroups: { [page]: [{ subPage, title }] } — 会话级内存态
+                const tabGroups = ref({});
+                function _tabTitle(page, subPage) {
+                    return (subPageNames[subPage]) || subPage;
+                }
+                function _ensureDefaultTab(page) {
+                    const menu = allMenuDefs.find(m => m.key === page);
+                    if (!menu || !menu.subPages || !menu.subPages.length) return;
+                    const g = tabGroups.value[page] || [];
+                    if (!g.length) {
+                        const def = menu.subPages[0];
+                        tabGroups.value = Object.assign({}, tabGroups.value, { [page]: [{ subPage: def, title: _tabTitle(page, def) }] });
+                    }
+                }
+                // 打开页签 (中栏点击/外部跳转): 已存在仅激活, 否则追加并激活; 超上限淘汰最早非默认
+                function openTab(page, subPage) {
+                    const T = window.__quantModules && window.__quantModules.tabsCore;
+                    const title = _tabTitle(page, subPage);
+                    if (T) {
+                        const res = T.openTab(tabGroups.value, page, subPage, title);
+                        tabGroups.value = res.groups;
+                    } else {
+                        const g = tabGroups.value[page] || [];
+                        if (!g.some(t => t.subPage === subPage)) {
+                            tabGroups.value = Object.assign({}, tabGroups.value, { [page]: g.concat([{ subPage, title }]) });
+                        }
+                    }
+                    navigateTo(page, subPage);
+                }
+                // 关闭页签: 激活页签被关 → 回退右侧/左侧相邻; 组空 → 重建默认页签
+                function closeTab(page, subPage) {
+                    const T = window.__quantModules && window.__quantModules.tabsCore;
+                    const active = currentSubPage.value;
+                    let res = null;
+                    if (T) {
+                        res = T.closeTab(tabGroups.value, page, subPage, active);
+                        tabGroups.value = res.groups;
+                    } else {
+                        const g = tabGroups.value[page] || [];
+                        tabGroups.value = Object.assign({}, tabGroups.value, { [page]: g.filter(t => t.subPage !== subPage) });
+                    }
+                    const g = tabGroups.value[page] || [];
+                    if (!g.length) {
+                        _ensureDefaultTab(page);
+                        const menu = allMenuDefs.find(m => m.key === page);
+                        const def = menu && menu.subPages && menu.subPages[0];
+                        if (def) navigateTo(page, def);
+                        return;
+                    }
+                    const nextActive = res ? res.nextActive : null;
+                    if (nextActive) navigateTo(page, nextActive);
+                }
+                // 激活页签: 页签栏点击; 页签不存在时自动打开 (hash 深链等)
+                function activateTab(page, subPage) {
+                    const g = tabGroups.value[page] || [];
+                    if (!g.some(t => t.subPage === subPage)) {
+                        openTab(page, subPage);
+                        return;
+                    }
+                    navigateTo(page, subPage);
+                }
+                // 页签联动: 切一级确保默认页签; 外部导航 (hash/键盘/内部跳转) 到未打开子页自动开页签
+                watch([currentPage, currentSubPage], ([page, sub]) => {
+                    _ensureDefaultTab(page);
+                    const g = tabGroups.value[page] || [];
+                    if (sub && !g.some(t => t.subPage === sub)) {
+                        tabGroups.value = Object.assign({}, tabGroups.value, { [page]: g.concat([{ subPage: sub, title: _tabTitle(page, sub) }]) });
+                    }
+                }, { immediate: true });
+
+                // 页签键盘导航: Ctrl+Tab / Ctrl+Shift+Tab (V6.1 F10)
+                const _onTabKeydown = function (e) {
+                    if (!(e.ctrlKey && e.key === 'Tab')) return;
+                    const page = currentPage.value;
+                    const g = tabGroups.value[page] || [];
+                    if (g.length <= 1) return;
+                    e.preventDefault();
+                    const active = currentSubPage.value;
+                    const idx = Math.max(0, g.findIndex(t => t.subPage === active));
+                    const next = e.shiftKey ? (idx - 1 + g.length) % g.length : (idx + 1) % g.length;
+                    const target = g[next];
+                    if (target) activateTab(page, target.subPage);
+                };
+                window.addEventListener('keydown', _onTabKeydown);
+
+                // ===== 主题 (V6.1 F5: 明/暗两套模式 + 色相) =====
+                const themes = ref({ light: { name: '浅色', color: '#f5f3ea' }, dark: { name: '深色', color: '#0f0f23' } });
+                const currentTheme = ref('light');  // 当前解析后模式: light|dark
 
                 // ===== 数据 =====
                 // 状态与加载已下沉 js/app-logic/data.js（loading/loadingView/viewCache/dates/selectedDate/lastLoadTime/consensus/loadDates/loadConsensusData/...）
@@ -385,14 +469,17 @@ const allMenuDefs = [
                 const expandedStrategies = ref({});
                 // 自动保存策略筛选配置的 watch 已下沉 js/app-logic/watch.js
 
-                // ===== 主题切换（护栏片段保留）=====
-                function applyTheme(theme) {
-                    currentTheme.value = theme;
-                    // v3.17.11 (FR-3.17.11.3/4): data-theme 设置唯一权威实现在 themes.js（本处仅委托）
+                // ===== 主题切换（V6.1 F5: 模式 light/dark/system + 色相 hue; 兼容旧主题名）=====
+                function applyTheme(modeOrLegacy, hue) {
+                    // v3.17.11: data-theme 设置唯一权威实现在 themes.js（本处仅委托并同步 currentTheme）
+                    let res = null;
                     if (window.__quantModules && window.__quantModules.themes &&
                         typeof window.__quantModules.themes.applyTheme === 'function') {
-                        window.__quantModules.themes.applyTheme(theme);
+                        res = window.__quantModules.themes.applyTheme(modeOrLegacy, hue);
                     }
+                    currentTheme.value = (res && res.mode)
+                        ? res.mode
+                        : ((modeOrLegacy === 'dark' || modeOrLegacy === 'dark-pro') ? 'dark' : 'light');
                     // v3.15 (15.4): 已挂载 ECharts 实例按新主题重绘（数据已缓存, 换色即生效）
                     Vue.nextTick(() => {
                         if (window.__quantModules && window.__quantModules.echartsTheme &&
@@ -402,17 +489,46 @@ const allMenuDefs = [
                     });
                 }
 
-                function changeTheme(theme) {
-                    applyTheme(theme);
+                // 持久化主题偏好 (theme 模式 + theme_hue), 走 preferences 双通道 (localStorage + 后端)
+                function _persistThemePref(mode, hue) {
+                    const P = window.__quantModules && window.__quantModules.preferences;
+                    if (!P || !P.setPreferences) return;
+                    try {
+                        P.setPreferences({ theme: mode });
+                        if (hue != null && hue !== '') P.setPreferences({ theme_hue: parseInt(hue, 10) });
+                    } catch (e) { /* 偏好持久化失败不阻塞切换 */ }
+                }
+
+                function changeTheme(themeOrMode, hue) {
+                    applyTheme(themeOrMode, hue);
+                    // 解析实际模式与色相用于持久化
+                    const T = window.__quantModules && window.__quantModules.themes;
+                    let mode = themeOrMode;
+                    if (T && T.LEGACY_MAP && T.LEGACY_MAP[themeOrMode]) mode = T.LEGACY_MAP[themeOrMode][0];
+                    if (mode === 'system') mode = currentTheme.value;  // system 已解析为实际模式
+                    _persistThemePref(mode, hue);
                     if (currentUser.value) {
                         fetch(`/api/users/${currentUser.value.username}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ theme })
+                            body: JSON.stringify({ theme: mode })
                         });
-                        currentUser.value.theme = theme;
+                        currentUser.value.theme = mode;
                         localStorage.setItem('quant_user', JSON.stringify(currentUser.value));
                     }
+                }
+
+                // V6.1: 模式快捷切换 (浅色/深色/跟随系统) — 保留当前色相
+                function changeThemeMode(mode) {
+                    const P = window.__quantModules && window.__quantModules.preferences;
+                    const hue = (P && P.getPreference) ? P.getPreference('theme_hue') : null;
+                    changeTheme(mode, hue);
+                }
+                // V6.1: 主题色切换 (预设/自定义色相) — 保留当前模式
+                function changeThemeHue(hue) {
+                    const P = window.__quantModules && window.__quantModules.preferences;
+                    const mode = (P && P.getPreference) ? (P.getPreference('theme') || 'light') : 'light';
+                    changeTheme(mode, hue);
                 }
 
                 // ===== v3.16 (16.4): K线渲染状态与编排（护栏片段保留: onLegend 回调接线）=====
@@ -777,7 +893,7 @@ const allMenuDefs = [
                         btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
                         runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum } = __backtestDomain;
                 const __systemDomain = (window.__quantModules && window.__quantModules.system)
-                    ? window.__quantModules.system.create({ configChanged, aiConfig, aiLoading, feishuConfig, currentTheme, changeTheme, autoEvaluateConfig, iconSystem, researchMenuEnabled, currentUser, strategyFilter, applyTheme, dashboardData, lastRefreshTime, saveAiModels })
+                    ? window.__quantModules.system.create({ configChanged, aiConfig, aiLoading, feishuConfig, currentTheme, changeTheme, autoEvaluateConfig, researchMenuEnabled, currentUser, strategyFilter, applyTheme, dashboardData, lastRefreshTime, saveAiModels })
                     : {};
                 const { configSaving, globalConfigDirty, lastSavedTime,
                         feishuConfigOriginal, aiConfigOriginal, tushareConfigOriginal,
@@ -943,6 +1059,7 @@ const allMenuDefs = [
                 onUnmounted(() => {
                     if (strategyPollTimer) clearInterval(strategyPollTimer);
                     window.removeEventListener('keydown', handleGlobalKeydown);
+                    window.removeEventListener('keydown', _onTabKeydown);
                 });
 
                 // ===== v3.8.1: 通用数值格式化 (弹窗展示用, 最多保留 digits 位小数, null/NaN 回退 '--')
@@ -954,14 +1071,16 @@ const allMenuDefs = [
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
                     currentPage, pageComp, currentSubPage, sidebarCollapsed, menus,
+                    // V6.1 (PRD-6.1 F8): 动态页签
+                    tabGroups, openTab, closeTab, activateTab,
                     fmtNum, sanitizeHtml, keyClick, isOnline,
-                    currentUser, iconSystem, allMenuDefs,
+                    currentUser, allMenuDefs,
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
                     t, locale, changeLanguage,
                     currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV, viewNote,
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
-                    themes, currentTheme, changeTheme, handleLogout,
+                    themes, currentTheme, changeTheme, changeThemeMode, changeThemeHue, handleLogout,
 
                     marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
@@ -1071,8 +1190,6 @@ const allMenuDefs = [
                     poolChangeBadge, timeBarPercent, timeSinceRefresh, navigateToStrategyFilter,
                     // v1.5.0
                     showUserMenu,
-                    // v1.9.2: 图标系统
-                    switchIconSystem, ICON_MAPS,
                     // v3.0: 侧边栏折叠
                     toggleSidebar,
                     // v1.9.2: 策略研究菜单

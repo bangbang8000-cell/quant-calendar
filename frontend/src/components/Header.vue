@@ -22,16 +22,16 @@ export default {
       return child ? [parent, child] : [parent]
     })
 
-    const isDark = computed(() => (state.currentTheme && state.currentTheme.value) === 'dark-pro')
+    const isDark = computed(() => (state.currentTheme && state.currentTheme.value) === 'dark')
     // v-model 需可赋值变量 (可选链不可直接赋值)
     const searchQuery = computed({
       get: () => (state.searchQuery && state.searchQuery.value) || '',
       set: (v) => { if (state.searchQuery) state.searchQuery.value = v },
     })
+    // V6.1 (PRD-6.1 F5): 明/暗模式快捷切换 (保留当前主题色)
     function toggleThemeQuick() {
-      if (!state.changeTheme) return
-      const target = isDark.value ? 'gold' : 'dark-pro'
-      state.changeTheme(target)
+      if (!state.changeThemeMode) return
+      state.changeThemeMode(isDark.value ? 'light' : 'dark')
     }
     function toggleSidebar() {
       if (window.innerWidth < 768) {
@@ -123,20 +123,6 @@ export default {
             @keydown.enter.prevent="menuItem(() => { state.showChangePassword = true })()"
           >
             <AppIcon name="lock" :size="16" /> 修改密码
-          </div>
-          <div class="qc-user-dropdown-divider"></div>
-          <div class="qc-user-dropdown-title"><AppIcon name="palette" :size="14" /> 切换主题</div>
-          <div
-            v-for="(theme, key) in state.themes" :key="key"
-            class="qc-user-dropdown-item qc-theme-row"
-            :class="{ 'is-active': state.currentTheme?.value === key }"
-            role="menuitemradio" :aria-checked="state.currentTheme?.value === key" tabindex="0"
-            @click="menuItem(() => state.changeTheme(key))()"
-            @keydown.enter.prevent="menuItem(() => state.changeTheme(key))()"
-          >
-            <span class="qc-theme-dot" :style="{ background: theme.color }"></span>
-            <span class="qc-theme-name">{{ theme.name }}</span>
-            <AppIcon v-if="state.currentTheme?.value === key" name="check" :size="14" class="qc-theme-check" />
           </div>
           <div class="qc-user-dropdown-divider"></div>
           <div class="qc-user-dropdown-item is-danger" role="menuitem" tabindex="0" @click="handleLogout" @keydown.enter.prevent="handleLogout">

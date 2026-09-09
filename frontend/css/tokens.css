@@ -67,7 +67,7 @@
   --qc-nav-item-hover: var(--qc-neutral-900);
   --qc-nav-item-hover-bg: var(--qc-neutral-100);
   /* V6.0.1 (B1/B2): 对比度修复 — 分组标签 400→500；选中项背景提亮 + 文字加深
-     V6.0.1: 选中项背景改 var(--qc-primary-50) 随主题 (原硬编码 #fdfaf3 不随主题)
+     V6.0.1: 选中项背景改 var(--qc-primary-50) 随主题 (原硬编码 #fdfaf3 不随主题) <!-- qc-allow-hardcode 注释样本豁免 -->
      P2-6: 金色选中态对比度 — 50 → 100 (handover 2.2) */
   --qc-nav-item-active: var(--qc-primary-800);
   --qc-nav-item-active-bg: var(--qc-primary-100);

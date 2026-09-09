@@ -222,6 +222,102 @@
 .dashboard-grid .stat-card.gold    { border-left: 3px solid var(--color-gold); }
 .dashboard-grid .stat-card.warning { border-left: 3px solid var(--el-warning); }
 
+/* ─── V6.1 (PRD-6.1 F7): 统一股票列表 .qc-stock-list ─────── */
+/* 只读型卡片列表 (股票池/共识排名/涨停池等) 收敛为同一视觉语言 */
+.qc-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-space-2);
+}
+.qc-stock-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--qc-space-3);
+  padding: var(--qc-space-3) var(--qc-space-4);
+  border-radius: var(--qc-radius-medium);
+  background: var(--qc-card);
+  border: 1px solid var(--qc-border);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.qc-stock-row:hover {
+  border-color: var(--qc-primary-300);
+  background: var(--qc-primary-50);
+}
+.qc-stock-row.is-active {
+  border-color: var(--qc-primary-500);
+  background: var(--qc-primary-100);
+}
+.qc-stock-row:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-stock-rank {
+  min-width: 24px;
+  text-align: center;
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+}
+.qc-stock-info { min-width: 0; }
+.qc-stock-code {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  font-family: var(--qc-font-mono);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--qc-foreground);
+}
+.qc-stock-name {
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+  margin-top: 2px;
+}
+.qc-stock-tags { display: flex; gap: var(--qc-space-1); flex-wrap: wrap; }
+.qc-stock-tag {
+  font-size: var(--qc-font-size-xs);
+  padding: 1px 8px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-muted);
+  color: var(--qc-muted-foreground);
+}
+/* 密度联动 (V6.1 F9) */
+[data-density="compact"] .qc-stock-row { padding: var(--qc-space-2) var(--qc-space-3); }
+[data-density="spacious"] .qc-stock-row { padding: var(--qc-space-4) var(--qc-space-5); }
+
+/* V6.1: el-table 表格场景统一表样式 (数据源健康/AI 用量/龙虎榜等保留 el-table) */
+.qc-work-area-content .el-table {
+  border-radius: var(--qc-radius-medium);
+  overflow: hidden;
+  --el-table-header-bg-color: var(--qc-muted);
+  --el-table-row-hover-bg-color: var(--qc-primary-50);
+  --el-table-border-color: var(--qc-border);
+  --el-table-text-color: var(--qc-foreground);
+  --el-table-header-text-color: var(--qc-muted-foreground);
+}
+
+/* V6.1: 既有 consensus-item 卡片列表 (股票池/共识排名) hover 统一到 qc-stock-row 观感 */
+.consensus-item {
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.consensus-item:hover {
+  background: var(--qc-primary-50);
+  box-shadow: var(--qc-shadow-sm);
+}
+
+/* V6.1 (PRD-6.1 F5): 外观设置 — 模式/色相小节标签与工具类 */
+.theme-section-label {
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  color: var(--qc-muted-foreground);
+  margin-bottom: var(--qc-space-2);
+}
+.theme-section-label + .el-radio-group,
+.theme-section-label + .theme-list { margin-bottom: var(--qc-space-3); }
+.w-60 { width: 60px; }
+.w-220 { width: 220px; }
+
 /* ─── §3.1 今日一屏状态点 (● 交易中/休市 — 文本已含 ●, 仅统一字重/色) ── */
 .today-hero-status {
   display: inline-flex;

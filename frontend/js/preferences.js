@@ -19,13 +19,15 @@
   const PREFERENCE_DEFAULTS = {
     default_view: 'strategies',
     theme: 'system',
+    // V6.1 (PRD-6.1 F5): 主题色色相 (0-360, 默认金色 45)
+    theme_hue: 45,
     chart_period: 'daily',
     language: 'zh-CN',
     info_density: 'comfortable',
     kline_show_minutes: 'hide',  // V5.4.1 (用户要求): 分钟级K线默认隐藏, 系统设置可开启
   };
 
-  const PREFERENCE_KEYS = ['default_view', 'theme', 'chart_period', 'language', 'info_density', 'kline_show_minutes'];
+  const PREFERENCE_KEYS = ['default_view', 'theme', 'theme_hue', 'chart_period', 'language', 'info_density', 'kline_show_minutes'];
 
   const PREFERENCE_VALUES = {
     default_view: ['strategies', 'calendar', 'ai', 'research', 'system'],
@@ -36,8 +38,15 @@
     kline_show_minutes: ['hide', 'show'],
   };
 
+  // V6.1: theme_hue 为 0-360 整数 (预设色板与自定义共用), 不走数组白名单
+  function _validThemeHue(v) {
+    v = parseInt(v, 10);
+    return !isNaN(v) && v >= 0 && v <= 360;
+  }
+
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）
   // system: 跟随系统 prefers-color-scheme
+  // V6.1: 新模型下模式即主题 (light/dark), 旧映射保留仅用于迁移展示
   const THEME_MODE_TO_THEME = {
     light: 'classic-white',
     dark: 'dark-pro',
@@ -73,7 +82,9 @@
     const out = {};
     PREFERENCE_KEYS.forEach(function (k) {
       const v = merged[k];
-      out[k] = (PREFERENCE_VALUES[k].indexOf(v) !== -1) ? v : PREFERENCE_DEFAULTS[k];
+      out[k] = (k === 'theme_hue')
+        ? (_validThemeHue(v) ? parseInt(v, 10) : PREFERENCE_DEFAULTS[k])
+        : ((PREFERENCE_VALUES[k].indexOf(v) !== -1) ? v : PREFERENCE_DEFAULTS[k]);
     });
     return out;
   }
@@ -84,8 +95,9 @@
   }
 
   function isValidValue(key, value) {
-    return PREFERENCE_KEYS.indexOf(key) !== -1
-      && PREFERENCE_VALUES[key].indexOf(value) !== -1;
+    if (PREFERENCE_KEYS.indexOf(key) === -1) return false;
+    if (key === 'theme_hue') return _validThemeHue(value);
+    return PREFERENCE_VALUES[key].indexOf(value) !== -1;
   }
 
   // 设置偏好（同步写 localStorage + 异步写后端（登录态））；非法键/值返回 false
@@ -156,7 +168,8 @@
     return v;
   }
 
-  // 主题模式 → 具体主题名（system 跟随系统；亮/暗映射到既有主题）
+  // 主题模式 → 解析后的模式（light/dark; system 跟随系统）
+  // V6.1: 直接返回模式名, 由 themes.applyTheme 应用 (不再映射到旧 8 主题名)
   function resolveTheme(mode) {
     const m = mode || getPreference('theme') || 'system';
     if (m === 'system') {
@@ -164,9 +177,9 @@
       if (typeof window !== 'undefined' && window.matchMedia) {
         dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       }
-      return dark ? THEME_MODE_TO_THEME.dark : THEME_MODE_TO_THEME.light;
+      return dark ? 'dark' : 'light';
     }
-    return THEME_MODE_TO_THEME[m] || THEME_MODE_TO_THEME.light;
+    return (m === 'dark' || m === 'light') ? m : 'light';
   }
 
   const api = {

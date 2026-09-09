@@ -47,15 +47,22 @@
             });
           };
 
-          // 恢复本地主题
+          // 恢复本地主题 (V6.1: 模式+色相; 旧 quant_theme 经 themes.js 迁移兜底)
           const savedTheme = localStorage.getItem('quant_theme');
           // v3.17.10 (FR-3.17.10): 无本地显式主题时应用偏好主题模式（仍经 applyTheme 权威实现）
           const __prefs = (window.__quantModules && window.__quantModules.preferences)
             ? window.__quantModules.preferences.getLocal() : {};
-          if (!savedTheme && __prefs.theme && window.__quantModules && window.__quantModules.preferences) {
-            applyTheme(window.__quantModules.preferences.resolveTheme(__prefs.theme));
+          if (window.__quantModules && window.__quantModules.themes) {
+            const T = window.__quantModules.themes;
+            let mode = __prefs.theme || 'system';
+            let hue = (__prefs.theme_hue != null && __prefs.theme_hue !== '') ? __prefs.theme_hue : null;
+            const legacy = (typeof T.migrateLegacyTheme === 'function') ? T.migrateLegacyTheme() : null;
+            if (hue == null && legacy) { mode = legacy.mode; hue = legacy.hue; }
+            if (hue == null) hue = 45;
+            applyTheme(mode, hue);
+          } else if (savedTheme) {
+            applyTheme(savedTheme);
           }
-          if (savedTheme) applyTheme(savedTheme);
 
           // v1.10: 恢复用户最后选择（无本地最后页面时回落偏好 default_view）
           // V6.0 (P1-3): URL hash 优先恢复 — 刷新定位到具体子页
@@ -102,10 +109,14 @@
 
           // ===== 第1波: 不依赖用户身份的并行加载（后台, 不阻塞主界面渲染）=====
           const p1 = Promise.all([
-            withTimeout(
-              fetch('/api/themes').then(r => r.json()).then(d => { themes.value = d.themes || []; }),
-              2000, 'themes'
-            ),
+            // V6.1 (PRD-6.1 F5): 主题收敛为明/暗两套 — 不再拉取后端 8 主题列表
+            // (command-panel / 外观设置遍历 themes 用新模型两套)
+            Promise.resolve().then(() => {
+              themes.value = {
+                light: { name: '浅色', color: '#f5f3ea' },
+                dark: { name: '深色', color: '#0f0f23' },
+              };
+            }),
             withTimeout(fetchMarketData(), 3000, 'marketData'),
             withTimeout(fetchMerrillStages(), 2000, 'merrillStages'),
           ]).then(() => {
@@ -142,12 +153,22 @@
             currentUser.value = null;
             return;
           }
-          // 2) 主题: 本地主题优先, 用户 theme / 偏好模式兜底
+          // 2) 主题: 偏好(模式+色相)优先, 旧 quant_theme / 用户 theme 字段经 LEGACY_MAP 兜底
           if (currentUser.value) {
             const userTheme = currentUser.value.theme || '';
-            const fallbackTheme = (__prefs.theme && window.__quantModules && window.__quantModules.preferences)
-              ? window.__quantModules.preferences.resolveTheme(__prefs.theme) : 'tech-blue';
-            applyTheme(savedTheme || userTheme || fallbackTheme);
+            const T = window.__quantModules && window.__quantModules.themes;
+            let mode = __prefs.theme || 'system';
+            let hue = (__prefs.theme_hue != null && __prefs.theme_hue !== '') ? __prefs.theme_hue : null;
+            if (hue == null && T && typeof T.migrateLegacyTheme === 'function') {
+              const legacy = T.migrateLegacyTheme();
+              if (legacy) { mode = legacy.mode; hue = legacy.hue; }
+              else if (userTheme && T.LEGACY_MAP && T.LEGACY_MAP[userTheme]) {
+                const u = T.LEGACY_MAP[userTheme];
+                mode = u[0]; hue = u[1];
+              }
+            }
+            if (hue == null) hue = 45;
+            applyTheme(mode, hue);
           }
           // v3.17.10 (FR-3.17.10): 拉取后端偏好合并并应用（登录用户重启/换设备保持）
           if (window.__quantModules && window.__quantModules.preferences) {
@@ -158,8 +179,8 @@
                 && menus.value.some(function (m) { return m.key === loaded.default_view; })) {
               currentPage.value = loaded.default_view;
             }
-            if (!savedTheme && loaded.theme) {
-              applyTheme(P.resolveTheme(loaded.theme));
+            if (loaded.theme) {
+              applyTheme(loaded.theme, (loaded.theme_hue != null && loaded.theme_hue !== '') ? loaded.theme_hue : null);
             }
             if (currentKlinePeriod
                 && (loaded.chart_period === 'weekly' || loaded.chart_period === 'monthly')) {

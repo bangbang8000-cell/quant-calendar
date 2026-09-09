@@ -86,9 +86,9 @@ class TestChartThemeRerender:
         assert 'refreshAllCharts,' in ECHARTS_THEME
 
     def test_apply_theme_triggers_rerender(self):
-        """applyTheme 设置 data-theme 后 nextTick 触发 refreshAllCharts"""
-        seg = APP_LOGIC[APP_LOGIC.index('function applyTheme(theme)'):]
-        seg = seg[:seg.index('function changeTheme(theme)')]
+        """applyTheme 设置 data-theme 后 nextTick 触发 refreshAllCharts (V6.1: 签名 modeOrLegacy, hue)"""
+        seg = APP_LOGIC[APP_LOGIC.index('function applyTheme('):]
+        seg = seg[:seg.index('function changeTheme(')]
         assert 'refreshAllCharts()' in seg
 
     def test_kline_rerender_registered(self):

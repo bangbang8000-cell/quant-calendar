@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 481, f"qcState 唯一键数异常: {len(set(keys))} (期望 481; V5.4.1 R1 +1: klineDegradeNote(分钟数据降级日线提示); +2: klineShowMinutes/toggleKlineShowMinutes(分钟级K线显示开关))"
+    assert len(set(keys)) == 484, f"qcState 唯一键数异常: {len(set(keys))} (期望 484; V6.1 F8 动态页签 +4: tabGroups/openTab/closeTab/activateTab; V6.1 F5 主题 +2: changeThemeMode/changeThemeHue; V6.1 F4 图标系统 -3: iconSystem/switchIconSystem/ICON_MAPS 移除)"
 
 
 def test_watch_currentpage_single():
@@ -74,21 +74,22 @@ def test_watch_currentpage_single():
 
 
 def test_themes_module_authority():
-    """FR-3.17.11.4: themes.js 为权威单一 applyTheme（定义 data-theme+持久化实现），
-    app-logic/system.js 仅引用不重复实现主题应用函数体"""
+    """FR-3.17.11.4 + V6.1 F5: themes.js 为权威单一 applyTheme（定义 data-theme/data-theme-mode +
+    内联色相 token + 持久化实现），app-logic/system.js 仅引用不重复实现主题应用函数体"""
     src = _read("js/themes.js")
-    # 权威 applyTheme 定义在 themes.js（含 data-theme 设置 + quant_theme 持久化）
-    assert "function applyTheme(theme)" in src, "themes.js 应定义权威 applyTheme"
+    # 权威 applyTheme 定义在 themes.js（含 data-theme-mode 设置 + 模式/色相持久化）
+    assert "function applyTheme(" in src, "themes.js 应定义权威 applyTheme"
     assert "setAttribute('data-theme'" in src, "themes.js applyTheme 应设置 data-theme"
-    assert "localStorage.setItem('quant_theme'" in src, "themes.js applyTheme 应持久化 quant_theme"
+    assert "setAttribute('data-theme-mode'" in src, "themes.js applyTheme 应设置 data-theme-mode"
+    assert "localStorage.setItem('quant_theme_mode'" in src, "themes.js applyTheme 应持久化模式"
     # 主题应用（data-theme/持久化）实现不得散落在其他文件
     for rel in ("js/app-logic.js", "js/system.js"):
         other = _read(rel)
         assert "setAttribute('data-theme'" not in other, f"{rel} 不应重复设置 data-theme"
-        assert "localStorage.setItem('quant_theme'" not in other, f"{rel} 不应重复持久化 quant_theme"
+        assert "localStorage.setItem('quant_theme_mode'" not in other, f"{rel} 不应重复持久化主题模式"
     # app-logic 委托权威实现（引用 themes.applyTheme）
     app = _read("js/app-logic.js")
-    assert "themes.applyTheme(theme)" in app, "app-logic 应委托 themes.applyTheme 权威实现"
+    assert "themes.applyTheme(" in app, "app-logic 应委托 themes.applyTheme 权威实现"
     assert "function changeTheme" not in src, "themes.js 不应再含 changeTheme 重复实现"
     assert "window.__quantModules.themes" in src
 
@@ -532,11 +533,14 @@ def test_factor_ic_wiring():
 # ─── v3.17 (FR-3.17.2 / AI 每日市场复盘) 回归 ─────────────────────────
 
 def test_market_review_subpage_present():
-    """FR-3.17.2: 研究页市场复盘子页应调用 /api/market/reviews 与 /api/market/review 并含'市场复盘'文案"""
+    """FR-3.17.2: 研究页市场复盘子页应调用 /api/market/reviews 与 /api/market/review;
+    V6.1 F3 去重后标题由 subPageNames 承载 (不再经页面组件内 t(...) 渲染)"""
     src = _read("js/components/research-page.js")
     assert "/api/market/reviews" in src, "应调用 /api/market/reviews 列表端点"
     assert "/api/market/review" in src, "应调用 /api/market/review 详情端点"
-    assert "research.marketReview" in src, "应经 t('research.marketReview') 渲染'市场复盘'标题"
+    # V6.1: 标题承载移到 app-logic subPageNames (中栏/页签标题)
+    app = _read("js/app-logic.js")
+    assert "'market-review': '市场复盘'" in app, "subPageNames 应含'市场复盘'标题映射"
     assert "市场复盘" in _read("js/locales/zh-CN.js"), "zh 语言包应保留'市场复盘'文案"
 
 
@@ -1150,16 +1154,16 @@ def test_preferences_valid_values():
 
 
 def test_theme_authority_not_duplicated_in_preferences():
-    """FR-3.17.10: 偏好模块不得另起主题实现 — data-theme/quant_theme 仍唯一于 themes.js"""
+    """FR-3.17.10 + V6.1 F5: 偏好模块不得另起主题实现 — data-theme/data-theme-mode 仍唯一于 themes.js"""
     prefs = _read("js/preferences.js")
     assert "setAttribute('data-theme'" not in prefs, "preferences.js 不应重复设置 data-theme"
-    assert "localStorage.setItem('quant_theme'" not in prefs, "preferences.js 不应重复持久化 quant_theme"
-    # 偏好通过 themes.applyTheme 权威实现应用（映射具体主题名）
+    assert "localStorage.setItem('quant_theme_mode'" not in prefs, "preferences.js 不应重复持久化主题模式"
+    # 偏好通过 themes.applyTheme 权威实现应用（模式映射）
     assert "THEME_MODE_TO_THEME" in prefs, "偏好应提供主题模式→具体主题映射"
     assert "resolveTheme" in prefs, "偏好应提供 resolveTheme"
     # 主题仍走 applyTheme 单一权威（既有断言持续生效）
     themes = _read("js/themes.js")
-    assert "function applyTheme(theme)" in themes, "themes.js 应保持唯一 applyTheme 权威"
+    assert "function applyTheme(" in themes, "themes.js 应保持唯一 applyTheme 权威"
 
 
 def test_i18n_module_exists():
@@ -1804,17 +1808,18 @@ def test_brand_quant_calendar_unified():
 
 
 # V5.3.0 (T-5.3.1.1): 页面头全站统一守卫
+# V6.1 (PRD-6.1 F3): 页面组件去重 — 标题/二级切换上移至中栏 SubNav 与 Header 面包屑,
+# 页面组件内不再含 .page-header / .page-title (守卫语义反转: 无残留)
 
 def test_all_main_pages_have_unified_page_header():
-    """5 个主页面组件根级均含统一 .page-header + .page-title (与 5.2.5 基线一致)。
-
-    守卫: 未来新页面/重构不得偏离统一页头模式; 页面标题来自 i18n (t('...')) 或既有文案。
+    """6 个主页面组件去重后均不得含 .page-header / .page-title (V6.1 F3)。
+    标题由中栏 SubNav 顶部 + Header 面包屑承载; 操作区以 .qc-page-tools 呈现。
     """
     for rel in ["research-page.js", "strategies-page.js", "shortterm-page.js",
                 "ai-page.js", "calendar-page.js", "system-page.js"]:
         src = _read("js/components/" + rel)
-        assert 'class="page-header"' in src, f"{rel} 缺统一 .page-header (T-5.3.1.1)"
-        assert 'class="page-title"' in src, f"{rel} 缺 .page-title (T-5.3.1.1)"
+        assert 'class="page-header"' not in src, f"{rel} 不应再含 .page-header (V6.1 F3 去重)"
+        assert 'class="page-title"' not in src, f"{rel} 不应再含 .page-title (V6.1 F3 去重)"
 
 
 # V5.2.12 (FIX-2): 短线复盘 market-review/scan 懒加载补注册守卫

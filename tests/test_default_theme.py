@@ -36,9 +36,13 @@ def test_auth_js_login_fallback():
 
 
 def test_themes_js_startup_default():
-    """themes.js: 启动无 saved 时显式默认 gold"""
+    """V6.1 (PRD-6.1 F5): themes.js 新模型 — 金色为默认色相(45), 旧 8 主题经 LEGACY_MAP 迁移"""
     p = os.path.join(FRONTEND_ROOT, "js", "themes.js")
     with open(p, encoding="utf-8") as f:
         src = f.read()
-    assert "'gold'" in src, "themes.js 应含 gold"
-    assert "gold" in src.split("const saved")[1], "启动兜底应显式 gold"
+    assert "'gold'" in src, "themes.js 应含 gold (旧主题兼容)"
+    assert "const LEGACY_MAP" in src, "themes.js 应含旧主题迁移映射"
+    # 金色 → light/45 (默认色相)
+    assert "'gold':" in src and "['light', 45]" in src, "gold 应映射为 light/45"
+    # 启动默认: 无偏好时色相回退 45 (金色)
+    assert "hue == null) hue = 45" in src, "启动默认色相应为 45 (金色)"

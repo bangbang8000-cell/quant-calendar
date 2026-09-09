@@ -10,10 +10,7 @@
     name: 'qc-system-page',
     template: `
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
-                    <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
-                    <div class="page-header">
-                        <div class="page-title">{{ t('nav.system') }}</div>
-                    </div>
+                    <!-- V6.1 (PRD-6.1 F3): 移除页内标题 (由中栏分组导航/面包屑承载) -->
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">
                             <span>{{ t('system.title') }}</span>
@@ -175,15 +172,27 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-title">🎨 主题选择</div>
+                        <div class="card-title">🎨 外观设置</div>
+                        <!-- V6.1 (PRD-6.1 F5): 模式 (明/暗/跟随系统) + 主题色 (预设色板 + 自定义色相) -->
+                        <div class="theme-section-label">外观模式</div>
+                        <el-radio-group :model-value="themeMode" size="small" @change="onThemeModeChange">
+                            <el-radio-button value="light">浅色</el-radio-button>
+                            <el-radio-button value="dark">深色</el-radio-button>
+                            <el-radio-button value="system">跟随系统</el-radio-button>
+                        </el-radio-group>
+                        <div class="theme-section-label">主题色</div>
                         <div class="theme-list">
-                            <div v-for="(theme, key) in themes" :key="key" class="theme-item" :class="{active: currentTheme === key}" @click="changeTheme(key)">
-                                <div class="theme-color" :style="{background: theme.gradient}"></div>
-                                <div class="text-base-medium">{{ theme.name }}
-                                    <span class="text-xs-primary-ml4" v-if="currentUser?.theme === key">默认</span>
+                            <div v-for="h in themeHues" :key="h" class="theme-item" :class="{active: themeHue === h}" @click="setThemeHue(h)">
+                                <div class="theme-color" :style="{background: hueColor(h)}"></div>
+                                <div class="text-base-medium">{{ hueName(h) }}
+                                    <span class="text-xs-primary-ml4" v-if="themeHue === h">当前</span>
                                 </div>
-                                <span v-if="currentTheme === key" class="theme-current-badge">当前</span>
                             </div>
+                        </div>
+                        <div class="flex-c-gap-12 mt-8">
+                            <span class="text-sm-secondary w-60">自定义</span>
+                            <el-slider class="w-220" :model-value="themeHue" :min="0" :max="359" :step="1"
+                                @change="setThemeHue" aria-label="自定义主题色相" />
                         </div>
                     </div>
 
@@ -212,27 +221,7 @@
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-title">🎯 图标系统</div>
-                        <div class="theme-list">
-                            <div class="theme-item" :class="{active: iconSystem === 'emoji'}" @click="switchIconSystem('emoji')">
-                                <div class="theme-color bg-gradient-brand"></div>
-                                <div class="text-base-medium">原生<span class="text-xs-primary-ml4" v-if="iconSystem === 'emoji'">当前</span></div>
-                            </div>
-                            <div class="theme-item" :class="{active: iconSystem === 'ink'}" @click="switchIconSystem('ink')">
-                                <div class="theme-color bg-gradient-ink"></div>
-                                <div class="text-base-medium">墨韵<span class="text-xs-primary-ml4" v-if="iconSystem === 'ink'">当前</span></div>
-                            </div>
-                            <div class="theme-item" :class="{active: iconSystem === 'edge'}" @click="switchIconSystem('edge')">
-                                <div class="theme-color theme-color-ai"></div>
-                                <div class="text-base-medium">锋线<span class="text-xs-primary-ml4" v-if="iconSystem === 'edge'">当前</span></div>
-                            </div>
-                            <div class="theme-item" :class="{active: iconSystem === 'crystal'}" @click="switchIconSystem('crystal')">
-                                <div class="theme-color theme-color-ai"></div>
-                                <div class="text-base-medium">叠彩<span class="text-xs-primary-ml4" v-if="iconSystem === 'crystal'">当前</span></div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- V6.1 (PRD-6.1 F4): 移除图标系统切换卡片 — 导航图标统一为一套, 不再提供四套切换 -->
                 </div>
 
                     <!-- V6.0 (P1-3): health — 数据源健康独立子页 -->
@@ -1514,6 +1503,23 @@
         // V6.0 (P1-3): 数据源健康子页加载健康面板数据 (refreshHealth 为组件本地方法)
         if (sub === 'health') refreshHealth();
       });
+      // V6.1 (PRD-6.1 F5): 外观设置 — 主题模式(明/暗/跟随系统) + 主题色色相(预设+自定义)
+      const themeHues = [45, 220, 0, 140, 270, 320];  // 金/蓝/红/绿/紫/粉
+      const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色' };
+      const themeMode = Vue.computed(() => {
+        const P = window.__quantModules && window.__quantModules.preferences;
+        return (P && P.getPreference && P.getPreference('theme')) || 'system';
+      });
+      const themeHue = Vue.ref(45);
+      (function () {
+        const P = window.__quantModules && window.__quantModules.preferences;
+        const h = (P && P.getPreference && P.getPreference('theme_hue'));
+        if (h != null && h !== '') themeHue.value = parseInt(h, 10);
+      })();
+      function onThemeModeChange(mode) { if (state.changeThemeMode) state.changeThemeMode(mode); }
+      function setThemeHue(h) { themeHue.value = parseInt(h, 10); if (state.changeThemeHue) state.changeThemeHue(themeHue.value); }
+      function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
+      function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
@@ -1871,6 +1877,9 @@
 
       return {
         ...state,
+        // V6.1 (PRD-6.1 F5): 外观设置
+        themeHues, themeHueNames, themeMode, themeHue,
+        onThemeModeChange, setThemeHue, hueColor, hueName,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
         aiTotal, aiDayPeak,

@@ -72,7 +72,8 @@ def test_sfc_components_use_qc_tokens_and_aria():
     for name, cls, aria in (
         ("Sidebar.vue", "qc-sidebar", "aria-current"),
         ("Header.vue", "qc-header", "aria-label"),
-        ("SubNav.vue", "qc-subnav", "aria-selected"),
+        # V6.1 (PRD-6.1 F1): SubNav 收敛为中栏导航 (非 tablist), 断言 aria-label
+        ("SubNav.vue", "qc-subnav", "aria-label"),
         ("MobileNav.vue", "qc-mobile-nav", "aria-current"),
     ):
         src = _read(os.path.join(SRC_COMPONENTS, name))

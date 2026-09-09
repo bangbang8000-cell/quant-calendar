@@ -493,3 +493,183 @@
   .qc-main-offset.sidebar-expanded,
   .qc-main-offset.sidebar-collapsed-nav { margin-left: 0; }
 }
+
+/* ─── V6.1 (PRD-6.1 F1): 三栏式布局 — 中栏二级常驻 ───────────── */
+/* 中栏: 固定定位, left 跟随侧边栏展开/折叠 */
+.qc-subnav-column {
+  position: fixed;
+  top: 0;
+  left: var(--qc-sidebar-width);
+  width: var(--qc-subnav-width);
+  height: 100vh;
+  z-index: 90;
+  background: var(--qc-card);
+  border-right: 1px solid var(--qc-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: left var(--duration-base) var(--easing-standard);
+}
+.qc-subnav-column-header {
+  flex-shrink: 0;
+  padding: var(--qc-space-3) var(--qc-space-4) var(--qc-space-2);
+  border-bottom: 1px solid var(--qc-border);
+}
+.qc-subnav-current-label {
+  font-size: var(--qc-font-size-md);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--qc-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.qc-subnav-column-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--qc-space-2) 0;
+}
+/* 分组折叠 chevron 旋转 */
+.qc-subnav-group-label .is-open { transform: rotate(180deg); }
+.qc-subnav-group-label .qc-icon { transition: transform var(--duration-fast) var(--easing-standard); }
+
+/* 侧边栏折叠态: 中栏 left 与工作区 margin 联动 */
+.qc-sidebar.is-collapsed ~ .qc-subnav-column { left: var(--qc-sidebar-collapsed-width); }
+
+/* 工作区: 移除 V6.0 的 max-width:1400px 限制, 填满右侧 (覆盖 themes.css 同名规则) */
+.main-content {
+  margin-left: calc(var(--qc-sidebar-width) + var(--qc-subnav-width));
+  max-width: none;
+}
+.main-content.expanded {
+  margin-left: calc(var(--qc-sidebar-collapsed-width) + var(--qc-subnav-width));
+  max-width: none;
+}
+.qc-work-area-content {
+  min-width: 0;
+}
+
+/* 可读内容限宽 (表格/图表撑满, 表单/正文限 1200px) */
+.qc-readable {
+  max-width: 1200px;
+}
+
+/* 平板 (768-1279): 侧边栏自动折叠为图标, 中栏仍常驻 */
+@media (max-width: 1279px) {
+  .qc-subnav-column { left: var(--qc-sidebar-collapsed-width); }
+  .main-content,
+  .main-content.expanded {
+    margin-left: calc(var(--qc-sidebar-collapsed-width) + var(--qc-subnav-width));
+    max-width: none;
+  }
+}
+
+/* 移动 (<768): 中栏隐藏, 工作区全宽 */
+@media (max-width: 767px) {
+  .qc-subnav-column { display: none; }
+  .main-content,
+  .main-content.expanded {
+    margin-left: 0;
+    max-width: 100%;
+  }
+}
+
+/* ─── V6.1 (PRD-6.1 F8): 动态页签栏 ─────────────────────── */
+.qc-dynamic-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: var(--qc-space-2);
+  margin-bottom: var(--qc-space-3);
+  border-bottom: 1px solid var(--qc-border);
+  scrollbar-width: thin;
+}
+.qc-dynamic-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  height: 30px;
+  padding: 0 var(--qc-space-3);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-card);
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-fast);
+}
+.qc-dynamic-tab:hover {
+  color: var(--qc-nav-item-hover);
+  border-color: var(--qc-primary-300);
+}
+.qc-dynamic-tab.is-active {
+  color: var(--qc-nav-item-active);
+  border-color: var(--qc-primary-500);
+  background: var(--qc-nav-item-active-bg);
+}
+.qc-dynamic-tab:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-dynamic-tab-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.qc-dynamic-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--qc-muted-foreground);
+  cursor: pointer;
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+.qc-dynamic-tab-close:hover {
+  background: var(--qc-muted);
+  color: var(--qc-foreground);
+}
+
+/* 移动端: 页签可横向滚动, 底边距让位于 TabBar */
+@media (max-width: 767px) {
+  .qc-dynamic-tabs {
+    margin-left: calc(-1 * var(--qc-space-3));
+    margin-right: calc(-1 * var(--qc-space-3));
+    padding-left: var(--qc-space-3);
+    padding-right: var(--qc-space-3);
+  }
+}
+
+/* ─── V6.1 (PRD-6.1 F1): 信息密度联动 — 紧凑/舒适/宽松 ───── */
+[data-density="compact"] .qc-sidebar-item { height: 36px; }
+[data-density="compact"] .qc-subnav-item { height: 32px; }
+[data-density="compact"] .qc-dynamic-tab { height: 26px; }
+[data-density="spacious"] .qc-sidebar-item { height: 48px; }
+[data-density="spacious"] .qc-subnav-item { height: 42px; }
+[data-density="spacious"] .qc-dynamic-tab { height: 34px; }
+
+/* ─── V6.1 (PRD-6.1 F1): 移动端抽屉内二级导航 ────────────── */
+.qc-drawer-menu-row {
+  display: flex;
+  align-items: center;
+  margin: 2px 0;
+}
+.qc-drawer-menu-row .qc-sidebar-item {
+  flex: 1;
+  min-width: 0;
+}
+.qc-drawer-menu-row > .qc-sidebar-chevron {
+  margin-right: var(--qc-space-1);
+  flex-shrink: 0;
+}
+.qc-drawer-children {
+  padding-left: 8px;
+  margin-bottom: 4px;
+  border-left: 1px solid var(--qc-border);
+  margin-left: var(--qc-space-5);
+}

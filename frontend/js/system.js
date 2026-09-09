@@ -3,7 +3,7 @@
 // 工厂模式：window.__quantModules.system.create(deps) → 该域全部状态与函数。
 // deps（共享依赖，均为 ref/函数，由 app-logic 传入）:
 //   configChanged aiConfig aiLoading feishuConfig currentTheme changeTheme autoEvaluateConfig
-//   iconSystem researchMenuEnabled currentUser strategyFilter applyTheme
+//   researchMenuEnabled currentUser strategyFilter applyTheme
 //   dashboardData lastRefreshTime saveAiModels
 (function () {
   if (!window.__quantModules) window.__quantModules = {};
@@ -12,7 +12,7 @@
     create(deps) {
       const { ref, computed, watch } = Vue;
       const { configChanged, aiConfig, aiLoading, feishuConfig, currentTheme, changeTheme, autoEvaluateConfig,
-              iconSystem, researchMenuEnabled, currentUser, strategyFilter, applyTheme,
+              researchMenuEnabled, currentUser, strategyFilter, applyTheme,
               dashboardData, lastRefreshTime, saveAiModels } = deps;
 
 const configSaving = ref(false);
@@ -192,7 +192,6 @@ async function saveAllConfig() {
                 rate_limit: rateLimitConfig.value,
                 auto_evaluate: autoEvaluateConfig.value,
                 theme: currentTheme.value,
-                icon_system: iconSystem.value,
                 research_menu_enabled: researchMenuEnabled.value
             }})
         }).then(r => ['userConfig', r.ok]),
@@ -263,7 +262,6 @@ async function resetAllConfig() {
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
             // Only apply config theme if user hasn't manually selected one
             if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
-            if (c.icon_system) { iconSystem.value = c.icon_system; localStorage.setItem('icon_system', c.icon_system); }
             if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
         }
         globalConfigDirty.value = false;
@@ -523,7 +521,6 @@ async function loadUserConfig() {
             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
             if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
-            if (c.icon_system) { iconSystem.value = c.icon_system; localStorage.setItem('icon_system', c.icon_system); }
             if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
         }
     } catch (e) {

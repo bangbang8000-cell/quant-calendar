@@ -18,9 +18,29 @@
 
                     <!-- 日/周/月/年视图 -->
                     <template v-if="currentSubPage !== 'pool'">
-                        <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
-                        <div class="page-header">
-                            <div class="page-title">{{ t('nav.calendar') }}</div>
+                        <!-- V6.1 (PRD-6.1 F3): 日历操作区 — 工作区内容顶部工具栏 (原 SubNav 顶部 Tab 形态迁出) -->
+                        <div class="qc-page-tools">
+                            <div class="flex-c-gap-12">
+                                <el-date-picker v-if="calType === 'date'" v-model="selectedDate" type="date"
+                                    format="YYYY-MM-DD" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectDate')"
+                                    :disabled-date="disabledDate" size="small" @change="onDateChange"></el-date-picker>
+                                <el-date-picker v-else-if="calType === 'week'" v-model="selectedDate" type="week"
+                                    format="YYYY 第w周" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectWeek')"
+                                    :disabled-date="disabledDate" size="small" @change="onDateChange"></el-date-picker>
+                                <el-date-picker v-else-if="calType === 'month'" v-model="selectedDate" type="month"
+                                    format="YYYY-MM" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectMonth')"
+                                    :disabled-date="disabledDate" size="small" @change="onDateChange"></el-date-picker>
+                                <el-date-picker v-else v-model="selectedDate" type="year"
+                                    format="YYYY" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectYear')"
+                                    :disabled-date="disabledDate" size="small" @change="onDateChange"></el-date-picker>
+                                <el-button size="small" :loading="loading" :title="t('calendar.refreshData')" @click="refreshCalendarData">
+                                    <span aria-hidden="true">🔄</span> {{ t('common.refresh') }}
+                                </el-button>
+                                <el-button size="small" :title="t('calendar.exportCsv')" @click="exportCSV">
+                                    <span aria-hidden="true">⬇</span> {{ t('common.export') }}
+                                </el-button>
+                                <span class="qc-subnav-lastload" v-if="lastLoadTime">{{ lastLoadTime }}</span>
+                            </div>
                             <div class="flex-c-gap-12">
                                 <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« {{ t('calendar.prev') }}{{ viewUnit }}</el-button>
                                 <el-button size="small" @click="navigateDate(1)" :disabled="!canNavNext">{{ t('calendar.next') }}{{ viewUnit }} »</el-button>
@@ -162,10 +182,16 @@
       // v3.11 (FR-3.11.5): 日历页手势翻日期（水平滑动切上一/下一交易日）
       // 仅移动端；纵向滚动/点击忽略；消费手势后 stopPropagation 避免触发上层 main-content 的翻页
       // v3.17.8 (FR-3.17.8): 叠加下拉刷新 — 页面顶部下拉超过阈值触发 refreshCalendarData
-      const { ref } = Vue;
+      const { ref, computed } = Vue;
       const calTouchX = ref(0);
       const calTouchY = ref(0);
       const pullRefreshing = ref(false);
+      // V6.1 (PRD-6.1 F3): 日历工具栏日期选择器类型 (由当前子页推导, 原 SubNav 迁出)
+      const calType = computed(() => {
+        const map = { daily: 'date', weekly: 'week', monthly: 'month', yearly: 'year' };
+        const sp = (state.currentSubPage && state.currentSubPage.value) || '';
+        return map[sp] || 'date';
+      });
       let _pullTimer = null;
       function onCalTouchStart(e) {
         const t = e.touches && e.touches[0];
@@ -251,7 +277,7 @@
           compareLoading.value = false;
         }
       }
-      return { ...state, pullRefreshing, onCalTouchStart, onCalTouchEnd,
+      return { ...state, calType, pullRefreshing, onCalTouchStart, onCalTouchEnd,
                compareVisible, compareLoading, compareError, compareData, comparePairs, openStrategyCompare };
     },
   };
