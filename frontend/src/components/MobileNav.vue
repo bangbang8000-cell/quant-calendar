@@ -6,12 +6,13 @@ import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
 import AppIcon from './common/AppIcon.vue'
 
 // 桌面一级 → 移动 Tab 映射 (PRD 1.2.1 / FR-6.0.4)
+// V6.0 (P1-4): 末位 Tab 语义修正 — 「我的」→「设置」, 图标 user → settings
 const TABS = [
   { key: 'strategies', label: '首页', icon: 'home' },
   { key: 'calendar', label: '日历', icon: 'calendar' },
   { key: 'ai', label: 'AI', icon: 'bot' },
   { key: 'research', label: '研究', icon: 'flask-conical' },
-  { key: 'system', label: '我的', icon: 'user' },
+  { key: 'system', label: '设置', icon: 'settings' },
 ]
 
 export default {
@@ -93,12 +94,13 @@ export default {
       <div class="qc-drawer-header">
         <div class="qc-drawer-brand">
           <svg class="qc-logo-mark" viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
-            <rect x="4" y="7" width="4" height="10" rx="1" fill="#c49b2e"/>
-            <line x1="6" y1="4" x2="6" y2="20" stroke="#b8922a" stroke-width="1"/>
-            <rect x="10" y="11" width="4" height="6" rx="1" fill="#8f6f1f"/>
-            <line x1="12" y1="5" x2="12" y2="19" stroke="#8f6f1f" stroke-width="1"/>
-            <rect x="16" y="4" width="4" height="13" rx="1" fill="#b8922a"/>
-            <line x1="18" y1="3" x2="18" y2="21" stroke="#b8922a" stroke-width="1"/>
+            <!-- P2-7: 单主色 var(--qc-primary-600) + opacity 表现 K 线高低 (handover 4.1) -->
+            <rect x="4" y="7" width="4" height="10" rx="1" fill="var(--qc-primary-600)"/>
+            <line x1="6" y1="4" x2="6" y2="20" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+            <rect x="10" y="11" width="4" height="6" rx="1" fill="var(--qc-primary-600)" opacity="0.7"/>
+            <line x1="12" y1="5" x2="12" y2="19" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+            <rect x="16" y="4" width="4" height="13" rx="1" fill="var(--qc-primary-600)" opacity="0.85"/>
+            <line x1="18" y1="3" x2="18" y2="21" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
           </svg>
           <span>{{ state.t('login.title') }}</span>
         </div>

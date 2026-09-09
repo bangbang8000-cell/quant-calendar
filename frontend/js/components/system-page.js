@@ -235,6 +235,167 @@
                     </div>
                 </div>
 
+                    <!-- V6.0 (P1-3): health — 数据源健康独立子页 -->
+                    <div v-else-if="currentSubPage === 'health'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>📊 数据源健康</span>
+                                <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
+                            </div>
+                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">📡 数据源可用性</div>
+                                <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
+                                    <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
+                                        <span class="source-name">{{ s.name }}</span>
+                                        <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                        <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
+                                        <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
+                                    </div>
+                                </div>
+                                <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
+                            </div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">🔁 路由状态</div>
+                                <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
+                                    <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
+                                        <div class="usage-src-head">
+                                            <span class="usage-src-name">{{ ds.name }}</span>
+                                            <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
+                                        </div>
+                                        <div class="usage-src-row">
+                                            <span class="usage-src-row-label">成功率</span>
+                                            <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
+                                        </div>
+                                        <div class="usage-src-row">
+                                            <span class="usage-src-row-label">平均延迟</span>
+                                            <span class="usage-src-row-value">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                        </div>
+                                        <div class="usage-src-row" v-if="ds.consecutive_failures">
+                                            <span class="usage-src-row-label">连续失败</span>
+                                            <span class="usage-src-row-value">{{ ds.consecutive_failures }} 次</span>
+                                        </div>
+                                        <div class="usage-src-row" v-if="ds.switch_reason">
+                                            <span class="usage-src-row-label">最近切换</span>
+                                            <span class="usage-src-row-value" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="usage-ai-empty" v-else>暂无数据源调用记录（服务刚重启时为空，随调用自动累计）</div>
+                            </div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">🩺 数据健康度</div>
+                                <div class="today-health-strip">
+                                    <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
+                                    <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
+                                        <span class="today-health-dot" :class="healthClass(s)"></span>
+                                        <span class="today-health-name">{{ s.name }}</span>
+                                        <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
+                                        <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
+                                        <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
+                                        <span class="today-health-calls">{{ s.calls }}次</span>
+                                        <span v-if="s.degraded" class="today-health-badge">degraded</span>
+                                        <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- V6.0 (P1-3): schedule — 调度任务独立子页 -->
+                    <div v-else-if="currentSubPage === 'schedule'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>🧩 调度任务</span>
+                                <el-button size="small" @click="loadHealthDetail">刷新</el-button>
+                            </div>
+                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
+                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ t.name || k }}</span>
+                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近运行</span>
+                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近成功</span>
+                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed'">
+                                        <span class="text-sm-tertiary">连续失败</span>
+                                        <span class="sys-health-meta">{{ t.consecutive_failures || 0 }} 次</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed' && t.detail">
+                                        <span class="text-sm-tertiary">失败原因</span>
+                                        <span class="sys-health-meta" :title="t.detail">{{ (t.detail || '').slice(0, 60) }}{{ (t.detail || '').length > 60 ? '…' : '' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录（服务刚重启时为空，随定时任务自动填充）</div>
+                        </div>
+                        <div class="card mt-14">
+                            <div class="card-title flex-between">
+                                <span>🗂 任务队列</span>
+                                <el-button size="small" text @click="loadJobQueue">刷新</el-button>
+                            </div>
+                            <div class="sys-health-grid" v-if="jobQueue.length">
+                                <div class="sys-health-card" v-for="j in jobQueue" :key="j.job_id">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ j.task_type }}</span>
+                                        <span :class="j.status === 'completed' ? 'chip-success' : (j.status === 'running' || j.status === 'pending') ? 'chip-info' : 'chip-danger'">{{ jobStatusText(j.status) }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">进度</span>
+                                        <el-progress :percentage="Number(j.progress) || 0" :stroke-width="10" :status="j.status === 'failed' ? 'exception' : (j.status === 'completed' ? 'success' : '')" style="width: 160px"></el-progress>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.message">
+                                        <span class="text-sm-tertiary">状态</span>
+                                        <span class="sys-health-meta">{{ j.message }}</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.status === 'running' || j.status === 'pending'">
+                                        <el-button size="small" type="danger" text @click="cancelJob(j.job_id)">取消任务</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无队列任务（批量评估/回测等长任务会出现在这里）</div>
+                        </div>
+                    </div>
+
+                    <!-- V6.0 (P1-3): guard — AI 事实护栏独立子页 -->
+                    <div v-else-if="currentSubPage === 'guard'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>🔍 AI 事实护栏审计</span>
+                                <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
+                            </div>
+                            <div v-if="factCheck" class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">抽查日期</div>
+                                    <div class="sys-health-big">{{ factCheck.date || '—' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">检查数字</div>
+                                    <div class="sys-health-big">{{ factCheck.checked ?? 0 }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">通过率</div>
+                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">未验证</div>
+                                    <div class="sys-health-big">{{ factCheck.unverified ?? 0 }}</div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无事实护栏审计报告（点击"立即抽查"生成）</div>
+                            <div v-if="factCheck && factCheck.failures && factCheck.failures.length" class="sys-health-row">
+                                <span class="text-sm-tertiary">失败明细</span>
+                                <span class="sys-health-meta">{{ factCheck.failures.length }} 条（最近 {{ factCheck.failures[0].number }} 等）</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- autoeval: 自动评估配置 (v1.8.0) -->
                     <div v-else-if="currentSubPage === 'autoeval'">
                         <div class="card">
@@ -1350,6 +1511,8 @@
       Vue.watch(() => state.currentSubPage && state.currentSubPage.value, (sub) => {
         if (sub === 'autoeval' && state.loadAiVendors) state.loadAiVendors();
         if (sub === 'datadict') loadDataDict();
+        // V6.0 (P1-3): 数据源健康子页加载健康面板数据 (refreshHealth 为组件本地方法)
+        if (sub === 'health') refreshHealth();
       });
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)

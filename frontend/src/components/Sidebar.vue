@@ -76,12 +76,13 @@ export default {
     <!-- Logo 区 -->
     <div class="qc-sidebar-logo">
       <svg class="qc-logo-mark" viewBox="0 0 24 24" width="32" height="32" fill="none" aria-hidden="true">
-        <rect x="4" y="7" width="4" height="10" rx="1" fill="#c49b2e"/>
-        <line x1="6" y1="4" x2="6" y2="20" stroke="#b8922a" stroke-width="1"/>
-        <rect x="10" y="11" width="4" height="6" rx="1" fill="#8f6f1f"/>
-        <line x1="12" y1="5" x2="12" y2="19" stroke="#8f6f1f" stroke-width="1"/>
-        <rect x="16" y="4" width="4" height="13" rx="1" fill="#b8922a"/>
-        <line x1="18" y1="3" x2="18" y2="21" stroke="#b8922a" stroke-width="1"/>
+        <!-- P2-7: 单主色 var(--qc-primary-600) + opacity 表现 K 线高低 (handover 4.1) -->
+        <rect x="4" y="7" width="4" height="10" rx="1" fill="var(--qc-primary-600)"/>
+        <line x1="6" y1="4" x2="6" y2="20" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+        <rect x="10" y="11" width="4" height="6" rx="1" fill="var(--qc-primary-600)" opacity="0.7"/>
+        <line x1="12" y1="5" x2="12" y2="19" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
+        <rect x="16" y="4" width="4" height="13" rx="1" fill="var(--qc-primary-600)" opacity="0.85"/>
+        <line x1="18" y1="3" x2="18" y2="21" stroke="var(--qc-primary-600)" stroke-width="1" opacity="0.5"/>
       </svg>
       <span v-if="!sidebarCollapsed" class="qc-logo-text">{{ state.t('login.title') }}</span>
     </div>
@@ -92,37 +93,50 @@ export default {
         <div v-if="menus.some((m) => m.group === group)" class="qc-nav-group">
           <span v-if="!sidebarCollapsed" class="qc-nav-group-label">{{ GROUP_LABELS[group] }}</span>
           <template v-for="menu in menus.filter((m) => m.group === group)" :key="menu.key">
-            <!-- 一级项 -->
-            <a
+            <!-- 一级项 (V6.0.1 P0-2: link 与 chevron 兄弟, 消除 button 嵌套 a 无效 HTML)
+                 P1-5: 折叠态 Tooltip 改用 el-tooltip (placement right, 300ms 延迟) -->
+            <div
               class="qc-sidebar-item"
               :class="{
-                'is-active': isActive(menu),
                 'has-children': hasChildren(menu),
                 'is-child-open': expandedMenus[menu.key],
               }"
-              :href="'#' + menu.key"
-              :title="sidebarCollapsed ? menu.name : undefined"
-              :aria-current="isActive(menu) ? 'page' : null"
-              @click.prevent="navigate(menu)"
             >
-              <AppIcon :name="menu.iconName || ''" :size="18" class="qc-sidebar-icon" />
-              <span v-if="!sidebarCollapsed" class="qc-sidebar-label">{{ menu.name }}</span>
-              <span v-if="!sidebarCollapsed && menu.badge" class="qc-nav-badge">{{ menu.badge }}</span>
+              <el-tooltip
+                :content="menu.name"
+                placement="right"
+                :show-after="300"
+                :disabled="!sidebarCollapsed"
+              >
+                <a
+                  class="qc-sidebar-link"
+                  :class="{ 'is-active': isActive(menu) }"
+                  :href="'#' + menu.key"
+                  :aria-current="isActive(menu) ? 'page' : null"
+                  @click.prevent="navigate(menu)"
+                >
+                  <AppIcon :name="menu.iconName || ''" :size="18" class="qc-sidebar-icon" />
+                  <span v-if="!sidebarCollapsed" class="qc-sidebar-label">{{ menu.name }}</span>
+                  <span v-if="!sidebarCollapsed && menu.badge" class="qc-nav-badge">{{ menu.badge }}</span>
+                </a>
+              </el-tooltip>
               <button
                 v-if="!sidebarCollapsed && hasChildren(menu)"
                 class="qc-sidebar-chevron"
                 :class="{ 'is-open': expandedMenus[menu.key] }"
                 :aria-expanded="!!expandedMenus[menu.key]"
+                :aria-controls="'submenu-' + menu.key"
                 aria-label="展开子菜单"
-                @click.stop="toggleSubmenu(menu)"
+                @click="toggleSubmenu(menu)"
               >
                 <AppIcon name="chevron-down" :size="14" />
               </button>
-            </a>
+            </div>
             <!-- 子菜单 (展开态) -->
             <div
               v-if="!sidebarCollapsed && hasChildren(menu) && expandedMenus[menu.key]"
               class="qc-sidebar-children"
+              :id="'submenu-' + menu.key"
             >
               <a
                 v-for="sp in menu.subPages"

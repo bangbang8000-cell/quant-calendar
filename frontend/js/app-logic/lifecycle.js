@@ -23,6 +23,21 @@
         runOnMounted: async () => {
           window.addEventListener('keydown', handleGlobalKeydown);
 
+          // V6.0 (P1-3): 浏览器前进/后退 — hash 路由回写当前页/子页
+          window.addEventListener('hashchange', function () {
+            const h = window.location.hash || '';
+            if (!h || h === '#') return;
+            const parts = h.replace(/^#\/?/, '').split('/');
+            const hp = parts[0], hs = parts[1] || '';
+            const menu = menus.value.find(function (m) { return m.key === hp; });
+            if (!menu) return;
+            if (!hs) { currentPage.value = hp; return; }
+            if (menu.subPages.indexOf(hs) >= 0) {
+              currentPage.value = hp;
+              currentSubPage.value = hs;
+            }
+          });
+
           // 超时保护的 Promise 包装器（防阻塞渲染）
           const withTimeout = (promise, ms = 3000, label = '') => {
             const timer = new Promise((_, reject) =>
@@ -43,15 +58,30 @@
           if (savedTheme) applyTheme(savedTheme);
 
           // v1.10: 恢复用户最后选择（无本地最后页面时回落偏好 default_view）
+          // V6.0 (P1-3): URL hash 优先恢复 — 刷新定位到具体子页
           (function() {
-            var p = localStorage.getItem('quant_last_page');
-            if (p && menus.value.some(function(m) { return m.key === p; })) {
-              currentPage.value = p;
-            } else if (__prefs.default_view && menus.value.some(function(m) { return m.key === __prefs.default_view; })) {
-              currentPage.value = __prefs.default_view;
+            var h = window.location.hash || '';
+            var fromHash = false;
+            if (h && h !== '#') {
+              var parts = h.replace(/^#\/?/, '').split('/');
+              var hp = parts[0], hs = parts[1] || '';
+              var menu = menus.value.find(function(m) { return m.key === hp; });
+              if (menu) {
+                currentPage.value = hp;
+                if (hs && menu.subPages.indexOf(hs) >= 0) currentSubPage.value = hs;
+                fromHash = true;
+              }
             }
-            var s = localStorage.getItem('quant_last_subpage');
-            if (s) currentSubPage.value = s;
+            if (!fromHash) {
+              var p = localStorage.getItem('quant_last_page');
+              if (p && menus.value.some(function(m) { return m.key === p; })) {
+                currentPage.value = p;
+              } else if (__prefs.default_view && menus.value.some(function(m) { return m.key === __prefs.default_view; })) {
+                currentPage.value = __prefs.default_view;
+              }
+              var s = localStorage.getItem('quant_last_subpage');
+              if (s) currentSubPage.value = s;
+            }
             var d = localStorage.getItem('quant_last_date');
             if (d) selectedDate.value = d;
             var v = localStorage.getItem('quant_last_view');

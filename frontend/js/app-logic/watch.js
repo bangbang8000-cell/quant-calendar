@@ -36,6 +36,15 @@
 
       // ===== v1.5.0: 子页面切换同步 =====
       watch([currentPage, currentSubPage], ([page, sub]) => {
+        // V6.0 (P1-3): URL hash 同步 — 支持刷新定位与浏览器前进后退
+        // 格式: #<page>/<sub>（如 #system/health）；hash 由 hashchange 监听回写状态
+        try {
+          const hashSub = sub || '';
+          const target = hashSub ? '#' + page + '/' + hashSub : '#' + page;
+          if (window.location.hash !== target) {
+            window.location.hash = target;
+          }
+        } catch (e) { /* hash 同步失败不阻塞导航 */ }
         // 保存当前子页
         if (sub) localStorage.setItem('quant_last_subpage', sub);
         // 自动设置子页默认值（首次进入时 sub 可能为空）
@@ -105,6 +114,9 @@
         // 系统配子页切换
         if (page === 'system' && currentUser.value?.role === 'admin') {
           if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
+          if (sub === 'health') { loadHealthDetail(); loadHealthMetrics(); }  // V6.0 (P1-3): 数据源健康独立子页
+          if (sub === 'schedule') { loadHealthDetail(); }  // V6.0 (P1-3): 调度任务独立子页 (任务队列由组件轮询)
+          if (sub === 'guard') { loadFactCheck(); }  // V6.0 (P1-3): AI 事实护栏独立子页
           if (sub === 'usage') { loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage(); loadFactCheck(); }
           if (sub === 'autoeval') { loadAutoEvaluateConfig(); loadAiVendors(); }  // V4.6: 进入自动评估强制加载厂商卡
           if (sub === 'datasource') loadDatasourceConfig();

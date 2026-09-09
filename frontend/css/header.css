@@ -79,41 +79,42 @@
   opacity: 0.7;
 }
 
-/* 中区搜索 */
+/* 中区搜索 (V6.0.1 P0-1: 覆盖 EP autocomplete 内部结构 — el-autocomplete 渲染为
+   .el-input__wrapper 嵌套, 原按自定义 flex 容器写导致圆角/背景/focus 不生效) */
 .qc-header-center {
   flex: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--qc-space-2);
   max-width: 520px;
   margin: 0 var(--qc-space-4);
 }
 .qc-header-search {
-  display: flex;
-  align-items: center;
-  gap: var(--qc-space-2);
-  width: 100%;
-  max-width: 320px;
-  height: 36px;
-  padding: 0 var(--qc-space-3);
-  background: var(--qc-muted);
-  border-radius: var(--qc-radius-full);
-  color: var(--qc-muted-foreground);
-  transition: box-shadow var(--duration-fast);
-}
-.qc-header-search:focus-within {
-  box-shadow: 0 0 0 2px var(--qc-ring);
-}
-.qc-header-search-icon { flex-shrink: 0; }
-.qc-header-search-input {
   flex: 1;
   min-width: 0;
-  border: none;
-  outline: none;
+  max-width: 320px;
+}
+.qc-header-search .el-input { width: 100%; }
+.qc-header-search .el-input__wrapper {
+  background: var(--qc-muted);
+  border-radius: var(--qc-radius-full);
+  box-shadow: none;
+  padding: 0 var(--qc-space-3);
+  height: 36px;
+  transition: box-shadow var(--duration-fast);
+}
+.qc-header-search .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px var(--qc-ring) inset;
+}
+.qc-header-search .el-input__inner {
   background: transparent;
   color: var(--qc-foreground);
   font-size: var(--qc-font-size-base);
 }
-.qc-header-search-input::placeholder { color: var(--qc-muted-foreground); }
+.qc-header-search .el-input__inner::placeholder { color: var(--qc-muted-foreground); }
+.qc-header-search .el-input__prefix { color: var(--qc-muted-foreground); }
+.qc-header-search-icon { flex-shrink: 0; }
 .qc-header-search-kbd {
   flex-shrink: 0;
   font-size: var(--qc-font-size-xs);

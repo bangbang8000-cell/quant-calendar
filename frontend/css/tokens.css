@@ -67,9 +67,10 @@
   --qc-nav-item-hover: var(--qc-neutral-900);
   --qc-nav-item-hover-bg: var(--qc-neutral-100);
   /* V6.0.1 (B1/B2): 对比度修复 — 分组标签 400→500；选中项背景提亮 + 文字加深
-     V6.0.1: 选中项背景改 var(--qc-primary-50) 随主题 (原硬编码 #fdfaf3 不随主题) */
+     V6.0.1: 选中项背景改 var(--qc-primary-50) 随主题 (原硬编码 #fdfaf3 不随主题)
+     P2-6: 金色选中态对比度 — 50 → 100 (handover 2.2) */
   --qc-nav-item-active: var(--qc-primary-800);
-  --qc-nav-item-active-bg: var(--qc-primary-50);
+  --qc-nav-item-active-bg: var(--qc-primary-100);
   --qc-nav-item-active-border: var(--qc-primary-500);
   --qc-nav-group-label: var(--qc-neutral-500);
   --qc-nav-badge-bg: var(--qc-primary-100);
@@ -244,6 +245,21 @@
 
 /* v3.17.9 (FR-3.17.9): in-DOM 模板在 Vue 挂载前隐藏（防止 defer 下原始 {{}} 模板闪现） */
 [v-cloak] { display: none !important; }
+
+/* V6.0 (P2-8): 全局主题切换过渡 (handover 10.3) — 换主题时颜色/边框/阴影平滑过渡
+   注: 各组件自带 transition 的类选择器特异性更高, 不会被本条 * 规则覆盖 */
+*,
+*::before,
+*::after {
+  transition: background-color 0.25s ease, color 0.25s ease,
+              border-color 0.25s ease, box-shadow 0.25s ease;
+}
+/* 开关/滑块/进度条保留自身交互动效, 不受全局过渡干扰 */
+.qc-switch,
+.qc-slider,
+.qc-progress-bar {
+  transition: none;
+}
 
 /* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */
 .num-tabular { font-variant-numeric: tabular-nums; }

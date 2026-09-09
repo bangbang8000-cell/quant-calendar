@@ -10,17 +10,18 @@ import AppIcon from './common/AppIcon.vue'
 const TOP_TAB_PAGES = ['strategies', 'calendar', 'ai', 'shortterm']
 
 // 系统配置左侧子导航分组 (PRD 1.2.3)
-// 叶节点映射现有 subPage: health/schedule→status, guard→autoeval (anchor 供页内滚动)
+// V6.0 (P1-3): 每个叶节点独立 subPage key (status/health/schedule/autoeval/usage/guard),
+// 不再共用 key + anchor 滚动 — 支持 URL hash 深链与浏览器前进后退
 const SYSTEM_GROUPS = [
   { label: '运行监控', items: [
     { key: 'status', label: '系统状态', icon: 'activity' },
-    { key: 'status', label: '数据源健康', icon: 'database', anchor: 'health' },
-    { key: 'status', label: '调度任务', icon: 'clock', anchor: 'schedule' },
+    { key: 'health', label: '数据源健康', icon: 'database' },
+    { key: 'schedule', label: '调度任务', icon: 'clock' },
   ]},
   { label: '智能服务', items: [
     { key: 'autoeval', label: '自动评估', icon: 'bot' },
     { key: 'usage', label: 'AI 用量', icon: 'bar-chart-3' },
-    { key: 'autoeval', label: 'AI 事实护栏', icon: 'shield', anchor: 'guard' },
+    { key: 'guard', label: 'AI 事实护栏', icon: 'shield' },
   ]},
   { label: '平台设置', items: [
     { key: 'datasource', label: '数据源', icon: 'hard-drive' },
@@ -64,13 +65,6 @@ export default {
     function goSystemItem(item) {
       if (state.currentSubPage) state.currentSubPage.value = item.key
       try { localStorage.setItem('quant_last_subpage', item.key) } catch (e) {}
-      if (item.anchor) {
-        // 页内锚点滚动 (数据源健康/调度任务/AI护栏为页内区块)
-        requestAnimationFrame(() => {
-          const el = document.getElementById(item.anchor)
-          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        })
-      }
     }
     function toggleGroup(label) { collapsedGroups.value[label] = !collapsedGroups.value[label] }
 
@@ -182,7 +176,7 @@ export default {
         <a
           v-for="sp in subPages" :key="sp"
           class="qc-subnav-item" :class="{ 'is-active': isSubActive(sp) }"
-          :href="'#' + sp"
+          :href="'#' + currentPage + '/' + sp"
           @click.prevent="goSub(sp)"
         >
           <AppIcon :name="subIcon(sp)" :size="16" />

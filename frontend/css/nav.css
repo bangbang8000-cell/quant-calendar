@@ -62,38 +62,61 @@
   user-select: none;
 }
 
-/* 一级菜单项 */
+/* 一级菜单项 (V6.0.1 P0-2: 容器化 — link 与 chevron 为兄弟, 消除 <button> 嵌套 <a> 无效 HTML) */
 .qc-sidebar-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--qc-space-3);
   height: 40px;
-  padding: 0 var(--qc-space-3);
   margin: 2px 0;
   border-radius: var(--qc-radius-medium);
   border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--easing-standard),
+              border-color var(--duration-fast) var(--easing-standard);
+}
+/* 子菜单/抽屉项仍为 <a class="qc-sidebar-item">, 复用链接样式 */
+.qc-sidebar-item.qc-sidebar-child,
+.qc-drawer-body .qc-sidebar-item {
+  padding: 0 var(--qc-space-3);
+  gap: var(--qc-space-3);
   color: var(--qc-nav-item-default);
   font-size: var(--qc-font-size-base);
   font-weight: var(--qc-font-weight-medium);
   text-decoration: none;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--easing-standard),
-              color var(--duration-fast) var(--easing-standard),
-              border-color var(--duration-fast) var(--easing-standard);
 }
-.qc-sidebar-item:hover {
+/* 内部导航链接 (桌面一级) */
+.qc-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-3);
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--qc-space-3);
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--qc-font-weight-medium);
+  text-decoration: none;
+}
+.qc-sidebar-item:hover,
+.qc-sidebar-link:hover {
   background: var(--qc-nav-item-hover-bg);
   color: var(--qc-nav-item-hover);
 }
+.qc-sidebar-link:focus-visible,
 .qc-sidebar-item:focus-visible {
   outline: 2px solid var(--qc-ring);
   outline-offset: -2px;
 }
+/* 选中态: 桌面一级经 :has() 定位容器; 子菜单/抽屉经 .is-active 自身 */
+.qc-sidebar-item:has(.qc-sidebar-link.is-active),
 .qc-sidebar-item.is-active {
   background: var(--qc-nav-item-active-bg);
   color: var(--qc-nav-item-active);
   border-left-color: var(--qc-nav-item-active-border);
 }
+.qc-sidebar-link.is-active { color: var(--qc-nav-item-active); }
 .qc-sidebar-item.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -114,6 +137,7 @@
   justify-content: center;
   width: 22px;
   height: 22px;
+  margin-right: var(--qc-space-2);
   border: none;
   background: transparent;
   color: var(--qc-nav-item-default);
@@ -160,35 +184,18 @@
   text-overflow: ellipsis;
 }
 
-/* 折叠态: 仅图标 + hover Tooltip (C3: 300ms 延迟显示) */
+/* 折叠态: 仅图标; P1-5: Tooltip 由 el-tooltip 组件提供 (placement right, show-after 300ms),
+   el-tooltip 直通渲染 <a> 为触发元素, 无需额外样式 */
 .qc-sidebar.is-collapsed .qc-sidebar-item {
   justify-content: center;
   padding: 0;
   width: 100%;
   position: relative;
 }
-.qc-sidebar.is-collapsed .qc-sidebar-item::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--qc-neutral-800);
-  color: var(--qc-neutral-0);
-  font-size: var(--qc-font-size-sm);
-  padding: 6px 10px;
-  border-radius: var(--qc-radius-small);
-  white-space: nowrap;
-  z-index: 200;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--duration-fast) ease 0.3s, visibility 0s linear 0.3s;
-}
-.qc-sidebar.is-collapsed .qc-sidebar-item:hover::after {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity var(--duration-fast) ease 0.3s;
+.qc-sidebar.is-collapsed .qc-sidebar-link {
+  justify-content: center;
+  padding: 0;
+  position: relative;
 }
 .qc-sidebar.is-collapsed .qc-nav-group-label { display: none; }
 
@@ -233,7 +240,7 @@
 }
 .qc-page-title {
   margin: 0;
-  font-size: var(--qc-font-size-lg);
+  font-size: var(--qc-font-size-xl);
   font-weight: var(--qc-font-weight-semibold);
   color: var(--qc-foreground);
   line-height: 1.3;

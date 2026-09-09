@@ -10,9 +10,27 @@
   border-radius: var(--qc-radius-large);
   padding: var(--qc-space-4);
   min-width: 0;
+  transition: box-shadow var(--duration-base), border-color var(--duration-base), transform var(--duration-base);
+  /* P2-9: 卡片 stagger 入场 (backwards 保证动画结束后 transform 交还 hover 过渡) */
+  animation: qc-card-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+/* P2-10: hover 微悬浮 (克制, 仅 2px) */
+.qc-card:hover {
+  box-shadow: var(--qc-shadow-sm);
+  border-color: var(--qc-neutral-300);
+  transform: translateY(-2px);
 }
 .qc-card + .qc-card { margin-top: var(--qc-space-4); }
-/* hover 仅轻阴影, 不上浮 (克制) */
+/* P2-9: 相邻卡片 stagger 延迟 (handover 10.1) */
+@keyframes qc-card-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.qc-card:nth-child(1) { animation-delay: 0.05s; }
+.qc-card:nth-child(2) { animation-delay: 0.10s; }
+.qc-card:nth-child(3) { animation-delay: 0.15s; }
+.qc-card:nth-child(4) { animation-delay: 0.20s; }
+/* hover 仅轻阴影, 不上浮 (克制) — opt-in 变体保留 */
 .qc-card-hover { transition: box-shadow var(--duration-base), border-color var(--duration-base); }
 .qc-card-hover:hover { box-shadow: var(--qc-shadow-sm); border-color: var(--qc-neutral-300); }
 
@@ -26,7 +44,7 @@
 .qc-kpi { display: flex; flex-direction: column; gap: var(--qc-space-1); }
 .qc-kpi-label { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); font-weight: var(--qc-font-weight-medium); }
 .qc-kpi-value {
-  font-size: 30px;
+  font-size: 32px; /* P2-11: KPI 数值 28→32px 强化数据层级 */
   font-weight: var(--qc-font-weight-bold);
   color: var(--qc-foreground);
   font-variant-numeric: tabular-nums;
@@ -186,7 +204,7 @@
 }
 .dashboard-grid .stat-card:hover { box-shadow: var(--qc-shadow-md); border-color: var(--qc-neutral-300); }
 .dashboard-grid .stat-value {
-  font-size: 28px;
+  font-size: 32px; /* P2-11: KPI 数值 28→32px 强化数据层级 */
   font-weight: var(--qc-font-weight-bold);
   color: var(--qc-foreground);
   font-variant-numeric: tabular-nums;

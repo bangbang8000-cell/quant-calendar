@@ -1,4 +1,4 @@
-(function(){const{inject:Y}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:`
+(function(){const{inject:$}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:`
                 <div v-if="currentPage === 'system'" key="system" class="system-page-root">
                     <!-- V5.3.0 (T-5.3.1.1): 统一页面头 — 与 research/shortterm 一致 -->
                     <div class="page-header">
@@ -224,6 +224,167 @@
                         </div>
                     </div>
                 </div>
+
+                    <!-- V6.0 (P1-3): health — 数据源健康独立子页 -->
+                    <div v-else-if="currentSubPage === 'health'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>📊 数据源健康</span>
+                                <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
+                            </div>
+                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">📡 数据源可用性</div>
+                                <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
+                                    <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
+                                        <span class="source-name">{{ s.name }}</span>
+                                        <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                        <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
+                                        <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
+                                    </div>
+                                </div>
+                                <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
+                            </div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">🔁 路由状态</div>
+                                <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
+                                    <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
+                                        <div class="usage-src-head">
+                                            <span class="usage-src-name">{{ ds.name }}</span>
+                                            <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
+                                        </div>
+                                        <div class="usage-src-row">
+                                            <span class="usage-src-row-label">成功率</span>
+                                            <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
+                                        </div>
+                                        <div class="usage-src-row">
+                                            <span class="usage-src-row-label">平均延迟</span>
+                                            <span class="usage-src-row-value">{{ ds.avg_latency_ms ?? '--' }}ms</span>
+                                        </div>
+                                        <div class="usage-src-row" v-if="ds.consecutive_failures">
+                                            <span class="usage-src-row-label">连续失败</span>
+                                            <span class="usage-src-row-value">{{ ds.consecutive_failures }} 次</span>
+                                        </div>
+                                        <div class="usage-src-row" v-if="ds.switch_reason">
+                                            <span class="usage-src-row-label">最近切换</span>
+                                            <span class="usage-src-row-value" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="usage-ai-empty" v-else>暂无数据源调用记录（服务刚重启时为空，随调用自动累计）</div>
+                            </div>
+                            <div class="section-block-top">
+                                <div class="section-title-base">🩺 数据健康度</div>
+                                <div class="today-health-strip">
+                                    <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
+                                    <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
+                                        <span class="today-health-dot" :class="healthClass(s)"></span>
+                                        <span class="today-health-name">{{ s.name }}</span>
+                                        <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
+                                        <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
+                                        <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
+                                        <span class="today-health-calls">{{ s.calls }}次</span>
+                                        <span v-if="s.degraded" class="today-health-badge">degraded</span>
+                                        <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- V6.0 (P1-3): schedule — 调度任务独立子页 -->
+                    <div v-else-if="currentSubPage === 'schedule'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>🧩 调度任务</span>
+                                <el-button size="small" @click="loadHealthDetail">刷新</el-button>
+                            </div>
+                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
+                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ t.name || k }}</span>
+                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近运行</span>
+                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">最近成功</span>
+                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed'">
+                                        <span class="text-sm-tertiary">连续失败</span>
+                                        <span class="sys-health-meta">{{ t.consecutive_failures || 0 }} 次</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="t.last_status === 'failed' && t.detail">
+                                        <span class="text-sm-tertiary">失败原因</span>
+                                        <span class="sys-health-meta" :title="t.detail">{{ (t.detail || '').slice(0, 60) }}{{ (t.detail || '').length > 60 ? '…' : '' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录（服务刚重启时为空，随定时任务自动填充）</div>
+                        </div>
+                        <div class="card mt-14">
+                            <div class="card-title flex-between">
+                                <span>🗂 任务队列</span>
+                                <el-button size="small" text @click="loadJobQueue">刷新</el-button>
+                            </div>
+                            <div class="sys-health-grid" v-if="jobQueue.length">
+                                <div class="sys-health-card" v-for="j in jobQueue" :key="j.job_id">
+                                    <div class="sys-health-card-head">
+                                        <span class="sys-health-name">{{ j.task_type }}</span>
+                                        <span :class="j.status === 'completed' ? 'chip-success' : (j.status === 'running' || j.status === 'pending') ? 'chip-info' : 'chip-danger'">{{ jobStatusText(j.status) }}</span>
+                                    </div>
+                                    <div class="sys-health-row">
+                                        <span class="text-sm-tertiary">进度</span>
+                                        <el-progress :percentage="Number(j.progress) || 0" :stroke-width="10" :status="j.status === 'failed' ? 'exception' : (j.status === 'completed' ? 'success' : '')" style="width: 160px"></el-progress>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.message">
+                                        <span class="text-sm-tertiary">状态</span>
+                                        <span class="sys-health-meta">{{ j.message }}</span>
+                                    </div>
+                                    <div class="sys-health-row" v-if="j.status === 'running' || j.status === 'pending'">
+                                        <el-button size="small" type="danger" text @click="cancelJob(j.job_id)">取消任务</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无队列任务（批量评估/回测等长任务会出现在这里）</div>
+                        </div>
+                    </div>
+
+                    <!-- V6.0 (P1-3): guard — AI 事实护栏独立子页 -->
+                    <div v-else-if="currentSubPage === 'guard'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span>🔍 AI 事实护栏审计</span>
+                                <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
+                            </div>
+                            <div v-if="factCheck" class="sys-health-grid">
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">抽查日期</div>
+                                    <div class="sys-health-big">{{ factCheck.date || '—' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">检查数字</div>
+                                    <div class="sys-health-big">{{ factCheck.checked ?? 0 }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">通过率</div>
+                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
+                                </div>
+                                <div class="sys-health-card">
+                                    <div class="sys-health-card-title">未验证</div>
+                                    <div class="sys-health-big">{{ factCheck.unverified ?? 0 }}</div>
+                                </div>
+                            </div>
+                            <div class="text-sm-tertiary" v-else>暂无事实护栏审计报告（点击"立即抽查"生成）</div>
+                            <div v-if="factCheck && factCheck.failures && factCheck.failures.length" class="sys-health-row">
+                                <span class="text-sm-tertiary">失败明细</span>
+                                <span class="sys-health-meta">{{ factCheck.failures.length }} 条（最近 {{ factCheck.failures[0].number }} 等）</span>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- autoeval: 自动评估配置 (v1.8.0) -->
                     <div v-else-if="currentSubPage === 'autoeval'">
@@ -1332,4 +1493,4 @@
                         </div>
                     </div>
                     </div>
-    `,setup(){const t=Y("qcState");if(!t)return{};Vue.watch(()=>t.currentSubPage&&t.currentSubPage.value,e=>{e==="autoeval"&&t.loadAiVendors&&t.loadAiVendors(),e==="datadict"&&K()});const V=Vue.ref([]),g=Vue.ref(""),I=Vue.ref("read"),o=Vue.ref(""),h=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},f=Vue.ref([]),b=Vue.ref(!1);async function $(){b.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});f.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),f.value=[]}finally{b.value=!1}}const y=Vue.ref(!1),x=Vue.ref(null),j=Vue.ref(null),L=Vue.ref([]),X=Vue.ref(null);function Z(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function p(){try{const a=await(await fetch("/api/jobs?limit=20")).json();a&&a.success&&(L.value=a.data&&a.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function ee(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),p()}catch(a){console.warn("[system] 取消任务失败:",a)}}function ae(){p(),X.value=window.setInterval(p,15e3)}const v=Vue.ref({items:[]}),k=Vue.ref([]),F=Vue.ref(null),H=Vue.ref({data_sources:[],alerts:[]}),se=function(){return c().authHeaders?c().authHeaders():{}},u=function(e){return fetch(e,{headers:se()}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()})};async function te(){y.value=!0,x.value=null;try{const[e,a,s,r]=await Promise.all([u("/api/reliability/freshness"),u("/api/reliability/heal-history?limit=20"),u("/api/reliability/startup-report"),u("/api/reliability/source-health")]);v.value=e&&e.data||{items:[]},k.value=a&&a.data||[],F.value=s&&s.data||null,H.value=r||{data_sources:[],alerts:[]},j.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),x.value="健康数据加载失败: "+(e.message||""),v.value={items:[]},k.value=[]}finally{y.value=!1}}const w=Vue.ref(!1),_=Vue.ref(""),C=Vue.ref(""),A=Vue.ref({fields:[]});async function K(){w.value=!0,_.value="";try{const e="/api/data-dict"+(C.value?"?category="+C.value:""),a=await u(e);A.value=a&&a.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),_.value="数据字典加载失败: "+(e.message||""),A.value={fields:[]}}finally{w.value=!1}}function le(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function ie(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const ce=Vue.computed(()=>(v.value?v.value.items||[]:[]).filter(a=>a.status==="stale"||a.status==="missing").length),O=Vue.ref("rules"),N=Vue.ref([]),U=Vue.ref([]),B=Vue.ref([]),i=Vue.ref(!1),z=Vue.ref(""),R=Vue.ref("price_above"),M=Vue.ref(""),d=Vue.ref(!1),G=Vue.ref(60),l=Vue.ref("");function ne(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function m(){i.value=!0;try{const e=await(await fetch("/api/alerts/rules")).json();N.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e}finally{i.value=!1}}async function W(){i.value=!0;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();U.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e}finally{i.value=!1}}async function q(){i.value=!0;try{const e=await(await fetch("/api/alerts/channels")).json(),a=await(await fetch("/api/alerts/silence")).json();B.value=e&&e.channels||[],d.value=!!(a&&a.silenced)}catch(e){l.value="通道状态加载失败: "+e}finally{i.value=!1}}function re(e){O.value=e,e==="rules"?m():e==="history"?W():q()}async function oe(){const e=z.value.trim();if(!e){l.value="请填写股票代码";return}i.value=!0;try{const a={stock_code:e,rule_type:R.value};if(R.value!=="new_pool"){const r=Number(M.value);if(isNaN(r)){l.value="阈值必须为数值";return}a.threshold=r}const s=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})).json();s&&s.rule?(l.value="规则已添加",z.value="",M.value="",m()):l.value=s&&s.detail||"添加失败"}catch(a){l.value="添加失败: "+a}finally{i.value=!1}}async function de(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(a){l.value="切换失败: "+a}}async function ve(e){try{const a=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();a&&a.success?(l.value="规则已删除",m()):l.value="删除失败"}catch(a){l.value="删除失败: "+a}}async function J(){try{const e=d.value?G.value:0,a=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();d.value=!!(a&&a.silenced),l.value=d.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function ue(){d.value=!1,await J()}function pe(e){return!!e&&!e.degraded}const me=Vue.computed(()=>(t&&t.analyticsRank&&t.analyticsRank.value||[]).reduce((a,s)=>Math.max(a,s.views||0),0)||1),T=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function S(){h.value=!0;try{const e=await c().apiFetch(T()+"/keys");V.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{h.value=!1}}async function ge(){try{const e=await c().apiFetch(T()+"/keys",{method:"POST",body:JSON.stringify({name:g.value||"未命名",role:I.value||"read",expire_days:365})});e&&e.success?(o.value=e.api_key||"",g.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await S()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function he(){if(o.value)try{await navigator.clipboard.writeText(o.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function fe(e){try{const a=await c().apiFetch(T()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),o.value&&e.prefix&&o.value.includes(e.prefix)&&(o.value=""),await S()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const be={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function ye(e){return be[e]||e}const xe=computed(()=>{var e;return(((e=t.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:ye(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function ke(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function we(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const n=t.aiUsage||Vue.ref({}),P=Vue.computed(()=>{const e=n.value&&n.value.by_model||{};return Object.entries(e).map(([a,s])=>({name:a,count:s})).sort((a,s)=>s.count-a.count)}),_e=Vue.computed(()=>P.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Ce=Vue.computed(()=>P.value.reduce((e,a)=>e+a.count,0)||1),Ae=Vue.computed(()=>D.value.reduce((e,a)=>Math.max(e,a.count),0)||0),D=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=[],s=new Date;for(let r=29;r>=0;r--){const E=new Date(s.getFullYear(),s.getMonth(),s.getDate()-r),Q=E.getFullYear()+"-"+String(E.getMonth()+1).padStart(2,"0")+"-"+String(E.getDate()).padStart(2,"0");a.push({day:Q,count:e[Q]||0})}return a}),ze=Vue.computed(()=>D.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Re=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=new Date,s=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[s]||0}),Me=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=Object.keys(e).filter(s=>(e[s]||0)>0);return a.length?a[a.length-1]:""});function Te(e){t.analyticsDays&&(t.analyticsDays.value=e),typeof t.loadAnalytics=="function"&&t.loadAnalytics()}const Se='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',Pe='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function De(e){return e?Pe:Se}return ae(),{...t,analyticsMaxViews:me,aiModelRank:P,aiModelMax:_e,aiDayTrend:D,aiDayMax:ze,todayAiCalls:Re,lastAiCallDay:Me,aiTotal:Ce,aiDayPeak:Ae,setAnalyticsDays:Te,viewIcon:De,openApiKeys:V,openApiKeyName:g,openApiKeyRole:I,newOpenApiKey:o,openApiLoading:h,loadOpenApiKeys:S,generateOpenApiKey:ge,copyOpenApiKey:he,revokeOpenApiKey:fe,healthRows:xe,healthClass:ke,fmtAge:we,staleAssetCount:ce,jobQueue:L,loadJobQueue:p,cancelJob:ee,jobStatusText:Z,auditLogs:f,auditLoading:b,loadAuditLogs:$,healthLoading:y,healthError:x,healthUpdatedAt:j,freshnessData:v,healHistory:k,startupReport:F,sourceHealth:H,refreshHealth:te,statusColor:le,statusLabel:ie,sourceOk:pe,dictLoading:w,dictError:_,dictCategory:C,dictData:A,loadDataDict:K,ncTab:O,ncRules:N,ncHistory:U,ncChannels:B,ncLoading:i,ncNewCode:z,ncNewType:R,ncNewThreshold:M,ncSilence:d,ncSilenceMinutes:G,ncMsg:l,ncTypeLabel:ne,onNcTab:re,loadAlertRules:m,loadAlertHistory:W,loadAlertChannels:q,addAlertRule:oe,toggleAlertRule:de,removeAlertRule:ve,applySilence:J,clearSilence:ue}}}})();
+    `,setup(){const t=$("qcState");if(!t)return{};Vue.watch(()=>t.currentSubPage&&t.currentSubPage.value,e=>{e==="autoeval"&&t.loadAiVendors&&t.loadAiVendors(),e==="datadict"&&O(),e==="health"&&K()});const V=Vue.ref([]),h=Vue.ref(""),j=Vue.ref("read"),d=Vue.ref(""),g=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},f=Vue.ref([]),y=Vue.ref(!1);async function X(){y.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()});f.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),f.value=[]}finally{y.value=!1}}const b=Vue.ref(!1),x=Vue.ref(null),I=Vue.ref(null),L=Vue.ref([]),Z=Vue.ref(null);function ee(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function p(){try{const s=await(await fetch("/api/jobs?limit=20")).json();s&&s.success&&(L.value=s.data&&s.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function se(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),p()}catch(s){console.warn("[system] 取消任务失败:",s)}}function ae(){p(),Z.value=window.setInterval(p,15e3)}const v=Vue.ref({items:[]}),k=Vue.ref([]),H=Vue.ref(null),F=Vue.ref({data_sources:[],alerts:[]}),te=function(){return c().authHeaders?c().authHeaders():{}},u=function(e){return fetch(e,{headers:te()}).then(function(s){if(!s.ok)throw new Error("HTTP "+s.status);return s.json()})};async function K(){b.value=!0,x.value=null;try{const[e,s,a,r]=await Promise.all([u("/api/reliability/freshness"),u("/api/reliability/heal-history?limit=20"),u("/api/reliability/startup-report"),u("/api/reliability/source-health")]);v.value=e&&e.data||{items:[]},k.value=s&&s.data||[],H.value=a&&a.data||null,F.value=r||{data_sources:[],alerts:[]},I.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),x.value="健康数据加载失败: "+(e.message||""),v.value={items:[]},k.value=[]}finally{b.value=!1}}const w=Vue.ref(!1),_=Vue.ref(""),C=Vue.ref(""),A=Vue.ref({fields:[]});async function O(){w.value=!0,_.value="";try{const e="/api/data-dict"+(C.value?"?category="+C.value:""),s=await u(e);A.value=s&&s.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),_.value="数据字典加载失败: "+(e.message||""),A.value={fields:[]}}finally{w.value=!1}}function le(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function ie(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const ce=Vue.computed(()=>(v.value?v.value.items||[]:[]).filter(s=>s.status==="stale"||s.status==="missing").length),N=Vue.ref("rules"),U=Vue.ref([]),B=Vue.ref([]),G=Vue.ref([]),i=Vue.ref(!1),z=Vue.ref(""),R=Vue.ref("price_above"),S=Vue.ref(""),o=Vue.ref(!1),W=Vue.ref(60),l=Vue.ref("");function ne(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function m(){i.value=!0;try{const e=await(await fetch("/api/alerts/rules")).json();U.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e}finally{i.value=!1}}async function q(){i.value=!0;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();B.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e}finally{i.value=!1}}async function J(){i.value=!0;try{const e=await(await fetch("/api/alerts/channels")).json(),s=await(await fetch("/api/alerts/silence")).json();G.value=e&&e.channels||[],o.value=!!(s&&s.silenced)}catch(e){l.value="通道状态加载失败: "+e}finally{i.value=!1}}function re(e){N.value=e,e==="rules"?m():e==="history"?q():J()}async function de(){const e=z.value.trim();if(!e){l.value="请填写股票代码";return}i.value=!0;try{const s={stock_code:e,rule_type:R.value};if(R.value!=="new_pool"){const r=Number(S.value);if(isNaN(r)){l.value="阈值必须为数值";return}s.threshold=r}const a=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)})).json();a&&a.rule?(l.value="规则已添加",z.value="",S.value="",m()):l.value=a&&a.detail||"添加失败"}catch(s){l.value="添加失败: "+s}finally{i.value=!1}}async function oe(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(s){l.value="切换失败: "+s}}async function ve(e){try{const s=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();s&&s.success?(l.value="规则已删除",m()):l.value="删除失败"}catch(s){l.value="删除失败: "+s}}async function Q(){try{const e=o.value?W.value:0,s=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();o.value=!!(s&&s.silenced),l.value=o.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function ue(){o.value=!1,await Q()}function pe(e){return!!e&&!e.degraded}const me=Vue.computed(()=>(t&&t.analyticsRank&&t.analyticsRank.value||[]).reduce((s,a)=>Math.max(s,a.views||0),0)||1),P=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function M(){g.value=!0;try{const e=await c().apiFetch(P()+"/keys");V.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{g.value=!1}}async function he(){try{const e=await c().apiFetch(P()+"/keys",{method:"POST",body:JSON.stringify({name:h.value||"未命名",role:j.value||"read",expire_days:365})});e&&e.success?(d.value=e.api_key||"",h.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await M()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function ge(){if(d.value)try{await navigator.clipboard.writeText(d.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function fe(e){try{const s=await c().apiFetch(P()+"/keys/"+e.id,{method:"DELETE"});s&&s.success?(ElementPlus.ElMessage.success("Key 已吊销"),d.value&&e.prefix&&d.value.includes(e.prefix)&&(d.value=""),await M()):ElementPlus.ElMessage.error(s&&(s.detail||s.message)||"吊销失败")}catch(s){ElementPlus.ElMessage.error("吊销失败: "+(s.message||""))}}const ye={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function be(e){return ye[e]||e}const xe=computed(()=>{var e;return(((e=t.healthMetrics)==null?void 0:e.value)||[]).map(s=>({name:be(s.name),source:s.name,success_rate:s.success_rate,avg_latency_ms:s.avg_latency_ms,calls:s.calls||0,degraded:!!s.degraded,data_age_hours:s.data_age_hours!=null?s.data_age_hours:null,stale:!!s.stale,last_fetch:s.last_fetch||s.last_success||null}))});function ke(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function we(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const n=t.aiUsage||Vue.ref({}),T=Vue.computed(()=>{const e=n.value&&n.value.by_model||{};return Object.entries(e).map(([s,a])=>({name:s,count:a})).sort((s,a)=>a.count-s.count)}),_e=Vue.computed(()=>T.value.reduce((e,s)=>Math.max(e,s.count),0)||1),Ce=Vue.computed(()=>T.value.reduce((e,s)=>e+s.count,0)||1),Ae=Vue.computed(()=>D.value.reduce((e,s)=>Math.max(e,s.count),0)||0),D=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},s=[],a=new Date;for(let r=29;r>=0;r--){const E=new Date(a.getFullYear(),a.getMonth(),a.getDate()-r),Y=E.getFullYear()+"-"+String(E.getMonth()+1).padStart(2,"0")+"-"+String(E.getDate()).padStart(2,"0");s.push({day:Y,count:e[Y]||0})}return s}),ze=Vue.computed(()=>D.value.reduce((e,s)=>Math.max(e,s.count),0)||1),Re=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},s=new Date,a=s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0");return e[a]||0}),Se=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},s=Object.keys(e).filter(a=>(e[a]||0)>0);return s.length?s[s.length-1]:""});function Pe(e){t.analyticsDays&&(t.analyticsDays.value=e),typeof t.loadAnalytics=="function"&&t.loadAnalytics()}const Me='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',Te='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function De(e){return e?Te:Me}return ae(),{...t,analyticsMaxViews:me,aiModelRank:T,aiModelMax:_e,aiDayTrend:D,aiDayMax:ze,todayAiCalls:Re,lastAiCallDay:Se,aiTotal:Ce,aiDayPeak:Ae,setAnalyticsDays:Pe,viewIcon:De,openApiKeys:V,openApiKeyName:h,openApiKeyRole:j,newOpenApiKey:d,openApiLoading:g,loadOpenApiKeys:M,generateOpenApiKey:he,copyOpenApiKey:ge,revokeOpenApiKey:fe,healthRows:xe,healthClass:ke,fmtAge:we,staleAssetCount:ce,jobQueue:L,loadJobQueue:p,cancelJob:se,jobStatusText:ee,auditLogs:f,auditLoading:y,loadAuditLogs:X,healthLoading:b,healthError:x,healthUpdatedAt:I,freshnessData:v,healHistory:k,startupReport:H,sourceHealth:F,refreshHealth:K,statusColor:le,statusLabel:ie,sourceOk:pe,dictLoading:w,dictError:_,dictCategory:C,dictData:A,loadDataDict:O,ncTab:N,ncRules:U,ncHistory:B,ncChannels:G,ncLoading:i,ncNewCode:z,ncNewType:R,ncNewThreshold:S,ncSilence:o,ncSilenceMinutes:W,ncMsg:l,ncTypeLabel:ne,onNcTab:re,loadAlertRules:m,loadAlertHistory:q,loadAlertChannels:J,addAlertRule:de,toggleAlertRule:oe,removeAlertRule:ve,applySilence:Q,clearSilence:ue}}}})();
