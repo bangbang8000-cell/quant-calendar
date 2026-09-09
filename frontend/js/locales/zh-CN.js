@@ -92,7 +92,7 @@
     'common.refresh': '刷新',
     'common.refreshing': '正在刷新数据...',
     'common.export': '导出',
-    'common.searchPlaceholder': '搜索股票代码或名称...',
+    'common.searchPlaceholder': '搜索股票、策略…',
     'common.view': '查看',
     'common.unitStock': '只',
     // 日历页

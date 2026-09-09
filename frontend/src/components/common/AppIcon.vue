@@ -10,6 +10,8 @@ import {
   RefreshCw, Download, ExternalLink, Command, Sparkles, TrendingUp, TrendingDown,
   CircleDot, Check, AlertTriangle, Loader2, ArrowLeft, ArrowRight, Eye, EyeOff,
   Lock, SlidersHorizontal, Play, History, Layers, LineChart, Target, SearchCheck,
+  // V6.2 (PRD-6.2 F1): 二级图标补全新增
+  Star, MessageCircle, CalendarDays, CalendarRange, CalendarCheck,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -74,6 +76,12 @@ const ICON_MAP = {
   'line-chart': LineChart,
   'target': Target,
   'search-check': SearchCheck,
+  // V6.2 (PRD-6.2 F1): 二级图标补全新增
+  'star': Star,
+  'message-circle': MessageCircle,
+  'calendar-days': CalendarDays,
+  'calendar-range': CalendarRange,
+  'calendar-check': CalendarCheck,
 }
 
 const comp = () => ICON_MAP[props.name] || null

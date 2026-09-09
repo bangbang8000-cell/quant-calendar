@@ -62,4 +62,22 @@ g = { a: [{ subPage: 'x', title: 'X' }] };
 r = closeTab(g, 'a', 'missing', 'x');
 assert.strictEqual(tabsOf(r.groups, 'a').length, 1, '关闭不存在的页签不应变更');
 
+// V6.2 F8: 关闭其他 (仅保留 keep)
+g = { b: [{ subPage: 'x', title: 'X' }, { subPage: 'y', title: 'Y' }, { subPage: 'z', title: 'Z' }] };
+r = tabs.closeOthers(g, 'b', 'y');
+assert.deepStrictEqual(tabsOf(r.groups, 'b').map(t => t.subPage), ['y'], '关闭其他应仅保留 keep');
+assert.strictEqual(r.activeKey, 'b/y');
+
+// V6.2 F8: 全部关闭 → 组空
+g = { b: [{ subPage: 'x', title: 'X' }, { subPage: 'y', title: 'Y' }] };
+r = tabs.closeAll(g, 'b');
+assert.strictEqual(tabsOf(r.groups, 'b').length, 0, '全部关闭应清空组');
+
+// V6.2 F8: 拖拽排序
+g = { c: [{ subPage: 'a', title: 'A' }, { subPage: 'b', title: 'B' }, { subPage: 'c', title: 'C' }] };
+r = tabs.reorder(g, 'c', 0, 2);
+assert.deepStrictEqual(tabsOf(r.groups, 'c').map(t => t.subPage), ['b', 'c', 'a'], '拖拽 0→2 应重排');
+r = tabs.reorder(g, 'c', 9, 0);  // 越界 fromIdx 不变
+assert.deepStrictEqual(tabsOf(r.groups, 'c').map(t => t.subPage), ['a', 'b', 'c'], '越界 fromIdx 不应变更');
+
 console.log('tabs-core: all assertions passed');

@@ -91,7 +91,7 @@
     'common.refresh': 'Refresh',
     'common.refreshing': 'Refreshing data...',
     'common.export': 'Export',
-    'common.searchPlaceholder': 'Search stock code or name...',
+    'common.searchPlaceholder': 'Search stocks…',
     'common.view': 'View',
     'common.unitStock': ' stocks',
     // 日历页

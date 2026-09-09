@@ -167,20 +167,20 @@
                             <span>{{ t('strategies.consensusTop5') }}</span>
                             <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
-                        <qc-state-panel v-if="filteredConsensusRank.length === 0" type="empty" title="暂无共识数据"></qc-state-panel>
-                        <div v-for="item in filteredConsensusRank.slice(0,5)" :key="item.code" class="consensus-item" @click="showStockDetail(item.code)">
-                            <div class="consensus-badge">{{ item.strategy_count }}</div>
-                            <div class="consensus-info">
-                                <div class="consensus-code">{{ item.code }}</div>
-                                <div class="consensus-name">{{ item.name }}
-                                    <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                                    <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
-                                </div>
-                            </div>
-                            <div class="consensus-tags">
-                                <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
-                            </div>
-                        </div>
+                        <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
+                        <qc-stock-list
+                          :items="filteredConsensusRank.slice(0, 5)"
+                          empty-text="暂无共识数据"
+                          @select="(item) => showStockDetail(item.code)"
+                        >
+                          <template #extra="{ item }">
+                            <span class="qc-stock-tag">{{ item.strategy_count }} 策略</span>
+                          </template>
+                          <template #actions="{ item }">
+                            <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
+                          </template>
+                        </qc-stock-list>
                     </div>
 
                     </div>
@@ -434,14 +434,15 @@
                         <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
                         <qc-virtual-list class="h-calc-240" :items="filteredConsensusRank" :row-height="78">
                             <template #default="{ item, index }">
-                            <div class="consensus-item mb-0" @click="showStockDetail(item.code)">
-                                <div class="consensus-badge">{{ item.strategy_count || index + 1 }}</div>
-                                <div class="consensus-info">
-                                    <div class="consensus-code">{{ item.code }}</div>
-                                    <div class="consensus-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span></div>
+                            <!-- V6.2 F5: 行样式对齐 qc-stock-row, 保留虚拟滚动 -->
+                            <div class="qc-stock-row mb-0" @click="showStockDetail(item.code)">
+                                <div class="qc-stock-rank">{{ item.strategy_count || index + 1 }}</div>
+                                <div class="qc-stock-info">
+                                    <div class="qc-stock-code"><span class="qc-stock-code-num">{{ item.code }}</span></div>
+                                    <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span></div>
                                 </div>
-                                <div class="consensus-tags">
-                                    <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="strategy-tag">{{ s }}</span>
+                                <div class="qc-stock-tags">
+                                    <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
                                 </div>
                             </div>
                             </template>

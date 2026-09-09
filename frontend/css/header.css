@@ -21,6 +21,8 @@
   align-items: center;
   gap: var(--qc-space-3);
   min-width: 0;
+  /* V6.2 (PRD-6.2 F2): 页签占满左区 */
+  flex: 1;
 }
 .qc-icon-btn {
   display: inline-flex;
@@ -79,6 +81,52 @@
   opacity: 0.7;
 }
 
+/* V6.2 (PRD-6.2 F6): 移动端「当前二级」下拉 (由 v-if=isMobile 控制显示) */
+.qc-header-subnav { position: relative; flex-shrink: 0; }
+.qc-subnav-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qc-space-1);
+  height: 30px;
+  max-width: 96px;
+  padding: 0 var(--qc-space-2);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-muted);
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--duration-fast), border-color var(--duration-fast);
+}
+.qc-subnav-picker:hover { border-color: var(--qc-primary-300); }
+.qc-subnav-picker:focus-visible { outline: 2px solid var(--qc-ring); outline-offset: -2px; }
+.qc-subnav-picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qc-subnav-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  min-width: 150px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--qc-popover);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  box-shadow: var(--qc-shadow-lg);
+  padding: var(--qc-space-1);
+}
+.qc-subnav-picker-item {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-radius: var(--qc-radius-medium);
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-base);
+  cursor: pointer;
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+.qc-subnav-picker-item:hover { background: var(--qc-nav-item-hover-bg); color: var(--qc-nav-item-hover); }
+.qc-subnav-picker-item.is-active { background: var(--qc-nav-item-active-bg); color: var(--qc-nav-item-active); }
+
 /* 中区搜索 (V6.0.1 P0-1: 覆盖 EP autocomplete 内部结构 — el-autocomplete 渲染为
    .el-input__wrapper 嵌套, 原按自定义 flex 容器写导致圆角/背景/focus 不生效) */
 .qc-header-center {
@@ -87,13 +135,49 @@
   align-items: center;
   justify-content: center;
   gap: var(--qc-space-2);
-  max-width: 520px;
+  /* V6.2 (PRD-6.2 F3): 增宽居中 */
+  max-width: 640px;
   margin: 0 var(--qc-space-4);
+}
+/* V6.2 (PRD-6.2 F2): Header 内动态页签 (取代面包屑) — 横向滚动 + 渐变遮罩 */
+.qc-header-tabs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* 覆盖 nav.css 工作区顶部形态 */
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  mask-image: linear-gradient(to right, black 92%, transparent 100%);
+}
+.qc-header-tabs::-webkit-scrollbar { display: none; }
+.qc-header-tabs .qc-dynamic-tab {
+  height: 28px;
+  padding: 0 var(--qc-space-3);
+  border-radius: var(--qc-radius-small);
+  border-color: transparent;
+  background: transparent;
+  flex-shrink: 0;
+}
+.qc-header-tabs .qc-dynamic-tab:hover { background: var(--qc-muted); }
+.qc-header-tabs .qc-dynamic-tab.is-active {
+  background: var(--qc-muted);
+  border-color: var(--qc-border);
+}
+.qc-header-tabs .qc-dynamic-tab-close {
+  width: 16px;
+  height: 16px;
 }
 .qc-header-search {
   flex: 1;
   min-width: 0;
-  max-width: 320px;
+  /* V6.2 (PRD-6.2 F3): 320px → 480px */
+  max-width: 480px;
 }
 .qc-header-search .el-input { width: 100%; }
 .qc-header-search .el-input__wrapper {
@@ -115,6 +199,8 @@
 .qc-header-search .el-input__inner::placeholder { color: var(--qc-muted-foreground); }
 .qc-header-search .el-input__prefix { color: var(--qc-muted-foreground); }
 .qc-header-search-icon { flex-shrink: 0; }
+/* V6.2 (PRD-6.2 F3): kbd 内置 suffix (EP suffix slot), 右侧留白 */
+.qc-header-search .el-input__suffix { align-items: center; padding-right: var(--qc-space-1); }
 .qc-header-search-kbd {
   flex-shrink: 0;
   font-size: var(--qc-font-size-xs);
@@ -123,6 +209,8 @@
   border-radius: var(--qc-radius-small);
   padding: 1px 6px;
   background: var(--qc-card);
+  line-height: 1.6;
+  user-select: none;
 }
 
 /* 右区 */
@@ -230,9 +318,19 @@
 
 /* 移动端 */
 @media (max-width: 767px) {
-  .qc-header-center { display: none; }
+  /* V6.2 (PRD-6.2 F3): 搜索框移动端显示并收缩 (原隐藏) */
+  .qc-header-center {
+    display: flex;
+    flex: 0 1 auto;
+    max-width: none;
+    margin: 0 var(--qc-space-2);
+  }
+  .qc-header-search { max-width: none; }
+  .qc-header-search .el-input__suffix { display: none; }  /* 移动端隐藏 Ctrl+K */
   .qc-header {
     padding: 0 var(--qc-space-3);
+    gap: var(--qc-space-2);
   }
-  .qc-breadcrumb-item:first-child { display: none; }
+  .qc-header-left { flex: 0 1 auto; }
+  .qc-header-tabs { flex: 1; }
 }

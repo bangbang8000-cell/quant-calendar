@@ -83,7 +83,7 @@
     'common.refresh': '刷新',
     'common.refreshing': '正在刷新數据...',
     'common.export': '導出',
-    'common.searchPlaceholder': '搜索股票代碼或名称...',
+    'common.searchPlaceholder': '搜尋股票、策略…',
     'common.view': '查看',
     'common.unitStock': '只',
     'calendar.poolTitle': '策略共識度股票池',

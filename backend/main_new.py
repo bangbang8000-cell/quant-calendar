@@ -127,7 +127,7 @@ async def lifespan(app: FastAPI):
 # v3.17 全版（3.17.0→3.17.3）交付后定版为 3.17.3; 3.17.4: 前端静态资源缓存爆破; 3.17.5: 数据源延迟趋势+数据健康度移入用量统计
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
-APP_VERSION = "6.1.0"  # V6.1.0 (PRD-6.1): 三栏式布局与视觉系统统一 — 中栏二级常驻 + 工作区右移 + 图标单套(Lucide) + 明/暗主题+色相 + 彩色Logo + 股票列表统一 + 动态页签
+APP_VERSION = "6.2.0"  # V6.2.0 (PRD-6.2): 导航与界面细节收口 — 二级图标全量 + 页签迁Header取代面包屑 + 搜索框升级 + StockList组件化 + 移动端二级下拉 + 断点细化 + 页签右键/拖拽
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404

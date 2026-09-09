@@ -76,6 +76,29 @@
     return groups[page] || [];
   }
 
+  // 关闭其他: 仅保留 keep 页签 (V6.2 F8 右键「关闭其他」)
+  function closeOthers(groups, page, keepSubPage) {
+    var g = groups[page] || [];
+    var next = g.filter(function (t) { return t.subPage === keepSubPage; });
+    var nextGroups = Object.assign({}, groups, (_defineProperty({}, page, next)));
+    return { groups: nextGroups, activeKey: next.length ? keyOf(page, next[0].subPage) : null };
+  }
+
+  // 全部关闭: 组清空, 由调用方重建默认页签 (V6.2 F8 右键「全部关闭」)
+  function closeAll(groups, page) {
+    var nextGroups = Object.assign({}, groups, (_defineProperty({}, page, [])));
+    return { groups: nextGroups, activeKey: null };
+  }
+
+  // 拖拽排序: 将 fromIdx 移动到 toIdx (V6.2 F8)
+  function reorder(groups, page, fromIdx, toIdx) {
+    var g = (groups[page] || []).slice();
+    if (fromIdx < 0 || fromIdx >= g.length) return { groups: groups };
+    var item = g.splice(fromIdx, 1)[0];
+    g.splice(Math.max(0, Math.min(toIdx, g.length)), 0, item);
+    return { groups: Object.assign({}, groups, (_defineProperty({}, page, g))) };
+  }
+
   return {
     MAX_TABS: MAX_TABS,
     openTab: openTab,
@@ -83,6 +106,9 @@
     getDefaultTab: getDefaultTab,
     tabsOf: tabsOf,
     evictOldest: evictOldest,
+    closeOthers: closeOthers,
+    closeAll: closeAll,
+    reorder: reorder,
     keyOf: keyOf,
   };
 });

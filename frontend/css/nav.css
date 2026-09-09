@@ -673,3 +673,43 @@
   border-left: 1px solid var(--qc-border);
   margin-left: var(--qc-space-5);
 }
+
+/* ─── V6.2 (PRD-6.2 F7): 断点细化 — 中栏宽度分档 ─────────── */
+/* 变量联动: 中栏宽 + 工作区 margin-left(calc) 自动生效 */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root { --qc-subnav-width: 180px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --qc-subnav-width: 160px; }
+}
+
+/* ─── V6.2 (PRD-6.2 F8): 页签右键菜单 ─────────────────────── */
+.qc-tab-ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.qc-tab-ctx {
+  position: fixed;
+  z-index: 1001;
+  min-width: 132px;
+  padding: var(--qc-space-1);
+  background: var(--qc-popover);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  box-shadow: var(--qc-shadow-lg);
+}
+.qc-tab-ctx-item {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-radius: var(--qc-radius-medium);
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-base);
+  cursor: pointer;
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+}
+.qc-tab-ctx-item:hover { background: var(--qc-nav-item-hover-bg); color: var(--qc-nav-item-hover); }
+.qc-tab-ctx-divider {
+  height: 1px;
+  background: var(--qc-border);
+  margin: var(--qc-space-1) 0;
+}

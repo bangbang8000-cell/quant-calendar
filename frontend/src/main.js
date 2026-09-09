@@ -38,12 +38,15 @@ import SubNavV6 from './components/SubNav.vue'
 import MobileNavV6 from './components/MobileNav.vue'
 // V6.1 (PRD-6.1 F8): 动态页签栏
 import DynamicTabsV6 from './components/DynamicTabs.vue'
+// V6.2 (PRD-6.2 F5): 通用股票列表组件
+import StockListV6 from './components/common/StockList.vue'
 if (!window.__quantComponents) window.__quantComponents = {}
 window.__quantComponents.Sidebar = SidebarV6
 window.__quantComponents.Header = HeaderV6
 window.__quantComponents.SubNav = SubNavV6
 window.__quantComponents.MobileNav = MobileNavV6
 window.__quantComponents.DynamicTabs = DynamicTabsV6
+window.__quantComponents.StockList = StockListV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

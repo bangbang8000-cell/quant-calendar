@@ -3,7 +3,7 @@
 // 左: 折叠/汉堡 + 面包屑 | 中: 全局搜索 | 右: 通知/主题/用户菜单
 // 二级 Tab 已迁出至 SubNav; 日历操作区经 SubNav 渲染 (页面级)
 // 对象字面量导出, 注册由 main.js 完成
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
 import AppIcon from './common/AppIcon.vue'
 
 export default {
@@ -13,14 +13,31 @@ export default {
     const state = inject('qcState')
     if (!state) return {}
     const showUserMenu = ref(false)
-
-    const breadcrumbs = computed(() => {
-      const parent = state.currentPageName && state.currentPageName.value
-        ? state.currentPageName.value : ''
-      const sp = state.currentSubPage && state.currentSubPage.value ? state.currentSubPage.value : ''
-      const child = sp && state.subPageNames && state.subPageNames[sp] ? state.subPageNames[sp] : ''
-      return child ? [parent, child] : [parent]
+    // V6.2 (PRD-6.2 F2): 面包屑移除 — 由动态页签激活态承载「当前在哪」
+    // V6.2 (PRD-6.2 F6): 移动端「当前二级」下拉 (桌面隐藏)
+    const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+    function _onResize() { isMobile.value = window.innerWidth < 768 }
+    onMounted(() => window.addEventListener('resize', _onResize))
+    onUnmounted(() => window.removeEventListener('resize', _onResize))
+    const openSubnavPicker = ref(false)
+    const currentSubLabel = computed(() => {
+      const sp = state.currentSubPage && state.currentSubPage.value
+      return (sp && state.subPageNames && state.subPageNames[sp]) || sp || ''
     })
+    const subnavOptions = computed(() => {
+      const page = state.currentPage && state.currentPage.value
+      const menu = (state.menus && state.menus.value || []).find((m) => m.key === page)
+      return (menu && menu.subPages || []).map((sp) => ({
+        key: sp,
+        label: (state.subPageNames && state.subPageNames[sp]) || sp,
+      }))
+    })
+    function toggleSubnavPicker() { openSubnavPicker.value = !openSubnavPicker.value }
+    function closeSubnavPicker() { openSubnavPicker.value = false }
+    function pickSubnav(sp) {
+      openSubnavPicker.value = false
+      if (state.activateTab) state.activateTab(state.currentPage.value, sp)
+    }
 
     const isDark = computed(() => (state.currentTheme && state.currentTheme.value) === 'dark')
     // v-model 需可赋值变量 (可选链不可直接赋值)
@@ -50,8 +67,11 @@ export default {
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
     return {
-      state, showUserMenu, breadcrumbs, isDark, searchQuery,
+      state, showUserMenu, isDark, searchQuery,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
+      // V6.2 (PRD-6.2 F6): 移动端二级下拉
+      isMobile, openSubnavPicker, currentSubLabel, subnavOptions,
+      toggleSubnavPicker, closeSubnavPicker, pickSubnav,
     }
   },
 }
@@ -63,12 +83,24 @@ export default {
       <button class="qc-icon-btn" :aria-label="state.sidebarCollapsed?.value ? '展开侧边栏' : '折叠侧边栏'" @click="toggleSidebar">
         <AppIcon name="menu" :size="20" />
       </button>
-      <nav class="qc-breadcrumb" aria-label="面包屑">
-        <template v-for="(crumb, i) in breadcrumbs" :key="i">
-          <span v-if="i > 0" class="qc-breadcrumb-sep" aria-hidden="true"><AppIcon name="chevron-right" :size="12" /></span>
-          <span class="qc-breadcrumb-item" :class="{ 'is-current': i === breadcrumbs.length - 1 }">{{ crumb }}</span>
-        </template>
-      </nav>
+      <!-- V6.2 (PRD-6.2 F6): 移动端「当前二级」下拉 (桌面隐藏) -->
+      <div v-if="isMobile" class="qc-header-subnav" v-click-outside="closeSubnavPicker">
+        <button class="qc-subnav-picker" :aria-expanded="openSubnavPicker" @click="toggleSubnavPicker">
+          <span class="qc-subnav-picker-label">{{ currentSubLabel || '二级' }}</span>
+          <AppIcon name="chevron-down" :size="14" />
+        </button>
+        <div v-if="openSubnavPicker" class="qc-subnav-picker-menu" role="menu">
+          <div
+            v-for="opt in subnavOptions" :key="opt.key"
+            class="qc-subnav-picker-item" :class="{ 'is-active': opt.key === (state.currentSubPage && state.currentSubPage.value) }"
+            role="menuitem" @click="pickSubnav(opt.key)"
+          >
+            {{ opt.label }}
+          </div>
+        </div>
+      </div>
+      <!-- V6.2 (PRD-6.2 F2): 动态页签取代面包屑, 进入 Header 左区 -->
+      <qc-dynamic-tabs class="qc-header-tabs"></qc-dynamic-tabs>
     </div>
 
     <div class="qc-header-center">
@@ -85,12 +117,15 @@ export default {
         <template #prefix>
           <AppIcon name="search" :size="16" class="qc-header-search-icon" />
         </template>
+        <!-- V6.2 (PRD-6.2 F3): Ctrl+K 内置为 suffix, 不再外置独立 span -->
+        <template #suffix>
+          <span class="qc-header-search-kbd">Ctrl+K</span>
+        </template>
         <template #default="slotProps">
           <span>{{ slotProps?.item?.icon }} {{ slotProps?.item?.label || slotProps?.item?.name }}</span>
           <span class="qc-search-sublabel" v-if="slotProps?.item?.subLabel">{{ slotProps?.item?.subLabel }}</span>
         </template>
       </el-autocomplete>
-      <span class="qc-header-search-kbd">Ctrl+K</span>
     </div>
 
     <div class="qc-header-right">

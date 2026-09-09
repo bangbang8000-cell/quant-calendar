@@ -69,13 +69,30 @@ export default {
     }
     function toggleGroup(label) { collapsedGroups.value[label] = !collapsedGroups.value[label] }
 
-    // 策略研究左侧子导航图标
+    // V6.2 (PRD-6.2 F1): 全部二级菜单语义图标 — 双层映射 (page → subPage → iconName)
     const SUB_ICONS = {
-      'research-overview': 'search-check', 'quant-research': 'line-chart',
-      'strategy-write': 'layers', 'custom-write': 'sparkles',
-      'backtest': 'play', 'backtest-history': 'history',
+      'strategies': {
+        'overview': 'pie-chart', 'merrill': 'clock', 'market': 'trending-up', 'consensus': 'target',
+      },
+      'calendar': {
+        'daily': 'calendar', 'weekly': 'calendar-days', 'monthly': 'calendar-range',
+        'yearly': 'calendar-check', 'pool': 'database',
+      },
+      'ai': {
+        'overview': 'activity', 'focus': 'target', 'watchlist': 'star', 'history': 'history',
+        'evaluation-analysis': 'bar-chart-3', 'chat_history': 'message-circle',
+      },
+      'research': {
+        'research-overview': 'search-check', 'quant-research': 'line-chart',
+        'strategy-write': 'layers', 'custom-write': 'sparkles',
+        'backtest': 'play', 'backtest-history': 'history',
+      },
+      'shortterm': {
+        'overview': 'layout-dashboard', 'market-review': 'line-chart', 'ztpool': 'trending-up',
+        'lhb': 'users', 'sector': 'layers', 'intraday': 'clock', 'scan': 'search-check',
+      },
     }
-    const subIcon = (sp) => SUB_ICONS[sp] || 'circle-dot'
+    const subIcon = (page, sp) => (SUB_ICONS[page] && SUB_ICONS[page][sp]) || 'circle-dot'
 
     return {
       state, currentPage, currentSubPage, subPages, currentMenu,
@@ -121,7 +138,7 @@ export default {
           :href="'#' + currentPage + '/' + sp"
           @click.prevent="goSub(sp)"
         >
-          <AppIcon :name="subIcon(sp)" :size="16" />
+          <AppIcon :name="subIcon(currentPage, sp)" :size="16" />
           <span>{{ subLabel(sp) }}</span>
         </a>
       </template>

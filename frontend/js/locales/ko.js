@@ -83,7 +83,7 @@
     'common.refresh': '새로고침',
     'common.refreshing': 'Refreshing data...',
     'common.export': '내보내기',
-    'common.searchPlaceholder': 'Search stock code or name...',
+    'common.searchPlaceholder': '종목 검색…',
     'common.view': '보기',
     'common.unitStock': '개',
     'calendar.poolTitle': '전략 컨센서스 종목 풀',

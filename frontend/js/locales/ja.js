@@ -83,7 +83,7 @@
     'common.refresh': '更新',
     'common.refreshing': 'Refreshing data...',
     'common.export': 'エクスポート',
-    'common.searchPlaceholder': 'Search stock code or name...',
+    'common.searchPlaceholder': '株を検索…',
     'common.view': '表示',
     'common.unitStock': '件',
     'calendar.poolTitle': '戦略コンセンサス株プール',

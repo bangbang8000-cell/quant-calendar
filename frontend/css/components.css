@@ -282,6 +282,18 @@
   background: var(--qc-muted);
   color: var(--qc-muted-foreground);
 }
+/* V6.2 (PRD-6.2 F5): 股票状态徽标 (新增/调出) */
+.qc-stock-code-num { font-family: var(--qc-font-mono); }
+.qc-stock-status {
+  font-size: var(--qc-font-size-xs);
+  line-height: 1.4;
+  padding: 0 6px;
+  border-radius: var(--qc-radius-full);
+}
+.qc-stock-status.is-new { background: var(--el-success); color: var(--qc-neutral-0); }
+.qc-stock-status.is-out { background: var(--qc-muted); color: var(--qc-muted-foreground); }
+/* V6.2: 股票行内信号说明整行占位 (日历股票池) */
+.qc-stock-row .cal-subtitle-ellipsis { grid-column: 1 / -1; margin-top: 2px; }
 /* 密度联动 (V6.1 F9) */
 [data-density="compact"] .qc-stock-row { padding: var(--qc-space-2) var(--qc-space-3); }
 [data-density="spacious"] .qc-stock-row { padding: var(--qc-space-4) var(--qc-space-5); }
