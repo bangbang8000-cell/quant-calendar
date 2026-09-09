@@ -117,5 +117,9 @@ def test_echarts_theme_uses_chart_bg():
     assert "--chart-bg" in THEME_JS, "echarts-theme 未使用 --chart-bg"
 
 
-def test_echarts_theme_has_accent():
-    assert "--color-accent" in THEME_JS
+def test_echarts_theme_gold_palette():
+    """V6.0 (DS-6.0 §2.6): echarts 主序列色板金化 — 金色系 + 辅助灰, 不引用旧 accent"""
+    for tok in ("--qc-primary-600", "--qc-primary-500", "--qc-primary-700",
+                "--qc-primary-400", "--qc-neutral-400"):
+        assert tok in THEME_JS, f"echarts-theme 缺少金色系令牌 {tok}"
+    assert "--color-accent" not in THEME_JS, "echarts-theme 不应再引用旧 accent"

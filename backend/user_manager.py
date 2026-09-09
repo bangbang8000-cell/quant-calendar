@@ -52,6 +52,12 @@ THEMES = {
         "secondary": "#e6c450",
         "gradient": "linear-gradient(135deg, #ffffff 45%, #b8922a 55%)"
     },
+    "gold": {
+        "name": "金色",
+        "primary": "#b8922a",
+        "secondary": "#e6c450",
+        "gradient": "linear-gradient(135deg, #8b6914 0%, #b8922a 50%, #d4a843 100%)"
+    },
     "dark-pro": {
         "name": "暗色专业",
         "primary": "#64ffda",
@@ -90,7 +96,7 @@ class UserManager:
                     "username": "guest",
                     "password": self._hash_password("guest"),
                     "role": "guest",
-                    "theme": "vibrant-orange",
+                    "theme": "gold",
                     "enabled": True,
                     "locked": True,
                     "created_at": "2026-05-15",
@@ -104,7 +110,7 @@ class UserManager:
                     "username": "admin",
                     "password": self._hash_password("admin"),
                     "role": "admin",
-                    "theme": "vibrant-orange",
+                    "theme": "gold",
                     "created_at": "2026-01-01",
                     "token_version": 1
                 }
@@ -114,7 +120,7 @@ class UserManager:
                 "username": "guest",
                 "password": self._hash_password("guest"),
                 "role": "guest",
-                "theme": "vibrant-orange",
+                "theme": "gold",
                 "enabled": True,
                 "locked": True,
                 "created_at": "2026-05-15"
@@ -182,12 +188,12 @@ class UserManager:
                 return True
         return False
 
-    def add_user(self, username: str, password: str, role: str = "user", theme: str = "vibrant-orange", group: str = None) -> bool:
+    def add_user(self, username: str, password: str, role: str = "user", theme: str = "gold", group: str = None) -> bool:
         """添加用户"""
         if username in self.users:
             return False
         if theme not in THEMES:
-            theme = "vibrant-orange"
+            theme = "gold"
         self.users[username] = {
             "username": username,
             "password": self._hash_password(password),

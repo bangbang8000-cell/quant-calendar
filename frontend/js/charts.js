@@ -83,19 +83,20 @@
       risk: getCSSVar('--color-danger') || '#C62828',
       warn: getCSSVar('--color-warning') || '#FF9800',
       success: getCSSVar('--color-success') || '#4CAF50',
-      primary: getCSSVar('--primary-color') || '#667eea',
+      primary: getCSSVar('--qc-primary-600') || '#b8922a',
       grid: getCSSVar('--chart-split') || '#e2e8f0',
       axis: getCSSVar('--chart-axis') || '#cbd5e1',
       bg: getCSSVar('--chart-bg') || 'transparent',
+      // V6.0 (DS-6.0 §2.6): 序列色板金化 — 金色系 + 辅助灰, 涨跌语义色置后由显式引用使用
       series: [
-        getCSSVar('--primary-color') || '#667eea',
+        getCSSVar('--qc-primary-600') || '#b8922a',
+        getCSSVar('--qc-primary-500') || '#c49b2e',
+        getCSSVar('--qc-primary-700') || '#8f6f1f',
+        getCSSVar('--qc-primary-400') || '#d4b352',
         getCSSVar('--color-up') || '#E63946',
         getCSSVar('--color-down') || '#2E7D32',
         getCSSVar('--color-accent') || '#F59E0B',
-        getCSSVar('--color-warning') || '#FF9800',
-        getCSSVar('--color-info') || '#1976d2',
-        getCSSVar('--color-success') || '#4CAF50',
-        getCSSVar('--text-tertiary') || '#9ca3af',
+        getCSSVar('--qc-neutral-400') || '#b8ae9f',
       ],
     };
   }

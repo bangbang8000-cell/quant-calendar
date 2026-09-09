@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""V4.8 (R2): 默认主题统一为活力金 vibrant-orange"""
+"""V6.0 (DS-6.0 §1.2): 默认主题统一为克制金 gold"""
 import os
 
 FRONTEND_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
@@ -13,32 +13,32 @@ def _read(rel):
 
 
 def test_user_manager_default_theme():
-    """user_manager: 新用户/内置用户默认 theme = vibrant-orange"""
+    """user_manager: 新用户/内置用户默认 theme = gold"""
     src = _read("backend/user_manager.py")
-    assert "vibrant-orange" in src, "user_manager 应含 vibrant-orange"
-    assert 'theme: str = "tech-blue"' not in src, "add_user 默认不应再是 tech-blue"
+    assert '"gold"' in src, "user_manager 应含 gold 默认主题"
+    assert 'theme: str = "vibrant-orange"' not in src, "add_user 默认不应再是 vibrant-orange"
 
 
 def test_user_config_default_theme():
-    """user_config: 用户配置默认 theme = vibrant-orange"""
+    """user_config: 用户配置默认 theme = gold"""
     src = _read("backend/api/v1/user_config.py")
-    assert "vibrant-orange" in src, "user_config 应含 vibrant-orange"
-    assert '"theme": "tech-blue"' not in src, "配置默认不应再是 tech-blue"
+    assert '"gold"' in src, "user_config 应含 gold 默认主题"
+    assert '"theme": "vibrant-orange"' not in src, "配置默认不应再是 vibrant-orange"
 
 
 def test_auth_js_login_fallback():
-    """auth.js: 登录后 applyTheme fallback = vibrant-orange"""
+    """auth.js: 登录后 applyTheme fallback = gold"""
     p = os.path.join(FRONTEND_ROOT, "js", "app-logic", "auth.js")
     with open(p, encoding="utf-8") as f:
         src = f.read()
-    assert "vibrant-orange" in src, "auth.js 应含 vibrant-orange fallback"
-    assert "tech-blue" not in src, "auth.js 不应再有 tech-blue fallback"
+    assert "'gold'" in src, "auth.js 应含 gold fallback"
+    assert "vibrant-orange" not in src, "auth.js 不应再有 vibrant-orange fallback"
 
 
 def test_themes_js_startup_default():
-    """themes.js: 启动无 saved 时显式默认 vibrant-orange"""
+    """themes.js: 启动无 saved 时显式默认 gold"""
     p = os.path.join(FRONTEND_ROOT, "js", "themes.js")
     with open(p, encoding="utf-8") as f:
         src = f.read()
-    assert "vibrant-orange" in src, "themes.js 应含 vibrant-orange"
-    assert "vibrant-orange" in src.split("const saved")[1], "启动兜底应显式 vibrant-orange"
+    assert "'gold'" in src, "themes.js 应含 gold"
+    assert "gold" in src.split("const saved")[1], "启动兜底应显式 gold"

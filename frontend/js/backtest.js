@@ -269,7 +269,7 @@
         const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
         // qc-allow-hardcode: 以下 #hex 为 ECharts 运行时兜底字面量
         const themeColors = {
-          primary: getCSSVar('--primary-color') || '#2563eb',
+          primary: getCSSVar('--qc-primary-600') || '#b8922a',
           success: getCSSVar('--color-success') || '#4CAF50',
           accent: getCSSVar('--color-accent') || '#F59E0B',
           info: getCSSVar('--color-info') || '#1976d2',

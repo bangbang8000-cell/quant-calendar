@@ -95,7 +95,7 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'vibrant-orange');
+            applyTheme(data.user.theme || 'gold');
             // V4.6 修复: 登录成功立即加载 AI 厂商(提前发出, 避免与系统配置页请求排队导致延迟)
             if (typeof loadAiVendors === 'function') loadAiVendors();
             await loadUserConfig();
@@ -141,7 +141,7 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'vibrant-orange');
+            applyTheme(data.user.theme || 'gold');
             await loadUserConfig();
             await loadDates();
             await loadDashboardData();

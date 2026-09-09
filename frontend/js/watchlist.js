@@ -963,7 +963,7 @@ function registerTrendChart(el, code, records) {
     // v3.15: 主题感知色 — 渲染时读令牌, 暗色下轴/文字不糊
     // qc-allow-hardcode: 下方 #hex 为 ECharts 运行时兜底字面量
     const themeColors = {
-        primary: getCSSVar('--primary-color') || '#2563eb',
+        primary: getCSSVar('--qc-primary-600') || '#b8922a',
         textPrimary: getCSSVar('--text-primary') || '#1f2937',
         textSecondary: getCSSVar('--text-secondary') || '#6b7280',
         border: getCSSVar('--border-light') || '#e5e7eb',

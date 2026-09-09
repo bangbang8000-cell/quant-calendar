@@ -10,13 +10,14 @@
       textStyle: { color: getCSSVar('--text-primary') || '#1f2937' },
       // V5.0.5 (T-5.0.54): 画布背景令牌 (dark-pro 覆盖为暗色, 明/暗主题切换图表联动)
       backgroundColor: getCSSVar('--chart-bg') || 'transparent',
+      // V6.0 (DS-6.0 §2.6): 主序列色板金化 — 金色系 + 辅助灰, 随主题 --qc-primary-* 联动
       color: [
-        getCSSVar('--primary-color') || '#667eea',
-        getCSSVar('--color-up') || '#43e97b',
-        getCSSVar('--color-down') || '#fa709a',
-        getCSSVar('--color-accent') || '#f6d365',
-        getCSSVar('--text-secondary') || '#6b7280',
-        getCSSVar('--text-tertiary') || '#9ca3af',
+        getCSSVar('--qc-primary-600') || '#b8922a',
+        getCSSVar('--qc-primary-500') || '#c49b2e',
+        getCSSVar('--qc-primary-700') || '#8f6f1f',
+        getCSSVar('--qc-primary-400') || '#d4b352',
+        getCSSVar('--qc-neutral-400') || '#b8ae9f',
+        getCSSVar('--qc-neutral-500') || '#8f8679',
       ],
       legend: { textStyle: { color: getCSSVar('--text-secondary') || '#6b7280' } },
       categoryAxis: {

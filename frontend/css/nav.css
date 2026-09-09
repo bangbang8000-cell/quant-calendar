@@ -160,14 +160,14 @@
   text-overflow: ellipsis;
 }
 
-/* 折叠态: 仅图标 + hover Tooltip */
+/* 折叠态: 仅图标 + hover Tooltip (C3: 300ms 延迟显示) */
 .qc-sidebar.is-collapsed .qc-sidebar-item {
   justify-content: center;
   padding: 0;
   width: 100%;
   position: relative;
 }
-.qc-sidebar.is-collapsed .qc-sidebar-item:hover::after {
+.qc-sidebar.is-collapsed .qc-sidebar-item::after {
   content: attr(title);
   position: absolute;
   left: calc(100% + 8px);
@@ -181,7 +181,14 @@
   white-space: nowrap;
   z-index: 200;
   pointer-events: none;
-  transition: opacity var(--duration-base);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--duration-fast) ease 0.3s, visibility 0s linear 0.3s;
+}
+.qc-sidebar.is-collapsed .qc-sidebar-item:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--duration-fast) ease 0.3s;
 }
 .qc-sidebar.is-collapsed .qc-nav-group-label { display: none; }
 
@@ -215,6 +222,33 @@
 }
 
 /* ─── 页面级二级导航: 顶部 Tab 式 ─────────────── */
+/* V6.0.1 (A2): 页面标题 — 18px/600 (修正 h1 默认 32px) */
+.qc-page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qc-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--qc-space-3);
+}
+.qc-page-title {
+  margin: 0;
+  font-size: var(--qc-font-size-lg);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--qc-foreground);
+  line-height: 1.3;
+}
+.qc-page-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+}
+.qc-subnav-lastload {
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+  margin-left: var(--qc-space-2);
+  white-space: nowrap;
+}
 .qc-subnav-tabs {
   display: flex;
   align-items: center;
@@ -232,9 +266,12 @@
   font-size: var(--qc-font-size-base);
   font-weight: var(--qc-font-weight-medium);
   cursor: pointer;
+  /* V6.0.1 (A1): 重置 button 默认底/边框, 消除浅灰底 */
+  background: transparent;
+  border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: color var(--duration-fast), border-color var(--duration-fast);
+  transition: color var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-fast);
 }
 .qc-subnav-tab:hover { color: var(--qc-nav-item-hover); }
 .qc-subnav-tab.is-active {
@@ -244,6 +281,11 @@
 .qc-subnav-tab:focus-visible {
   outline: 2px solid var(--qc-ring);
   outline-offset: -2px;
+}
+/* V6.0.1 (C1): top-tab 内容区与 Tab 留白 */
+.qc-subnav-body {
+  padding-top: var(--qc-space-4);
+  min-width: 0;
 }
 
 /* ─── 页面级二级导航: 左侧子导航式 ─────────────── */
