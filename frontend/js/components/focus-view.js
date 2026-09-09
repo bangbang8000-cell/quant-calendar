@@ -378,9 +378,10 @@
         await resolveLatest();
         await loadAll();
       });
+      // V5.4.2 (fix): SESSION_LABELS 需经 setup 暴露, 模板才能访问 (Vue 模板仅见实例绑定)
       return { curDate, session, results, history, track, trackLoading, trackNote,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
-               TRACK_WINDOWS, EMOJI, TIER_EMOJI, displayGroups, latestNote,
+               TRACK_WINDOWS, EMOJI, TIER_EMOJI, SESSION_LABELS, displayGroups, latestNote,
                sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,
                loadStockHistory, loadAll, poolStatus, openStockDetail, actionPct };

@@ -108,3 +108,16 @@ def test_focus_view_pool_state_badges():
     for s in ("新入池", "在池", "已出池"):
         assert s in fv, "应含入池状态徽标 " + s
     assert "pool_state" in fv, "应读取后端 pool_state 字段"
+
+
+def test_focus_view_exposes_session_labels_to_template():
+    """V5.4.2 (fix): 模板内 {{ SESSION_LABELS[s] }} 需经 setup return 暴露 (Vue 模板仅见实例绑定)。
+
+    回归: v5.4.2 初版漏返回 SESSION_LABELS → 历史时段标签渲染抛
+    TypeError(reading 'after_close'), 冒烟 0 pageerror 门禁抓出后修复。
+    """
+    fv = _read("js/components/focus-view.js")
+    assert "SESSION_LABELS[s]" in fv or "SESSION_LABELS[h.session]" in fv, \
+        "模板应使用 SESSION_LABELS (历史时段中文)"
+    assert "SESSION_LABELS, displayGroups" in fv, \
+        "setup return 应暴露 SESSION_LABELS (否则模板访问 undefined 抛错)"
