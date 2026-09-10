@@ -110,6 +110,14 @@ def test_focus_view_pool_state_badges():
     assert "pool_state" in fv, "应读取后端 pool_state 字段"
 
 
+def test_focus_view_shows_eval_scope_base_date():
+    """V5.4.3 (FR-5.4.3): 界面说明本次评分纳入的新入池范围 (基准日)。"""
+    fv = _read("js/components/focus-view.js")
+    assert "baseNote" in fv, "应展示评分范围提示 (baseNote)"
+    assert "base_date" in fv, "应读取后端 base_date"
+    assert "收盘池" in fv, "提示应说明基准池口径"
+
+
 def test_focus_view_exposes_session_labels_to_template():
     """V5.4.2 (fix): 模板内 {{ SESSION_LABELS[s] }} 需经 setup return 暴露 (Vue 模板仅见实例绑定)。
 

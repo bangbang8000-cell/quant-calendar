@@ -56,10 +56,14 @@ def load_all_watchlist_codes():
     return sorted(codes)
 
 
-def load_new_pool_codes(date):
-    """当日新入池 (日历视图 status=new)。数据缺失时返回空集合, 不抛错。"""
+def load_new_pool_codes(date, agg=None):
+    """当日新入池 (日历视图 status=new)。数据缺失时返回空集合, 不抛错。
+
+    V5.4.3: agg 可注入 (测试/复用), 缺省用全局 views_aggregator 单例。
+    """
+    _agg = agg if agg is not None else views_aggregator
     try:
-        result = views_aggregator.get_day_view(date)
+        result = _agg.get_day_view(date)
     except Exception as e:
         logger.warning("[focus] 日视图加载失败 %s: %s", date, e)
         return set()
@@ -69,11 +73,87 @@ def load_new_pool_codes(date):
         if not code:
             continue
         try:
-            if views_aggregator.calculate_status(code, date, 'day') == 'new':
+            if _agg.calculate_status(code, date, 'day') == 'new':
                 codes.add(code)
         except Exception:
             continue
     return codes
+
+
+# ─── V5.4.3 (FR-5.4.3): 评估范围"新入池基准日"解析 ──────────────────
+#
+# 背景 (2026-09-10 线上实测): 当日持仓矩阵由 20:00 策略任务生成, 在此之前当日
+# daily_data 与上一交易日相同 (继承日) → load_new_pool_codes(当日) 恒为空集 →
+# 盘前 09:00 评估只算了自选, 完全漏掉"昨晚 20:00 算好的新入池"。
+#
+# 规范:
+#   - after_close (20:00): 新入池基准 = 当日 (当日矩阵已生成时); 未就绪回退最近已完成日
+#   - pre_open / intraday_*: 新入池基准 = date 之前最近一个"已生成矩阵"的交易日
+#     (= 前一交易日 20:00 算好的新入池)
+# 解析在评估执行时进行 (动态范围), 不做快照缓存。
+
+def is_pool_ready(date, agg=None):
+    """指定交易日的持仓矩阵是否"已生成" (非继承日且当日有持仓)。
+
+    继承日 = daily_data[date] 与上一交易日完全相同 → 新入池/出池恒为 0。
+    数据缺失 / 未知日期 → False (保守)。
+    """
+    _agg = agg if agg is not None else views_aggregator
+    try:
+        dates = list(getattr(_agg, 'all_dates', None) or [])
+        if date not in dates:
+            return False
+        if not (_agg.daily_data.get(date) or []):
+            return False
+        return not _agg.is_inherited_day(date)
+    except Exception:
+        return False
+
+
+def resolve_base_date(date, session, agg=None):
+    """解析评估所用"新入池"基准日。返回 (base_date, reason)。
+
+    reason: today (盘后当日矩阵已就绪) | last_completed (回退最近已完成日) | none (无数据)
+    """
+    _agg = agg if agg is not None else views_aggregator
+    if session == 'after_close' and is_pool_ready(date, agg=_agg):
+        return date, 'today'
+    try:
+        dates = list(getattr(_agg, 'all_dates', None) or [])
+    except Exception:
+        dates = []
+    try:
+        idx = dates.index(date)
+    except ValueError:
+        idx = len(dates)
+    for j in range(idx - 1, -1, -1):
+        d = dates[j]
+        if is_pool_ready(d, agg=_agg):
+            return d, 'last_completed'
+    return date, 'none'
+
+
+def load_focus_list_for_session(username, date, session, scope='all', agg=None,
+                                watchlist_fn=None):
+    """评估用清单 (V5.4.3): 自选 ∪ 基准日新入池, 基准日按时点动态解析。
+
+    与 load_focus_list 的差异: 新入池取自"最近一次已完成生成的池"
+    (盘前 = 前一交易日 20:00 算好的; 盘后 = 当天), 而非 date 当日。
+    结果额外带 base_date / base_reason 供落库与前端提示。
+    """
+    _agg = agg if agg is not None else views_aggregator
+    base, reason = resolve_base_date(date, session, agg=_agg)
+    if watchlist_fn is not None:
+        wl = list(watchlist_fn() or [])
+    elif username:
+        wl = load_watchlist_codes(username)
+    else:
+        wl = load_all_watchlist_codes()
+    np_ = load_new_pool_codes(base, agg=_agg)
+    result = _enrich_member_names(compute_focus_list(wl, np_, scope))
+    result['base_date'] = base
+    result['base_reason'] = reason
+    return result
 
 
 def load_focus_list(username, date, scope='all'):

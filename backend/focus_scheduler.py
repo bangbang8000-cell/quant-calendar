@@ -67,6 +67,56 @@ def is_eligible_date(target_date, today=None):
     return target_date == today
 
 
+# ─── V5.4.3 (FR-5.4.3): 盘后等待"当日持仓矩阵就绪" ────────────────────
+#
+# 背景: 当日持仓矩阵由 20:00 策略任务生成 (全市场耗时 1~3 分钟)。盘后评估若抢在
+# 生成前执行, 当日仍是继承日 → 当天新入池为空 → 漏算当天新入池。故盘后必须等池就绪。
+AFTER_CLOSE_POOL_WAIT_MINUTES = 60
+AFTER_CLOSE_START = "20:00"
+
+
+def _within_window(now_hm, start_hm, minutes):
+    now = _hm_minutes(now_hm)
+    s = _hm_minutes(start_hm)
+    return s <= now <= s + minutes
+
+
+def load_pool_ready(date) -> bool:
+    """当日持仓矩阵是否已生成 (委托 focus_list.is_pool_ready, 单一实现)。"""
+    try:
+        from focus_list import is_pool_ready
+        return bool(is_pool_ready(date))
+    except Exception:
+        return False
+
+
+def decide_session_with_readiness(now_hm, trading_day=True, intraday_enabled=False,
+                                  pool_ready=True):
+    """在 decide_session 之上叠加"盘后等当日池就绪" (返回 (session|None, reason))。
+
+    - 盘后: 池就绪 → 执行 (窗口内 'live'; 窗口后 'pool_ready_late' 补做);
+            未就绪且在等待期内 → 等待 ('pool_not_ready');
+            未就绪且超等待期 → ('pool_not_ready_timeout')
+    - 其它时点: 语义与 decide_session 完全一致 (窗口 8 分钟, 不受 pool_ready 影响)
+    """
+    if not trading_day:
+        return None, "not_trading_day"
+    session, reason = decide_session(now_hm, trading_day, intraday_enabled)
+    if session == "after_close":
+        if pool_ready:
+            return "after_close", reason
+        if _within_window(now_hm, AFTER_CLOSE_START, AFTER_CLOSE_POOL_WAIT_MINUTES):
+            return None, "pool_not_ready"
+        return None, "pool_not_ready_timeout"
+    if session is None and _within_window(now_hm, AFTER_CLOSE_START,
+                                          AFTER_CLOSE_POOL_WAIT_MINUTES):
+        # 窗口已过但仍在等待期 (进程重启 / 策略延迟): 池就绪即补做
+        if pool_ready:
+            return "after_close", "pool_ready_late"
+        return None, "pool_not_ready"
+    return session, reason
+
+
 def load_intraday_enabled() -> bool:
     """读取盘中可选时点开关 (V5.4.0 决策: 可选默认关)。
 
