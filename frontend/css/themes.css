@@ -865,7 +865,7 @@
         }
         .card {
             background: var(--bg-card);
-            backdrop-filter: blur(10px);
+            /* V6.5 (PRD-6.5): 去除毛玻璃 — 背景实底, 无需 backdrop-filter */
             border-radius: var(--r-xl);
             padding: 20px;
             margin-bottom: 20px;
@@ -1461,7 +1461,7 @@
         }
         .stat-card {
             background: var(--bg-card);
-            backdrop-filter: blur(10px);
+            /* V6.5 (PRD-6.5): 去除毛玻璃 — 背景实底 */
             border-radius: var(--r-xl);
             padding: 20px;
             display: flex;
@@ -4088,7 +4088,8 @@ text {
 /* ========== v3.11 (FR-3.11.7) 今日一屏 — 聚合当日决策要素 ========== */
 .today-hero {
     padding: 16px 20px;
-    background: linear-gradient(160deg, color-mix(in srgb, var(--primary-color) 6%, transparent), var(--bg-card) 40%);
+    /* V6.5 (PRD-6.5): 去除半透明毛玻璃 — 实底卡片, 不再透出底层渐变 */
+    background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: var(--r-lg);
     margin-bottom: 16px;
