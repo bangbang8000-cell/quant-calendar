@@ -60,6 +60,9 @@ quant-calendar-ops/versions/
 _shots/
 dogfood-output/
 
+# IDE auxiliary (planning docs, agent scratch)
+.trae/
+
 # OS files
 .DS_Store
 Thumbs.db
