@@ -13,6 +13,9 @@ export default {
     const state = inject('qcState')
     if (!state) return {}
     const showUserMenu = ref(false)
+    // V6.3 (PRD-6.3 F4): 导航形态 + 页签开关 — 动态页签仅 subnav/tree 且开启时渲染 (toptab 由二级 tab 承担)
+    const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
+    const tabsEnabled = computed(() => (state.tabsEnabled && state.tabsEnabled.value) !== false)
     // V6.2 (PRD-6.2 F2): 面包屑移除 — 由动态页签激活态承载「当前在哪」
     // V6.2 (PRD-6.2 F6): 移动端「当前二级」下拉 (桌面隐藏)
     const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -67,7 +70,7 @@ export default {
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
     return {
-      state, showUserMenu, isDark, searchQuery,
+      state, showUserMenu, isDark, searchQuery, navMode, tabsEnabled,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
       // V6.2 (PRD-6.2 F6): 移动端二级下拉
       isMobile, openSubnavPicker, currentSubLabel, subnavOptions,
@@ -99,8 +102,12 @@ export default {
           </div>
         </div>
       </div>
-      <!-- V6.2 (PRD-6.2 F2): 动态页签取代面包屑, 进入 Header 左区 -->
-      <qc-dynamic-tabs class="qc-header-tabs"></qc-dynamic-tabs>
+      <!-- V6.2 (PRD-6.2 F2): 动态页签取代面包屑, 进入 Header 左区
+           V6.3 (PRD-6.3 F4): 仅 subnav/tree 形态且页签开关开启时渲染 (toptab 由顶部二级 tab 承担) -->
+      <qc-dynamic-tabs v-if="(navMode === 'subnav' || navMode === 'tree') && tabsEnabled" class="qc-header-tabs"></qc-dynamic-tabs>
+      <!-- V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (点击走 openTab, 承担页签定位)
+           M5.1: 移动端隐藏, 由二级下拉 picker 承担 (窄屏横向标签过挤) -->
+      <qc-top-tabs v-if="navMode === 'toptab' && !isMobile"></qc-top-tabs>
     </div>
 
     <div class="qc-header-center">

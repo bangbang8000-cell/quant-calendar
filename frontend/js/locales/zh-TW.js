@@ -55,6 +55,11 @@
     'sub.user': '用户與權限',
     'sub.usage': '用量統計',
     'sub.about': '關于',
+    // V6.3 (PRD-6.3 F4): 界面與導航
+    'navMode.subnav': '中欄二級（預設）',
+    'navMode.tree': '側欄樹狀',
+    'navMode.toptab': '頂部二級標籤',
+    'tabsEnabled.hint': '頂部二級形態由二級標籤承擔頁籤定位，動態頁籤不可用',
     'view.day': '日視圖',
     'view.week': '周視圖',
     'view.month': '月視圖',

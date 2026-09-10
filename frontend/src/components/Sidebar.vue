@@ -14,6 +14,8 @@ export default {
 
     const menus = computed(() => (state.menus && state.menus.value) || [])
     const currentPage = computed(() => (state.currentPage && state.currentPage.value) || '')
+    // V6.3 (PRD-6.3 F4): 导航形态 — 侧栏树状二级仅 tree 形态渲染 (subnav/toptab 隐藏树枝)
+    const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
     const sidebarCollapsed = computed({
       get: () => (state.sidebarCollapsed && state.sidebarCollapsed.value) || false,
       set: (v) => { if (state.sidebarCollapsed) state.sidebarCollapsed.value = v },
@@ -62,7 +64,7 @@ export default {
     onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
     return {
-      state, menus, currentPage, sidebarCollapsed, expandedMenus,
+      state, menus, currentPage, navMode, sidebarCollapsed, expandedMenus,
       GROUP_LABELS, GROUPS,
       isActive, isChildActive, hasChildren, subLabel,
       toggleSubmenu, navigate, toggleCollapse,
@@ -100,8 +102,9 @@ export default {
             <div
               class="qc-sidebar-item"
               :class="{
-                'has-children': hasChildren(menu),
-                'is-child-open': expandedMenus[menu.key],
+                // V6.3 (PRD-6.3 F4): 树枝标识仅 tree 形态生效
+                'has-children': navMode === 'tree' && hasChildren(menu),
+                'is-child-open': navMode === 'tree' && expandedMenus[menu.key],
               }"
             >
               <el-tooltip
@@ -123,7 +126,7 @@ export default {
                 </a>
               </el-tooltip>
               <button
-                v-if="!sidebarCollapsed && hasChildren(menu)"
+                v-if="!sidebarCollapsed && navMode === 'tree' && hasChildren(menu)"
                 class="qc-sidebar-chevron"
                 :class="{ 'is-open': expandedMenus[menu.key] }"
                 :aria-expanded="!!expandedMenus[menu.key]"
@@ -134,9 +137,9 @@ export default {
                 <AppIcon name="chevron-down" :size="14" />
               </button>
             </div>
-            <!-- 子菜单 (展开态) -->
+            <!-- 子菜单 (展开态) — V6.3 (PRD-6.3 F4): 树状二级仅 tree 形态渲染 -->
             <div
-              v-if="!sidebarCollapsed && hasChildren(menu) && expandedMenus[menu.key]"
+              v-if="!sidebarCollapsed && navMode === 'tree' && hasChildren(menu) && expandedMenus[menu.key]"
               class="qc-sidebar-children"
               :id="'submenu-' + menu.key"
             >

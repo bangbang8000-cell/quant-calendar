@@ -547,6 +547,20 @@
   margin-left: calc(var(--qc-sidebar-collapsed-width) + var(--qc-subnav-width));
   max-width: none;
 }
+/* V6.3 (PRD-6.3 F4): 三形态布局联动 — 树状/顶部二级形态隐藏中栏, 工作区左边距仅含侧栏
+   (subnav 形态保持上方默认规则; 属性选择器优先级高于 .main-content, 覆盖无需 !important) */
+[data-navmode="tree"] .qc-subnav-column,
+[data-navmode="toptab"] .qc-subnav-column { display: none; }
+[data-navmode="tree"] .main-content,
+[data-navmode="toptab"] .main-content {
+  margin-left: var(--qc-sidebar-width);
+  max-width: none;
+}
+[data-navmode="tree"] .main-content.expanded,
+[data-navmode="toptab"] .main-content.expanded {
+  margin-left: var(--qc-sidebar-collapsed-width);
+  max-width: none;
+}
 .qc-work-area-content {
   min-width: 0;
 }
@@ -564,6 +578,13 @@
     margin-left: calc(var(--qc-sidebar-collapsed-width) + var(--qc-subnav-width));
     max-width: none;
   }
+  /* V6.3 (PRD-6.3 F4): 平板树状/顶部二级 — 中栏已隐藏, 左边距仅含折叠侧栏 */
+  [data-navmode="tree"] .main-content,
+  [data-navmode="tree"] .main-content.expanded,
+  [data-navmode="toptab"] .main-content,
+  [data-navmode="toptab"] .main-content.expanded {
+    margin-left: var(--qc-sidebar-collapsed-width);
+  }
 }
 
 /* 移动 (<768): 中栏隐藏, 工作区全宽 */
@@ -573,6 +594,13 @@
   .main-content.expanded {
     margin-left: 0;
     max-width: 100%;
+  }
+  /* V6.3 (PRD-6.3 F4): 移动端树状/顶部二级 — 侧栏亦隐藏, 左边距归零 */
+  [data-navmode="tree"] .main-content,
+  [data-navmode="tree"] .main-content.expanded,
+  [data-navmode="toptab"] .main-content,
+  [data-navmode="toptab"] .main-content.expanded {
+    margin-left: 0;
   }
 }
 
@@ -595,7 +623,8 @@
   height: 30px;
   padding: 0 var(--qc-space-3);
   border: 1px solid var(--qc-border);
-  border-radius: var(--qc-radius-full);
+  /* V6.3 (PRD-6.3 F2): 页签圆角矩形化 — 由胶囊(radius-full)收敛为 small(6px), 统一各形态页签观感 */
+  border-radius: var(--qc-radius-small);
   background: var(--qc-card);
   color: var(--qc-nav-item-default);
   font-size: var(--qc-font-size-sm);

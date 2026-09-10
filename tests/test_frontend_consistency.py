@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 484, f"qcState 唯一键数异常: {len(set(keys))} (期望 484; V6.1 F8 动态页签 +4: tabGroups/openTab/closeTab/activateTab; V6.1 F5 主题 +2: changeThemeMode/changeThemeHue; V6.1 F4 图标系统 -3: iconSystem/switchIconSystem/ICON_MAPS 移除)"
+    assert len(set(keys)) == 488, f"qcState 唯一键数异常: {len(set(keys))} (期望 488; V6.1 F8 动态页签 +4: tabGroups/openTab/closeTab/activateTab; V6.1 F5 主题 +2: changeThemeMode/changeThemeHue; V6.1 F4 图标系统 -3: iconSystem/switchIconSystem/ICON_MAPS 移除; V6.3 F4 导航形态 +4: navMode/tabsEnabled/setNavMode/setTabsEnabled)"
 
 
 def test_watch_currentpage_single():

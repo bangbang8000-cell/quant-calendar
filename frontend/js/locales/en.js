@@ -59,6 +59,11 @@
     'sub.user': 'Users & Permissions',
     'sub.usage': 'Usage Stats',
     'sub.about': 'About',
+    // V6.3 (PRD-6.3 F4): UI & navigation
+    'navMode.subnav': 'Sidebar + sub-nav column',
+    'navMode.tree': 'Tree in sidebar',
+    'navMode.toptab': 'Top secondary tabs',
+    'tabsEnabled.hint': 'Top-tab layout uses the secondary tab bar instead; dynamic tabs are unavailable',
     // 视图
     'view.day': 'Daily',
     'view.week': 'Weekly',

@@ -60,6 +60,11 @@
     'sub.user': '用户与权限',
     'sub.usage': '用量统计',
     'sub.about': '关于',
+    // V6.3 (PRD-6.3 F4): 界面与导航
+    'navMode.subnav': '中栏二级（默认）',
+    'navMode.tree': '侧栏树状',
+    'navMode.toptab': '顶部二级标签',
+    'tabsEnabled.hint': '顶部二级形态由二级标签承担页签定位，动态页签不可用',
     // 视图
     'view.day': '日视图',
     'view.week': '周视图',

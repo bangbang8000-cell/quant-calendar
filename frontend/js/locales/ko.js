@@ -55,6 +55,11 @@
     'sub.user': '사용자 및 권한',
     'sub.usage': '사용량 통계',
     'sub.about': '정보',
+    // V6.3 (PRD-6.3 F4): UI · 내비게이션
+    'navMode.subnav': '사이드바 + 보조 내비게이션',
+    'navMode.tree': '사이드바 트리',
+    'navMode.toptab': '상단 보조 탭',
+    'tabsEnabled.hint': '상단 탭 형태에서는 동적 탭을 사용할 수 없습니다',
     'view.day': '일별 보기',
     'view.week': '주별 보기',
     'view.month': '월별 보기',

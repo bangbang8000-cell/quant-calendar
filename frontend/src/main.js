@@ -17,6 +17,8 @@ import '../js/recent.js'
 import '../js/core.js'
 // V6.1 (PRD-6.1 F8): 动态页签状态机纯函数 (挂载 __quantModules.tabsCore)
 import '../js/tabs-core.js'
+// V6.3 (PRD-6.3 F3/F4): 导航形态/页签开关状态机纯函数 (挂载 __quantModules.navModeCore)
+import '../js/nav-mode-core.js'
 import '../js/charts.js'
 import '../js/ai.js'
 import '../js/system.js'
@@ -40,6 +42,8 @@ import MobileNavV6 from './components/MobileNav.vue'
 import DynamicTabsV6 from './components/DynamicTabs.vue'
 // V6.2 (PRD-6.2 F5): 通用股票列表组件
 import StockListV6 from './components/common/StockList.vue'
+// V6.3 (PRD-6.3 F4): toptab 形态 — Header 顶部二级横向标签
+import TopTabsV6 from './components/TopTabs.vue'
 if (!window.__quantComponents) window.__quantComponents = {}
 window.__quantComponents.Sidebar = SidebarV6
 window.__quantComponents.Header = HeaderV6
@@ -47,6 +51,7 @@ window.__quantComponents.SubNav = SubNavV6
 window.__quantComponents.MobileNav = MobileNavV6
 window.__quantComponents.DynamicTabs = DynamicTabsV6
 window.__quantComponents.StockList = StockListV6
+window.__quantComponents.TopTabs = TopTabsV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

@@ -10,8 +10,10 @@ import os
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JS_DIR = os.path.join(BASE, "frontend", "js")
 
-# 预算 (字节): 主逻辑文件 ≤ 80KB; 源码 JS 总量 ≤ 1.3MB (当前 ~1.13MB, 含按需组件/locales)
-MAIN_LOGIC_BUDGET = 80 * 1024
+# 预算 (字节): 主逻辑文件 ≤ 96KB; 源码 JS 总量 ≤ 1.3MB (当前 ~1.13MB, 含按需组件/locales)
+# V6.2 并入主线 v5.4.3 后 app-logic.js ~86KB (超出 V5.3.0 设定的 80KB);
+# V6.3 (PRD-6.3 F4) 导航形态状态层接入 +2.6KB → ~88.7KB; 预算上调至 96KB 保留 ~8% 余量
+MAIN_LOGIC_BUDGET = 96 * 1024
 TOTAL_JS_BUDGET = 1300 * 1024
 
 

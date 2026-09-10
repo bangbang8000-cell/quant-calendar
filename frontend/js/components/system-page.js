@@ -879,6 +879,25 @@
                             <el-switch v-model="researchMenuEnabled" @change="toggleResearchMenu" size="small" />
                         </div>
                     </div>
+                    <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 + 动态页签开关 -->
+                    <div class="card mt-4">
+                        <div class="card-title">🧭 界面与导航</div>
+                        <div class="flex-c-gap-12">
+                            <div class="flex-c-gap-6">
+                                <label class="text-base-primary-nowrap">导航形态</label>
+                                <el-select class="w-200" :model-value="navMode" @change="onNavModeChange" size="small">
+                                    <el-option value="subnav" :label="t('navMode.subnav')" />
+                                    <el-option value="tree" :label="t('navMode.tree')" />
+                                    <el-option value="toptab" :label="t('navMode.toptab')" />
+                                </el-select>
+                            </div>
+                            <div class="flex-c-gap-6">
+                                <label class="text-base-primary-nowrap">动态页签</label>
+                                <el-switch :model-value="tabsEnabled" @change="onTabsEnabledChange" size="small" :disabled="navMode === 'toptab'" />
+                            </div>
+                        </div>
+                        <div class="text-sm-tertiary-mt6" v-if="navMode === 'toptab'">{{ t('tabsEnabled.hint') }}</div>
+                    </div>
                 </div>
                     <div v-else-if="currentSubPage === 'datadict'">
                         <div class="card">
@@ -1520,6 +1539,9 @@
       function setThemeHue(h) { themeHue.value = parseInt(h, 10); if (state.changeThemeHue) state.changeThemeHue(themeHue.value); }
       function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
       function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
+      // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态/页签开关即时生效 (state.navMode/tabsEnabled/setNavMode/setTabsEnabled 经 ...state 展开)
+      function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }
+      function onTabsEnabledChange(v) { if (state.setTabsEnabled) state.setTabsEnabled(v); }
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
@@ -1880,6 +1902,8 @@
         // V6.1 (PRD-6.1 F5): 外观设置
         themeHues, themeHueNames, themeMode, themeHue,
         onThemeModeChange, setThemeHue, hueColor, hueName,
+        // V6.3 (PRD-6.3 F4): 界面与导航
+        onNavModeChange, onTabsEnabledChange,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
         aiTotal, aiDayPeak,

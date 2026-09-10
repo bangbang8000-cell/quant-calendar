@@ -10,6 +10,9 @@
   padding: 0 var(--qc-space-4);
   background: var(--qc-card);
   border-bottom: 1px solid var(--qc-border);
+  /* V6.3 (PRD-6.3 F1): 顶部栏容器化 — 圆角矩形 + 与下方工作区 12px 间隙 */
+  border-radius: var(--qc-radius-large);
+  margin-bottom: var(--qc-space-3);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -173,6 +176,42 @@
   width: 16px;
   height: 16px;
 }
+/* V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (复用 qc-header-tabs 容器与页签视觉, 不可关闭/无右键) */
+.qc-top-tabs .qc-top-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  height: 28px;
+  padding: 0 var(--qc-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--qc-radius-small);
+  background: transparent;
+  color: var(--qc-nav-item-default);
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--duration-fast), background-color var(--duration-fast), border-color var(--duration-fast);
+}
+.qc-top-tabs .qc-top-tab:hover {
+  background: var(--qc-muted);
+  color: var(--qc-nav-item-hover);
+}
+.qc-top-tabs .qc-top-tab.is-active {
+  background: var(--qc-muted);
+  border-color: var(--qc-border);
+  color: var(--qc-nav-item-active);
+}
+.qc-top-tabs .qc-top-tab:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-top-tab-label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .qc-header-search {
   flex: 1;
   min-width: 0;
@@ -330,6 +369,9 @@
   .qc-header {
     padding: 0 var(--qc-space-3);
     gap: var(--qc-space-2);
+    /* V6.3 (PRD-6.3 F1): 移动端贴边 — 圆角归零, 间距收窄 */
+    border-radius: 0;
+    margin-bottom: var(--qc-space-2);
   }
   .qc-header-left { flex: 0 1 auto; }
   .qc-header-tabs { flex: 1; }

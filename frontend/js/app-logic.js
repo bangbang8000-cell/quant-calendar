@@ -160,6 +160,22 @@ const allMenuDefs = [
                     } catch(e) { console.warn('loadGroupConfig:', e); }
                 }
                 const currentPage = ref('strategies');
+                // V6.3 (PRD-6.3 F3/F4): 导航形态 + 页签开关 — localStorage 持久化全局偏好 (默认 subnav / 开)
+                const _navPrefs = (window.__quantModules && window.__quantModules.navModeCore)
+                    ? window.__quantModules.navModeCore.readPrefs()
+                    : { navMode: 'subnav', tabsEnabled: true };
+                const navMode = ref(_navPrefs.navMode);
+                const tabsEnabled = ref(_navPrefs.tabsEnabled);
+                function setNavMode(v) {
+                    const C = window.__quantModules && window.__quantModules.navModeCore;
+                    navMode.value = C ? C.normalizeNavMode(v) : ((v === 'tree' || v === 'toptab') ? v : 'subnav');
+                    if (C) C.writePrefs({ navMode: navMode.value });
+                }
+                function setTabsEnabled(v) {
+                    tabsEnabled.value = !!v;
+                    const C = window.__quantModules && window.__quantModules.navModeCore;
+                    if (C) C.writePrefs({ tabsEnabled: tabsEnabled.value });
+                }
                 const shortcutHelpItems = [
                     { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索/菜单/指令)' },
                     { keys: 'Ctrl+/', desc: '显示/隐藏快捷键帮助' },
@@ -346,7 +362,7 @@ const allMenuDefs = [
                 const subPageNames = {
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
                     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
-                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪',
+                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis — 修复中栏/页签/移动端下拉/授权对话框 4 处显示 id 回退
                     'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
@@ -1071,6 +1087,8 @@ const allMenuDefs = [
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
                     currentPage, pageComp, currentSubPage, sidebarCollapsed, menus,
+                    // V6.3 (PRD-6.3 F3/F4): 导航形态 + 页签开关
+                    navMode, tabsEnabled, setNavMode, setTabsEnabled,
                     // V6.1 (PRD-6.1 F8): 动态页签
                     tabGroups, openTab, closeTab, activateTab,
                     fmtNum, sanitizeHtml, keyClick, isOnline,

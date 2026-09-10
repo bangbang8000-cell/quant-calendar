@@ -55,6 +55,11 @@
     'sub.user': 'ユーザーと権限',
     'sub.usage': '利用統計',
     'sub.about': '情報',
+    // V6.3 (PRD-6.3 F4): UI・ナビゲーション
+    'navMode.subnav': 'サイドバー + サブナビ',
+    'navMode.tree': 'サイドバーツリー',
+    'navMode.toptab': '上部セカンダリタブ',
+    'tabsEnabled.hint': '上部タブ形態では動的タブは使用できません',
     'view.day': '日ビュー',
     'view.week': '週ビュー',
     'view.month': '月ビュー',

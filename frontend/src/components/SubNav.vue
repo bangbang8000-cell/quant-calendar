@@ -43,6 +43,8 @@ export default {
 
     const currentPage = computed(() => (state.currentPage && state.currentPage.value) || '')
     const currentSubPage = computed(() => (state.currentSubPage && state.currentSubPage.value) || '')
+    // V6.3 (PRD-6.3 F4): 导航形态 — 中栏二级仅 subnav 形态渲染 (tree/toptab 隐藏)
+    const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
     const collapsedGroups = ref({})
 
     const menus = computed(() => (state.menus && state.menus.value) || [])
@@ -95,7 +97,7 @@ export default {
     const subIcon = (page, sp) => (SUB_ICONS[page] && SUB_ICONS[page][sp]) || 'circle-dot'
 
     return {
-      state, currentPage, currentSubPage, subPages, currentMenu,
+      state, currentPage, currentSubPage, navMode, subPages, currentMenu,
       collapsedGroups, pageTitle, subLabel, isSubActive,
       goSub, goSystemItem, toggleGroup, SYSTEM_GROUPS, subIcon,
     }
@@ -104,8 +106,9 @@ export default {
 </script>
 
 <template>
-  <!-- V6.1 (PRD-6.1 F1): 中栏二级导航 — 固定常驻, 顶部显示当前一级页面名 -->
-  <aside class="qc-subnav-column" aria-label="二级导航">
+  <!-- V6.1 (PRD-6.1 F1): 中栏二级导航 — 固定常驻, 顶部显示当前一级页面名
+       V6.3 (PRD-6.3 F4): 仅 subnav 形态渲染 (tree/toptab 由 data-navmode CSS 隐藏 + v-if 双保险) -->
+  <aside v-if="navMode === 'subnav'" class="qc-subnav-column" aria-label="二级导航">
     <div class="qc-subnav-column-header">
       <span class="qc-subnav-current-label">{{ pageTitle }}</span>
     </div>
