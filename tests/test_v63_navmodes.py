@@ -51,11 +51,14 @@ def test_main_content_margin_by_navmode():
     assert m and "display: none" in m.group(1), "tree/toptab 应隐藏中栏 .qc-subnav-column"
 
 
-def test_dynamic_tabs_gated():
-    """TC-6.3.3.4/5: 动态页签仅 subnav/tree 且 tabsEnabled 时渲染 (toptab 由二级 tab 承担)"""
+def test_dynamic_tabs_removed_and_crumbs_in_tree():
+    """TC-6.3.3.4 (V6.4): 动态页签已移除; 面包屑仅 tree 形态渲染 (subnav/toptab 由中栏/顶部标签承担)"""
     src = _norm(_read("src/components/Header.vue"))
-    assert "(navMode === 'subnav' || navMode === 'tree') && tabsEnabled" in src, \
-        "qc-dynamic-tabs 应带 (subnav||tree)&&tabsEnabled 条件"
+    assert "qc-dynamic-tabs" not in src, "Header 不应再渲染动态页签"
+    assert "qc-header-crumbs" in src, "Header 应含面包屑元素"
+    assert "navMode === 'tree' && !isMobile" in src, "面包屑应仅 tree 形态展示"
+    assert os.path.exists(os.path.join(FRONTEND, "src", "components", "TopTabs.vue")), \
+        "顶部二级标签组件应保留"
 
 
 def test_breakpoint_overrides_present():

@@ -30,25 +30,23 @@ def test_appicon_whitelist_extended():
 
 
 def test_breadcrumb_removed():
-    """TC-6.2.2: Header 面包屑移除; 工作区不再挂载页签"""
+    """TC-6.2.2 (V6.4 修订): 动态页签已移除; Header 面包屑按 V6.4 决策恢复 (tree 形态显示)"""
     header = _read("src/components/Header.vue")
-    assert "qc-breadcrumb" not in header, "Header.vue 不应再含面包屑"
-    assert "breadcrumbs" not in header, "Header.vue 不应再有 breadcrumbs"
-    assert "qc-header-tabs" in header, "Header 应承载动态页签 (qc-header-tabs)"
+    # V6.4: 动态页签已整体移除, Header 不再承载页签
+    assert "qc-header-tabs" not in header, "V6.4 后 Header 不应再含动态页签容器"
     idx = _read("index.html")
     assert "<qc-dynamic-tabs>" not in idx, "index.html 工作区不应再挂载页签"
+    # V6.4: 面包屑恢复 (tree 形态条件显示)
+    assert "qc-header-crumbs" in header, "V6.4 后 Header 应含面包屑区 (tree 形态)"
 
 
 def test_tab_dom_no_nested():
-    """TC-6.2.3: 页签 role=tab 为 div; 关闭为独立 button; 无嵌套交互元素"""
-    src = _read("src/components/DynamicTabs.vue")
-    assert 'role="tab"' in src, "页签应保留 role=tab"
-    assert '<div' in src and 'class="qc-dynamic-tab"' in src, "页签主体应为 div"
-    assert 'class="qc-dynamic-tab-close" type="button"' in src, "关闭应为独立 button"
-    assert 'button[role="tab"]' not in src, "不应为 button 承载 tab"
-    # Teleport 右键菜单
-    assert "qc-tab-ctx" in src, "应有页签右键菜单"
-    assert "draggable" in src, "应有拖拽排序"
+    """TC-6.2.3 (V6.4 修订): 动态页签组件已移除, 无任何残留引用"""
+    assert not os.path.exists(os.path.join(FRONTEND, "src/components/DynamicTabs.vue")), \
+        "V6.4 后 DynamicTabs.vue 应已删除"
+    header = _read("src/components/Header.vue")
+    assert "dynamic-tab" not in header and "DynamicTabs" not in header, \
+        "Header.vue 不应再引用动态页签"
 
 
 def test_stocklist_registered():

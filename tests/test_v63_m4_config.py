@@ -8,7 +8,7 @@ FRONTEND = os.path.join(BASE, "frontend")
 LOCALES = os.path.join(FRONTEND, "js", "locales")
 
 REQUIRED_KEYS = [
-    "navMode.subnav", "navMode.tree", "navMode.toptab", "tabsEnabled.hint",
+    "navMode.subnav", "navMode.tree", "navMode.toptab",
 ]
 
 
@@ -30,28 +30,30 @@ def test_i18n_keys_all_locales():
 
 
 def test_feature_page_has_nav_section():
-    """M4.1: 功能配置页含「界面与导航」区块 + 形态下拉 + 页签开关"""
+    """M4.1: 功能配置页含「界面与导航」区块 + 形态下拉 (V6.4: 动态页签开关已移除)"""
     src = _read(os.path.join(FRONTEND, "js", "components", "system-page.js"))
     assert "🧭 界面与导航" in src, "功能配置页应含「界面与导航」区块"
     assert ":model-value=\"navMode\"" in src, "形态下拉应绑定 navMode"
-    assert ":model-value=\"tabsEnabled\"" in src, "页签开关应绑定 tabsEnabled"
+    # V6.4: 动态页签开关已移除 (仅导航形态保留)
+    assert "tabsEnabled" not in src, "配置页不应再引用 tabsEnabled"
+    assert "onTabsEnabledChange" not in src, "配置页不应再含页签开关接线"
     # 三形态选项
     for opt in ('value="subnav"', 'value="tree"', 'value="toptab"'):
         assert opt in src, f"形态下拉缺少选项 {opt}"
-    # toptab 下页签开关禁用 + 提示
-    assert ':disabled="navMode === \'toptab\'"' in src, "toptab 下页签开关应 disabled"
-    assert "t('tabsEnabled.hint')" in src, "toptab 下应显示页签不可用提示"
 
 
 def test_feature_page_wired_to_state():
-    """M4.2: 变更接线 → setNavMode/setTabsEnabled (即时生效 + writePrefs 持久化)"""
+    """M4.2: 变更接线 → setNavMode (即时生效 + writePrefs 持久化); V6.4: 页签开关函数已移除"""
     sys_src = _read(os.path.join(FRONTEND, "js", "components", "system-page.js"))
     assert "function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }" in sys_src
-    assert "function onTabsEnabledChange(v) { if (state.setTabsEnabled) state.setTabsEnabled(v); }" in sys_src
-    assert "onNavModeChange, onTabsEnabledChange," in sys_src, "setup return 应导出接线函数"
-    # 状态层: setNavMode/setTabsEnabled 写 localStorage (刷新保持)
+    assert "onNavModeChange," in sys_src, "setup return 应导出接线函数"
+    assert "onTabsEnabledChange" not in sys_src, "页签开关接线函数应已移除"
+    # 状态层: setNavMode 写 localStorage (刷新保持); V6.4: setTabsEnabled 已移除
     app = _read(os.path.join(FRONTEND, "js", "app-logic.js"))
     assert "function setNavMode" in app and "writePrefs" in app, \
         "setNavMode 应经 navModeCore.writePrefs 持久化"
-    assert "function setTabsEnabled" in app and "writePrefs" in app, \
-        "setTabsEnabled 应经 navModeCore.writePrefs 持久化"
+    assert "setTabsEnabled" not in app, "setTabsEnabled 应已移除"
+    # 状态机: 不再导出 tabsVisible / tabs_enabled
+    core = _read(os.path.join(FRONTEND, "js", "nav-mode-core.js"))
+    assert "tabsVisible" not in core, "nav-mode-core 不应再含 tabsVisible"
+    assert "tabs_enabled" not in core, "nav-mode-core 不应再写 tabs_enabled 键"

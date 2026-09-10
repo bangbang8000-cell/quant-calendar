@@ -56,6 +56,10 @@ quant-calendar-ops/versions/
 *.original*
 *_bak*
 
+# Dev artifacts (screenshots / dogfood walkthrough outputs)
+_shots/
+dogfood-output/
+
 # OS files
 .DS_Store
 Thumbs.db

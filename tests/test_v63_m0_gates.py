@@ -14,19 +14,20 @@ def _read(rel):
 
 
 def test_tab_radius_rectangular():
-    """TC-6.3.2.1: 页签圆角收敛为 small(6px), 不存在胶囊(radius-full)分支"""
+    """TC-6.3.2.1 (V6.4): 动态页签已移除 — 无 .qc-dynamic-tab 规则; 顶部二级标签 top-tab 圆角为 small(6px) 矩形"""
     nav = _read("css/nav.css")
     header = _read("css/header.css")
-    for src_name, src in (("nav.css", nav), ("header.css", header)):
-        # 所有 .qc-dynamic-tab 规则块内的 border-radius 应指向 --qc-radius-small
-        # (负向前瞻排除 -close 等子元素, 其 50% 圆角合法)
-        for m in re.finditer(r"\.qc-dynamic-tab(?![-\w])[^{]*\{([^}]*)\}", src):
-            block = m.group(1)
-            if "border-radius" in block:
-                assert "--qc-radius-small" in block, \
-                    f"{src_name} 页签 border-radius 应收敛为 small: {block.strip()}"
-                assert "--qc-radius-full" not in block, \
-                    f"{src_name} 页签不应再使用胶囊: {block.strip()}"
+    # V6.4: 动态页签组件与样式已整体移除
+    assert ".qc-dynamic-tab" not in nav, "nav.css 不应再含动态页签规则"
+    assert ".qc-dynamic-tab" not in header, "header.css 不应再含动态页签规则"
+    # 保留的顶部二级标签: 圆角矩形 (small, 非胶囊)
+    for m in re.finditer(r"\.qc-top-tab(?![-\w])[^{]*\{([^}]*)\}", header):
+        block = m.group(1)
+        if "border-radius" in block:
+            assert "--qc-radius-small" in block, \
+                f"header.css 顶部标签 border-radius 应为 small: {block.strip()}"
+            assert "--qc-radius-full" not in block, \
+                f"顶部标签不应使用胶囊: {block.strip()}"
 
 
 def test_header_rounded_and_gap():
