@@ -38,20 +38,21 @@ import SidebarV6 from './components/Sidebar.vue'
 import HeaderV6 from './components/Header.vue'
 import SubNavV6 from './components/SubNav.vue'
 import MobileNavV6 from './components/MobileNav.vue'
-// V6.1 (PRD-6.1 F8): 动态页签栏
-import DynamicTabsV6 from './components/DynamicTabs.vue'
 // V6.2 (PRD-6.2 F5): 通用股票列表组件
 import StockListV6 from './components/common/StockList.vue'
 // V6.3 (PRD-6.3 F4): toptab 形态 — Header 顶部二级横向标签
 import TopTabsV6 from './components/TopTabs.vue'
+// V6.5 (PRD-6.5 F5): AppIcon 全局注册 — JS 模板(弹窗/页面组件)可直接用 <qc-icon>
+import AppIconV6 from './components/common/AppIcon.vue'
+AppIconV6.name = 'qc-icon'
 if (!window.__quantComponents) window.__quantComponents = {}
 window.__quantComponents.Sidebar = SidebarV6
 window.__quantComponents.Header = HeaderV6
 window.__quantComponents.SubNav = SubNavV6
 window.__quantComponents.MobileNav = MobileNavV6
-window.__quantComponents.DynamicTabs = DynamicTabsV6
 window.__quantComponents.StockList = StockListV6
 window.__quantComponents.TopTabs = TopTabsV6
+window.__quantComponents.AppIcon = AppIconV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

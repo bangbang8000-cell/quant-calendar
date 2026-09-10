@@ -124,6 +124,11 @@
   border-radius: var(--qc-radius-xl);
   box-shadow: var(--qc-shadow-lg);
 }
+/* V6.5 (PRD-6.5 F4): 个股/指数详情弹窗 — 渐变头部贴合容器圆角, 无直角溢出 */
+.el-dialog.kline-dialog,
+.el-dialog.merrill-detail-dialog {
+  overflow: hidden;
+}
 .el-overlay { background-color: var(--qc-overlay); }
 .el-drawer { border-radius: var(--qc-radius-large) 0 0 var(--qc-radius-large); }
 .el-dropdown-menu, .el-popper.is-light { border-radius: var(--qc-radius-large); box-shadow: var(--qc-shadow-md); }

@@ -12,6 +12,12 @@ import {
   Lock, SlidersHorizontal, Play, History, Layers, LineChart, Target, SearchCheck,
   // V6.2 (PRD-6.2 F1): 二级图标补全新增
   Star, MessageCircle, CalendarDays, CalendarRange, CalendarCheck,
+  // V6.5 (PRD-6.5 F5): 全站 emoji → Lucide 图标新增
+  Brain, Lightbulb, OctagonX, Flag, Package, ClipboardList, Pin, RadioTower,
+  Gauge, Landmark, CandlestickChart, Wallet, BadgeCheck,
+  // V6.5 (PRD-6.5 F5): 全站 emoji → Lucide 图标新增(补充)
+  Key, Factory, Trophy, Rocket, Flame, MapPin, ScrollText, BookOpen, Dna, BarChart,
+  Plus,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -82,6 +88,32 @@ const ICON_MAP = {
   'calendar-days': CalendarDays,
   'calendar-range': CalendarRange,
   'calendar-check': CalendarCheck,
+  // V6.5 (PRD-6.5 F5): 全站 emoji → Lucide 图标新增
+  'brain': Brain,
+  'lightbulb': Lightbulb,
+  'octagon-x': OctagonX,
+  'flag': Flag,
+  'package': Package,
+  'clipboard-list': ClipboardList,
+  'pin': Pin,
+  'radio-tower': RadioTower,
+  'gauge': Gauge,
+  'landmark': Landmark,
+  'candlestick-chart': CandlestickChart,
+  'wallet': Wallet,
+  'badge-check': BadgeCheck,
+  // V6.5 (PRD-6.5 F5): 全站 emoji → Lucide 图标新增(补充)
+  'key': Key,
+  'factory': Factory,
+  'trophy': Trophy,
+  'rocket': Rocket,
+  'flame': Flame,
+  'map-pin': MapPin,
+  'scroll-text': ScrollText,
+  'book-open': BookOpen,
+  'dna': Dna,
+  'bar-chart': BarChart,
+  'plus': Plus,
 }
 
 const comp = () => ICON_MAP[props.name] || null

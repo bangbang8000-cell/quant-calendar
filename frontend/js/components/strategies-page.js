@@ -67,7 +67,7 @@
                                 <div class="today-focus-list">
                                     <div v-if="todayFocus.length === 0" class="today-focus-empty">{{ t('strategies.noAlert') }}</div>
                                     <div v-for="(f, i) in todayFocus.slice(0, 3)" :key="i" class="today-focus-item" :class="f.level" @click="f.action">
-                                        <span class="today-focus-icon">{{ f.icon }}</span><span class="today-focus-text">{{ f.text }}</span>
+                                        <span class="today-focus-icon"><qc-icon :name="f.icon" :size="14" /></span><span class="today-focus-text">{{ f.text }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -81,28 +81,28 @@
                     </div>
                     <div v-else class="dashboard-grid">
                         <div class="stat-card info">
-                            <div class="stat-icon info">📅</div>
+                            <div class="stat-icon info"><qc-icon name="calendar" :size="18" /></div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_trading_days || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.tradingDays') }}</div>
                             </div>
                         </div>
                         <div class="stat-card success">
-                            <div class="stat-icon success">📈</div>
+                            <div class="stat-icon success"><qc-icon name="trending-up" :size="18" /></div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.total_stocks_covered || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.coveredStocks') }}</div>
                             </div>
                         </div>
                         <div class="stat-card gold">
-                            <div class="stat-icon gold">🎯</div>
+                            <div class="stat-icon gold"><qc-icon name="target" :size="18" /></div>
                             <div class="stat-content">
                                 <div class="stat-value">{{ dashboardData.stats?.strategy_count || 0 }}</div>
                                 <div class="stat-label">{{ t('strategies.strategyCount') }}</div>
                             </div>
                         </div>
                         <div class="stat-card warning">
-                            <div class="stat-icon warning">💎</div>
+                            <div class="stat-icon warning"><qc-icon name="sparkles" :size="18" /></div>
                             <div class="stat-content">
                                 <div class="flex-baseline-gap-8">
                                     <div class="stat-value">{{ currentPoolSize }}</div>
@@ -149,7 +149,7 @@
 
 <!-- 各策略选股数量 (v1.11: 可点击跳转) -->
                     <div class="card">
-                        <div class="card-title">📈 各策略选股统计 <span class="text-sm-tertiary-normal">(点击策略跳转日历筛选)</span></div>
+                        <div class="card-title"><qc-icon name="trending-up" :size="14" /> 各策略选股统计 <span class="text-sm-tertiary-normal">(点击策略跳转日历筛选)</span></div>
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item clickable" @click="navigateToStrategyFilter(item.strategy_name)">
                             <div class="strategy-header">
                                 <span class="strategy-name">{{ item.strategy_name }} <span class="text-xs-tertiary-ml4">→</span></span>
@@ -192,21 +192,21 @@
                     <div class="card overflow-hidden">
                         <div class="flex-between-mb16">
                             <div class="strategy-title-bar">
-                                ⏱ 美林时钟 · 经济周期
+                                <qc-icon name="clock" :size="14" /> 美林时钟 · 经济周期
                             </div>
                             <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
                             <!-- V4.5 (FR-4.5.1): 配置就近 -->
                             <el-button size="small" type="primary" plain @click="merrillConfigOpen = !merrillConfigOpen">
-                                ⚙ {{ merrillConfigOpen ? '收起配置' : '配置' }}
+                                <qc-icon name="settings" :size="14" /> {{ merrillConfigOpen ? '收起配置' : '配置' }}
                             </el-button>
                         </div>
                         <div class="card mt-4" v-if="merrillConfigOpen">
-                            <div class="card-title">⏱ 美林时钟配置</div>
+                            <div class="card-title"><qc-icon name="clock" :size="14" /> 美林时钟配置</div>
                             <div class="flex-between-mb12">
                                 <span class="text-base-secondary">上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong></span>
-                                <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">🔄 手动重评估</el-button>
+                                <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading"><qc-icon name="refresh" :size="14" /> 手动重评估</el-button>
                             </div>
                             <div class="flex-between-mb12">
                                 <span class="text-base-secondary">自动刷新</span>
@@ -241,7 +241,7 @@
                         <!-- 时间 + 进度 -->
                         <div class="gold-note-box" v-if="merrillData.timing">
                             <div class="flex-between-base-mb6">
-                                <span class="color-secondary">📅 {{ merrillData.timing.current_stage_start_date || '—' }}</span>
+                                <span class="color-secondary"><qc-icon name="calendar" :size="14" /> {{ merrillData.timing.current_stage_start_date || '—' }}</span>
                                 <span class="strategy-badge" v-if="merrillData.timing.maturity" :style="{color: merrillData.color}">{{ merrillData.timing.maturity }}</span>
                             </div>
                             <div class="flex-between-xs-mb7">
@@ -262,7 +262,7 @@
 
                         <!-- 多维度评分 -->
                         <div class="note-box-14" v-if="merrillData.dimension_scores">
-                            <div class="text-base-semibold-primary-mb10">📊 多维度评分</div>
+                            <div class="text-base-semibold-primary-mb10"><qc-icon name="bar-chart-3" :size="14" /> 多维度评分</div>
                             <div class="flex-c-gap-8-mb6-sm" v-for="dim in dimensionScoreList" :key="dim.key">
                                 <span class="stat-label-40">{{ dim.label }}</span>
                                 <div class="stat-track-10">
@@ -289,13 +289,13 @@
                         </div>
 
                         <div class="gold-hint">
-                            💡 点击阶段卡片查看详细分析和投资建议
+                            <qc-icon name="lightbulb" :size="14" /> 点击阶段卡片查看详细分析和投资建议
                         </div>
 
                         <!-- v3.22-I4 + V4.0.1: 历史周期时间轴(最近4轮, 历史在上/最新在下, 蛇形连线, hover介绍) -->
                         <div class="merrill-timeline-block">
                             <div class="merrill-timeline-head">
-                                <span>🕰 历史周期时间轴</span>
+                                <span><qc-icon name="history" :size="14" /> 历史周期时间轴</span>
                                 <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
                                 <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
                             </div>
@@ -396,12 +396,12 @@
                     
                     <!-- 市场行情概览 -->
                     <div class="card">
-                        <div class="card-title">💹 今日市场行情</div>
+                        <div class="card-title"><qc-icon name="line-chart" :size="14" /> 今日市场行情</div>
                         <div class="market-status">
                             <span>
                                 <span class="color-primary-semibold-600" v-if="marketData.is_trading_day">● 交易日</span>
                                 <span class="color-tertiary" v-else>○ 非交易日</span>
-                                <span class="ml-8-neutral-600" v-if="marketData.in_trading_hours">🕐 交易中</span>
+                                <span class="ml-8-neutral-600" v-if="marketData.in_trading_hours"><qc-icon name="clock" :size="14" /> 交易中</span>
                                 <span class="ml-8-tertiary" v-if="!marketData.in_trading_hours && marketData.is_trading_day">已收盘</span>
                             </span>
                             <span class="text-xs-tertiary">{{ marketData.date }}</span>
@@ -430,7 +430,7 @@
 
                     <!-- 策略共识度排行 -->
                     <div class="card">
-                        <div class="card-title">🏆 策略共识度排行 (多策略同时选中)</div>
+                        <div class="card-title"><qc-icon name="trophy" :size="14" /> 策略共识度排行 (多策略同时选中)</div>
                         <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
                         <qc-virtual-list class="h-calc-240" :items="filteredConsensusRank" :row-height="78">
                             <template #default="{ item, index }">
@@ -593,9 +593,9 @@
                     <!-- V4.9 (P1): 执行看板子页 -->
                     <div v-else-if="currentSubPage === 'execution'" class="card">
                         <div class="card-title flex-between">
-                            <span>⚡ 策略执行看板</span>
+                            <span><qc-icon name="zap" :size="14" /> 策略执行看板</span>
                             <div class="flex-c-gap-8">
-                                <el-button size="small" @click="loadExecutionData" :loading="execLoading">🔄 刷新</el-button>
+                                <el-button size="small" @click="loadExecutionData" :loading="execLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
                                 <el-select class="w-100" size="small" v-model="execDays" @change="loadExecutionData">
                                     <el-option label="近1天" :value="1" />
                                     <el-option label="近7天" :value="7" />
@@ -607,28 +607,28 @@
                         <!-- 聚合统计卡片 -->
                         <div v-if="execSummary" class="dashboard-grid">
                             <div class="stat-card info">
-                                <div class="stat-icon info">📋</div>
+                                <div class="stat-icon info"><qc-icon name="clipboard-list" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ execSummary.total }}</div>
                                     <div class="stat-label">总执行次数</div>
                                 </div>
                             </div>
                             <div class="stat-card success">
-                                <div class="stat-icon success">✅</div>
+                                <div class="stat-icon success"><qc-icon name="check" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ execSummary.success_count }}</div>
                                     <div class="stat-label">成功次数</div>
                                 </div>
                             </div>
                             <div class="stat-card warning">
-                                <div class="stat-icon warning">📈</div>
+                                <div class="stat-icon warning"><qc-icon name="trending-up" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value" :class="execSuccessClass">{{ execSummary.success_rate || 0 }}%</div>
                                     <div class="stat-label">成功率</div>
                                 </div>
                             </div>
                             <div class="stat-card gold">
-                                <div class="stat-icon gold">📅</div>
+                                <div class="stat-icon gold"><qc-icon name="calendar" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ Object.keys(execSummary.daily_trend || {}).length }}</div>
                                     <div class="stat-label">覆盖天数</div>
@@ -638,7 +638,7 @@
 
                         <!-- 各任务状态卡片 -->
                         <div v-if="execSummary?.by_task" class="card mt-4">
-                            <div class="card-title">📊 各任务执行统计</div>
+                            <div class="card-title"><qc-icon name="bar-chart-3" :size="14" /> 各任务执行统计</div>
                             <div class="strategy-item" v-for="(stats, taskName) in execSummary.by_task" :key="taskName">
                                 <div class="strategy-header">
                                     <span class="strategy-name">{{ taskName }}</span>
@@ -661,10 +661,10 @@
 
                         <!-- V4.9.2 (P1): 每日策略执行监控 -->
                         <div class="card mt-4">
-                            <div class="card-title">📅 {{ t('exec.resultTitle') }}</div>
+                            <div class="card-title"><qc-icon name="calendar" :size="14" /> {{ t('exec.resultTitle') }}</div>
                             <div class="dashboard-grid">
                                 <div class="stat-card warning">
-                                    <div class="stat-icon warning">🗓</div>
+                                    <div class="stat-icon warning"><qc-icon name="calendar-days" :size="18" /></div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execCountdownText }}</div>
                                         <div class="stat-label">{{ t('exec.countdown') }}</div>
@@ -678,14 +678,14 @@
                                     </div>
                                 </div>
                                 <div class="stat-card info">
-                                    <div class="stat-icon info">📦</div>
+                                    <div class="stat-icon info"><qc-icon name="package" :size="18" /></div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execLastDate }}</div>
                                         <div class="stat-label">{{ t('exec.lastRun') }}</div>
                                     </div>
                                 </div>
                                 <div class="stat-card gold">
-                                    <div class="stat-icon gold">👁</div>
+                                    <div class="stat-icon gold"><qc-icon name="eye" :size="18" /></div>
                                     <div class="stat-content">
                                         <div class="stat-value" :class="execVisibleClass">{{ execVisibleText }}</div>
                                         <div class="stat-label">{{ t('exec.dayTotal') }}</div>
@@ -722,7 +722,7 @@
                                 <el-select class="w-120" size="small" v-model="execTraceDate" @change="loadExecutionTrace(execTraceDate)">
                                     <el-option v-for="r in execResultsDates" :key="r.date" :label="r.date" :value="r.date" />
                                 </el-select>
-                                <el-button size="small" @click="loadExecutionTrace(execTraceDate)" :loading="execTraceLoading">🔄 {{ t('exec.traceTitle') }}</el-button>
+                                <el-button size="small" @click="loadExecutionTrace(execTraceDate)" :loading="execTraceLoading"><qc-icon name="refresh" :size="14" /> {{ t('exec.traceTitle') }}</el-button>
                             </div>
                             <div v-if="execTraceSteps.length" class="strategy-item" v-for="s in execTraceSteps" :key="s.step + (s.ts || '')">
                                 <div class="strategy-header">
@@ -737,7 +737,7 @@
                         <!-- 历史记录表 -->
                         <div class="card mt-4">
                             <div class="card-title flex-between">
-                                <span>📝 执行历史 <span class="text-sm-tertiary">(最近 {{ execDays }} 天)</span></span>
+                                <span><qc-icon name="file-text" :size="14" /> 执行历史 <span class="text-sm-tertiary">(最近 {{ execDays }} 天)</span></span>
                                 <div class="flex-c-gap-8">
                                     <el-select class="w-120" size="small" v-model="execTaskFilter" @change="loadExecutionData" clearable placeholder="全部任务">
                                         <el-option v-for="t in execTaskOptions" :key="t" :label="t" :value="t" />
@@ -827,14 +827,14 @@
           const newNames = pc.new_stock_names || {};
           const names = (pc.new_stocks || []).map(c => newNames[c] || codeNameMap.value[c] || c).slice(0, 4).join('、');
           items.push({
-            icon: '🆕', level: 'new',
+            icon: 'sparkles', level: 'new',
             text: `今日新入池 ${n} 只${names ? ' · ' + names : ''}`,
             action: () => { if (window.__quantGoPage) window.__quantGoPage('calendar', 'pool'); else { state.currentPage.value = 'calendar'; state.currentSubPage.value = 'pool'; } state.statusFilter.value = 'new'; },
           });
         }
         for (const s of health.value.filter(x => x.degraded)) {
           items.push({
-            icon: '⚠', level: 'warn',
+            icon: 'alert-triangle', level: 'warn',
             text: `数据源 ${healthName(s.name)} degraded（连续失败）`,
             action: () => { if (window.__quantGoPage) window.__quantGoPage('system', ''); else { state.currentPage.value = 'system'; } },
           });
@@ -842,13 +842,13 @@
         const t = merrill.value.timing;
         if (t && t.progress_percent && t.progress_percent > 100) {
           items.push({
-            icon: '⏰', level: 'warn',
+            icon: 'clock', level: 'warn',
             text: `美林「${merrill.value.name}」已超期 ${t.progress_percent}%`,
             action: () => { state.currentSubPage.value = 'merrill'; },
           });
         } else if (t && t.maturity && merrill.value.name) {
           items.push({
-            icon: '⏳', level: 'info',
+            icon: 'clock', level: 'info',
             text: `美林「${merrill.value.name}」阶段成熟度 ${t.maturity}`,
             action: () => { state.currentSubPage.value = 'merrill'; },
           });
@@ -856,7 +856,7 @@
         const mk = market.value;
         if (mk && mk.is_trading_day === false && mk.date) {
           items.push({
-            icon: '📅', level: 'info',
+            icon: 'calendar', level: 'info',
             text: `${mk.date} 非交易日`,
             action: () => { state.currentSubPage.value = 'market'; },
           });

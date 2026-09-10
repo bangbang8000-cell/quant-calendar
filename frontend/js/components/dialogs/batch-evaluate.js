@@ -9,7 +9,7 @@
   window.__quantComponents.BatchEvaluateDialog = {
     name: 'qc-batch-evaluate-dialog',
     template: `
-        <el-dialog class="max-w-520" v-model="showBatchEvaluate" title="🤖 批量AI评估" width="95%">
+        <el-dialog class="max-w-520" v-model="showBatchEvaluate" title="批量AI评估" width="95%">
             <div class="p-15-0-15">
                 <el-form label-width="100px" v-if="!batchRunning">
                     <el-form-item label="股票列表">

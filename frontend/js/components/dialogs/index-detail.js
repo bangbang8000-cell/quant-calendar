@@ -10,13 +10,13 @@
   window.__quantComponents.IndexDetailDialog = {
     name: 'qc-index-detail-dialog',
     template: `
-        <el-dialog v-model="indexDetailVisible" title="📈 指数详情分析" width="800px" class="kline-dialog">
+        <el-dialog v-model="indexDetailVisible" title="指数详情分析" width="800px" class="kline-dialog">
             <div v-if="indexDetail">
                 <!-- 头部信息 -->
                 <div class="detail-header">
                     <div>
                         <h3 class="text-xl-title">{{ indexDetail.name }} <span class="text-md-muted">{{ indexDetail.code }}</span></h3>
-                        <div class="detail-subtitle">💹 {{ indexDetail.market }} 市场指数</div>
+                        <div class="detail-subtitle"><qc-icon name="line-chart" :size="13" /> {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
                         <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
@@ -47,7 +47,7 @@
                 </div>
 
                 <!-- K线图区域 -->
-                <div class="section-title mt-20"><span>🕯</span> K线图与均线</div>
+                <div class="section-title mt-20"><span><qc-icon name="candlestick-chart" :size="14" /></span> K线图与均线</div>
                 <div class="kline-container">
                     <div class="kline-tabs">
                         <button
@@ -76,11 +76,11 @@
 
                 <!-- AI评估结果 -->
                 <div v-if="indexAiResult" class="ai-result-box">
-                    <div class="section-title"><span>🤖</span> AI智能指数评估结果</div>
+                    <div class="section-title"><span><qc-icon name="bot" :size="14" /></span> AI智能指数评估结果</div>
                     <div class="ai-analysis" v-html="sanitizeHtml(indexAiResult.analysis)"></div>
                     <div class="mt-4">
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
-                            📌 {{ indexAiResult.suggestion || '暂无' }}
+                            <qc-icon name="pin" :size="14" /> {{ indexAiResult.suggestion || '暂无' }}
                         </el-tag>
                         <span class="ml-12-base-secondary">信心指数: {{ fmtNum(indexAiResult.confidence || 75, 0) }}%</span>
                     </div>
@@ -89,7 +89,7 @@
                 <!-- 操作按钮 -->
                 <div class="mt-20-center">
                     <el-button class="w-200" type="primary" size="large" @click="doIndexAiEvaluate" :loading="indexAiLoading">
-                        🔬 技术指标评估
+                        <qc-icon name="search-check" :size="16" /> 技术指标评估
                     </el-button>
                 </div>
             </div>

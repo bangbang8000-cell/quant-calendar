@@ -15,26 +15,26 @@
                         <div class="card-title flex-between">
                             <span>{{ t('system.title') }}</span>
                             <div class="flex-c-gap-8">
-                                <span class="text-sm-secondary" v-if="dashboardData.latest_date">📅 {{ dashboardData.latest_date }}</span>
+                                <span class="text-sm-secondary" v-if="dashboardData.latest_date"><qc-icon name="calendar" :size="14" /> {{ dashboardData.latest_date }}</span>
                             </div>
                         </div>
                         <div class="status-grid">
                             <div class="status-item">
-                                <div class="status-icon">📈</div>
+                                <div class="status-icon"><qc-icon name="trending-up" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.stockData') }}</div>
                                     <div class="status-value color-primary">{{ stockCount || '---' }} {{ t('common.unitStock') }}</div>
                                 </div>
                             </div>
                             <div class="status-item">
-                                <div class="status-icon">🎯</div>
+                                <div class="status-icon"><qc-icon name="target" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.strategyData') }}</div>
                                     <div class="status-value color-primary">{{ dashboardData.stats?.strategy_count || '---' }} 个</div>
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'autoeval'" title="点击配置 AI 自动评估">
-                                <div class="status-icon">🤖</div>
+                                <div class="status-icon"><qc-icon name="bot" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.aiService') }}</div>
                                     <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
@@ -43,7 +43,7 @@
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'feature'" title="点击配置飞书推送">
-                                <div class="status-icon">📢</div>
+                                <div class="status-icon"><qc-icon name="message-circle" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.feishuPush') }}</div>
                                     <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-color)' : 'var(--text-secondary)'}">
@@ -52,7 +52,7 @@
                                 </div>
                             </div>
                             <div class="status-item clickable" @click="currentSubPage = 'datasource'" title="点击配置数据源">
-                                <div class="status-icon">📊</div>
+                                <div class="status-icon"><qc-icon name="bar-chart-3" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.tushare') }}</div>
                                     <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
@@ -61,14 +61,14 @@
                                 </div>
                             </div>
                             <div class="status-item">
-                                <div class="status-icon">📆</div>
+                                <div class="status-icon"><qc-icon name="calendar" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.tradeCalendar') }}</div>
                                     <div class="status-value color-primary">{{ tradeDateCount || '---' }} {{ t('system.unitDays') }}</div>
                                 </div>
                             </div>
                             <div class="status-item">
-                                <div class="status-icon">💎</div>
+                                <div class="status-icon"><qc-icon name="sparkles" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.poolStocks') }}</div>
                                     <div class="status-value color-primary">{{ currentPoolSize }} {{ t('common.unitStock') }}</div>
@@ -79,7 +79,7 @@
                         <!-- V5.0 (T-5.0.6): 健康与可靠性面板 — 数据新鲜度/自愈时间线/启动自检/数据源可用性 -->
                         <div class="card mt-24">
                             <div class="card-title flex-between">
-                                <span>🩺 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
+                                <span><qc-icon name="activity" :size="14" /> 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
                             <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
@@ -98,10 +98,10 @@
 <!-- 数据新鲜度 -->
                             <!-- V5.3.0 (T-5.3.6.2): 数据旧了 告警条 -->
                             <div v-if="staleAssetCount > 0" class="health-stale-banner">
-                                ⚠ 数据已过期: {{ staleAssetCount }} 项资产 (点击刷新数据源)
+                                <qc-icon name="alert-triangle" :size="14" /> 数据已过期: {{ staleAssetCount }} 项资产 (点击刷新数据源)
                                 <el-button size="small" class="ml-8" @click="refreshHealth">重新检查</el-button>
                             </div>
-                            <div class="health-section-title">📅 数据新鲜度</div>
+                            <div class="health-section-title"><qc-icon name="calendar" :size="14" /> 数据新鲜度</div>
                             <el-table :data="freshnessData.items" size="small" v-loading="healthLoading" style="width:100%">
                                 <el-table-column prop="name" label="资产" min-width="150" />
                                 <el-table-column label="状态" width="90">
@@ -116,7 +116,7 @@
                             <div class="text-sm-tertiary mt-8" v-if="!freshnessData.items || !freshnessData.items.length">暂无新鲜度数据 — 数据资产在运行时自动登记</div>
 
                             <!-- 自愈时间线 -->
-                            <div class="health-section-title mt-20">🔧 自愈时间线（最近 {{ healHistory.length }} 次）</div>
+                            <div class="health-section-title mt-20"><qc-icon name="settings" :size="14" /> 自愈时间线（最近 {{ healHistory.length }} 次）</div>
                             <div v-if="healHistory.length" class="heal-list">
                                 <div v-for="(h, i) in healHistory" :key="i" class="heal-row">
                                     <span class="text-xs-tertiary heal-ts">{{ h.ts }}</span>
@@ -129,7 +129,7 @@
                             <div class="text-sm-tertiary" v-else>暂无自愈记录 — 巡检随调度健康检查自动执行</div>
 
                             <!-- 数据源可用性 -->
-                            <div class="health-section-title mt-20">📡 数据源可用性</div>
+                            <div class="health-section-title mt-20"><qc-icon name="radio-tower" :size="14" /> 数据源可用性</div>
                             <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
                                 <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
                                     <span class="source-name">{{ s.name }}</span>
@@ -162,7 +162,7 @@
 
                     <!-- 访问限速配置 -->
                     <div class="card mt-24">
-                        <div class="card-title">🚦 访问限速配置</div>
+                        <div class="card-title"><qc-icon name="gauge" :size="14" /> 访问限速配置</div>
                         <el-form label-width="100px">
                             <el-form-item label="API 限流 (次/分钟/IP)">
                                 <el-input-number v-model="rateLimitConfig.api_limit" :min="10" :max="10000" :step="50" @change="saveRateLimit" />
@@ -172,7 +172,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-title">🎨 外观设置</div>
+                        <div class="card-title"><qc-icon name="palette" :size="14" /> 外观设置</div>
                         <!-- V6.1 (PRD-6.1 F5): 模式 (明/暗/跟随系统) + 主题色 (预设色板 + 自定义色相) -->
                         <div class="theme-section-label">外观模式</div>
                         <el-radio-group :model-value="themeMode" size="small" @change="onThemeModeChange">
@@ -213,7 +213,7 @@
 
                     <!-- V5.4.1 (用户要求): 分钟级K线显示开关（默认隐藏, 可在此开启） -->
                     <div class="card">
-                        <div class="card-title">📈 K线显示</div>
+                        <div class="card-title"><qc-icon name="trending-up" :size="14" /> K线显示</div>
                         <div class="flex-c-gap-12-wrap">
                             <el-switch :model-value="klineShowMinutes" @change="toggleKlineShowMinutes"
                                 active-text="显示分钟级K线" inactive-text="隐藏分钟级K线" />
@@ -228,12 +228,12 @@
                     <div v-else-if="currentSubPage === 'health'">
                         <div class="card">
                             <div class="card-title flex-between">
-                                <span>📊 数据源健康</span>
+                                <span><qc-icon name="bar-chart-3" :size="14" /> 数据源健康</span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
                             <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
                             <div class="section-block-top">
-                                <div class="section-title-base">📡 数据源可用性</div>
+                                <div class="section-title-base"><qc-icon name="radio-tower" :size="14" /> 数据源可用性</div>
                                 <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
                                     <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
                                         <span class="source-name">{{ s.name }}</span>
@@ -245,7 +245,7 @@
                                 <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
                             </div>
                             <div class="section-block-top">
-                                <div class="section-title-base">🔁 路由状态</div>
+                                <div class="section-title-base"><qc-icon name="refresh" :size="14" /> 路由状态</div>
                                 <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
                                     <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
                                         <div class="usage-src-head">
@@ -273,7 +273,7 @@
                                 <div class="usage-ai-empty" v-else>暂无数据源调用记录（服务刚重启时为空，随调用自动累计）</div>
                             </div>
                             <div class="section-block-top">
-                                <div class="section-title-base">🩺 数据健康度</div>
+                                <div class="section-title-base"><qc-icon name="activity" :size="14" /> 数据健康度</div>
                                 <div class="today-health-strip">
                                     <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
                                     <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
@@ -284,7 +284,7 @@
                                         <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
                                         <span class="today-health-calls">{{ s.calls }}次</span>
                                         <span v-if="s.degraded" class="today-health-badge">degraded</span>
-                                        <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
+                                        <span v-if="s.stale" class="today-health-badge is-stale"><qc-icon name="clock" :size="12" /> 超期</span>
                                     </div>
                                 </div>
                             </div>
@@ -295,7 +295,7 @@
                     <div v-else-if="currentSubPage === 'schedule'">
                         <div class="card">
                             <div class="card-title flex-between">
-                                <span>🧩 调度任务</span>
+                                <span><qc-icon name="layers" :size="14" /> 调度任务</span>
                                 <el-button size="small" @click="loadHealthDetail">刷新</el-button>
                             </div>
                             <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
@@ -326,7 +326,7 @@
                         </div>
                         <div class="card mt-14">
                             <div class="card-title flex-between">
-                                <span>🗂 任务队列</span>
+                                <span><qc-icon name="layers" :size="14" /> 任务队列</span>
                                 <el-button size="small" text @click="loadJobQueue">刷新</el-button>
                             </div>
                             <div class="sys-health-grid" v-if="jobQueue.length">
@@ -356,7 +356,7 @@
                     <div v-else-if="currentSubPage === 'guard'">
                         <div class="card">
                             <div class="card-title flex-between">
-                                <span>🔍 AI 事实护栏审计</span>
+                                <span><qc-icon name="search" :size="14" /> AI 事实护栏审计</span>
                                 <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
                             </div>
                             <div v-if="factCheck" class="sys-health-grid">
@@ -388,7 +388,7 @@
                     <!-- autoeval: 自动评估配置 (v1.8.0) -->
                     <div v-else-if="currentSubPage === 'autoeval'">
                         <div class="card">
-                            <div class="card-title">🤖 自动评估配置</div>
+                            <div class="card-title"><qc-icon name="bot" :size="14" /> 自动评估配置</div>
                             <el-form label-width="100px">
                                 <el-form-item label="启用">
                                     <el-switch v-model="autoEvaluateConfig.enabled" active-text="已开启" inactive-text="已关闭" @change="saveAutoEvaluateConfig" />
@@ -422,14 +422,14 @@
 
                     <!-- v3.16 (FR-3.16.1): 飞书推送配置 — 独立 Webhook 配置 + 测试发送 -->
                     <div class="card mt-4">
-                        <div class="card-title">📢 飞书推送配置</div>
+                        <div class="card-title"><qc-icon name="message-circle" :size="14" /> 飞书推送配置</div>
                         <el-form label-width="100px">
                             <el-form-item label="Webhook">
                                 <el-input class="max-w-460" v-model="feishuConfig.webhook_url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."/>
                             </el-form-item>
                             <el-form-item>
-                                <el-button type="primary" size="small" @click="saveFeishuConfig" :loading="feishuSaving">💾 保存配置</el-button>
-                                <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'">🧪 测试发送</el-button>
+                                <el-button type="primary" size="small" @click="saveFeishuConfig" :loading="feishuSaving"><qc-icon name="hard-drive" :size="14" /> 保存配置</el-button>
+                                <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'"><qc-icon name="flask-conical" :size="14" /> 测试发送</el-button>
                                 <span class="ml-10-sm" v-if="feishuTestMessage" :style="{color: feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'var(--el-success)' : 'var(--el-danger)'}">{{ feishuTestMessage }}</span>
                             </el-form-item>
                         </el-form>
@@ -438,13 +438,13 @@
                     <!-- V5.0.4 T-5.0.45: 通知中心 (规则/投递历史/通道状态+静默) -->
                     <div class="card mt-4">
                         <div class="card-title flex-between">
-                            <span>🔔 通知中心</span>
+                            <span><qc-icon name="bell" :size="14" /> 通知中心</span>
                             <span class="text-sm-tertiary" v-if="ncMsg">{{ ncMsg }}</span>
                         </div>
                         <div class="flex-gap-8-mb16">
-                            <el-button :type="ncTab === 'rules' ? 'primary' : ''" size="small" @click="onNcTab('rules')">📜 通知规则</el-button>
-                            <el-button :type="ncTab === 'history' ? 'primary' : ''" size="small" @click="onNcTab('history')">📡 投递历史</el-button>
-                            <el-button :type="ncTab === 'channels' ? 'primary' : ''" size="small" @click="onNcTab('channels')">🔕 通道与静默</el-button>
+                            <el-button :type="ncTab === 'rules' ? 'primary' : ''" size="small" @click="onNcTab('rules')"><qc-icon name="scroll-text" :size="14" /> 通知规则</el-button>
+                            <el-button :type="ncTab === 'history' ? 'primary' : ''" size="small" @click="onNcTab('history')"><qc-icon name="radio-tower" :size="14" /> 投递历史</el-button>
+                            <el-button :type="ncTab === 'channels' ? 'primary' : ''" size="small" @click="onNcTab('channels')"><qc-icon name="moon" :size="14" /> 通道与静默</el-button>
                         </div>
 
                         <!-- 通知规则 Tab -->
@@ -523,7 +523,7 @@
                                 <el-switch v-model="ncSilence" active-text="静默预警" inactive-text="正常推送" @change="applySilence"/>
                                 <span class="text-sm-secondary">静默时长(分钟):</span>
                                 <el-input-number v-model="ncSilenceMinutes" :min="1" :max="1440" size="small" />
-                                <el-button size="small" @click="applySilence">💤 静默 {{ ncSilenceMinutes }} 分钟</el-button>
+                                <el-button size="small" @click="applySilence"><qc-icon name="moon" :size="14" /> 静默 {{ ncSilenceMinutes }} 分钟</el-button>
                                 <el-button size="small" v-if="ncSilence" @click="clearSilence">恢复推送</el-button>
                             </div>
                         </div>
@@ -531,16 +531,16 @@
 
                     <!-- AI 模型管理 (v3.14 厂商化: 以厂商为主配置卡, 卡内配 API 后管理多个模型名) -->
                     <div class="card mt-4">
-                        <div class="card-title">🤖 AI 模型管理</div>
+                        <div class="card-title"><qc-icon name="bot" :size="14" /> AI 模型管理</div>
                         <p class="text-sm-secondary-m0-16">以厂商为主配置卡，卡内配置 API（地址+密钥+超时）后选择多个模型名；按数组顺序（厂商 → 模型）串行调用，首个可用模型返回结果。</p>
                         <div class="flex-gap-8-mb16-wrap">
-                            <el-button size="small" type="primary" @click="loadAiVendors">🔄 刷新</el-button>
-                            <el-button size="small" type="primary" @click="testAllVendorModels" :loading="testingAllModels">🧪 探测全部</el-button>
+                            <el-button size="small" type="primary" @click="loadAiVendors"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
+                            <el-button size="small" type="primary" @click="testAllVendorModels" :loading="testingAllModels"><qc-icon name="flask-conical" :size="14" /> 探测全部</el-button>
                             <!-- v3.16 (FR-3.16.1): AI 连接测试入口 (testAiApi) -->
-                            <el-button size="small" type="primary" @click="testAiApi" :loading="aiLoading">🔌 连接测试</el-button>
-                            <el-button size="small" type="primary" @click="saveAiVendors" :loading="savingAiModels">💾 保存</el-button>
+                            <el-button size="small" type="primary" @click="testAiApi" :loading="aiLoading"><qc-icon name="zap" :size="14" /> 连接测试</el-button>
+                            <el-button size="small" type="primary" @click="saveAiVendors" :loading="savingAiModels"><qc-icon name="hard-drive" :size="14" /> 保存</el-button>
                             <el-dropdown class="ml-auto" trigger="click" @command="(cmd) => cmd === '__custom__' ? addCustomVendor() : addVendorFromCatalog(cmd)">
-                                <el-button size="small" type="primary">➕ 新增厂商</el-button>
+                                <el-button size="small" type="primary"><qc-icon name="plus" :size="14" /> 新增厂商</el-button>
                                 <template #dropdown>
                                     <el-dropdown-menu>
                                         <el-dropdown-item v-if="!aiCatalog.vendors || aiCatalog.vendors.length===0" disabled>加载目录中…</el-dropdown-item>
@@ -550,7 +550,7 @@
                                 </template>
                             </el-dropdown>
                         </div>
-                        <div class="text-center-danger-pad16" v-if="aiModelsError">⚠️ {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
+                        <div class="text-center-danger-pad16" v-if="aiModelsError"><qc-icon name="alert-triangle" :size="14" /> {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
                         <div v-for="(v,vi) in aiVendors" :key="v.vendor_key" class="card mb-12">
@@ -559,10 +559,10 @@
                                     {{ v.name }}
                                     <el-tag size="small" :type="v.kind==='CodingPlan' ? 'warning' : v.kind==='国外' ? 'info' : v.kind==='国内' ? 'success' : 'primary'">{{ v.kind }}</el-tag>
                                     <el-tag v-if="v.tier" size="small" type="warning">套餐: {{ v.tier }}</el-tag>
-                                    <span class="text-sm-tertiary" v-if="v.locked">🔒</span>
+                                    <span class="text-sm-tertiary" v-if="v.locked"><qc-icon name="lock" :size="12" /></span>
                                     <a class="text-sm-link" v-if="v.website" :href="v.website" target="_blank" rel="noopener">官网 ↗</a>
                                 </span>
-                                <el-button size="small" type="danger" @click="removeVendor(v)">🗑️ 删除厂商</el-button>
+                                <el-button size="small" type="danger" @click="removeVendor(v)"><qc-icon name="x" :size="14" /> 删除厂商</el-button>
                             </div>
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
@@ -577,7 +577,7 @@
                                 <el-form-item label="API Key">
                                     <el-input :model-value="v._editing ? v.api_key : v._masked" :disabled="!v._editing" @update:model-value="val => { if (v._editing) { v.api_key = val; } else { v._masked = val; } }" placeholder="厂商级密钥，卡内模型共用">
                                         <template #suffix>
-                                            <el-button size="small" :type="v._editing ? 'warning' : 'primary'" plain @click="toggleVendorEdit(v)" style="margin-left:4px">🔓 {{ v._editing ? '锁定' : '编辑密钥' }}</el-button>
+                                            <el-button size="small" :type="v._editing ? 'warning' : 'primary'" plain @click="toggleVendorEdit(v)" style="margin-left:4px"><qc-icon name="lock" :size="14" /> {{ v._editing ? '锁定' : '编辑密钥' }}</el-button>
                                         <span class="key-reveal-toggle" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center" :title="v._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'" @click="toggleVendorKeyReveal(v)" v-html="sanitizeHtml(viewIcon(v._revealed))"></span>
                                         </template>
                                     </el-input>
@@ -590,12 +590,12 @@
                                             <el-switch v-model="m.enabled" size="small"/>
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
                                             <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
-                                            <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)">🧪 测试</el-button>
-                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)">🗑️</el-button>
+                                            <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)"><qc-icon name="flask-conical" :size="14" /> 测试</el-button>
+                                            <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)"><qc-icon name="x" :size="14" /></el-button>
                                         </div>
                                         <div class="flex-gap-8-mt8">
-                                            <el-button size="small" @click="addVendorModel(v)">➕ 添加模型</el-button>
-                                            <el-button size="small" :loading="v._fetching" @click="fetchVendorModels(v)">📡 获取模型列表</el-button>
+                                            <el-button size="small" @click="addVendorModel(v)"><qc-icon name="plus" :size="14" /> 添加模型</el-button>
+                                            <el-button size="small" :loading="v._fetching" @click="fetchVendorModels(v)"><qc-icon name="radio-tower" :size="14" /> 获取模型列表</el-button>
                                         </div>
                                     </div>
                                 </el-form-item>
@@ -609,16 +609,16 @@
                     <div v-else-if="currentSubPage === 'datasource'">
                     <!-- 优先级说明条 -->
                     <div class="info-banner">
-                        <span>🔢 数据源优先级:</span>
+                        <span><qc-icon name="bar-chart-3" :size="14" /> 数据源优先级:</span>
                         <span class="text-medium">① sxsc-tushare → ② tushare → ③ akshare</span>
                         <span class="color-tertiary-ml-auto">按优先级依次尝试</span>
                     </div>
 
                     <!-- v3.16 (FR-3.16.1): 数据同步入口 (syncStockData) -->
                     <div class="card mb-14">
-                        <div class="card-title">🔄 数据同步</div>
+                        <div class="card-title"><qc-icon name="refresh" :size="14" /> 数据同步</div>
                         <div class="flex-c-gap-12-wrap">
-                            <el-button type="primary" :loading="syncingData" @click="syncStockData">📥 同步股票数据</el-button>
+                            <el-button type="primary" :loading="syncingData" @click="syncStockData"><qc-icon name="download" :size="14" /> 同步股票数据</el-button>
                             <span class="text-sm-secondary">从 Tushare 拉取最新行情并更新本地缓存</span>
                         </div>
                     </div>
@@ -626,12 +626,12 @@
                     <!-- sxsc-tushare 卡片 -->
                     <div class="card mb-14">
                         <div class="card-title flex-between">
-                            <span>🔗 sxsc-tushare（券商版）</span>
+                            <span><qc-icon name="external-link" :size="14" /> sxsc-tushare（券商版）</span>
                             <div class="flex-c-gap-10">
                                 <el-switch v-model="datasourceConfig.sxsc_tushare.enabled" @change="saveDatasourceConfig" size="small" />
                                 <span class="text-success-sm" v-if="datasourceStatus.sxsc_tushare === 'connected'">已连接</span>
                                 <span class="text-warning-sm" v-else-if="datasourceStatus.sxsc_tushare === 'testing'">测试中...</span>
-                                <span class="text-sm-tertiary" v-else>⏳ 未检测</span>
+                                <span class="text-sm-tertiary" v-else><qc-icon name="clock" :size="12" /> 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -646,7 +646,7 @@
                                 <el-input-number v-model="datasourceConfig.sxsc_tushare.timeout" :min="5" :max="120" @change="saveDatasourceConfig" />
                             </el-form-item>
                             <el-form-item>
-                                <el-button @click="testDatasource('sxsc_tushare')" :loading="datasourceStatus.sxsc_tushare === 'testing'" type="primary" size="small">🧪 测试连接</el-button>
+                                <el-button @click="testDatasource('sxsc_tushare')" :loading="datasourceStatus.sxsc_tushare === 'testing'" type="primary" size="small"><qc-icon name="flask-conical" :size="14" /> 测试连接</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
@@ -654,12 +654,12 @@
                     <!-- tushare 卡片 -->
                     <div class="card mb-14">
                         <div class="card-title flex-between">
-                            <span>📡 tushare（标准版 Pro）</span>
+                            <span><qc-icon name="radio-tower" :size="14" /> tushare（标准版 Pro）</span>
                             <div class="flex-c-gap-10">
                                 <el-switch v-model="datasourceConfig.tushare.enabled" @change="saveDatasourceConfig" size="small" />
                                 <span class="text-success-sm" v-if="datasourceStatus.tushare === 'connected'">已连接</span>
                                 <span class="text-warning-sm" v-else-if="datasourceStatus.tushare === 'testing'">测试中...</span>
-                                <span class="text-sm-tertiary" v-else>⏳ 未检测</span>
+                                <span class="text-sm-tertiary" v-else><qc-icon name="clock" :size="12" /> 未检测</span>
                             </div>
                         </div>
                         <el-form label-width="80px">
@@ -677,7 +677,7 @@
                                 <el-input-number v-model="datasourceConfig.tushare.timeout" :min="5" :max="120" @change="saveDatasourceConfig" />
                             </el-form-item>
                             <el-form-item>
-                                <el-button @click="testDatasource('tushare')" :loading="datasourceStatus.tushare === 'testing'" type="primary" size="small">🧪 测试连接</el-button>
+                                <el-button @click="testDatasource('tushare')" :loading="datasourceStatus.tushare === 'testing'" type="primary" size="small"><qc-icon name="flask-conical" :size="14" /> 测试连接</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
@@ -685,12 +685,12 @@
                     <!-- akshare 卡片 -->
                     <div class="card mb-14">
                         <div class="card-title flex-between">
-                            <span>🌐 akshare（开源免费）</span>
+                            <span><qc-icon name="languages" :size="14" /> akshare（开源免费）</span>
                             <div class="flex-c-gap-10">
                                 <el-switch v-model="datasourceConfig.akshare.enabled" @change="saveDatasourceConfig" size="small" />
                                 <span class="text-success-sm" v-if="datasourceStatus.akshare === 'connected'">可用</span>
                                 <span class="text-warning-sm" v-else-if="datasourceStatus.akshare === 'testing'">测试中...</span>
-                                <span class="text-sm-tertiary" v-else>⏳ 未检测</span>
+                                <span class="text-sm-tertiary" v-else><qc-icon name="clock" :size="12" /> 未检测</span>
                             </div>
                         </div>
                         <div class="text-base-secondary-pad">
@@ -698,7 +698,7 @@
                         </div>
                         <el-form label-width="80px">
                             <el-form-item>
-                                <el-button @click="testDatasource('akshare')" :loading="datasourceStatus.akshare === 'testing'" type="primary" size="small">🧪 测试连接</el-button>
+                                <el-button @click="testDatasource('akshare')" :loading="datasourceStatus.akshare === 'testing'" type="primary" size="small"><qc-icon name="flask-conical" :size="14" /> 测试连接</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
@@ -707,7 +707,7 @@
                     <!-- feature 子页: 功能开关与配置 -->
                     <div v-else-if="currentSubPage === 'feature'">
                         <div class="card">
-                        <div class="card-title">🎛️ 策略筛选</div>
+                        <div class="card-title"><qc-icon name="sliders-horizontal" :size="14" /> 策略筛选</div>
                         <div class="mb-12">
                             <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
                                 <el-checkbox class="mb-6" v-for="s in strategyFilterOptions" :key="s" :label="s" border>
@@ -723,26 +723,26 @@
                             </el-radio-group>
                         </div>
                         <div class="info-banner-plain">
-                            <div class="mb-6-medium">🔍 预览匹配股票数</div>
+                            <div class="mb-6-medium"><qc-icon name="search" :size="14" /> 预览匹配股票数</div>
                             <div class="flex-wrap-gap-12">
-                                <span>☀️ 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
-                                <span>📅 周视图: <strong>{{ strategyPreviewCount.week ?? '-' }}</strong></span>
-                                <span>🗓️ 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
-                                <span>📆 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
+                                <span><qc-icon name="sun" :size="14" /> 日视图: <strong>{{ strategyPreviewCount.day ?? '-' }}</strong></span>
+                                <span><qc-icon name="calendar" :size="14" /> 周视图: <strong>{{ strategyPreviewCount.week ?? '-' }}</strong></span>
+                                <span><qc-icon name="calendar" :size="14" /> 月视图: <strong>{{ strategyPreviewCount.month ?? '-' }}</strong></span>
+                                <span><qc-icon name="calendar" :size="14" /> 年视图: <strong>{{ strategyPreviewCount.year ?? '-' }}</strong></span>
                             </div>
                         </div>
                     </div>
 
                     <!-- v3.3.0-T8: 数据备份与恢复 -->
                     <div class="card mt-14">
-                        <div class="card-title">💾 数据备份与恢复</div>
+                        <div class="card-title"><qc-icon name="hard-drive" :size="14" /> 数据备份与恢复</div>
                         <div class="flex-wrap-gap-10-mb12">
                             <el-button size="small" type="primary" :loading="backupCreating" @click="createBackup">立即备份</el-button>
                             <el-button size="small" @click="loadBackups">刷新列表</el-button>
                         </div>
                         <div class="max-h-220-scroll" v-if="backups.length">
                             <div class="backup-row" v-for="b in backups" :key="b.name">
-                                <span>🕐 {{ b.time }} <span class="text-xs-tertiary">({{ (b.size / 1024).toFixed(0) }} KB)</span></span>
+                                <span><qc-icon name="clock" :size="12" /> {{ b.time }} <span class="text-xs-tertiary">({{ (b.size / 1024).toFixed(0) }} KB)</span></span>
                                 <el-button size="small" type="warning" plain :disabled="currentUser?.role !== 'admin'" @click="restoreBackup(b.name)">恢复</el-button>
                             </div>
                         </div>
@@ -750,7 +750,7 @@
                     </div>
                     <!-- V5.3.0 (T-5.3.5.5): 报表导出 (PDF/Excel/HTML) -->
                     <div class="card mt-4">
-                        <div class="card-title">📄 报表导出</div>
+                        <div class="card-title"><qc-icon name="file-text" :size="14" /> 报表导出</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">量化选股日报 (当日) · 可导出 PDF / Excel / HTML</span>
                             <div class="flex-c-gap-8">
@@ -763,13 +763,13 @@
                     </div>
                     <!-- v2.0: 美林时钟配置 -->
                     <div class="card mt-4">
-                        <div class="card-title">⏱️ 美林时钟</div>
+                        <div class="card-title"><qc-icon name="clock" :size="14" /> 美林时钟</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
                                 上次更新: <strong>{{ merrillClockLastUpdated || '—' }}</strong>
                             </span>
                             <el-button size="small" type="primary" @click="doMerrillReevaluate" :loading="merrillReevalLoading">
-                                🔄 手动重评估
+                                <qc-icon name="refresh" :size="14" /> 手动重评估
                             </el-button>
                         </div>
                         <div class="result-box" v-if="merrillReevalResult" :style="{color: merrillReevalResult.includes('失败') ? 'var(--el-danger)' : 'var(--el-success)'}">
@@ -794,7 +794,7 @@
 
                     <!-- v1.8.0: 数据刷新配置 -->
                     <div class="card mt-4">
-                        <div class="card-title">🔄 策略数据刷新</div>
+                        <div class="card-title"><qc-icon name="refresh" :size="14" /> 策略数据刷新</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
                                 上次刷新: <strong>{{ dataRefreshConfig.last_refresh || '—' }}</strong>
@@ -803,10 +803,10 @@
                                 </span>
                             </span>
                             <el-button size="small" type="primary" @click="triggerDataReload" :loading="dataRefreshReloading">
-                                🔄 手动加载
+                                <qc-icon name="refresh" :size="14" /> 手动加载
                             </el-button>
                             <el-button size="small" type="primary" @click="triggerDataPull" :loading="dataPullRunning">
-                                📥 手动拉取
+                                <qc-icon name="download" :size="14" /> 手动拉取
                             </el-button>
                         </div>
                         <div class="flex-col-gap-12">
@@ -871,7 +871,7 @@
 
                     <!-- v1.9.2: 策略研究菜单开关 -->
                     <div class="card mt-4">
-                        <div class="card-title">🔬 策略研究菜单</div>
+                        <div class="card-title"><qc-icon name="search-check" :size="14" /> 策略研究菜单</div>
                         <div class="flex-between">
                             <span class="text-base-secondary">
                                 {{ researchMenuEnabled ? '已显示策略研究菜单' : '已隐藏策略研究菜单' }}
@@ -879,9 +879,9 @@
                             <el-switch v-model="researchMenuEnabled" @change="toggleResearchMenu" size="small" />
                         </div>
                     </div>
-                    <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 + 动态页签开关 -->
+                    <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 (V6.4: 动态页签开关已移除) -->
                     <div class="card mt-4">
-                        <div class="card-title">🧭 界面与导航</div>
+                        <div class="card-title"><qc-icon name="layout-dashboard" :size="14" /> 界面与导航</div>
                         <div class="flex-c-gap-12">
                             <div class="flex-c-gap-6">
                                 <label class="text-base-primary-nowrap">导航形态</label>
@@ -891,17 +891,12 @@
                                     <el-option value="toptab" :label="t('navMode.toptab')" />
                                 </el-select>
                             </div>
-                            <div class="flex-c-gap-6">
-                                <label class="text-base-primary-nowrap">动态页签</label>
-                                <el-switch :model-value="tabsEnabled" @change="onTabsEnabledChange" size="small" :disabled="navMode === 'toptab'" />
-                            </div>
                         </div>
-                        <div class="text-sm-tertiary-mt6" v-if="navMode === 'toptab'">{{ t('tabsEnabled.hint') }}</div>
                     </div>
                 </div>
                     <div v-else-if="currentSubPage === 'datadict'">
                         <div class="card">
-                            <div class="usage-card-title">📖 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.0.1 T-5.0.14)</span></div>
+                            <div class="usage-card-title"><qc-icon name="book-open" :size="14" /> 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.0.1 T-5.0.14)</span></div>
                             <div class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                                 <el-radio-group v-model="dictCategory" size="small" @change="loadDataDict">
                                     <el-radio label="">全部</el-radio>
@@ -928,25 +923,25 @@
                     </div>
                     <div v-else-if="currentSubPage === 'user'">
                         <div v-if="currentUser?.role !== 'admin'" class="card text-center-pad40">
-                            <div class="text-3xl-mb12">🔐</div>
+                            <div class="text-3xl-mb12"><qc-icon name="lock" :size="32" /></div>
                             <div class="color-secondary">仅管理员可访问此页面</div>
                         </div>
                         <div v-else>
                         <div class="card">
-                            <div class="card-title">👥 用户与权限</div>
+                            <div class="card-title"><qc-icon name="users" :size="14" /> 用户与权限</div>
                             <p class="color-secondary">用户列表: {{ userList.length }} 个用户 | 分组: {{ Object.keys(allGroups).length }} 个</p>
                         </div>
 
                     <!-- Tab 切换 -->
                     <div class="flex-gap-8-mb16">
-                        <el-button :type="userPageTab === 'users' ? 'primary' : ''" size="small" @click="userPageTab = 'users'">👥 用户列表</el-button>
-                        <el-button :type="userPageTab === 'groups' ? 'primary' : ''" size="small" @click="userPageTab = 'groups'">📋 分组配置</el-button>
+                        <el-button :type="userPageTab === 'users' ? 'primary' : ''" size="small" @click="userPageTab = 'users'"><qc-icon name="users" :size="14" /> 用户列表</el-button>
+                        <el-button :type="userPageTab === 'groups' ? 'primary' : ''" size="small" @click="userPageTab = 'groups'"><qc-icon name="clipboard-list" :size="14" /> 分组配置</el-button>
                     </div>
 
                     <!-- 用户列表 Tab -->
                     <div v-if="userPageTab === 'users'">
                     <div class="card">
-                        <div class="card-title">👥 用户列表 ({{ userList.length }}人)</div>
+                        <div class="card-title"><qc-icon name="users" :size="14" /> 用户列表 ({{ userList.length }}人)</div>
                         <div class="flex-gap-12-mb12">
                             <el-input class="w-160" v-model="userSearch" placeholder="搜索用户名..." clearable size="small"/>
                             <el-select class="w-120" v-model="groupFilter" placeholder="分组" clearable size="small">
@@ -969,13 +964,13 @@
                                         </div>
                                         <div class="user-meta-info">
                                             <span class="mr-12" v-if="user.created_at">
-                                                🕐 创建于: {{ new Date(user.created_at).toLocaleDateString('zh-CN') }}
+                                                <qc-icon name="clock" :size="12" /> 创建于: {{ new Date(user.created_at).toLocaleDateString('zh-CN') }}
                                             </span>
                                             <span v-if="user.last_login_at">
-                                                🕐 上次登录: {{ new Date(user.last_login_at).toLocaleString('zh-CN') }}
+                                                <qc-icon name="clock" :size="12" /> 上次登录: {{ new Date(user.last_login_at).toLocaleString('zh-CN') }}
                                             </span>
                                             <span class="ml-12" v-if="user.login_count !== undefined">
-                                                🔐 登录: {{ user.login_count }}次
+                                                <qc-icon name="lock" :size="12" /> 登录: {{ user.login_count }}次
                                             </span>
                                         </div>
                                         <div class="user-status-row" v-if="user.username !== 'admin'">
@@ -1007,7 +1002,7 @@
                                 <div class="flex-c-gap-8-mb4">
                                     <strong class="text-lg">{{ g.name }}</strong>
                                     <span class="text-10-tertiary">{{ gid }}</span>
-                                    <span class="text-10-tertiary" v-if="g.locked">🔒</span>
+                                    <span class="text-10-tertiary" v-if="g.locked"><qc-icon name="lock" :size="12" /></span>
                                 </div>
                                 <div class="text-sm-secondary-mb6">{{ g.description }}</div>
                                 <div class="text-sm-tertiary">
@@ -1015,8 +1010,8 @@
                                 </div>
                             </div>
                             <div class="flex-gap-6-shrink0">
-                                <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)">{{ expandedGroups[gid] ? '收起' : '👥 成员' }}</el-button>
-                                <el-button size="small" type="primary" @click="openMenuConfig(gid)">⚙️ 菜单</el-button>
+                                <el-button v-if="!g.locked" size="small" @click="toggleGroupExpand(gid)"><qc-icon name="users" :size="14" /> {{ expandedGroups[gid] ? '收起' : '成员' }}</el-button>
+                                <el-button size="small" type="primary" @click="openMenuConfig(gid)"><qc-icon name="settings" :size="14" /> 菜单</el-button>
                                 <el-button v-if="!g.locked" size="small" type="danger" @click="deleteGroupConfig(gid)">删除</el-button>
                             </div>
                         </div>
@@ -1035,7 +1030,7 @@
 
                     <!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->
                     <div class="card mt-14">
-                        <div class="card-title">🔑 开放 API</div>
+                        <div class="card-title"><qc-icon name="key" :size="14" /> 开放 API</div>
                         <p class="color-secondary">为外部程序签发只读 API Key（库中仅存哈希，明文只展示一次；行情数据不可达时开放接口返回 degraded 占位）。</p>
                         <div class="flex-gap-8-mb12">
                             <el-input class="w-160" v-model="openApiKeyName" placeholder="Key 名称（可选）" size="small" />
@@ -1078,37 +1073,37 @@
                         <div class="usage-card-grid">
                         <!-- 卡1: 资源监控 -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🖥️ 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
+                            <div class="usage-card-title"><qc-icon name="cpu" :size="14" /> 资源监控<span class="usage-card-title-sub">服务器实时资源</span></div>
                             <div class="usage-ai-panel">
                                 <div class="usage-ai-panel-title">实时指标
                                     <span class="usage-ai-panel-meta">CPU/内存/磁盘</span>
                                 </div>
                                 <div class="usage-ai-summary">
                                     <div class="usage-ai-stat usage-ai-stat-meter">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚙️</span><span class="usage-ai-stat-label">CPU</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="cpu" :size="14" /></span><span class="usage-ai-stat-label">CPU</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat usage-ai-stat-meter">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">🧠</span><span class="usage-ai-stat-label">内存</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="brain" :size="14" /></span><span class="usage-ai-stat-label">内存</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.mem_percent ?? '--' }}%</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat usage-ai-stat-meter">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">💾</span><span class="usage-ai-stat-label">磁盘</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="hard-drive" :size="14" /></span><span class="usage-ai-stat-label">磁盘</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.percent ?? '--' }}%</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⏱️</span><span class="usage-ai-stat-label">运行时长</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="clock" :size="14" /></span><span class="usage-ai-stat-label">运行时长</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.uptime ? sysMonitor.uptime.toFixed(2) + 'h' : '--' }}</div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">📡</span><span class="usage-ai-stat-label">平均延迟</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="radio-tower" :size="14" /></span><span class="usage-ai-stat-label">平均延迟</span></div>
                                         <div class="usage-ai-stat-num">{{ sysMonitor.metrics?.avg_ms ?? '--' }}<small>ms</small></div>
                                     </div>
                                     <div class="usage-ai-stat">
-                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon">⚠️</span><span class="usage-ai-stat-label">错误率</span></div>
+                                        <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="alert-triangle" :size="14" /></span><span class="usage-ai-stat-label">错误率</span></div>
                                         <div class="usage-ai-stat-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                     </div>
                                 </div>
@@ -1116,7 +1111,7 @@
                         </div>
                         <!-- 卡2: 数据源健康 (含数据健康度) -->
                         <div class="usage-card">
-                            <div class="usage-card-title">📊 数据源健康<span class="usage-card-title-sub">三源成功率/延迟</span></div>
+                            <div class="usage-card-title"><qc-icon name="bar-chart-3" :size="14" /> 数据源健康<span class="usage-card-title-sub">三源成功率/延迟</span></div>
                             <div class="section-block-top">
                             <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
                                 <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
@@ -1148,7 +1143,7 @@
                         <div class="section-block-top">
                             <!-- v3.18 (FR-3.18.1): 手动生成复盘入口 + 失败可见 -->
                             <div class="section-title-base flex-between">
-                                <span>🩺 数据健康度</span>
+                                <span><qc-icon name="activity" :size="14" /> 数据健康度</span>
                                 <el-button size="small" :loading="reviewTriggering" @click="triggerMarketReview">立即生成复盘</el-button>
                             </div>
                             <div class="today-health-strip">
@@ -1161,7 +1156,7 @@
                                     <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
                                     <span class="today-health-calls">{{ s.calls }}次</span>
                                     <span v-if="s.degraded" class="today-health-badge">degraded</span>
-                                    <span v-if="s.stale" class="today-health-badge is-stale">⏳ 超期</span>
+                                    <span v-if="s.stale" class="today-health-badge is-stale"><qc-icon name="clock" :size="12" /> 超期</span>
                                 </div>
                             </div>
                         </div>
@@ -1169,11 +1164,11 @@
 
                         <!-- 卡3: 运维状态 (AI护栏 + 调度 + 备份合并) -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🛡️ 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
+                            <div class="usage-card-title"><qc-icon name="shield" :size="14" /> 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
                             <div class="section-block-top">
                             <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
                             <div class="section-title-base flex-between">
-                                <span>🔍 AI 事实护栏审计</span>
+                                <span><qc-icon name="search" :size="14" /> AI 事实护栏审计</span>
                                 <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
                             </div>
                             <div v-if="factCheck" class="sys-health-grid">
@@ -1203,7 +1198,7 @@
 
                         <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
                         <div class="section-block-top">
-                            <div class="section-title-base">🧩 调度任务</div>
+                            <div class="section-title-base"><qc-icon name="layers" :size="14" /> 调度任务</div>
                             <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
                                 <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
                                     <div class="sys-health-card-head">
@@ -1235,7 +1230,7 @@
                         <!-- V5.3.0 (T-5.3.3.5 / FR-5.3.3.5): 任务队列面板 (批量任务进度可见可取消) -->
                         <div class="section-block-top">
                             <div class="section-title-base flex-between">
-                                <span>🗂 任务队列</span>
+                                <span><qc-icon name="layers" :size="14" /> 任务队列</span>
                                 <el-button size="small" text @click="loadJobQueue">刷新</el-button>
                             </div>
                             <div class="sys-health-grid" v-if="jobQueue.length">
@@ -1264,7 +1259,7 @@
                         <!-- v3.17.6: 立即备份按钮 (createBackup 复用 feature 子页逻辑) -->
                         <div class="section-block-top">
                             <div class="section-title-base flex-between">
-                                <span>💾 备份与磁盘</span>
+                                <span><qc-icon name="hard-drive" :size="14" /> 备份与磁盘</span>
                                 <el-button size="small" type="primary" @click="createBackup" :loading="backupCreating">立即备份</el-button>
                             </div>
                             <div class="sys-health-grid">
@@ -1290,7 +1285,7 @@
 
                         <!-- 卡4: AI 用量 -->
                         <div class="usage-card">
-                            <div class="usage-card-title">🤖 AI 用量<span class="usage-card-title-sub">30s 自动刷新</span></div>
+                            <div class="usage-card-title"><qc-icon name="bot" :size="14" /> AI 用量<span class="usage-card-title-sub">30s 自动刷新</span></div>
                             <div class="section-block-top">
                             <div class="section-title-base flex-between">
                                 <span>用量汇总</span>
@@ -1349,7 +1344,7 @@
 
                         <!-- 额外全宽卡: 页面热度 -->
                         <div class="usage-card-extra usage-card">
-                            <div class="usage-card-title">🔥 页面热度<span class="usage-card-title-sub">近 {{ analyticsDays }} 天</span></div>
+                            <div class="usage-card-title"><qc-icon name="flame" :size="14" /> 页面热度<span class="usage-card-title-sub">近 {{ analyticsDays }} 天</span></div>
                             <div class="section-block-top">
                             <div class="section-title-base flex-between">
                                 <span>排行</span>
@@ -1392,7 +1387,7 @@
                                     <div class="about-logo-sub">{{ t('login.subtitle') }}</div>
                                 </div>
                             </div>
-                            <div class="card-title">📖 软件简介</div>
+                            <div class="card-title"><qc-icon name="book-open" :size="14" /> 软件简介</div>
                             <div class="about-body-text">
                                 <p class="m-0-0-12">基于<strong class="color-text-primary">美林时钟经济周期理论</strong>，融合多策略选股与 AI 深度评估的智能投研工具。</p>
                                 <p class="m-0"><strong class="color-text-primary">核心功能：</strong></p>
@@ -1415,7 +1410,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-title">📌 软件版本</div>
+                            <div class="card-title"><qc-icon name="pin" :size="14" /> 软件版本</div>
                             <div class="flex-c-gap-16-wrap">
                                 <span class="version-badge">v{{ appVersion }}</span>
                                 <span class="text-success-md">● 服务运行中</span>
@@ -1423,7 +1418,7 @@
                         </div>
                         <!-- v3.21 (遗留2): 操作审计 — admin 查看最近敏感操作 -->
                         <div class="card">
-                            <div class="card-title">🛡 操作审计 <span class="text-sm-tertiary">(管理员)</span></div>
+                            <div class="card-title"><qc-icon name="shield" :size="14" /> 操作审计 <span class="text-sm-tertiary">(管理员)</span></div>
                             <div class="flex-end-gap-8 mb-8">
                                 <el-button size="small" @click="loadAuditLogs" :loading="auditLoading">刷新</el-button>
                             </div>
@@ -1439,7 +1434,7 @@
                         </div>
                         <!-- v3.2.0-T24: 问题反馈 -->
                         <div class="card">
-                            <div class="card-title">📮 问题反馈</div>
+                            <div class="card-title"><qc-icon name="message-circle" :size="14" /> 问题反馈</div>
                             <div class="flex-col-gap-10">
                                 <el-input v-model="feedbackText" type="textarea" :rows="3" placeholder="描述你遇到的问题或建议 (系统信息会自动附带)"></el-input>
                                 <div class="flex-end-gap-8">
@@ -1448,10 +1443,10 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-title">🧩 系统组件</div>
+                            <div class="card-title"><qc-icon name="layers" :size="14" /> 系统组件</div>
                             <div class="grid-auto-fill-200">
                                 <div class="tech-item">
-                                    <span class="text-xl">⚡</span>
+                                    <span class="text-xl"><qc-icon name="zap" :size="32" /></span>
                                     <div>
                                         <div class="text-md-semibold">FastAPI</div>
                                         <div class="text-sm-tertiary">后端框架</div>
@@ -1465,28 +1460,28 @@
                                     </div>
                                 </div>
                                 <div class="tech-item">
-                                    <span class="text-xl">🎨</span>
+                                    <span class="text-xl"><qc-icon name="palette" :size="32" /></span>
                                     <div>
                                         <div class="text-md-semibold">Element Plus</div>
                                         <div class="text-sm-tertiary">UI 组件库</div>
                                     </div>
                                 </div>
                                 <div class="tech-item">
-                                    <span class="text-xl">🐍</span>
+                                    <span class="text-xl"><qc-icon name="file-text" :size="30" /></span>
                                     <div>
                                         <div class="text-md-semibold">Python 3</div>
                                         <div class="text-sm-tertiary">运行环境</div>
                                     </div>
                                 </div>
                                 <div class="tech-item">
-                                    <span class="text-xl">📊</span>
+                                    <span class="text-xl"><qc-icon name="bar-chart-3" :size="32" /></span>
                                     <div>
                                         <div class="text-md-semibold">ECharts</div>
                                         <div class="text-sm-tertiary">图表引擎</div>
                                     </div>
                                 </div>
                                 <div class="tech-item">
-                                    <span class="text-xl">📡</span>
+                                    <span class="text-xl"><qc-icon name="radio-tower" :size="32" /></span>
                                     <div>
                                         <div class="text-md-semibold">Tushare Pro</div>
                                         <div class="text-sm-tertiary">金融数据 API</div>
@@ -1495,7 +1490,7 @@
                             </div>
                         </div>
                         <div class="card border-left-warning">
-                            <div class="card-title">⚠️ 风险提示</div>
+                            <div class="card-title"><qc-icon name="alert-triangle" :size="14" /> 风险提示</div>
                             <div class="about-body-text">
                                 <p class="m-0-0-8"><strong class="color-text-primary">本系统仅供学习研究，不构成任何投资建议。</strong></p>
                                 <p class="m-0-0-8">• 选股结果基于历史数据和量化模型，<strong>过往表现不代表未来收益</strong></p>
@@ -1504,7 +1499,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-title">📧 联系与反馈</div>
+                            <div class="card-title"><qc-icon name="message-circle" :size="14" /> 联系与反馈</div>
                             <div class="about-body-text">
                                 <p class="m-0">• 维护团队：犇犇量化团队</p>
                             </div>
@@ -1539,9 +1534,8 @@
       function setThemeHue(h) { themeHue.value = parseInt(h, 10); if (state.changeThemeHue) state.changeThemeHue(themeHue.value); }
       function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
       function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
-      // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态/页签开关即时生效 (state.navMode/tabsEnabled/setNavMode/setTabsEnabled 经 ...state 展开)
+      // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态即时生效 (V6.4: 页签开关已移除; state.navMode/setNavMode 经 ...state 展开)
       function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }
-      function onTabsEnabledChange(v) { if (state.setTabsEnabled) state.setTabsEnabled(v); }
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
@@ -1903,7 +1897,7 @@
         themeHues, themeHueNames, themeMode, themeHue,
         onThemeModeChange, setThemeHue, hueColor, hueName,
         // V6.3 (PRD-6.3 F4): 界面与导航
-        onNavModeChange, onTabsEnabledChange,
+        onNavModeChange,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
         aiTotal, aiDayPeak,

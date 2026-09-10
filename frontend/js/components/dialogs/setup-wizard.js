@@ -14,7 +14,7 @@
                 <!-- 步骤 1: 修改密码 -->
                 <div v-if="setupStep === 1">
                     <div class="text-center-mb24">
-                        <div class="text-3xl-mb8">🔐</div>
+                        <div class="text-3xl-mb8"><qc-icon name="lock" :size="36" /></div>
                         <div class="text-md-semibold-600">管理员密码</div>
                         <div class="color-tertiary-mt4">建议修改默认密码以保证安全</div>
                     </div>
@@ -32,7 +32,7 @@
                 <!-- 步骤 2: AI 模型 -->
                 <div v-if="setupStep === 2">
                     <div class="text-center-mb24">
-                        <div class="text-3xl-mb8">🤖</div>
+                        <div class="text-3xl-mb8"><qc-icon name="bot" :size="36" /></div>
                         <div class="text-md-semibold-600">AI 大模型配置</div>
                         <div class="color-tertiary-mt4">用于股票智能评估，支持 DeepSeek/OpenAI 等</div>
                     </div>
@@ -61,7 +61,7 @@
                 <!-- 步骤 3: Tushare -->
                 <div v-if="setupStep === 3">
                     <div class="text-center-mb24">
-                        <div class="text-3xl-mb8">📊</div>
+                        <div class="text-3xl-mb8"><qc-icon name="database" :size="36" /></div>
                         <div class="text-md-semibold-600">Tushare 数据源</div>
                         <div class="color-tertiary-mt4">用于获取行情数据和股票信息</div>
                     </div>

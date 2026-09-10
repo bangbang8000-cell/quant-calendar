@@ -604,83 +604,13 @@
   }
 }
 
-/* ─── V6.1 (PRD-6.1 F8): 动态页签栏 ─────────────────────── */
-.qc-dynamic-tabs {
-  display: flex;
-  align-items: center;
-  gap: var(--qc-space-2);
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding-bottom: var(--qc-space-2);
-  margin-bottom: var(--qc-space-3);
-  border-bottom: 1px solid var(--qc-border);
-  scrollbar-width: thin;
-}
-.qc-dynamic-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--qc-space-2);
-  height: 30px;
-  padding: 0 var(--qc-space-3);
-  border: 1px solid var(--qc-border);
-  /* V6.3 (PRD-6.3 F2): 页签圆角矩形化 — 由胶囊(radius-full)收敛为 small(6px), 统一各形态页签观感 */
-  border-radius: var(--qc-radius-small);
-  background: var(--qc-card);
-  color: var(--qc-nav-item-default);
-  font-size: var(--qc-font-size-sm);
-  font-weight: var(--qc-font-weight-medium);
-  white-space: nowrap;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-fast);
-}
-.qc-dynamic-tab:hover {
-  color: var(--qc-nav-item-hover);
-  border-color: var(--qc-primary-300);
-}
-.qc-dynamic-tab.is-active {
-  color: var(--qc-nav-item-active);
-  border-color: var(--qc-primary-500);
-  background: var(--qc-nav-item-active-bg);
-}
-.qc-dynamic-tab:focus-visible {
-  outline: 2px solid var(--qc-ring);
-  outline-offset: -2px;
-}
-.qc-dynamic-tab-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-.qc-dynamic-tab-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  color: var(--qc-muted-foreground);
-  cursor: pointer;
-  transition: background-color var(--duration-fast), color var(--duration-fast);
-}
-.qc-dynamic-tab-close:hover {
-  background: var(--qc-muted);
-  color: var(--qc-foreground);
-}
-
-/* 移动端: 页签可横向滚动, 底边距让位于 TabBar */
-@media (max-width: 767px) {
-  .qc-dynamic-tabs {
-    margin-left: calc(-1 * var(--qc-space-3));
-    margin-right: calc(-1 * var(--qc-space-3));
-    padding-left: var(--qc-space-3);
-    padding-right: var(--qc-space-3);
-  }
-}
+/* ─── V6.1 (PRD-6.1 F8): 动态页签栏 — V6.4 (PRD-6.4): 动态页签已移除, 区块删除 ───── */
 
 /* ─── V6.1 (PRD-6.1 F1): 信息密度联动 — 紧凑/舒适/宽松 ───── */
 [data-density="compact"] .qc-sidebar-item { height: 36px; }
 [data-density="compact"] .qc-subnav-item { height: 32px; }
-[data-density="compact"] .qc-dynamic-tab { height: 26px; }
 [data-density="spacious"] .qc-sidebar-item { height: 48px; }
 [data-density="spacious"] .qc-subnav-item { height: 42px; }
-[data-density="spacious"] .qc-dynamic-tab { height: 34px; }
 
 /* ─── V6.1 (PRD-6.1 F1): 移动端抽屉内二级导航 ────────────── */
 .qc-drawer-menu-row {

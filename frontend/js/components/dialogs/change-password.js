@@ -9,7 +9,7 @@
   window.__quantComponents.ChangePasswordDialog = {
     name: 'qc-change-password-dialog',
     template: `
-        <el-dialog v-model="showChangePassword" title="🔑 修改密码" width="420px" :close-on-click-modal="false">
+        <el-dialog v-model="showChangePassword" title="修改密码" width="420px" :close-on-click-modal="false">
             <el-form :model="changePasswordForm" label-width="80px">
                 <el-form-item label="当前密码">
                     <el-input v-model="changePasswordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password />

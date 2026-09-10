@@ -1095,6 +1095,8 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
+            /* V6.5 (PRD-6.5 F4): 渐变头部贴合弹窗容器圆角(容器 16px xl), 顶部圆角消除直角溢出 */
+            border-radius: var(--qc-radius-xl) var(--qc-radius-xl) 0 0;
         }
         .detail-header h3 {
             font-size: var(--font-xl);

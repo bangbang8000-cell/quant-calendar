@@ -9,7 +9,7 @@
   window.__quantComponents.MerrillDetailDialog = {
     name: 'qc-merrill-detail-dialog',
     template: `
-        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.icon || '🔬') + ' ' + (merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
+        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
             <!-- 骨架屏加载 -->
             <div v-if="!merrillDetailData.name" class="skeleton-loader">
                 <div class="skeleton-header"></div>
@@ -34,7 +34,7 @@
                 <!-- ★ 当前周期状态：活跃阶段=实时进度，非活跃阶段=上一轮历史 -->
                 <!-- 活跃阶段：实时进度 -->
                 <div v-if="merrillDetailData._isCurrent && merrillDetailData._currentTiming" class="detail-section mt-1">
-                    <div class="section-title">📍 当前周期实时进度</div>
+                    <div class="section-title"><qc-icon name="map-pin" :size="14" /> 当前周期实时进度</div>
                     <div class="grid-4col-gap12">
                         <div class="stat-item">
                             <div class="stat-value num-tabular">{{ merrillDetailData._currentTiming.current_stage_start_date || '—' }}</div>
@@ -57,12 +57,12 @@
                         <span v-if="merrillDetailData._confidence">置信度：<b :style="{color: confidenceColor}">{{ merrillDetailData._confidence.level }}</b></span>
                         <span v-if="merrillDetailData._currentTiming.progress_percent > 0">进度：<b>{{ fmtNum(merrillDetailData._currentTiming.progress_percent) }}%</b></span>
                         <span class="text-warning-semibold" v-if="merrillDetailData._nextPrediction?.next_stage">
-                            ⚠ →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%
+                            <qc-icon name="arrow-right" :size="13" /> →{{ merrillDetailData._nextPrediction.next_stage_name }} {{ (merrillDetailData._nextPrediction.transition_probability*100)?.toFixed(2) || 0 }}%
                         </span>
                     </div>
                     <!-- 过渡警告横幅 -->
                     <div class="warning-banner" v-if="merrillDetailData._currentTiming.progress_percent> 80 && merrillDetailData._nextPrediction?.transition_probability> 0.15">
-                        <b class="color-badge-warning">⚠ 周期切换预警</b>
+                        <b class="color-badge-warning"><qc-icon name="alert-triangle" :size="13" /> 周期切换预警</b>
                         <span class="color-secondary-ml8">
                             当前{{ merrillDetailData.name }}已进入后期（{{ fmtNum(merrillDetailData._currentTiming.progress_percent) }}%），
                             预测下一阶段为<b class="color-warning">{{ merrillDetailData._nextPrediction.next_stage_name }}</b>
@@ -73,7 +73,7 @@
 
                 <!-- 非活跃阶段：历史轮次 -->
                 <div v-else-if="merrillDetailData._history && merrillDetailData._history.length> 0" class="detail-section mt-1">
-                    <div class="section-title">📅 历史轮次（共 {{ merrillDetailData._history.length }} 轮）</div>
+                    <div class="section-title"><qc-icon name="calendar-days" :size="14" /> 历史轮次（共 {{ merrillDetailData._history.length }} 轮）</div>
                     <!-- 最近一次：摘要卡片 -->
                     <div class="grid-4col-gap12-mb14" v-if="merrillDetailData._lastPeriod">
                         <div class="stat-item">
@@ -103,7 +103,7 @@
                             <span class="text-sm-secondary">{{ h.duration || '—' }}</span>
                         </div>
                         <div class="text-sm-secondary-lh">
-                            🔑 {{ h.trigger || '—' }}
+                            <qc-icon name="key" :size="13" /> {{ h.trigger || '—' }}
                         </div>
                         <div class="flex-gap-10-mt6-xs" v-if="h.key_indicators && Object.keys(h.key_indicators).length">
                             <span v-if="h.key_indicators.gdp_growth">GDP {{ h.key_indicators.gdp_growth }}%</span>
@@ -115,13 +115,13 @@
                 </div>
                 <!-- 无历史记录 -->
                 <div v-else-if="!merrillDetailData._isCurrent && !merrillDetailData._lastPeriod" class="detail-section mt-1">
-                    <div class="section-title">📅 历史轮次</div>
-                    <qc-state-panel type="empty" icon="📅" title="暂无历史记录"></qc-state-panel>
+                    <div class="section-title"><qc-icon name="calendar-days" :size="14" /> 历史轮次</div>
+                    <qc-state-panel type="empty" icon="calendar-days" title="暂无历史记录"></qc-state-panel>
                 </div>
 
                 <!-- 经济特征 -->
                 <div class="detail-section">
-                    <div class="section-title">📊 经济特征</div>
+                    <div class="section-title"><qc-icon name="bar-chart-3" :size="14" /> 经济特征</div>
                     <div class="characteristics-grid">
                         <div v-for="(value, key) in merrillDetailData.characteristics" :key="key" class="char-item">
                             <div class="char-label">{{ getCharLabel(key) }}</div>
@@ -132,7 +132,7 @@
 
                 <!-- v2.0: 多维度评分详情 -->
                 <div v-if="merrillData.dimension_scores" class="detail-section">
-                    <div class="section-title">🎯 多维度评分详情</div>
+                    <div class="section-title"><qc-icon name="target" :size="14" /> 多维度评分详情</div>
                     <div class="flex-c-gap-10-mb8-base" v-for="dim in dimensionScoreList" :key="dim.key">
                         <span class="merrill-dim-label">{{ dim.label }}</span>
                         <div class="merrill-dim-track">
@@ -142,14 +142,14 @@
                         <span class="text-sm-medium" :style="{color: dim.color}">{{ dim.level }}</span>
                     </div>
                     <div class="warning-note" v-if="merrillData.early_warnings?.length">
-                        <b class="color-el-danger">⚠ 早期预警：</b>
+                        <b class="color-el-danger"><qc-icon name="alert-triangle" :size="13" /> 早期预警：</b>
                         <span class="inline-mr12" v-for="(w, i) in merrillData.early_warnings" :key="i">{{ w.type || w }}</span>
                     </div>
                 </div>
 
                 <!-- 资产配置建议 -->
                 <div class="detail-section">
-                    <div class="section-title">💼 资产配置建议</div>
+                    <div class="section-title"><qc-icon name="wallet" :size="14" /> 资产配置建议</div>
                     <div class="allocation-grid">
                         <div v-for="(info, asset) in merrillDetailData.allocation" :key="asset" class="allocation-item">
                             <div class="allocation-header">
@@ -164,7 +164,7 @@
 
                 <!-- 行业配置建议 -->
                 <div class="detail-section">
-                    <div class="section-title">🏭 行业配置建议</div>
+                    <div class="section-title"><qc-icon name="factory" :size="14" /> 行业配置建议</div>
                     <div class="sector-list">
                         <div v-for="(advice, index) in merrillDetailData.sector_advice" :key="index" class="sector-item">
                             {{ advice }}
@@ -174,29 +174,29 @@
 
                 <!-- v3.7.13: 策略建议 -->
                 <div v-if="merrillDetailData.strategy_mapping" class="detail-section">
-                    <div class="section-title">📐 策略建议</div>
+                    <div class="section-title"><qc-icon name="sliders-horizontal" :size="14" /> 策略建议</div>
                     <div class="allocation-grid grid-2col-only">
                         <div class="allocation-item">
-                            <div class="allocation-header">🏆 主推策略</div>
+                            <div class="allocation-header"><qc-icon name="trophy" :size="14" /> 主推策略</div>
                             <div class="allocation-advice color-token-primary">
                                 {{ (merrillDetailData.strategy_mapping.primary || []).join(' · ') }}
                             </div>
                         </div>
                         <div class="allocation-item">
-                            <div class="allocation-header">📌 次选策略</div>
+                            <div class="allocation-header"><qc-icon name="pin" :size="14" /> 次选策略</div>
                             <div class="allocation-advice color-el-warning">
                                 {{ (merrillDetailData.strategy_mapping.secondary || []).join(' · ') }}
                             </div>
                         </div>
                     </div>
                     <div class="note-box-sm">
-                        💡 {{ merrillDetailData.strategy_mapping.rationale }}
+                        <qc-icon name="lightbulb" :size="14" /> {{ merrillDetailData.strategy_mapping.rationale }}
                     </div>
                 </div>
 
                 <!-- 历史统计 -->
                 <div class="detail-section">
-                    <div class="section-title">📜 历史统计</div>
+                    <div class="section-title"><qc-icon name="scroll-text" :size="14" /> 历史统计</div>
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-value">{{ fmtNum(merrillDetailData.historical_stats?.avg_duration_months) }}个月</div>
@@ -219,17 +219,17 @@
 
                 <!-- 典型历史案例 -->
                 <div v-if="merrillDetailData.case_studies?.length" class="detail-section">
-                    <div class="section-title">📚 典型历史案例</div>
+                    <div class="section-title"><qc-icon name="book-open" :size="14" /> 典型历史案例</div>
                     <div class="case-list">
                         <div v-for="(cs, index) in merrillDetailData.case_studies" :key="index" class="case-item">
-                            📌 {{ cs }}
+                            <qc-icon name="pin" :size="13" /> {{ cs }}
                         </div>
                     </div>
                 </div>
 
                 <!-- 风险提示 -->
                 <div class="detail-section risk-section">
-                    <div class="section-title">⚠ 风险提示</div>
+                    <div class="section-title"><qc-icon name="alert-triangle" :size="14" /> 风险提示</div>
                     <div class="risk-list">
                         <div v-for="(risk, index) in merrillDetailData.risks" :key="index" class="risk-item">
                             {{ risk }}

@@ -23,6 +23,7 @@
       icon: { type: String, default: '' },
     },
     emits: ['retry'],
+    // V6.5 (PRD-6.5 F5): icon 支持 Lucide 名称(ASCII) → <qc-icon> 渲染; emoji 原样保留
     template: `
         <div class="qc-state-panel" :class="'qc-state-' + type" role="status">
             <!-- 加载态：复用骨架屏 -->
@@ -34,7 +35,7 @@
             </div>
             <!-- 空/错误/离线态：统一空态样式 -->
             <div v-else class="empty-state qc-state-info">
-                <div class="qc-state-icon">{{ icon }}</div>
+                <div class="qc-state-icon"><qc-icon v-if="isIconName" :name="icon" :size="32" /><template v-else>{{ icon }}</template></div>
                 <div class="qc-state-title">{{ title }}</div>
                 <div class="qc-state-desc" v-if="desc">{{ desc }}</div>
                 <div class="qc-state-action" v-if="retryable">
@@ -51,7 +52,9 @@
       const title = computed(() => props.title || meta.value.title || '');
       const desc = computed(() => props.desc || meta.value.desc || '');
       const retryable = computed(() => !!meta.value.retry);
-      return { icon, title, desc, retryable };
+      // ASCII 名称(含 -) → Lucide; emoji/空 → 原样
+      const isIconName = computed(() => /^[a-z][a-z0-9-]*$/.test(String(icon.value || '')));
+      return { icon, title, desc, retryable, isIconName };
     },
   };
 })();

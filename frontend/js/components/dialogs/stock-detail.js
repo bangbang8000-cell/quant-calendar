@@ -13,7 +13,7 @@
         <el-dialog v-model="stockDetailVisible" :title="t('detail.title')" width="800px" class="kline-dialog">
             <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
             <div v-if="stockDetailLoading && !stockDetail" class="empty-state p-48-0">
-                <div class="empty-state-icon-xs">⏳</div>
+                <div class="empty-state-icon-xs"><qc-icon name="loader" :size="24" /></div>
                 <div class="text-md-medium-primary">{{ t('detail.loading') }}</div>
                 <div class="text-sm-tertiary-mt8">{{ t('detail.loadingHint') }}</div>
             </div>
@@ -37,9 +37,9 @@
                     <!-- V5.4.1 (R3): 自选/入池状态 + 入池历史 (重点跟踪弹窗信息) -->
                     <div v-if="poolInfo" class="detail-pool-row">
                         <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'watchlist'"
-                            size="small" type="warning" effect="light">⭐ 自选</el-tag>
+                            size="small" type="warning" effect="light"><qc-icon name="star" :size="13" /> 自选</el-tag>
                         <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'new_pool'"
-                            size="small" type="success" effect="light">🆕 入池</el-tag>
+                            size="small" type="success" effect="light"><qc-icon name="badge-check" :size="13" /> 入池</el-tag>
                         <el-tag v-if="poolInfo.holding" size="small" type="danger" effect="light">持仓</el-tag>
                         <span v-if="poolInfo.pool_history && poolInfo.pool_history.first_appear"
                               class="detail-pool-history">
@@ -84,15 +84,15 @@
                     <div v-if="aiLoading" class="ai-stage-indicator">
                         <div class="ai-stage-dots-row">
                             <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'fetching' || aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done' }">
-                                <span class="ai-stage-icon">📡</span>
+                                <span class="ai-stage-icon"><qc-icon name="radio-tower" :size="18" /></span>
                             </div>
                             <div class="ai-stage-line" :class="{ done: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done' }"></div>
                             <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'calculating' || aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'analyzing' || aiEvalStage === 'done' }">
-                                <span class="ai-stage-icon">📊</span>
+                                <span class="ai-stage-icon"><qc-icon name="bar-chart-3" :size="18" /></span>
                             </div>
                             <div class="ai-stage-line" :class="{ done: aiEvalStage === 'analyzing' || aiEvalStage === 'done' }"></div>
                             <div class="ai-stage-dot" :class="{ active: aiEvalStage === 'analyzing' || aiEvalStage === 'done', done: aiEvalStage === 'done' }">
-                                <span class="ai-stage-icon">🤖</span>
+                                <span class="ai-stage-icon"><qc-icon name="bot" :size="18" /></span>
                             </div>
                         </div>
                         <div class="ai-stage-label">
@@ -102,7 +102,7 @@
                     </div>
                     <!-- v3.15 (15.3): 评估失败提示 + 重试 -->
                     <div v-if="aiEvalError && !aiLoading" class="ai-eval-error">
-                        <span class="ai-eval-error-icon">⚠</span>
+                        <span class="ai-eval-error-icon"><qc-icon name="alert-triangle" :size="18" /></span>
                         <span class="ai-eval-error-text" :title="aiEvalError">{{ aiEvalError }}</span>
                         <el-button size="small" type="primary" @click="doAiEvaluate">{{ t('detail.retry') }}</el-button>
                     </div>
@@ -207,10 +207,10 @@
                             <div class="card-title m-0-0-16">
                                 <span>{{ t('detail.evalTitle') }}</span>
                                 <!-- v3.15 (15.3): 模型信息展示 -->
-                                <span v-if="aiResult.model_used" class="ai-result-meta" title="模型">🧠 {{ aiResult.model_used }}</span>
+                                <span v-if="aiResult.model_used" class="ai-result-meta" title="模型"><qc-icon name="brain" :size="13" /> {{ aiResult.model_used }}</span>
                                 <span v-if="aiResult.model_provider" class="ai-result-meta" title="厂商">{{ aiResult.model_provider }}</span>
                                 <span v-if="aiResult.result && aiResult.result.provider && aiResult.result.provider !== (aiResult.model_provider || '')" class="ai-result-meta" title="引擎">{{ aiResult.result.provider }}</span>
-                                <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟">⚡ {{ aiResult.llm_latency_ms }}ms</span>
+                                <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟"><qc-icon name="zap" :size="13" /> {{ aiResult.llm_latency_ms }}ms</span>
                                 <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">{{ t('detail.cachedResult') }}</span>
                                 <span class="flex-1"></span>
                                 <el-button size="small" @click="copyAiReport">{{ t('detail.copyReport') }}</el-button>
@@ -232,7 +232,7 @@
                                     <div class="text-md-secondary-lh">{{ aiResult.result.detailed_report || '' }}</div>
                                     <!-- 评估历史对比 -->
                                     <div class="inline-chip" v-if="evalHistoryComparison">
-                                        📈 上次{{ fmtNum(evalHistoryComparison.prevScore, 1) }}分 → 本次{{ fmtNum(evalHistoryComparison.currScore, 1) }}分
+                                        <qc-icon name="trending-up" :size="13" /> 上次{{ fmtNum(evalHistoryComparison.prevScore, 1) }}分 → 本次{{ fmtNum(evalHistoryComparison.currScore, 1) }}分
                                         <span :style="{color:evalHistoryComparison.diff>0?'var(--el-success)':evalHistoryComparison.diff<0?'var(--el-danger)':'var(--text-tertiary)'}">
                                             {{ evalHistoryComparison.diff>0?'↑':evalHistoryComparison.diff<0?'↓':'→' }}{{ fmtNum(Math.abs(evalHistoryComparison.diff), 1) }}
                                         </span>
@@ -244,7 +244,7 @@
                                 </div>
                             </div>
                             <div class="panel-card">
-                                <div class="panel-title">🔬 九维度评分</div>
+                                <div class="panel-title"><qc-icon name="search-check" :size="14" /> 九维度评分</div>
                                 <div class="flex-c-gap-10-mb6" v-for="(score,name) in aiResult.result.dimensions" :key="name">
                                     <span class="dim-label">{{ name }}</span>
                                     <div class="dim-track">
@@ -260,19 +260,19 @@
                                     <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.strengths || []).length">-</div>
                                 </div>
                                 <div class="factor-card-gold">
-                                    <div class="factor-title-gold">⚠ 风险</div>
+                                    <div class="factor-title-gold"><qc-icon name="alert-triangle" :size="14" /> 风险</div>
                                     <div class="detail-text-primary" v-for="w in (aiResult?.result?.analysis?.weaknesses || [])" :key="w">• {{ w }}</div>
                                     <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.weaknesses || []).length">-</div>
                                 </div>
                                 <div class="factor-card-info">
-                                    <div class="factor-title-info">💡 建议</div>
+                                    <div class="factor-title-info"><qc-icon name="lightbulb" :size="14" /> 建议</div>
                                     <div class="detail-text-primary" v-for="s in (aiResult?.result?.analysis?.suggestions || [])" :key="s">• {{ s }}</div>
                                     <div class="muted-sm" v-if="!(aiResult?.result?.analysis?.suggestions || []).length">-</div>
                                 </div>
                             </div>
                             <!-- 信号归因条 -->
                             <div class="factor-note-box" v-if="aiResult.result.signal_attribution">
-                                <div class="panel-title-mb8">📊 信号归因</div>
+                                <div class="panel-title-mb8"><qc-icon name="bar-chart-3" :size="14" /> 信号归因</div>
                                 <div class="flex-gap-8-wrap">
                                     <span class="chip-info" v-if="aiResult.result.signal_attribution.technical">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
                                     <span class="chip-success" v-if="aiResult.result.signal_attribution.fundamentals">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
@@ -281,45 +281,45 @@
                                 </div>
                                 <div class="text-sm-secondary-mt6" v-if="aiResult.result.signal_attribution.strongest_bullish">
                                     <span class="color-success">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
-                                    <span class="ml-12" v-if="aiResult.result.signal_attribution.strongest_bearish">🔴 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
+                                    <span class="ml-12" v-if="aiResult.result.signal_attribution.strongest_bearish"><qc-icon name="trending-down" :size="13" /> 最强看空: {{ aiResult.result.signal_attribution.strongest_bearish }}</span>
                                 </div>
                             </div>
                             <!-- 狙击点卡片 -->
                             <div class="grid-3col-gap10-mt12" v-if="aiResult.result.analysis?.sniper_points">
                                 <div class="factor-mini-info">
-                                    <div class="text-xs-tertiary-mb4">🎯 理想买入</div>
+                                    <div class="text-xs-tertiary-mb4"><qc-icon name="target" :size="13" /> 理想买入</div>
                                     <div class="factor-mini-val-info">{{ fmtNum(aiResult.result.analysis.sniper_points.ideal_buy) }}</div>
                                 </div>
                                 <div class="factor-mini-danger">
-                                    <div class="text-xs-tertiary-mb4">🛑 止损</div>
+                                    <div class="text-xs-tertiary-mb4"><qc-icon name="octagon-x" :size="13" /> 止损</div>
                                     <div class="factor-mini-val-danger">{{ fmtNum(aiResult.result.analysis.sniper_points.stop_loss) }}</div>
                                 </div>
                                 <div class="factor-mini-success">
-                                    <div class="text-xs-tertiary-mb4">🏁 目标</div>
+                                    <div class="text-xs-tertiary-mb4"><qc-icon name="flag" :size="13" /> 目标</div>
                                     <div class="factor-mini-val-success">{{ fmtNum(aiResult.result.analysis.sniper_points.take_profit) }}</div>
                                 </div>
                             </div>
                             <!-- 仓位建议 -->
                             <div class="grid-2col-gap10-mt12" v-if="aiResult.result.analysis?.position_advice">
                                 <div class="panel-box">
-                                    <div class="text-xs-tertiary-mb4">👤 空仓者</div>
+                                    <div class="text-xs-tertiary-mb4"><qc-icon name="user" :size="13" /> 空仓者</div>
                                     <div class="text-sm-primary">{{ aiResult.result.analysis.position_advice.no_position }}</div>
                                 </div>
                                 <div class="panel-box">
-                                    <div class="text-xs-tertiary-mb4">📦 持仓者</div>
+                                    <div class="text-xs-tertiary-mb4"><qc-icon name="package" :size="13" /> 持仓者</div>
                                     <div class="text-sm-primary">{{ aiResult.result.analysis.position_advice.has_position }}</div>
                                 </div>
                             </div>
                             <!-- 数据质量提示 -->
                             <div class="factor-empty-note" v-if="aiResult.result.data_quality_note">
-                                📋 {{ aiResult.result.data_quality_note }}
+                                <qc-icon name="clipboard-list" :size="14" /> {{ aiResult.result.data_quality_note }}
                             </div>
                         </div>
                         <div class="text-center-tertiary-pad40" v-else>
-                            <div class="text-3xl-mb12">🤖</div>
+                            <div class="text-3xl-mb12"><qc-icon name="bot" :size="36" /></div>
                             <div v-if="aiResult">
                                 <div class="mb-8">最近评估：{{ aiResult.result.level }}</div>
-                                <div class="text-sm">🕐 {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
+                                <div class="text-sm"><qc-icon name="clock" :size="13" /> {{ (lastEvalTime || aiResult.evaluate_time || '').split('T')[0] }} {{ ((lastEvalTime || aiResult.evaluate_time || '').split('T')[1] || '').split('.')[0] }}</div>
                             </div>
                             <div v-else>{{ t('detail.noEvalYet') }}</div>
                         </div>
@@ -328,23 +328,23 @@
                     <!-- Tab: AI 问股对话 -->
                     <div v-if="stockDetailTab === 'chat'">
                         <div class="card mb-12">
-                            <div class="card-title m-0-0-12">💬 AI 智能问股</div>
+                            <div class="card-title m-0-0-12"><qc-icon name="message-circle" :size="14" /> AI 智能问股</div>
                             <!-- Quick prompts -->
                             <div class="flex-wrap-gap-6-mb12">
-                                <el-button size="small" @click="askStockQuick('trend')">📈 趋势分析</el-button>
-                                <el-button size="small" @click="askStockQuick('fundamental')">📊 基本面</el-button>
-                                <el-button size="small" @click="askStockQuick('comprehensive')">🔬 综合分析</el-button>
+                                <el-button size="small" @click="askStockQuick('trend')"><qc-icon name="trending-up" :size="13" /> 趋势分析</el-button>
+                                <el-button size="small" @click="askStockQuick('fundamental')"><qc-icon name="bar-chart-3" :size="13" /> 基本面</el-button>
+                                <el-button size="small" @click="askStockQuick('comprehensive')"><qc-icon name="search-check" :size="13" /> 综合分析</el-button>
                             </div>
                             <!-- Chat messages -->
                             <!-- v3.16 (16.8): 历史消息惰性加载提示 -->
-                            <div class="text-center-tertiary-pad12" v-if="stockChatLoading && stockChatMessages.length === 0">⏳ 加载历史消息中...</div>
+                            <div class="text-center-tertiary-pad12" v-if="stockChatLoading && stockChatMessages.length === 0"><qc-icon name="loader" :size="14" /> 加载历史消息中...</div>
                             <div class="scroll-300" v-else-if="stockChatMessages.length> 0">
                                 <div class="mb-10" v-for="(msg, mi) in stockChatMessages" :key="mi">
                                     <div class="text-right" v-if="msg.role==='user'">
                                         <span class="chat-bubble-user">{{ msg.content }}</span>
                                     </div>
                                     <div class="flex-gap-6" v-else>
-                                        <span>🤖</span>
+                                        <span><qc-icon name="bot" :size="16" /></span>
                                         <div class="chat-scroll" v-html="renderMarkdown(msg.content)"></div>
                                     </div>
                                 </div>
@@ -362,7 +362,7 @@
                     <div v-if="stockDetailTab === 'factor'">
                         <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
                         <qc-state-panel v-if="factorLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="factorError || !factorGroups.length" type="empty" icon="🧬" :title="t('detail.factorEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else-if="factorError || !factorGroups.length" type="empty" icon="dna" :title="t('detail.factorEmpty')"></qc-state-panel>
                         <div v-else>
                             <div v-if="factorSummary && factorSummary.available" class="factor-summary">
                                 <span class="factor-summary-count">{{ t('detail.factorCount', { count: factorSummary.available }) }}</span>
@@ -395,7 +395,7 @@
                     <div v-if="stockDetailTab === 'performance'">
                         <!-- V5.3.10: 业绩预告/快报 (sxsc forecast/express) -->
                         <qc-state-panel v-if="perfLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="perfError" type="empty" icon="📊" :title="t('detail.perfEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else-if="perfError" type="empty" icon="bar-chart" :title="t('detail.perfEmpty')"></qc-state-panel>
                         <div v-else-if="perfForecast.length || perfExpress.length">
                             <div v-if="perfForecast.length" class="perf-block">
                                 <div class="perf-block-title">{{ t('detail.perfForecast') }}</div>
@@ -431,7 +431,7 @@
                                 </el-table>
                             </div>
                         </div>
-                        <qc-state-panel v-else type="empty" icon="📊" :title="t('detail.perfEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" icon="bar-chart" :title="t('detail.perfEmpty')"></qc-state-panel>
                     </div>
                 </div>
             </div>

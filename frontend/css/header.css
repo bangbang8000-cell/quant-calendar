@@ -142,7 +142,29 @@
   max-width: 640px;
   margin: 0 var(--qc-space-4);
 }
-/* V6.2 (PRD-6.2 F2): Header 内动态页签 (取代面包屑) — 横向滚动 + 渐变遮罩 */
+/* V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态的 Header 位置指示 (V6.2 动态页签已移除) */
+.qc-header-crumbs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.qc-crumb {
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qc-crumb-root { color: var(--qc-foreground); }
+.qc-crumb-sep {
+  color: var(--qc-border);
+  flex-shrink: 0;
+}
+/* V6.2 (PRD-6.2 F2): Header 内二级标签容器 — 横向滚动 + 渐变遮罩 (V6.4: 动态页签移除, 容器保留供 TopTabs 复用) */
 .qc-header-tabs {
   flex: 1;
   min-width: 0;
@@ -159,24 +181,7 @@
   mask-image: linear-gradient(to right, black 92%, transparent 100%);
 }
 .qc-header-tabs::-webkit-scrollbar { display: none; }
-.qc-header-tabs .qc-dynamic-tab {
-  height: 28px;
-  padding: 0 var(--qc-space-3);
-  border-radius: var(--qc-radius-small);
-  border-color: transparent;
-  background: transparent;
-  flex-shrink: 0;
-}
-.qc-header-tabs .qc-dynamic-tab:hover { background: var(--qc-muted); }
-.qc-header-tabs .qc-dynamic-tab.is-active {
-  background: var(--qc-muted);
-  border-color: var(--qc-border);
-}
-.qc-header-tabs .qc-dynamic-tab-close {
-  width: 16px;
-  height: 16px;
-}
-/* V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (复用 qc-header-tabs 容器与页签视觉, 不可关闭/无右键) */
+/* V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (复用 qc-header-tabs 容器, 不可关闭/无右键) */
 .qc-top-tabs .qc-top-tab {
   display: inline-flex;
   align-items: center;
@@ -213,10 +218,11 @@
   text-overflow: ellipsis;
 }
 .qc-header-search {
-  flex: 1;
-  min-width: 0;
-  /* V6.2 (PRD-6.2 F3): 320px → 480px */
-  max-width: 480px;
+  /* V6.5 (PRD-6.5 F3): 固定窄宽 220px, 贴近右侧铃铛; 去掉弹性伸缩 */
+  flex: 0 0 220px;
+  width: 220px;
+  max-width: 220px;
+  min-width: 220px;
 }
 .qc-header-search .el-input { width: 100%; }
 .qc-header-search .el-input__wrapper {

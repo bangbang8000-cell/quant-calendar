@@ -154,11 +154,11 @@
                         <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon gold">🏔</div><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
-                                <div class="stat-card"><div class="stat-icon info">🪜</div><div class="stat-label">梯队</div><div class="stat-value">{{ ladderText }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">🚀</div><div class="stat-label">涨停</div><div class="stat-value">{{ pools.zt ? pools.zt.length : '—' }} 家</div></div>
-                                <div class="stat-card"><div class="stat-icon warning">💥</div><div class="stat-label">炸板</div><div class="stat-value">{{ pools.zb ? pools.zb.length : '—' }} 家</div></div>
-                                <div class="stat-card"><div class="stat-icon danger">📉</div><div class="stat-label">跌停</div><div class="stat-value">{{ pools.dt ? pools.dt.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon gold"><qc-icon name="trending-up" :size="18" /></div><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="layers" :size="18" /></div><div class="stat-label">梯队</div><div class="stat-value">{{ ladderText }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success"><qc-icon name="rocket" :size="18" /></div><div class="stat-label">涨停</div><div class="stat-value">{{ pools.zt ? pools.zt.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon warning"><qc-icon name="alert-triangle" :size="18" /></div><div class="stat-label">炸板</div><div class="stat-value">{{ pools.zb ? pools.zb.length : '—' }} 家</div></div>
+                                <div class="stat-card"><div class="stat-icon danger"><qc-icon name="trending-down" :size="18" /></div><div class="stat-label">跌停</div><div class="stat-value">{{ pools.dt ? pools.dt.length : '—' }} 家</div></div>
                             </div>
                             <div v-if="pools.ladder && pools.ladder.note" class="text-xs-tertiary mb-4">{{ pools.ladder.note }}</div>
                             <div v-if="pools.ladder && Object.keys(pools.ladder.tiers || {}).length" id="shorttermLadderChart" class="mb-4" style="height:170px;width:100%"></div>
@@ -219,10 +219,12 @@
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="lhbError" type="error" :title="lhbErrTitle" :desc="lhbErrDesc" @retry="loadLhb"></qc-state-panel>
                         <div v-else-if="lhbRows">
+                            <!-- V6.5 (PRD-6.5 F2): 数据源降级提示(非静默空表) -->
+                            <div v-if="lhbReason" class="text-xs-tertiary mb-4" title="点击展开完整原因" style="cursor:help">⚠️ {{ lhbReason.length > 120 ? lhbReason.slice(0, 120) + '…' : lhbReason }}</div>
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon gold">📊</div><div class="stat-label">上榜家数</div><div class="stat-value">{{ lhbRows.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">🏦</div><div class="stat-label">机构净买合计</div><div class="stat-value" style="font-size:1.15em">{{ fmtAmount(lhbInstitutionNetBuy) }}</div></div>
-                                <div class="stat-card"><div class="stat-icon warning">🔥</div><div class="stat-label">游资上榜</div><div class="stat-value">{{ lhbHotMoneyCount }}</div></div>
+                                <div class="stat-card"><div class="stat-icon gold"><qc-icon name="bar-chart-3" :size="18" /></div><div class="stat-label">上榜家数</div><div class="stat-value">{{ lhbRows.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success"><qc-icon name="landmark" :size="18" /></div><div class="stat-label">机构净买合计</div><div class="stat-value" style="font-size:1.15em">{{ fmtAmount(lhbInstitutionNetBuy) }}</div></div>
+                                <div class="stat-card"><div class="stat-icon warning"><qc-icon name="flame" :size="18" /></div><div class="stat-label">游资上榜</div><div class="stat-value">{{ lhbHotMoneyCount }}</div></div>
                             </div>
                             <div class="table-container">
                                 <el-table :data="lhbPageRows" size="small" max-height="560">
@@ -263,9 +265,9 @@
                         <qc-state-panel v-else-if="sectorError" type="error" :title="sectorErrTitle" :desc="sectorErrDesc" @retry="loadSectorFlow"></qc-state-panel>
                         <div v-else-if="sectorRows && sectorRows.length">
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon info">🥇</div><div class="stat-label">净流入榜首</div><div class="stat-value stat-value-lg">{{ sectorTopName }}</div></div>
-                                <div class="stat-card"><div class="stat-icon info">🗂</div><div class="stat-label">板块数</div><div class="stat-value">{{ sectorRows.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">💰</div><div class="stat-label">Top 净流入</div><div class="stat-value stat-value-lg">{{ fmtAmount(sectorTopInflow) }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="trophy" :size="18" /></div><div class="stat-label">净流入榜首</div><div class="stat-value stat-value-lg">{{ sectorTopName }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="layers" :size="18" /></div><div class="stat-label">板块数</div><div class="stat-value">{{ sectorRows.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success"><qc-icon name="wallet" :size="18" /></div><div class="stat-label">Top 净流入</div><div class="stat-value stat-value-lg">{{ fmtAmount(sectorTopInflow) }}</div></div>
                             </div>
                             <div class="table-container">
                                 <el-table :data="sectorPageRows" size="small" max-height="560">
@@ -334,6 +336,8 @@
       const lhbError = ref(false);
       const lhbErrTitle = ref('数据加载失败');
       const lhbErrDesc = ref('请检查服务后重试');
+      // V6.5 (PRD-6.5 F2): 数据源降级原因(available=false 时后端透出 reason)
+      const lhbReason = ref(null);
       // V5.2.4 (T-5.2.54): 长表分页(>200 行启用, 每页 50)
       const lhbPage = ref(1);
       const PAGE_SIZE = 50;
@@ -430,6 +434,8 @@
           if (seq !== _reqSeq) return;
           if (res && res.success) {
             lhbRows.value = Array.isArray(res.rows) ? res.rows : null;
+            // V6.5 (PRD-6.5 F2): 数据源降级原因透出; available=false 时不静默
+            lhbReason.value = res.available === false ? (res.reason || null) : null;
             lhbPage.value = 1;
           } else if (res && res.detail) {
             // V5.2.0-fix: 401 提示登录
@@ -947,7 +953,7 @@
       return {
         currentPage, currentSubPage,
         shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter,
-        lhbRows, lhbLoading, lhbError, lhbPageRows, lhbPage,
+        lhbRows, lhbLoading, lhbError, lhbReason, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
         sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorPageRows, sectorPage, sectorLoading, sectorError, sectorFlowSource,
         PAGE_SIZE, gotoSector,

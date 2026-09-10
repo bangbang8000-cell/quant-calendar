@@ -9,7 +9,7 @@
   window.__quantComponents.MenuConfigDialog = {
     name: 'qc-menu-config-dialog',
     template: `
-        <el-dialog v-model="menuConfigDialog" :title="'⚙ ' + (allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
+        <el-dialog v-model="menuConfigDialog" :title="(allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
             <div class="p-15-0">
                 <el-form label-width="60px" size="small">
                     <el-form-item label="组名">
@@ -40,7 +40,7 @@
             </div>
             <template #footer>
                 <el-button @click="menuConfigDialog = false">取消</el-button>
-                <el-button type="primary" @click="saveMenuConfig" :loading="savingGroup">💾 保存</el-button>
+                <el-button type="primary" @click="saveMenuConfig" :loading="savingGroup"><qc-icon name="hard-drive" :size="14" /> 保存</el-button>
             </template>
         </el-dialog>
     `,

@@ -13,10 +13,21 @@ export default {
     const state = inject('qcState')
     if (!state) return {}
     const showUserMenu = ref(false)
-    // V6.3 (PRD-6.3 F4): 导航形态 + 页签开关 — 动态页签仅 subnav/tree 且开启时渲染 (toptab 由二级 tab 承担)
+    // V6.3 (PRD-6.3 F4): 导航形态 (动态页签 V6.4 已移除, 面包屑仅 tree 形态展示)
     const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
-    const tabsEnabled = computed(() => (state.tabsEnabled && state.tabsEnabled.value) !== false)
-    // V6.2 (PRD-6.2 F2): 面包屑移除 — 由动态页签激活态承载「当前在哪」
+    // V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态展示「一级 / 二级」
+    //   subnav/toptab 形态不展示 (中栏标题 / 顶部二级标签已承担位置指示)
+    const crumbRoot = computed(() => {
+      const page = state.currentPage && state.currentPage.value
+      const name = state.currentPageName && state.currentPageName.value
+      if (name) return name
+      const menu = (state.menus && state.menus.value || []).find((m) => m.key === page)
+      return (menu && menu.name) || page || ''
+    })
+    const crumbSub = computed(() => {
+      const sp = state.currentSubPage && state.currentSubPage.value
+      return (sp && state.subPageNames && state.subPageNames[sp]) || sp || ''
+    })
     // V6.2 (PRD-6.2 F6): 移动端「当前二级」下拉 (桌面隐藏)
     const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
     function _onResize() { isMobile.value = window.innerWidth < 768 }
@@ -70,7 +81,7 @@ export default {
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
     return {
-      state, showUserMenu, isDark, searchQuery, navMode, tabsEnabled,
+      state, showUserMenu, isDark, searchQuery, navMode, crumbRoot, crumbSub,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
       // V6.2 (PRD-6.2 F6): 移动端二级下拉
       isMobile, openSubnavPicker, currentSubLabel, subnavOptions,
@@ -102,9 +113,15 @@ export default {
           </div>
         </div>
       </div>
-      <!-- V6.2 (PRD-6.2 F2): 动态页签取代面包屑, 进入 Header 左区
-           V6.3 (PRD-6.3 F4): 仅 subnav/tree 形态且页签开关开启时渲染 (toptab 由顶部二级 tab 承担) -->
-      <qc-dynamic-tabs v-if="(navMode === 'subnav' || navMode === 'tree') && tabsEnabled" class="qc-header-tabs"></qc-dynamic-tabs>
+      <!-- V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态展示 (V6.2 动态页签已移除)
+           subnav/toptab 形态不展示: 中栏标题与顶部二级标签已承载位置指示 -->
+      <div v-if="navMode === 'tree' && !isMobile" class="qc-header-crumbs" aria-label="面包屑">
+        <span class="qc-crumb qc-crumb-root">{{ crumbRoot }}</span>
+        <template v-if="crumbSub">
+          <span class="qc-crumb-sep" aria-hidden="true">/</span>
+          <span class="qc-crumb qc-crumb-sub">{{ crumbSub }}</span>
+        </template>
+      </div>
       <!-- V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (点击走 openTab, 承担页签定位)
            M5.1: 移动端隐藏, 由二级下拉 picker 承担 (窄屏横向标签过挤) -->
       <qc-top-tabs v-if="navMode === 'toptab' && !isMobile"></qc-top-tabs>

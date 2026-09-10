@@ -160,21 +160,16 @@ const allMenuDefs = [
                     } catch(e) { console.warn('loadGroupConfig:', e); }
                 }
                 const currentPage = ref('strategies');
-                // V6.3 (PRD-6.3 F3/F4): 导航形态 + 页签开关 — localStorage 持久化全局偏好 (默认 subnav / 开)
+                // V6.3 (PRD-6.3 F3/F4): 导航形态 — localStorage 持久化全局偏好 (默认 subnav)
+                // V6.4 (PRD-6.4): 动态页签已移除 (tabsEnabled 不再需要)
                 const _navPrefs = (window.__quantModules && window.__quantModules.navModeCore)
                     ? window.__quantModules.navModeCore.readPrefs()
-                    : { navMode: 'subnav', tabsEnabled: true };
+                    : { navMode: 'subnav' };
                 const navMode = ref(_navPrefs.navMode);
-                const tabsEnabled = ref(_navPrefs.tabsEnabled);
                 function setNavMode(v) {
                     const C = window.__quantModules && window.__quantModules.navModeCore;
                     navMode.value = C ? C.normalizeNavMode(v) : ((v === 'tree' || v === 'toptab') ? v : 'subnav');
                     if (C) C.writePrefs({ navMode: navMode.value });
-                }
-                function setTabsEnabled(v) {
-                    tabsEnabled.value = !!v;
-                    const C = window.__quantModules && window.__quantModules.navModeCore;
-                    if (C) C.writePrefs({ tabsEnabled: tabsEnabled.value });
                 }
                 const shortcutHelpItems = [
                     { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索/菜单/指令)' },
@@ -1087,9 +1082,9 @@ const allMenuDefs = [
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
                 const qcState = {
                     currentPage, pageComp, currentSubPage, sidebarCollapsed, menus,
-                    // V6.3 (PRD-6.3 F3/F4): 导航形态 + 页签开关
-                    navMode, tabsEnabled, setNavMode, setTabsEnabled,
-                    // V6.1 (PRD-6.1 F8): 动态页签
+                    // V6.3 (PRD-6.3 F3/F4): 导航形态 (V6.4: 动态页签开关已移除)
+                    navMode, setNavMode,
+                    // V6.1 (PRD-6.1 F8): 动态页签状态 (内部导航副作用保留: openTab 同步 hash/当前二级)
                     tabGroups, openTab, closeTab, activateTab,
                     fmtNum, sanitizeHtml, keyClick, isOnline,
                     currentUser, allMenuDefs,
