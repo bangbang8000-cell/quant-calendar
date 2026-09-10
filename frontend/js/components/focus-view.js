@@ -45,6 +45,7 @@
         <div class="card mb-4">
           <div class="card-title">🎯 重点跟踪 · 今日概览
             <span class="card-title-hint" v-if="latestNote">{{ latestNote }}</span>
+            <span class="card-title-hint" v-if="baseNote">{{ baseNote }}</span>
           </div>
           <div class="flex-between mb-8">
             <div class="flex-gap-8">
@@ -227,6 +228,16 @@
         if (li.date !== curDate.value) return '';
         return '已加载最近一次评估: ' + li.date + ' · ' + (SESSION_LABELS[li.session] || li.session);
       });
+      // V5.4.3 (FR-5.4.3): 说明"本次评分纳入的新入池范围" —
+      // 盘前 = 前一交易日 20:00 算好的池 (昨晚算好); 盘后 = 当天收盘池。
+      const baseNote = computed(function () {
+        const d = results.value && results.value.base_date;
+        if (!d) return '';
+        if (d === curDate.value) {
+          return '评分范围: ' + d + ' 收盘池 + 自选';
+        }
+        return '评分范围: ' + d + ' 收盘池(前一交易日算好) + 自选';
+      });
 
       function fmtScore(s) {
         if (s === null || s === undefined) return '—';
@@ -382,6 +393,7 @@
       return { curDate, session, results, history, track, trackLoading, trackNote,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
                TRACK_WINDOWS, EMOJI, TIER_EMOJI, SESSION_LABELS, displayGroups, latestNote,
+               baseNote,
                sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,
                loadStockHistory, loadAll, poolStatus, openStockDetail, actionPct };

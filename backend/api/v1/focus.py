@@ -45,6 +45,32 @@ async def get_focus_list(
     return {"success": True, "data": result}
 
 
+def _resolve_base_for_rows(rows, date, session):
+    """V5.4.3 (FR-5.4.3): 解析该次评估实际使用的"新入池基准日"。
+
+    优先取落库 raw_json.base_date (评估当时写入, 最真实); 无记录时按当前时点与
+    最近已完成持仓矩阵预演 (供"下次评估将纳入的范围"提示)。返回 (base_date, reason)。
+    """
+    import json as _json
+    import focus_list as fl
+    bases = []
+    for r in rows or []:
+        raw = r.get("raw_json")
+        try:
+            obj = _json.loads(raw) if isinstance(raw, str) else (raw or {})
+        except Exception:
+            continue
+        b = (obj or {}).get("base_date")
+        if b:
+            bases.append(b)
+    if bases:
+        return max(bases), "recorded"
+    try:
+        return fl.resolve_base_date(date, session or "after_close")
+    except Exception:
+        return None, "unknown"
+
+
 def _backfill_stock_names(rows):
     """V5.4.1 (fix): 历史记录 stock_name 缺失/等于代码时, 回填真实中文名 (不改 DB)。
 
@@ -77,6 +103,8 @@ async def get_focus_results(
 
     V5.4.2 (FR): 缺省 level 由评分回填 + 按推荐档位排序 (强烈推荐→观望, 组内评分降序)
     + groups 按推荐档位归类, 供前端分组渲染。
+    V5.4.3 (FR-5.4.3): 返回新入池基准日 base_date (评估时实际使用, 取自落库 raw_json;
+    无记录时按当前时点预演), 供前端说明"评估范围"。
     """
     import focus_list as fl
     import focus_store
@@ -94,6 +122,8 @@ async def get_focus_results(
             r["level"] = score_to_level(r.get("total_score"))
     sorted_rows = focus_digest.sort_rows_by_level(enriched)
     groups = focus_digest.group_rows_by_level(sorted_rows)
+    # V5.4.3: 新入池基准日 — 优先取落库记录 (评估时实际使用), 否则按时点预演
+    base_date, base_reason = _resolve_base_for_rows(sorted_rows, d, session)
     counts = {a: 0 for a in ACTION_ORDER}
     for r in sorted_rows:
         counts[r.get("action")] = counts.get(r.get("action"), 0) + 1
@@ -102,6 +132,7 @@ async def get_focus_results(
         "actions": counts, "rows": sorted_rows, "groups": groups,
         "user": user["username"] if user else None,
         "holdings_count": len(holdings),
+        "base_date": base_date, "base_reason": base_reason,
     }}
 
 

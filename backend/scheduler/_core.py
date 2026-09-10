@@ -874,28 +874,38 @@ class SchedulerCoreMixin:
         """
         while self.running:
             try:
-                from focus_scheduler import decide_session, load_intraday_enabled
+                from focus_scheduler import (
+                    decide_session_with_readiness, load_intraday_enabled, load_pool_ready)
                 from focus_eval import run_session
                 from focus_store import query_by_date
                 from market_data import is_trading_day
                 now = datetime.now()
                 today = now.strftime('%Y-%m-%d')
-                session, reason = decide_session(
+                # V5.4.3 (FR-5.4.3): 盘后必须等当日持仓矩阵生成完成 (20:00 策略任务),
+                # 否则当天新入池为空 → 漏算当天新入池; 就绪后即执行 (窗口后可补做)。
+                session, reason = decide_session_with_readiness(
                     now.strftime('%H:%M'),
                     trading_day=is_trading_day(now),  # 期望 date/datetime 对象
                     intraday_enabled=load_intraday_enabled(),
+                    pool_ready=load_pool_ready(today),
                 )
                 if session and not query_by_date(today, session):
-                    logger.info("🎯 重点跟踪评估触发: %s %s", today, session)
+                    logger.info("🎯 重点跟踪评估触发: %s %s (%s)", today, session, reason)
                     try:
                         out = await run_session(today, session)
                         logger.info(
-                            "重点跟踪评估完成: %s %s 评估 %s 只 (ai=%s rule=%s degraded=%s)",
+                            "重点跟踪评估完成: %s %s 评估 %s 只 (ai=%s rule=%s degraded=%s) "
+                            "新入池基准=%s(%s) 自选=%s 新入池=%s",
                             today, session, out.get('evaluated'), out.get('ai_count'),
                             out.get('rule_count'), out.get('degraded'),
+                            out.get('base_date'), out.get('base_reason'),
+                            (out.get('roster') or {}).get('watchlist_count'),
+                            (out.get('roster') or {}).get('new_pool_count'),
                         )
                     except Exception as e:  # noqa: BLE001
                         logger.error("重点跟踪评估执行异常: %s", e)
+                elif reason == 'pool_not_ready':
+                    logger.info("⏳ 重点跟踪盘后等待当日持仓矩阵生成: %s", today)
             except Exception as e:  # noqa: BLE001
                 logger.error("重点跟踪调度异常: %s", e)
             await asyncio.sleep(60)

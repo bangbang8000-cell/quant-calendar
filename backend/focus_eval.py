@@ -106,22 +106,28 @@ def _load_kline(stock_code, limit=30):
         return []
 
 
-async def _rule_eval_one(date, session, code, name=""):
+async def _rule_eval_one(date, session, code, name="", base_date=None):
     """单只规则快评并落库。返回评估 dict。"""
     kline = _load_kline(code)
     r = rule_quick_eval(code, kline=kline, stock_name=name)
+    raw = dict(r)
+    if base_date:
+        raw["base_date"] = base_date          # V5.4.3: 新入池基准日 (可审计)
     record = focus_store.build_record(
         trade_date=date, session=session, stock_code=code,
         stock_name=name or code, total_score=r["total_score"], level=r["level"],
         direction=r["direction"], model_provider="rule", model_used="rule-quick",
-        raw_json=r)
+        raw_json=raw)
     focus_store.upsert_eval(record)
     return r
 
 
 async def evaluate_codes(date, session, codes, stock_names=None,
-                         ai_available=True):
-    """对清单评估并落库。返回统计 {evaluated, ai_count, rule_count, degraded, reason}。"""
+                         ai_available=True, base_date=None):
+    """对清单评估并落库。返回统计 {evaluated, ai_count, rule_count, degraded, reason}。
+
+    V5.4.3: base_date = 新入池基准日, 写入 raw_json 供界面/审计说明评估范围。
+    """
     codes = [c for c in (codes or []) if c]
     out = {"session": session, "date": date, "evaluated": len(codes),
            "ai_count": 0, "rule_count": 0, "degraded": False, "reason": ""}
@@ -133,7 +139,7 @@ async def evaluate_codes(date, session, codes, stock_names=None,
         out["degraded"] = True
         out["reason"] = "rule_oversize" if len(codes) > MAX_AI_LIST else "rule_no_ai"
         for c in codes:
-            await _rule_eval_one(date, session, c, names.get(c, ""))
+            await _rule_eval_one(date, session, c, names.get(c, ""), base_date=base_date)
         out["rule_count"] = len(codes)
         return out
     try:
@@ -144,24 +150,27 @@ async def evaluate_codes(date, session, codes, stock_names=None,
         out["degraded"] = True
         out["reason"] = "rule_ai_error"
         for c in codes:
-            await _rule_eval_one(date, session, c, names.get(c, ""))
+            await _rule_eval_one(date, session, c, names.get(c, ""), base_date=base_date)
         out["rule_count"] = len(codes)
         return out
     for r in results or []:
         code = r.get("stock_code") or ""
         if r.get("success") and r.get("result"):
             res = r["result"]
+            raw = dict(res) if isinstance(res, dict) else {}
+            if base_date:
+                raw["base_date"] = base_date   # V5.4.3: 新入池基准日 (可审计)
             record = focus_store.build_record(
                 trade_date=date, session=session, stock_code=code,
                 stock_name=res.get("stock_name") or names.get(code, "") or "",
                 total_score=res.get("total_score"), level=res.get("level", ""),
                 model_provider=r.get("model_provider") or "ai",
                 model_used=r.get("model_used") or "",
-                raw_json=res)
+                raw_json=raw)
             focus_store.upsert_eval(record)
             out["ai_count"] += 1
         else:
-            await _rule_eval_one(date, session, code, names.get(code, ""))
+            await _rule_eval_one(date, session, code, names.get(code, ""), base_date=base_date)
             out["rule_count"] += 1
     return out
 
@@ -175,12 +184,17 @@ async def run_session(date, session, scope="all", username=None,
                 "ai_count": 0, "rule_count": 0, "degraded": True,
                 "reason": "not_today"}
     import focus_list as fl
-    if username:
-        lst = fl.load_focus_list(username, date, scope)
-    else:
-        lst = fl.load_focus_list_anonymous(date, scope)
+    # V5.4.3 (FR-5.4.3): 按"时点 + 最近已完成持仓矩阵"解析新入池基准日 —
+    # 盘前取前一交易日 20:00 算好的新入池; 盘后取当天新入池 (当日矩阵就绪时)。
+    lst = fl.load_focus_list_for_session(username, date, session, scope)
     members = lst.get("members", []) or []
     names = {m["code"]: m.get("name", "") for m in members}
     codes = [m["code"] for m in members]
-    return await evaluate_codes(date, session, codes, stock_names=names,
-                                ai_available=ai_available)
+    base_date = lst.get("base_date") or date
+    out = await evaluate_codes(date, session, codes, stock_names=names,
+                               ai_available=ai_available, base_date=base_date)
+    out["base_date"] = base_date
+    out["base_reason"] = lst.get("base_reason")
+    out["roster"] = {"watchlist_count": lst.get("watchlist_count"),
+                     "new_pool_count": lst.get("new_pool_count")}
+    return out

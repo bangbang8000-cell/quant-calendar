@@ -67,15 +67,26 @@ def goto_focus(page):
           if (els.length) els[0].click();
         }""")
         time.sleep(1.5)
-    # 打开重点跟踪 (AI 页概览统计卡, aria-label="重点跟踪")
-    page.evaluate("""() => {
-      const el = document.querySelector('[aria-label="重点跟踪"]');
-      if (el) { el.click(); return true; }
-      const card = [...document.querySelectorAll('.stat-card')].find(c => c.textContent.includes('重点跟踪'));
-      if (card) { card.click(); return true; }
-      return false;
-    }""")
-    time.sleep(4)
+    # 打开重点跟踪 (AI 页概览统计卡, aria-label="重点跟踪") — 入口未就绪时轮询重试
+    for _ in range(15):
+        ok = page.evaluate("""() => {
+          const el = document.querySelector('[aria-label="重点跟踪"]');
+          if (el) { el.click(); return true; }
+          const card = [...document.querySelectorAll('.stat-card')].find(c => c.textContent.includes('重点跟踪'));
+          if (card) { card.click(); return true; }
+          return false;
+        }""")
+        if ok:
+            break
+        time.sleep(1)
+    # 等待重点跟踪视图渲染完成 (行/档位/空态出现), 避免时序抖动误判
+    for _ in range(20):
+        ready = page.evaluate("""() => !!document.querySelector(
+            '.focus-tier-header, .focus-row, .focus-empty, .focus-row-name')""")
+        if ready:
+            break
+        time.sleep(1)
+    time.sleep(1)
 
 
 def main():
@@ -135,6 +146,9 @@ def main():
         onboarding_count = page.evaluate(
             "() => document.querySelectorAll('qc-onboarding').length")
         check('SM-5.4.2-6 qc-onboarding 组件未挂载', onboarding_count == 0)
+
+        # SM-5.4.3-1: 评分范围(新入池基准日)提示 — 盘前=前一交易日池 / 盘后=当天池
+        check('SM-5.4.3-1 展示评分范围提示', '评分范围' in html)
 
         browser.close()
 
