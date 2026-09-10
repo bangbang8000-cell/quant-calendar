@@ -99,9 +99,21 @@ def _stats_from_prev_rows(rows: list, today_codes=None) -> dict:
 
 
 def _spot_pct_map() -> dict:
-    """全市场实时涨跌幅 {代码: pct_chg}(实时兜底用; 失败抛错交上层降级)"""
-    import akshare as ak
-    df = ak.stock_zh_a_spot_em()
+    """全市场实时涨跌幅 {代码: pct_chg}(实时兜底用)
+
+    V6.5 (PRD-6.5 F1): 缺 akshare 依赖或请求失败时返回空映射, 交上层覆盖率降级,
+    不再向 overview 抛 ModuleNotFoundError。
+    """
+    try:
+        import akshare as ak
+    except Exception as e:  # noqa: BLE001 — 缺依赖统一降级
+        logger.warning('akshare 不可用, 实时涨跌幅映射降级为空: %s', e)
+        return {}
+    try:
+        df = ak.stock_zh_a_spot_em()
+    except Exception as e:  # noqa: BLE001 — 数据源异常统一降级
+        logger.warning('实时行情抓取失败, 涨跌幅映射降级为空: %s', e)
+        return {}
     out = {}
     for _, r in df.iterrows():
         c = _zero_pad(r.get('代码'))

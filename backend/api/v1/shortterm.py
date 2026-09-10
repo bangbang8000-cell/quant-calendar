@@ -63,9 +63,21 @@ async def get_pools(date: str = None, user: Optional[dict] = Depends(get_current
 
 @router.get("/lhb")
 async def get_lhb(date: str = None, user: Optional[dict] = Depends(get_current_user)):
+    """龙虎榜明细。
+
+    V6.5 (PRD-6.5 F2): 透出 available/reason — 数据源降级时前端可见原因,
+    不再静默转 None 当「暂无数据」。
+    """
     d = date or latest_session()
-    rows = _load_or_fetch(d, 'lhb', lambda x: lhb.fetch_lhb(x, x))
-    return {'success': True, 'date': d, 'settled': is_settled(d), 'rows': rows}
+    cached = store.load_pool(d, 'lhb')
+    if cached is not None:
+        return {'success': True, 'date': d, 'settled': is_settled(d),
+                'rows': cached, 'available': True, 'reason': None}
+    out = lhb.fetch_lhb(d, d)
+    return {'success': True, 'date': d, 'settled': is_settled(d),
+            'rows': out['rows'] if out.get('available') else None,
+            'available': bool(out.get('available')),
+            'reason': out.get('reason')}
 
 
 @router.get("/sector-flow")
@@ -253,12 +265,31 @@ async def get_weekly(end: str = None, user: Optional[dict] = Depends(get_current
 
 
 def _overview_bundle(date: str) -> dict:
-    """复盘看板聚合: 情绪指标 + 市场事实 + 梯队(供前端与验证条件共用)"""
-    metrics = emotion_metrics.build_metrics(date)
-    facts = market_facts.build_facts(date)
-    zt = store.load_pool(date, 'zt')
-    metrics['ladder'] = ladder.ladder_gap(zt or [])
-    return {**metrics, **facts}
+    """复盘看板聚合: 情绪指标 + 市场事实 + 梯队(供前端与验证条件共用)
+
+    V6.5 (PRD-6.5 F1): 任一指标异常不得拖垮整体看板 — 单指标降级失败时返回
+    部分 bundle + error 标记, 保证 /overview 恒 200。
+    """
+    bundle = {}
+    try:
+        metrics = emotion_metrics.build_metrics(date)
+        bundle = {**bundle, **metrics}
+    except Exception as e:  # noqa: BLE001 — 指标级异常隔离
+        logger.warning('情绪指标构建失败(%s): %s', date, e)
+        bundle['emotion_error'] = str(e)[:120]
+    try:
+        facts = market_facts.build_facts(date)
+        bundle = {**bundle, **facts}
+    except Exception as e:  # noqa: BLE001 — 指标级异常隔离
+        logger.warning('市场事实构建失败(%s): %s', date, e)
+        bundle['facts_error'] = str(e)[:120]
+    try:
+        zt = store.load_pool(date, 'zt')
+        bundle['ladder'] = ladder.ladder_gap(zt or [])
+    except Exception as e:  # noqa: BLE001 — 梯队异常隔离
+        logger.warning('梯队计算失败(%s): %s', date, e)
+        bundle['ladder'] = {'available': False, 'reason': str(e)[:120]}
+    return bundle
 
 
 # V5.2.4 (T-5.2.52): /overview 服务端 TTL 缓存 — 今日 10min / 历史日 1h
