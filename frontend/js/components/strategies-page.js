@@ -9,8 +9,8 @@
   window.__quantComponents.StrategiesPage = {
     name: 'qc-strategies-page',
     template: `
-                <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system+execution 下也渲染 -->
-                <div v-if="currentPage === 'strategies' || (currentPage === 'system' && currentSubPage === 'execution')" key="strategies">
+                <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system/ops+execution 下也渲染 (V6.9.1-fix2: ops 菜单也含 execution) -->
+                <div v-if="currentPage === 'strategies' || ((currentPage === 'system' || currentPage === 'ops') && currentSubPage === 'execution')" key="strategies">
                     <div v-if="currentSubPage === 'overview'">
                         <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 (回测入口 + 交易日信息) -->
                         <div class="qc-page-tools">

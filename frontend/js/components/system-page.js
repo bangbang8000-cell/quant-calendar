@@ -13,7 +13,7 @@
                     <!-- V6.1 (PRD-6.1 F3): 移除页内标题 (由中栏分组导航/面包屑承载) -->
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">
-                            <span>{{ t('system.title') }}</span>
+                            <span>状态概览</span>
                             <div class="flex-c-gap-8">
                                 <span class="text-sm-secondary" v-if="dashboardData.latest_date"><qc-icon name="calendar" :size="14" /> {{ dashboardData.latest_date }}</span>
                             </div>
@@ -162,8 +162,12 @@
                             <div v-else class="text-sm-tertiary m-0-0-12">暂无审计记录</div>
                         </div>
 
+                    </div>
+
+                    <!-- V6.9.1-fix2: 配置保存独立子页 (自 status 拆出) -->
+                    <div v-else-if="currentSubPage === 'config'">
                         <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (靠上放置, v3.17 UI优化) -->
-                        <div class="card mt-24">
+                        <div class="card">
                             <div class="card-title flex-between">
                                 <span>{{ t('system.configManage') }}</span>
                                 <span class="text-xs-tertiary" v-if="lastSavedTime">{{ t('system.lastSaved') }}{{ lastSavedTime }}</span>

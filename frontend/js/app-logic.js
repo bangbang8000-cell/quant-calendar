@@ -117,8 +117,8 @@ const allMenuDefs = [
                     { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-manage', 'backtest', 'backtest-history'] }, // V6.6.1: 策略编写+全新策略合并为「策略管理」 (PRD 结论五)
                     { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.3: 市场复盘+异动扫描并入; V6.9.1-fix: 异动扫描删除
                     // V6.9.1-fix: 系统状态一级菜单 (自系统配置分离, 置于系统配置前) — 运行监控/数据/执行域
-                    { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] },
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'autoeval', 'datasource', 'feature', 'notification', 'user', 'about'], guestSubPages: ['status', 'about'] } // V6.9.1-fix: health/schedule/usage/guard/datadict/execution 移入 ops 一级菜单
+                    { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['status', 'health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] }, // V6.9.1-fix2: status(状态概览) 移入 ops 首位
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'autoeval', 'datasource', 'feature', 'notification', 'user', 'about'], guestSubPages: ['config', 'about'] } // V6.9.1-fix2: status 拆出, 新增 config(配置保存) 子页
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -369,7 +369,7 @@ const allMenuDefs = [
                     'shortterm.overview': '复盘看板', 'overview': '概览',
                     'shortterm.sector': '板块资金', 'sector': '板块资金',
                     'shortterm.intraday': '盘中核验', 'intraday': '盘中核验',
-                    'status': '系统状态', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': 'AI 服务', 'usage': '用量统计', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'notification': '通知中心', 'user': '用户与权限', 'about': '关于' // V6.0 (P1-3): health/schedule/guard 独立子页; V6.6.1 (方案A): autoeval→AI服务, usage→用量统计, 新增 notification
+                    'status': '状态概览', 'config': '配置保存', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': 'AI 服务', 'usage': '用量统计', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'notification': '通知中心', 'user': '用户与权限', 'about': '关于' // V6.9.1-fix2: status→状态概览, 新增 config→配置保存
                 };
 
                 // ===== V6.1 (PRD-6.1 F8): 动态页签状态 =====
