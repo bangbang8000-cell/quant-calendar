@@ -59,14 +59,14 @@
       if (pageHit) {
         out.push({
           type: 'menu', menuKey: m.key, subPage: m.subPages && m.subPages[0] || '',
-          label: m.name, subLabel: '页面', icon: m.icon || '📄',
+          label: m.name, subLabel: '页面', icon: m.icon || 'file-text',
         });
       }
       subs.forEach(function (sp) {
         out.push({
           type: 'menu', menuKey: m.key, subPage: sp,
           label: (subPageNames && subPageNames[sp]) || sp,
-          subLabel: m.name, icon: m.icon || '📄',
+          subLabel: m.name, icon: m.icon || 'file-text',
         });
       });
     });
@@ -102,7 +102,7 @@
       })
       .slice(0, 8)
       .map(function (s) {
-        return { type: 'stock', code: s.code, name: s.name, label: s.name, subLabel: s.code, icon: '📈' };
+        return { type: 'stock', code: s.code, name: s.name, label: s.name, subLabel: s.code, icon: 'trending-up' };
       });
   }
 
@@ -112,15 +112,15 @@
     const groups = [];
     const flat = [];
     if (stocks && stocks.length) {
-      groups.push({ key: 'stock', label: '📈 股票', items: stocks });
+      groups.push({ key: 'stock', label: '股票', items: stocks });
       flat.push.apply(flat, stocks);
     }
     if (menus && menus.length) {
-      groups.push({ key: 'menu', label: '🧭 菜单', items: menus });
+      groups.push({ key: 'menu', label: '菜单', items: menus });
       flat.push.apply(flat, menus);
     }
     if (commands && commands.length) {
-      groups.push({ key: 'command', label: '⚡ 指令', items: commands });
+      groups.push({ key: 'command', label: '指令', items: commands });
       flat.push.apply(flat, commands);
     }
     return { groups: groups, flat: flat };
@@ -171,18 +171,18 @@
   // ─── 默认指令定义（命令面板与全局搜索共享，TC-11.4）──
   // V5.3.0 (T-5.3.3.1 / FR-5.3.3.1): 指令集扩展 — 覆盖全部子页入口 + 高频动作
   const DEFAULT_COMMANDS = [
-    { key: 'refresh', label: '刷新当前页数据', icon: '🔄', keywords: 'reload refresh 刷新' },
-    { key: 'export', label: '导出当前 CSV', icon: '📥', keywords: 'csv export 导出' },
-    { key: 'batch', label: '批量 AI 评估', icon: '🤖', keywords: 'batch eval 批量 评估' },
-    { key: 'ai', label: '打开 AI 问股', icon: '💬', keywords: 'chat ask 问股' },
-    { key: 'sidebar', label: '折叠/展开侧边栏', icon: '📁', keywords: 'sidebar nav 侧边栏' },
-    { key: 'today', label: '今日一屏', icon: '📅', keywords: 'today 今日 一屏 看板' },
-    { key: 'add-portfolio', label: '加入组合', icon: '📊', keywords: 'portfolio 组合 加入 持仓' },
-    { key: 'open-system', label: '打开系统设置', icon: '🖥', keywords: 'system 系统 设置 配置' },
-    { key: 'refresh-data-source', label: '刷新数据源', icon: '📡', keywords: 'datasource 数据源 刷新 tushare akshare' },
-    { key: 'open-shortterm', label: '打开短线复盘', icon: '⚡', keywords: 'shortterm 短线 复盘 涨停' },
-    { key: 'open-research', label: '打开策略研究', icon: '🔬', keywords: 'research 策略 研究 回测' },
-    { key: 'open-calendar', label: '打开量化日历', icon: '🗓', keywords: 'calendar 日历 股票池' },
+    { key: 'refresh', label: '刷新当前页数据', icon: 'refresh', keywords: 'reload refresh 刷新' },
+    { key: 'export', label: '导出当前 CSV', icon: 'download', keywords: 'csv export 导出' },
+    { key: 'batch', label: '批量 AI 评估', icon: 'bot', keywords: 'batch eval 批量 评估' },
+    { key: 'ai', label: '打开 AI 问股', icon: 'message-circle', keywords: 'chat ask 问股' },
+    { key: 'sidebar', label: '折叠/展开侧边栏', icon: 'folder', keywords: 'sidebar nav 侧边栏' },
+    { key: 'today', label: '今日一屏', icon: 'calendar', keywords: 'today 今日 一屏 看板' },
+    { key: 'add-portfolio', label: '加入组合', icon: 'bar-chart-3', keywords: 'portfolio 组合 加入 持仓' },
+    { key: 'open-system', label: '打开系统设置', icon: 'cpu', keywords: 'system 系统 设置 配置' },
+    { key: 'refresh-data-source', label: '刷新数据源', icon: 'radio-tower', keywords: 'datasource 数据源 刷新 tushare akshare' },
+    { key: 'open-shortterm', label: '打开短线复盘', icon: 'zap', keywords: 'shortterm 短线 复盘 涨停' },
+    { key: 'open-research', label: '打开策略研究', icon: 'flask-conical', keywords: 'research 策略 研究 回测' },
+    { key: 'open-calendar', label: '打开量化日历', icon: 'calendar-days', keywords: 'calendar 日历 股票池' },
   ];
 
   // ─── V5.0.6 T-5.0.63: 注册制 + 全局快捷键 ─────────────────────
@@ -321,3 +321,15 @@
 // window.QuantCommandPanel 挂载被跳过 → keys.js/command-panel.js 取不到。
 // 修复: main.js 显式 import 本模块 (拿 factory 结果) 并挂载 window.QuantCommandPanel。
 // (本文件保持 UMD 结构, 供 Node require 单测; ESM 构建时 export 由 Rollup 从 module.exports 提取)
+
+// V6.6 (PRD-6.6): 强制浏览器全局挂载 — 无论 Rollup 是否走 module.exports 分支,
+// 若 window.QuantCommandPanel 未被 UMD 挂载, 则从 module.exports 补挂
+(function (root) {
+  'use strict';
+  if (root && !root.QuantCommandPanel) {
+    try {
+      var m = (typeof module !== 'undefined' && module.exports) ? module.exports : null;
+      if (m) root.QuantCommandPanel = m;
+    } catch (e) { /* ignore */ }
+  }
+})((typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null)));

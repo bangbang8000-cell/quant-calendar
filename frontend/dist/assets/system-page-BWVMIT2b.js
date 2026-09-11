@@ -27,6 +27,7 @@
                                 <div class="status-icon"><qc-icon name="bot" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.aiService') }}</div>
+                                    <!-- V6.6: 已配置/未配置 品牌强调色，非语义三态，保留内联 -->
                                     <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
                                         {{ aiStatus === 'ok' ? t('system.ok') : t('system.needsConfig') }}
                                     </div>
@@ -36,6 +37,7 @@
                                 <div class="status-icon"><qc-icon name="message-circle" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.feishuPush') }}</div>
+                                    <!-- V6.6: 已配置/未配置 品牌强调色，非语义三态，保留内联 -->
                                     <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-color)' : 'var(--text-secondary)'}">
                                         {{ feishuConfig.webhook_url ? t('system.configured') : t('system.notConfigured') }}
                                     </div>
@@ -45,6 +47,7 @@
                                 <div class="status-icon"><qc-icon name="bar-chart-3" :size="18" /></div>
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.tushare') }}</div>
+                                    <!-- V6.6: 已连接/未连接 品牌强调色，非语义三态，保留内联 -->
                                     <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
                                         {{ tushareStatus === 'connected' ? t('system.connected') : t('system.notConnected') }}
                                     </div>
@@ -72,14 +75,14 @@
                                 <span><qc-icon name="activity" :size="14" /> 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
-                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+                            <div class="text-sm qc-text-error" v-if="healthError">{{ healthError }}</div>
 
                             <!-- 启动自检摘要 -->
                             <div class="flex-c-gap-8 mb-12" v-if="startupReport">
-                                <span class="health-badge" :style="{color:'var(--color-success)'}">自检 ok {{ startupReport.ok_count }}</span>
-                                <span class="health-badge" v-if="startupReport.warn_count" :style="{color:'var(--color-warning)'}">warn {{ startupReport.warn_count }}</span>
-                                <span class="health-badge" v-if="startupReport.fail_count" :style="{color:'var(--color-danger)'}">fail {{ startupReport.fail_count }}</span>
-                                <span class="health-badge" :style="{color: startupReport.healthy ? 'var(--color-success)' : 'var(--color-danger)'}">{{ startupReport.healthy ? '健康' : '不健康' }}</span>
+                                <span class="health-badge qc-text-success">自检 ok {{ startupReport.ok_count }}</span>
+                                <span class="health-badge qc-text-warning" v-if="startupReport.warn_count">warn {{ startupReport.warn_count }}</span>
+                                <span class="health-badge qc-text-error" v-if="startupReport.fail_count">fail {{ startupReport.fail_count }}</span>
+                                <span class="health-badge" :class="startupReport.healthy ? 'qc-text-success' : 'qc-text-error'">{{ startupReport.healthy ? '健康' : '不健康' }}</span>
                                 <span class="text-xs-tertiary" v-if="startupReport.ts">· {{ startupReport.ts }}</span>
                             </div>
                             <div class="text-sm-tertiary mb-12" v-else>启动自检报告尚未生成（服务重启后自动生成）</div>
@@ -96,6 +99,7 @@
                                 <el-table-column prop="name" label="资产" min-width="150" />
                                 <el-table-column label="状态" width="90">
                                     <template #default="{ row }">
+                                        <!-- V6.6: statusColor() 函数枚举映射色，保留内联 -->
                                         <span :style="{color: statusColor(row.status)}">{{ statusLabel(row.status) }}</span>
                                     </template>
                                 </el-table-column>
@@ -112,7 +116,7 @@
                                     <span class="text-xs-tertiary heal-ts">{{ h.ts }}</span>
                                     <span class="heal-action">{{ h.action }}</span>
                                     <span class="text-xs-tertiary">{{ h.target }}</span>
-                                    <span :style="{color: h.ok ? 'var(--color-success)' : 'var(--color-danger)'}">{{ h.ok ? '✓' : '✗' }}</span>
+                                    <span :class="h.ok ? 'qc-text-success' : 'qc-text-error'"><qc-icon :name="h.ok ? 'check' : 'x'" :size="14" /></span>
                                     <span class="text-xs-tertiary heal-summary">{{ h.summary }}</span>
                                 </div>
                             </div>
@@ -123,12 +127,29 @@
                             <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
                                 <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
                                     <span class="source-name">{{ s.name }}</span>
-                                    <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                    <span :class="sourceOk(s) ? 'qc-text-success' : 'qc-text-error'">{{ sourceOk(s) ? '正常' : '降级' }}</span>
                                     <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
                                     <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
+                        </div>
+
+                        <!-- V6.6.1 (PRD F-6.6.8 方案A): 操作审计 — 自 about 归位至运行监控 (仅管理员可见) -->
+                        <div class="card mt-24" v-if="currentUser?.role === 'admin'">
+                            <div class="card-title flex-between">
+                                <span><qc-icon name="shield" :size="14" /> 操作审计 <span class="text-sm-tertiary">(管理员)</span></span>
+                                <el-button size="small" @click="loadAuditLogs" :loading="auditLoading">刷新</el-button>
+                            </div>
+                            <div v-if="auditLogs.length" class="audit-list">
+                                <div v-for="l in auditLogs" :key="l.id" class="audit-row">
+                                    <span class="audit-action">{{ l.action }}</span>
+                                    <span class="text-sm">{{ l.username }}</span>
+                                    <span class="text-sm-tertiary">{{ l.ts }}</span>
+                                    <span class="text-sm-tertiary audit-detail">{{ l.detail }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="text-sm-tertiary m-0-0-12">暂无审计记录</div>
                         </div>
 
                         <!-- v3.16 (FR-3.16.1): 配置管理 — 通用操作栏 (靠上放置, v3.17 UI优化) -->
@@ -161,56 +182,7 @@
                         </el-form>
                     </div>
 
-                    <div class="card">
-                        <div class="card-title"><qc-icon name="palette" :size="14" /> 外观设置</div>
-                        <!-- V6.1 (PRD-6.1 F5): 模式 (明/暗/跟随系统) + 主题色 (预设色板 + 自定义色相) -->
-                        <div class="theme-section-label">外观模式</div>
-                        <el-radio-group :model-value="themeMode" size="small" @change="onThemeModeChange">
-                            <el-radio-button value="light">浅色</el-radio-button>
-                            <el-radio-button value="dark">深色</el-radio-button>
-                            <el-radio-button value="system">跟随系统</el-radio-button>
-                        </el-radio-group>
-                        <div class="theme-section-label">主题色</div>
-                        <div class="theme-list">
-                            <div v-for="h in themeHues" :key="h" class="theme-item" :class="{active: themeHue === h}" @click="setThemeHue(h)">
-                                <div class="theme-color" :style="{background: hueColor(h)}"></div>
-                                <div class="text-base-medium">{{ hueName(h) }}
-                                    <span class="text-xs-primary-ml4" v-if="themeHue === h">当前</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-c-gap-12 mt-8">
-                            <span class="text-sm-secondary w-60">自定义</span>
-                            <el-slider class="w-220" :model-value="themeHue" :min="0" :max="359" :step="1"
-                                @change="setThemeHue" aria-label="自定义主题色相" />
-                        </div>
-                    </div>
-
-                    <!-- v3.17.14 (FR-3.17.14): 语言切换（立即生效 + 偏好持久化） -->
-                    <div class="card">
-                        <div class="card-title">{{ t('system.language') }}</div>
-                        <div class="flex-c-gap-12-wrap">
-                            <el-select class="w-180" :model-value="locale" size="small" @change="changeLanguage">
-                                <el-option value="zh-CN" :label="t('lang.zh-CN')" />
-                                <el-option value="en" :label="t('lang.en')" />
-                                <el-option value="ja" :label="t('lang.ja')" />
-                                <el-option value="ko" :label="t('lang.ko')" />
-                                <el-option value="zh-TW" :label="t('lang.zh-TW')" />
-                            </el-select>
-                            <span class="text-sm-tertiary-ml4">{{ t('system.languageDesc') }}</span>
-                        </div>
-                    </div>
-
-                    <!-- V5.4.1 (用户要求): 分钟级K线显示开关（默认隐藏, 可在此开启） -->
-                    <div class="card">
-                        <div class="card-title"><qc-icon name="trending-up" :size="14" /> K线显示</div>
-                        <div class="flex-c-gap-12-wrap">
-                            <el-switch :model-value="klineShowMinutes" @change="toggleKlineShowMinutes"
-                                active-text="显示分钟级K线" inactive-text="隐藏分钟级K线" />
-                            <span class="text-sm-tertiary-ml4">股票/指数弹窗默认隐藏 60/30/15 分钟K线（数据源受限时可在此开启）</span>
-                        </div>
-                    </div>
-
+                    <!-- V6.6.1 (PRD F-6.6.8 方案A): 外观设置/语言/K线显示已迁往 feature「界面与个性化」区 (个性化归位) -->
                     <!-- V6.1 (PRD-6.1 F4): 移除图标系统切换卡片 — 导航图标统一为一套, 不再提供四套切换 -->
                 </div>
 
@@ -221,13 +193,13 @@
                                 <span><qc-icon name="bar-chart-3" :size="14" /> 数据源健康</span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
-                            <div class="text-sm" v-if="healthError" :style="{color:'var(--color-danger)'}">{{ healthError }}</div>
+                            <div class="text-sm qc-text-error" v-if="healthError">{{ healthError }}</div>
                             <div class="section-block-top">
                                 <div class="section-title-base"><qc-icon name="radio-tower" :size="14" /> 数据源可用性</div>
                                 <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
                                     <div v-for="s in sourceHealth.data_sources" :key="s.name" class="health-source-item">
                                         <span class="source-name">{{ s.name }}</span>
-                                        <span :style="{color: sourceOk(s) ? 'var(--color-success)' : 'var(--color-danger)'}">{{ sourceOk(s) ? '正常' : '降级' }}</span>
+                                        <span :class="sourceOk(s) ? 'qc-text-success' : 'qc-text-error'">{{ sourceOk(s) ? '正常' : '降级' }}</span>
                                         <span class="text-xs-tertiary" v-if="s.success_rate != null">成功率 {{ s.success_rate }}%</span>
                                         <span class="text-xs-tertiary" v-if="s.avg_ms != null">· {{ s.avg_ms }}ms</span>
                                     </div>
@@ -420,103 +392,9 @@
                             <el-form-item>
                                 <el-button type="primary" size="small" @click="saveFeishuConfig" :loading="feishuSaving"><qc-icon name="hard-drive" :size="14" /> 保存配置</el-button>
                                 <el-button size="small" @click="testFeishuWebhook" :loading="feishuTestStatus === 'testing'"><qc-icon name="flask-conical" :size="14" /> 测试发送</el-button>
-                                <span class="ml-10-sm" v-if="feishuTestMessage" :style="{color: feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'var(--el-success)' : 'var(--el-danger)'}">{{ feishuTestMessage }}</span>
+                                <span class="ml-10-sm" v-if="feishuTestMessage" :class="feishuTestMessage.includes('成功') || feishuTestMessage.includes('已发送') ? 'qc-text-success' : 'qc-text-error'">{{ feishuTestMessage }}</span>
                             </el-form-item>
                         </el-form>
-                    </div>
-
-                    <!-- V5.0.4 T-5.0.45: 通知中心 (规则/投递历史/通道状态+静默) -->
-                    <div class="card mt-4">
-                        <div class="card-title flex-between">
-                            <span><qc-icon name="bell" :size="14" /> 通知中心</span>
-                            <span class="text-sm-tertiary" v-if="ncMsg">{{ ncMsg }}</span>
-                        </div>
-                        <div class="flex-gap-8-mb16">
-                            <el-button :type="ncTab === 'rules' ? 'primary' : ''" size="small" @click="onNcTab('rules')"><qc-icon name="scroll-text" :size="14" /> 通知规则</el-button>
-                            <el-button :type="ncTab === 'history' ? 'primary' : ''" size="small" @click="onNcTab('history')"><qc-icon name="radio-tower" :size="14" /> 投递历史</el-button>
-                            <el-button :type="ncTab === 'channels' ? 'primary' : ''" size="small" @click="onNcTab('channels')"><qc-icon name="moon" :size="14" /> 通道与静默</el-button>
-                        </div>
-
-                        <!-- 通知规则 Tab -->
-                        <div v-if="ncTab === 'rules'">
-                            <div class="flex-gap-12-mb12">
-                                <el-input class="w-140" v-model="ncNewCode" placeholder="股票代码 600519" clearable size="small"/>
-                                <el-select class="w-140" v-model="ncNewType" size="small">
-                                    <el-option label="价格突破" value="price_above" />
-                                    <el-option label="价格跌破" value="price_below" />
-                                    <el-option label="涨跌幅超" value="pct_change" />
-                                    <el-option label="量比异动" value="volume_surge" />
-                                    <el-option label="入选股票池" value="new_pool" />
-                                </el-select>
-                                <el-input class="w-120" v-model="ncNewThreshold" placeholder="阈值" size="small"/>
-                                <el-button type="primary" size="small" @click="addAlertRule" :loading="ncLoading">+ 添加规则</el-button>
-                            </div>
-                            <el-table :data="ncRules" size="small" v-loading="ncLoading" style="width:100%">
-                                <el-table-column prop="stock_code" label="股票" width="110" />
-                                <el-table-column label="类型" width="110">
-                                    <template #default="s">
-                                        {{ ncTypeLabel(s.row.rule_type) }}
-                                    </template>
-                                </el-table-column>
-                                <el-table-column prop="threshold" label="阈值" width="100" />
-                                <el-table-column label="启用" width="90">
-                                    <template #default="s">
-                                        <el-switch :model-value="s.row.enabled" size="small" @change="toggleAlertRule(s.row)" />
-                                    </template>
-                                </el-table-column>
-                                <el-table-column prop="created_at" label="创建时间" min-width="150" />
-                                <el-table-column label="操作" width="80">
-                                    <template #default="s">
-                                        <el-button size="small" type="danger" text @click="removeAlertRule(s.row)">删除</el-button>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                        </div>
-
-                        <!-- 投递历史 Tab -->
-                        <div v-if="ncTab === 'history'">
-                            <el-table :data="ncHistory" size="small" v-loading="ncLoading" style="width:100%">
-                                <el-table-column prop="created_at" label="时间" width="150" />
-                                <el-table-column prop="event_type" label="类型" width="90" />
-                                <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
-                                <el-table-column prop="channel" label="通道" width="90" />
-                                <el-table-column prop="recipient" label="收件人" width="120" />
-                                <el-table-column label="结果" width="90">
-                                    <template #default="s">
-                                        <span :style="{color: s.row.ok ? 'var(--color-success)' : 'var(--color-danger)'}">
-                                            {{ s.row.ok ? '成功' : '失败' }}
-                                        </span>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                            <p class="text-sm-tertiary mt-8" v-if="ncHistory.length === 0 && !ncLoading">暂无投递记录</p>
-                        </div>
-
-                        <!-- 通道与静默 Tab -->
-                        <div v-if="ncTab === 'channels'">
-                            <el-table :data="ncChannels" size="small" v-loading="ncLoading" style="width:100%" class="mb-12">
-                                <el-table-column prop="name" label="通道" width="120" />
-                                <el-table-column label="状态" width="140">
-                                    <template #default="s">
-                                        <span :style="{color: s.row.available ? 'var(--color-success)' : 'var(--text-tertiary)'}">
-                                            {{ s.row.available ? '可用' : '未配置' }}
-                                        </span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column prop="configured" label="已配置" width="90">
-                                    <template #default="s">
-                                        <span :style="{color: s.row.configured ? 'var(--color-success)' : 'var(--text-tertiary)'}">{{ s.row.configured ? '是' : '否' }}</span>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                            <div class="flex-gap-12-mb12">
-                                <el-switch v-model="ncSilence" active-text="静默预警" inactive-text="正常推送" @change="applySilence"/>
-                                <span class="text-sm-secondary">静默时长(分钟):</span>
-                                <el-input-number v-model="ncSilenceMinutes" :min="1" :max="1440" size="small" />
-                                <el-button size="small" @click="applySilence"><qc-icon name="moon" :size="14" /> 静默 {{ ncSilenceMinutes }} 分钟</el-button>
-                                <el-button size="small" v-if="ncSilence" @click="clearSilence">恢复推送</el-button>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- AI 模型管理 (v3.14 厂商化: 以厂商为主配置卡, 卡内配 API 后管理多个模型名) -->
@@ -579,7 +457,7 @@
                                             <span class="model-index">{{ mi+1 }}</span>
                                             <el-switch v-model="m.enabled" size="small"/>
                                             <el-input class="w-220" v-model="m.name" :disabled="m.locked" size="small" placeholder="模型名"/>
-                                            <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :style="{color:m.testResult.success?'var(--el-success)':'var(--el-danger)'}">{{ m.testResult.success?'✓':'✗' }} {{ m.testResult.message }}</span>
+                                            <span class="text-sm-ellipsis" v-if="m.testResult!==undefined" :class="m.testResult.success?'qc-text-success':'qc-text-error'"><qc-icon :name="m.testResult.success ? 'check' : 'x'" :size="13" /> {{ m.testResult.message }}</span>
                                             <el-button size="small" type="primary" :loading="m._testing" @click="testVendorModel(v,m)"><qc-icon name="flask-conical" :size="14" /> 测试</el-button>
                                             <el-button v-if="!m.locked" size="small" type="danger" @click="removeVendorModel(v,mi)"><qc-icon name="x" :size="14" /></el-button>
                                         </div>
@@ -593,6 +471,102 @@
                         </div>
                         </div>
                     </div>
+                    </div>
+
+                    <!-- V6.6.1 (PRD F-6.6.8 方案A): notification — 通知中心独立子页 (自 autoeval 拆出, 逻辑不变) -->
+                    <div v-else-if="currentSubPage === 'notification'">
+                        <div class="card">
+                            <div class="card-title flex-between">
+                                <span><qc-icon name="bell" :size="14" /> 通知中心 <span class="text-sm-tertiary">自定义预警规则 · 投递历史 · 通道与静默</span></span>
+                                <span class="text-sm-tertiary" v-if="ncMsg">{{ ncMsg }}</span>
+                            </div>
+                            <div class="flex-gap-8-mb16">
+                                <el-button :type="ncTab === 'rules' ? 'primary' : ''" size="small" @click="onNcTab('rules')"><qc-icon name="scroll-text" :size="14" /> 通知规则</el-button>
+                                <el-button :type="ncTab === 'history' ? 'primary' : ''" size="small" @click="onNcTab('history')"><qc-icon name="radio-tower" :size="14" /> 投递历史</el-button>
+                                <el-button :type="ncTab === 'channels' ? 'primary' : ''" size="small" @click="onNcTab('channels')"><qc-icon name="moon" :size="14" /> 通道与静默</el-button>
+                            </div>
+
+                            <!-- 通知规则 Tab -->
+                            <div v-if="ncTab === 'rules'">
+                                <div class="flex-gap-12-mb12">
+                                    <el-input class="w-140" v-model="ncNewCode" placeholder="股票代码 600519" clearable size="small"/>
+                                    <el-select class="w-140" v-model="ncNewType" size="small">
+                                        <el-option label="价格突破" value="price_above" />
+                                        <el-option label="价格跌破" value="price_below" />
+                                        <el-option label="涨跌幅超" value="pct_change" />
+                                        <el-option label="量比异动" value="volume_surge" />
+                                        <el-option label="入选股票池" value="new_pool" />
+                                    </el-select>
+                                    <el-input class="w-120" v-model="ncNewThreshold" placeholder="阈值" size="small"/>
+                                    <el-button type="primary" size="small" @click="addAlertRule" :loading="ncLoading">+ 添加规则</el-button>
+                                </div>
+                                <el-table :data="ncRules" size="small" v-loading="ncLoading" style="width:100%">
+                                    <el-table-column prop="stock_code" label="股票" width="110" />
+                                    <el-table-column label="类型" width="110">
+                                        <template #default="s">
+                                            {{ ncTypeLabel(s.row.rule_type) }}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="threshold" label="阈值" width="100" />
+                                    <el-table-column label="启用" width="90">
+                                        <template #default="s">
+                                            <el-switch :model-value="s.row.enabled" size="small" @change="toggleAlertRule(s.row)" />
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="created_at" label="创建时间" min-width="150" />
+                                    <el-table-column label="操作" width="80">
+                                        <template #default="s">
+                                            <el-button size="small" type="danger" text @click="removeAlertRule(s.row)">删除</el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+
+                            <!-- 投递历史 Tab -->
+                            <div v-if="ncTab === 'history'">
+                                <el-table :data="ncHistory" size="small" v-loading="ncLoading" style="width:100%">
+                                    <el-table-column prop="created_at" label="时间" width="150" />
+                                    <el-table-column prop="event_type" label="类型" width="90" />
+                                    <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
+                                    <el-table-column prop="channel" label="通道" width="90" />
+                                    <el-table-column prop="recipient" label="收件人" width="120" />
+                                    <el-table-column label="结果" width="90">
+                                        <template #default="s">
+                                            <span :class="s.row.ok ? 'qc-text-success' : 'qc-text-error'">
+                                                {{ s.row.ok ? '成功' : '失败' }}
+                                            </span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <p class="text-sm-tertiary mt-8" v-if="ncHistory.length === 0 && !ncLoading">暂无投递记录</p>
+                            </div>
+
+                            <!-- 通道与静默 Tab -->
+                            <div v-if="ncTab === 'channels'">
+                                <el-table :data="ncChannels" size="small" v-loading="ncLoading" style="width:100%" class="mb-12">
+                                    <el-table-column prop="name" label="通道" width="120" />
+                                    <el-table-column label="状态" width="140">
+                                        <template #default="s">
+                                            <span :class="s.row.available ? 'qc-text-success' : 'qc-text-muted'">
+                                                {{ s.row.available ? '可用' : '未配置' }}
+                                            </span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="configured" label="已配置" width="90">
+                                        <template #default="s">
+                                            <span :class="s.row.configured ? 'qc-text-success' : 'qc-text-muted'">{{ s.row.configured ? '是' : '否' }}</span>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <div class="flex-gap-12-mb12">
+                                    <el-switch v-model="ncSilence" active-text="静默预警" inactive-text="正常推送" @change="applySilence"/>
+                                    <span class="text-sm-secondary">静默时长(分钟):</span>
+                                    <el-input-number v-model="ncSilenceMinutes" :min="1" :max="1440" size="small" />
+                                    <el-button size="small" @click="applySilence"><qc-icon name="moon" :size="14" /> 静默 {{ ncSilenceMinutes }} 分钟</el-button>
+                                    <el-button size="small" v-if="ncSilence" @click="clearSilence">恢复推送</el-button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- datasource: 多数据源配置 -->
@@ -762,7 +736,7 @@
                                 <qc-icon name="refresh" :size="14" /> 手动重评估
                             </el-button>
                         </div>
-                        <div class="result-box" v-if="merrillReevalResult" :style="{color: merrillReevalResult.includes('失败') ? 'var(--el-danger)' : 'var(--el-success)'}">
+                        <div class="result-box" v-if="merrillReevalResult" :class="merrillReevalResult.includes('失败') ? 'qc-text-error' : 'qc-text-success'">
                             {{ merrillReevalResult }}
                         </div>
                         <div class="flex-c-gap-16">
@@ -788,7 +762,7 @@
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
                                 上次刷新: <strong>{{ dataRefreshConfig.last_refresh || '—' }}</strong>
-                                <span class="ml-6-sm" v-if="dataRefreshConfig.last_refresh_status" :style="{color: dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'var(--el-danger)' : 'var(--el-success)'}">
+                                <span class="ml-6-sm" v-if="dataRefreshConfig.last_refresh_status" :class="dataRefreshConfig.last_refresh_status.startsWith('failed') ? 'qc-text-error' : 'qc-text-success'">
                                     {{ dataRefreshConfig.last_refresh_status.startsWith('failed') ? '失败' : '' }}
                                 </span>
                             </span>
@@ -870,6 +844,7 @@
                         </div>
                     </div>
                     <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 (V6.4: 动态页签开关已移除) -->
+                    <!-- V6.6.1 (F-6.6.9): 三形态说明文案 (V6.4 P0 遗留) -->
                     <div class="card mt-4">
                         <div class="card-title"><qc-icon name="layout-dashboard" :size="14" /> 界面与导航</div>
                         <div class="flex-c-gap-12">
@@ -880,6 +855,53 @@
                                     <el-option value="tree" :label="t('navMode.tree')" />
                                     <el-option value="toptab" :label="t('navMode.toptab')" />
                                 </el-select>
+                            </div>
+                        </div>
+                        <div class="text-sm-tertiary-mt8">中栏二级（默认）：左侧一级 + 中栏常驻二级，适合二级页较多的页面。侧栏树状：二级直接展开在侧栏内，节省中栏空间。顶部二级标签：二级以横排标签置于头部，适合二级项较少的页面。</div>
+                    </div>
+                    <!-- V6.6.1 (PRD F-6.6.8 方案A): 界面与个性化 — 外观/语言/K线显示自 status 归位至此 (个性化设置集中) -->
+                    <div class="card mt-4">
+                        <div class="card-title"><qc-icon name="palette" :size="14" /> 界面与个性化 <span class="text-sm-tertiary">主题 · 语言 · 图表</span></div>
+                        <div class="theme-section-label">外观模式</div>
+                        <el-radio-group :model-value="themeMode" size="small" @change="onThemeModeChange">
+                            <el-radio-button value="light">浅色</el-radio-button>
+                            <el-radio-button value="dark">深色</el-radio-button>
+                            <el-radio-button value="system">跟随系统</el-radio-button>
+                        </el-radio-group>
+                        <div class="theme-section-label">主题色</div>
+                        <div class="theme-list">
+                            <div v-for="h in themeHues" :key="h" class="theme-item" :class="{active: themeHue === h}" @click="setThemeHue(h)">
+                                <!-- V6.6: hueColor() 主题色相预览（配置派生色），保留内联 -->
+                                <div class="theme-color" :style="{background: hueColor(h)}"></div>
+                                <div class="text-base-medium">{{ hueName(h) }}
+                                    <span class="text-xs-primary-ml4" v-if="themeHue === h">当前</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-c-gap-12 mt-8">
+                            <span class="text-sm-secondary w-60">自定义</span>
+                            <el-slider class="w-220" :model-value="themeHue" :min="0" :max="359" :step="1"
+                                @change="setThemeHue" aria-label="自定义主题色相" />
+                        </div>
+                        <div class="section-sub-block-top">
+                            <label class="text-base-primary-nowrap">{{ t('system.language') }}</label>
+                            <div class="flex-c-gap-12-wrap mt-8">
+                                <el-select class="w-180" :model-value="locale" size="small" @change="changeLanguage">
+                                    <el-option value="zh-CN" :label="t('lang.zh-CN')" />
+                                    <el-option value="en" :label="t('lang.en')" />
+                                    <el-option value="ja" :label="t('lang.ja')" />
+                                    <el-option value="ko" :label="t('lang.ko')" />
+                                    <el-option value="zh-TW" :label="t('lang.zh-TW')" />
+                                </el-select>
+                                <span class="text-sm-tertiary-ml4">{{ t('system.languageDesc') }}</span>
+                            </div>
+                        </div>
+                        <div class="section-sub-block-top">
+                            <label class="text-base-primary-nowrap"><qc-icon name="trending-up" :size="14" /> K线显示</label>
+                            <div class="flex-c-gap-12-wrap mt-8">
+                                <el-switch :model-value="klineShowMinutes" @change="toggleKlineShowMinutes"
+                                    active-text="显示分钟级K线" inactive-text="隐藏分钟级K线" />
+                                <span class="text-sm-tertiary-ml4">股票/指数弹窗默认隐藏 60/30/15 分钟K线（数据源受限时可在此开启）</span>
                             </div>
                         </div>
                     </div>
@@ -1020,7 +1042,7 @@
 
                     <!-- v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 -->
                     <div class="card mt-14">
-                        <div class="card-title"><qc-icon name="key" :size="14" /> 开放 API</div>
+                        <div class="card-title"><qc-icon name="key" :size="14" /> 开放 API <span class="text-sm-tertiary">开发者能力 (V6.6.1 决策 D8: 暂不拆分, 保留于用户与权限)</span></div>
                         <p class="color-secondary">为外部程序签发只读 API Key（库中仅存哈希，明文只展示一次；行情数据不可达时开放接口返回 degraded 占位）。</p>
                         <div class="flex-gap-8-mb12">
                             <el-input class="w-160" v-model="openApiKeyName" placeholder="Key 名称（可选）" size="small" />
@@ -1059,6 +1081,26 @@
                     </div>
                     <!-- v3.17.5 (FR-3.17.5): 用量统计 — 资源监控/调度任务/备份磁盘/页面热度 (自系统状态移入) -->
                     <div v-else-if="currentSubPage === 'usage'">
+                        <!-- V6.6.1 (PRD F-6.6.8 方案A): 运维健康摘要条 — 替代重复整块渲染, 点击跳转对应子页 -->
+                        <div class="card mb-14">
+                            <div class="card-title"><qc-icon name="activity" :size="14" /> 运维健康摘要 <span class="text-sm-tertiary">点击跳转详情</span></div>
+                            <div class="flex-wrap-gap-12">
+                                <span class="health-badge" :class="(healthDetail.data_sources || []).some(d => d.routing_status === 'cooling' || d.degraded) ? 'qc-text-warning' : 'qc-text-success'">
+                                    <qc-icon :name="(healthDetail.data_sources || []).some(d => d.routing_status === 'cooling' || d.degraded) ? 'alert-triangle' : 'check'" :size="13" /> 数据源 {{ (healthDetail.data_sources || []).filter(d => d.routing_status === 'cooling' || d.degraded).length }} 个降级
+                                </span>
+                                <el-button size="small" text @click="goSystemSub('health')">数据源健康详情</el-button>
+                                <span class="health-badge" :class="Object.values(healthDetail.scheduler_tasks || {}).some(t => t.last_status === 'failed') ? 'qc-text-error' : 'qc-text-success'">
+                                    <qc-icon :name="Object.values(healthDetail.scheduler_tasks || {}).some(t => t.last_status === 'failed') ? 'alert-triangle' : 'check'" :size="13" /> 调度失败 {{ Object.values(healthDetail.scheduler_tasks || {}).filter(t => t.last_status === 'failed').length }}
+                                </span>
+                                <el-button size="small" text @click="goSystemSub('schedule')">调度任务详情</el-button>
+                                <span class="health-badge" :class="factCheck && factCheck.pass_rate != null && factCheck.pass_rate < 90 ? 'qc-text-warning' : 'qc-text-success'">
+                                    <qc-icon name="shield" :size="13" /> AI 护栏通过率 {{ factCheck && factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}
+                                </span>
+                                <el-button size="small" text @click="goSystemSub('guard')">事实护栏详情</el-button>
+                                <span class="health-badge"><qc-icon name="hard-drive" :size="13" /> 最近备份 {{ healthDetail.backup_last_success || '暂无' }}</span>
+                                <el-button size="small" text @click="goSystemSub('feature')">备份设置</el-button>
+                            </div>
+                        </div>
                         <!-- v3.22-I2: 用量统计卡片化 — 4卡片网格 -->
                         <div class="usage-card-grid">
                         <!-- 卡1: 资源监控 -->
@@ -1094,185 +1136,13 @@
                                     </div>
                                     <div class="usage-ai-stat">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="alert-triangle" :size="14" /></span><span class="usage-ai-stat-label">错误率</span></div>
+                                        <!-- V6.6: 错误率阈值派生色（数值比较），保留内联 -->
                                         <div class="usage-ai-stat-num" :style="{color: (sysMonitor.metrics?.error_rate ?? 0) > 5 ? 'var(--el-danger)' : 'var(--color-primary)'}">{{ sysMonitor.metrics?.error_rate ?? 0 }}%</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <!-- 卡2: 数据源健康 (含数据健康度) -->
-                        <div class="usage-card">
-                            <div class="usage-card-title"><qc-icon name="bar-chart-3" :size="14" /> 数据源健康<span class="usage-card-title-sub">三源成功率/延迟</span></div>
-                            <div class="section-block-top">
-                            <div class="usage-src-grid" v-if="(healthDetail.data_sources || []).length">
-                                <div class="usage-src-card" :class="ds.routing_status === 'cooling' ? 'is-degraded' : ''" v-for="(ds, i) in healthDetail.data_sources" :key="i">
-                                    <div class="usage-src-head">
-                                        <span class="usage-src-name">{{ ds.name }}</span>
-                                        <span :class="ds.routing_status === 'cooling' ? 'chip-warning' : 'chip-success'">{{ ds.routing_status === 'cooling' ? '冷却中' : '参与路由' }}</span>
-                                    </div>
-                                    <div class="usage-src-row">
-                                        <span class="usage-src-row-label">成功率</span>
-                                        <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
-                                    </div>
-                                    <div class="usage-src-row">
-                                        <span class="usage-src-row-label">平均延迟</span>
-                                        <span class="usage-src-row-value">{{ ds.avg_latency_ms ?? '--' }}ms</span>
-                                    </div>
-                                    <div class="usage-src-row" v-if="ds.consecutive_failures">
-                                        <span class="usage-src-row-label">连续失败</span>
-                                        <span class="usage-src-row-value">{{ ds.consecutive_failures }} 次</span>
-                                    </div>
-                                    <div class="usage-src-row" v-if="ds.switch_reason">
-                                        <span class="usage-src-row-label">最近切换</span>
-                                        <span class="usage-src-row-value" :title="ds.last_switch_at">{{ ds.switch_reason }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="usage-ai-empty" v-else>暂无数据源调用记录（服务刚重启时为空，随调用自动累计）</div>
-                        </div>
-                        <!-- v3.17.5: 数据健康度 (自策略总览移入) — v3.17.6 (bugfix): 移出数据源延迟网格, 独立成块 -->
-                        <div class="section-block-top">
-                            <!-- v3.18 (FR-3.18.1): 手动生成复盘入口 + 失败可见 -->
-                            <div class="section-title-base flex-between">
-                                <span><qc-icon name="activity" :size="14" /> 数据健康度</span>
-                                <el-button size="small" :loading="reviewTriggering" @click="triggerMarketReview">立即生成复盘</el-button>
-                            </div>
-                            <div class="today-health-strip">
-                                <div v-if="healthRows.length === 0" class="today-health-empty">{{ t('strategies.noSourceCall') }}</div>
-                                <div v-for="s in healthRows" :key="s.source" class="today-health-item" :class="{ 'is-stale': s.stale }" :title="s.last_fetch ? '最近成功: ' + s.last_fetch : '尚无成功调用'">
-                                    <span class="today-health-dot" :class="healthClass(s)"></span>
-                                    <span class="today-health-name">{{ s.name }}</span>
-                                    <span class="today-health-rate">{{ s.success_rate != null ? s.success_rate + '%' : '—' }}</span>
-                                    <span class="today-health-lat" v-if="s.avg_latency_ms != null">{{ s.avg_latency_ms }}ms</span>
-                                    <span class="today-health-age" v-if="s.data_age_hours != null" :class="{ 'is-stale': s.stale }">{{ fmtAge(s.data_age_hours) }}</span>
-                                    <span class="today-health-calls">{{ s.calls }}次</span>
-                                    <span v-if="s.degraded" class="today-health-badge">degraded</span>
-                                    <span v-if="s.stale" class="today-health-badge is-stale"><qc-icon name="clock" :size="12" /> 超期</span>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- /数据源健康卡 -->
-
-                        <!-- 卡3: 运维状态 (AI护栏 + 调度 + 备份合并) -->
-                        <div class="usage-card">
-                            <div class="usage-card-title"><qc-icon name="shield" :size="14" /> 运维状态<span class="usage-card-title-sub">AI 护栏 · 调度 · 备份</span></div>
-                            <div class="section-block-top">
-                            <!-- v3.18 (FR-3.18.9): AI 事实护栏审计 — 最近报告 + 立即抽查 -->
-                            <div class="section-title-base flex-between">
-                                <span><qc-icon name="search" :size="14" /> AI 事实护栏审计</span>
-                                <el-button size="small" :loading="factCheckRunning" @click="triggerFactCheck">立即抽查</el-button>
-                            </div>
-                            <div v-if="factCheck" class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">抽查日期</div>
-                                    <div class="sys-health-big">{{ factCheck.date || '—' }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">检查数字</div>
-                                    <div class="sys-health-big">{{ factCheck.checked ?? 0 }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">通过率</div>
-                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">未验证</div>
-                                    <div class="sys-health-big">{{ factCheck.unverified ?? 0 }}</div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无事实护栏审计报告（点击"立即抽查"生成）</div>
-                            <div v-if="factCheck && factCheck.failures && factCheck.failures.length" class="sys-health-row">
-                                <span class="text-sm-tertiary">失败明细</span>
-                                <span class="sys-health-meta">{{ factCheck.failures.length }} 条（最近 {{ factCheck.failures[0].number }} 等）</span>
-                            </div>
-                        </div>
-
-                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->
-                        <div class="section-block-top">
-                            <div class="section-title-base"><qc-icon name="layers" :size="14" /> 调度任务</div>
-                            <div class="sys-health-grid" v-if="Object.keys(healthDetail.scheduler_tasks || {}).length">
-                                <div class="sys-health-card" v-for="(t, k) in healthDetail.scheduler_tasks" :key="k">
-                                    <div class="sys-health-card-head">
-                                        <span class="sys-health-name">{{ t.name || k }}</span>
-                                        <span :class="t.last_status === 'success' ? 'chip-success' : t.last_status === 'failed' ? 'chip-danger' : 'chip-info'">{{ t.last_status === 'success' ? '正常' : t.last_status === 'failed' ? '失败' : '未运行' }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">最近运行</span>
-                                        <span class="sys-health-meta">{{ t.last_run || '—' }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">最近成功</span>
-                                        <span class="sys-health-meta">{{ t.last_success || '—' }}</span>
-                                    </div>
-                                    <!-- v3.17.6: 失败详情 (detail 来自 scheduler._record_task_run) -->
-                                    <div class="sys-health-row" v-if="t.last_status === 'failed'">
-                                        <span class="text-sm-tertiary">连续失败</span>
-                                        <span class="sys-health-meta">{{ t.consecutive_failures || 0 }} 次</span>
-                                    </div>
-                                    <div class="sys-health-row" v-if="t.last_status === 'failed' && t.detail">
-                                        <span class="text-sm-tertiary">失败原因</span>
-                                        <span class="sys-health-meta" :title="t.detail">{{ (t.detail || '').slice(0, 60) }}{{ (t.detail || '').length > 60 ? '…' : '' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无调度任务运行记录（服务刚重启时为空，随定时任务自动填充）</div>
-                        </div>
-                        <!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束 -->
-                        <!-- V5.3.0 (T-5.3.3.5 / FR-5.3.3.5): 任务队列面板 (批量任务进度可见可取消) -->
-                        <div class="section-block-top">
-                            <div class="section-title-base flex-between">
-                                <span><qc-icon name="layers" :size="14" /> 任务队列</span>
-                                <el-button size="small" text @click="loadJobQueue">刷新</el-button>
-                            </div>
-                            <div class="sys-health-grid" v-if="jobQueue.length">
-                                <div class="sys-health-card" v-for="j in jobQueue" :key="j.job_id">
-                                    <div class="sys-health-card-head">
-                                        <span class="sys-health-name">{{ j.task_type }}</span>
-                                        <span :class="j.status === 'completed' ? 'chip-success' : (j.status === 'running' || j.status === 'pending') ? 'chip-info' : 'chip-danger'">{{ jobStatusText(j.status) }}</span>
-                                    </div>
-                                    <div class="sys-health-row">
-                                        <span class="text-sm-tertiary">进度</span>
-                                        <el-progress :percentage="Number(j.progress) || 0" :stroke-width="10" :status="j.status === 'failed' ? 'exception' : (j.status === 'completed' ? 'success' : '')" style="width: 160px"></el-progress>
-                                    </div>
-                                    <div class="sys-health-row" v-if="j.message">
-                                        <span class="text-sm-tertiary">状态</span>
-                                        <span class="sys-health-meta">{{ j.message }}</span>
-                                    </div>
-                                    <div class="sys-health-row" v-if="j.status === 'running' || j.status === 'pending'">
-                                        <el-button size="small" type="danger" text @click="cancelJob(j.job_id)">取消任务</el-button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-sm-tertiary" v-else>暂无队列任务（批量评估/回测等长任务会出现在这里）</div>
-                        </div>
-                        <!-- V5.3.0 (T-5.3.3.5): 任务队列面板 代码结束 -->
-                        <!-- v3.17.12: 备份与磁盘 -->
-                        <!-- v3.17.6: 立即备份按钮 (createBackup 复用 feature 子页逻辑) -->
-                        <div class="section-block-top">
-                            <div class="section-title-base flex-between">
-                                <span><qc-icon name="hard-drive" :size="14" /> 备份与磁盘</span>
-                                <el-button size="small" type="primary" @click="createBackup" :loading="backupCreating">立即备份</el-button>
-                            </div>
-                            <div class="sys-health-grid">
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">最近备份成功</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_last_success || '暂无备份' }}</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">备份数量</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.backup_count ?? 0 }} 个</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">磁盘剩余</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.free_gb ?? '--' }} GB</div>
-                                </div>
-                                <div class="sys-health-card">
-                                    <div class="sys-health-card-title">磁盘使用</div>
-                                    <div class="sys-health-big color-primary">{{ healthDetail.disk?.percent ?? '--' }}%</div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- /运维状态卡 -->
-
+                        <!-- V6.6.1 (PRD F-6.6.8 方案A): 移除与 health/schedule/guard 重复的数据源健康/运维状态整块, 由顶部健康摘要条替代 -->
                         <!-- 卡4: AI 用量 -->
                         <div class="usage-card">
                             <div class="usage-card-title"><qc-icon name="bot" :size="14" /> AI 用量<span class="usage-card-title-sub">30s 自动刷新</span></div>
@@ -1406,25 +1276,10 @@
                                 <span class="text-success-md">● 服务运行中</span>
                             </div>
                         </div>
-                        <!-- v3.21 (遗留2): 操作审计 — admin 查看最近敏感操作 -->
-                        <div class="card">
-                            <div class="card-title"><qc-icon name="shield" :size="14" /> 操作审计 <span class="text-sm-tertiary">(管理员)</span></div>
-                            <div class="flex-end-gap-8 mb-8">
-                                <el-button size="small" @click="loadAuditLogs" :loading="auditLoading">刷新</el-button>
-                            </div>
-                            <div v-if="auditLogs.length" class="audit-list">
-                                <div v-for="l in auditLogs" :key="l.id" class="audit-row">
-                                    <span class="audit-action">{{ l.action }}</span>
-                                    <span class="text-sm">{{ l.username }}</span>
-                                    <span class="text-sm-tertiary">{{ l.ts }}</span>
-                                    <span class="text-sm-tertiary audit-detail">{{ l.detail }}</span>
-                                </div>
-                            </div>
-                            <div v-else class="text-sm-tertiary m-0-0-12">暂无审计记录</div>
-                        </div>
+                        <!-- V6.6.1 (PRD F-6.6.8 方案A): 操作审计已移入 status 子页 — 运行监控组 -->
                         <!-- v3.2.0-T24: 问题反馈 -->
                         <div class="card">
-                            <div class="card-title"><qc-icon name="message-circle" :size="14" /> 问题反馈</div>
+                            <div class="card-title"><qc-icon name="message-circle" :size="14" /> 问题与反馈</div>
                             <div class="flex-col-gap-10">
                                 <el-input v-model="feedbackText" type="textarea" :rows="3" placeholder="描述你遇到的问题或建议 (系统信息会自动附带)"></el-input>
                                 <div class="flex-end-gap-8">
@@ -1434,50 +1289,7 @@
                         </div>
                         <div class="card">
                             <div class="card-title"><qc-icon name="layers" :size="14" /> 系统组件</div>
-                            <div class="grid-auto-fill-200">
-                                <div class="tech-item">
-                                    <span class="text-xl"><qc-icon name="zap" :size="32" /></span>
-                                    <div>
-                                        <div class="text-md-semibold">FastAPI</div>
-                                        <div class="text-sm-tertiary">后端框架</div>
-                                    </div>
-                                </div>
-                                <div class="tech-item">
-                                    <span class="text-xl-success">▣</span>
-                                    <div>
-                                        <div class="text-md-semibold">Vue 3</div>
-                                        <div class="text-sm-tertiary">前端框架</div>
-                                    </div>
-                                </div>
-                                <div class="tech-item">
-                                    <span class="text-xl"><qc-icon name="palette" :size="32" /></span>
-                                    <div>
-                                        <div class="text-md-semibold">Element Plus</div>
-                                        <div class="text-sm-tertiary">UI 组件库</div>
-                                    </div>
-                                </div>
-                                <div class="tech-item">
-                                    <span class="text-xl"><qc-icon name="file-text" :size="30" /></span>
-                                    <div>
-                                        <div class="text-md-semibold">Python 3</div>
-                                        <div class="text-sm-tertiary">运行环境</div>
-                                    </div>
-                                </div>
-                                <div class="tech-item">
-                                    <span class="text-xl"><qc-icon name="bar-chart-3" :size="32" /></span>
-                                    <div>
-                                        <div class="text-md-semibold">ECharts</div>
-                                        <div class="text-sm-tertiary">图表引擎</div>
-                                    </div>
-                                </div>
-                                <div class="tech-item">
-                                    <span class="text-xl"><qc-icon name="radio-tower" :size="32" /></span>
-                                    <div>
-                                        <div class="text-md-semibold">Tushare Pro</div>
-                                        <div class="text-sm-tertiary">金融数据 API</div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="text-sm-tertiary">FastAPI · Vue 3 · Element Plus · ECharts · Tushare Pro</div>
                         </div>
                         <div class="card border-left-warning">
                             <div class="card-title"><qc-icon name="alert-triangle" :size="14" /> 风险提示</div>
@@ -1491,9 +1303,9 @@
                         <div class="card">
                             <div class="card-title"><qc-icon name="message-circle" :size="14" /> 联系与反馈</div>
                             <div class="about-body-text">
-                                <p class="m-0">• 维护团队：犇犇量化团队</p>
+                                <p class="m-0">• 维护团队：犇犇量化团队 · 反馈请使用上方「问题与反馈」</p>
                             </div>
                         </div>
                     </div>
                     </div>
-    `,setup(){const s=Z("qcState");if(!s)return{};Vue.watch(()=>s.currentSubPage&&s.currentSubPage.value,e=>{e==="autoeval"&&s.loadAiVendors&&s.loadAiVendors(),e==="datadict"&&O(),e==="health"&&N()});const ee=[45,220,0,140,270,320],E={45:"金色",220:"蓝色",0:"红色",140:"绿色",270:"紫色",320:"粉色"},ae=Vue.computed(()=>{const e=window.__quantModules&&window.__quantModules.preferences;return e&&e.getPreference&&e.getPreference("theme")||"system"}),p=Vue.ref(45);(function(){const e=window.__quantModules&&window.__quantModules.preferences,a=e&&e.getPreference&&e.getPreference("theme_hue");a!=null&&a!==""&&(p.value=parseInt(a,10))})();function se(e){s.changeThemeMode&&s.changeThemeMode(e)}function te(e){p.value=parseInt(e,10),s.changeThemeHue&&s.changeThemeHue(p.value)}function le(e){return"hsl("+e+", 75%, 42%)"}function ie(e){return E[e]||"自定义 "+e}function ce(e){s.setNavMode&&s.setNavMode(e)}const j=Vue.ref([]),g=Vue.ref(""),I=Vue.ref("read"),r=Vue.ref(""),f=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},b=Vue.ref([]),y=Vue.ref(!1);async function ne(){y.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});b.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),b.value=[]}finally{y.value=!1}}const k=Vue.ref(!1),w=Vue.ref(null),H=Vue.ref(null),L=Vue.ref([]),oe=Vue.ref(null);function re(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function m(){try{const a=await(await fetch("/api/jobs?limit=20")).json();a&&a.success&&(L.value=a.data&&a.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function de(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),m()}catch(a){console.warn("[system] 取消任务失败:",a)}}function ve(){m(),oe.value=window.setInterval(m,15e3)}const v=Vue.ref({items:[]}),x=Vue.ref([]),F=Vue.ref(null),K=Vue.ref({data_sources:[],alerts:[]}),ue=function(){return c().authHeaders?c().authHeaders():{}},u=function(e){return fetch(e,{headers:ue()}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()})};async function N(){k.value=!0,w.value=null;try{const[e,a,t,o]=await Promise.all([u("/api/reliability/freshness"),u("/api/reliability/heal-history?limit=20"),u("/api/reliability/startup-report"),u("/api/reliability/source-health")]);v.value=e&&e.data||{items:[]},x.value=a&&a.data||[],F.value=t&&t.data||null,K.value=o||{data_sources:[],alerts:[]},H.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),w.value="健康数据加载失败: "+(e.message||""),v.value={items:[]},x.value=[]}finally{k.value=!1}}const _=Vue.ref(!1),z=Vue.ref(""),C=Vue.ref(""),q=Vue.ref({fields:[]});async function O(){_.value=!0,z.value="";try{const e="/api/data-dict"+(C.value?"?category="+C.value:""),a=await u(e);q.value=a&&a.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),z.value="数据字典加载失败: "+(e.message||""),q.value={fields:[]}}finally{_.value=!1}}function pe(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function me(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const he=Vue.computed(()=>(v.value?v.value.items||[]:[]).filter(a=>a.status==="stale"||a.status==="missing").length),U=Vue.ref("rules"),B=Vue.ref([]),G=Vue.ref([]),W=Vue.ref([]),i=Vue.ref(!1),A=Vue.ref(""),M=Vue.ref("price_above"),R=Vue.ref(""),d=Vue.ref(!1),J=Vue.ref(60),l=Vue.ref("");function ge(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function h(){i.value=!0;try{const e=await(await fetch("/api/alerts/rules")).json();B.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e}finally{i.value=!1}}async function Q(){i.value=!0;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();G.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e}finally{i.value=!1}}async function Y(){i.value=!0;try{const e=await(await fetch("/api/alerts/channels")).json(),a=await(await fetch("/api/alerts/silence")).json();W.value=e&&e.channels||[],d.value=!!(a&&a.silenced)}catch(e){l.value="通道状态加载失败: "+e}finally{i.value=!1}}function fe(e){U.value=e,e==="rules"?h():e==="history"?Q():Y()}async function be(){const e=A.value.trim();if(!e){l.value="请填写股票代码";return}i.value=!0;try{const a={stock_code:e,rule_type:M.value};if(M.value!=="new_pool"){const o=Number(R.value);if(isNaN(o)){l.value="阈值必须为数值";return}a.threshold=o}const t=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})).json();t&&t.rule?(l.value="规则已添加",A.value="",R.value="",h()):l.value=t&&t.detail||"添加失败"}catch(a){l.value="添加失败: "+a}finally{i.value=!1}}async function ye(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(a){l.value="切换失败: "+a}}async function ke(e){try{const a=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();a&&a.success?(l.value="规则已删除",h()):l.value="删除失败"}catch(a){l.value="删除失败: "+a}}async function $(){try{const e=d.value?J.value:0,a=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();d.value=!!(a&&a.silenced),l.value=d.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function we(){d.value=!1,await $()}function xe(e){return!!e&&!e.degraded}const _e=Vue.computed(()=>(s&&s.analyticsRank&&s.analyticsRank.value||[]).reduce((a,t)=>Math.max(a,t.views||0),0)||1),P=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function T(){f.value=!0;try{const e=await c().apiFetch(P()+"/keys");j.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{f.value=!1}}async function ze(){try{const e=await c().apiFetch(P()+"/keys",{method:"POST",body:JSON.stringify({name:g.value||"未命名",role:I.value||"read",expire_days:365})});e&&e.success?(r.value=e.api_key||"",g.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await T()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function Ce(){if(r.value)try{await navigator.clipboard.writeText(r.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function qe(e){try{const a=await c().apiFetch(P()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),r.value&&e.prefix&&r.value.includes(e.prefix)&&(r.value=""),await T()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const Ae={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function Me(e){return Ae[e]||e}const Re=computed(()=>{var e;return(((e=s.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:Me(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function Pe(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function Te(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const n=s.aiUsage||Vue.ref({}),D=Vue.computed(()=>{const e=n.value&&n.value.by_model||{};return Object.entries(e).map(([a,t])=>({name:a,count:t})).sort((a,t)=>t.count-a.count)}),De=Vue.computed(()=>D.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Se=Vue.computed(()=>D.value.reduce((e,a)=>e+a.count,0)||1),Ve=Vue.computed(()=>S.value.reduce((e,a)=>Math.max(e,a.count),0)||0),S=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=[],t=new Date;for(let o=29;o>=0;o--){const V=new Date(t.getFullYear(),t.getMonth(),t.getDate()-o),X=V.getFullYear()+"-"+String(V.getMonth()+1).padStart(2,"0")+"-"+String(V.getDate()).padStart(2,"0");a.push({day:X,count:e[X]||0})}return a}),Ee=Vue.computed(()=>S.value.reduce((e,a)=>Math.max(e,a.count),0)||1),je=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=new Date,t=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[t]||0}),Ie=Vue.computed(()=>{const e=n.value&&n.value.by_day||{},a=Object.keys(e).filter(t=>(e[t]||0)>0);return a.length?a[a.length-1]:""});function He(e){s.analyticsDays&&(s.analyticsDays.value=e),typeof s.loadAnalytics=="function"&&s.loadAnalytics()}const Le='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',Fe='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function Ke(e){return e?Fe:Le}return ve(),{...s,themeHues:ee,themeHueNames:E,themeMode:ae,themeHue:p,onThemeModeChange:se,setThemeHue:te,hueColor:le,hueName:ie,onNavModeChange:ce,analyticsMaxViews:_e,aiModelRank:D,aiModelMax:De,aiDayTrend:S,aiDayMax:Ee,todayAiCalls:je,lastAiCallDay:Ie,aiTotal:Se,aiDayPeak:Ve,setAnalyticsDays:He,viewIcon:Ke,openApiKeys:j,openApiKeyName:g,openApiKeyRole:I,newOpenApiKey:r,openApiLoading:f,loadOpenApiKeys:T,generateOpenApiKey:ze,copyOpenApiKey:Ce,revokeOpenApiKey:qe,healthRows:Re,healthClass:Pe,fmtAge:Te,staleAssetCount:he,jobQueue:L,loadJobQueue:m,cancelJob:de,jobStatusText:re,auditLogs:b,auditLoading:y,loadAuditLogs:ne,healthLoading:k,healthError:w,healthUpdatedAt:H,freshnessData:v,healHistory:x,startupReport:F,sourceHealth:K,refreshHealth:N,statusColor:pe,statusLabel:me,sourceOk:xe,dictLoading:_,dictError:z,dictCategory:C,dictData:q,loadDataDict:O,ncTab:U,ncRules:B,ncHistory:G,ncChannels:W,ncLoading:i,ncNewCode:A,ncNewType:M,ncNewThreshold:R,ncSilence:d,ncSilenceMinutes:J,ncMsg:l,ncTypeLabel:ge,onNcTab:fe,loadAlertRules:h,loadAlertHistory:Q,loadAlertChannels:Y,addAlertRule:be,toggleAlertRule:ye,removeAlertRule:ke,applySilence:$,clearSilence:we}}}})();
+    `,setup(){const s=Z("qcState");if(!s)return{};function ee(e){s.currentSubPage.value=e}function ae(){p(),D(),R()}Vue.watch(()=>s.currentSubPage&&s.currentSubPage.value,e=>{e==="autoeval"&&s.loadAiVendors&&s.loadAiVendors(),e==="datadict"&&G(),e==="health"&&U(),e==="notification"&&ae()});const se=[45,220,0,140,270,320],I={45:"金色",220:"蓝色",0:"红色",140:"绿色",270:"紫色",320:"粉色"},te=Vue.computed(()=>{const e=window.__quantModules&&window.__quantModules.preferences;return e&&e.getPreference&&e.getPreference("theme")||"system"}),m=Vue.ref(45);(function(){const e=window.__quantModules&&window.__quantModules.preferences,a=e&&e.getPreference&&e.getPreference("theme_hue");a!=null&&a!==""&&(m.value=parseInt(a,10))})();function le(e){s.changeThemeMode&&s.changeThemeMode(e)}function ie(e){m.value=parseInt(e,10),s.changeThemeHue&&s.changeThemeHue(m.value)}function ne(e){return"hsl("+e+", 75%, 42%)"}function ce(e){return I[e]||"自定义 "+e}function oe(e){s.setNavMode&&s.setNavMode(e)}const j=Vue.ref([]),h=Vue.ref(""),L=Vue.ref("read"),r=Vue.ref(""),f=Vue.ref(!1),n=()=>window.__quantModules&&window.__quantModules.core||{},b=Vue.ref([]),y=Vue.ref(!1);async function re(){y.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:n().authHeaders?n().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});b.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),b.value=[]}finally{y.value=!1}}const x=Vue.ref(!1),k=Vue.ref(null),F=Vue.ref(null),K=Vue.ref([]),de=Vue.ref(null);function ue(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function g(){try{const a=await(await fetch("/api/jobs?limit=20")).json();a&&a.success&&(K.value=a.data&&a.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function ve(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),g()}catch(a){console.warn("[system] 取消任务失败:",a)}}function pe(){g(),de.value=window.setInterval(g,15e3)}const u=Vue.ref({items:[]}),w=Vue.ref([]),O=Vue.ref(null),N=Vue.ref({data_sources:[],alerts:[]}),me=function(){return n().authHeaders?n().authHeaders():{}},v=function(e){return fetch(e,{headers:me()}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()})};async function U(){x.value=!0,k.value=null;try{const[e,a,t,o]=await Promise.all([v("/api/reliability/freshness"),v("/api/reliability/heal-history?limit=20"),v("/api/reliability/startup-report"),v("/api/reliability/source-health")]);u.value=e&&e.data||{items:[]},w.value=a&&a.data||[],O.value=t&&t.data||null,N.value=o||{data_sources:[],alerts:[]},F.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),k.value="健康数据加载失败: "+(e.message||""),u.value={items:[]},w.value=[]}finally{x.value=!1}}const _=Vue.ref(!1),z=Vue.ref(""),C=Vue.ref(""),q=Vue.ref({fields:[]});async function G(){_.value=!0,z.value="";try{const e="/api/data-dict"+(C.value?"?category="+C.value:""),a=await v(e);q.value=a&&a.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),z.value="数据字典加载失败: "+(e.message||""),q.value={fields:[]}}finally{_.value=!1}}function ge(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function he(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const fe=Vue.computed(()=>(u.value?u.value.items||[]:[]).filter(a=>a.status==="stale"||a.status==="missing").length),W=Vue.ref("rules"),B=Vue.ref([]),J=Vue.ref([]),Q=Vue.ref([]),i=Vue.ref(!1),A=Vue.ref(""),P=Vue.ref("price_above"),M=Vue.ref(""),d=Vue.ref(!1),Y=Vue.ref(60),l=Vue.ref("");function be(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function p(){i.value=!0;try{const e=await(await fetch("/api/alerts/rules")).json();B.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e}finally{i.value=!1}}async function D(){i.value=!0;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();J.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e}finally{i.value=!1}}async function R(){i.value=!0;try{const e=await(await fetch("/api/alerts/channels")).json(),a=await(await fetch("/api/alerts/silence")).json();Q.value=e&&e.channels||[],d.value=!!(a&&a.silenced)}catch(e){l.value="通道状态加载失败: "+e}finally{i.value=!1}}function ye(e){W.value=e,e==="rules"?p():e==="history"?D():R()}async function xe(){const e=A.value.trim();if(!e){l.value="请填写股票代码";return}i.value=!0;try{const a={stock_code:e,rule_type:P.value};if(P.value!=="new_pool"){const o=Number(M.value);if(isNaN(o)){l.value="阈值必须为数值";return}a.threshold=o}const t=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})).json();t&&t.rule?(l.value="规则已添加",A.value="",M.value="",p()):l.value=t&&t.detail||"添加失败"}catch(a){l.value="添加失败: "+a}finally{i.value=!1}}async function ke(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(a){l.value="切换失败: "+a}}async function we(e){try{const a=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();a&&a.success?(l.value="规则已删除",p()):l.value="删除失败"}catch(a){l.value="删除失败: "+a}}async function $(){try{const e=d.value?Y.value:0,a=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();d.value=!!(a&&a.silenced),l.value=d.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function _e(){d.value=!1,await $()}function ze(e){return!!e&&!e.degraded}const Ce=Vue.computed(()=>(s&&s.analyticsRank&&s.analyticsRank.value||[]).reduce((a,t)=>Math.max(a,t.views||0),0)||1),S=()=>n().OPENAPI_ROUTE_BASE||"/api/openapi";async function T(){f.value=!0;try{const e=await n().apiFetch(S()+"/keys");j.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{f.value=!1}}async function qe(){try{const e=await n().apiFetch(S()+"/keys",{method:"POST",body:JSON.stringify({name:h.value||"未命名",role:L.value||"read",expire_days:365})});e&&e.success?(r.value=e.api_key||"",h.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await T()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function Ae(){if(r.value)try{await navigator.clipboard.writeText(r.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function Pe(e){try{const a=await n().apiFetch(S()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),r.value&&e.prefix&&r.value.includes(e.prefix)&&(r.value=""),await T()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const Me={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function De(e){return Me[e]||e}const Re=computed(()=>{var e;return(((e=s.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:De(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function Se(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function Te(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const c=s.aiUsage||Vue.ref({}),V=Vue.computed(()=>{const e=c.value&&c.value.by_model||{};return Object.entries(e).map(([a,t])=>({name:a,count:t})).sort((a,t)=>t.count-a.count)}),Ve=Vue.computed(()=>V.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Ee=Vue.computed(()=>V.value.reduce((e,a)=>e+a.count,0)||1),He=Vue.computed(()=>E.value.reduce((e,a)=>Math.max(e,a.count),0)||0),E=Vue.computed(()=>{const e=c.value&&c.value.by_day||{},a=[],t=new Date;for(let o=29;o>=0;o--){const H=new Date(t.getFullYear(),t.getMonth(),t.getDate()-o),X=H.getFullYear()+"-"+String(H.getMonth()+1).padStart(2,"0")+"-"+String(H.getDate()).padStart(2,"0");a.push({day:X,count:e[X]||0})}return a}),Ie=Vue.computed(()=>E.value.reduce((e,a)=>Math.max(e,a.count),0)||1),je=Vue.computed(()=>{const e=c.value&&c.value.by_day||{},a=new Date,t=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[t]||0}),Le=Vue.computed(()=>{const e=c.value&&c.value.by_day||{},a=Object.keys(e).filter(t=>(e[t]||0)>0);return a.length?a[a.length-1]:""});function Fe(e){s.analyticsDays&&(s.analyticsDays.value=e),typeof s.loadAnalytics=="function"&&s.loadAnalytics()}const Ke='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',Oe='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function Ne(e){return e?Oe:Ke}return pe(),{...s,themeHues:se,themeHueNames:I,themeMode:te,themeHue:m,onThemeModeChange:le,setThemeHue:ie,hueColor:ne,hueName:ce,onNavModeChange:oe,analyticsMaxViews:Ce,aiModelRank:V,aiModelMax:Ve,aiDayTrend:E,aiDayMax:Ie,todayAiCalls:je,lastAiCallDay:Le,aiTotal:Ee,aiDayPeak:He,setAnalyticsDays:Fe,viewIcon:Ne,openApiKeys:j,openApiKeyName:h,openApiKeyRole:L,newOpenApiKey:r,openApiLoading:f,loadOpenApiKeys:T,generateOpenApiKey:qe,copyOpenApiKey:Ae,revokeOpenApiKey:Pe,healthRows:Re,healthClass:Se,fmtAge:Te,staleAssetCount:fe,jobQueue:K,loadJobQueue:g,cancelJob:ve,jobStatusText:ue,auditLogs:b,auditLoading:y,loadAuditLogs:re,healthLoading:x,healthError:k,healthUpdatedAt:F,freshnessData:u,healHistory:w,startupReport:O,sourceHealth:N,refreshHealth:U,statusColor:ge,statusLabel:he,sourceOk:ze,dictLoading:_,dictError:z,dictCategory:C,dictData:q,loadDataDict:G,ncTab:W,ncRules:B,ncHistory:J,ncChannels:Q,ncLoading:i,ncNewCode:A,ncNewType:P,ncNewThreshold:M,ncSilence:d,ncSilenceMinutes:Y,ncMsg:l,ncTypeLabel:be,onNcTab:ye,loadAlertRules:p,loadAlertHistory:D,loadAlertChannels:R,addAlertRule:xe,toggleAlertRule:ke,removeAlertRule:we,applySilence:$,clearSilence:_e,goSystemSub:ee}}}})();

@@ -31,8 +31,8 @@
                 <span @click.stop="toggleWatchlist(item.stock_code, item.stock_name)" tabindex="0" role="button"
                       :aria-label="watchState.label" :title="watchState.label" class="history-star"
                       @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchState.icon }}</span>
-                <span v-if="evaluatedCodes.has(item.stock_code)" title="已AI评估" class="history-flag">🤖</span>
-                <span v-if="klineLoadedCodes.has(item.stock_code)" title="已加载K线" class="history-flag">📈</span>
+                <span v-if="evaluatedCodes.has(item.stock_code)" title="已AI评估" class="history-flag"><qc-icon name="bot" :size="14" /></span>
+                <span v-if="klineLoadedCodes.has(item.stock_code)" title="已加载K线" class="history-flag"><qc-icon name="trending-up" :size="14" /></span>
               </template>
             </div>
             <span v-if="type === 'history'" class="score-badge-small" :style="{background: item.result.level_color + '20', color: item.result.level_color}">
@@ -45,13 +45,13 @@
             </span>
           </div>
           <div class="history-footer">
-            <span class="history-time">🕐 {{ timeText }}</span>
-            <span class="history-provider">{{ providerIcon }} {{ providerText }}</span>
-            <span v-if="type === 'history' && showDims" class="history-dims">🔬 {{ dimsText }}</span>
+            <span class="history-time"><qc-icon name="clock" :size="14" /> {{ timeText }}</span>
+            <span class="history-provider"><qc-icon :name="providerIcon" :size="14" /> {{ providerText }}</span>
+            <span v-if="type === 'history' && showDims" class="history-dims"><qc-icon name="flask-conical" :size="14" /> {{ dimsText }}</span>
           </div>
         </div>
         <div class="history-actions">
-          <el-button size="small" type="danger" text @click.stop="remove" aria-label="删除记录">🗑</el-button>
+          <el-button size="small" type="danger" text @click.stop="remove" aria-label="删除记录"><qc-icon name="trash-2" :size="14" /></el-button>
         </div>
       </div>
     `,
@@ -71,7 +71,7 @@
         return { icon: has ? '⭐' : '☆', label: has ? '取消收藏' : '加入收藏' };
       });
 
-      const providerIcon = computed(() => (props.type === 'history' ? '🤖' : '💬'));
+      const providerIcon = computed(() => (props.type === 'history' ? 'bot' : 'message-circle'));
       const providerText = computed(() =>
         props.type === 'history'
           ? (props.item.result?.provider || '')

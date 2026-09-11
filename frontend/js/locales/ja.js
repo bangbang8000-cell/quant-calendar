@@ -19,18 +19,20 @@
     'sub.strategies.overview': '戦略概要', 'sub.ai.overview': '評価概要', 'sub.research.research-overview': '研究概要',
     'sub.execution': '実行ダッシュボード',
     'sub.merrill': 'メリルクロック',
-    'sub.market': '市場相場',
+    'sub.market': '市場概況',   // V6.6.1: 名称変更
     'sub.consensus': '戦略コンセンサス',
     'sub.daily': '日ビュー',
     'sub.weekly': '週ビュー',
     'sub.monthly': '月ビュー',
     'sub.yearly': '年ビュー',
     'sub.pool': '株プール',
+    'sub.calendar': 'カレンダー',   // V6.6.1: 統合後メインビュー
     'sub.watchlist': 'マイ自選',
     'sub.history': '評価履歴',
     'sub.evaluation-analysis': '評価分析',
     'sub.focus': '重点追跡',
     'sub.datadict': 'データ辞書',
+    'sub.notification': '通知センター',   // V6.6.1 (方案A)
     'sub.chat_history': '質問履歴',
     'sub.portfolio': 'ポートフォリオ',
     'sub.research-overview': '研究概要',
@@ -38,9 +40,10 @@
     'sub.strategy-write': '戦略作成',
     'sub.backtest': '戦略バックテスト',
     'sub.backtest-history': 'バックテスト履歴',
-    'sub.market-review': '市場レビュー',
+    'sub.market-review': '日次レビュー',   // V6.6.1: 名称変更
     'sub.scan': '変動スキャン',
     'sub.custom-write': '新規戦略',
+    'sub.strategy-manage': '戦略管理',   // V6.6.1: 統合
     'sub.ztpool': 'ストップ高レビュー',
     'sub.lhb': '竜虎榜',
     'sub.shortterm.overview': '振り返りダッシュボード',
@@ -49,7 +52,7 @@
     'sub.shortterm.intraday': '日中検証',
     'sub.intraday': '日中検証',
     'sub.status': 'システム状態',
-    'sub.autoeval': '自動評価',
+    'sub.autoeval': 'AI サービス',   // V6.6.1 (方案A): 収束・名称変更
     'sub.datasource': 'データソース',
     'sub.feature': '機能設定',
     'sub.user': 'ユーザーと権限',

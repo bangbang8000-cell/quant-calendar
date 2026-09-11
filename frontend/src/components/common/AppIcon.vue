@@ -18,6 +18,9 @@ import {
   // V6.5 (PRD-6.5 F5): 全站 emoji → Lucide 图标新增(补充)
   Key, Factory, Trophy, Rocket, Flame, MapPin, ScrollText, BookOpen, Dna, BarChart,
   Plus,
+  // V6.6 (PRD-6.6 F2): 美术收尾 — emoji 清理补充图标
+  StarOff, Upload, Gem, FolderOpen, Link, Save, Trash2, Pause, HelpCircle,
+  PlayCircle, Pencil, Folder, Code,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -114,19 +117,31 @@ const ICON_MAP = {
   'dna': Dna,
   'bar-chart': BarChart,
   'plus': Plus,
+  // V6.6 (PRD-6.6 F2): 美术收尾 — emoji 清理补充图标
+  'star-off': StarOff,
+  'upload': Upload,
+  'gem': Gem,
+  'folder-open': FolderOpen,
+  'link': Link,
+  'save': Save,
+  'trash-2': Trash2,
+  'pause': Pause,
+  'help-circle': HelpCircle,
+  'play-circle': PlayCircle,
+  'pencil': Pencil,
+  'folder': Folder,
+  'code': Code,
 }
 
-const comp = () => ICON_MAP[props.name] || null
+const comp = () => ICON_MAP[props.name] || ICON_MAP['circle-dot']
 </script>
 
 <template>
   <component
     :is="comp()"
-    v-if="comp()"
     :size="size"
     :stroke-width="strokeWidth"
     aria-hidden="true"
     class="qc-icon"
   />
-  <span v-else class="qc-icon-fallback" aria-hidden="true">{{ name }}</span>
 </template>

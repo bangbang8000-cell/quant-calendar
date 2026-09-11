@@ -19,18 +19,20 @@
     'sub.strategies.overview': '전략 개요', 'sub.ai.overview': '평가 개요', 'sub.research.research-overview': '연구 개요',
     'sub.execution': '실행 대시보드',
     'sub.merrill': '메릴 클록',
-    'sub.market': '시장 시세',
+    'sub.market': '지수 현황',   // V6.6.1: 명칭 변경
     'sub.consensus': '전략 컨센서스',
     'sub.daily': '일별 보기',
     'sub.weekly': '주별 보기',
     'sub.monthly': '월별 보기',
     'sub.yearly': '연별 보기',
     'sub.pool': '종목 풀',
+    'sub.calendar': '캘린더',   // V6.6.1: 통합 후 메인 뷰
     'sub.watchlist': '내 관심목록',
     'sub.history': '평가 이력',
     'sub.evaluation-analysis': '평가 분석',
     'sub.focus': '중점 추적',
     'sub.datadict': '데이터 사전',
+    'sub.notification': '알림 센터',   // V6.6.1 (方案A)
     'sub.chat_history': '문의 이력',
     'sub.portfolio': '포트폴리오',
     'sub.research-overview': '연구 개요',
@@ -38,9 +40,10 @@
     'sub.strategy-write': '전략 작성',
     'sub.backtest': '전략 백테스트',
     'sub.backtest-history': '백테스트 이력',
-    'sub.market-review': '시장 리뷰',
+    'sub.market-review': '일일 리뷰',   // V6.6.1: 명칭 변경
     'sub.scan': '변동 스캔',
     'sub.custom-write': '새 전략',
+    'sub.strategy-manage': '전략 관리',   // V6.6.1: 통합
     'sub.ztpool': '상한가 리뷰',
     'sub.lhb': '용호방',
     'sub.shortterm.overview': '복기 대시보드',
@@ -49,7 +52,7 @@
     'sub.shortterm.intraday': '장중 검증',
     'sub.intraday': '장중 검증',
     'sub.status': '시스템 상태',
-    'sub.autoeval': '자동 평가',
+    'sub.autoeval': 'AI 서비스',   // V6.6.1 (方案A): 수렴·명칭 변경
     'sub.datasource': '데이터 소스',
     'sub.feature': '기능 설정',
     'sub.user': '사용자 및 권한',

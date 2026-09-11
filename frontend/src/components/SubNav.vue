@@ -10,26 +10,29 @@ import AppIcon from './common/AppIcon.vue'
 
 // 系统配置左侧子导航分组 (PRD 1.2.3)
 // V6.0 (P1-3): 每个叶节点独立 subPage key (status/health/schedule/autoeval/usage/guard),
-// 不再共用 key + anchor 滚动 — 支持 URL hash 深链与浏览器前进后退
+//   不再共用 key + anchor 滚动 — 支持 URL hash 深链与浏览器前进后退
+// V6.6.1 (PRD F-6.6.8 方案A): 运行监控并入 guard/execution; 智能服务收敛 autoeval/usage;
+//   平台设置新增 notification(通知中心); 组织管理仅 user/about
 const SYSTEM_GROUPS = [
   { label: '运行监控', items: [
     { key: 'status', label: '系统状态', icon: 'activity' },
     { key: 'health', label: '数据源健康', icon: 'database' },
     { key: 'schedule', label: '调度任务', icon: 'clock' },
+    { key: 'guard', label: 'AI 事实护栏', icon: 'shield' },
+    { key: 'execution', label: '执行看板', icon: 'cpu' },
   ]},
   { label: '智能服务', items: [
-    { key: 'autoeval', label: '自动评估', icon: 'bot' },
-    { key: 'usage', label: 'AI 用量', icon: 'bar-chart-3' },
-    { key: 'guard', label: 'AI 事实护栏', icon: 'shield' },
+    { key: 'autoeval', label: 'AI 服务', icon: 'bot' },
+    { key: 'usage', label: '用量统计', icon: 'bar-chart-3' },
   ]},
   { label: '平台设置', items: [
     { key: 'datasource', label: '数据源', icon: 'hard-drive' },
     { key: 'feature', label: '功能配置', icon: 'sliders-horizontal' },
     { key: 'datadict', label: '数据字典', icon: 'file-text' },
+    { key: 'notification', label: '通知中心', icon: 'bell' },
   ]},
   { label: '组织管理', items: [
     { key: 'user', label: '用户与权限', icon: 'users' },
-    { key: 'execution', label: '执行看板', icon: 'cpu' },
     { key: 'about', label: '关于', icon: 'info' },
   ]},
 ]
@@ -72,21 +75,21 @@ export default {
     function toggleGroup(label) { collapsedGroups.value[label] = !collapsedGroups.value[label] }
 
     // V6.2 (PRD-6.2 F1): 全部二级菜单语义图标 — 双层映射 (page → subPage → iconName)
+    // V6.6.1 (PRD F-6.6.7): calendar 合并后主视图 key=calendar; research 合并为 strategy-manage; ai 新增 portfolio
     const SUB_ICONS = {
       'strategies': {
         'overview': 'pie-chart', 'merrill': 'clock', 'market': 'trending-up', 'consensus': 'target',
       },
       'calendar': {
-        'daily': 'calendar', 'weekly': 'calendar-days', 'monthly': 'calendar-range',
-        'yearly': 'calendar-check', 'pool': 'database',
+        'calendar': 'calendar', 'pool': 'database',
       },
       'ai': {
         'overview': 'activity', 'focus': 'target', 'watchlist': 'star', 'history': 'history',
-        'evaluation-analysis': 'bar-chart-3', 'chat_history': 'message-circle',
+        'evaluation-analysis': 'bar-chart-3', 'portfolio': 'bar-chart-3', 'chat_history': 'message-circle',
       },
       'research': {
         'research-overview': 'search-check', 'quant-research': 'line-chart',
-        'strategy-write': 'layers', 'custom-write': 'sparkles',
+        'strategy-manage': 'layers',
         'backtest': 'play', 'backtest-history': 'history',
       },
       'shortterm': {

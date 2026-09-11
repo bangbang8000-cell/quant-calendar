@@ -38,8 +38,10 @@
       watch([currentPage, currentSubPage], ([page, sub]) => {
         // V6.0 (P1-3): URL hash 同步 — 支持刷新定位与浏览器前进后退
         // 格式: #<page>/<sub>（如 #system/health）；hash 由 hashchange 监听回写状态
+        // V6.6.1: 日历主视图 (sub=calendar) 写 #calendar 裸 hash（避免 #calendar/calendar 冗余）
         try {
-          const hashSub = sub || '';
+          const CAL_BARE = (page === 'calendar' && sub === 'calendar');
+          const hashSub = (!CAL_BARE && sub) || '';
           const target = hashSub ? '#' + page + '/' + hashSub : '#' + page;
           if (window.location.hash !== target) {
             window.location.hash = target;
@@ -74,12 +76,10 @@
             }).catch(function (e) { console.warn('[lazy] research 组件补加载失败', e); });
           }
         }
-        // 日历页：同步 currentSubPage → currentView
-        if (page === 'calendar' && ['daily','weekly','monthly','yearly'].includes(sub)) {
-          const viewMap = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' };
-          if (viewMap[sub] && currentView.value !== viewMap[sub]) {
-            currentView.value = viewMap[sub];
-            if (dates.value.length > 0) {
+        // 日历页：主视图 (V6.6.1 合并后 sub=calendar) — 视图由页内切换器/↑↓ 经 switchView 驱动, currentView 变更由 watch([currentView,...]) 兜底重载
+        if (page === 'calendar' && sub === 'calendar') {
+          if (!consensus.value || consensus.value.length === 0) {
+            if (dates.value.length > 0 && !selectedDate.value) {
               selectedDate.value = dates.value[dates.value.length - 1] || '';
             }
             setTimeout(loadConsensusData, 50);

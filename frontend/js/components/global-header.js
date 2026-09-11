@@ -34,20 +34,21 @@
           </div>
 
           <div class="header-date-area" v-if="currentPage === 'calendar'">
-            <el-date-picker v-if="currentSubPage === 'daily'"
+            <!-- V6.6.1 (PRD F-6.6.7): 日期选择器类型改由 currentView 驱动 (4 视图已合并为单子页) -->
+            <el-date-picker v-if="currentView === 'day'"
                 v-model="selectedDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD"
                 :placeholder="t('calendar.selectDate')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-date-picker v-else-if="currentSubPage === 'weekly'"
+            <el-date-picker v-else-if="currentView === 'week'"
                 v-model="selectedDate" type="week" format="YYYY 第w周" value-format="YYYY-MM-DD"
                 :placeholder="t('calendar.selectWeek')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-date-picker v-else-if="currentSubPage === 'monthly'"
+            <el-date-picker v-else-if="currentView === 'month'"
                 v-model="selectedDate" type="month" format="YYYY-MM" value-format="YYYY-MM-DD"
                 :placeholder="t('calendar.selectMonth')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-date-picker v-else-if="currentSubPage === 'yearly'"
+            <el-date-picker v-else-if="currentView === 'year'"
                 v-model="selectedDate" type="year" format="YYYY" value-format="YYYY-MM-DD"
                 :placeholder="t('calendar.selectYear')" @change="onDateChange" :disabled-date="disabledDate" size="small"></el-date-picker>
-            <el-button class="ml-8px" size="small" @click="refreshCalendarData" :loading="loading" :title="t('calendar.refreshData')">🔄 {{ t('common.refresh') }}</el-button>
-            <el-button class="ml-4px" size="small" @click="exportCSV" :title="t('calendar.exportCsv')">📥 {{ t('common.export') }}</el-button>
+            <el-button class="ml-8px" size="small" @click="refreshCalendarData" :loading="loading" :title="t('calendar.refreshData')"><qc-icon name="refresh" :size="14" /> {{ t('common.refresh') }}</el-button>
+            <el-button class="ml-4px" size="small" @click="exportCSV" :title="t('calendar.exportCsv')"><qc-icon name="download" :size="14" /> {{ t('common.export') }}</el-button>
             <span class="text-sm-tertiary-ml6-nowrap" v-if="lastLoadTime">{{ lastLoadTime }}</span>
           </div>
 
@@ -61,10 +62,10 @@
             <span class="info-chip-xs" v-if="currentUser?.role === 'guest'">访客</span>
             <span class="text-xs-tertiary">▼</span>
             <div class="user-menu-dropdown" v-if="showUserMenu" @click.stop role="menu">
-              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">⚙ 重新运行初始化向导</div>
-              <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" tabindex="0" role="menuitem" @click="showUserMenu = false; showChangePassword = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🔑 修改密码</div>
+              <div class="user-menu-item" v-if="currentUser?.role === 'admin'" tabindex="0" role="menuitem" @click="showUserMenu = false; resetSetupWizard()" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="settings" :size="14" /> 重新运行初始化向导</div>
+              <div class="user-menu-item" v-if="currentUser?.role !== 'guest'" tabindex="0" role="menuitem" @click="showUserMenu = false; showChangePassword = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="key" :size="14" /> 修改密码</div>
               <div class="user-menu-divider"></div>
-              <div class="user-menu-section-title">🎨 切换主题</div>
+              <div class="user-menu-section-title"><qc-icon name="palette" :size="14" /> 切换主题</div>
               <div v-for="(theme, key) in themes" :key="key" class="user-menu-item theme-item-row"
                    :class="{'theme-active': currentTheme === key}" tabindex="0"
                    role="menuitemradio" :aria-checked="currentTheme === key"
@@ -75,7 +76,7 @@
                 <span v-if="currentTheme === key" class="theme-check">✓</span>
               </div>
               <div class="user-menu-divider"></div>
-              <div class="user-menu-item danger" tabindex="0" role="menuitem" @click="handleLogout" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🚪 退出登录</div>
+              <div class="user-menu-item danger" tabindex="0" role="menuitem" @click="handleLogout" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="log-out" :size="14" /> 退出登录</div>
             </div>
           </div>
         </div>

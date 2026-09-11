@@ -18,28 +18,28 @@
                                 {{ t('ai.batchEval') }}
                             </el-button>
                             <el-button size="small" @click="showAutoEvaluateSettings = true">
-                                <span class="mr-4">⚙</span>{{ t('ai.autoEval') }}
+                                <span class="mr-4"><qc-icon name="settings" :size="14" /></span>{{ t('ai.autoEval') }}
                             </el-button>
                         </div>
 
                         <!-- 统计卡片 -->
                         <div class="dashboard-grid mb-20">
                             <div class="stat-card stat-card-primary" @click="currentSubPage = 'history'" tabindex="0" role="button" aria-label="历史评估" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                <div class="stat-icon stat-icon-info">📋</div>
+                                <div class="stat-icon stat-icon-info"><qc-icon name="file-text" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistory.length }}</div>
                                     <div class="stat-label">{{ t('ai.totalEval') }}</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-success" @click="currentSubPage = 'history'" tabindex="0" role="button" aria-label="覆盖股票" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                <div class="stat-icon stat-icon-success">📈</div>
+                                <div class="stat-icon stat-icon-success"><qc-icon name="trending-up" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiHistoryStockCount }}</div>
                                     <div class="stat-label">{{ t('ai.coveredStocks') }}</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-gold" @click="currentSubPage = 'watchlist'" tabindex="0" role="button" aria-label="自选股" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                <div class="stat-icon stat-icon-gold">⭐</div>
+                                <div class="stat-icon stat-icon-gold"><qc-icon name="star" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ watchlist.length }}</div>
                                     <div class="stat-label">{{ t('ai.watchlist') }}</div>
@@ -55,15 +55,16 @@
                             </div>
                             <!-- v5.4.0 (FR-5.4.4): 重点跟踪入口 -->
                             <div class="stat-card stat-card-info-border" @click="currentSubPage = 'focus'" tabindex="0" role="button" aria-label="重点跟踪" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                <div class="stat-icon stat-icon-info-hover">🎯</div>
+                                <div class="stat-icon stat-icon-info-hover"><qc-icon name="target" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">5 档</div>
                                     <div class="stat-label">重点跟踪</div>
                                 </div>
                             </div>
                             <div class="stat-card stat-card-warning" @click="showAutoEvaluateSettings = true" tabindex="0" role="button" aria-label="自动评估设置" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)" :style="{opacity: autoEvaluateConfig.enabled ? 1 : 0.6}">
+                                <!-- V6.6: 启用/暂停 金色品牌底 + 固定 warning 图标色，背景双态非语义三态，保留内联 -->
                                 <div class="stat-icon" :style="{background: autoEvaluateConfig.enabled ? 'var(--badge-gold-bg)' : 'var(--bg-hover)', color: 'var(--el-warning)'}">
-                                    {{ autoEvaluateConfig.enabled ? '▶' : '⏸' }}
+                                    <qc-icon :name="autoEvaluateConfig.enabled ? 'play' : 'pause'" :size="18" />
                                 </div>
                                 <div class="stat-content">
                                     <div class="stat-value text-md">{{ autoEvaluateConfig.enabled ? t('ai.running') : t('ai.paused') }}</div>
@@ -73,7 +74,7 @@
                             <!-- v3.5.0-T6: AI 用量统计 -->
                             <!-- v3.17.6: title 提示详细用量位置 (系统→用量统计) -->
                             <div class="stat-card stat-card-info-border" title="AI 模型调用统计, 模型分布/近30天趋势见 系统→用量统计">
-                                <div class="stat-icon stat-icon-info-hover">⚡</div>
+                                <div class="stat-icon stat-icon-info-hover"><qc-icon name="zap" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ aiUsage.total_calls || 0 }}</div>
                                     <div class="stat-label">{{ t('ai.aiCalls') }}</div>
@@ -109,10 +110,12 @@
                                 <div v-for="item in aiHistory.slice(0,3)" :key="item.id" @click="viewAiResult(item)" class="hover-lift recent-card">
                                     <div class="flex-between-mb8">
                                         <span class="text-md-semibold">{{ item.stock_code }}</span>
+                                        <!-- V6.6: item.result.level_color 服务端返回实时色，保留内联 -->
                                         <span :style="{color:item.result.level_color,fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb6">{{ item.stock_name }}</div>
                                     <div class="flex-between">
+                                        <!-- V6.6: level_color 服务端实时色（含 20 透明底），保留内联 -->
                                         <span :style="{background:item.result.level_color+'20',color:item.result.level_color,padding:'2px 8px',borderRadius:'10px',fontSize:'var(--font-xs)'}">{{ item.result.level }}</span>
                                         <span class="text-xs-tertiary">{{ (item.evaluate_time||'').split('T')[0] }}</span>
                                     </div>
@@ -122,7 +125,7 @@
                                         <span v-if="(item.attribution.misses||[]).filter(m=>m.signal==='risk').length" class="text-xs" style="color:var(--sem-risk)">{{ (item.attribution.misses||[]).filter(m=>m.signal==='risk').length }} 险</span>
                                         <span class="text-xs-tertiary" v-if="item.attribution.consistency_note">{{ item.attribution.consistency_note }}</span>
                                     </div>
-                                    <div v-else-if="item.attribution && !item.attribution.available" class="text-xs-tertiary mt-4">归因数据不足 [⚠️]</div>
+                                    <div v-else-if="item.attribution && !item.attribution.available" class="text-xs-tertiary mt-4">归因数据不足 <qc-icon name="alert-triangle" :size="14" /></div>
                                 </div>
                             </div>
                         </div>
@@ -135,6 +138,7 @@
                                 <div class="flex-c-gap-8-mb6" v-for="bar in scoreDistribution" :key="bar.label">
                                     <span class="bar-label">{{ bar.label }}</span>
                                     <div class="bar-track">
+                                        <!-- V6.6: scoreDistribution 分数区间枚举色，定义于共享 watchlist.js，跨文件保留内联 -->
                                         <div :style="{width:bar.pct+'%',height:'100%',background:bar.color,borderRadius:'9px',transition:'width 0.6s ease',minWidth:bar.count>0?'4px':'0'}"></div>
                                     </div>
                                     <span class="bar-count">{{ bar.count }}</span>
@@ -159,7 +163,7 @@
                                     </div>
                                     <el-button class="align-self-start" v-if="watchlist.length> 0" type="primary" size="small" @click="quickEvaluate" :disabled="!quickEvalStock" :loading="aiLoading">{{ t('ai.quickEval') }}</el-button>
                                     <div class="text-center-tertiary-pad20x0" v-if="watchlist.length === 0">
-                                        <div class="text-3xl-mb8">⭐</div>
+                                        <div class="text-3xl-mb8"><qc-icon name="star" :size="36" /></div>
                                         <div class="text-sm">{{ t('ai.noWatchlist') }}</div>
                                         <el-button class="mt-2" size="small" @click="currentSubPage = 'watchlist'">{{ t('ai.goAddWatchlist') }}</el-button>
                                     </div>
@@ -172,7 +176,7 @@
 
                         <!-- 空状态：无任何评估记录 -->
                         <div v-if="aiHistory.length === 0" class="card text-center-pad40x20">
-                            <div class="empty-state-icon-md">🤖</div>
+                            <div class="empty-state-icon-md"><qc-icon name="bot" :size="32" /></div>
                             <div class="text-lg-semibold-primary-mb8">{{ t('ai.title') }}</div>
                             <div class="text-md-secondary-mb20">{{ t('ai.subtitle') }}</div>
                             <div class="flex-gap-12-center">
@@ -189,7 +193,7 @@
                             <div class="card-title">{{ t('ai.evalHitRate') }} <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
                             <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
                             <qc-state-panel v-if="trackLoading" type="loading"></qc-state-panel>
-                            <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="📊" :title="t('ai.insufficientSamples')"></qc-state-panel>
+                            <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="bar-chart-3" :title="t('ai.insufficientSamples')"></qc-state-panel>
                             <template v-else>
                                 <div class="eval-track-overall">
                                     <div v-for="w in trackWindows" :key="w.key" class="eval-track-stat">
@@ -272,10 +276,10 @@
                                 </div>
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllHistory">{{ selectedHistoryIds.length === aiHistory.length ? '取消全选' : '全选' }}</el-button>
-                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="batchReevaluateHistory">🔄 再次评估</el-button>
-                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="success" @click="batchAddToWatchlist">⭐ 加入自选</el-button>
-                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="warning" @click="batchAddToPortfolio">📊 加入组合</el-button>
-                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="danger" @click="deleteSelectedHistory">🗑 批量删除</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="batchReevaluateHistory"><qc-icon name="refresh" :size="14" /> 再次评估</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="success" @click="batchAddToWatchlist"><qc-icon name="star" :size="14" /> 加入自选</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="warning" @click="batchAddToPortfolio"><qc-icon name="bar-chart-3" :size="14" /> 加入组合</el-button>
+                                    <el-button v-if="selectedHistoryIds.length > 0" size="small" type="danger" @click="deleteSelectedHistory"><qc-icon name="trash-2" :size="14" /> 批量删除</el-button>
                                     <el-button v-if="selectedHistoryIds.length > 0" size="small" @click="clearSelection">取消选择</el-button>
                                 </div>
                             </div>
@@ -288,7 +292,7 @@
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadAiHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="aiHistoryError" type="error" @retry="loadAiHistory"></qc-state-panel>
                         <div v-else-if="aiHistory.length === 0" class="empty-state">
-                            <div class="empty-state-icon">🤖</div>
+                            <div class="empty-state-icon"><qc-icon name="bot" :size="32" /></div>
                             <div class="text-md-medium-primary">{{ t('ai.noEvalRecord') }}</div>
                             <div class="text-sm-tertiary-mt8">
                                 {{ t('ai.evalHint') }}
@@ -315,7 +319,7 @@
                                         </div>
                                         <div class="flex-1" @click="toggleDateExpand(date)">
                                             <div class="flex-c-gap-8">
-                                                <span class="text-md-semibold">📅 {{ date }}</span>
+                                                <span class="text-md-semibold"><qc-icon name="calendar" :size="14" /> {{ date }}</span>
                                                 <span class="count-badge-sm">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
@@ -346,7 +350,7 @@
                                         </div>
                                         <div class="flex-1" @click="toggleMonthExpand(month)">
                                             <div class="flex-c-gap-8">
-                                                <span class="text-md-semibold">📆 {{ month }}</span>
+                                                <span class="text-md-semibold"><qc-icon name="calendar-days" :size="14" /> {{ month }}</span>
                                                 <span class="count-badge-sm">{{ records.length }}条评估</span>
                                             </div>
                                         </div>
@@ -380,6 +384,7 @@
                                             <strong>{{ code }}</strong>
                                             <span class="color-tertiary">{{ records[0].stock_name }}</span>
                                             <span class="count-badge-sm">{{ records.length }}次</span>
+                                            <!-- V6.6: records[0].result.level_color 服务端实时色，保留内联 -->
                                             <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ fmtNum(records[0].result.total_score) }}分</span>
                                         </div>
                                     </div>
@@ -419,20 +424,20 @@
                                 </div>
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllChatSessions">{{ selectedChatIds.length === allChatSessionsFlat.length ? '取消全选' : '全选' }}</el-button>
-                                    <el-button v-if="selectedChatIds.length > 0" size="small" type="danger" @click="deleteSelectedChatSessions">🗑 批量删除</el-button>
+                                    <el-button v-if="selectedChatIds.length > 0" size="small" type="danger" @click="deleteSelectedChatSessions"><qc-icon name="trash-2" :size="14" /> 批量删除</el-button>
                                     <el-button v-if="selectedChatIds.length > 0" size="small" @click="selectedChatIds = []">取消选择</el-button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="card">
-                            <div class="card-title">💬 AI 问股历史 <span class="card-title-hint">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span></div>
+                            <div class="card-title"><qc-icon name="message-circle" :size="16" /> AI 问股历史 <span class="card-title-hint">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span></div>
                         <!-- v3.16 (16.7): 统一加载/离线/错误态（可重试） -->
                         <qc-state-panel v-if="chatHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadChatHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="chatHistoryError" type="error" @retry="loadChatHistory"></qc-state-panel>
                         <div v-else-if="allChatSessionsFlat.length === 0" class="empty-state">
-                            <div class="empty-state-icon">💬</div>
+                            <div class="empty-state-icon"><qc-icon name="message-circle" :size="32" /></div>
                             <div class="text-md-medium-primary">暂无问股记录</div>
                             <div class="text-sm-tertiary-mt8">
                                 在股票详情页点击「AI 问股」开始对话
@@ -441,9 +446,9 @@
 
                         <!-- 视图切换 -->
                         <div class="flex-gap-8-mb12" v-if="allChatSessionsFlat.length> 0">
-                            <el-button size="small" @click="chatHistoryView = 'date'" :type="chatHistoryView === 'date' ? 'primary' : ''">📅 按日期</el-button>
-                            <el-button size="small" @click="chatHistoryView = 'month'" :type="chatHistoryView === 'month' ? 'primary' : ''">📆 按月</el-button>
-                            <el-button size="small" @click="chatHistoryView = 'stock'" :type="chatHistoryView === 'stock' ? 'primary' : ''">📈 按股票</el-button>
+                            <el-button size="small" @click="chatHistoryView = 'date'" :type="chatHistoryView === 'date' ? 'primary' : ''"><qc-icon name="calendar" :size="14" /> 按日期</el-button>
+                            <el-button size="small" @click="chatHistoryView = 'month'" :type="chatHistoryView === 'month' ? 'primary' : ''"><qc-icon name="calendar-days" :size="14" /> 按月</el-button>
+                            <el-button size="small" @click="chatHistoryView = 'stock'" :type="chatHistoryView === 'stock' ? 'primary' : ''"><qc-icon name="trending-up" :size="14" /> 按股票</el-button>
                         </div>
 
                         <!-- 按日期聚合 -->
@@ -458,7 +463,7 @@
                                         </div>
                                         <div class="flex-1" @click="toggleChatDateExpand(date)">
                                             <div class="flex-c-gap-8">
-                                                <span class="text-md-semibold">📅 {{ date }}</span>
+                                                <span class="text-md-semibold"><qc-icon name="calendar" :size="14" /> {{ date }}</span>
                                                 <span class="count-badge-sm">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
@@ -489,7 +494,7 @@
                                         </div>
                                         <div class="flex-1" @click="toggleChatMonthExpand(month)">
                                             <div class="flex-c-gap-8">
-                                                <span class="text-md-semibold">📆 {{ month }}</span>
+                                                <span class="text-md-semibold"><qc-icon name="calendar-days" :size="14" /> {{ month }}</span>
                                                 <span class="count-badge-sm">{{ sessions.length }}条对话</span>
                                             </div>
                                         </div>
@@ -551,12 +556,12 @@
                                 </div>
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllWatchlist">{{ selectedWatchlistCodes.length === watchlist.length ? '取消全选' : '全选' }}</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="primary" @click="batchEvaluateSelected" :disabled="aiLoading">📊 评估选中</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist">🗑 移除选中</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="primary" @click="batchEvaluateSelected" :disabled="aiLoading"><qc-icon name="bar-chart-3" :size="14" /> 评估选中</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist"><qc-icon name="trash-2" :size="14" /> 移除选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" @click="clearWatchlistSelection">取消选择</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="primary" @click="batchEvaluateWatchlist" :disabled="aiLoading">📊 批量评估</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="danger" @click="clearWatchlist">🗑 清空自选</el-button>
-                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" @click="preloadWatchlistKline" :loading="preloadingKline">🔄 预加载K线</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="primary" @click="batchEvaluateWatchlist" :disabled="aiLoading"><qc-icon name="bar-chart-3" :size="14" /> 批量评估</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" type="danger" @click="clearWatchlist"><qc-icon name="trash-2" :size="14" /> 清空自选</el-button>
+                                    <el-button v-if="selectedWatchlistCodes.length === 0" size="small" @click="preloadWatchlistKline" :loading="preloadingKline"><qc-icon name="refresh" :size="14" /> 预加载K线</el-button>
                                 </div>
                             </div>
                         </div>
@@ -597,7 +602,7 @@
                             <!-- v3.16 (16.7): 离线检测 -->
                             <qc-state-panel v-else-if="!isOnline && watchlist.length === 0" type="offline" @retry="loadWatchlist"></qc-state-panel>
                             <div v-else-if="watchlist.length === 0" class="watchlist-empty">
-                                <div class="watchlist-empty-icon">⭐</div>
+                                <div class="watchlist-empty-icon"><qc-icon name="star" :size="32" /></div>
                                 <div class="watchlist-empty-title">暂无自选股</div>
                                 <div class="watchlist-empty-hint">搜索股票代码或名称添加</div>
                             </div>
@@ -615,12 +620,14 @@
                                         <div class="watchlist-info">
                                             <span class="watchlist-code">{{ stock.code }}</span>
                                             <span class="watchlist-name">{{ stock.name }}</span>
-                                            <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning">⏳</span>
+                                            <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning"><qc-icon name="loader" :size="12" /></span>
+                                            <!-- V6.6: getWatchlistScore().color 函数计算色，保留内联 -->
                                             <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
                                                 {{ fmtNum(getWatchlistScore(stock.code).score) }}
                                             </span>
                                             <!-- v3.17.7 实时化 (FR-3.17.7): 行内实时报价（涨跌色/涨跌幅/量比/涨速 + 预警标记） -->
                                             <div v-if="realtimeQuotes[stock.code]" class="watchlist-quote">
+                                                <!-- V6.6: realtimeQuoteColor() 实时涨跌计算色，保留内联 -->
                                                 <span class="quote-price" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePriceText(stock.code) }}</span>
                                                 <span class="quote-pct" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePctText(stock.code) }}</span>
                                                 <span class="quote-meta">量比 {{ realtimeRatioText(stock.code, 'volume_ratio') }}</span>
@@ -629,13 +636,13 @@
                                             </div>
                                         </div>
                                         <div class="watchlist-actions">
-                                            <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading">📊 评估</el-button>
-                                            <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)">📈 K线</el-button>
-                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)" aria-label="从自选删除">🗑</el-button>
+                                            <el-button size="small" @click.stop="watchlistEvaluate(stock.code, stock.name)" :disabled="aiLoading"><qc-icon name="bar-chart-3" :size="14" /> 评估</el-button>
+                                            <el-button size="small" @click.stop="showStockKline(stock.code, stock.name)"><qc-icon name="trending-up" :size="14" /> K线</el-button>
+                                            <el-button size="small" type="danger" text @click.stop="removeFromWatchlist(stock.code)" aria-label="从自选删除"><qc-icon name="trash-2" :size="14" /></el-button>
                                         </div>
                                         </div>
                                         <div class="swipe-reveal-actions">
-                                            <el-button size="small" type="danger" @click.stop="removeFromWatchlist(stock.code)">🗑 删除</el-button>
+                                            <el-button size="small" type="danger" @click.stop="removeFromWatchlist(stock.code)"><qc-icon name="trash-2" :size="14" /> 删除</el-button>
                                         </div>
                                     </div>
                                     </template>

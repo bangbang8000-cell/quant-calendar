@@ -83,6 +83,21 @@
 .qc-status-dot.is-running { background: var(--qc-primary-500); }
 .qc-status-cell { display: inline-flex; align-items: center; gap: var(--qc-space-2); }
 
+/* V6.6 (PRD-6.6 F3): 语义工具类 — 文本色 / 背景 subtle / 美林时钟阶段 */
+.qc-text-success { color: var(--qc-state-success, var(--qc-success)); }
+.qc-text-warning { color: var(--qc-state-warning, var(--qc-warning)); }
+.qc-text-error   { color: var(--qc-state-error, var(--qc-error)); }
+.qc-text-info    { color: var(--qc-state-info, var(--qc-info)); }
+.qc-text-muted   { color: var(--qc-muted-foreground); }
+.qc-bg-primary-subtle { background: var(--qc-primary-50); }
+.qc-bg-success-subtle { background: var(--qc-success-50, var(--badge-success-bg)); }
+.qc-bg-warning-subtle { background: var(--qc-warning-50, var(--badge-warning-bg)); }
+.qc-bg-error-subtle   { background: var(--qc-error-50, var(--badge-danger-bg)); }
+.qc-merrill-bearish   { background: var(--qc-error-100, var(--badge-danger-bg)); color: var(--qc-error-700, var(--badge-danger-text)); }
+.qc-merrill-bullish   { background: var(--qc-success-100, var(--badge-success-bg)); color: var(--qc-success-700, var(--badge-success-text)); }
+.qc-merrill-overheat  { background: var(--qc-warning-100, var(--badge-warning-bg)); color: var(--qc-warning-700, var(--badge-warning-text)); }
+.qc-merrill-recovery  { background: var(--qc-primary-100); color: var(--qc-primary-700); }
+
 /* ─── §2.3 按钮 (Element Plus 变量级覆盖) ────────────── */
 /* 注: 主按钮/次按钮已由 themes.css --btn-primary-* 全量 token 化 (gold 主题对齐 §2.3),
    此处仅补充字重统一 + 危险/文本变体对齐 DS-6.0 语义色 */

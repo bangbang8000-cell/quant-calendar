@@ -10,8 +10,12 @@
 
   const EMOJI = { '买入': '🟢', '持有': '🟡', '观望': '⚪', '减仓': '🟠', '卖出': '🔴' };
   const ACTION_ORDER = ['买入', '持有', '观望', '减仓', '卖出'];
+  // V6.6: 动作档位语义色 (qc-status-dot 渲染, 与图例 .focus-action-* 同色)
+  const ACTION_DOT = { '买入': 'is-success', '持有': 'is-warning', '观望': 'is-info', '减仓': 'is-danger', '卖出': 'is-danger' };
   // V5.4.2 (FR): 推荐档位 (level) 符号 — 与后端 focus_digest.LEVEL_EMOJI 同口径
   const TIER_EMOJI = { '强烈推荐': '🔥', '推荐': '🟢', '谨慎推荐': '🟡', '中性': '⚪', '观望': '🔵' };
+  // V6.6: 推荐档位语义色 (qc-status-dot 渲染, 🔥/🟢/🟡/⚪/🔵 → 语义色)
+  const TIER_DOT = { '强烈推荐': 'is-danger', '推荐': 'is-success', '谨慎推荐': 'is-warning', '中性': 'is-info', '观望': 'is-running' };
   const SESSIONS = [
     { v: 'pre_open', l: '盘前 09:00' },
     { v: 'intraday_1', l: '盘中 10:30' },
@@ -43,7 +47,7 @@
       <div>
         <!-- 今日概览卡 -->
         <div class="card mb-4">
-          <div class="card-title">🎯 重点跟踪 · 今日概览
+          <div class="card-title"><qc-icon name="target" :size="14" /> 重点跟踪 · 今日概览
             <span class="card-title-hint" v-if="latestNote">{{ latestNote }}</span>
             <span class="card-title-hint" v-if="baseNote">{{ baseNote }}</span>
           </div>
@@ -68,20 +72,20 @@
             <div class="focus-action-legend">
               <span v-for="a in ACTION_ORDER" :key="a" class="focus-action-legend-item">
                 <span class="focus-action-dot" :class="'focus-action-' + a"></span>
-                {{ EMOJI[a] }} {{ a }} <b>{{ results.actions[a] || 0 }}</b>
+                {{ a }} <b>{{ results.actions[a] || 0 }}</b>
               </span>
             </div>
           </div>
           <div v-else class="flex-gap-8">
             <el-tag v-for="a in ACTION_ORDER" :key="a" :type="tagType(a)" size="small" effect="light">
-              {{ EMOJI[a] }} {{ a }}: 0
+              <span class="qc-status-dot" :class="ACTION_DOT[a]"></span> {{ a }}: 0
             </el-tag>
           </div>
         </div>
 
         <!-- 当日多时点结果 -->
         <div class="card mb-4">
-          <div class="card-title">📊 当日多时点结果
+          <div class="card-title"><qc-icon name="bar-chart-3" :size="14" /> 当日多时点结果
             <span class="card-title-hint">时段: {{ sessionLabel }} · 点击行展开详情</span>
           </div>
           <div v-if="loading" class="color-secondary">加载中…</div>
@@ -92,7 +96,7 @@
             <!-- V5.4.2 (FR): 按推荐档位归类 (强烈推荐→观望), 组内评分降序 — 后端 results.groups 已就绪 -->
             <template v-for="(rows, lv) in displayGroups" :key="lv">
               <div class="focus-tier-header">
-                <span class="focus-tier-emoji">{{ TIER_EMOJI[lv] || '·' }}</span>
+                <span class="focus-tier-emoji"><span class="qc-status-dot" :class="TIER_DOT[lv] || 'is-info'"></span></span>
                 <span class="focus-tier-name">{{ lv }}</span>
                 <span class="color-secondary">({{ rows.length }})</span>
               </div>
@@ -100,13 +104,13 @@
                 :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
                 @click="toggle(row.stock_code)" tabindex="0" role="button"
                 @keydown.enter.prevent="toggle(row.stock_code)">
-                <span class="focus-row-emoji">{{ EMOJI[row.action] || '·' }}</span>
+                <span class="focus-row-emoji"><span class="qc-status-dot" :class="ACTION_DOT[row.action] || 'is-info'"></span></span>
                 <span class="focus-row-name">{{ row.stock_name }}
                   <span class="color-secondary">({{ row.stock_code }})</span>
                   <!-- V5.4.2 (FR): 入池状态徽标 — 新入池/在池/已出池 + 自选/持仓 -->
                   <span v-if="poolStatus[row.stock_code]" class="focus-row-badges">
                     <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'watchlist'"
-                      size="small" type="warning" effect="light" class="focus-badge">⭐ 自选</el-tag>
+                      size="small" type="warning" effect="light" class="focus-badge"><qc-icon name="star" :size="14" /> 自选</el-tag>
                     <el-tag v-if="poolStatus[row.stock_code].pool_state === 'new_pool'"
                       size="small" type="success" effect="light" class="focus-badge">🆕 新入池</el-tag>
                     <el-tag v-else-if="poolStatus[row.stock_code].pool_state === 'in_pool'"
@@ -122,7 +126,7 @@
                 <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
                 <el-button size="small" circle text type="primary" class="focus-row-open"
                   @click.stop="openStockDetail(row.stock_code)"
-                  :title="'打开 ' + row.stock_code + ' 详情'">📈</el-button>
+                  :title="'打开 ' + row.stock_code + ' 详情'"><qc-icon name="trending-up" :size="14" /></el-button>
                 <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
                 <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
                   <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
@@ -153,7 +157,7 @@
 
         <!-- 历史记录 -->
         <div class="card mb-4">
-          <div class="card-title">🕘 历史记录 <span class="card-title-hint">当日时段分组</span></div>
+          <div class="card-title"><qc-icon name="history" :size="14" /> 历史记录 <span class="card-title-hint">当日时段分组</span></div>
           <div v-if="Object.keys(history.sessions || {}).length === 0" class="color-secondary">
             该日期暂无历史评估记录
           </div>
@@ -182,7 +186,7 @@
 
         <!-- 效果块 -->
         <div class="card">
-          <div class="card-title">📈 评估效果 <span class="card-title-hint">历史命中率（决策复盘）</span></div>
+          <div class="card-title"><qc-icon name="trending-up" :size="14" /> 评估效果 <span class="card-title-hint">历史命中率（决策复盘）</span></div>
           <div v-if="trackLoading" class="color-secondary">加载中…</div>
           <div v-else class="flex-gap-8">
             <el-tag v-for="w in TRACK_WINDOWS" :key="w.key" size="small" :type="rateTagType(w.key)">
@@ -392,7 +396,7 @@
       // V5.4.2 (fix): SESSION_LABELS 需经 setup 暴露, 模板才能访问 (Vue 模板仅见实例绑定)
       return { curDate, session, results, history, track, trackLoading, trackNote,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
-               TRACK_WINDOWS, EMOJI, TIER_EMOJI, SESSION_LABELS, displayGroups, latestNote,
+               TRACK_WINDOWS, EMOJI, ACTION_DOT, TIER_EMOJI, TIER_DOT, SESSION_LABELS, displayGroups, latestNote,
                baseNote,
                sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,

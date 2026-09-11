@@ -169,9 +169,9 @@ function navigateToStrategyFilter(strategyName) {
     strategyFilter.value.mode = 'union';
     localStorage.setItem('quant_strategy_filter_selected', JSON.stringify([strategyName]));
     localStorage.setItem('quant_strategy_filter_mode', 'union');
-    // 跳转到日历页
+    // 跳转到日历页 (V6.6.1: 4 视图合并后主视图 key=calendar)
     currentPage.value = 'calendar';
-    currentSubPage.value = 'daily';
+    currentSubPage.value = 'calendar';
 }
 
       return {

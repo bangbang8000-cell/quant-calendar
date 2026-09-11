@@ -12,37 +12,37 @@
                 <!-- V5.2.3: 市场复盘/异动扫描移入短线复盘 → 本组件在 shortterm 下也渲染这两个子页 -->
                 <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && (currentSubPage === 'market-review' || currentSubPage === 'scan'))" key="research">
                     <!-- v3.16 (16.8): 功能未开启时的统一占位 (仅策略研究菜单下生效, 短线复盘托管不受研究开关影响) -->
-                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
+                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="lock" title="研究功能未开启"
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
-                        <div class="card-title">📊 策略研究概览</div>
+                        <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>
                         <!-- 快速入口网格 -->
                         <div class="dashboard-grid">
                             <div class="stat-card clickable" @click="currentSubPage = 'quant-research'">
-                                <div class="stat-icon">🔬</div>
+                                <div class="stat-icon"><qc-icon name="flask-conical" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ strategies.length }}</div>
                                     <div class="stat-label">策略总数</div>
                                 </div>
                             </div>
-                            <div class="stat-card clickable" @click="currentSubPage = 'strategy-write'">
-                                <div class="stat-icon">✏️</div>
+                            <div class="stat-card clickable" @click="openStrategyManage('template')">
+                                <div class="stat-icon"><qc-icon name="pencil" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ variants.length }}</div>
                                     <div class="stat-label">微调策略</div>
                                 </div>
                             </div>
-                            <div class="stat-card clickable" @click="currentSubPage = 'custom-write'">
-                                <div class="stat-icon">🚀</div>
+                            <div class="stat-card clickable" @click="openStrategyManage('custom')">
+                                <div class="stat-icon"><qc-icon name="rocket" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ customs.length }}</div>
                                     <div class="stat-label">自定义策略</div>
                                 </div>
                             </div>
                             <div class="stat-card clickable" @click="goShortterm('market-review')">
-                                <div class="stat-icon">📋</div>
+                                <div class="stat-icon"><qc-icon name="file-text" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ marketReviews.length }}</div>
                                     <div class="stat-label">市场复盘</div>
@@ -50,7 +50,7 @@
                             </div>
                             <!-- 5.1.0 (T-5.1.4): 研究历史入口 (实验持久化) -->
                             <div class="stat-card clickable" @click="openResearchHistory">
-                                <div class="stat-icon">🗂️</div>
+                                <div class="stat-icon"><qc-icon name="folder" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ researchHistory.length }}</div>
                                     <div class="stat-label">研究历史</div>
@@ -58,27 +58,27 @@
                             </div>
                         </div>
                         <!-- 快速入口列表 -->
-                        <div class="card-title mt-4">🔗 快捷入口</div>
+                        <div class="card-title mt-4"><qc-icon name="link" :size="16" /> 快捷入口</div>
                         <div class="consensus-item clickable" @click="currentSubPage = 'quant-research'">
                             <div class="consensus-badge">1</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🔬 量化研究</div>
+                                <div class="consensus-code"><qc-icon name="flask-conical" :size="14" /> 量化研究</div>
                                 <div class="consensus-name">策略注册表 · 参数方案 · 因子IC分析 · 参数扫描</div>
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'strategy-write'">
+                        <div class="consensus-item clickable" @click="openStrategyManage('template')">
                             <div class="consensus-badge">2</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">✏️ 策略编写</div>
+                                <div class="consensus-code"><qc-icon name="pencil" :size="14" /> 模板编辑</div>
                                 <div class="consensus-name">复制母本 → SelectionSpec 微调 → AI 交易码生成</div>
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'custom-write'">
+                        <div class="consensus-item clickable" @click="openStrategyManage('custom')">
                             <div class="consensus-badge">3</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🚀 全新策略</div>
+                                <div class="consensus-code"><qc-icon name="rocket" :size="14" /> 全新创建</div>
                                 <div class="consensus-name">AI 代写 · 本地回测 · AI 优化</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -86,7 +86,7 @@
                         <div class="consensus-item clickable" @click="currentSubPage = 'backtest'">
                             <div class="consensus-badge">4</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">📊 回测工作台</div>
+                                <div class="consensus-code"><qc-icon name="bar-chart-3" :size="14" /> 回测工作台</div>
                                 <div class="consensus-name">单/多策略回测 · 净值曲线 · 年度收益</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -94,7 +94,7 @@
                         <div class="consensus-item clickable" @click="goShortterm('market-review')">
                             <div class="consensus-badge">5</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">📋 市场复盘</div>
+                                <div class="consensus-code"><qc-icon name="file-text" :size="14" /> 市场复盘</div>
                                 <div class="consensus-name">AI 每日市场解读 · 三大指数 · 板块资金 · 情绪分析</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -102,7 +102,7 @@
                         <div class="consensus-item clickable" @click="goShortterm('scan')">
                             <div class="consensus-badge">6</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">⚡ 异动扫描</div>
+                                <div class="consensus-code"><qc-icon name="zap" :size="14" /> 异动扫描</div>
                                 <div class="consensus-name">涨停 · 跌停 · 放量 · 连板 · 事件提醒</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -111,7 +111,7 @@
                         <div class="consensus-item clickable" @click="openResearchHistory">
                             <div class="consensus-badge">7</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🗂️ 研究历史</div>
+                                <div class="consensus-code"><qc-icon name="folder" :size="14" /> 研究历史</div>
                                 <div class="consensus-name">因子IC · 分层 · 扫描 · 回测 实验记录 · 对比</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -125,17 +125,17 @@
                             desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
                         <template v-else>
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon info">🔬</div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">🟢</div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="flask-conical" :size="18" /></div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success"><span class="qc-status-dot is-success"></span></div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
                             </div>
                             <!-- 策略列表: 卡片 + 选择 -->
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-220" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
                                     <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                                 </el-select>
-                                <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning">▶ 手工运行</el-button>
+                                <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning"><qc-icon name="play" :size="14" /> 手工运行</el-button>
                                 <el-date-picker class="w-150" v-model="runAsOf" type="date" size="small" placeholder="评估日(默认最新)" value-format="YYYY-MM-DD"/>
-                                <el-button size="small" @click="exportActivePtradeCode">📤 导出 PTrade 代码</el-button>
+                                <el-button size="small" @click="exportActivePtradeCode"><qc-icon name="upload" :size="14" /> 导出 PTrade 代码</el-button>
                             </div>
                             <!-- v3.21 (P0-6): 策略纳管卡片 (默认纳管不可删, 可复制调参) -->
                             <div class="strategy-params flex-wrap-gap-12-mb16-c">
@@ -151,9 +151,9 @@
                                         <el-option value="default" label="内置池" />
                                         <el-option value="all" label="全市场" />
                                     </el-select>
-                                    <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning">⚡ 立即生成持仓</el-button>
-                                    <el-button v-if="lastHoldings" size="small" @click="openLastHoldings">📄 查看最近持仓</el-button>
-                                    <el-button size="small" @click="cloneStrategy">📋 复制为副本调参</el-button>
+                                    <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning"><qc-icon name="zap" :size="14" /> 立即生成持仓</el-button>
+                                    <el-button v-if="lastHoldings" size="small" @click="openLastHoldings"><qc-icon name="file-text" :size="14" /> 查看最近持仓</el-button>
+                                    <el-button size="small" @click="cloneStrategy"><qc-icon name="file-text" :size="14" /> 复制为副本调参</el-button>
                                 </div>
                             </div>
                             <div v-if="activeStrategy" class="strategy-detail">
@@ -165,8 +165,8 @@
                                             <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
-                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
-                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
+                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile"><qc-icon name="save" :size="14" /> 保存方案</el-button>
+                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile"><qc-icon name="trash-2" :size="14" /> 删除</el-button>
                                     </div>
                                 </div>
                                 <!-- schema 驱动参数表单 -->
@@ -200,7 +200,7 @@
 
                         <!-- v3.20 (P1-F8): 因子研究 — 单因子IC评价 + 分层回测 -->
                         <div class="factor-research">
-                            <div class="card-title">📊 因子研究</div>
+                            <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-220" v-model="factorKey" size="small" placeholder="选择因子">
                                     <el-option v-for="f in activeStrategy.factor_specs || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
@@ -245,7 +245,7 @@
                             </div>
                             <!-- T-5.1.16: 因子详情面板 (定义/覆盖度/IC衰减/换手/多重检验/近2年) -->
                             <div v-if="factorDetail" class="factor-detail-panel mt-8">
-                                <div class="card-title">📋 因子详情 <span class="text-sm-tertiary">{{ factorDetail.meta.name }} · {{ factorDetail.meta.category }}</span></div>
+                                <div class="card-title"><qc-icon name="file-text" :size="16" /> 因子详情 <span class="text-sm-tertiary">{{ factorDetail.meta.name }} · {{ factorDetail.meta.category }}</span></div>
                                 <div v-if="factorDetail.meta.description" class="text-sm-tertiary-mt8">{{ factorDetail.meta.description }}</div>
                                 <!-- 覆盖度 -->
                                 <div class="grid-auto-fit-140-mb16 mt-8">
@@ -286,10 +286,10 @@
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
                             <div class="sweep-research mt-8">
-                                <div class="card-title">🔬 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
+                                <div class="card-title"><qc-icon name="flask-conical" :size="16" /> 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
                                 <div class="flex-wrap-gap-12-mb16-c">
                                     <el-input class="w-260" size="small" v-model="sweepGrid" placeholder='JSON 网格, 如 {"top_n":[10,20,30],"st_filter":[true,false]}' />
-                                    <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading">▶ 运行扫描</el-button>
+                                    <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading"><qc-icon name="play" :size="14" /> 运行扫描</el-button>
                                     <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
                                 </div>
                                 <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
@@ -308,14 +308,20 @@
                                         <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
-                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠ 疑似过拟合</span>
+                                        <span v-if="row.overfit_warning" class="text-sm-tertiary"><qc-icon name="alert-triangle" :size="14" /> 疑似过拟合</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-else-if="currentSubPage === 'strategy-write'" class="card">
-                        <div class="card-title">⚙ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
+                    <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
+                        <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
+                        <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
+                        <div class="flex-gap-8-mb16">
+                            <el-button :type="strategyManageMode === 'template' ? 'primary' : ''" size="small" @click="strategyManageMode = 'template'"><qc-icon name="settings" :size="14" /> 模板编辑</el-button>
+                            <el-button :type="strategyManageMode === 'custom' ? 'primary' : ''" size="small" @click="strategyManageMode = 'custom'"><qc-icon name="rocket" :size="14" /> 全新创建</el-button>
+                        </div>
+                        <template v-if="strategyManageMode === 'template'">
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">母本策略</span>
@@ -323,8 +329,8 @@
                                 <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                             </el-select>
                             <el-input class="w-160" size="small" v-model="profileName" placeholder="新策略名(可选)" />
-                            <el-button size="small" type="primary" @click="cloneNewStrategy" :loading="variantBusy">📋 复制为微调策略</el-button>
-                            <el-button size="small" @click="loadVariants">🔄 刷新列表</el-button>
+                            <el-button size="small" type="primary" @click="cloneNewStrategy" :loading="variantBusy"><qc-icon name="file-text" :size="14" /> 复制为微调策略</el-button>
+                            <el-button size="small" @click="loadVariants"><qc-icon name="refresh" :size="14" /> 刷新列表</el-button>
                         </div>
                         <!-- variant 列表 -->
                         <div v-if="variants.length" class="strategy-params flex-wrap-gap-12-mb16-c">
@@ -332,12 +338,12 @@
                             <el-select class="w-220" size="small" v-model="variantSelected" placeholder="选择微调策略" @change="selectVariant(variantSelected)">
                                 <el-option v-for="v in variants" :key="v.id" :label="(v.name || v.id) + ' (' + v.id + ')'" :value="v.id" />
                             </el-select>
-                            <el-button size="small" type="warning" @click="runVariantOnce" :loading="variantBusy">⚡ 生成持仓矩阵</el-button>
+                            <el-button size="small" type="warning" @click="runVariantOnce" :loading="variantBusy"><qc-icon name="zap" :size="14" /> 生成持仓矩阵</el-button>
                         </div>
                         <div v-if="variantMsg" class="text-sm-primary mt-8">{{ variantMsg }}</div>
                         <!-- v3.22 (I3A): 第2步 SelectionSpec 微调协议 -->
                         <div v-if="variantSelected && variantSpec" class="strategy-params">
-                            <div class="section-title-base mt-8">🎯 SelectionSpec 微调选股协议 <span class="text-sm-tertiary">纯收紧约束: 仅在持仓矩阵内二次筛选</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="target" :size="16" /> SelectionSpec 微调选股协议 <span class="text-sm-tertiary">纯收紧约束: 仅在持仓矩阵内二次筛选</span></div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <div class="strategy-param-row">
                                     <label class="strategy-param-label">持仓数量</label>
@@ -368,26 +374,25 @@
                                     <el-input class="w-200" size="small" v-model="specCapText" placeholder="如 50,2000 (留空不限)" />
                                 </div>
                             </div>
-                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving">💾 保存 SelectionSpec</el-button>
+                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving"><qc-icon name="save" :size="14" /> 保存 SelectionSpec</el-button>
                         </div>
                         <!-- v3.22 (I3A): 第3步 AI 交易码 -->
                         <div v-if="variantSelected" class="strategy-params">
-                            <div class="section-title-base mt-8">🤖 AI 交易码 <span class="text-sm-tertiary">读取持仓矩阵 + SelectionSpec → PTrade 兼容代码(含风控)</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="bot" :size="16" /> AI 交易码 <span class="text-sm-tertiary">读取持仓矩阵 + SelectionSpec → PTrade 兼容代码(含风控)</span></div>
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-button size="small" type="primary" @click="genVariantAiCode" :loading="aiCodeLoading">⚡ 生成 AI 交易码</el-button>
-                                <el-button size="small" @click="copyVariantCode" :disabled="!aiCode">📋 复制代码</el-button>
+                                <el-button size="small" type="primary" @click="genVariantAiCode" :loading="aiCodeLoading"><qc-icon name="zap" :size="14" /> 生成 AI 交易码</el-button>
+                                <el-button size="small" @click="copyVariantCode" :disabled="!aiCode"><qc-icon name="file-text" :size="14" /> 复制代码</el-button>
                             </div>
                             <div v-if="aiCode" class="ptrade-code-pre">{{ aiCode }}</div>
                         </div>
-                    </div>
-                    <div v-else-if="currentSubPage === 'custom-write'" class="card">
-                        <div class="card-title">🚀 全新策略 <span class="text-sm-tertiary">AI 代写 → 本地回测 → AI 优化</span></div>
+                        </template>
+                        <template v-else>
                         <!-- v3.22 (I3B): 第1步 AI 代写 -->
                         <div class="strategy-params">
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-input class="w-180" size="small" v-model="customName" placeholder="策略名(如 均线突破)" />
-                                <el-button size="small" type="primary" @click="genCustomCode" :loading="customGenLoading">🤖 AI 代写</el-button>
-                                <el-button size="small" @click="loadCustoms">🔄 刷新列表</el-button>
+                                <el-button size="small" type="primary" @click="genCustomCode" :loading="customGenLoading"><qc-icon name="bot" :size="14" /> AI 代写</el-button>
+                                <el-button size="small" @click="loadCustoms"><qc-icon name="refresh" :size="14" /> 刷新列表</el-button>
                             </div>
                             <el-input type="textarea" :rows="3" size="small" v-model="customPrompt"
                                 placeholder="描述策略思路, 如: 双均线金叉买入, 死叉卖出, 单只仓位20%, 止损8%" class="w-full" />
@@ -398,22 +403,22 @@
                             <el-select class="w-220" size="small" v-model="customSelected" placeholder="选择策略">
                                 <el-option v-for="c in customs" :key="c.id" :label="(c.name || c.id) + ' (' + c.id + ')'" :value="c.id" />
                             </el-select>
-                            <el-button size="small" @click="loadCustomCode" :disabled="!customSelected">📄 读取代码</el-button>
-                            <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading">⚡ 本地回测</el-button>
-                            <el-button size="small" type="primary" @click="runCustomOptimize" :loading="customOptLoading">🧠 AI 优化</el-button>
+                            <el-button size="small" @click="loadCustomCode" :disabled="!customSelected"><qc-icon name="file-text" :size="14" /> 读取代码</el-button>
+                            <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading"><qc-icon name="zap" :size="14" /> 本地回测</el-button>
+                            <el-button size="small" type="primary" @click="runCustomOptimize" :loading="customOptLoading"><qc-icon name="brain" :size="14" /> AI 优化</el-button>
                         </div>
                         <div v-if="customMsg" class="text-sm-primary mt-8">{{ customMsg }}</div>
                         <!-- 代码区 -->
                         <div v-if="customCode" class="strategy-params">
-                            <div class="section-title-base mt-8">💻 策略代码 <span class="text-sm-tertiary">PTrade 兼容</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="code" :size="16" /> 策略代码 <span class="text-sm-tertiary">PTrade 兼容</span></div>
                             <pre class="ptrade-code-pre">{{ customCode }}</pre>
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-button size="small" @click="copyCustomCode">📋 复制代码</el-button>
+                                <el-button size="small" @click="copyCustomCode"><qc-icon name="file-text" :size="14" /> 复制代码</el-button>
                             </div>
                         </div>
                         <!-- 回测结果 -->
                         <div v-if="customBtResult" class="strategy-params">
-                            <div class="section-title-base mt-8">📊 回测结果</div>
+                            <div class="section-title-base mt-8"><qc-icon name="bar-chart-3" :size="16" /> 回测结果</div>
                             <div class="custom-bt-grid">
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
@@ -423,6 +428,7 @@
                                 <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ fmtNum(customBtResult.metrics.win_rate_pct) }}%</b></div>
                             </div>
                         </div>
+                        </template>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">{{ t('research.backtest') }}</div>
@@ -433,7 +439,7 @@
                             </el-select>
                             <el-date-picker class="w-260" v-model="backtestRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
                             <el-input-number class="w-140" v-model="backtestCapital" size="small" :min="10000" :step="50000"/>
-                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning">▶ 运行回测</el-button>
+                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning"><qc-icon name="play" :size="14" /> 运行回测</el-button>
                         </div>
                         <!-- 回测结果 -->
                         <template v-if="backtestResult">
@@ -471,7 +477,7 @@
                                     <el-option label="近30天" :value="30" />
                                     <el-option label="近90天" :value="90" />
                                 </el-select>
-                                <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading">🔄 刷新</el-button>
+                                <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
@@ -503,7 +509,7 @@
                     </div>
                     <!-- 5.1.0 (T-5.1.4): 研究历史子页 (实验持久化列表/对比) -->
                     <div v-else-if="currentSubPage === 'research-history'" class="card">
-                        <div class="card-title">🗂️ 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
+                        <div class="card-title"><qc-icon name="folder" :size="16" /> 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
                         <!-- 类型过滤 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">
@@ -514,7 +520,7 @@
                                 <el-radio-button label="backtest">回测</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
-                            <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory">⬇️ 导出 CSV</el-button>
+                            <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
                         </div>
                         <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" desc="请检查网络后重试" @retry="loadResearchHistory"></qc-state-panel>
@@ -525,12 +531,12 @@
                         <template v-else>
                             <!-- 对比按钮 -->
                             <div v-if="researchHistorySelected.length >= 2" class="flex-c-gap-8 mb-12">
-                                <el-button size="small" type="primary" :loading="researchCompareLoading" @click="runResearchCompare">📊 对比所选 ({{ researchHistorySelected.length }})</el-button>
+                                <el-button size="small" type="primary" :loading="researchCompareLoading" @click="runResearchCompare"><qc-icon name="bar-chart-3" :size="14" /> 对比所选 ({{ researchHistorySelected.length }})</el-button>
                                 <el-button size="small" @click="researchHistorySelected = []">清空选择</el-button>
                             </div>
                             <!-- 对比结果 -->
                             <div v-if="researchCompareRows.length" class="card mb-12">
-                                <div class="card-title">📈 实验对比</div>
+                                <div class="card-title"><qc-icon name="trending-up" :size="16" /> 实验对比</div>
                                 <div class="table-container">
                                     <table class="bt-compare-table">
                                         <thead>
@@ -602,7 +608,7 @@
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-button v-if="selectedReviewDate" size="small" @click="selectedReviewDate = ''">← 返回列表</el-button>
-                                <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘">🔄</el-button>
+                                <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
 
@@ -611,12 +617,12 @@
                             <qc-state-panel v-if="marketReviewLoading" type="loading"></qc-state-panel>
                             <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
                                 desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
-                            <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="📋" title="暂无市场复盘"
+                            <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
                                 desc="尚未生成任何市场复盘报告"></qc-state-panel>
                             <div v-else class="market-review-list">
                                 <div class="flex-wrap mb-4">
-                                    <div class="stat-card"><div class="stat-icon info">📋</div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
-                                    <div class="stat-card"><div class="stat-icon success">📅</div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
+                                    <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
+                                    <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
                                 </div>
                                 <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
                                      tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
@@ -717,7 +723,7 @@
                         <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留刷新操作 -->
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
-                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描">🔄</el-button>
+                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
 
@@ -739,8 +745,8 @@
                         <template v-else-if="scanResult && scanResult.moves && scanResult.moves.length">
                             <div v-if="scanResult.note" class="scan-note">{{ scanResult.note }}</div>
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon warning">⚡</div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon info">🗓</div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon warning"><qc-icon name="zap" :size="18" /></div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
                             </div>
                             <div class="scan-meta">共 {{ scanResult.moves.length }} 只异动(可点击查看详情)</div>
                             <div v-for="group in scanGroups" :key="group.label" class="scan-group">
@@ -807,6 +813,14 @@
       // V5.2.8 (T-5.2.53): 竞态防护推广 — 页面级请求序号
       let _reqSeq = 0;
       if (!state) return {};
+
+      // V6.6.1 (PRD F-6.6.7): 策略管理子页 — 模板编辑/全新创建两态 (原 strategy-write/custom-write 合并)
+      const strategyManageMode = ref(localStorage.getItem('quant_strategy_mode') === 'custom' ? 'custom' : 'template');
+      function openStrategyManage(mode) {
+        strategyManageMode.value = mode;
+        try { localStorage.setItem('quant_strategy_mode', mode); } catch (e) {}
+        state.currentSubPage.value = 'strategy-manage';
+      }
 
       // ===== v3.17.2 (FR-3.17.2): AI 每日市场复盘 — 列表 + 详情 =====
       const marketReviews = ref([]);
@@ -1757,6 +1771,7 @@
 
       return {
         ...state,
+        strategyManageMode, openStrategyManage,
         btHistory, btHistoryLoading, btHistoryError, btHistoryDays, loadBtHistory,
         // 5.1.0 (T-5.1.4): 研究历史
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,

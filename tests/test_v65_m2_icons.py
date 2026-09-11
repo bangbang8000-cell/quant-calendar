@@ -108,3 +108,32 @@ def test_qc_icon_globally_registered():
     assert "AppIconV6.name = 'qc-icon'" in src, "AppIcon 未命名为 qc-icon"
     assert "window.__quantComponents.AppIcon = AppIconV6" in src, \
         "AppIcon 未注册进 __quantComponents"
+
+
+def _strip_semantic(text, semantic_chars):
+    for ch in semantic_chars:
+        text = text.replace(ch, "")
+    return text
+
+
+def test_v66_page_emoji_cleaned():
+    """TC-6.6.1.3: V6.6 清理文件无装饰性 emoji（语义标记按文件剥离）"""
+    # (路径, 该文件保留的语义标记)
+    cases = [
+        ("js/components/research-page.js", "✓✗① ② ③ ④ ⑤─"),
+        ("js/components/ai-page.js", "✓✗−▶"),
+        ("js/components/calendar-page.js", "⭐☆▾▴«»"),
+        ("js/components/focus-view.js", "🟢🟡⚪🟠🔴🔥🔵🆕📍🚪▲▼"),
+        ("js/components/history-record.js", "✓⭐☆"),
+        ("js/components/command-panel.js", "▼✓"),
+        ("js/components/global-header.js", "▼✓"),
+        ("js/command-panel-core.js", ""),
+    ]
+    for rel, semantic in cases:
+        src = _read_f(rel)
+        src = _strip_semantic(src, semantic)
+        src = _strip_allowed(src)
+        src = re.sub(r"<!--.*?-->", "", src, flags=re.S)
+        lines = [ln for ln in src.splitlines() if not ln.strip().startswith("//")]
+        found = _EMOJI_RE.findall("\n".join(lines))
+        assert not found, f"{rel} 仍含装饰性 emoji: {sorted(set(found))}"

@@ -1,38 +1,38 @@
-(function(){const{ref:s,computed:O,watch:ea,inject:aa}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ResearchPage={name:"qc-research-page",template:`
+(function(){const{ref:s,computed:O,watch:aa,inject:ta}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ResearchPage={name:"qc-research-page",template:`
                 <!-- V5.2.3: 市场复盘/异动扫描移入短线复盘 → 本组件在 shortterm 下也渲染这两个子页 -->
                 <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && (currentSubPage === 'market-review' || currentSubPage === 'scan'))" key="research">
                     <!-- v3.16 (16.8): 功能未开启时的统一占位 (仅策略研究菜单下生效, 短线复盘托管不受研究开关影响) -->
-                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="🔒" title="研究功能未开启"
+                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="lock" title="研究功能未开启"
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
                     <template v-else>
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
-                        <div class="card-title">📊 策略研究概览</div>
+                        <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>
                         <!-- 快速入口网格 -->
                         <div class="dashboard-grid">
                             <div class="stat-card clickable" @click="currentSubPage = 'quant-research'">
-                                <div class="stat-icon">🔬</div>
+                                <div class="stat-icon"><qc-icon name="flask-conical" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ strategies.length }}</div>
                                     <div class="stat-label">策略总数</div>
                                 </div>
                             </div>
-                            <div class="stat-card clickable" @click="currentSubPage = 'strategy-write'">
-                                <div class="stat-icon">✏️</div>
+                            <div class="stat-card clickable" @click="openStrategyManage('template')">
+                                <div class="stat-icon"><qc-icon name="pencil" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ variants.length }}</div>
                                     <div class="stat-label">微调策略</div>
                                 </div>
                             </div>
-                            <div class="stat-card clickable" @click="currentSubPage = 'custom-write'">
-                                <div class="stat-icon">🚀</div>
+                            <div class="stat-card clickable" @click="openStrategyManage('custom')">
+                                <div class="stat-icon"><qc-icon name="rocket" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ customs.length }}</div>
                                     <div class="stat-label">自定义策略</div>
                                 </div>
                             </div>
                             <div class="stat-card clickable" @click="goShortterm('market-review')">
-                                <div class="stat-icon">📋</div>
+                                <div class="stat-icon"><qc-icon name="file-text" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ marketReviews.length }}</div>
                                     <div class="stat-label">市场复盘</div>
@@ -40,7 +40,7 @@
                             </div>
                             <!-- 5.1.0 (T-5.1.4): 研究历史入口 (实验持久化) -->
                             <div class="stat-card clickable" @click="openResearchHistory">
-                                <div class="stat-icon">🗂️</div>
+                                <div class="stat-icon"><qc-icon name="folder" :size="18" /></div>
                                 <div class="stat-content">
                                     <div class="stat-value">{{ researchHistory.length }}</div>
                                     <div class="stat-label">研究历史</div>
@@ -48,27 +48,27 @@
                             </div>
                         </div>
                         <!-- 快速入口列表 -->
-                        <div class="card-title mt-4">🔗 快捷入口</div>
+                        <div class="card-title mt-4"><qc-icon name="link" :size="16" /> 快捷入口</div>
                         <div class="consensus-item clickable" @click="currentSubPage = 'quant-research'">
                             <div class="consensus-badge">1</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🔬 量化研究</div>
+                                <div class="consensus-code"><qc-icon name="flask-conical" :size="14" /> 量化研究</div>
                                 <div class="consensus-name">策略注册表 · 参数方案 · 因子IC分析 · 参数扫描</div>
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'strategy-write'">
+                        <div class="consensus-item clickable" @click="openStrategyManage('template')">
                             <div class="consensus-badge">2</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">✏️ 策略编写</div>
+                                <div class="consensus-code"><qc-icon name="pencil" :size="14" /> 模板编辑</div>
                                 <div class="consensus-name">复制母本 → SelectionSpec 微调 → AI 交易码生成</div>
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="currentSubPage = 'custom-write'">
+                        <div class="consensus-item clickable" @click="openStrategyManage('custom')">
                             <div class="consensus-badge">3</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🚀 全新策略</div>
+                                <div class="consensus-code"><qc-icon name="rocket" :size="14" /> 全新创建</div>
                                 <div class="consensus-name">AI 代写 · 本地回测 · AI 优化</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -76,7 +76,7 @@
                         <div class="consensus-item clickable" @click="currentSubPage = 'backtest'">
                             <div class="consensus-badge">4</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">📊 回测工作台</div>
+                                <div class="consensus-code"><qc-icon name="bar-chart-3" :size="14" /> 回测工作台</div>
                                 <div class="consensus-name">单/多策略回测 · 净值曲线 · 年度收益</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -84,7 +84,7 @@
                         <div class="consensus-item clickable" @click="goShortterm('market-review')">
                             <div class="consensus-badge">5</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">📋 市场复盘</div>
+                                <div class="consensus-code"><qc-icon name="file-text" :size="14" /> 市场复盘</div>
                                 <div class="consensus-name">AI 每日市场解读 · 三大指数 · 板块资金 · 情绪分析</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -92,7 +92,7 @@
                         <div class="consensus-item clickable" @click="goShortterm('scan')">
                             <div class="consensus-badge">6</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">⚡ 异动扫描</div>
+                                <div class="consensus-code"><qc-icon name="zap" :size="14" /> 异动扫描</div>
                                 <div class="consensus-name">涨停 · 跌停 · 放量 · 连板 · 事件提醒</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -101,7 +101,7 @@
                         <div class="consensus-item clickable" @click="openResearchHistory">
                             <div class="consensus-badge">7</div>
                             <div class="consensus-info">
-                                <div class="consensus-code">🗂️ 研究历史</div>
+                                <div class="consensus-code"><qc-icon name="folder" :size="14" /> 研究历史</div>
                                 <div class="consensus-name">因子IC · 分层 · 扫描 · 回测 实验记录 · 对比</div>
                             </div>
                             <span class="market-review-arrow">›</span>
@@ -115,17 +115,17 @@
                             desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
                         <template v-else>
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon info">🔬</div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon success">🟢</div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="flask-conical" :size="18" /></div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon success"><span class="qc-status-dot is-success"></span></div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
                             </div>
                             <!-- 策略列表: 卡片 + 选择 -->
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-220" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
                                     <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                                 </el-select>
-                                <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning">▶ 手工运行</el-button>
+                                <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning"><qc-icon name="play" :size="14" /> 手工运行</el-button>
                                 <el-date-picker class="w-150" v-model="runAsOf" type="date" size="small" placeholder="评估日(默认最新)" value-format="YYYY-MM-DD"/>
-                                <el-button size="small" @click="exportActivePtradeCode">📤 导出 PTrade 代码</el-button>
+                                <el-button size="small" @click="exportActivePtradeCode"><qc-icon name="upload" :size="14" /> 导出 PTrade 代码</el-button>
                             </div>
                             <!-- v3.21 (P0-6): 策略纳管卡片 (默认纳管不可删, 可复制调参) -->
                             <div class="strategy-params flex-wrap-gap-12-mb16-c">
@@ -141,9 +141,9 @@
                                         <el-option value="default" label="内置池" />
                                         <el-option value="all" label="全市场" />
                                     </el-select>
-                                    <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning">⚡ 立即生成持仓</el-button>
-                                    <el-button v-if="lastHoldings" size="small" @click="openLastHoldings">📄 查看最近持仓</el-button>
-                                    <el-button size="small" @click="cloneStrategy">📋 复制为副本调参</el-button>
+                                    <el-button size="small" type="warning" @click="runOnceActive" :loading="govRunning"><qc-icon name="zap" :size="14" /> 立即生成持仓</el-button>
+                                    <el-button v-if="lastHoldings" size="small" @click="openLastHoldings"><qc-icon name="file-text" :size="14" /> 查看最近持仓</el-button>
+                                    <el-button size="small" @click="cloneStrategy"><qc-icon name="file-text" :size="14" /> 复制为副本调参</el-button>
                                 </div>
                             </div>
                             <div v-if="activeStrategy" class="strategy-detail">
@@ -155,8 +155,8 @@
                                             <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
-                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile">💾 保存方案</el-button>
-                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile">🗑 删除</el-button>
+                                        <el-button size="small" type="primary" @click="saveProfile" :loading="savingProfile"><qc-icon name="save" :size="14" /> 保存方案</el-button>
+                                        <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile"><qc-icon name="trash-2" :size="14" /> 删除</el-button>
                                     </div>
                                 </div>
                                 <!-- schema 驱动参数表单 -->
@@ -190,7 +190,7 @@
 
                         <!-- v3.20 (P1-F8): 因子研究 — 单因子IC评价 + 分层回测 -->
                         <div class="factor-research">
-                            <div class="card-title">📊 因子研究</div>
+                            <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-220" v-model="factorKey" size="small" placeholder="选择因子">
                                     <el-option v-for="f in activeStrategy.factor_specs || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
@@ -235,7 +235,7 @@
                             </div>
                             <!-- T-5.1.16: 因子详情面板 (定义/覆盖度/IC衰减/换手/多重检验/近2年) -->
                             <div v-if="factorDetail" class="factor-detail-panel mt-8">
-                                <div class="card-title">📋 因子详情 <span class="text-sm-tertiary">{{ factorDetail.meta.name }} · {{ factorDetail.meta.category }}</span></div>
+                                <div class="card-title"><qc-icon name="file-text" :size="16" /> 因子详情 <span class="text-sm-tertiary">{{ factorDetail.meta.name }} · {{ factorDetail.meta.category }}</span></div>
                                 <div v-if="factorDetail.meta.description" class="text-sm-tertiary-mt8">{{ factorDetail.meta.description }}</div>
                                 <!-- 覆盖度 -->
                                 <div class="grid-auto-fit-140-mb16 mt-8">
@@ -276,10 +276,10 @@
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
                             <div class="sweep-research mt-8">
-                                <div class="card-title">🔬 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
+                                <div class="card-title"><qc-icon name="flask-conical" :size="16" /> 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
                                 <div class="flex-wrap-gap-12-mb16-c">
                                     <el-input class="w-260" size="small" v-model="sweepGrid" placeholder='JSON 网格, 如 {"top_n":[10,20,30],"st_filter":[true,false]}' />
-                                    <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading">▶ 运行扫描</el-button>
+                                    <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading"><qc-icon name="play" :size="14" /> 运行扫描</el-button>
                                     <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
                                 </div>
                                 <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
@@ -298,14 +298,20 @@
                                         <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
                                         <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
-                                        <span v-if="row.overfit_warning" class="text-sm-tertiary">⚠ 疑似过拟合</span>
+                                        <span v-if="row.overfit_warning" class="text-sm-tertiary"><qc-icon name="alert-triangle" :size="14" /> 疑似过拟合</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-else-if="currentSubPage === 'strategy-write'" class="card">
-                        <div class="card-title">⚙ 策略编写 <span class="text-sm-tertiary">复制母本 → 参数 → 持仓矩阵 → SelectionSpec → AI 交易码</span></div>
+                    <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
+                        <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
+                        <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
+                        <div class="flex-gap-8-mb16">
+                            <el-button :type="strategyManageMode === 'template' ? 'primary' : ''" size="small" @click="strategyManageMode = 'template'"><qc-icon name="settings" :size="14" /> 模板编辑</el-button>
+                            <el-button :type="strategyManageMode === 'custom' ? 'primary' : ''" size="small" @click="strategyManageMode = 'custom'"><qc-icon name="rocket" :size="14" /> 全新创建</el-button>
+                        </div>
+                        <template v-if="strategyManageMode === 'template'">
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">母本策略</span>
@@ -313,8 +319,8 @@
                                 <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                             </el-select>
                             <el-input class="w-160" size="small" v-model="profileName" placeholder="新策略名(可选)" />
-                            <el-button size="small" type="primary" @click="cloneNewStrategy" :loading="variantBusy">📋 复制为微调策略</el-button>
-                            <el-button size="small" @click="loadVariants">🔄 刷新列表</el-button>
+                            <el-button size="small" type="primary" @click="cloneNewStrategy" :loading="variantBusy"><qc-icon name="file-text" :size="14" /> 复制为微调策略</el-button>
+                            <el-button size="small" @click="loadVariants"><qc-icon name="refresh" :size="14" /> 刷新列表</el-button>
                         </div>
                         <!-- variant 列表 -->
                         <div v-if="variants.length" class="strategy-params flex-wrap-gap-12-mb16-c">
@@ -322,12 +328,12 @@
                             <el-select class="w-220" size="small" v-model="variantSelected" placeholder="选择微调策略" @change="selectVariant(variantSelected)">
                                 <el-option v-for="v in variants" :key="v.id" :label="(v.name || v.id) + ' (' + v.id + ')'" :value="v.id" />
                             </el-select>
-                            <el-button size="small" type="warning" @click="runVariantOnce" :loading="variantBusy">⚡ 生成持仓矩阵</el-button>
+                            <el-button size="small" type="warning" @click="runVariantOnce" :loading="variantBusy"><qc-icon name="zap" :size="14" /> 生成持仓矩阵</el-button>
                         </div>
                         <div v-if="variantMsg" class="text-sm-primary mt-8">{{ variantMsg }}</div>
                         <!-- v3.22 (I3A): 第2步 SelectionSpec 微调协议 -->
                         <div v-if="variantSelected && variantSpec" class="strategy-params">
-                            <div class="section-title-base mt-8">🎯 SelectionSpec 微调选股协议 <span class="text-sm-tertiary">纯收紧约束: 仅在持仓矩阵内二次筛选</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="target" :size="16" /> SelectionSpec 微调选股协议 <span class="text-sm-tertiary">纯收紧约束: 仅在持仓矩阵内二次筛选</span></div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <div class="strategy-param-row">
                                     <label class="strategy-param-label">持仓数量</label>
@@ -358,26 +364,25 @@
                                     <el-input class="w-200" size="small" v-model="specCapText" placeholder="如 50,2000 (留空不限)" />
                                 </div>
                             </div>
-                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving">💾 保存 SelectionSpec</el-button>
+                            <el-button size="small" type="primary" @click="saveVariantSpec" :loading="variantSaving"><qc-icon name="save" :size="14" /> 保存 SelectionSpec</el-button>
                         </div>
                         <!-- v3.22 (I3A): 第3步 AI 交易码 -->
                         <div v-if="variantSelected" class="strategy-params">
-                            <div class="section-title-base mt-8">🤖 AI 交易码 <span class="text-sm-tertiary">读取持仓矩阵 + SelectionSpec → PTrade 兼容代码(含风控)</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="bot" :size="16" /> AI 交易码 <span class="text-sm-tertiary">读取持仓矩阵 + SelectionSpec → PTrade 兼容代码(含风控)</span></div>
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-button size="small" type="primary" @click="genVariantAiCode" :loading="aiCodeLoading">⚡ 生成 AI 交易码</el-button>
-                                <el-button size="small" @click="copyVariantCode" :disabled="!aiCode">📋 复制代码</el-button>
+                                <el-button size="small" type="primary" @click="genVariantAiCode" :loading="aiCodeLoading"><qc-icon name="zap" :size="14" /> 生成 AI 交易码</el-button>
+                                <el-button size="small" @click="copyVariantCode" :disabled="!aiCode"><qc-icon name="file-text" :size="14" /> 复制代码</el-button>
                             </div>
                             <div v-if="aiCode" class="ptrade-code-pre">{{ aiCode }}</div>
                         </div>
-                    </div>
-                    <div v-else-if="currentSubPage === 'custom-write'" class="card">
-                        <div class="card-title">🚀 全新策略 <span class="text-sm-tertiary">AI 代写 → 本地回测 → AI 优化</span></div>
+                        </template>
+                        <template v-else>
                         <!-- v3.22 (I3B): 第1步 AI 代写 -->
                         <div class="strategy-params">
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-input class="w-180" size="small" v-model="customName" placeholder="策略名(如 均线突破)" />
-                                <el-button size="small" type="primary" @click="genCustomCode" :loading="customGenLoading">🤖 AI 代写</el-button>
-                                <el-button size="small" @click="loadCustoms">🔄 刷新列表</el-button>
+                                <el-button size="small" type="primary" @click="genCustomCode" :loading="customGenLoading"><qc-icon name="bot" :size="14" /> AI 代写</el-button>
+                                <el-button size="small" @click="loadCustoms"><qc-icon name="refresh" :size="14" /> 刷新列表</el-button>
                             </div>
                             <el-input type="textarea" :rows="3" size="small" v-model="customPrompt"
                                 placeholder="描述策略思路, 如: 双均线金叉买入, 死叉卖出, 单只仓位20%, 止损8%" class="w-full" />
@@ -388,22 +393,22 @@
                             <el-select class="w-220" size="small" v-model="customSelected" placeholder="选择策略">
                                 <el-option v-for="c in customs" :key="c.id" :label="(c.name || c.id) + ' (' + c.id + ')'" :value="c.id" />
                             </el-select>
-                            <el-button size="small" @click="loadCustomCode" :disabled="!customSelected">📄 读取代码</el-button>
-                            <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading">⚡ 本地回测</el-button>
-                            <el-button size="small" type="primary" @click="runCustomOptimize" :loading="customOptLoading">🧠 AI 优化</el-button>
+                            <el-button size="small" @click="loadCustomCode" :disabled="!customSelected"><qc-icon name="file-text" :size="14" /> 读取代码</el-button>
+                            <el-button size="small" type="warning" @click="runCustomBacktest" :loading="customBtLoading"><qc-icon name="zap" :size="14" /> 本地回测</el-button>
+                            <el-button size="small" type="primary" @click="runCustomOptimize" :loading="customOptLoading"><qc-icon name="brain" :size="14" /> AI 优化</el-button>
                         </div>
                         <div v-if="customMsg" class="text-sm-primary mt-8">{{ customMsg }}</div>
                         <!-- 代码区 -->
                         <div v-if="customCode" class="strategy-params">
-                            <div class="section-title-base mt-8">💻 策略代码 <span class="text-sm-tertiary">PTrade 兼容</span></div>
+                            <div class="section-title-base mt-8"><qc-icon name="code" :size="16" /> 策略代码 <span class="text-sm-tertiary">PTrade 兼容</span></div>
                             <pre class="ptrade-code-pre">{{ customCode }}</pre>
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-button size="small" @click="copyCustomCode">📋 复制代码</el-button>
+                                <el-button size="small" @click="copyCustomCode"><qc-icon name="file-text" :size="14" /> 复制代码</el-button>
                             </div>
                         </div>
                         <!-- 回测结果 -->
                         <div v-if="customBtResult" class="strategy-params">
-                            <div class="section-title-base mt-8">📊 回测结果</div>
+                            <div class="section-title-base mt-8"><qc-icon name="bar-chart-3" :size="16" /> 回测结果</div>
                             <div class="custom-bt-grid">
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
@@ -413,6 +418,7 @@
                                 <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ fmtNum(customBtResult.metrics.win_rate_pct) }}%</b></div>
                             </div>
                         </div>
+                        </template>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">{{ t('research.backtest') }}</div>
@@ -423,7 +429,7 @@
                             </el-select>
                             <el-date-picker class="w-260" v-model="backtestRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
                             <el-input-number class="w-140" v-model="backtestCapital" size="small" :min="10000" :step="50000"/>
-                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning">▶ 运行回测</el-button>
+                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning"><qc-icon name="play" :size="14" /> 运行回测</el-button>
                         </div>
                         <!-- 回测结果 -->
                         <template v-if="backtestResult">
@@ -461,7 +467,7 @@
                                     <el-option label="近30天" :value="30" />
                                     <el-option label="近90天" :value="90" />
                                 </el-select>
-                                <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading">🔄 刷新</el-button>
+                                <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
@@ -493,7 +499,7 @@
                     </div>
                     <!-- 5.1.0 (T-5.1.4): 研究历史子页 (实验持久化列表/对比) -->
                     <div v-else-if="currentSubPage === 'research-history'" class="card">
-                        <div class="card-title">🗂️ 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
+                        <div class="card-title"><qc-icon name="folder" :size="16" /> 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
                         <!-- 类型过滤 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">
@@ -504,7 +510,7 @@
                                 <el-radio-button label="backtest">回测</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
-                            <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory">⬇️ 导出 CSV</el-button>
+                            <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
                         </div>
                         <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" desc="请检查网络后重试" @retry="loadResearchHistory"></qc-state-panel>
@@ -515,12 +521,12 @@
                         <template v-else>
                             <!-- 对比按钮 -->
                             <div v-if="researchHistorySelected.length >= 2" class="flex-c-gap-8 mb-12">
-                                <el-button size="small" type="primary" :loading="researchCompareLoading" @click="runResearchCompare">📊 对比所选 ({{ researchHistorySelected.length }})</el-button>
+                                <el-button size="small" type="primary" :loading="researchCompareLoading" @click="runResearchCompare"><qc-icon name="bar-chart-3" :size="14" /> 对比所选 ({{ researchHistorySelected.length }})</el-button>
                                 <el-button size="small" @click="researchHistorySelected = []">清空选择</el-button>
                             </div>
                             <!-- 对比结果 -->
                             <div v-if="researchCompareRows.length" class="card mb-12">
-                                <div class="card-title">📈 实验对比</div>
+                                <div class="card-title"><qc-icon name="trending-up" :size="16" /> 实验对比</div>
                                 <div class="table-container">
                                     <table class="bt-compare-table">
                                         <thead>
@@ -592,7 +598,7 @@
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-button v-if="selectedReviewDate" size="small" @click="selectedReviewDate = ''">← 返回列表</el-button>
-                                <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘">🔄</el-button>
+                                <el-button size="small" @click="loadMarketReviews" aria-label="刷新市场复盘"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
 
@@ -601,12 +607,12 @@
                             <qc-state-panel v-if="marketReviewLoading" type="loading"></qc-state-panel>
                             <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
                                 desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
-                            <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="📋" title="暂无市场复盘"
+                            <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
                                 desc="尚未生成任何市场复盘报告"></qc-state-panel>
                             <div v-else class="market-review-list">
                                 <div class="flex-wrap mb-4">
-                                    <div class="stat-card"><div class="stat-icon info">📋</div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
-                                    <div class="stat-card"><div class="stat-icon success">📅</div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
+                                    <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
+                                    <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
                                 </div>
                                 <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
                                      tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
@@ -707,7 +713,7 @@
                         <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留刷新操作 -->
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
-                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描">🔄</el-button>
+                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
 
@@ -729,8 +735,8 @@
                         <template v-else-if="scanResult && scanResult.moves && scanResult.moves.length">
                             <div v-if="scanResult.note" class="scan-note">{{ scanResult.note }}</div>
                             <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon warning">⚡</div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon info">🗓</div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
+                                <div class="stat-card"><div class="stat-icon warning"><qc-icon name="zap" :size="18" /></div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
+                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
                             </div>
                             <div class="scan-meta">共 {{ scanResult.moves.length }} 只异动(可点击查看详情)</div>
                             <div v-for="group in scanGroups" :key="group.label" class="scan-group">
@@ -789,4 +795,4 @@
                         </div>
                     </div>
                     </template>
-                </div>`,setup(){const y=aa("qcState"),Te=Vue.ref(!1),qe=Vue.ref(!1);let l=0;if(!y)return{};const ze=s([]),F=s(!1),j=s(!1),L=s(""),H=s(null),U=s(!1),x=s(!1);async function G(){const e=++l;F.value=!0,j.value=!1;try{const a=await fetch("/api/market/reviews?limit=30",{headers:u()}).then(t=>t.json());if(e!==l)return;a&&a.success?ze.value=Array.isArray(a.data)?a.data:[]:j.value=!0}catch(a){console.error("[market-review] 复盘列表加载失败:",a),j.value=!0}finally{e===l&&(F.value=!1)}}function ta(e){L.value=e,Oe(e)}function sa(){L.value="",H.value=null,x.value=!1}async function Oe(e){const a=++l;U.value=!0,x.value=!1,H.value=null;try{const t=e?"/api/market/review?date="+encodeURIComponent(e):"/api/market/review",i=await fetch(t,{headers:u()}).then(n=>n.json());if(a!==l)return;i&&i.success?H.value=i.data:x.value=!0}catch(t){console.error("[market-review] 复盘详情加载失败:",t),x.value=!0}finally{a===l&&(U.value=!1)}}function la(e){return e>0?"up":e<0?"down":"flat"}function ia(e){return e==null||isNaN(Number(e))?"—":(e>0?"+":"")+Number(e).toFixed(2)+"%"}function ra(e){const a={indexes:"指数",sectors:"板块",moneyflow:"资金",sentiment:"情绪"};return Object.entries(e||{}).map(function(t){const i=t[0],n=t[1],m=!n||n==="unavailable"||n==="数据不可达";return{label:a[i]||i,value:m?"数据不可达":n,unavailable:m}})}const Y=s(["strategies","watchlist"]),$=s(!1),A=s(!1),E=s(null),je=s("watchlist"),K=s(!1),b=s(null);async function Le(){const e=++l;$.value=!0,A.value=!1;try{const a="/api/market/scan?pool="+encodeURIComponent((Y.value||[]).join(",")||"all"),t=await fetch(a,{headers:u()}).then(i=>i.json());if(e!==l)return;t&&t.success?E.value=t.data||{moves:[],note:""}:A.value=!0}catch(a){console.error("[scan] 异动扫描失败:",a),A.value=!0}finally{e===l&&($.value=!1)}}async function He(){const e=++l;K.value=!0;try{const a="/api/market/events?scope="+encodeURIComponent(je.value),t=await fetch(a,{headers:u()}).then(i=>i.json());if(e!==l)return;t&&t.success?b.value=t.data||{events:[],note:""}:b.value={events:[],note:"事件数据暂不可用"}}catch(a){console.error("[scan] 事件提醒加载失败:",a),b.value={events:[],note:"事件数据暂不可用"}}finally{e===l&&(K.value=!1)}}O(function(){const e={strategies:"当日入池",watchlist:"自选股"},a=(Y.value||[]).map(function(t){return e[t]}).filter(Boolean);return a.length?a.join("+"):"所选范围"});const na=O(function(){const e=["涨停","连板","放量","异动振幅","跌停"],a=E.value&&E.value.moves||[],t=[];return e.forEach(function(i){const n=a.filter(function(m){return(m.labels||[]).indexOf(i)>=0});n.length&&t.push({label:i,moves:n})}),t}),ca=O(function(){const e={};return(b.value&&b.value.events||[]).forEach(function(a){(e[a.type]=e[a.type]||[]).push(a)}),Object.keys(e).map(function(a){return{type:a,events:e[a]}})});function oa(e){return e==="跌停"?"down":e==="涨停"||e==="连板"?"up":"neutral"}function da(e){return e==null||isNaN(Number(e))?"--":Number(e).toFixed(2)}function va(e){return e>0?"up":e<0?"down":"flat"}function ua(e){return e==null||isNaN(Number(e))?"—":(e>0?"+":"")+Number(e).toFixed(2)+"%"}const _=s([]),Q=s(!1),W=s(!1),r=s(""),v=s({}),X=s(!1),Ae=s(""),S=s(""),Z=s([]),R=s([]),C=s(""),N=s(""),ee=s(!0),ae=s(!0),te=s("20:00"),se=s("default"),le=s(!1),V=s(""),ie=O(function(){return _.value.find(function(e){return e.id===r.value})||null});async function d(e,a){a=a||{},a.headers=Object.assign({},a.headers||{});const t=localStorage.getItem("quant_token")||"";return t&&(a.headers.Authorization="Bearer "+t),fetch(e,a)}async function re(){const e=++l;Q.value=!0,W.value=!1;try{const a=await d("/api/strategies").then(function(t){return t.json()});if(e!==l)return;_.value=Array.isArray(a)?a:[],_.value.length&&!r.value&&(r.value=_.value[0].id,Ee())}catch(a){console.error("[research] 策略列表加载失败:",a),W.value=!0}finally{e===l&&(Q.value=!1)}}function Ee(){const e=ie.value;e&&(v.value={},e.schema.forEach(function(a){v.value[a.key]=a.default}),S.value="",Ve(),D(),ne())}async function D(){if(!r.value){R.value=[];return}try{const e=await d("/api/strategies/"+r.value+"/profiles").then(function(a){return a.json()});R.value=e&&e.data&&e.data.profiles||[],C.value=""}catch(e){console.error("[research] 方案列表加载失败:",e),R.value=[]}}async function ma(){Te.value=!0;const e=(N.value||"").trim();if(!e){window._core&&window._core.showToast("请输入方案名称");return}try{const a=await d("/api/strategies/"+r.value+"/profiles",{method:"POST",body:JSON.stringify({name:e,params:v.value})}).then(function(t){return t.json()});if(a&&a.detail){window._core&&window._core.showToast(String(a.detail));return}N.value="",await D(),window._core&&window._core.showToast("方案已保存")}catch(a){console.error("[research] 方案保存失败:",a),window._core&&window._core.showToast("方案保存失败")}}function pa(){const e=R.value.find(function(a){return a.id===C.value});e&&(Object.keys(e.params||{}).forEach(function(a){v.value[a]=e.params[a]}),window._core&&window._core.showToast("已应用方案: "+e.name))}async function fa(){if(C.value)try{await d("/api/strategies/"+r.value+"/profiles/"+C.value,{method:"DELETE"}).then(function(e){return e.json()}),await D(),window._core&&window._core.showToast("方案已删除")}catch(e){console.error("[research] 方案删除失败:",e)}}async function ne(){try{const e=await d("/api/strategies/governance").then(function(i){return i.json()}),t=(e&&e.data&&e.data.strategies||{})[r.value]||{};ee.value=t.enabled!==!1,te.value=t.schedule||"20:00",se.value=t.universe==="all"?"all":"default",ae.value=t.show_in_calendar!==!1,V.value=t.last_holdings||""}catch(e){console.error("[research] 纳管状态加载失败:",e)}}async function ya(){try{await d("/api/strategies/governance",{method:"PUT",body:JSON.stringify({strategies:function(){const e={};return e[r.value]={enabled:ee.value,schedule:te.value,universe:se.value,show_in_calendar:ae.value},e}()})}).then(function(e){return e.json()}),window._core&&window._core.showToast("纳管设置已更新")}catch(e){console.error("[research] 纳管更新失败:",e)}}async function ga(){if(r.value){le.value=!0;try{const e=await d("/api/strategies/"+r.value+"/run-once",{method:"POST",body:JSON.stringify({as_of:Ae.value||void 0})}).then(function(a){return a.json()});if(e&&e.detail){window._core&&window._core.showToast(String(e.detail));return}window._core&&window._core.showToast("持仓已生成"),await ne()}catch(e){console.error("[research] run-once 失败:",e),window._core&&window._core.showToast("持仓生成失败")}finally{le.value=!1}}}function wa(){V.value&&window.open(V.value.replace(/\./g,"/").replace(/^\/?home\/evergreen\/dsh-workspace\/quant-calendar-ops\//,"/api/static/"),"_blank")}function ha(){const e=ie.value;if(!e)return;const a=(N.value||"").trim()||e.name+"-副本";ba(a,Object.assign({},v.value)),window._core&&window._core.showToast("已复制为副本方案: "+a)}async function ba(e,a){try{await d("/api/strategies/"+r.value+"/profiles",{method:"POST",body:JSON.stringify({name:e,params:a})}).then(function(t){return t.json()}),await D()}catch(t){console.error("[research] 副本保存失败:",t)}}async function Ve(){const e=++l;if(r.value)try{const a=await d("/api/strategies/"+r.value+"/runs?limit=5").then(function(t){return t.json()});if(e!==l)return;Z.value=Array.isArray(a)?a:[]}catch{Z.value=[]}}async function ka(){if(r.value){X.value=!0;try{const e=await d("/api/strategies/"+r.value+"/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({params:v.value,as_of:Ae.value||void 0})}).then(function(a){return a.json()});e&&e.status==="success"?Ve():alert("运行失败: "+(e.detail||JSON.stringify(e)))}catch(e){console.error("[research] 策略运行失败:",e),alert("运行失败: "+e.message)}finally{X.value=!1}}}async function xa(){if(r.value)try{const e=Object.keys(v.value).map(function(t){return encodeURIComponent(t)+"="+encodeURIComponent(v.value[t])}).join("&"),a=await d("/api/strategies/"+r.value+"/ptrade-code?"+e).then(function(t){return t.json()});a&&a.code?S.value=a.code:alert("导出失败: "+(a.detail||JSON.stringify(a)))}catch(e){console.error("[research] PTrade 导出失败:",e),alert("导出失败: "+e.message)}}function _a(){if(!S.value)return;const e=document.createElement("textarea");e.value=S.value,document.body.appendChild(e),e.select();try{document.execCommand("copy")}catch{}document.body.removeChild(e)}ea(function(){return y.currentPage.value+"/"+y.currentSubPage.value},function(e){e==="research/research-overview"&&(re(),G(),ge(),_e()),(e==="research/market-review"||e==="shortterm/market-review")&&!L.value&&G(),(e==="research/scan"||e==="shortterm/scan")&&(Le(),He()),e==="research/quant-research"&&re(),e==="research/backtest-history"&&We()},{immediate:!0});const M=s("mom20"),ce=s(!1),oe=s(!1),Me=s(null),Be=s(null),Sa=[{name:"mom20",category:"technical"},{name:"pe",category:"valuation"},{name:"pb",category:"valuation"},{name:"turnover20",category:"sentiment"},{name:"capital_flow",category:"capital"}],Je=s('{"top_n":[10,20,30]}'),de=s(null),P=s(""),ve=s(!1),Fe=s(null);async function Ra(){if(!r.value){ElementPlus.ElMessage.warning("请先选择策略");return}let e;try{e=JSON.parse(Je.value)}catch{ElementPlus.ElMessage.error("网格 JSON 格式错误");return}if(!e||Object.keys(e).length===0){ElementPlus.ElMessage.warning("网格不能为空");return}ve.value=!0,de.value=null,P.value="";try{const a=await fetch("/api/strategies/"+r.value+"/sweep",{method:"POST",headers:u(),body:JSON.stringify({param_grid:e})}).then(function(t){return t.json()});a&&Array.isArray(a.results)?(de.value=a.results,P.value="完成 "+a.count+" 组"+(a.data_degraded?" (数据不可达, 结果降级)":""),Fe.value=a.param_stability||null):P.value=a&&a.detail||"扫描失败"}catch(a){console.error("[sweep]",a),P.value="扫描失败: "+a.message}finally{ve.value=!1}}async function Ca(){ce.value=!0;try{const e=await d("/api/strategies/factors/ic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:M.value,params:v.value||{}})}).then(function(t){return t.json()}),a=e&&e.report?e.report.n1||{}:{};Me.value=a}catch(e){console.error("[research] 因子IC分析失败:",e),alert("因子 IC 分析失败: "+e.message)}finally{seq===l&&(ce.value=!1)}}async function Na(){oe.value=!0;try{const e=await d("/api/strategies/factors/layer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:M.value,params:v.value||{}})}).then(function(a){return a.json()});e&&e.layers?Be.value=e:alert("分层回测: "+(e.message||"无数据"))}catch(e){console.error("[research] 分层回测失败:",e),alert("分层回测失败: "+e.message)}finally{seq===l&&(oe.value=!1)}}const ue=s(null),me=s(!1);async function Da(){me.value=!0,ue.value=null;try{const e=await d("/api/strategies/factors/detail",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:M.value,params:v.value||{}})}).then(function(a){return a.json()});e&&e.detail?ue.value=e.detail:alert("因子详情: "+(e.message||"无数据"))}catch(e){console.error("[research] 因子详情失败:",e),alert("因子详情失败: "+e.message)}finally{seq===l&&(me.value=!1)}}const Ue=s([]),p=s(null),f=s(null),Ge=s(null),k=s(""),pe=s(!1),I=s(!1),c=s(""),fe=s(""),ye=s("");function u(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function ge(){const e=++l;try{const a=await fetch("/api/strategies/variants",{headers:u()}).then(function(t){return t.json()});if(e!==l)return;Ue.value=a&&a.data&&a.data.variants||[]}catch(a){console.error("[i3a] 加载 variants 失败:",a)}}async function Pa(){if(!r.value){c.value="请先在量化研究选择母本策略";return}I.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+r.value+"/clone",{method:"POST",headers:u(),body:JSON.stringify({name:(N.value||"").trim()||void 0,params:Object.assign({},v.value)})}).then(function(t){return t.json()});if(e&&e.detail){c.value=String(e.detail);return}const a=e&&e.data;a&&a.sid&&(p.value=a.sid,c.value="已复制为新策略: "+a.name,await ge(),await B(a.sid))}catch(e){console.error("[i3a] 复制失败:",e),c.value="复制失败: "+e.message}finally{I.value=!1}}async function Ia(e){p.value=e,c.value="",k.value="",await B(e)}async function B(e){try{const a=await fetch("/api/strategies/"+e+"/selection-spec",{headers:u()}).then(function(t){return t.json()});a&&a.data&&a.data.spec&&(f.value=Object.assign({},a.data.spec),Ge.value=a.data.fields,fe.value=(a.data.spec.industry_scope||[]).join(","),ye.value=(a.data.spec.market_cap_range||[]).join(","))}catch(a){console.error("[i3a] 加载 spec 失败:",a)}}async function Ta(){if(qe.value=!0,!(!p.value||!f.value))try{f.value.industry_scope=fe.value?fe.value.split(/[,，]/).map(function(a){return a.trim()}).filter(Boolean):[],f.value.market_cap_range=ye.value?ye.value.split(/[,，]/).map(Number).filter(function(a){return!isNaN(a)}):[];const e=await fetch("/api/strategies/"+p.value+"/selection-spec",{method:"PUT",headers:u(),body:JSON.stringify({spec:f.value})}).then(function(a){return a.json()});e&&e.data&&e.data.spec&&(f.value=e.data.spec,c.value="SelectionSpec 已保存")}catch(e){console.error("[i3a] 保存 spec 失败:",e),c.value="保存失败"}}async function qa(){if(!p.value){c.value="请先选择/创建微调策略";return}I.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+p.value+"/run-once",{method:"POST",headers:u(),body:"{}"}).then(function(a){return a.json()});c.value=e&&e.detail?String(e.detail):"持仓已生成: "+(e&&e.data&&e.data.symbols||0)+" 只"}catch(e){console.error("[i3a] run-once 失败:",e),c.value="生成持仓失败"}finally{I.value=!1}}async function za(){if(!p.value){c.value="请先选择/创建微调策略";return}f.value||await B(p.value),pe.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+p.value+"/ai-trade-code",{method:"POST",headers:u(),body:JSON.stringify({spec:f.value})}).then(function(a){return a.json()});if(e&&e.detail){c.value=String(e.detail);return}e&&e.data&&(k.value=e.data.code||"",e.data.api_errors&&e.data.api_errors.length?c.value="生成成功(含 API 校验告警 "+e.data.api_errors.length+" 条)":c.value="AI 交易码已生成, 已通过矩阵内校验")}catch(e){console.error("[i3a] AI 交易码失败:",e),c.value="AI 生成失败: "+e.message}finally{pe.value=!1}}function Oa(){if(k.value)if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(k.value).then(function(){c.value="代码已复制"});else{const e=document.createElement("textarea");e.value=k.value,document.body.appendChild(e),e.select(),document.execCommand("copy"),document.body.removeChild(e),c.value="代码已复制"}}const Ye=s(""),we=s(""),$e=s([]),w=s(""),h=s(""),o=s(""),he=s(null),be=s(!1),ke=s(!1),xe=s(!1);function T(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function _e(){const e=++l;try{const a=await fetch("/api/strategies/custom",{headers:T()}).then(function(t){return t.json()});if(e!==l)return;$e.value=a&&a.data&&a.data.customs||[]}catch(a){console.error("[i3b] 加载自定义策略失败:",a)}}async function ja(){if(!we.value.trim()){o.value="请描述策略思路";return}be.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom",{method:"POST",headers:T(),body:JSON.stringify({name:Ye.value.trim()||"自定义策略",prompt:we.value})}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(h.value=e.data.code||"",o.value="AI 代写成功: "+e.data.sid+(e.data.api_errors&&e.data.api_errors.length?" (API 告警 "+e.data.api_errors.length+" 条)":" (校验通过)"),await _e())}catch(e){console.error("[i3b] AI 代写失败:",e),o.value="AI 代写失败: "+e.message}finally{be.value=!1}}async function La(){if(w.value)try{const e=await fetch("/api/strategies/custom/"+w.value+"/code",{headers:T()}).then(function(a){return a.json()});e&&e.data&&(h.value=e.data.code||"",o.value="")}catch(e){console.error("[i3b] 读取代码失败:",e)}}async function Ha(){if(!w.value){o.value="请先选择自定义策略";return}ke.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom/"+w.value+"/backtest",{method:"POST",headers:T(),body:"{}"}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(he.value=e.data,o.value="回测完成")}catch(e){console.error("[i3b] 回测失败:",e),o.value="回测失败: "+e.message}finally{ke.value=!1}}async function Aa(){if(!w.value){o.value="请先选择自定义策略";return}xe.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom/"+w.value+"/ai-optimize",{method:"POST",headers:T(),body:JSON.stringify({backtest:he.value})}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(h.value=e.data.code||"",o.value="AI 优化完成"+(e.data.api_errors&&e.data.api_errors.length?" (API 告警 "+e.data.api_errors.length+" 条)":" (校验通过)"))}catch(e){console.error("[i3b] AI 优化失败:",e),o.value="AI 优化失败: "+e.message}finally{xe.value=!1}}function Ea(){if(h.value)if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(h.value).then(function(){o.value="代码已复制"});else{const e=document.createElement("textarea");e.value=h.value,document.body.appendChild(e),e.select(),document.execCommand("copy"),document.body.removeChild(e),o.value="代码已复制"}}const Ke=Vue.ref([]),Se=Vue.ref(!1),Re=Vue.ref(!1),Qe=Vue.ref(30);async function We(){const e=++l;Se.value=!0,Re.value=!1;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},i=await fetch("/api/backtest/history?days="+Qe.value,{headers:t}).then(function(n){return n.json()});if(e!==l)return;Ke.value=i&&i.data||[]}catch(a){console.error("[backtest] 回测历史加载失败:",a),Re.value=!0}finally{e===l&&(Se.value=!1)}}const J=Vue.ref([]),Ce=Vue.ref(!1),Ne=Vue.ref(!1),q=Vue.ref(""),g=Vue.ref([]),De=Vue.ref(""),Xe=Vue.ref([]),Pe=Vue.ref(!1),Ie=Vue.ref(!1),Va={factor_ic:"因子IC",layer:"分层",sweep:"扫描",backtest:"回测",stability:"稳定性"};function Ma(e){return Va[e]||e||"—"}function Ba(e){y&&y.navigateTo&&y.navigateTo("shortterm",e)}function Ja(){y.currentSubPage.value="research-history",Ze()}async function Ze(){const e=++l;Ce.value=!0,Ne.value=!1;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},i=q.value?"?type="+encodeURIComponent(q.value):"",n=await fetch("/api/strategies/research-history"+i,{headers:t}).then(function(m){return m.json()});if(e!==l)return;J.value=n&&n.items||[]}catch(a){console.error("[research-history] 加载失败:",a),Ne.value=!0}finally{e===l&&(Ce.value=!1)}}async function Fa(){Ie.value=!0;try{const e=window.__quantModules&&window.__quantModules.core||{},a=typeof e.authHeaders=="function"?e.authHeaders():{},t=q.value?"?type="+encodeURIComponent(q.value):"",i=await fetch("/api/strategies/research-history/export"+t,{headers:a});if(!i.ok)throw new Error("HTTP "+i.status);const n=await i.blob(),m=URL.createObjectURL(n),z=document.createElement("a");z.href=m,z.download="research_history.csv",document.body.appendChild(z),z.click(),document.body.removeChild(z),URL.revokeObjectURL(m)}catch(e){console.error("[research-history] 导出失败:",e)}finally{seq===l&&(Ie.value=!1)}}function Ua(e){const a=g.value.indexOf(e);a>=0?g.value.splice(a,1):g.value.length<10&&g.value.push(e)}function Ga(e){De.value=De.value===e?"":e}async function Ya(){const e=g.value;if(!(e.length<2)){Pe.value=!0;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},i=await fetch("/api/strategies/research-history/compare",{method:"POST",headers:Object.assign({"Content-Type":"application/json"},t),body:JSON.stringify({ids:e})}).then(function(n){return n.json()});Xe.value=i&&i.items||[]}catch(a){console.error("[research-history] 对比失败:",a)}finally{seq===l&&(Pe.value=!1)}}}async function $a(e){try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},i=await fetch("/api/strategies/research-history/"+e,{method:"DELETE",headers:t}).then(function(n){return n.json()});if(i&&i.deleted){J.value=J.value.filter(function(m){return m.id!==e});const n=g.value.indexOf(e);n>=0&&g.value.splice(n,1)}}catch(a){console.error("[research-history] 删除失败:",a)}}return{...y,btHistory:Ke,btHistoryLoading:Se,btHistoryError:Re,btHistoryDays:Qe,loadBtHistory:We,researchHistory:J,researchHistoryLoading:Ce,researchHistoryError:Ne,researchHistoryType:q,researchHistorySelected:g,researchDetailId:De,researchCompareRows:Xe,researchCompareLoading:Pe,researchTypeLabel:Ma,goShortterm:Ba,openResearchHistory:Ja,loadResearchHistory:Ze,researchExportLoading:Ie,exportResearchHistory:Fa,toggleResearchSelect:Ua,toggleResearchDetail:Ga,runResearchCompare:Ya,deleteResearchHistory:$a,marketReviews:ze,marketReviewLoading:F,marketReviewError:j,selectedReviewDate:L,marketReviewDetail:H,marketReviewDetailLoading:U,marketReviewDetailError:x,loadMarketReviews:G,openMarketReview:ta,backToMarketReviewList:sa,loadMarketReviewDetail:Oe,marketReviewChgClass:la,marketReviewChgText:ia,marketReviewSrcEntries:ra,scanPool:Y,scanLoading:$,scanError:A,scanResult:E,eventScope:je,eventsLoading:K,eventsData:b,loadScan:Le,loadEvents:He,scanGroups:na,eventGroups:ca,strategies:_,strategiesLoading:Q,strategiesError:W,activeStrategyId:r,activeStrategy:ie,paramValues:v,strategyRunning:X,ptradeCode:S,strategyRuns:Z,savingProfile:Te,variantSaving:qe,loadStrategies:re,onStrategyChange:Ee,runActiveStrategy:ka,exportActivePtradeCode:xa,copyPtradeCode:_a,profiles:R,profileSelect:C,profileName:N,loadProfiles:D,saveProfile:ma,applyProfile:pa,deleteProfile:fa,govEnabled:ee,govSchedule:te,govUniverse:se,govRunning:le,lastHoldings:V,loadGov:ne,updateGov:ya,runOnceActive:ga,openLastHoldings:wa,cloneStrategy:ha,govShowCalendar:ae,factorKey:M,factorIcLoading:ce,factorLayerLoading:oe,factorIcReport:Me,factorLayerResult:Be,factorOptions:Sa,runFactorIc:Ca,runFactorLayer:Na,factorDetail:ue,factorDetailLoading:me,runFactorDetail:Da,variants:Ue,variantSelected:p,variantSpec:f,specFields:Ge,aiCode:k,aiCodeLoading:pe,variantBusy:I,variantMsg:c,loadVariants:ge,cloneNewStrategy:Pa,selectVariant:Ia,loadVariantSpec:B,saveVariantSpec:Ta,runVariantOnce:qa,genVariantAiCode:za,copyVariantCode:Oa,customName:Ye,customPrompt:we,customs:$e,customSelected:w,customCode:h,customMsg:o,customBtResult:he,customGenLoading:be,customBtLoading:ke,customOptLoading:xe,loadCustoms:_e,genCustomCode:ja,loadCustomCode:La,runCustomBacktest:Ha,runCustomOptimize:Aa,copyCustomCode:Ea,tagClass:oa,formatPrice:da,chgClass:va,chgText:ua,sweepGrid:Je,sweepResult:de,sweepMessage:P,sweepLoading:ve,sweepStability:Fe,runSweep:Ra}}}})();
+                </div>`,setup(){const f=ta("qcState"),Ie=Vue.ref(!1),Pe=Vue.ref(!1);let i=0;if(!f)return{};const Te=s(localStorage.getItem("quant_strategy_mode")==="custom"?"custom":"template");function sa(e){Te.value=e;try{localStorage.setItem("quant_strategy_mode",e)}catch{}f.currentSubPage.value="strategy-manage"}const Oe=s([]),F=s(!1),j=s(!1),L=s(""),H=s(null),U=s(!1),x=s(!1);async function G(){const e=++i;F.value=!0,j.value=!1;try{const a=await fetch("/api/market/reviews?limit=30",{headers:u()}).then(t=>t.json());if(e!==i)return;a&&a.success?Oe.value=Array.isArray(a.data)?a.data:[]:j.value=!0}catch(a){console.error("[market-review] 复盘列表加载失败:",a),j.value=!0}finally{e===i&&(F.value=!1)}}function ia(e){L.value=e,je(e)}function la(){L.value="",H.value=null,x.value=!1}async function je(e){const a=++i;U.value=!0,x.value=!1,H.value=null;try{const t=e?"/api/market/review?date="+encodeURIComponent(e):"/api/market/review",l=await fetch(t,{headers:u()}).then(n=>n.json());if(a!==i)return;l&&l.success?H.value=l.data:x.value=!0}catch(t){console.error("[market-review] 复盘详情加载失败:",t),x.value=!0}finally{a===i&&(U.value=!1)}}function ra(e){return e>0?"up":e<0?"down":"flat"}function na(e){return e==null||isNaN(Number(e))?"—":(e>0?"+":"")+Number(e).toFixed(2)+"%"}function ca(e){const a={indexes:"指数",sectors:"板块",moneyflow:"资金",sentiment:"情绪"};return Object.entries(e||{}).map(function(t){const l=t[0],n=t[1],m=!n||n==="unavailable"||n==="数据不可达";return{label:a[l]||l,value:m?"数据不可达":n,unavailable:m}})}const Y=s(["strategies","watchlist"]),$=s(!1),A=s(!1),M=s(null),Le=s("watchlist"),K=s(!1),b=s(null);async function He(){const e=++i;$.value=!0,A.value=!1;try{const a="/api/market/scan?pool="+encodeURIComponent((Y.value||[]).join(",")||"all"),t=await fetch(a,{headers:u()}).then(l=>l.json());if(e!==i)return;t&&t.success?M.value=t.data||{moves:[],note:""}:A.value=!0}catch(a){console.error("[scan] 异动扫描失败:",a),A.value=!0}finally{e===i&&($.value=!1)}}async function Ae(){const e=++i;K.value=!0;try{const a="/api/market/events?scope="+encodeURIComponent(Le.value),t=await fetch(a,{headers:u()}).then(l=>l.json());if(e!==i)return;t&&t.success?b.value=t.data||{events:[],note:""}:b.value={events:[],note:"事件数据暂不可用"}}catch(a){console.error("[scan] 事件提醒加载失败:",a),b.value={events:[],note:"事件数据暂不可用"}}finally{e===i&&(K.value=!1)}}O(function(){const e={strategies:"当日入池",watchlist:"自选股"},a=(Y.value||[]).map(function(t){return e[t]}).filter(Boolean);return a.length?a.join("+"):"所选范围"});const oa=O(function(){const e=["涨停","连板","放量","异动振幅","跌停"],a=M.value&&M.value.moves||[],t=[];return e.forEach(function(l){const n=a.filter(function(m){return(m.labels||[]).indexOf(l)>=0});n.length&&t.push({label:l,moves:n})}),t}),da=O(function(){const e={};return(b.value&&b.value.events||[]).forEach(function(a){(e[a.type]=e[a.type]||[]).push(a)}),Object.keys(e).map(function(a){return{type:a,events:e[a]}})});function va(e){return e==="跌停"?"down":e==="涨停"||e==="连板"?"up":"neutral"}function ua(e){return e==null||isNaN(Number(e))?"--":Number(e).toFixed(2)}function ma(e){return e>0?"up":e<0?"down":"flat"}function pa(e){return e==null||isNaN(Number(e))?"—":(e>0?"+":"")+Number(e).toFixed(2)+"%"}const _=s([]),Q=s(!1),W=s(!1),r=s(""),v=s({}),X=s(!1),Me=s(""),S=s(""),Z=s([]),R=s([]),q=s(""),z=s(""),ee=s(!0),ae=s(!0),te=s("20:00"),se=s("default"),ie=s(!1),E=s(""),le=O(function(){return _.value.find(function(e){return e.id===r.value})||null});async function d(e,a){a=a||{},a.headers=Object.assign({},a.headers||{});const t=localStorage.getItem("quant_token")||"";return t&&(a.headers.Authorization="Bearer "+t),fetch(e,a)}async function re(){const e=++i;Q.value=!0,W.value=!1;try{const a=await d("/api/strategies").then(function(t){return t.json()});if(e!==i)return;_.value=Array.isArray(a)?a:[],_.value.length&&!r.value&&(r.value=_.value[0].id,Ee())}catch(a){console.error("[research] 策略列表加载失败:",a),W.value=!0}finally{e===i&&(Q.value=!1)}}function Ee(){const e=le.value;e&&(v.value={},e.schema.forEach(function(a){v.value[a.key]=a.default}),S.value="",Ve(),C(),ne())}async function C(){if(!r.value){R.value=[];return}try{const e=await d("/api/strategies/"+r.value+"/profiles").then(function(a){return a.json()});R.value=e&&e.data&&e.data.profiles||[],q.value=""}catch(e){console.error("[research] 方案列表加载失败:",e),R.value=[]}}async function fa(){Ie.value=!0;const e=(z.value||"").trim();if(!e){window._core&&window._core.showToast("请输入方案名称");return}try{const a=await d("/api/strategies/"+r.value+"/profiles",{method:"POST",body:JSON.stringify({name:e,params:v.value})}).then(function(t){return t.json()});if(a&&a.detail){window._core&&window._core.showToast(String(a.detail));return}z.value="",await C(),window._core&&window._core.showToast("方案已保存")}catch(a){console.error("[research] 方案保存失败:",a),window._core&&window._core.showToast("方案保存失败")}}function ya(){const e=R.value.find(function(a){return a.id===q.value});e&&(Object.keys(e.params||{}).forEach(function(a){v.value[a]=e.params[a]}),window._core&&window._core.showToast("已应用方案: "+e.name))}async function ga(){if(q.value)try{await d("/api/strategies/"+r.value+"/profiles/"+q.value,{method:"DELETE"}).then(function(e){return e.json()}),await C(),window._core&&window._core.showToast("方案已删除")}catch(e){console.error("[research] 方案删除失败:",e)}}async function ne(){try{const e=await d("/api/strategies/governance").then(function(l){return l.json()}),t=(e&&e.data&&e.data.strategies||{})[r.value]||{};ee.value=t.enabled!==!1,te.value=t.schedule||"20:00",se.value=t.universe==="all"?"all":"default",ae.value=t.show_in_calendar!==!1,E.value=t.last_holdings||""}catch(e){console.error("[research] 纳管状态加载失败:",e)}}async function wa(){try{await d("/api/strategies/governance",{method:"PUT",body:JSON.stringify({strategies:function(){const e={};return e[r.value]={enabled:ee.value,schedule:te.value,universe:se.value,show_in_calendar:ae.value},e}()})}).then(function(e){return e.json()}),window._core&&window._core.showToast("纳管设置已更新")}catch(e){console.error("[research] 纳管更新失败:",e)}}async function ha(){if(r.value){ie.value=!0;try{const e=await d("/api/strategies/"+r.value+"/run-once",{method:"POST",body:JSON.stringify({as_of:Me.value||void 0})}).then(function(a){return a.json()});if(e&&e.detail){window._core&&window._core.showToast(String(e.detail));return}window._core&&window._core.showToast("持仓已生成"),await ne()}catch(e){console.error("[research] run-once 失败:",e),window._core&&window._core.showToast("持仓生成失败")}finally{ie.value=!1}}}function ba(){E.value&&window.open(E.value.replace(/\./g,"/").replace(/^\/?home\/evergreen\/dsh-workspace\/quant-calendar-ops\//,"/api/static/"),"_blank")}function ka(){const e=le.value;if(!e)return;const a=(z.value||"").trim()||e.name+"-副本";xa(a,Object.assign({},v.value)),window._core&&window._core.showToast("已复制为副本方案: "+a)}async function xa(e,a){try{await d("/api/strategies/"+r.value+"/profiles",{method:"POST",body:JSON.stringify({name:e,params:a})}).then(function(t){return t.json()}),await C()}catch(t){console.error("[research] 副本保存失败:",t)}}async function Ve(){const e=++i;if(r.value)try{const a=await d("/api/strategies/"+r.value+"/runs?limit=5").then(function(t){return t.json()});if(e!==i)return;Z.value=Array.isArray(a)?a:[]}catch{Z.value=[]}}async function _a(){if(r.value){X.value=!0;try{const e=await d("/api/strategies/"+r.value+"/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({params:v.value,as_of:Me.value||void 0})}).then(function(a){return a.json()});e&&e.status==="success"?Ve():alert("运行失败: "+(e.detail||JSON.stringify(e)))}catch(e){console.error("[research] 策略运行失败:",e),alert("运行失败: "+e.message)}finally{X.value=!1}}}async function Sa(){if(r.value)try{const e=Object.keys(v.value).map(function(t){return encodeURIComponent(t)+"="+encodeURIComponent(v.value[t])}).join("&"),a=await d("/api/strategies/"+r.value+"/ptrade-code?"+e).then(function(t){return t.json()});a&&a.code?S.value=a.code:alert("导出失败: "+(a.detail||JSON.stringify(a)))}catch(e){console.error("[research] PTrade 导出失败:",e),alert("导出失败: "+e.message)}}function Ra(){if(!S.value)return;const e=document.createElement("textarea");e.value=S.value,document.body.appendChild(e),e.select();try{document.execCommand("copy")}catch{}document.body.removeChild(e)}aa(function(){return f.currentPage.value+"/"+f.currentSubPage.value},function(e){e==="research/research-overview"&&(re(),G(),ge(),_e()),(e==="research/market-review"||e==="shortterm/market-review")&&!L.value&&G(),(e==="research/scan"||e==="shortterm/scan")&&(He(),Ae()),e==="research/quant-research"&&re(),e==="research/backtest-history"&&Xe()},{immediate:!0});const V=s("mom20"),ce=s(!1),oe=s(!1),Be=s(null),Je=s(null),qa=[{name:"mom20",category:"technical"},{name:"pe",category:"valuation"},{name:"pb",category:"valuation"},{name:"turnover20",category:"sentiment"},{name:"capital_flow",category:"capital"}],Fe=s('{"top_n":[10,20,30]}'),de=s(null),D=s(""),ve=s(!1),Ue=s(null);async function za(){if(!r.value){ElementPlus.ElMessage.warning("请先选择策略");return}let e;try{e=JSON.parse(Fe.value)}catch{ElementPlus.ElMessage.error("网格 JSON 格式错误");return}if(!e||Object.keys(e).length===0){ElementPlus.ElMessage.warning("网格不能为空");return}ve.value=!0,de.value=null,D.value="";try{const a=await fetch("/api/strategies/"+r.value+"/sweep",{method:"POST",headers:u(),body:JSON.stringify({param_grid:e})}).then(function(t){return t.json()});a&&Array.isArray(a.results)?(de.value=a.results,D.value="完成 "+a.count+" 组"+(a.data_degraded?" (数据不可达, 结果降级)":""),Ue.value=a.param_stability||null):D.value=a&&a.detail||"扫描失败"}catch(a){console.error("[sweep]",a),D.value="扫描失败: "+a.message}finally{ve.value=!1}}async function Ca(){ce.value=!0;try{const e=await d("/api/strategies/factors/ic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:V.value,params:v.value||{}})}).then(function(t){return t.json()}),a=e&&e.report?e.report.n1||{}:{};Be.value=a}catch(e){console.error("[research] 因子IC分析失败:",e),alert("因子 IC 分析失败: "+e.message)}finally{seq===i&&(ce.value=!1)}}async function Da(){oe.value=!0;try{const e=await d("/api/strategies/factors/layer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:V.value,params:v.value||{}})}).then(function(a){return a.json()});e&&e.layers?Je.value=e:alert("分层回测: "+(e.message||"无数据"))}catch(e){console.error("[research] 分层回测失败:",e),alert("分层回测失败: "+e.message)}finally{seq===i&&(oe.value=!1)}}const ue=s(null),me=s(!1);async function Na(){me.value=!0,ue.value=null;try{const e=await d("/api/strategies/factors/detail",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sid:r.value||"multi_factor",factor_key:V.value,params:v.value||{}})}).then(function(a){return a.json()});e&&e.detail?ue.value=e.detail:alert("因子详情: "+(e.message||"无数据"))}catch(e){console.error("[research] 因子详情失败:",e),alert("因子详情失败: "+e.message)}finally{seq===i&&(me.value=!1)}}const Ge=s([]),p=s(null),y=s(null),Ye=s(null),k=s(""),pe=s(!1),N=s(!1),c=s(""),fe=s(""),ye=s("");function u(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function ge(){const e=++i;try{const a=await fetch("/api/strategies/variants",{headers:u()}).then(function(t){return t.json()});if(e!==i)return;Ge.value=a&&a.data&&a.data.variants||[]}catch(a){console.error("[i3a] 加载 variants 失败:",a)}}async function Ia(){if(!r.value){c.value="请先在量化研究选择母本策略";return}N.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+r.value+"/clone",{method:"POST",headers:u(),body:JSON.stringify({name:(z.value||"").trim()||void 0,params:Object.assign({},v.value)})}).then(function(t){return t.json()});if(e&&e.detail){c.value=String(e.detail);return}const a=e&&e.data;a&&a.sid&&(p.value=a.sid,c.value="已复制为新策略: "+a.name,await ge(),await B(a.sid))}catch(e){console.error("[i3a] 复制失败:",e),c.value="复制失败: "+e.message}finally{N.value=!1}}async function Pa(e){p.value=e,c.value="",k.value="",await B(e)}async function B(e){try{const a=await fetch("/api/strategies/"+e+"/selection-spec",{headers:u()}).then(function(t){return t.json()});a&&a.data&&a.data.spec&&(y.value=Object.assign({},a.data.spec),Ye.value=a.data.fields,fe.value=(a.data.spec.industry_scope||[]).join(","),ye.value=(a.data.spec.market_cap_range||[]).join(","))}catch(a){console.error("[i3a] 加载 spec 失败:",a)}}async function Ta(){if(Pe.value=!0,!(!p.value||!y.value))try{y.value.industry_scope=fe.value?fe.value.split(/[,，]/).map(function(a){return a.trim()}).filter(Boolean):[],y.value.market_cap_range=ye.value?ye.value.split(/[,，]/).map(Number).filter(function(a){return!isNaN(a)}):[];const e=await fetch("/api/strategies/"+p.value+"/selection-spec",{method:"PUT",headers:u(),body:JSON.stringify({spec:y.value})}).then(function(a){return a.json()});e&&e.data&&e.data.spec&&(y.value=e.data.spec,c.value="SelectionSpec 已保存")}catch(e){console.error("[i3a] 保存 spec 失败:",e),c.value="保存失败"}}async function Oa(){if(!p.value){c.value="请先选择/创建微调策略";return}N.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+p.value+"/run-once",{method:"POST",headers:u(),body:"{}"}).then(function(a){return a.json()});c.value=e&&e.detail?String(e.detail):"持仓已生成: "+(e&&e.data&&e.data.symbols||0)+" 只"}catch(e){console.error("[i3a] run-once 失败:",e),c.value="生成持仓失败"}finally{N.value=!1}}async function ja(){if(!p.value){c.value="请先选择/创建微调策略";return}y.value||await B(p.value),pe.value=!0,c.value="";try{const e=await fetch("/api/strategies/"+p.value+"/ai-trade-code",{method:"POST",headers:u(),body:JSON.stringify({spec:y.value})}).then(function(a){return a.json()});if(e&&e.detail){c.value=String(e.detail);return}e&&e.data&&(k.value=e.data.code||"",e.data.api_errors&&e.data.api_errors.length?c.value="生成成功(含 API 校验告警 "+e.data.api_errors.length+" 条)":c.value="AI 交易码已生成, 已通过矩阵内校验")}catch(e){console.error("[i3a] AI 交易码失败:",e),c.value="AI 生成失败: "+e.message}finally{pe.value=!1}}function La(){if(k.value)if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(k.value).then(function(){c.value="代码已复制"});else{const e=document.createElement("textarea");e.value=k.value,document.body.appendChild(e),e.select(),document.execCommand("copy"),document.body.removeChild(e),c.value="代码已复制"}}const $e=s(""),we=s(""),Ke=s([]),w=s(""),h=s(""),o=s(""),he=s(null),be=s(!1),ke=s(!1),xe=s(!1);function I(){const e=localStorage.getItem("quant_token")||"";return e?{Authorization:"Bearer "+e,"Content-Type":"application/json"}:{"Content-Type":"application/json"}}async function _e(){const e=++i;try{const a=await fetch("/api/strategies/custom",{headers:I()}).then(function(t){return t.json()});if(e!==i)return;Ke.value=a&&a.data&&a.data.customs||[]}catch(a){console.error("[i3b] 加载自定义策略失败:",a)}}async function Ha(){if(!we.value.trim()){o.value="请描述策略思路";return}be.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom",{method:"POST",headers:I(),body:JSON.stringify({name:$e.value.trim()||"自定义策略",prompt:we.value})}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(h.value=e.data.code||"",o.value="AI 代写成功: "+e.data.sid+(e.data.api_errors&&e.data.api_errors.length?" (API 告警 "+e.data.api_errors.length+" 条)":" (校验通过)"),await _e())}catch(e){console.error("[i3b] AI 代写失败:",e),o.value="AI 代写失败: "+e.message}finally{be.value=!1}}async function Aa(){if(w.value)try{const e=await fetch("/api/strategies/custom/"+w.value+"/code",{headers:I()}).then(function(a){return a.json()});e&&e.data&&(h.value=e.data.code||"",o.value="")}catch(e){console.error("[i3b] 读取代码失败:",e)}}async function Ma(){if(!w.value){o.value="请先选择自定义策略";return}ke.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom/"+w.value+"/backtest",{method:"POST",headers:I(),body:"{}"}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(he.value=e.data,o.value="回测完成")}catch(e){console.error("[i3b] 回测失败:",e),o.value="回测失败: "+e.message}finally{ke.value=!1}}async function Ea(){if(!w.value){o.value="请先选择自定义策略";return}xe.value=!0,o.value="";try{const e=await fetch("/api/strategies/custom/"+w.value+"/ai-optimize",{method:"POST",headers:I(),body:JSON.stringify({backtest:he.value})}).then(function(a){return a.json()});if(e&&e.detail){o.value=String(e.detail);return}e&&e.data&&(h.value=e.data.code||"",o.value="AI 优化完成"+(e.data.api_errors&&e.data.api_errors.length?" (API 告警 "+e.data.api_errors.length+" 条)":" (校验通过)"))}catch(e){console.error("[i3b] AI 优化失败:",e),o.value="AI 优化失败: "+e.message}finally{xe.value=!1}}function Va(){if(h.value)if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(h.value).then(function(){o.value="代码已复制"});else{const e=document.createElement("textarea");e.value=h.value,document.body.appendChild(e),e.select(),document.execCommand("copy"),document.body.removeChild(e),o.value="代码已复制"}}const Qe=Vue.ref([]),Se=Vue.ref(!1),Re=Vue.ref(!1),We=Vue.ref(30);async function Xe(){const e=++i;Se.value=!0,Re.value=!1;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},l=await fetch("/api/backtest/history?days="+We.value,{headers:t}).then(function(n){return n.json()});if(e!==i)return;Qe.value=l&&l.data||[]}catch(a){console.error("[backtest] 回测历史加载失败:",a),Re.value=!0}finally{e===i&&(Se.value=!1)}}const J=Vue.ref([]),qe=Vue.ref(!1),ze=Vue.ref(!1),P=Vue.ref(""),g=Vue.ref([]),Ce=Vue.ref(""),Ze=Vue.ref([]),De=Vue.ref(!1),Ne=Vue.ref(!1),Ba={factor_ic:"因子IC",layer:"分层",sweep:"扫描",backtest:"回测",stability:"稳定性"};function Ja(e){return Ba[e]||e||"—"}function Fa(e){f&&f.navigateTo&&f.navigateTo("shortterm",e)}function Ua(){f.currentSubPage.value="research-history",ea()}async function ea(){const e=++i;qe.value=!0,ze.value=!1;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},l=P.value?"?type="+encodeURIComponent(P.value):"",n=await fetch("/api/strategies/research-history"+l,{headers:t}).then(function(m){return m.json()});if(e!==i)return;J.value=n&&n.items||[]}catch(a){console.error("[research-history] 加载失败:",a),ze.value=!0}finally{e===i&&(qe.value=!1)}}async function Ga(){Ne.value=!0;try{const e=window.__quantModules&&window.__quantModules.core||{},a=typeof e.authHeaders=="function"?e.authHeaders():{},t=P.value?"?type="+encodeURIComponent(P.value):"",l=await fetch("/api/strategies/research-history/export"+t,{headers:a});if(!l.ok)throw new Error("HTTP "+l.status);const n=await l.blob(),m=URL.createObjectURL(n),T=document.createElement("a");T.href=m,T.download="research_history.csv",document.body.appendChild(T),T.click(),document.body.removeChild(T),URL.revokeObjectURL(m)}catch(e){console.error("[research-history] 导出失败:",e)}finally{seq===i&&(Ne.value=!1)}}function Ya(e){const a=g.value.indexOf(e);a>=0?g.value.splice(a,1):g.value.length<10&&g.value.push(e)}function $a(e){Ce.value=Ce.value===e?"":e}async function Ka(){const e=g.value;if(!(e.length<2)){De.value=!0;try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},l=await fetch("/api/strategies/research-history/compare",{method:"POST",headers:Object.assign({"Content-Type":"application/json"},t),body:JSON.stringify({ids:e})}).then(function(n){return n.json()});Ze.value=l&&l.items||[]}catch(a){console.error("[research-history] 对比失败:",a)}finally{seq===i&&(De.value=!1)}}}async function Qa(e){try{const a=window.__quantModules&&window.__quantModules.core||{},t=typeof a.authHeaders=="function"?a.authHeaders():{},l=await fetch("/api/strategies/research-history/"+e,{method:"DELETE",headers:t}).then(function(n){return n.json()});if(l&&l.deleted){J.value=J.value.filter(function(m){return m.id!==e});const n=g.value.indexOf(e);n>=0&&g.value.splice(n,1)}}catch(a){console.error("[research-history] 删除失败:",a)}}return{...f,strategyManageMode:Te,openStrategyManage:sa,btHistory:Qe,btHistoryLoading:Se,btHistoryError:Re,btHistoryDays:We,loadBtHistory:Xe,researchHistory:J,researchHistoryLoading:qe,researchHistoryError:ze,researchHistoryType:P,researchHistorySelected:g,researchDetailId:Ce,researchCompareRows:Ze,researchCompareLoading:De,researchTypeLabel:Ja,goShortterm:Fa,openResearchHistory:Ua,loadResearchHistory:ea,researchExportLoading:Ne,exportResearchHistory:Ga,toggleResearchSelect:Ya,toggleResearchDetail:$a,runResearchCompare:Ka,deleteResearchHistory:Qa,marketReviews:Oe,marketReviewLoading:F,marketReviewError:j,selectedReviewDate:L,marketReviewDetail:H,marketReviewDetailLoading:U,marketReviewDetailError:x,loadMarketReviews:G,openMarketReview:ia,backToMarketReviewList:la,loadMarketReviewDetail:je,marketReviewChgClass:ra,marketReviewChgText:na,marketReviewSrcEntries:ca,scanPool:Y,scanLoading:$,scanError:A,scanResult:M,eventScope:Le,eventsLoading:K,eventsData:b,loadScan:He,loadEvents:Ae,scanGroups:oa,eventGroups:da,strategies:_,strategiesLoading:Q,strategiesError:W,activeStrategyId:r,activeStrategy:le,paramValues:v,strategyRunning:X,ptradeCode:S,strategyRuns:Z,savingProfile:Ie,variantSaving:Pe,loadStrategies:re,onStrategyChange:Ee,runActiveStrategy:_a,exportActivePtradeCode:Sa,copyPtradeCode:Ra,profiles:R,profileSelect:q,profileName:z,loadProfiles:C,saveProfile:fa,applyProfile:ya,deleteProfile:ga,govEnabled:ee,govSchedule:te,govUniverse:se,govRunning:ie,lastHoldings:E,loadGov:ne,updateGov:wa,runOnceActive:ha,openLastHoldings:ba,cloneStrategy:ka,govShowCalendar:ae,factorKey:V,factorIcLoading:ce,factorLayerLoading:oe,factorIcReport:Be,factorLayerResult:Je,factorOptions:qa,runFactorIc:Ca,runFactorLayer:Da,factorDetail:ue,factorDetailLoading:me,runFactorDetail:Na,variants:Ge,variantSelected:p,variantSpec:y,specFields:Ye,aiCode:k,aiCodeLoading:pe,variantBusy:N,variantMsg:c,loadVariants:ge,cloneNewStrategy:Ia,selectVariant:Pa,loadVariantSpec:B,saveVariantSpec:Ta,runVariantOnce:Oa,genVariantAiCode:ja,copyVariantCode:La,customName:$e,customPrompt:we,customs:Ke,customSelected:w,customCode:h,customMsg:o,customBtResult:he,customGenLoading:be,customBtLoading:ke,customOptLoading:xe,loadCustoms:_e,genCustomCode:Ha,loadCustomCode:Aa,runCustomBacktest:Ma,runCustomOptimize:Ea,copyCustomCode:Va,tagClass:va,formatPrice:ua,chgClass:ma,chgText:pa,sweepGrid:Fe,sweepResult:de,sweepMessage:D,sweepLoading:ve,sweepStability:Ue,runSweep:za}}}})();

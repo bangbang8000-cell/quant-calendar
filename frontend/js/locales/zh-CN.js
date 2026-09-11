@@ -23,19 +23,21 @@
     'sub.strategies.overview': '策略概览', 'sub.ai.overview': '评估概览', 'sub.research.research-overview': '研究概览',
     'sub.execution': '执行看板',
     'sub.merrill': '美林时钟',
-    'sub.market': '市场行情',
+    'sub.market': '大盘行情',   // V6.6.1: 更名消歧
     'sub.consensus': '策略共识榜',
     'sub.daily': '日视图',
     'sub.weekly': '周视图',
     'sub.monthly': '月视图',
     'sub.yearly': '年视图',
     'sub.pool': '股票池',
+    'sub.calendar': '量化日历',   // V6.6.1: 4 视图合并后主视图
     'sub.watchlist': '我的自选',
     'sub.history': '评估历史',
     'sub.evaluation-analysis': '评估分析',
     'sub.focus': '重点跟踪',
 
     'sub.datadict': '数据字典',
+    'sub.notification': '通知中心',   // V6.6.1 (方案A): 通知中心独立子页
     'sub.chat_history': '问股历史',
     'sub.portfolio': '组合持仓',
     'sub.research-overview': '研究概览',
@@ -43,9 +45,10 @@
     'sub.strategy-write': '策略编写',
     'sub.backtest': '策略回测',
     'sub.backtest-history': '回测记录',
-    'sub.market-review': '市场复盘',
+    'sub.market-review': '每日复盘',   // V6.6.1: 更名消歧
     'sub.scan': '异动扫描',
     'sub.custom-write': '全新策略',
+    'sub.strategy-manage': '策略管理',   // V6.6.1: 策略编写+全新策略合并
     'sub.ztpool': '涨停复盘',
     'sub.lhb': '龙虎榜',
     'sub.shortterm.overview': '复盘看板',
@@ -54,7 +57,7 @@
     'sub.shortterm.intraday': '盘中核验',
     'sub.intraday': '盘中核验',
     'sub.status': '系统状态',
-    'sub.autoeval': '自动评估',
+    'sub.autoeval': 'AI 服务',   // V6.6.1 (方案A): 收敛更名
     'sub.datasource': '数据源',
     'sub.feature': '功能配置',
     'sub.user': '用户与权限',

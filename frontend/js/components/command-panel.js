@@ -17,7 +17,7 @@
                     aria-label="搜索股票 / 菜单 / 指令"
                     @keydown.up.prevent="onUp" @keydown.down.prevent="onDown"
                     @keydown.enter.prevent="onEnter">
-            <template #prefix><span class="opacity-6">🔍</span></template>
+            <template #prefix><span class="opacity-6"><qc-icon name="search" :size="16" /></span></template>
           </el-input>
 
           <div class="command-groups" v-if="results.flat.length">
@@ -25,7 +25,10 @@
               <div class="command-group-label">{{ g.label }}</div>
               <div v-for="item in g.items" :key="itemKey(item)" class="command-item"
                    :class="{active: isActive(item)}" @click="execute(item)" @mouseenter="setActive(item)">
-                <span class="command-item-icon" v-html="sanitizeHtml(item.icon || '')"></span>
+                <span class="command-item-icon">
+                  <qc-icon v-if="isIconName(item.icon)" :name="item.icon" :size="14" />
+                  <template v-else v-html="sanitizeHtml(item.icon || '')"></template>
+                </span>
                 <span class="command-item-label">{{ item.label }}</span>
                 <span class="command-item-sub">{{ item.subLabel }}</span>
               </div>
@@ -56,12 +59,16 @@
         const themeKeys = Object.keys(state.themes.value || {});
         themeKeys.forEach(function (tk) {
           const t = state.themes.value[tk];
-          defs.push({ key: 'theme:' + tk, label: '切换主题 · ' + (t.name || tk), icon: '🎨', keywords: 'theme 主题' });
+          defs.push({ key: 'theme:' + tk, label: '切换主题 · ' + (t.name || tk), icon: 'palette', keywords: 'theme 主题' });
         });
         return defs;
       });
 
       // ─── 检索 ───
+      // V6.6: Lucide 图标名识别 (白名单名 → qc-icon; 其余 emoji/HTML → 原 v-html 渲染)
+      function isIconName(n) {
+        return typeof n === 'string' && /^[a-z][a-z0-9-]*$/.test(n);
+      }
       const menus = computed(() => state.menus.value || []);
       // v3.17.10 (FR-3.17.10): 本地拼音检索索引（内置核心清单 + 自选 + 评估历史 + 持仓）
       function buildLocalIndex() {
@@ -81,7 +88,7 @@
         const P = window.__quantModules && window.__quantModules.pinyin;
         if (!P) return [];
         return P.searchStocksByQuery(q, buildLocalIndex()).map(function (r) {
-          return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
+          return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: 'trending-up' };
         });
       }
       // v3.17.10 (FR-3.17.10): 空查询 → 最近查看 + 我的自选直达
@@ -90,11 +97,11 @@
         const R = window.__quantModules && window.__quantModules.recent;
         if (R) {
           R.getRecentViewed().slice(0, 5).forEach(function (r) {
-            recent.push({ type: 'stock', code: r.code, name: r.name || r.code, label: r.name || r.code, subLabel: '最近查看 · ' + r.code, icon: '📈' });
+            recent.push({ type: 'stock', code: r.code, name: r.name || r.code, label: r.name || r.code, subLabel: '最近查看 · ' + r.code, icon: 'trending-up' });
           });
         }
         const wl = (state.watchlist && state.watchlist.value || []).slice(0, 8).map(function (s) {
-          return { type: 'stock', code: s.code, name: s.name || s.code, label: s.name || s.code, subLabel: '我的自选 · ' + s.code, icon: '📈' };
+          return { type: 'stock', code: s.code, name: s.name || s.code, label: s.name || s.code, subLabel: '我的自选 · ' + s.code, icon: 'trending-up' };
         });
         return recent.concat(wl);
       }
@@ -134,8 +141,9 @@
           activeIndex.value = 0;
           state.searchStocks(q, function (items) {
             if (query.value.trim() !== q) return; // 过期回调丢弃
-            const remote = items.map(function (r) {
-              return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
+            // V6.6: 仅保留真股票条目 (带 code/name), 过滤误入的菜单/指令建议
+            const remote = (items || []).filter(function (r) { return r && r.code && r.name; }).map(function (r) {
+              return { type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: 'trending-up' };
             });
             // v3.17.10 (FR-3.17.10): 本地拼音索引优先，远程结果按 code 去重补充
             const seen = {};
@@ -250,6 +258,7 @@
       return {
         visible, query, results, inputEl,
         sanitizeHtml: state.sanitizeHtml,
+        isIconName,
         onDown, onUp, onEnter, execute, isActive, setActive, itemKey,
         onGlobalKeydown,
       };

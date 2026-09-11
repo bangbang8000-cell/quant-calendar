@@ -34,12 +34,18 @@
                                     format="YYYY" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectYear')"
                                     :disabled-date="disabledDate" size="small" @change="onDateChange"></el-date-picker>
                                 <el-button size="small" :loading="loading" :title="t('calendar.refreshData')" @click="refreshCalendarData">
-                                    <span aria-hidden="true">🔄</span> {{ t('common.refresh') }}
+                                    <span aria-hidden="true"><qc-icon name="refresh" :size="14" /></span> {{ t('common.refresh') }}
                                 </el-button>
                                 <el-button size="small" :title="t('calendar.exportCsv')" @click="exportCSV">
-                                    <span aria-hidden="true">⬇</span> {{ t('common.export') }}
+                                    <span aria-hidden="true"><qc-icon name="download" :size="14" /></span> {{ t('common.export') }}
                                 </el-button>
                                 <span class="qc-subnav-lastload" v-if="lastLoadTime">{{ lastLoadTime }}</span>
+                                <!-- V6.6.1 (PRD F-6.6.7): 页内视图切换器 — 日/周/月/年 (替代原 4 个二级菜单) -->
+                                <div class="flex-c-gap-6" role="tablist" aria-label="视图切换">
+                                    <el-button v-for="v in ['day','week','month','year']" :key="v" size="small"
+                                        :type="currentView === v ? 'primary' : ''"
+                                        @click="switchViewLocal(v)">{{ viewLabel(v) }}</el-button>
+                                </div>
                             </div>
                             <div class="flex-c-gap-12">
                                 <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« {{ t('calendar.prev') }}{{ viewUnit }}</el-button>
@@ -49,16 +55,16 @@
                         </div>
 
                         <div class="card">
-                            <div class="card-title">💎 {{ t('calendar.poolTitle') }}</div>
+                            <div class="card-title"><qc-icon name="gem" :size="16" /> {{ t('calendar.poolTitle') }}</div>
                             <!-- V4.9.4: 对比基准/沿用持仓提示(来自 /api/view note) -->
                             <div v-if="viewNote" class="cal-view-note" role="status">{{ viewNote }}</div>
                             
                             <!-- 状态筛选 -->
                             <div class="status-tabs" role="tablist">
-                                <div class="status-tab" :class="{active: statusFilter === 'all'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'all'" @click="statusFilter = 'all'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📋 {{ t('calendar.all') }} <span class="count">{{ statusCounts.all }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'new'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'new'" @click="statusFilter = 'new'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">🆕 {{ t('calendar.newPool') }} <span class="count">{{ statusCounts.newCount }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'current'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'current'" @click="statusFilter = 'current'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📌 {{ t('calendar.currentHold') }} <span class="count">{{ statusCounts.current }}</span></div>
-                                <div class="status-tab" :class="{active: statusFilter === 'out'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'out'" @click="statusFilter = 'out'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">📤 {{ t('calendar.outPool') }} <span class="count">{{ statusCounts.out }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'all'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'all'" @click="statusFilter = 'all'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="file-text" :size="14" /> {{ t('calendar.all') }} <span class="count">{{ statusCounts.all }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'new'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'new'" @click="statusFilter = 'new'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="badge-check" :size="14" /> {{ t('calendar.newPool') }} <span class="count">{{ statusCounts.newCount }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'current'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'current'" @click="statusFilter = 'current'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="pin" :size="14" /> {{ t('calendar.currentHold') }} <span class="count">{{ statusCounts.current }}</span></div>
+                                <div class="status-tab" :class="{active: statusFilter === 'out'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'out'" @click="statusFilter = 'out'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="upload" :size="14" /> {{ t('calendar.outPool') }} <span class="count">{{ statusCounts.out }}</span></div>
                             </div>
 
                             <div class="search-box">
@@ -83,13 +89,13 @@
                                                 <span v-if="item.status === 'new'" class="qc-stock-status is-new">{{ t('calendar.newPool') }}</span>
                                                 <span v-else-if="item.status === 'out'" class="qc-stock-status is-out">{{ t('calendar.outPool') }}</span>
                                             </div>
-                                            <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')">🤖</span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')">📈</span></div>
+                                            <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span></div>
                                         </div>
                                         <div class="qc-stock-tags">
                                             <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
                                         </div>
                                         <!-- v3.7.11: AI入池信号解读（固定行高内单行省略, V6.2: 整行占位） -->
-                                        <div class="cal-subtitle-ellipsis" v-if="poolSignals[item.code]">🤖 {{ poolSignals[item.code] }}</div>
+                                        <div class="cal-subtitle-ellipsis" v-if="poolSignals[item.code]"><qc-icon name="bot" :size="14" /> {{ poolSignals[item.code] }}</div>
                                     </div>
                                     </template>
                                 </qc-virtual-list>
@@ -100,7 +106,7 @@
                     <!-- 股票池管理视图 -->
                     <template v-else>
                         <div class="card">
-                            <div class="card-title">💎 {{ t('calendar.poolManage') }}</div>
+                            <div class="card-title"><qc-icon name="gem" :size="16" /> {{ t('calendar.poolManage') }}</div>
                             <div class="flex-gap-12-mb16-wrap">
                                 <div class="stat-card flex-1-min120-pad14">
                                     <div class="stat-value text-xl">{{ statusCounts.all }}</div>
@@ -122,7 +128,7 @@
                         </div>
 
                         <div class="card mt-4">
-                            <div class="card-title">📋 {{ t('calendar.strategyDist') }}</div>
+                            <div class="card-title"><qc-icon name="file-text" :size="16" /> {{ t('calendar.strategyDist') }}</div>
                             <qc-state-panel v-if="strategyDistribution.length === 0" type="empty" :title="t('common.empty')"></qc-state-panel>
                             <div v-else>
                                 <div class="cal-note-box" v-for="item in strategyDistribution" :key="item.strategy">
@@ -135,7 +141,7 @@
                                             <span class="inline-tag" v-if="si < 5 || expandedStrategies[item.strategy]" :title="stock.code + ' ' + stock.name">
                                                 <span class="text-semibold-primary">{{ stock.code }}</span>
                                                 <span class="color-tertiary">{{ stock.name }}</span>
-                                                <span class="gold-link" @click.stop="toggleWatchlist(stock.code, stock.name)" :title="watchlistCodes.has(stock.code)?t('calendar.unwatch'):t('calendar.watch')">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span class="text-xs-ml2" v-if="evaluatedCodes.has(stock.code)" :title="t('calendar.aiEvaluated')">🤖</span><span class="text-xs-ml2" v-if="klineLoadedCodes.has(stock.code)" :title="t('calendar.klineLoaded')">📈</span>
+                                                <span class="gold-link" @click.stop="toggleWatchlist(stock.code, stock.name)" :title="watchlistCodes.has(stock.code)?t('calendar.unwatch'):t('calendar.watch')">{{ watchlistCodes.has(stock.code) ? '⭐' : '☆' }}</span><span class="text-xs-ml2" v-if="evaluatedCodes.has(stock.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span><span class="text-xs-ml2" v-if="klineLoadedCodes.has(stock.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span>
                                             </span>
                                         </template>
                                         <span class="text-xs-tag-tertiary" v-if="item.names.length> 5 && !expandedStrategies[item.strategy]" tabindex="0" role="button" :aria-expanded="false" @click="expandedStrategies[item.strategy] = true" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
@@ -187,12 +193,23 @@
       const calTouchX = ref(0);
       const calTouchY = ref(0);
       const pullRefreshing = ref(false);
-      // V6.1 (PRD-6.1 F3): 日历工具栏日期选择器类型 (由当前子页推导, 原 SubNav 迁出)
+      // V6.1 (PRD-6.1 F3): 日历工具栏日期选择器类型 (由当前视图推导, 原 SubNav 迁出)
+      // V6.6.1 (PRD F-6.6.7): 4 视图已合并为单子页, 类型改由 currentView 驱动
       const calType = computed(() => {
-        const map = { daily: 'date', weekly: 'week', monthly: 'month', yearly: 'year' };
-        const sp = (state.currentSubPage && state.currentSubPage.value) || '';
-        return map[sp] || 'date';
+        const map = { day: 'date', week: 'week', month: 'month', year: 'year' };
+        const v = (state.currentView && state.currentView.value) || 'day';
+        return map[v] || 'date';
       });
+      // V6.6.1: 页内视图切换 (日/周/月/年)
+      const VIEW_LABELS = { day: '日', week: '周', month: '月', year: '年' };
+      function viewLabel(v) {
+        const lbl = state.t && state.t('view.' + v);
+        return lbl || VIEW_LABELS[v] || v;
+      }
+      function switchViewLocal(v) {
+        if (state.switchView) state.switchView(v);
+        else if (state.currentView) state.currentView.value = v;
+      }
       let _pullTimer = null;
       function onCalTouchStart(e) {
         const t = e.touches && e.touches[0];
@@ -279,6 +296,7 @@
         }
       }
       return { ...state, calType, pullRefreshing, onCalTouchStart, onCalTouchEnd,
+               viewLabel, switchViewLocal,
                compareVisible, compareLoading, compareError, compareData, comparePairs, openStrategyCompare };
     },
   };

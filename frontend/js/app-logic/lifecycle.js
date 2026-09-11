@@ -23,6 +23,25 @@
         runOnMounted: async () => {
           window.addEventListener('keydown', handleGlobalKeydown);
 
+          // V6.6.1 (PRD F-6.6.7): 旧深链重定向 — 合并/更名子页的旧 hash 映射到新 key
+          // 日历视图子页 → 主视图 key=calendar 并同步 currentView; 策略编写/全新策略 → strategy-manage 并记录模式
+          function applyRedirect(hp, hs) {
+            const calViewMap = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' };
+            if (hp === 'calendar' && calViewMap[hs]) {
+              currentPage.value = 'calendar';
+              currentSubPage.value = 'calendar';
+              if (calViewMap[hs]) currentView.value = calViewMap[hs];
+              return true;
+            }
+            if (hp === 'research' && (hs === 'strategy-write' || hs === 'custom-write')) {
+              currentPage.value = 'research';
+              currentSubPage.value = 'strategy-manage';
+              try { localStorage.setItem('quant_strategy_mode', hs === 'custom-write' ? 'custom' : 'template'); } catch (e) {}
+              return true;
+            }
+            return false;
+          }
+
           // V6.0 (P1-3): 浏览器前进/后退 — hash 路由回写当前页/子页
           window.addEventListener('hashchange', function () {
             const h = window.location.hash || '';
@@ -31,7 +50,8 @@
             const hp = parts[0], hs = parts[1] || '';
             const menu = menus.value.find(function (m) { return m.key === hp; });
             if (!menu) return;
-            if (!hs) { currentPage.value = hp; return; }
+            if (applyRedirect(hp, hs)) return;
+            if (!hs) { currentPage.value = hp; currentSubPage.value = menu.subPages[0] || ''; return; }
             if (menu.subPages.indexOf(hs) >= 0) {
               currentPage.value = hp;
               currentSubPage.value = hs;
@@ -74,9 +94,13 @@
               var hp = parts[0], hs = parts[1] || '';
               var menu = menus.value.find(function(m) { return m.key === hp; });
               if (menu) {
-                currentPage.value = hp;
-                if (hs && menu.subPages.indexOf(hs) >= 0) currentSubPage.value = hs;
-                fromHash = true;
+                if (applyRedirect(hp, hs)) { fromHash = true; }
+                else {
+                  currentPage.value = hp;
+                  if (hs && menu.subPages.indexOf(hs) >= 0) currentSubPage.value = hs;
+                  else if (!hs) currentSubPage.value = menu.subPages[0] || '';
+                  fromHash = true;
+                }
               }
             }
             if (!fromHash) {

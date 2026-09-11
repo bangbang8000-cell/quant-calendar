@@ -540,8 +540,8 @@ def test_market_review_subpage_present():
     assert "/api/market/review" in src, "应调用 /api/market/review 详情端点"
     # V6.1: 标题承载移到 app-logic subPageNames (中栏/页签标题)
     app = _read("js/app-logic.js")
-    assert "'market-review': '市场复盘'" in app, "subPageNames 应含'市场复盘'标题映射"
-    assert "市场复盘" in _read("js/locales/zh-CN.js"), "zh 语言包应保留'市场复盘'文案"
+    assert "'market-review': '每日复盘'" in app, "subPageNames 应含'每日复盘'标题映射 (V6.6.1 更名)"
+    assert "每日复盘" in _read("js/locales/zh-CN.js"), "zh 语言包应保留'每日复盘'文案"
 
 
 def test_market_review_no_inline_style():
@@ -724,8 +724,9 @@ def test_fact_check_wiring():
     assert "事实护栏审计" in src, "系统配置页应展示事实护栏审计"
     assert "triggerFactCheck" in src and "factCheckRunning" in src, "应接入立即抽查"
     assert "/api/ai/fact-check/latest" in _read("js/app-logic/ops.js"), "ops 应加载最近审计"
-    seg = src[src.index("v3.18 (FR-3.18.9): AI 事实护栏审计"):]
-    seg = seg[:seg.index("<!-- v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点 -->")]
+    # V6.6.1 (方案A): usage 重复块已移除, 事实护栏审计现位于 guard 子页
+    seg = src[src.index("guard — AI 事实护栏独立子页"):]
+    seg = seg[:seg.index("v-else-if=\"currentSubPage === 'autoeval'\"")]
     assert 'style="' not in seg, "事实护栏审计片段不应含内联 style 属性"
     assert "style={" not in seg, "事实护栏审计片段不应含绑定式内联 style"
 
@@ -754,7 +755,7 @@ def test_scan_subpage_registered():
     assert s and "'scan'" in s.group(0), "shortterm 菜单 subPages 应含 'scan'"
     assert "'market-review'" in s.group(0), "shortterm 菜单 subPages 应含 'market-review'"
     assert "'scan': '异动扫描'" in app, "subPageNames 应映射 'scan' → 异动扫描"
-    assert "'market-review': '市场复盘'" in app, "subPageNames 应映射 'market-review' → 市场复盘"
+    assert "'market-review': '每日复盘'" in app, "subPageNames 应映射 'market-review' → 每日复盘 (V6.6.1 更名)"
 
 
 def test_research_menu_enabled_by_default():
@@ -928,10 +929,11 @@ def test_health_detail_endpoint_invoked():
 
 
 def test_health_detail_no_inline_style():
-    """FR-3.17.12: 调度任务健康面板新增片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
+    """FR-3.17.12: 调度任务健康面板新增片段不得使用内联 style（须走 CSS 类 + tokens 变量）
+    V6.6.1 (方案A): usage 重复块已移除, 调度任务面板现位于 schedule 子页"""
     src = _read("js/components/system-page.js")
-    start = src.index("v3.17.12 (FR-3.17.12): 调度任务健康面板 代码起点")
-    end = src.index("v3.17.12 (FR-3.17.12): 调度任务健康面板 代码结束")
+    start = src.index("v-else-if=\"currentSubPage === 'schedule'\"")
+    end = src.index("任务队列")
     seg = src[start:end]
     assert 'style="' not in seg, "调度任务健康面板不应含内联 style 属性"
     assert "style={" not in seg, "调度任务健康面板不应含绑定式内联 style"

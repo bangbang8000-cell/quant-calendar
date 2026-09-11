@@ -7,21 +7,21 @@ import { inject, computed } from 'vue'
 import AppIcon from './common/AppIcon.vue'
 
 // 二级菜单语义图标 — 双层映射 (与 SubNav.vue SUB_ICONS 保持一致, 修改需同步)
+// V6.6.1 (PRD F-6.6.7): calendar 合并后主视图 key=calendar; research 合并为 strategy-manage; ai 新增 portfolio
 const SUB_ICONS = {
   'strategies': {
     'overview': 'pie-chart', 'merrill': 'clock', 'market': 'trending-up', 'consensus': 'target',
   },
   'calendar': {
-    'daily': 'calendar', 'weekly': 'calendar-days', 'monthly': 'calendar-range',
-    'yearly': 'calendar-check', 'pool': 'database',
+    'calendar': 'calendar', 'pool': 'database',
   },
   'ai': {
     'overview': 'activity', 'focus': 'target', 'watchlist': 'star', 'history': 'history',
-    'evaluation-analysis': 'bar-chart-3', 'chat_history': 'message-circle',
+    'evaluation-analysis': 'bar-chart-3', 'portfolio': 'bar-chart-3', 'chat_history': 'message-circle',
   },
   'research': {
     'research-overview': 'search-check', 'quant-research': 'line-chart',
-    'strategy-write': 'layers', 'custom-write': 'sparkles',
+    'strategy-manage': 'layers',
     'backtest': 'play', 'backtest-history': 'history',
   },
   'shortterm': {

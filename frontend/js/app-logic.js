@@ -111,12 +111,12 @@ const allMenuDefs = [
                     // V6.0 (PRD-6.0 FR-6.0.1): 新增 group(一级分组) + iconName(Lucide 图标) 字段
                     // V6.1 (PRD-6.1 F4): 移除 icon(emoji) 字段 — 图标仅经 iconName + AppIcon 渲染
                     // 分组: research=量化投研 / platform=平台管理
-                    { key: 'strategies', name: '策略总览', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置
-                    { key: 'calendar', name: '量化日历', iconName: 'calendar', group: 'research', subPages: ['daily', 'weekly', 'monthly', 'yearly', 'pool'] },
-                    { key: 'ai', name: '智能评估', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'chat_history'] }, // V5.0.11: 评估分析(命中率)独立子页; V5.4.0: 重点跟踪子页(置于自选前)
-                    { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-write', 'custom-write', 'backtest', 'backtest-history'] }, // V5.2.3: 市场复盘/异动扫描移入短线复盘
+                    { key: 'strategies', name: '策略总览', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置; V6.6.1: market 更名「大盘行情」
+                    { key: 'calendar', name: '量化日历', iconName: 'calendar', group: 'research', subPages: ['calendar', 'pool'] }, // V6.6.1: 日/周/月/年 4 视图合并为页内切换 (PRD F-6.6.7)
+                    { key: 'ai', name: '智能评估', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'portfolio', 'chat_history'] }, // V5.0.11: 评估分析独立子页; V5.4.0: 重点跟踪子页; V6.6.1: 组合持仓入口 (PRD 结论一)
+                    { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-manage', 'backtest', 'backtest-history'] }, // V6.6.1: 策略编写+全新策略合并为「策略管理」 (PRD 结论五)
                     { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'health', 'schedule', 'autoeval', 'usage', 'guard', 'datasource', 'feature', 'datadict', 'user', 'execution', 'about'], guestSubPages: ['status', 'about'] } // V6.0 (P1-3): health/schedule/guard 独立子页
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'health', 'schedule', 'autoeval', 'usage', 'guard', 'datasource', 'feature', 'datadict', 'notification', 'user', 'execution', 'about'], guestSubPages: ['status', 'about'] } // V6.0 (P1-3): health/schedule/guard 独立子页; V6.6.1 (方案A): 新增 notification 通知中心子页
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -355,15 +355,15 @@ const allMenuDefs = [
                 const stockDetailLoading = ref(false);
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
-                    'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
-                    'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
-                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis — 修复中栏/页签/移动端下拉/授权对话框 4 处显示 id 回退
-                    'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '市场复盘', 'scan': '异动扫描',
+                    'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
+                    'calendar': '量化日历', 'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池', // V6.6.1: calendar 为合并后主视图 key
+                    'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', 'portfolio': '组合持仓', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis; V6.6.1: 组合持仓入口
+                    'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', 'scan': '异动扫描', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
                     'shortterm.sector': '板块资金', 'sector': '板块资金',
                     'shortterm.intraday': '盘中核验', 'intraday': '盘中核验',
-                    'status': '系统状态', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': '自动评估', 'usage': 'AI 用量', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'user': '用户与权限', 'about': '关于' // V6.0 (P1-3): health/schedule/guard 独立子页
+                    'status': '系统状态', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': 'AI 服务', 'usage': '用量统计', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'notification': '通知中心', 'user': '用户与权限', 'about': '关于' // V6.0 (P1-3): health/schedule/guard 独立子页; V6.6.1 (方案A): autoeval→AI服务, usage→用量统计, 新增 notification
                 };
 
                 // ===== V6.1 (PRD-6.1 F8): 动态页签状态 =====

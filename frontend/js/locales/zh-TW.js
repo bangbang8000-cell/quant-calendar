@@ -19,18 +19,20 @@
     'sub.strategies.overview': '策略概览', 'sub.ai.overview': '評估概覽', 'sub.research.research-overview': '研究概覽',
     'sub.execution': '執行看板',
     'sub.merrill': '美林時钟',
-    'sub.market': '市場行情',
+    'sub.market': '大盤行情',   // V6.6.1: 更名消歧
     'sub.consensus': '策略共識榜',
     'sub.daily': '日視圖',
     'sub.weekly': '周視圖',
     'sub.monthly': '月視圖',
     'sub.yearly': '年視圖',
     'sub.pool': '股票池',
+    'sub.calendar': '量化日曆',   // V6.6.1: 合併後主視圖
     'sub.watchlist': '我的自選',
     'sub.history': '評估歷史',
     'sub.evaluation-analysis': '評估分析',
     'sub.focus': '重點追蹤',
     'sub.datadict': '數據字典',
+    'sub.notification': '通知中心',   // V6.6.1 (方案A)
     'sub.chat_history': '問股歷史',
     'sub.portfolio': '組合持仓',
     'sub.research-overview': '研究概覽',
@@ -38,9 +40,10 @@
     'sub.strategy-write': '策略编写',
     'sub.backtest': '策略回測',
     'sub.backtest-history': '回測记錄',
-    'sub.market-review': '市場複盤',
+    'sub.market-review': '每日複盤',   // V6.6.1: 更名消歧
     'sub.scan': '异動扫描',
     'sub.custom-write': '全新策略',
+    'sub.strategy-manage': '策略管理',   // V6.6.1: 合併
     'sub.ztpool': '漲停復盤',
     'sub.lhb': '龍虎榜',
     'sub.shortterm.overview': '復盤看板',
@@ -49,7 +52,7 @@
     'sub.shortterm.intraday': '盤中核驗',
     'sub.intraday': '盤中核驗',
     'sub.status': '系統状态',
-    'sub.autoeval': '自動評估',
+    'sub.autoeval': 'AI 服務',   // V6.6.1 (方案A): 收斂更名
     'sub.datasource': '數据源',
     'sub.feature': '功能配置',
     'sub.user': '用户與權限',

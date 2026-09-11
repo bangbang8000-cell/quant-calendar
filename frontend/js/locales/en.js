@@ -23,18 +23,20 @@
     'sub.strategies.overview': 'Strategy Overview', 'sub.ai.overview': 'Eval Overview', 'sub.research.research-overview': 'Research Overview',
     'sub.execution': 'Execution Dashboard',
     'sub.merrill': 'Merrill Clock',
-    'sub.market': 'Market',
+    'sub.market': 'Index Market',   // V6.6.1: rename
     'sub.consensus': 'Consensus Ranking',
     'sub.daily': 'Daily',
     'sub.weekly': 'Weekly',
     'sub.monthly': 'Monthly',
     'sub.yearly': 'Yearly',
     'sub.pool': 'Stock Pool',
+    'sub.calendar': 'Calendar',   // V6.6.1: merged main view
     'sub.watchlist': 'My Watchlist',
     'sub.history': 'Eval History',
     'sub.evaluation-analysis': 'Evaluation Analysis',
     'sub.focus': 'Focus Tracking',
     'sub.datadict': 'Data Dictionary',
+    'sub.notification': 'Notification Center',   // V6.6.1 (Plan A)
     'sub.chat_history': 'Chat History',
     'sub.portfolio': 'Portfolio',
     'sub.research-overview': 'Research Overview',
@@ -42,9 +44,10 @@
     'sub.strategy-write': 'Strategy Builder',
     'sub.backtest': 'Backtest',
     'sub.backtest-history': 'Backtest History',
-    'sub.market-review': 'Market Review',
+    'sub.market-review': 'Daily Review',   // V6.6.1: rename
     'sub.scan': 'Anomaly Scan',
     'sub.custom-write': 'New Strategy',
+    'sub.strategy-manage': 'Strategy Manager',   // V6.6.1: merged
     'sub.ztpool': 'Limit-up Review',
     'sub.lhb': 'Dragon-Tiger List',
     'sub.shortterm.overview': 'Review Dashboard',
@@ -53,7 +56,7 @@
     'sub.shortterm.intraday': 'Intraday Check',
     'sub.intraday': 'Intraday Check',
     'sub.status': 'System Status',
-    'sub.autoeval': 'Auto Eval',
+    'sub.autoeval': 'AI Services',   // V6.6.1 (Plan A): rename
     'sub.datasource': 'Data Source',
     'sub.feature': 'Features',
     'sub.user': 'Users & Permissions',

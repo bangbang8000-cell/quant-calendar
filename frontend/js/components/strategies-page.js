@@ -45,6 +45,7 @@
                             <!-- 美林时钟 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'merrill'">
                                 <div class="today-cell-label">{{ t('strategies.merrillLabel') }}</div>
+                                <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
                                 <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || t('strategies.computing') }}</div>
                                 <div class="today-cell-sub" v-if="merrillNext">{{ merrillNext }}</div>
                                 <div class="today-cell-sub" v-else-if="merrillData?.timing?.duration_days != null">已 {{ merrillData.timing.duration_days }} 天 · 剩余 {{ merrillData.timing.days_remaining ?? '—' }} 天</div>
@@ -194,6 +195,7 @@
                             <div class="strategy-title-bar">
                                 <qc-icon name="clock" :size="14" /> 美林时钟 · 经济周期
                             </div>
+                            <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
                             <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
@@ -224,10 +226,12 @@
 
                         <!-- 四阶段网格 -->
                         <div class="grid-2col-gap8-mb14">
+                            <!-- V6.6: 阶段色来自服务端 merrillStagesConfig 配置，保留内联 -->
                             <div v-for="s in stages" :key="s.key" @click.prevent="showStageDetail(s.key)"
                                  class="merrill-stage-card" :class="{active: merrillData.stage === s.key}"
                                  :style="merrillData.stage === s.key ? {borderColor: s.color, background: s.bg} : {}">
                                 <div class="merrill-stage-icon">{{ s.icon }}</div>
+                                <!-- V6.6: s.textColor 服务端配置色，保留内联 -->
                                 <div class="merrill-stage-name" :style="{color: s.textColor}">{{ s.name }}</div>
                                 <div class="merrill-stage-desc">{{ s.tagline }}</div>
                             </div>
@@ -242,6 +246,7 @@
                         <div class="gold-note-box" v-if="merrillData.timing">
                             <div class="flex-between-base-mb6">
                                 <span class="color-secondary"><qc-icon name="calendar" :size="14" /> {{ merrillData.timing.current_stage_start_date || '—' }}</span>
+                                <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
                                 <span class="strategy-badge" v-if="merrillData.timing.maturity" :style="{color: merrillData.color}">{{ merrillData.timing.maturity }}</span>
                             </div>
                             <div class="flex-between-xs-mb7">
@@ -252,6 +257,7 @@
                                 <span v-else>均值 {{ fmtNum(merrillData.timing.avg_duration_months) }}月</span>
                             </div>
                             <div class="progress-track-8">
+                                <!-- V6.6: 超期渐变插值（实时色→warning），保留内联 -->
                                 <div class="progress-fill-4" :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', background: (merrillData.timing.progress_percent || 0)> 100 ? 'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : (merrillData.color || 'var(--color-success)')}"></div>
                             </div>
                             <div class="flex-between-xs-mt4">
@@ -266,6 +272,7 @@
                             <div class="flex-c-gap-8-mb6-sm" v-for="dim in dimensionScoreList" :key="dim.key">
                                 <span class="stat-label-40">{{ dim.label }}</span>
                                 <div class="stat-track-10">
+                                    <!-- V6.6: dim 分数段渐变色（JS 插值计算），保留内联 -->
                                     <div class="stat-fill-5" :style="{width: dim.barWidth + '%', background: dim.barColor}"></div>
                                 </div>
                                 <span class="stat-value-35" :style="{color: dim.scoreColor}">+{{ dim.scoreStr }}</span>
@@ -277,6 +284,7 @@
                         <div class="strategy-summary-bar" v-if="merrillData.confidence">
                             <div class="flex-c-gap-6">
                                 <span class="text-sm-secondary">置信度</span>
+                                <!-- V6.6: confidenceColor 置信度计算色，保留内联 -->
                                 <span class="text-base-semibold" :style="{color: confidenceColor}">{{ merrillData.confidence.level || '—' }}</span>
                             </div>
                             <div class="flex-c-gap-4-sm" v-if="merrillData.next_stage_prediction">
@@ -316,6 +324,7 @@
                                                              @click.prevent="showTimelineStage(st.stage, $event)"
                                                              @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
                                                              @mouseleave="clearTlHover()">
+                                                            <!-- V6.6: getTimelineStageColor() 函数计算色，保留内联 -->
                                                             <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
                                                             <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
                                                             <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
