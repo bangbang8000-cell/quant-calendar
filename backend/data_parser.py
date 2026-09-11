@@ -414,6 +414,7 @@ class DataParser:
                 'name': stock_manager.get_name(stock),
                 'strategy_count': len(strategies),
                 'strategies': strategies,
+                'strategy_names': [STRATEGY_CONFIG.get(s, {}).get('name', s) for s in strategies],  # V6.9.1-fix: 补中文名映射, 避免前端/AI 展示英文 key
                 'consensus_level': len(strategies) / len(STRATEGY_CONFIG)
             })
 

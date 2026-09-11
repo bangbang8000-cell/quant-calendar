@@ -115,8 +115,10 @@ const allMenuDefs = [
                     { key: 'calendar', name: '量化日历', iconName: 'calendar', group: 'research', subPages: ['calendar', 'pool'] }, // V6.6.1: 日/周/月/年 4 视图合并为页内切换 (PRD F-6.6.7)
                     { key: 'ai', name: '智能评估', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'portfolio', 'chat_history'] }, // V5.0.11: 评估分析独立子页; V5.4.0: 重点跟踪子页; V6.6.1: 组合持仓入口 (PRD 结论一)
                     { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-manage', 'backtest', 'backtest-history'] }, // V6.6.1: 策略编写+全新策略合并为「策略管理」 (PRD 结论五)
-                    { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday', 'scan'] }, // V5.2.3: 市场复盘+异动扫描并入
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'health', 'schedule', 'autoeval', 'usage', 'guard', 'datasource', 'feature', 'datadict', 'notification', 'user', 'execution', 'about'], guestSubPages: ['status', 'about'] } // V6.0 (P1-3): health/schedule/guard 独立子页; V6.6.1 (方案A): 新增 notification 通知中心子页
+                    { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.3: 市场复盘+异动扫描并入; V6.9.1-fix: 异动扫描删除
+                    // V6.9.1-fix: 系统状态一级菜单 (自系统配置分离, 置于系统配置前) — 运行监控/数据/执行域
+                    { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] },
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['status', 'autoeval', 'datasource', 'feature', 'notification', 'user', 'about'], guestSubPages: ['status', 'about'] } // V6.9.1-fix: health/schedule/usage/guard/datadict/execution 移入 ops 一级菜单
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -313,12 +315,13 @@ const allMenuDefs = [
                 const lazyTick = ref(0);  // V5.2.12 (FIX-2): 懒加载组件补注册后 tick 强制 pageComp 重算
                 const pageComp = computed(() => {
                     void lazyTick.value;  // 依赖: 补加载注册完成后 lazyTick++ 触发重算
-                    const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', shortterm: 'qc-shortterm-page', system: 'qc-system-page' };
+                    const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', shortterm: 'qc-shortterm-page', ops: 'qc-system-page', system: 'qc-system-page' };
                     // V5.2.3: 市场复盘/异动扫描移入短线复盘, 执行看板移入系统配置 —
                     // 组件按顶层菜单选, 子页归属变化时路由到原组件(复用渲染, 避免复制模板)
+                    // V6.9.1-fix: 异动扫描已删除; 执行看板移入 ops 一级菜单
                     const _sp = currentSubPage.value;
-                    if (currentPage.value === 'shortterm' && (_sp === 'market-review' || _sp === 'scan')) return 'qc-research-page';
-                    if (currentPage.value === 'system' && _sp === 'execution') return 'qc-strategies-page';
+                    if (currentPage.value === 'shortterm' && (_sp === 'market-review')) return 'qc-research-page';
+                    if (currentPage.value === 'ops' && _sp === 'execution') return 'qc-strategies-page';
                     return _map[currentPage.value] || '';
                 });
                 const showUserMenu = ref(false);
@@ -361,7 +364,7 @@ const allMenuDefs = [
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
                     'calendar': '量化日历', 'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池', // V6.6.1: calendar 为合并后主视图 key
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', 'portfolio': '组合持仓', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis; V6.6.1: 组合持仓入口
-                    'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', 'scan': '异动扫描', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」
+                    'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」; V6.9.1-fix: 异动扫描已删除
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
                     'shortterm.sector': '板块资金', 'sector': '板块资金',

@@ -9,8 +9,8 @@
   window.__quantComponents.ResearchPage = {
     name: 'qc-research-page',
     template: `
-                <!-- V5.2.3: 市场复盘/异动扫描移入短线复盘 → 本组件在 shortterm 下也渲染这两个子页 -->
-                <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && (currentSubPage === 'market-review' || currentSubPage === 'scan'))" key="research">
+                <!-- V5.2.3: 市场复盘移入短线复盘 → 本组件在 shortterm 下也渲染该子页 (V6.9.1-fix: 异动扫描已删除) -->
+                <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && currentSubPage === 'market-review')" key="research">
                     <!-- v3.16 (16.8): 功能未开启时的统一占位 (仅策略研究菜单下生效, 短线复盘托管不受研究开关影响) -->
                     <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="lock" title="研究功能未开启"
                         desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
@@ -99,17 +99,9 @@
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
-                        <div class="consensus-item clickable" @click="goShortterm('scan')">
-                            <div class="consensus-badge">6</div>
-                            <div class="consensus-info">
-                                <div class="consensus-code"><qc-icon name="zap" :size="14" /> 异动扫描</div>
-                                <div class="consensus-name">涨停 · 跌停 · 放量 · 连板 · 事件提醒</div>
-                            </div>
-                            <span class="market-review-arrow">›</span>
-                        </div>
-                        <!-- 5.1.0 (T-5.1.4): 研究历史入口 -->
+                        <!-- 5.1.0 (T-5.1.4): 研究历史入口 (V6.9.1-fix: 异动扫描已删除, 编号 7→6) -->
                         <div class="consensus-item clickable" @click="openResearchHistory">
-                            <div class="consensus-badge">7</div>
+                            <div class="consensus-badge">6</div>
                             <div class="consensus-info">
                                 <div class="consensus-code"><qc-icon name="folder" :size="14" /> 研究历史</div>
                                 <div class="consensus-name">因子IC · 分层 · 扫描 · 回测 实验记录 · 对比</div>
@@ -718,92 +710,6 @@
                             </template>
                         </template>
                     </div>
-                    <!-- v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒 代码起点 -->
-                    <div v-else-if="currentSubPage === 'scan'" class="card scan-card">
-                        <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留刷新操作 -->
-                        <div class="qc-page-tools">
-                            <div class="flex-c-gap-12">
-                                <el-button size="small" :loading="scanLoading" @click="loadScan" aria-label="刷新异动扫描"><qc-icon name="refresh" :size="14" /></el-button>
-                            </div>
-                        </div>
-
-                        <!-- ===== 扫描工具栏 ===== -->
-                        <div class="scan-toolbar">
-                            <el-select v-model="scanPool" size="small" class="scan-pool-select" aria-label="扫描范围" multiple collapse-tags placeholder="扫描范围">
-                                <el-option label="当日入池" value="strategies"></el-option>
-                                <el-option label="我的自选" value="watchlist"></el-option>
-                            </el-select>
-                            <el-button type="primary" size="small" @click="loadScan" :loading="scanLoading">刷新扫描</el-button>
-                        </div>
-
-                        <div v-if="scanLoading" class="scan-loading">
-                            <qc-state-panel type="loading"></qc-state-panel>
-                            <div class="scan-loading-tip">正在扫描 {{ scanPoolLabel }}（首次约几秒，请稍候）...</div>
-                        </div>
-                        <qc-state-panel v-else-if="scanError" type="error" title="异动扫描失败"
-                            desc="请检查数据源后重试" @retry="loadScan"></qc-state-panel>
-                        <template v-else-if="scanResult && scanResult.moves && scanResult.moves.length">
-                            <div v-if="scanResult.note" class="scan-note">{{ scanResult.note }}</div>
-                            <div class="flex-wrap mb-4">
-                                <div class="stat-card"><div class="stat-icon warning"><qc-icon name="zap" :size="18" /></div><div class="stat-label">异动命中</div><div class="stat-value">{{ scanResult.moves.length }}</div></div>
-                                <div class="stat-card"><div class="stat-icon info"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">扫描日期</div><div class="stat-value stat-value-lg">{{ scanResult.date || '--' }}</div></div>
-                            </div>
-                            <div class="scan-meta">共 {{ scanResult.moves.length }} 只异动(可点击查看详情)</div>
-                            <div v-for="group in scanGroups" :key="group.label" class="scan-group">
-                                <div class="scan-group-title">{{ group.label }}
-                                    <span class="scan-group-count">{{ group.moves.length }}</span>
-                                </div>
-                                <div class="scan-group-list">
-                                    <div v-for="m in group.moves" :key="m.code" class="scan-row" tabindex="0" role="button"
-                                         :aria-label="'查看 ' + m.name + ' ' + m.code"
-                                         @click="showStockDetail(m.code)"
-                                         @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                        <div class="scan-row-main">
-                                            <span class="scan-row-name">{{ m.name }}</span>
-                                            <span class="scan-row-code">{{ m.code }}</span>
-                                            <span class="scan-row-close">{{ formatPrice(m.close) }}</span>
-                                            <span class="scan-row-chg" :class="chgClass(m.pct_chg)">{{ chgText(m.pct_chg) }}</span>
-                                        </div>
-                                        <div class="scan-row-tags">
-                                            <span v-for="tag in m.labels" :key="tag" class="scan-tag"
-                                                  :class="'scan-tag-' + tagClass(tag)">{{ tag }}</span>
-                                            <span v-if="m.volume_ratio" class="scan-row-vol">量比 {{ fmtNum(m.volume_ratio) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                        <qc-state-panel v-else type="empty" title="暂无异动"
-                            :desc="(scanResult && scanResult.note) || '当前扫描范围暂无符合条件的异动个股'"></qc-state-panel>
-
-                        <!-- ===== 事件提醒 ===== -->
-                        <div class="scan-section">
-                            <div class="scan-section-head">
-                                <div class="scan-section-title">事件提醒</div>
-                                <el-select v-model="eventScope" size="small" class="scan-pool-select" aria-label="事件范围">
-                                    <el-option label="自选股" value="watchlist"></el-option>
-                                    <el-option label="组合持仓" value="portfolio"></el-option>
-                                </el-select>
-                            </div>
-                            <qc-state-panel v-if="eventsLoading" type="loading"></qc-state-panel>
-                            <template v-else-if="eventsData && eventsData.events && eventsData.events.length">
-                                <div v-if="eventsData.note" class="scan-note">{{ eventsData.note }}</div>
-                                <div v-for="g in eventGroups" :key="g.type" class="scan-group">
-                                    <div class="scan-group-title">{{ g.type }}
-                                        <span class="scan-group-count">{{ g.events.length }}</span>
-                                    </div>
-                                    <div class="scan-group-list">
-                                        <div v-for="ev in g.events" :key="ev.code + '-' + ev.title + '-' + ev.date" class="scan-event-row">
-                                            <span class="scan-event-stock">{{ ev.name }} ({{ ev.code }})</span>
-                                            <span class="scan-event-title">{{ ev.title }}</span>
-                                            <span class="scan-event-date">{{ ev.date || '--' }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                            <div v-else class="scan-empty-state">{{ (eventsData && eventsData.note) || '近期无事件' }}</div>
-                        </div>
-                    </div>
                     </template>
                 </div>`,
     setup() {
@@ -905,112 +811,6 @@
           const unavailable = !val || val === 'unavailable' || val === '数据不可达';
           return { label: labels[key] || key, value: unavailable ? '数据不可达' : val, unavailable: unavailable };
         });
-      }
-
-      // ===== v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒（离线日线级） =====
-      const scanPool = ref(['strategies', 'watchlist']);  // v3.23: 多选扫描范围(当日入池/我的自选), 默认同时
-      const scanLoading = ref(false);
-      const scanError = ref(false);
-      const scanResult = ref(null);
-      const eventScope = ref('watchlist');
-      const eventsLoading = ref(false);
-      const eventsData = ref(null);
-
-      async function loadScan() {
-        const seq = ++_reqSeq;
-        scanLoading.value = true;
-        scanError.value = false;
-        try {
-          // v3.23: 多选范围 → 逗号并集(如 watchlist,strategies)
-          const url = '/api/market/scan?pool=' + encodeURIComponent((scanPool.value || []).join(',') || 'all');
-          // V5.3.15 (T-MR.1): /market/scan 需登录 — 带 Authorization 头, 否则 401 无数据
-          const res = await fetch(url, { headers: _authHeaders() }).then(r => r.json());
-        if (seq !== _reqSeq) return;
-          if (res && res.success) {
-            scanResult.value = res.data || { moves: [], note: '' };
-          } else {
-            scanError.value = true;
-          }
-        } catch (e) {
-          console.error('[scan] 异动扫描失败:', e);
-          scanError.value = true;
-        } finally {
-        if (seq === _reqSeq) scanLoading.value = false;
-        }
-      }
-
-      async function loadEvents() {
-        const seq = ++_reqSeq;
-        eventsLoading.value = true;
-        try {
-          const url = '/api/market/events?scope=' + encodeURIComponent(eventScope.value);
-          const res = await fetch(url, { headers: _authHeaders() }).then(r => r.json());
-        if (seq !== _reqSeq) return;
-          if (res && res.success) {
-            eventsData.value = res.data || { events: [], note: '' };
-          } else {
-            eventsData.value = { events: [], note: '事件数据暂不可用' };
-          }
-        } catch (e) {
-          console.error('[scan] 事件提醒加载失败:', e);
-          eventsData.value = { events: [], note: '事件数据暂不可用' };
-        } finally {
-        if (seq === _reqSeq) eventsLoading.value = false;
-        }
-      }
-
-      // 扫描范围中文名（loading 提示用）— v3.23 多选
-      const scanPoolLabel = computed(function () {
-        const m = { 'strategies': '当日入池', 'watchlist': '自选股' };
-        const names = (scanPool.value || []).map(function (p) { return m[p]; }).filter(Boolean);
-        return names.length ? names.join('+') : '所选范围';
-      });
-
-      // 异动标签分组（按固定展示顺序）
-      const scanGroups = computed(function () {
-        const order = ['涨停', '连板', '放量', '异动振幅', '跌停'];
-        const moves = (scanResult.value && scanResult.value.moves) || [];
-        const groups = [];
-        order.forEach(function (label) {
-          const ms = moves.filter(function (m) {
-            return (m.labels || []).indexOf(label) >= 0;
-          });
-          if (ms.length) groups.push({ label: label, moves: ms });
-        });
-        return groups;
-      });
-
-      // 事件按类型分组
-      const eventGroups = computed(function () {
-        const byType = {};
-        ((eventsData.value && eventsData.value.events) || []).forEach(function (ev) {
-          (byType[ev.type] = byType[ev.type] || []).push(ev);
-        });
-        return Object.keys(byType).map(function (type) {
-          return { type: type, events: byType[type] };
-        });
-      });
-
-      // 标签 → 语义色类（红涨绿跌：涨停/连板偏涨，跌停放量下跌偏跌）
-      function tagClass(tag) {
-        if (tag === '跌停') return 'down';
-        if (tag === '涨停' || tag === '连板') return 'up';
-        if (tag === '放量' || tag === '异动振幅') return 'neutral';
-        return 'neutral';
-      }
-
-      function formatPrice(v) {
-        if (v === null || v === undefined || isNaN(Number(v))) return '--';
-        return Number(v).toFixed(2);
-      }
-
-      function chgClass(pct) {
-        return pct > 0 ? 'up' : (pct < 0 ? 'down' : 'flat');
-      }
-
-      function chgText(pct) {
-        if (pct === null || pct === undefined || isNaN(Number(pct))) return '—';
-        return (pct > 0 ? '+' : '') + Number(pct).toFixed(2) + '%';
       }
 
       // ===== 策略管理 (v3.19 策略研究 P0) =====
@@ -1285,11 +1085,6 @@
           // 进入「市场复盘」且未停留在详情时加载列表 (V5.2.3: 移入短线复盘后 key=shortterm/market-review)
           if ((key === 'research/market-review' || key === 'shortterm/market-review') && !selectedReviewDate.value) {
             loadMarketReviews();
-          }
-          // 进入「异动扫描」时刷新扫描与事件提醒 (V5.2.3: 移入短线复盘后 key=shortterm/scan)
-          if (key === 'research/scan' || key === 'shortterm/scan') {
-            loadScan();
-            loadEvents();
           }
           // v3.19: 进入「量化研究」时加载策略列表
           if (key === 'research/quant-research') {
@@ -1675,7 +1470,7 @@
         return RESEARCH_TYPE_LABELS[type] || type || '—';
       }
       function goShortterm(sub) {
-        // V5.2.3: 市场复盘/异动扫描移入短线复盘 → 研究页入口跳转过去
+        // V5.2.3: 市场复盘移入短线复盘 → 研究页入口跳转过去 (V6.9.1-fix: 异动扫描已删除)
         if (state && state.navigateTo) state.navigateTo('shortterm', sub);
       }
 
@@ -1782,9 +1577,6 @@
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
         loadMarketReviews, openMarketReview, backToMarketReviewList, loadMarketReviewDetail,
         marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries,
-        scanPool, scanLoading, scanError, scanResult,
-        eventScope, eventsLoading, eventsData,
-        loadScan, loadEvents, scanGroups, eventGroups,
         strategies, strategiesLoading, strategiesError,
         activeStrategyId, activeStrategy, paramValues,
         strategyRunning, ptradeCode, strategyRuns,
@@ -1805,7 +1597,6 @@
         customName, customPrompt, customs, customSelected, customCode, customMsg, customBtResult,
         customGenLoading, customBtLoading, customOptLoading,
         loadCustoms, genCustomCode, loadCustomCode, runCustomBacktest, runCustomOptimize, copyCustomCode,
-        tagClass, formatPrice, chgClass, chgText,
         // V4.0 M2-1 参数扫描 (修复未进 return 的绑定缺口) + V5.0.2 T-5.0.24 稳定性
         sweepGrid, sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep,
       };

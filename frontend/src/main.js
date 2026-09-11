@@ -95,6 +95,7 @@ import '../js/app-logic.js'
 // 4 大页面组件(system/strategies/ai/research)合计 ~300KB raw, 延迟到进入页面时加载
 window.__lazyLoaders = {
   system: () => import('../js/components/system-page.js'),
+  ops: () => import('../js/components/system-page.js'),  // V6.9.1-fix: 系统状态一级菜单复用 system-page 渲染
   ai: () => import('../js/components/ai-page.js'),
   research: () => import('../js/components/research-page.js'),
   shortterm: () => import('../js/components/shortterm-page.js'),

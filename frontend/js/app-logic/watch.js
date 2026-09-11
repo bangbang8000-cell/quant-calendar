@@ -56,10 +56,10 @@
             currentSubPage.value = menu.subPages[0];
           }
         }
-        // V5.2.12 (FIX-2): 短线复盘的 market-review/scan 渲染 qc-research-page —
+        // V5.2.12 (FIX-2): 短线复盘的 market-review 渲染 qc-research-page —
         // 懒加载 chunk 按 currentPage 分组(切短线复盘只加载 shortterm chunk),
         // research 组件未注册时 <component :is> 解析失败 → 页面空白
-        if (page === 'shortterm' && (sub === 'market-review' || sub === 'scan')) {
+        if (page === 'shortterm' && sub === 'market-review') {
           const rl = window.__lazyLoaders && window.__lazyLoaders['research'];
           if (rl) {
             rl().then(function () {

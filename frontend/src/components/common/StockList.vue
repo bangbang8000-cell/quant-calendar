@@ -45,8 +45,9 @@ export default {
         </div>
         <div class="qc-stock-name">{{ item.name }}</div>
       </div>
-      <div v-if="item.strategies && item.strategies.length" class="qc-stock-tags">
-        <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
+      <!-- V6.9.1-fix: 策略标签优先展示 strategy_names (中文映射), 缺失时回退 strategies (原始 key) -->
+      <div v-if="(item.strategy_names || item.strategies) && (item.strategy_names || item.strategies).length" class="qc-stock-tags">
+        <span v-for="s in (item.strategy_names || item.strategies).slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
       </div>
       <div v-if="slots.extra" class="qc-stock-extra">
         <slot name="extra" :item="item" :index="i" />

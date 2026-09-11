@@ -41,7 +41,6 @@
     'sub.backtest': '전략 백테스트',
     'sub.backtest-history': '백테스트 이력',
     'sub.market-review': '일일 리뷰',   // V6.6.1: 명칭 변경
-    'sub.scan': '변동 스캔',
     'sub.custom-write': '새 전략',
     'sub.strategy-manage': '전략 관리',   // V6.6.1: 통합
     'sub.ztpool': '상한가 리뷰',

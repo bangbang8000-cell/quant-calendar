@@ -45,7 +45,6 @@
     'sub.backtest': 'Backtest',
     'sub.backtest-history': 'Backtest History',
     'sub.market-review': 'Daily Review',   // V6.6.1: rename
-    'sub.scan': 'Anomaly Scan',
     'sub.custom-write': 'New Strategy',
     'sub.strategy-manage': 'Strategy Manager',   // V6.6.1: merged
     'sub.ztpool': 'Limit-up Review',

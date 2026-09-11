@@ -305,13 +305,14 @@
         }
 
         /* 🌙 暗色专业版 - Bloomberg Terminal 风格 */
+        /* V6.9.1-fix: 暗色背景统一蓝色系 (去紫/去鲜艳), 点缀色保留鲜艳 (金蓝红绿紫粉) */
         [data-theme="dark-pro"] {
             --primary-color: #64ffda;
             --primary-rgb: 100, 255, 218;
             /* V6.0: qc 暗色导航 token 覆盖 (V6.0.1: 原 .dark 死代码已删除, 暗色统一由本 data-theme 块驱动) */
-            --qc-background: #0f0f23; --qc-foreground: #e6f1ff;
-            --qc-card: #1a1a3e; --qc-card-foreground: #e6f1ff;
-            --qc-popover: #1a1a3e; --qc-popover-foreground: #e6f1ff;
+            --qc-background: #0b1220; --qc-foreground: #e6f1ff;
+            --qc-card: #101a2e; --qc-card-foreground: #e6f1ff;
+            --qc-popover: #101a2e; --qc-popover-foreground: #e6f1ff;
             --qc-primary: #ffd166;
             --qc-primary-foreground: #1a1814;
             /* V6.0.1: 补全 dark-pro 金色 scale — 暗底适配 (50-300 深金底 / 400-900 亮金主色与文字) */
@@ -320,31 +321,31 @@
             --qc-primary-400: #a68a35; --qc-primary-500: #d4b352;
             --qc-primary-600: #ffd166; --qc-primary-700: #ffd166;
             --qc-primary-800: #e6cf86; --qc-primary-900: #f0e2b3;
-            --qc-muted: #1e2a4a; --qc-muted-foreground: #8892b0;
-            --qc-border: #2e4162; --qc-input: #2e4162; --qc-ring: #e6cf86;
-            --qc-nav-bg: #141431; --qc-nav-border: #2e4162;
+            --qc-muted: #16233b; --qc-muted-foreground: #8892b0;
+            --qc-border: #23344f; --qc-input: #23344f; --qc-ring: #e6cf86;
+            --qc-nav-bg: #0d1526; --qc-nav-border: #23344f;
             --qc-nav-item-default: #8892b0; --qc-nav-item-hover: #e6f1ff;
-            --qc-nav-item-hover-bg: #1e2a4a;
-            --qc-nav-item-active: #ffd166; --qc-nav-item-active-bg: #1e2a3a;
+            --qc-nav-item-hover-bg: #16233b;
+            --qc-nav-item-active: #ffd166; --qc-nav-item-active-bg: #142238;
             --qc-nav-item-active-border: #ffd166;
             --qc-nav-group-label: #64748b;
-            --qc-nav-badge-bg: #1e2a4a; --qc-nav-badge-text: #ffd166;
+            --qc-nav-badge-bg: #16233b; --qc-nav-badge-text: #ffd166;
             --qc-overlay: rgba(0, 0, 0, 0.6);
             --secondary-color: #5e6ad2;
-            --gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #233554 100%);
-            --card-border: #233554;
+            --gradient: linear-gradient(135deg, #0b1220 0%, #101a2e 50%, #1a2a44 100%);
+            --card-border: #1a2a44;
             --text-primary: #e6f1ff; --text-secondary: #8892b0; --text-tertiary: #7a8ba8;
             --text-link: #64ffda;
-            --bg-page: #0f0f23; --bg-card: #1a1a3e;
-            --bg-card-header: #1e2a4a;
-            --bg-sidebar: rgba(15,15,35,0.98);
-            --bg-dialog-header: linear-gradient(135deg, #1e2a4a 0%, #1a1a3e 100%);
-            --bg-dialog: rgba(26,26,62,0.98);
-            --bg-input: #233554; --bg-hover: #233554;
-            --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #15153a;
-            --border-light: #1e2a4a; --border-base: #2e4162; --border-heavy: #53699a;
+            --bg-page: #0b1220; --bg-card: #101a2e;
+            --bg-card-header: #16233b;
+            --bg-sidebar: rgba(11,18,32,0.98);
+            --bg-dialog-header: linear-gradient(135deg, #16233b 0%, #101a2e 100%);
+            --bg-dialog: rgba(16,26,46,0.98);
+            --bg-input: #16233b; --bg-hover: #16233b;
+            --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #0e1728;
+            --border-light: #16233b; --border-base: #23344f; --border-heavy: #3a5077;
             /* V4.4 (FR-4.4.1): dark 覆盖补全令牌 */
-            --border-color: #374151; --surface: #111827; --bg-code: #0f172a;
+            --border-color: #23344f; --surface: #111827; --bg-code: #0f172a;
             --bg-tertiary: #1f2937; --primary-color-dark: #3b82f6;
             --text-disabled: #64748b;   /* EP 禁用态文本 */
             --scrollbar-thumb: rgba(138,146,176,0.5);  /* EP 滚动条滑块(半透明次级色) */
@@ -354,14 +355,14 @@
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45) ;
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55) ;
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
-            --chart-split: #2e4162 ;
-            --chart-axis: #53699a ;
+            --chart-split: #23344f ;
+            --chart-axis: #3a5077 ;
             /* V5.5 (T-5.0.54): 图表画布背景暗色变体 (与 dark-pro --bg-card 一致) */
-            --chart-bg: #1a1a3e ;
-            --bg-page-rgb: 15, 15, 35;  /* 页面背景 rgb(loading 遮罩) */
+            --chart-bg: #101a2e ;
+            --bg-page-rgb: 11, 18, 32;  /* 页面背景 rgb(loading 遮罩) */
             /* V4.0.2 毛玻璃深色浮层 */
             /* V6.6 (PRD-6.6 F4): 暗色浮层实底 — 0.72 半透明改不透明, 消除玻璃透底 */
-            --glass-bg: #1a1a3e;
+            --glass-bg: #101a2e;
             --glass-border: rgba(255, 255, 255, 0.10);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.4);
@@ -375,7 +376,7 @@
             --el-success: #64ffda; --el-warning: #ffb74d;
             --el-danger: #ff5252; --el-info: #64b5f6;
             /* 🌙 暗色专业 - 主按钮令牌 (深色文字) */
-            --btn-primary-bg: #64ffda; --btn-primary-border: #64ffda; --btn-primary-color: #0f0f23;
+            --btn-primary-bg: #64ffda; --btn-primary-border: #64ffda; --btn-primary-color: #0b1220;
             --btn-primary-hover-bg: #45e0bc; --btn-primary-hover-border: #45e0bc;
             --btn-primary-active-bg: #20c997; --btn-primary-active-border: #20c997;
             --btn-primary-plain-bg: rgba(100,255,218,0.08); --btn-primary-plain-border: rgba(100,255,218,0.25); --btn-primary-plain-color: #64ffda;
@@ -388,9 +389,9 @@
             --color-info: var(--el-info);
             --bg-hover: var(--qc-nav-item-hover-bg);
             --qc-muted-foreground: #a0aec8;
-            --el-dialog-bg-color: var(--qc-card, #1a1a3e);
-            --el-dropdown-bg-color: var(--qc-card, #1a1a3e);
-            --el-popover-bg-color: var(--qc-card, #1a1a3e);
+            --el-dialog-bg-color: var(--qc-card, #101a2e);
+            --el-dropdown-bg-color: var(--qc-card, #101a2e);
+            --el-popover-bg-color: var(--qc-card, #101a2e);
         }
         /* V6.6 (PRD-6.6 F4): 暗色弹窗/下拉实底 — 覆盖 layout.css 的玻璃背景与模糊 */
         [data-theme="dark-pro"] .el-dialog,
@@ -4550,71 +4551,6 @@ text {
     .portfolio-form-item { width: 100%; }
     .portfolio-summary-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
-
-/* ===== v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒 ===== */
-.scan-card { display: flex; flex-direction: column; gap: 16px; }
-.scan-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.scan-pool-select { width: 150px; }
-.scan-note {
-    padding: 8px 12px; border-radius: var(--qc-radius-small);
-    background: var(--bg-card-header); border: 1px solid var(--border-light);
-    color: var(--text-secondary); font-size: var(--qc-font-size-sm);
-}
-.scan-meta { font-size: var(--qc-font-size-sm); color: var(--text-tertiary); }
-.scan-loading { display: flex; flex-direction: column; gap: 8px; }
-.scan-loading-tip { font-size: var(--qc-font-size-sm); color: var(--text-tertiary); text-align: center; }
-.scan-group { display: flex; flex-direction: column; gap: 8px; }
-.scan-group-title {
-    display: flex; align-items: center; gap: 8px;
-    font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); color: var(--text-primary);
-}
-.scan-group-count {
-    min-width: 20px; text-align: center; padding: 4px 8px; border-radius: var(--qc-radius-full);
-    background: var(--bg-card-header); color: var(--primary-color); font-size: var(--qc-font-size-xs);
-    font-weight: var(--font-medium);
-}
-.scan-group-list {
-    display: flex; flex-direction: column; gap: 8px;
-    background: var(--bg-card-header); border: 1px solid var(--border-light); border-radius: var(--qc-radius-medium);
-    padding: 8px;
-}
-.scan-row {
-    display: flex; flex-direction: column; gap: 8px; padding: 8px 10px;
-    border-radius: var(--qc-radius-small); cursor: pointer; border: 1px solid transparent;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-.scan-row:hover { background: var(--bg-hover); border-color: var(--primary-color); }
-.scan-row-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.scan-row-name { font-weight: var(--font-medium); color: var(--text-primary); }
-.scan-row-code { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
-.scan-row-close { font-size: var(--qc-font-size-base); color: var(--text-secondary); }
-.scan-row-chg { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); }
-.scan-row-chg.up { color: var(--color-rise); }
-.scan-row-chg.down { color: var(--color-fall); }
-.scan-row-chg.flat { color: var(--text-tertiary); }
-.scan-row-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.scan-tag {
-    font-size: var(--qc-font-size-xs); padding: 4px 8px; border-radius: var(--qc-radius-full);
-    font-weight: var(--font-medium);
-}
-.scan-tag-up { background: color-mix(in srgb, var(--color-rise) 12%, transparent); color: var(--color-rise); }
-.scan-tag-down { background: color-mix(in srgb, var(--color-fall) 12%, transparent); color: var(--color-fall); }
-.scan-tag-neutral { background: var(--badge-info-bg); color: var(--text-secondary); }
-.scan-row-vol { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
-.scan-section { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); }
-.scan-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.scan-section-title { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); color: var(--text-primary); }
-.scan-event-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; }
-.scan-event-stock { font-weight: var(--font-medium); color: var(--text-primary); }
-.scan-event-title { flex: 1; min-width: 0; color: var(--text-secondary); font-size: var(--qc-font-size-sm); }
-.scan-event-date { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); white-space: nowrap; }
-.scan-empty-state {
-    padding: 24px 0; text-align: center; color: var(--text-tertiary); font-size: var(--qc-font-size-sm);
-}
-
-/* =====
-
-/* =====
 
 /* ===== v3.17.9 内联样式迁移工具类 (由 _tmp_migrate_map.py 生成, 值与原内联样式 1:1) ===== */
 /* v3.22-logo: 关于页品牌展示 (logo + 标题同行) */

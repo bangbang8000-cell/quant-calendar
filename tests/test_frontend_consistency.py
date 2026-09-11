@@ -732,30 +732,20 @@ def test_fact_check_wiring():
 
 
 # ─── v3.17.7 (FR-3.17.7 / 盘中增强：异动扫描 + 事件提醒) 回归 ─────────────
+# V6.9.1-fix: 异动扫描已删除 — 相关子页/UI/CSS 全部移除, 仅保留"不应存在"守卫
 
-def test_scan_subpage_endpoint_invoked():
-    """FR-3.17.7: 研究页异动扫描子页应调用 /api/market/scan 与 /api/market/events 并含'异动'文案"""
+def test_scan_subpage_removed():
+    """V6.9.1-fix: 异动扫描已从前端删除 — research-page.js 不应含 scan 模板/状态/函数"""
     src = _read("js/components/research-page.js")
-    assert "/api/market/scan" in src, "应调用 /api/market/scan 扫描端点"
-    assert "/api/market/events" in src, "应调用 /api/market/events 事件端点"
-    assert "异动" in src, "应含'异动'文案"
-    # 后端路由配套存在
-    api = _read_backend("api/v1/market.py")
-    assert '@router.get("/scan")' in api, "后端应提供 GET /api/market/scan 路由"
-    assert '@router.get("/events")' in api, "后端应提供 GET /api/market/events 路由"
-
-
-def test_scan_subpage_registered():
-    """V5.2.3: 市场复盘/异动扫描已移入短线复盘(shortterm subPages 含 scan/market-review)"""
+    assert "currentSubPage === 'scan'" not in src, "research-page 不应再含 scan 子页分支"
+    assert "loadScan" not in src, "research-page 不应再含 loadScan 函数"
+    assert "scanPool" not in src, "research-page 不应再含 scanPool 状态"
+    # shortterm 菜单 subPages 不应含 scan
     app = _read("js/app-logic.js")
-    r = re.search(r"\{ key: 'research'.*?\}", app)
-    assert r and "'scan'" not in r.group(0), "research 菜单不应再含 'scan'(已移入短线复盘)"
-    assert "'market-review'" not in r.group(0), "research 菜单不应再含 'market-review'"
     s = re.search(r"\{ key: 'shortterm'.*?\}", app)
-    assert s and "'scan'" in s.group(0), "shortterm 菜单 subPages 应含 'scan'"
-    assert "'market-review'" in s.group(0), "shortterm 菜单 subPages 应含 'market-review'"
-    assert "'scan': '异动扫描'" in app, "subPageNames 应映射 'scan' → 异动扫描"
-    assert "'market-review': '每日复盘'" in app, "subPageNames 应映射 'market-review' → 每日复盘 (V6.6.1 更名)"
+    assert s and "'scan'" not in s.group(0), "shortterm 菜单 subPages 不应含 'scan' (已删除)"
+    # subPageNames 不应再映射 scan
+    assert "'scan': '异动扫描'" not in app, "subPageNames 不应再映射 'scan' (已删除)"
 
 
 def test_research_menu_enabled_by_default():
@@ -767,15 +757,7 @@ def test_research_menu_enabled_by_default():
     assert '"research_menu_enabled": True' in ucfg, "BASE_CONFIG_DEFAULTS 应将 research_menu_enabled 默认为 True"
 
 
-def test_scan_subpage_no_inline_style():
-    """FR-3.17.7: 异动扫描新增代码片段不得使用内联 style（须走 CSS 类 + tokens 变量）"""
-    src = _read("js/components/research-page.js")
-    seg = src[src.index("v3.17.7 (FR-3.17.7): 异动扫描 + 事件提醒 代码起点"):]
-    assert 'style="' not in seg, "异动扫描代码不应含内联 style 属性"
-    assert "style={" not in seg, "异动扫描代码不应含绑定式内联 style"
-    css = _read("css/themes.css")
-    for cls in (".scan-group", ".scan-row", ".scan-tag", ".scan-note", ".scan-section", ".scan-toolbar", ".scan-event-row"):
-        assert cls in css, f"themes.css 应定义 {cls}"
+# V6.9.1-fix: 异动扫描已删除 — test_scan_subpage_no_inline_style 已废弃移除
 
 
 # ─── v3.17.9 (内联样式收敛治理) 回归 ─────────────────────────────
@@ -1579,7 +1561,7 @@ def test_page_components_template_calls_resolve():
     qkeys = set(_re.findall(r"([A-Za-z_$][\w$]*)\s*[,}]", qseg))
     builtins = set("map filter reduce forEach includes indexOf lastIndexOf join slice splice concat keys values entries some every find findIndex sort reverse push pop shift unshift replace split toFixed toString toLocaleString trim toLowerCase toUpperCase parseInt parseFloat isNaN isFinite min max abs round floor ceil random Date String Number Boolean Object Array Math JSON RegExp Promise setTimeout setInterval clearTimeout clearInterval encodeURIComponent decodeURIComponent charAt startsWith endsWith".split())
     # 噪音豁免: 模板文本/CSS 误匹配词 (非真实模板调用)
-    noise = set("TOP5 gradient var function Tab rotate click if stringify".split())
+    noise = set("TOP5 gradient var function Tab rotate click if in stringify".split())  # V6.9.1-fix: 加 in (v-for 关键字)
     for rel in _comps:
         src = _read("js/components/" + rel)
         tpl_start = src.index("template: ")
@@ -1824,10 +1806,10 @@ def test_all_main_pages_have_unified_page_header():
         assert 'class="page-title"' not in src, f"{rel} 不应再含 .page-title (V6.1 F3 去重)"
 
 
-# V5.2.12 (FIX-2): 短线复盘 market-review/scan 懒加载补注册守卫
+# V5.2.12 (FIX-2): 短线复盘 market-review 懒加载补注册守卫
 
 def test_lazy_research_subpage_guard():
-    """V5.2.12: 短线复盘的 market-review/scan 渲染 qc-research-page —
+    """V5.2.12: 短线复盘的 market-review 渲染 qc-research-page —
     懒加载 chunk 按 currentPage 分组, 子页切换时 research chunk 可能未加载 →
     需 watch 补加载 + lazyTick 强制 pageComp 重算, 否则 <component :is> 解析失败页面空白。
     """

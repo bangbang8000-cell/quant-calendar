@@ -41,7 +41,6 @@
     'sub.backtest': '戦略バックテスト',
     'sub.backtest-history': 'バックテスト履歴',
     'sub.market-review': '日次レビュー',   // V6.6.1: 名称変更
-    'sub.scan': '変動スキャン',
     'sub.custom-write': '新規戦略',
     'sub.strategy-manage': '戦略管理',   // V6.6.1: 統合
     'sub.ztpool': 'ストップ高レビュー',

@@ -92,7 +92,7 @@
                                             <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span></div>
                                         </div>
                                         <div class="qc-stock-tags">
-                                            <span v-for="s in item.strategies.slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
+                                            <span v-for="s in (item.strategy_names || item.strategies).slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
                                         </div>
                                         <!-- v3.7.11: AI入池信号解读（固定行高内单行省略, V6.2: 整行占位） -->
                                         <div class="cal-subtitle-ellipsis" v-if="poolSignals[item.code]"><qc-icon name="bot" :size="14" /> {{ poolSignals[item.code] }}</div>

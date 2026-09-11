@@ -46,7 +46,6 @@
     'sub.backtest': '策略回测',
     'sub.backtest-history': '回测记录',
     'sub.market-review': '每日复盘',   // V6.6.1: 更名消歧
-    'sub.scan': '异动扫描',
     'sub.custom-write': '全新策略',
     'sub.strategy-manage': '策略管理',   // V6.6.1: 策略编写+全新策略合并
     'sub.ztpool': '涨停复盘',
