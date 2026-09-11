@@ -112,7 +112,7 @@
 | P1 | **行情数据本地缓存 + 增量拉取**（F-6.8.1，P0）：两级缓存扩展（日线批量缓存，TTL 与交易日历联动）；增量拉取（仅拉新交易日，基线定期重建）；限频感知调度 + 失败分片重试 | `backend/cache.py`、`backend/data_sources/_manager.py`、`backend/data_pipeline.py`、策略执行模块、`backend/data_sources/_health.py` | 全市场执行 ≤3min（实测）；缓存命中率 ≥90%；PIT/质量门禁通过 |
 | P2 | 缓存一致性守护：新缓存写入走 batch_id 血缘；`lookahead_guard` 校验不放松（专项测试） | `backend/lookahead_guard.py`、`backend/data_quality.py`、新增测试 | 防前视/质量用例全绿 |
 | P3 | 数据源调用量视图：积分消耗统计 + 限频预算提示（F-6.8.2） | `backend/api/v1/market.py`（或新增）、`backend/data_sources/_manager.py`、前端 system-page | 视图展示消耗与预算；阈值告警 |
-| P4 | akshare 依赖决策落地（F-6.8.3）：评估补装或确认代码层降级为最终形态 | `requirements*.txt`、`backend/shortterm/emotion_metrics.py` | 决策闭环；无 `ModuleNotFoundError` 路径 |
+| P4 | akshare 依赖决策落地（F-6.8.3）：**已决策 = 保持降级，不补装**（决策 D9）；确认代码层降级为最终形态，`emotion_metrics.py` 实时兜底路径不引入 akshare | `backend/shortterm/emotion_metrics.py` | 决策闭环（D9）；无 `ModuleNotFoundError` 路径 |
 | P5 | 数据导出增强：XLSX（中文表头/多表）——优先复用 `report_export.py` 零依赖方案（F-6.8.4） | `backend/report_export.py`、`backend/api/v1/export.py`、前端导出按钮 | XLSX 可用；CSV 不回归 |
 | P6 | 报表中心增强：模板字段/排序/水印 + 订阅回执（F-6.8.5） | `backend/report_center.py`、`backend/report_subscribe.py`、前端 | 模板自定义可用；投递回执展示 |
 | P7 | **e2e 视觉回归门禁化**：关键页截图 diff 纳入 CI 阻塞项（时间 mock + 阈值 ≤0.5% + 人工豁免）（F-6.8.6） | `.github/workflows/ci.yml`、`tests/e2e/visual_regression.py`、新增基线 | 关键页 diff 阻塞；豁免通道存在 |
