@@ -393,6 +393,17 @@
             --el-dropdown-bg-color: var(--qc-card, #101a2e);
             --el-popover-bg-color: var(--qc-card, #101a2e);
         }
+        /* V6.9.1-fix: 暗色 body/html/app-container 背景明确覆盖 — 确保最底层不出现鲜艳亮色 */
+        [data-theme="dark-pro"] body,
+        [data-theme="dark-pro"] html,
+        [data-theme="dark-pro"] .app-container,
+        [data-theme="dark-pro"] #app {
+            background: #0b1220 !important;
+            background-color: #0b1220 !important;
+        }
+        [data-theme="dark-pro"] .main-content {
+            background: transparent !important;
+        }
         /* V6.6 (PRD-6.6 F4): 暗色弹窗/下拉实底 — 覆盖 layout.css 的玻璃背景与模糊 */
         [data-theme="dark-pro"] .el-dialog,
         [data-theme="dark-pro"] .el-message-box {

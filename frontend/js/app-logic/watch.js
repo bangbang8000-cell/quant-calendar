@@ -111,8 +111,8 @@
           if (sub === 'overview') { loadAiHistory(); loadWatchlist(); }
           if (sub === 'chat_history') loadChatHistory();
         }
-        // 系统配子页切换
-        if (page === 'system' && currentUser.value?.role === 'admin') {
+        // 系统配置/系统状态 子页切换 (V6.9.1-fix: ops 一级菜单复用 system 数据加载链路)
+        if ((page === 'system' || page === 'ops') && currentUser.value?.role === 'admin') {
           if (sub === 'status') { loadSystemStatus(); checkTushareConnection(); }
           if (sub === 'health') { loadHealthDetail(); loadHealthMetrics(); }  // V6.0 (P1-3): 数据源健康独立子页
           if (sub === 'schedule') { loadHealthDetail(); }  // V6.0 (P1-3): 调度任务独立子页 (任务队列由组件轮询)
@@ -124,7 +124,7 @@
           if (sub === 'user') { loadAllGroups(); loadUsers(); }
         }
         // v3.17.6 (FR-3.17.6): 用量统计子页 30s 自动刷新 (离开时停止)
-        if (page === 'system' && sub === 'usage') {
+        if ((page === 'system' || page === 'ops') && sub === 'usage') {
           if (!usageRefreshTimer) {
             usageRefreshTimer = setInterval(() => {
               loadSysMonitor(); loadAnalytics(); loadHealthDetail(); loadHealthMetrics(); loadAiUsage();

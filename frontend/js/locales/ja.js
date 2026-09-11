@@ -13,6 +13,7 @@
     'nav.calendar': '量化カレンダー',
     'nav.ai': 'スマート評価',
     'nav.research': '戦略リサーチ',
+    'nav.ops': 'システム状態',
     'nav.system': 'システム設定',
     'nav.shortterm': '短期振り返り',
     'sub.overview': '概要',

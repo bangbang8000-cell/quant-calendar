@@ -16,6 +16,7 @@
     'nav.calendar': '量化日历',
     'nav.ai': '智能评估',
     'nav.research': '策略研究',
+    'nav.ops': '系统状态',
     'nav.system': '系统配置',
     'nav.shortterm': '短线复盘',
     // 二级导航（global-header 子页 tab；组件 subPageNames 保留作回退）

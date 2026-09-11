@@ -1,5 +1,5 @@
 (function(){const{inject:Z}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:`
-                <div v-if="currentPage === 'system'" key="system" class="system-page-root">
+                <div v-if="currentPage === 'system' || currentPage === 'ops'" key="system" class="system-page-root">
                     <!-- V6.1 (PRD-6.1 F3): 移除页内标题 (由中栏分组导航/面包屑承载) -->
                     <div v-if="currentSubPage === 'status'" class="card system-status-card">
                         <div class="card-title flex-between">

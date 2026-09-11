@@ -16,6 +16,7 @@
     'nav.calendar': 'Quant Calendar',
     'nav.ai': 'AI Evaluation',
     'nav.research': 'Strategy Research',
+    'nav.ops': 'System Status',
     'nav.system': 'System Settings',
     'nav.shortterm': 'Short-term Review',
     // 二级导航

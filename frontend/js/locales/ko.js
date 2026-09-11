@@ -13,6 +13,7 @@
     'nav.calendar': '퀀트 캘린더',
     'nav.ai': '스마트 평가',
     'nav.research': '전략 연구',
+    'nav.ops': '시스템 상태',
     'nav.system': '시스템 설정',
     'nav.shortterm': '단기 리뷰',
     'sub.overview': '개요',

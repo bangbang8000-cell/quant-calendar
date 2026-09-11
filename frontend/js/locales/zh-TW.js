@@ -9,10 +9,11 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '策略总览',
+    'nav.strategies': '策略總覽',
     'nav.calendar': '量化日歷',
     'nav.ai': '智能評估',
     'nav.research': '策略研究',
+    'nav.ops': '系統狀態',
     'nav.system': '系統配置',
     'nav.shortterm': '短線復盤',
     'sub.overview': '概览',
