@@ -142,13 +142,13 @@
     const menus = searchMenus(query, menuDefs, subPageNames).map(function (m) {
       return {
         type: 'menu', menuKey: m.menuKey, subPage: m.subPage,
-        label: m.label, subLabel: m.subLabel, icon: m.icon,
+        label: m.label, subLabel: m.subLabel, icon: m.icon, iconName: m.icon,
         value: m.icon + ' ' + m.label + ' · ' + m.subLabel,
       };
     });
     const commands = searchCommands(query, commandDefs || []).map(function (c) {
       return {
-        type: 'command', key: c.key, label: c.label, icon: c.icon, subLabel: '指令',
+        type: 'command', key: c.key, label: c.label, icon: c.icon, iconName: c.icon, subLabel: '指令',
         value: c.icon + ' ' + c.label,
       };
     });
@@ -181,6 +181,7 @@
     { key: 'open-system', label: '打开系统设置', icon: 'cpu', keywords: 'system 系统 设置 配置' },
     { key: 'refresh-data-source', label: '刷新数据源', icon: 'radio-tower', keywords: 'datasource 数据源 刷新 tushare akshare' },
     { key: 'open-shortterm', label: '打开短线复盘', icon: 'zap', keywords: 'shortterm 短线 复盘 涨停' },
+    { key: 'open-eval-history', label: '打开评估历史', icon: 'history', keywords: 'history 评估历史 历史 命中率' },
     { key: 'open-research', label: '打开策略研究', icon: 'flask-conical', keywords: 'research 策略 研究 回测' },
     { key: 'open-calendar', label: '打开量化日历', icon: 'calendar-days', keywords: 'calendar 日历 股票池' },
   ];
@@ -293,6 +294,9 @@
     reg.register('Ctrl+D', 'open-today', '今日一屏');
     reg.register('Ctrl+E', 'batch-eval', '批量 AI 评估');
     reg.register('Ctrl+G', 'add-portfolio', '加入组合');
+    // V6.7.1 (PRD F-6.7.2): 高频直达快捷键
+    reg.register('Ctrl+H', 'open-eval-history', '打开评估历史');
+    reg.register('Ctrl+Shift+S', 'open-shortterm', '打开短线复盘');
     return reg;
   }
 

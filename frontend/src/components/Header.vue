@@ -15,6 +15,12 @@ export default {
     const showUserMenu = ref(false)
     // V6.3 (PRD-6.3 F4): 导航形态 (动态页签 V6.4 已移除, 面包屑仅 tree 形态展示)
     const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
+    // V6.7.1 (PRD F-6.7.9 / OBS-4): toptab 形态无子页时 Header 左区兜底显示当前页名
+    const hasToptabs = computed(() => {
+      const page = state.currentPage && state.currentPage.value
+      const menu = (state.menus && state.menus.value || []).find((m) => m.key === page)
+      return !!(menu && menu.subPages && menu.subPages.length)
+    })
     // V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态展示「一级 / 二级」
     //   subnav/toptab 形态不展示 (中栏标题 / 顶部二级标签已承担位置指示)
     const crumbRoot = computed(() => {
@@ -54,6 +60,23 @@ export default {
     }
 
     const isDark = computed(() => (state.currentTheme && state.currentTheme.value) === 'dark')
+    // V6.7.1 (PRD F-6.7.1): 导航形态快速切换 (桌面 Header 右侧, 配置页仍有完整入口)
+    const openNavModeMenu = ref(false)
+    const NAV_MODES = [
+      { value: 'subnav', label: '中栏二级', desc: '左侧一级 + 中栏常驻二级' },
+      { value: 'tree', label: '侧栏树状', desc: '二级直接展开在侧栏内' },
+      { value: 'toptab', label: '顶部二级标签', desc: '二级以横排标签置于头部' },
+    ]
+    const navModeLabel = computed(() => {
+      const m = NAV_MODES.find((x) => x.value === navMode.value)
+      return (m && m.label) || navMode.value
+    })
+    function toggleNavModeMenu() { openNavModeMenu.value = !openNavModeMenu.value }
+    function closeNavModeMenu() { openNavModeMenu.value = false }
+    function pickNavMode(v) {
+      openNavModeMenu.value = false
+      if (state.setNavMode) state.setNavMode(v)
+    }
     // v-model 需可赋值变量 (可选链不可直接赋值)
     const searchQuery = computed({
       get: () => (state.searchQuery && state.searchQuery.value) || '',
@@ -81,8 +104,10 @@ export default {
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
     return {
-      state, showUserMenu, isDark, searchQuery, navMode, crumbRoot, crumbSub,
+      state, showUserMenu, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
+      // V6.7.1 (PRD F-6.7.1): 导航形态快速切换
+      openNavModeMenu, NAV_MODES, navModeLabel, toggleNavModeMenu, closeNavModeMenu, pickNavMode,
       // V6.2 (PRD-6.2 F6): 移动端二级下拉
       isMobile, openSubnavPicker, currentSubLabel, subnavOptions,
       toggleSubnavPicker, closeSubnavPicker, pickSubnav,
@@ -123,8 +148,12 @@ export default {
         </template>
       </div>
       <!-- V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (点击走 openTab, 承担页签定位)
-           M5.1: 移动端隐藏, 由二级下拉 picker 承担 (窄屏横向标签过挤) -->
-      <qc-top-tabs v-if="navMode === 'toptab' && !isMobile"></qc-top-tabs>
+           M5.1: 移动端隐藏, 由二级下拉 picker 承担 (窄屏横向标签过挤)
+           V6.7.1 (F-6.7.9 / OBS-4): 无子页时兜底显示当前页名 -->
+      <template v-if="navMode === 'toptab' && !isMobile">
+        <qc-top-tabs v-if="hasToptabs"></qc-top-tabs>
+        <span v-else class="qc-crumb qc-crumb-root">{{ crumbRoot }}</span>
+      </template>
     </div>
 
     <div class="qc-header-center">
@@ -159,6 +188,25 @@ export default {
       <button class="qc-icon-btn" :aria-label="isDark ? '切换亮色主题' : '切换暗色主题'" :title="isDark ? '切换亮色主题' : '切换暗色主题'" @click="toggleThemeQuick">
         <AppIcon :name="isDark ? 'sun' : 'moon'" :size="20" />
       </button>
+      <!-- V6.7.1 (PRD F-6.7.1): 导航形态快速切换 (桌面) -->
+      <div v-if="!isMobile" class="qc-navmode-switch" v-click-outside="closeNavModeMenu">
+        <button class="qc-icon-btn" :aria-label="'切换导航形态: ' + navModeLabel" :title="'导航形态: ' + navModeLabel" :aria-expanded="openNavModeMenu" @click="toggleNavModeMenu">
+          <AppIcon name="layers" :size="20" />
+        </button>
+        <div v-if="openNavModeMenu" class="qc-navmode-menu" role="menu">
+          <div v-for="m in NAV_MODES" :key="m.value"
+            class="qc-user-dropdown-item qc-navmode-item" :class="{ 'is-active': navMode === m.value }"
+            role="menuitem" tabindex="0" @click="pickNavMode(m.value)"
+            @keydown.enter.prevent="pickNavMode(m.value)" @keydown.space.prevent="pickNavMode(m.value)"
+          >
+            <div class="qc-navmode-item-main">
+              <span>{{ m.label }}</span>
+              <AppIcon v-if="navMode === m.value" name="check" :size="14" />
+            </div>
+            <div class="qc-navmode-item-desc">{{ m.desc }}</div>
+          </div>
+        </div>
+      </div>
       <div class="qc-user-menu" v-click-outside="closeUserMenu">
         <button class="qc-user-avatar" :aria-label="'用户菜单 ' + (state.currentUser?.username || '')" aria-haspopup="menu" :aria-expanded="showUserMenu" @click="openUserMenu">
           {{ (state.currentUser?.username || 'A').charAt(0).toUpperCase() }}

@@ -76,10 +76,12 @@ def test_breakpoint_overrides_present():
 
 
 def test_header_renders_toptabs_only_in_toptab():
-    """TC-6.3.3.3: toptab 形态 Header 渲染二级 tab (M5.1: 移动端隐藏由 picker 承担); 动态页签形态互斥"""
+    """TC-6.3.3.3: toptab 形态 Header 渲染二级 tab (M5.1: 移动端隐藏由 picker 承担); 动态页签形态互斥
+    V6.7.1 (F-6.7.9/OBS-4): 外包 template 门控 toptab, 无子页时兜底显示当前页名"""
     src = _norm(_read("src/components/Header.vue"))
-    assert "<qc-top-tabs v-if=\"navMode === 'toptab'" in src, \
-        "qc-top-tabs 应仅在 toptab 形态渲染"
+    assert "navMode === 'toptab'" in src, "qc-top-tabs 应仅在 toptab 形态渲染"
+    assert "qc-top-tabs v-if=\"hasToptabs\"" in src, "qc-top-tabs 应由 hasToptabs 门控"
+    assert "hasToptabs" in src and "crumbRoot" in src, "无子页兜底应显示当前页名"
     assert "!isMobile" in src, "移动端应隐藏 qc-top-tabs (由二级下拉承担)"
 
 

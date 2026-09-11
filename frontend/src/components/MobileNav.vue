@@ -56,7 +56,11 @@ export default {
       else { state.currentPage.value = menu.key; if (state.currentSubPage) state.currentSubPage.value = s }
       if (state.navigateTo) state.navigateTo(menu.key, s)
     }
-    function openDrawer() { drawerOpen.value = true }
+    function openDrawer() {
+      drawerOpen.value = true
+      // V6.7.1 (PRD F-6.7.7): 短线复盘抽屉内默认展开二级 (移动端高频可达)
+      if (drawerExpanded.value['shortterm'] === undefined) drawerExpanded.value['shortterm'] = true
+    }
     function closeDrawer() {
       drawerOpen.value = false
       // 焦点回到触发按钮

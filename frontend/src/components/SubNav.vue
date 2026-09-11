@@ -99,10 +99,18 @@ export default {
     }
     const subIcon = (page, sp) => (SUB_ICONS[page] && SUB_ICONS[page][sp]) || 'circle-dot'
 
+    // V6.7.1 (PRD F-6.7.6): 短线复盘二级视觉分组 — 仅视觉分组, 不改 key 与路由
+    const SHORTTERM_GROUPS = [
+      { label: '复盘', items: ['overview', 'market-review', 'ztpool'] },
+      { label: '数据', items: ['lhb', 'sector'] },
+      { label: '盘后核验', items: ['intraday', 'scan'] },
+    ]
+
     return {
       state, currentPage, currentSubPage, navMode, subPages, currentMenu,
       collapsedGroups, pageTitle, subLabel, isSubActive,
       goSub, goSystemItem, toggleGroup, SYSTEM_GROUPS, subIcon,
+      SHORTTERM_GROUPS,
     }
   },
 }
@@ -134,6 +142,21 @@ export default {
               <span>{{ item.label }}</span>
             </a>
           </template>
+        </div>
+      </template>
+      <!-- 短线复盘: 视觉分组 (V6.7.1 F-6.7.6) -->
+      <template v-else-if="currentPage === 'shortterm'">
+        <div v-for="g in SHORTTERM_GROUPS" :key="g.label" class="qc-subnav-group">
+          <div class="qc-subnav-group-label"><span>{{ g.label }}</span></div>
+          <a
+            v-for="sp in g.items" :key="sp"
+            class="qc-subnav-item" :class="{ 'is-active': isSubActive(sp) }"
+            :href="'#' + currentPage + '/' + sp"
+            @click.prevent="goSub(sp)"
+          >
+            <AppIcon :name="subIcon(currentPage, sp)" :size="16" />
+            <span>{{ subLabel(sp) }}</span>
+          </a>
         </div>
       </template>
       <!-- 其他一级页: 平铺二级 -->

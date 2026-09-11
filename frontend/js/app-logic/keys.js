@@ -23,10 +23,11 @@
           localHits = QCP.buildSearchSuggestions(queryString, menus.value, subPageNames, QCP.DEFAULT_COMMANDS);
         }
         // v3.17.10 (FR-3.17.10): 本地拼音检索兜底（内置核心清单 + 注册股票；数据源不可达时仍可直达）
+        // V6.7.1 (F-6.7.10): 建议图标统一 Lucide (iconName), 经 <qc-icon> 渲染
         const P = window.__quantModules && window.__quantModules.pinyin;
         if (P) {
           P.searchCoreStocks(queryString).forEach(function (r) {
-            localHits.push({ value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' });
+            localHits.push({ value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: 'trending-up', iconName: 'trending-up' });
           });
         }
         try {
@@ -34,18 +35,18 @@
           const data = await res.json();
           if (data.success && data.results) {
             const stocks = data.results.map(function(r) {
-              return { value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: '📈' };
+              return { value: r.code + ' ' + r.name, type: 'stock', code: r.code, name: r.name, label: r.name, subLabel: r.code, icon: 'trending-up', iconName: 'trending-up' };
             });
             // V5.3.0 (T-5.3.3.3): 分组消费 — 板块/策略/菜单并入建议 (图标+子标签区分)
             const grouped = [];
             (data.groups || []).forEach(function (g) {
               (g.items || []).forEach(function (it) {
                 if (it.type === 'sector') {
-                  grouped.push({ value: '🏷 ' + it.name + ' · ' + it.subLabel, type: 'sector', name: it.name, label: it.name, subLabel: '板块', icon: '🏷' });
+                  grouped.push({ value: it.name + ' · ' + it.subLabel, type: 'sector', name: it.name, label: it.name, subLabel: '板块', icon: 'layers', iconName: 'layers' });
                 } else if (it.type === 'strategy') {
-                  grouped.push({ value: '🧭 ' + it.name + ' · 策略', type: 'strategy', id: it.id, name: it.name, label: it.name, subLabel: '策略', icon: '🧭' });
+                  grouped.push({ value: it.name + ' · 策略', type: 'strategy', id: it.id, name: it.name, label: it.name, subLabel: '策略', icon: 'target', iconName: 'target' });
                 } else if (it.type === 'menu') {
-                  grouped.push({ value: '📄 ' + it.name, type: 'menu', menuKey: it.menuKey, name: it.name, label: it.name, subLabel: it.subLabel || '页面', icon: '📄' });
+                  grouped.push({ value: it.name, type: 'menu', menuKey: it.menuKey, name: it.name, label: it.name, subLabel: it.subLabel || '页面', icon: 'file-text', iconName: 'file-text' });
                 }
               });
             });
@@ -95,6 +96,9 @@
         else if (key === 'batch') { getShowBatchEvaluate().value = true; }
         else if (key === 'ai') { openAiFab(); }
         else if (key === 'sidebar') { toggleSidebar(); }
+        // V6.7.1 (PRD F-6.7.2): 高频直达 (命令面板执行同一入口)
+        else if (key === 'open-eval-history') { navigateTo('ai', 'history'); }
+        else if (key === 'open-shortterm') { navigateTo('shortterm', 'overview'); }
       }
 
       const shortcutHelpVisible = ref(false);
@@ -109,6 +113,9 @@
         const k = e.key.toLowerCase();
         if (e.ctrlKey && k === 'k') { e.preventDefault(); commandPaletteVisible.value = true; return; }
         if (e.ctrlKey && k === '/') { e.preventDefault(); shortcutHelpVisible.value = !shortcutHelpVisible.value; return; }
+        // V6.7.1 (PRD F-6.7.2): 高频直达快捷键 (须在 ctrlKey 早退之前)
+        if (e.ctrlKey && k === 'h') { e.preventDefault(); navigateTo('ai', 'history'); return; }
+        if (e.ctrlKey && e.shiftKey && k === 's') { e.preventDefault(); navigateTo('shortterm', 'overview'); return; }
         if (e.ctrlKey || e.metaKey || e.altKey) return;
         if (k >= '1' && k <= '5') {
           const idx = parseInt(k) - 1;

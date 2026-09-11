@@ -58,6 +58,17 @@ export default {
     function onKeydown(e) {
       // Ctrl+B 折叠/展开 (沿用现有快捷键)
       if (e.ctrlKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleCollapse() }
+      // V6.7.1 (PRD F-6.7.5): 侧栏内 ↑/↓ 焦点在菜单项间移动 (仅当焦点在侧栏链接时)
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        const links = Array.prototype.slice.call(
+          document.querySelectorAll('.qc-sidebar a.qc-sidebar-link, .qc-sidebar a.qc-sidebar-child'));
+        const idx = links.indexOf(document.activeElement);
+        if (idx >= 0) {
+          e.preventDefault();
+          const next = links[(idx + (e.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length];
+          if (next) next.focus();
+        }
+      }
     }
 
     onMounted(() => { ensureExpanded(); document.addEventListener('keydown', onKeydown) })

@@ -676,7 +676,7 @@
                                     <div class="stat-icon warning"><qc-icon name="calendar-days" :size="18" /></div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execCountdownText }}</div>
-                                        <div class="stat-label">{{ t('exec.countdown') }}</div>
+                                        <div class="stat-label">{{ t('exec.countdown') }}<span v-if="execNextRunText" class="text-sm-tertiary-ml4">下次自动更新 {{ execNextRunText }}</span></div>
                                     </div>
                                 </div>
                                 <div class="stat-card success">
@@ -1209,6 +1209,15 @@
         const s = p.countdown_seconds;
         return Math.floor(s / 3600) + 'h' + String(Math.floor((s % 3600) / 60)).padStart(2, '0') + 'm';
       });
+      // V6.7.1 (PRD F-6.7.9 / OBS-1): 明确「下次自动更新 HH:MM」时间点 (不依赖倒计时歧义)
+      const execNextRunText = Vue.computed(function () {
+        const p = (execPlan.value || []).find(function (x) { return x.enabled; });
+        if (!p || p.countdown_seconds == null || p.countdown_seconds < 0) return '';
+        try {
+          return new Date(Date.now() + p.countdown_seconds * 1000)
+            .toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        } catch (e) { return ''; }
+      });
       const execPhaseText = Vue.computed(function () {
         const st = execStatus.value;
         if (!st || st.phase === 'idle') return _execT('exec.waiting');
@@ -1314,7 +1323,7 @@
         loadExecutionData,
         execRateClass,
         execPlan, execStatus, execResults, execTraceDate, execTraceSteps, execTraceLoading,
-        execResultsDates, execCountdownText, execPhaseText, execStatusIcon,
+        execResultsDates, execCountdownText, execNextRunText, execPhaseText, execStatusIcon,
         execLastDate, execVisibleClass, execVisibleText,
         loadExecutionTrace, };
     },
