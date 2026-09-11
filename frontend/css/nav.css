@@ -81,7 +81,7 @@
   padding: 0 var(--qc-space-3);
   gap: var(--qc-space-3);
   color: var(--qc-nav-item-default);
-  font-size: var(--qc-font-size-base);
+  font-size: 14px;
   font-weight: var(--qc-font-weight-medium);
   text-decoration: none;
 }
@@ -95,9 +95,10 @@
   height: 100%;
   padding: 0 var(--qc-space-3);
   color: var(--qc-nav-item-default);
-  font-size: var(--qc-font-size-base);
-  font-weight: var(--qc-font-weight-medium);
+  font-size: 15px;
+  font-weight: var(--qc-font-weight-semibold);
   text-decoration: none;
+  letter-spacing: 0.01em;
 }
 .qc-sidebar-item:hover,
 .qc-sidebar-link:hover {
@@ -240,10 +241,11 @@
 }
 .qc-page-title {
   margin: 0;
-  font-size: var(--qc-font-size-xl);
+  font-size: 20px;
   font-weight: var(--qc-font-weight-semibold);
   color: var(--qc-foreground);
   line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 .qc-page-actions {
   display: flex;
@@ -270,7 +272,7 @@
   height: 40px;
   padding: 0 var(--qc-space-4);
   color: var(--qc-nav-item-default);
-  font-size: var(--qc-font-size-base);
+  font-size: 15px;
   font-weight: var(--qc-font-weight-medium);
   cursor: pointer;
   /* V6.0.1 (A1): 重置 button 默认底/边框, 消除浅灰底 */
@@ -284,6 +286,7 @@
 .qc-subnav-tab.is-active {
   color: var(--qc-nav-item-active);
   border-bottom-color: var(--qc-nav-item-active-border);
+  font-weight: var(--qc-font-weight-semibold);
 }
 .qc-subnav-tab:focus-visible {
   outline: 2px solid var(--qc-ring);
@@ -335,7 +338,7 @@
   margin: 2px var(--qc-space-2);
   border-radius: var(--qc-radius-medium);
   color: var(--qc-nav-item-default);
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
   text-decoration: none;
   transition: background-color var(--duration-fast), color var(--duration-fast);
@@ -352,7 +355,7 @@
 .qc-subnav-item.is-level-3 {
   padding-left: 28px;
   height: 32px;
-  font-size: 13px;
+  font-size: 15px;
 }
 .qc-subnav-item:focus-visible {
   outline: 2px solid var(--qc-ring);

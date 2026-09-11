@@ -186,13 +186,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--qc-space-2);
-  height: 28px;
-  padding: 0 var(--qc-space-3);
+  height: 36px;
+  padding: 0 var(--qc-space-4);
   border: 1px solid transparent;
   border-radius: var(--qc-radius-small);
   background: transparent;
   color: var(--qc-nav-item-default);
-  font-size: var(--qc-font-size-sm);
+  font-size: 15px;
   font-weight: var(--qc-font-weight-medium);
   white-space: nowrap;
   cursor: pointer;
@@ -207,6 +207,7 @@
   background: var(--qc-muted);
   border-color: var(--qc-border);
   color: var(--qc-nav-item-active);
+  font-weight: var(--qc-font-weight-semibold);
 }
 .qc-top-tabs .qc-top-tab:focus-visible {
   outline: 2px solid var(--qc-ring);

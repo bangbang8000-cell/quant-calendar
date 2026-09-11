@@ -84,6 +84,13 @@
       '--btn-primary-text-color': hsl(hue, 80, 42),
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 30) + ' 0%, ' + hsl(hue, 75, 42) + ' 50%, ' + hsl(hue, 70, 55) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 75, 42) + ' 0%, ' + hsl(hue, 85, 30) + ' 100%)',
+      // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro/gold 块硬编码, 不随主题切换)
+      '--qc-nav-item-active': hsl(hue, 80, 35),
+      '--qc-nav-item-active-bg': hsl(hue, 85, 92),
+      '--qc-nav-item-active-border': hsl(hue, 75, 48),
+      '--qc-nav-badge-bg': hsl(hue, 85, 92),
+      '--qc-nav-badge-text': hsl(hue, 80, 35),
+      '--qc-ring': hsl(hue, 70, 58),
     };
   }
 
@@ -125,6 +132,13 @@
       '--btn-primary-text-color': hsl(hue, 85, 65),
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 35) + ' 0%, ' + hsl(hue, 85, 50) + ' 50%, ' + hsl(hue, 85, 65) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, 65) + ' 0%, ' + hsl(hue, 80, 40) + ' 100%)',
+      // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro 块硬编码 #ffd166, 不随主题切换)
+      '--qc-nav-item-active': hsl(hue, 85, 65),
+      '--qc-nav-item-active-bg': 'rgba(' + rgb + ', 0.10)',
+      '--qc-nav-item-active-border': hsl(hue, 85, 65),
+      '--qc-nav-badge-bg': 'rgba(' + rgb + ', 0.12)',
+      '--qc-nav-badge-text': hsl(hue, 85, 65),
+      '--qc-ring': hsl(hue, 85, 65),
     };
   }
 

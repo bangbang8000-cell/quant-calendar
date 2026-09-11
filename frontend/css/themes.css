@@ -334,7 +334,7 @@
             --secondary-color: #5e6ad2;
             --gradient: linear-gradient(135deg, #0b1220 0%, #101a2e 50%, #1a2a44 100%);
             --card-border: #1a2a44;
-            --text-primary: #e6f1ff; --text-secondary: #8892b0; --text-tertiary: #7a8ba8;
+            --text-primary: #e6f1ff; --text-secondary: #a0aec8; --text-tertiary: #8b9bb5;
             --text-link: #64ffda;
             --bg-page: #0b1220; --bg-card: #101a2e;
             --bg-card-header: #16233b;
@@ -674,6 +674,16 @@
         [data-theme="dark-pro"] .el-textarea__inner::placeholder { color: var(--text-disabled) ; }
 
         /* ===== Element Plus 主按钮令牌化 (v3.13) ===== */
+        /* V6.9.2: EP 品牌色全局映射 — Switch/Slider/Progress/Checkbox 等内置组件随主题切换 */
+        :root {
+            --el-color-primary: var(--qc-primary);
+            --el-color-primary-light-3: var(--qc-primary-400);
+            --el-color-primary-light-5: var(--qc-primary-300);
+            --el-color-primary-light-7: var(--qc-primary-200);
+            --el-color-primary-light-8: var(--qc-primary-100);
+            --el-color-primary-light-9: var(--qc-primary-50);
+            --el-color-primary-dark-2: var(--qc-primary-700);
+        }
         .el-button--primary {
             background-color: var(--btn-primary-bg) !important;
             border-color: var(--btn-primary-border) !important;
@@ -908,9 +918,10 @@
             align-items: center;
         }
         .page-title {
-            font-size: var(--qc-font-size-lg);
+            font-size: 20px;
             font-weight: var(--font-semibold);
             color: var(--text-primary);
+            letter-spacing: 0.01em;
         }
         .card {
             background: var(--bg-card);
@@ -921,13 +932,14 @@
             box-shadow: var(--qc-shadow-md);  /* V4.6 (FR-4.6.5): 轻阴影, 专业感 */
         }
         .card-title {
-            font-size: var(--qc-font-size-md);
+            font-size: 17px;
             font-weight: var(--font-semibold);
             color: var(--text-primary);
             margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
+            letter-spacing: 0.01em;
         }
 
         /* ===== 移动端响应式适配 ===== */
