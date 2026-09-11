@@ -128,6 +128,27 @@ async def get_ai_track(window: Optional[int] = None, user: Dict = Depends(get_cu
         return {"success": False, "message": str(e)}
 
 
+@router.get("/calibration")
+async def get_ai_calibration(window: Optional[int] = None, user: Dict = Depends(get_current_active_user)):
+    """V6.9.1 (PRD F-6.9.1): AI 评估校准分析 — 评级 vs 实际涨跌校准/过度自信诊断。
+
+    复用 eval_track 样本 (direction/hit_n5/n10/n20/provider/level), 经 calibration 纯函数计算。
+    样本不足 (<50) 时 available=False 并给出提示, 不改变评估逻辑。
+    """
+    try:
+        from eval_track import get_track_summary
+        from calibration import compute_calibration, compute_model_calibration
+        summary = get_track_summary(user["username"], window=window)
+        samples = [s for s in (summary.get("samples") or []) if s.get("available")]
+        win = ("n" + str(window)) if window in (5, 10, 20) else "n5"
+        calib = compute_calibration(samples, window=win)
+        models = compute_model_calibration(samples, window=win)
+        return {"success": True, "data": {**calib, "by_model": models}}
+    except Exception as e:
+        logger.error(f"评估校准分析失败: {e}")
+        return {"success": False, "message": str(e)}
+
+
 @router.post("/fact-check/audit")
 async def run_fact_check_audit(user: Dict = Depends(get_non_guest_user)):
     """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》"""

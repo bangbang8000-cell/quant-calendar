@@ -124,19 +124,39 @@ class RealDataPortal:
             rows = []  # (date, symbol, field_dict)
             for td in trade_dates:
                 day_data = {}
+                fetched_any = False
                 if need_kline:
-                    df = self.source.get_market_daily_batch(td)
-                    if df is not None and len(df):
-                        for _, r in df.iterrows():
-                            code = str(r.get('ts_code', '')).strip()
-                            if not code:
-                                continue
-                            d = day_data.setdefault(code, {})
-                            for f in kline_fields:
-                                v = r.get(f)
-                                if v is not None:
-                                    d[f] = float(v)
+                    # V6.8.1 (PRD F-6.8.1): 按交易日缓存全市场 K 线 — 重复执行命中缓存跳过数据源与限流等待
+                    cached = None
+                    try:
+                        from market_cache import get_market_daily, set_market_daily
+                        cached = get_market_daily(td)
+                    except Exception:
+                        cached = None
+                    if cached:
+                        for code, d in cached.items():
+                            day_data[code] = dict(d)
+                    else:
+                        fetched_any = True
+                        df = self.source.get_market_daily_batch(td)
+                        if df is not None and len(df):
+                            cached_rows = {}
+                            for _, r in df.iterrows():
+                                code = str(r.get('ts_code', '')).strip()
+                                if not code:
+                                    continue
+                                d = day_data.setdefault(code, {})
+                                for f in kline_fields:
+                                    v = r.get(f)
+                                    if v is not None:
+                                        d[f] = float(v)
+                                cached_rows[code] = dict(d)
+                            try:
+                                set_market_daily(td, cached_rows)
+                            except Exception:
+                                pass
                 if need_basic:
+                    fetched_any = True
                     df = self.source.get_market_daily_basic_batch(td)
                     if df is not None and len(df):
                         for _, r in df.iterrows():
@@ -149,6 +169,7 @@ class RealDataPortal:
                                 if v is not None:
                                     d[f] = float(v)
                 if need_flow:
+                    fetched_any = True
                     df = self.source.get_market_moneyflow_batch(td)
                     if df is not None and len(df):
                         for _, r in df.iterrows():
@@ -168,7 +189,8 @@ class RealDataPortal:
                     row = {'date': str(td), 'symbol': code}
                     row.update(d)
                     rows.append(row)
-                _t.sleep(0.6)  # 尊重数据源限流(500次/分)
+                if fetched_any:
+                    _t.sleep(0.6)  # 尊重数据源限流(500次/分); 全缓存命中时跳过
             if not rows:
                 return pd.DataFrame()
             import pandas as _pd
