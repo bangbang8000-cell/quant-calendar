@@ -32,7 +32,8 @@ def test_i18n_keys_all_locales():
 def test_feature_page_has_nav_section():
     """M4.1: 功能配置页含「界面与导航」区块 + 形态下拉 (V6.4: 动态页签开关已移除)"""
     src = _read(os.path.join(FRONTEND, "js", "components", "system-page.js"))
-    assert "🧭 界面与导航" in src, "功能配置页应含「界面与导航」区块"
+    # V6.9.4 (H6): 卡片标题已由 emoji 🧭 迁移为 qc-icon 形态 — 断言现行结构
+    assert 'name="layout-dashboard"' in src and "界面与导航" in src, "功能配置页应含「界面与导航」区块"
     assert ":model-value=\"navMode\"" in src, "形态下拉应绑定 navMode"
     # V6.4: 动态页签开关已移除 (仅导航形态保留)
     assert "tabsEnabled" not in src, "配置页不应再引用 tabsEnabled"

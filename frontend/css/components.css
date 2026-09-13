@@ -126,8 +126,12 @@
 }
 .el-select .el-select__wrapper { box-shadow: 0 0 0 1px var(--qc-input) inset; }
 .el-select .el-select__wrapper.is-focused { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
-/* V6.9.3 (F2): el-select 长选项不换行 + 内容省略 + 防 flex 拉伸 */
-.el-select__wrapper { flex-wrap: nowrap !important; }
+/* V6.9.3 (F2) + V6.9.4 (F2.2/F7): el-select 单行不换行 + 高度兜底 + 防 flex 拉伸 */
+.el-select__wrapper {
+  flex-wrap: nowrap !important;
+  min-height: var(--el-component-size, 32px);
+  line-height: var(--el-component-size, 32px);
+}
 .el-select__selected-item,
 .el-select__selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qc-page-tools .el-select,
@@ -136,11 +140,14 @@
 .flex-c-gap-6 .el-select,
 .flex-c-gap-12 .el-date-editor,
 .flex-c-gap-6 .el-date-editor { flex: 0 0 auto; min-width: 0; }
-/* V6.9.3 (F2.3): 统一窄宽语义类 (替代散落 w-90/w-110/w-120/w-180) */
+/* V6.9.3 (F2.3) + V6.9.4 (F7): 统一窄宽语义类 (w-90~w-220/w-100px 收敛) */
 .w-select { width: 140px; }
-.w-select-sm { width: 110px; }
 .w-select-xs { width: 90px; }
-.w-select-lg { width: 180px; }
+.w-select-sm { width: 110px; }
+.w-select-md { width: 180px; }
+.w-select-lg { width: 220px; }
+/* V6.9.4 (F7): 旧 w-100px 别名兼容 (美林时钟配置等) */
+.w-100px { width: 100px; }
 .el-textarea__inner { box-shadow: 0 0 0 1px var(--qc-input) inset; }
 .el-textarea__inner:focus { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
 .el-form-item__label { font-size: 13px; color: var(--qc-muted-foreground); }
@@ -330,28 +337,14 @@
   white-space: nowrap;
 }
 .qc-stock-consensus {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-top: 4px;
-}
-.qc-stock-consensus-bar {
-  width: 64px;
-  height: 4px;
-  border-radius: var(--qc-radius-full);
-  background: var(--qc-muted);
-  overflow: hidden;
-}
-.qc-stock-consensus-fill {
-  height: 100%;
-  border-radius: var(--qc-radius-full);
-  background: var(--qc-primary);
-  transition: width 0.3s;
-}
-.qc-stock-consensus-pct {
   font-family: var(--qc-font-mono);
   font-size: var(--qc-font-size-xs);
   color: var(--qc-muted-foreground);
+  white-space: nowrap;
 }
 .qc-stock-data {
   display: flex;

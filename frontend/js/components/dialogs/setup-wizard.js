@@ -38,7 +38,7 @@
                     </div>
                     <el-form :model="setupForm" label-position="top">
                         <el-form-item label="提供商">
-                            <el-select class="w-100" v-model="setupForm.aiProvider">
+                            <el-select class="w-select-sm" v-model="setupForm.aiProvider">
                                 <el-option label="DeepSeek" value="deepseek" />
                                 <el-option label="OpenAI" value="openai" />
                                 <el-option label="其他兼容接口" value="custom" />

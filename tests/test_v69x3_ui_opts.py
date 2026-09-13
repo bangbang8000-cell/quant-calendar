@@ -131,6 +131,6 @@ def test_sxsc_rebuild_on_test():
 
 
 def test_version_bumped():
-    """TC-6.9.3.28: 版本号提升至 6.9.3"""
+    """TC-6.9.3.28: 版本号提升 (随发布迭代: 6.9.3 → 6.9.4)"""
     main = _read_b("main_new.py")
-    assert 'APP_VERSION = "6.9.3"' in main, "APP_VERSION 应为 6.9.3"
+    assert 'APP_VERSION = "6.9.4"' in main, "APP_VERSION 应为 6.9.4"

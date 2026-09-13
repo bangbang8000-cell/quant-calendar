@@ -109,9 +109,11 @@
                     </div>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">{{ t('research.quantResearch') }}</div>
+                        <!-- V6.9.4 (F6.2): 持仓数据文件缺失可诊断提示条 (策略定义列表仍可用) -->
+                        <div v-if="strategiesWarn" class="text-danger-semibold mt-8" role="alert"><qc-icon name="alert-triangle" :size="14" /> {{ strategiesWarn }}</div>
                         <!-- v3.19 (策略研究 P0): 策略注册表 → schema 表单 → 运行/回测/PTrade 导出 -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="strategiesError" type="error" title="策略加载失败"
+                        <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || '策略加载失败'"
                             desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
                         <template v-else>
                             <div class="flex-wrap mb-4">
@@ -120,7 +122,7 @@
                             </div>
                             <!-- 策略列表: 卡片 + 选择 -->
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-select class="w-220" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
+                                <el-select class="w-select-lg" v-model="activeStrategyId" size="small" placeholder="选择策略" @change="onStrategyChange">
                                     <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runActiveStrategy" :loading="strategyRunning"><qc-icon name="play" :size="14" /> 手工运行</el-button>
@@ -134,10 +136,10 @@
                                     <el-switch v-model="govEnabled" @change="updateGov" />
                                     <span class="strategy-param-label">进日历</span>
                                     <el-switch v-model="govShowCalendar" @change="updateGov" />
-                                    <el-select class="w-110" size="small" v-model="govSchedule" @change="updateGov">
+                                    <el-select class="w-select-sm" size="small" v-model="govSchedule" @change="updateGov">
                                         <el-option v-for="t in ['20:00','21:00','22:00','08:00']" :key="t" :label="t" :value="t" />
                                     </el-select>
-                                    <el-select class="w-110" size="small" v-model="govUniverse" @change="updateGov" :disabled="!govEnabled">
+                                    <el-select class="w-select-sm" size="small" v-model="govUniverse" @change="updateGov" :disabled="!govEnabled">
                                         <el-option value="default" label="内置池" />
                                         <el-option value="all" label="全市场" />
                                     </el-select>
@@ -151,7 +153,7 @@
                                 <!-- v3.21 (P0-3): 参数方案保存/加载 -->
                                 <div class="strategy-params">
                                     <div class="strategy-param-row">
-                                        <el-select class="w-200" size="small" v-model="profileSelect" placeholder="加载已存方案" @change="applyProfile">
+                                        <el-select class="w-select-lg" size="small" v-model="profileSelect" placeholder="加载已存方案" @change="applyProfile">
                                             <el-option v-for="p in profiles" :key="p.id" :label="p.name" :value="p.id" />
                                         </el-select>
                                         <el-input class="w-140" size="small" v-model="profileName" placeholder="方案名" />
@@ -163,7 +165,7 @@
                                 <div class="strategy-params">
                                     <div v-for="f in activeStrategy.schema" :key="f.key" class="strategy-param-row">
                                         <label class="strategy-param-label">{{ f.label }}</label>
-                                        <el-select v-if="f.type === 'enum'" class="w-200" size="small" v-model="paramValues[f.key]" @change="paramValues[f.key] = $event">
+                                        <el-select v-if="f.type === 'enum'" class="w-select-lg" size="small" v-model="paramValues[f.key]" @change="paramValues[f.key] = $event">
                                             <el-option v-for="o in f.options" :key="o" :label="o" :value="o" />
                                         </el-select>
                                         <el-switch v-else-if="f.type === 'bool'" v-model="paramValues[f.key]"></el-switch>
@@ -192,7 +194,7 @@
                         <div class="factor-research">
                             <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
                             <div class="flex-wrap-gap-12-mb16-c">
-                                <el-select class="w-220" v-model="factorKey" size="small" placeholder="选择因子">
+                                <el-select class="w-select-lg" v-model="factorKey" size="small" placeholder="选择因子">
                                     <el-option v-for="f in activeStrategy.factor_specs || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
@@ -315,7 +317,7 @@
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">母本策略</span>
-                            <el-select class="w-220" size="small" v-model="activeStrategyId" placeholder="选择母本" @change="onStrategyChange">
+                            <el-select class="w-select-lg" size="small" v-model="activeStrategyId" placeholder="选择母本" @change="onStrategyChange">
                                 <el-option v-for="s in strategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                             </el-select>
                             <el-input class="w-160" size="small" v-model="profileName" placeholder="新策略名(可选)" />
@@ -325,7 +327,7 @@
                         <!-- variant 列表 -->
                         <div v-if="variants.length" class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">微调策略</span>
-                            <el-select class="w-220" size="small" v-model="variantSelected" placeholder="选择微调策略" @change="selectVariant(variantSelected)">
+                            <el-select class="w-select-lg" size="small" v-model="variantSelected" placeholder="选择微调策略" @change="selectVariant(variantSelected)">
                                 <el-option v-for="v in variants" :key="v.id" :label="(v.name || v.id) + ' (' + v.id + ')'" :value="v.id" />
                             </el-select>
                             <el-button size="small" type="warning" @click="runVariantOnce" :loading="variantBusy"><qc-icon name="zap" :size="14" /> 生成持仓矩阵</el-button>
@@ -349,7 +351,7 @@
                                 </div>
                                 <div class="strategy-param-row">
                                     <label class="strategy-param-label">指数成分</label>
-                                    <el-select class="w-160" size="small" v-model="variantSpec.index_membership" clearable>
+                                    <el-select class="w-select-md" size="small" v-model="variantSpec.index_membership" clearable>
                                         <el-option value="hs300" label="沪深300" />
                                         <el-option value="zz500" label="中证500" />
                                         <el-option value="zz1000" label="中证1000" />
@@ -390,7 +392,7 @@
                         <!-- 自定义策略列表 -->
                         <div v-if="customs.length" class="strategy-params flex-wrap-gap-12-mb16-c">
                             <span class="strategy-param-label">自定义策略</span>
-                            <el-select class="w-220" size="small" v-model="customSelected" placeholder="选择策略">
+                            <el-select class="w-select-lg" size="small" v-model="customSelected" placeholder="选择策略">
                                 <el-option v-for="c in customs" :key="c.id" :label="(c.name || c.id) + ' (' + c.id + ')'" :value="c.id" />
                             </el-select>
                             <el-button size="small" @click="loadCustomCode" :disabled="!customSelected"><qc-icon name="file-text" :size="14" /> 读取代码</el-button>
@@ -424,7 +426,7 @@
                         <div class="card-title">{{ t('research.backtest') }}</div>
                         <!-- v3.2.0-T21: 回测参数 -->
                         <div class="flex-wrap-gap-12-mb16-c">
-                            <el-select class="w-180" v-model="backtestStrategy" size="small" placeholder="选择策略">
+                            <el-select class="w-select-md" v-model="backtestStrategy" size="small" placeholder="选择策略">
                                 <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name" :value="s.id" />
                             </el-select>
                             <el-date-picker class="w-260" v-model="backtestRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
@@ -462,7 +464,7 @@
                         <div class="card-title flex-between">
                             <span>{{ t('research.backtestHistory') }}</span>
                             <div class="flex-c-gap-8">
-                                <el-select class="w-100" size="small" v-model="btHistoryDays" @change="loadBtHistory">
+                                <el-select class="w-select-sm" size="small" v-model="btHistoryDays" @change="loadBtHistory">
                                     <el-option label="近7天" :value="7" />
                                     <el-option label="近30天" :value="30" />
                                     <el-option label="近90天" :value="90" />
@@ -815,6 +817,8 @@
       const strategies = ref([]);
       const strategiesLoading = ref(false);
       const strategiesError = ref(false);
+      const strategiesErrorText = ref('');  // V6.9.4 (F6.2): 错误卡标题 (含接口 detail)
+      const strategiesWarn = ref('');        // V6.9.4 (F6.2): 数据文件缺失提示条
       const activeStrategyId = ref('');
       const paramValues = ref({});
       const strategyRunning = ref(false);
@@ -846,19 +850,35 @@
         const seq = ++_reqSeq;
         strategiesLoading.value = true;
         strategiesError.value = false;
+        strategiesErrorText.value = '';
+        strategiesWarn.value = '';
         try {
           const res = await withAuth('/api/strategies').then(function (r) { return r.json(); });
-        if (seq !== _reqSeq) return;
-          strategies.value = Array.isArray(res) ? res : [];
-          if (strategies.value.length && !activeStrategyId.value) {
-            activeStrategyId.value = strategies.value[0].id;
-            onStrategyChange();
+          if (seq !== _reqSeq) return;
+          // V6.9.4 (F6.2): 兼容 { strategies, warn } 结构; 非数组/非策略列表响应视为错误并给出可诊断文案
+          let list = null;
+          if (Array.isArray(res)) {
+            list = res;
+          } else if (res && Array.isArray(res.strategies)) {
+            list = res.strategies;
+            if (res.warn) strategiesWarn.value = String(res.warn);
+          } else {
+            strategiesError.value = true;
+            strategiesErrorText.value = (res && res.detail) ? String(res.detail) : '策略列表加载失败（接口返回异常）';
+          }
+          if (list !== null) {
+            strategies.value = list;
+            if (strategies.value.length && !activeStrategyId.value) {
+              activeStrategyId.value = strategies.value[0].id;
+              onStrategyChange();
+            }
           }
         } catch (e) {
           console.error('[research] 策略列表加载失败:', e);
           strategiesError.value = true;
+          strategiesErrorText.value = '策略列表加载失败: ' + ((e && e.message) || '网络错误');
         } finally {
-        if (seq === _reqSeq) strategiesLoading.value = false;
+          if (seq === _reqSeq) strategiesLoading.value = false;
         }
       }
 
@@ -1139,6 +1159,7 @@
       }
 
       async function runFactorIc() {
+        const seq = ++_reqSeq;  // V6.9.4 (H3): 补竞态序号 — 原 finally 引用未定义 seq 抛 ReferenceError
         factorIcLoading.value = true;
         try {
           const res = await withAuth('/api/strategies/factors/ic', {
@@ -1161,6 +1182,7 @@
       }
 
       async function runFactorLayer() {
+        const seq = ++_reqSeq;  // V6.9.4 (H3): 补竞态序号
         factorLayerLoading.value = true;
         try {
           const res = await withAuth('/api/strategies/factors/layer', {
@@ -1189,6 +1211,7 @@
       const factorDetail = ref(null);
       const factorDetailLoading = ref(false);
       async function runFactorDetail() {
+        const seq = ++_reqSeq;  // V6.9.4 (H3): 补竞态序号
         factorDetailLoading.value = true;
         factorDetail.value = null;
         try {
@@ -1496,6 +1519,7 @@
         }
       }
       async function exportResearchHistory() {
+        const seq = ++_reqSeq;  // V6.9.4 (H3): 补竞态序号
         researchExportLoading.value = true;
         try {
           const core = (window.__quantModules && window.__quantModules.core) || {};
@@ -1527,6 +1551,7 @@
         researchDetailId.value = (researchDetailId.value === id) ? '' : id;
       }
       async function runResearchCompare() {
+        const seq = ++_reqSeq;  // V6.9.4 (H3): 补竞态序号
         const ids = researchHistorySelected.value;
         if (ids.length < 2) return;
         researchCompareLoading.value = true;
@@ -1575,7 +1600,7 @@
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
         loadMarketReviews, openMarketReview, backToMarketReviewList, loadMarketReviewDetail,
         marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries,
-        strategies, strategiesLoading, strategiesError,
+        strategies, strategiesLoading, strategiesError, strategiesErrorText, strategiesWarn,
         activeStrategyId, activeStrategy, paramValues,
         strategyRunning, ptradeCode, strategyRuns,
         savingProfile, variantSaving,

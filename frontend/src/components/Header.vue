@@ -290,7 +290,6 @@ export default {
               <span>{{ m.label }}</span>
               <AppIcon v-if="navMode === m.value" name="check" :size="14" />
             </div>
-            <div class="qc-navmode-item-desc">{{ m.desc }}</div>
           </div>
         </div>
       </div>

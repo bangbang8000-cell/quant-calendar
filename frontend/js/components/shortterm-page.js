@@ -248,11 +248,11 @@
                         <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
-                                <el-select v-model="sectorType" size="small" class="w-120" @change="loadSectorFlow">
+                                <el-select v-model="sectorType" size="small" class="w-select" @change="loadSectorFlow">
                                     <el-option label="行业资金流" value="行业资金流"></el-option>
                                     <el-option label="概念资金流" value="概念资金流"></el-option>
                                 </el-select>
-                                <el-select v-model="sectorIndicator" size="small" class="w-90" @change="loadSectorFlow">
+                                <el-select v-model="sectorIndicator" size="small" class="w-select-xs" @change="loadSectorFlow">
                                     <el-option label="今日" value="今日"></el-option>
                                     <el-option label="5日" value="5日"></el-option>
                                     <el-option label="10日" value="10日"></el-option>

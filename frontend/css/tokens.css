@@ -40,6 +40,21 @@
   --qc-state-info: #2563eb;
   --qc-state-info-bg: #eff6ff;
 
+  /* V6.9.4 (H6): 状态别名 — components.css fallback 引用 (--qc-success 系) 与 state 系对齐 */
+  --qc-success: var(--qc-state-success);
+  --qc-success-50: var(--qc-state-success-bg);
+  --qc-success-100: #dcfce7;
+  --qc-success-700: #15803d;
+  --qc-warning: var(--qc-state-warning);
+  --qc-warning-50: var(--qc-state-warning-bg);
+  --qc-warning-100: #fef3c7;
+  --qc-warning-700: #b45309;
+  --qc-error: var(--qc-state-error);
+  --qc-error-50: var(--qc-state-error-bg);
+  --qc-error-100: #fee2e2;
+  --qc-error-700: #b91c1c;
+  --qc-info: var(--qc-state-info);
+
   /* ─── Market Semantics (fixed, not theme-dependent) ─── */
   --qc-market-up: #e63946;
   --qc-market-down: #2e7d32;

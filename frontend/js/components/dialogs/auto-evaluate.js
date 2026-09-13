@@ -17,7 +17,7 @@
                     </el-form-item>
                     <template v-if="autoEvaluateConfig.enabled">
                         <el-form-item label="执行周期">
-                            <el-select class="w-100" v-model="autoEvaluateConfig.schedule_type">
+                            <el-select class="w-select-sm" v-model="autoEvaluateConfig.schedule_type">
                                 <el-option label="每个交易日执行" value="daily" />
                                 <el-option label="每周一执行" value="weekly" />
                                 <el-option label="每月1号执行" value="monthly" />

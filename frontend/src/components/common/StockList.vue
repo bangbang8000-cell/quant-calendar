@@ -81,12 +81,7 @@ export default {
                 {{ item.name }}
                 <slot name="name-suffix" :item="item" :index="index" />
               </div>
-              <div v-if="showConsensus" class="qc-stock-consensus">
-                <div class="qc-stock-consensus-bar">
-                  <div class="qc-stock-consensus-fill" :style="{ width: pctOf(item) + '%' }"></div>
-                </div>
-                <span class="qc-stock-consensus-pct">{{ pctOf(item) }}%</span>
-              </div>
+              <span v-if="showConsensus" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
             </div>
             <div v-if="(item.strategy_names || item.strategies) && (item.strategy_names || item.strategies).length" class="qc-stock-tags">
               <span v-for="s in displayTags(item)" :key="s.text" class="qc-stock-tag" :class="{ 'is-more': s.more }">{{ s.text }}</span>
@@ -131,12 +126,7 @@ export default {
               {{ item.name }}
               <slot name="name-suffix" :item="item" :index="i" />
             </div>
-            <div v-if="showConsensus" class="qc-stock-consensus">
-              <div class="qc-stock-consensus-bar">
-                <div class="qc-stock-consensus-fill" :style="{ width: pctOf(item) + '%' }"></div>
-              </div>
-              <span class="qc-stock-consensus-pct">{{ pctOf(item) }}%</span>
-            </div>
+            <span v-if="showConsensus" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
           </div>
           <div v-if="(item.strategy_names || item.strategies) && (item.strategy_names || item.strategies).length" class="qc-stock-tags">
             <span v-for="s in displayTags(item)" :key="s.text" class="qc-stock-tag" :class="{ 'is-more': s.more }">{{ s.text }}</span>

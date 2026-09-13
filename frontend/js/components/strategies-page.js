@@ -608,7 +608,7 @@
                             <span><qc-icon name="zap" :size="14" /> 策略执行看板</span>
                             <div class="flex-c-gap-8">
                                 <el-button size="small" @click="loadExecutionData" :loading="execLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
-                                <el-select class="w-100" size="small" v-model="execDays" @change="loadExecutionData">
+                                <el-select class="w-select-sm" size="small" v-model="execDays" @change="loadExecutionData">
                                     <el-option label="近1天" :value="1" />
                                     <el-option label="近7天" :value="7" />
                                     <el-option label="近30天" :value="30" />
@@ -731,7 +731,7 @@
                             </div>
                             <div class="card-title mt-2">{{ t('exec.traceTitle') }}</div>
                             <div class="flex-c-gap-8 mb-2">
-                                <el-select class="w-120" size="small" v-model="execTraceDate" @change="loadExecutionTrace(execTraceDate)">
+                                <el-select class="w-select" size="small" v-model="execTraceDate" @change="loadExecutionTrace(execTraceDate)">
                                     <el-option v-for="r in execResultsDates" :key="r.date" :label="r.date" :value="r.date" />
                                 </el-select>
                                 <el-button size="small" @click="loadExecutionTrace(execTraceDate)" :loading="execTraceLoading"><qc-icon name="refresh" :size="14" /> {{ t('exec.traceTitle') }}</el-button>
@@ -751,10 +751,10 @@
                             <div class="card-title flex-between">
                                 <span><qc-icon name="file-text" :size="14" /> 执行历史 <span class="text-sm-tertiary">(最近 {{ execDays }} 天)</span></span>
                                 <div class="flex-c-gap-8">
-                                    <el-select class="w-120" size="small" v-model="execTaskFilter" @change="loadExecutionData" clearable placeholder="全部任务">
+                                    <el-select class="w-select" size="small" v-model="execTaskFilter" @change="loadExecutionData" clearable placeholder="全部任务">
                                         <el-option v-for="t in execTaskOptions" :key="t" :label="t" :value="t" />
                                     </el-select>
-                                    <el-select class="w-100" size="small" v-model="execStatusFilter" @change="loadExecutionData" clearable placeholder="全部状态">
+                                    <el-select class="w-select-sm" size="small" v-model="execStatusFilter" @change="loadExecutionData" clearable placeholder="全部状态">
                                         <el-option label="成功" value="success" />
                                         <el-option label="失败" value="failed" />
                                     </el-select>

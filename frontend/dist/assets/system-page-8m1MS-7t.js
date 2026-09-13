@@ -361,7 +361,7 @@
                                 </el-form-item>
                                 <template v-if="autoEvaluateConfig.enabled">
                                     <el-form-item label="调度频率">
-                                        <el-select class="w-160" v-model="autoEvaluateConfig.schedule_type" @change="saveAutoEvaluateConfig">
+                                        <el-select class="w-select-md" v-model="autoEvaluateConfig.schedule_type" @change="saveAutoEvaluateConfig">
                                             <el-option label="每个交易日" value="daily" />
                                             <el-option label="每周一" value="weekly" />
                                             <el-option label="每月1号" value="monthly" />
@@ -439,7 +439,7 @@
                             <el-form class="mt-2" label-width="90px" size="small">
                                 <el-form-item label="厂商名"><el-input v-model="v.name" :disabled="v.locked" placeholder="厂商显示名"/></el-form-item>
                                 <el-form-item label="类型">
-                                    <el-select class="w-160" v-model="v.kind" :disabled="v.locked" size="small">
+                                    <el-select class="w-select-md" v-model="v.kind" :disabled="v.locked" size="small">
                                         <el-option label="国内" value="国内"/><el-option label="国外" value="国外"/>
                                         <el-option label="CodingPlan" value="CodingPlan"/><el-option label="自定义" value="自定义"/>
                                     </el-select>
@@ -494,7 +494,7 @@
                             <div v-if="ncTab === 'rules'">
                                 <div class="flex-gap-12-mb12">
                                     <el-input class="w-140" v-model="ncNewCode" placeholder="股票代码 600519" clearable size="small"/>
-                                    <el-select class="w-140" v-model="ncNewType" size="small">
+                                    <el-select class="w-select" v-model="ncNewType" size="small">
                                         <el-option label="价格突破" value="price_above" />
                                         <el-option label="价格跌破" value="price_below" />
                                         <el-option label="涨跌幅超" value="pct_change" />
@@ -808,14 +808,14 @@
                                     </div>
                                     <div class="flex-c-gap-6">
                                         <label class="text-base-primary-nowrap">频率</label>
-                                        <el-select class="w-110" v-model="dataRefreshConfig.pull_frequency" @change="saveDataRefreshConfig" size="small" :disabled="!dataRefreshConfig.pull_enabled">
+                                        <el-select class="w-select-sm" v-model="dataRefreshConfig.pull_frequency" @change="saveDataRefreshConfig" size="small" :disabled="!dataRefreshConfig.pull_enabled">
                                             <el-option label="每日" value="daily" />
                                             <el-option label="每周" value="weekly" />
                                         </el-select>
                                     </div>
                                     <div class="flex-c-gap-6" v-if="dataRefreshConfig.pull_frequency === 'weekly'">
                                         <label class="text-base-primary-nowrap">周几</label>
-                                        <el-select class="w-90" v-model="dataRefreshConfig.pull_weekday" @change="saveDataRefreshConfig" size="small" :disabled="!dataRefreshConfig.pull_enabled">
+                                        <el-select class="w-select-xs" v-model="dataRefreshConfig.pull_weekday" @change="saveDataRefreshConfig" size="small" :disabled="!dataRefreshConfig.pull_enabled">
                                             <el-option label="周一" value="0" />
                                             <el-option label="周二" value="1" />
                                             <el-option label="周三" value="2" />
@@ -837,7 +837,7 @@
                         <div class="flex-c-gap-12">
                             <div class="flex-c-gap-6">
                                 <label class="text-base-primary-nowrap">导航形态</label>
-                                <el-select class="w-200" :model-value="navMode" @change="onNavModeChange" size="small">
+                                <el-select class="w-select-lg" :model-value="navMode" @change="onNavModeChange" size="small">
                                     <el-option value="subnav" :label="t('navMode.subnav')" />
                                     <el-option value="tree" :label="t('navMode.tree')" />
                                     <el-option value="toptab" :label="t('navMode.toptab')" />
@@ -873,7 +873,7 @@
                         <div class="section-sub-block-top">
                             <label class="text-base-primary-nowrap">{{ t('system.language') }}</label>
                             <div class="flex-c-gap-12-wrap mt-8">
-                                <el-select class="w-180" :model-value="locale" size="small" @change="changeLanguage">
+                                <el-select class="w-select-md" :model-value="locale" size="small" @change="changeLanguage">
                                     <el-option value="zh-CN" :label="t('lang.zh-CN')" />
                                     <el-option value="en" :label="t('lang.en')" />
                                     <el-option value="ja" :label="t('lang.ja')" />
@@ -943,7 +943,7 @@
                         <div class="card-title"><qc-icon name="users" :size="14" /> 用户列表 ({{ userList.length }}人)</div>
                         <div class="flex-gap-12-mb12">
                             <el-input class="w-160" v-model="userSearch" placeholder="搜索用户名..." clearable size="small"/>
-                            <el-select class="w-120" v-model="groupFilter" placeholder="分组" clearable size="small">
+                            <el-select class="w-select" v-model="groupFilter" placeholder="分组" clearable size="small">
                                 <el-option v-for="(g, gid) in allGroups" :key="gid" :label="g.name" :value="gid" />
                             </el-select>
                             <el-button type="primary" size="small" @click="showAddUser = true">+ 添加用户</el-button>
@@ -1033,7 +1033,7 @@
                         <p class="color-secondary">为外部程序签发只读 API Key（库中仅存哈希，明文只展示一次；行情数据不可达时开放接口返回 degraded 占位）。</p>
                         <div class="flex-gap-8-mb12">
                             <el-input class="w-160" v-model="openApiKeyName" placeholder="Key 名称（可选）" size="small" />
-                            <el-select class="w-120" v-model="openApiKeyRole" size="small">
+                            <el-select class="w-select" v-model="openApiKeyRole" size="small">
                                 <el-option label="只读" value="read" />
                             </el-select>
                             <el-button type="primary" size="small" :loading="openApiLoading" @click="generateOpenApiKey">生成 Key</el-button>

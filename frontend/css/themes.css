@@ -348,6 +348,18 @@
             --border-color: #23344f; --surface: #111827; --bg-code: #0f172a;
             --bg-tertiary: #1f2937; --primary-color-dark: #3b82f6;
             --text-disabled: #64748b;   /* EP 禁用态文本 */
+            /* V6.9.4 (F5): EP 2.14.5 变量级深色映射 — 输入/选择器/日期弹层内部统一走暗底 */
+            --el-input-bg-color: var(--bg-card);
+            --el-input-text-color: var(--text-primary);
+            --el-input-placeholder-color: var(--text-disabled);
+            --el-input-border-color: var(--border-heavy);
+            --el-fill-color-blank: var(--bg-card);
+            --el-fill-color-light: var(--border-base);
+            --el-bg-color: var(--bg-card);
+            --el-border-color-light: var(--border-base);
+            --el-text-color-regular: var(--text-primary);
+            --el-text-color-secondary: var(--text-secondary);
+            --el-text-color-placeholder: var(--text-disabled);
             --scrollbar-thumb: rgba(138,146,176,0.5);  /* EP 滚动条滑块(半透明次级色) */
             --border-strong: #3a4a6a;   /* V4.8.1 D5: 时间轴连接线暗色变体(原亮灰 #d9dee8 刺眼) */
             /* V4.8.2 (D3): 暗色阴影变体 — 亮色 6-12% 黑在暗底不可见, 加深并保持 sm<md<lg 层级 */
@@ -398,8 +410,8 @@
         [data-theme="dark-pro"] html,
         [data-theme="dark-pro"] .app-container,
         [data-theme="dark-pro"] #app {
-            background: #0b1220 !important;
-            background-color: #0b1220 !important;
+            background: var(--bg-page) !important;  /* V6.9.4 (H6): token 化替代硬编码 #0b1220 */
+            background-color: var(--bg-page) !important;
         }
         [data-theme="dark-pro"] .main-content {
             background: transparent !important;
@@ -506,6 +518,21 @@
         }
         [data-theme="dark-pro"] .el-input__inner::placeholder { color: var(--text-disabled) ; }
         [data-theme="dark-pro"] .el-select .el-input__inner { background-color: var(--border-base) ; }
+        /* V6.9.4 (F5): 深色输入框适配 — EP 2.14.5 输入/选择器可见盒子为 .el-input__wrapper / .el-select__wrapper (非 .el-input__inner) */
+        [data-theme="dark-pro"] .el-input__wrapper,
+        [data-theme="dark-pro"] .el-select__wrapper {
+            background-color: var(--bg-card) ;
+            box-shadow: 0 0 0 1px var(--border-heavy) inset ;
+        }
+        [data-theme="dark-pro"] .el-input__wrapper.is-focus,
+        [data-theme="dark-pro"] .el-select__wrapper.is-focused {
+            box-shadow: 0 0 0 2px var(--primary-color) inset ;
+        }
+        [data-theme="dark-pro"] .el-input__inner,
+        [data-theme="dark-pro"] .el-select__input,
+        [data-theme="dark-pro"] .el-select__selected-item,
+        [data-theme="dark-pro"] .el-input__inner::placeholder { color: var(--text-primary) ; }
+        [data-theme="dark-pro"] .el-date-editor .el-input__wrapper { background-color: var(--bg-card) ; }
         [data-theme="dark-pro"] .el-table {
             background-color: var(--bg-card) ; color: var(--text-primary) ;
         }

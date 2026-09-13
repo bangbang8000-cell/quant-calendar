@@ -34,7 +34,19 @@ router = APIRouter(prefix='/strategies', tags=['策略研究'])
 @router.get('')
 async def list_strategies(_: Dict = Depends(get_non_guest_user)):
     """策略列表(内置注册表)"""
-    return registry.list()
+    strategies = registry.list()
+    # V6.9.4 (F6.1): 持仓数据文件缺失时附加可诊断提示 (策略定义列表不受影响)
+    try:
+        from data_parser import parser as _parser
+        has_holdings = bool(getattr(_parser, 'holdings_data', None))
+    except Exception:
+        has_holdings = True  # 探测失败不打扰正常返回
+    if not has_holdings:
+        return {
+            "strategies": strategies,
+            "warn": "未找到策略持仓数据文件（多因子策略持仓*.csv 等 4 个文件），请检查 data 目录；策略定义列表仍可用",
+        }
+    return strategies
 
 
 # ─── v3.21 (P0-6): 策略纳管中心 ────────────────────

@@ -266,18 +266,16 @@
   gap: var(--qc-space-3);
 }
 
-/* 导航形态快捷切换 (V6.7.1) */
+/* 导航形态快捷切换 (V6.7.1; V6.9.4 精简: 单行标签+✓, 字体统一) */
 .qc-navmode-switch { position: relative; display: inline-flex; }
 .qc-navmode-item-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--qc-space-2);
-}
-.qc-navmode-item-desc {
-  font-size: var(--qc-font-size-xs);
-  color: var(--qc-muted-foreground);
-  margin-top: 2px;
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  line-height: 1;
 }
 
 /* V6.9.3 (F4/F6): 铃铛/主题按钮容器 */
@@ -398,6 +396,8 @@
   box-shadow: var(--qc-shadow-lg);
   padding: var(--qc-space-2);
 }
+/* V6.9.4 (F3): 导航形态面板收窄 (独立块置于通用面板之后覆盖 min-width) */
+.qc-navmode-menu { min-width: 200px; }
 .qc-user-avatar {
   width: 32px;
   height: 32px;

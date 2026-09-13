@@ -18,18 +18,18 @@
                     <el-input v-model="userForm.password" type="password" placeholder="留空则不修改" show-password />
                 </el-form-item>
                 <el-form-item label="角色">
-                    <el-select class="w-100" v-model="userForm.role">
+                    <el-select class="w-select-sm" v-model="userForm.role">
                         <el-option label="管理员" value="admin" />
                         <el-option label="普通用户" value="user" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="所属组">
-                    <el-select class="w-100" v-model="userForm.group">
+                    <el-select class="w-select-sm" v-model="userForm.group">
                         <el-option v-for="(g, gid) in allGroups" :key="gid" :label="g.name" :value="gid" :disabled="userForm.username === 'admin' || userForm.username === 'guest'" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="默认主题">
-                    <el-select class="w-100" v-model="userForm.theme">
+                    <el-select class="w-select-sm" v-model="userForm.theme">
                         <el-option v-for="(theme, key) in themes" :key="key" :label="theme.name" :value="key" />
                     </el-select>
                 </el-form-item>

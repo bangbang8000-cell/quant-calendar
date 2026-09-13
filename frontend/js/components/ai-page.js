@@ -149,7 +149,7 @@
                                 <div class="card-title">{{ t('ai.quickOps') }}</div>
                                 <div class="flex-col-gap-10">
                                     <div class="text-sm-secondary-mb4" v-if="watchlist.length> 0">{{ t('ai.chooseFromWatchlist') }}</div>
-                                    <el-select class="w-100" v-if="watchlist.length> 0" v-model="quickEvalStock" :placeholder="t('ai.chooseFromWatchlist')" size="small" clearable>
+                                    <el-select class="w-select-sm" v-if="watchlist.length> 0" v-model="quickEvalStock" :placeholder="t('ai.chooseFromWatchlist')" size="small" clearable>
                                         <el-option v-for="s in watchlist" :key="s.code" :label="s.code + ' ' + s.name" :value="s.code" />
                                     </el-select>
                                     <div class="flex-gap-8-c" v-if="watchlist.length> 0">

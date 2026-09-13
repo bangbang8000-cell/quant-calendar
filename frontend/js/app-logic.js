@@ -458,10 +458,11 @@ const allMenuDefs = [
                 const themeHues = [45, 220, 0, 140, 270, 320];
                 const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色' };
                 const themeHue = ref(45);
-                const themeMode = Vue.computed(() => {
+                // V6.9.4 (F4/H2): themeMode 改响应式 ref — computed 依赖非响应式 getPreference 无法在切换后重算
+                const themeMode = ref((function () {
                     const P = window.__quantModules && window.__quantModules.preferences;
                     return (P && P.getPreference && P.getPreference('theme')) || 'system';
-                });
+                })());
                 (function () {
                     const P = window.__quantModules && window.__quantModules.preferences;
                     const h = (P && P.getPreference && P.getPreference('theme_hue'));
@@ -532,7 +533,14 @@ const allMenuDefs = [
                     const T = window.__quantModules && window.__quantModules.themes;
                     let mode = themeOrMode;
                     if (T && T.LEGACY_MAP && T.LEGACY_MAP[themeOrMode]) mode = T.LEGACY_MAP[themeOrMode][0];
-                    if (mode === 'system') mode = currentTheme.value;  // system 已解析为实际模式
+                    // V6.9.4 (F4): themeMode 保存「用户选择的模式」(light/dark/system) — 供面板高亮;
+                    // 非三态调用(legacy 迁移/旧主题名)回退为解析后实际模式
+                    if (mode === 'light' || mode === 'dark' || mode === 'system') {
+                        themeMode.value = mode;
+                    } else {
+                        themeMode.value = currentTheme.value;
+                    }
+                    if (mode === 'system') mode = currentTheme.value;  // system 已解析为实际模式 (用于持久化)
                     _persistThemePref(mode, hue);
                     if (currentUser.value) {
                         fetch(`/api/users/${currentUser.value.username}`, {
