@@ -11,7 +11,10 @@ class TestStrategyRunTask:
         calls = []
         state = {"multi_factor": {"enabled": True, "schedule": "20:00"},
                  "capital_flow": {"enabled": False, "schedule": "20:00"}}
-        with patch.object(gov, "get_state", return_value=state), \
+        # run_strategy_once 开头有「非交易日直接跳过」守卫 (V5.3.14), 不固定它
+        # 本用例在周末/节假日跑就会假失败 → 显式置为交易日, 保证与运行日期无关
+        with patch("stock_calendar.is_trade_date_str", return_value=True), \
+             patch.object(gov, "get_state", return_value=state), \
              patch.object(gov, "run_once") as run:
             run.side_effect = lambda sid, as_of=None: calls.append(sid) or {"sid": sid}
             from scheduler import run_strategy_once
@@ -26,10 +29,25 @@ class TestStrategyRunTask:
         from scheduler import run_strategy_once
         import strategy_governance as gov
         state = {"multi_factor": {"enabled": False, "schedule": "20:00"}}
-        with patch.object(gov, "get_state", return_value=state), \
+        with patch("stock_calendar.is_trade_date_str", return_value=True), \
+             patch.object(gov, "get_state", return_value=state), \
              patch.object(gov, "run_once") as run:
             run_strategy_once()
         run.assert_not_called()
+
+    def test_strategy_run_once_skips_on_non_trading_day(self):
+        """V5.3.14 (T-SP.P2.5): 非交易日直接跳过 — 防按 today(周末/节假日)建
+        data/holdings/{date} 残留目录与内容日期错位。此守卫原先无用例覆盖,
+        上面两条用例把它固定为交易日后, 由本用例单独守护跳过分支。"""
+        import strategy_governance as gov
+        from scheduler import run_strategy_once
+        with patch("stock_calendar.is_trade_date_str", return_value=False), \
+             patch.object(gov, "get_state") as get_state, \
+             patch.object(gov, "run_once") as run:
+            ok, executed, errors = run_strategy_once()
+        assert (ok, executed, errors) == (True, [], [])
+        run.assert_not_called()
+        get_state.assert_not_called()
 
     def test_strategy_run_task_sleep_until_20(self):
         """strategy_run_task 使用 governance 默认 20:00 (由 run_strategy_once 调度参数驱动)"""

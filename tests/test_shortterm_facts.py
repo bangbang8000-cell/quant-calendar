@@ -176,8 +176,9 @@ def test_summarize_conditions():
 # ---------- 近5日热度 + 龙头谱系 ----------
 
 def test_industry_heat_and_leaders(monkeypatch):
-    from shortterm import trade_calendar as tc
-    monkeypatch.setattr(tc, 'last_trade_dates',
+    # weekly.py 是 from .trade_calendar import last_trade_dates (直接引用),
+    # 必须打在 weekly 上; 打在 trade_calendar 上不生效 → 会查真实交易日导致假失败
+    monkeypatch.setattr(weekly, 'last_trade_dates',
                         lambda n, end=None: ['2026-09-02', '2026-09-01'])
     store.save_pool('2026-09-02', 'zt', [
         {'ts_code': 'a', 'name': '龙头A', 'boards': 5, 'industry': '半导体'},

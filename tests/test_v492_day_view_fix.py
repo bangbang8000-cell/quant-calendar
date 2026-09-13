@@ -88,7 +88,9 @@ class TestStrategyRunRefresh:
         state = {"multi_factor": {"enabled": True, "schedule": "20:00"},
                  "capital_flow": {"enabled": True, "schedule": "20:00"}}
         stages = []
-        with patch.object(gov, "get_state", return_value=state), \
+        # 同上: 固定交易日守卫, 否则周末/节假日执行会走「跳过」早退分支
+        with patch("stock_calendar.is_trade_date_str", return_value=True), \
+             patch.object(gov, "get_state", return_value=state), \
              patch.object(gov, "run_once", side_effect=lambda sid, as_of=None: None):
             run_strategy_once(lambda sid, stage: stages.append((sid, stage)))
         assert ("multi_factor", "generating") in stages
