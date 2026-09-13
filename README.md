@@ -219,11 +219,11 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
 | 项 | 链接 |
 |----|------|
-| 最新版本 | **v6.9.5**（用户菜单修复 · 导航字重归一 · 深色适配） |
+| 最新版本 | **v5.5.0**（6.x 编号并入 5.X · 默认顶部二级标签 · 下拉框换行根治） |
 | Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
-| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.9.5.zip |
-| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.9.5.tar.gz |
-| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:6.9.5 |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.5.0.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.5.0.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.5.0 |
 
 > 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
 
@@ -292,8 +292,11 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 ## 版本历史
 
+> **版本编号说明（2026-09 起）**：v6.0.0–v6.9.6 是一段独立演进的开发线（期间**未打过任何 tag**）。现已**整体并入 5.X 序列**，以 **v5.5.0** 作为汇合点，此后长期在 5.X 上推进（v5.5.1、v5.6.0 …）。下表中 v6.x 条目保留为当时的历史记录，不再变更。
+
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| **v5.5.0** | 2026-09 | **编号并入 5.X**：6.0–6.9.6 整条开发线汇合至此 / 默认导航形态改为**顶部二级标签**（toptab，显式用户选择仍被尊重）/ element-plus.css 补 `?v={{APP_VERSION}}` 版本号 — 该表响应头为 immutable 且原先唯独漏了版本号，浏览器永久沿用旧版 EP 样式，与 EP 2.14.5 新 DOM 错配导致下拉框文字与倒三角箭头换行、盒子被撑高 |
 | v6.9.5 | 2026-09 | 用户菜单功能修复：修改密码/退出登录/重新运行初始化向导点击生效（EP 消息服务显式挂载 + 菜单项调用修复 + 用户信息响应式解包）/ 一二级菜单选中未选中均不加粗 / 深色股票弹窗 K 线周期 tab 文字色修复（选中主题色底+深字，未选中白字） |
 | v6.9.4 | 2026-09 | EP 样式表对齐 2.14.5 根治下拉按钮换行 / 三处股票列表移除共识进度条 / 主题深浅色模式按钮高亮 / 深色输入框适配 / 策略研究空数据可诊断 / 导航形态面板精简 / 宽度类收敛 / 页面组件静态预注册根治研究·系统等页空白 |
 | v6.9.3 | 2026-09 | 12 项 UI 优化 — 股票列表信息密度 / 下拉规范 / 搜索框右移 / 铃铛面板 / 主题按钮 / 日历工具栏 / 短线复盘提速 / R1 清理 / sxsc 测试修复 / 功能配置精简 / 菜单重排 |
