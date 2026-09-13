@@ -56,6 +56,12 @@ window.__quantComponents.AppIcon = AppIconV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'
+// V6.9.4 (FIX): 页面组件静态预加载 — 与 calendar/strategies 一致, 消除懒加载注册时序导致
+// 刷新/启动停留在懒加载页时组件未注册 → <component :is> 渲染为自定义元素 → 工作区空白
+import '../js/components/system-page.js'
+import '../js/components/ai-page.js'
+import '../js/components/research-page.js'
+import '../js/components/shortterm-page.js'
 import '../js/virtual-list-core.js'
 import '../js/components/virtual-list.js'
 import '../js/mobile-gestures.js'
@@ -91,12 +97,12 @@ import '../js/app-logic/watch.js'
 import '../js/app-logic/lifecycle.js'
 import '../js/app-logic.js'
 
-// V4.3-S3 (方案A): 页面组件懒加载 — 切换对应页面前由 __quantGoPage 动态 import
-// 4 大页面组件(system/strategies/ai/research)合计 ~300KB raw, 延迟到进入页面时加载
+// V4.3-S3 (方案A): 页面组件懒加载 — V6.9.4 起改为顶部静态 import (与 calendar/strategies 一致, 消除注册时序空白)
+// __lazyLoaders 保留接口兼容 (__quantGoPage / watch.js 调用), 模块已静态加载, 返回已解析 Promise
 window.__lazyLoaders = {
-  system: () => import('../js/components/system-page.js'),
-  ops: () => import('../js/components/system-page.js'),  // V6.9.1-fix: 系统状态一级菜单复用 system-page 渲染
-  ai: () => import('../js/components/ai-page.js'),
-  research: () => import('../js/components/research-page.js'),
-  shortterm: () => import('../js/components/shortterm-page.js'),
+  system: () => Promise.resolve(),
+  ops: () => Promise.resolve(),   // V6.9.1-fix: 系统状态一级菜单复用 system-page 渲染
+  ai: () => Promise.resolve(),
+  research: () => Promise.resolve(),
+  shortterm: () => Promise.resolve(),
 };

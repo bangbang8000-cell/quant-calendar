@@ -51,10 +51,14 @@
             const menu = menus.value.find(function (m) { return m.key === hp; });
             if (!menu) return;
             if (applyRedirect(hp, hs)) return;
-            if (!hs) { currentPage.value = hp; currentSubPage.value = menu.subPages[0] || ''; return; }
-            if (menu.subPages.indexOf(hs) >= 0) {
+            if (!hs) { currentPage.value = hp; currentSubPage.value = menu.subPages[0] || ''; }
+            else if (menu.subPages.indexOf(hs) >= 0) {
               currentPage.value = hp;
               currentSubPage.value = hs;
+            } else { return; }
+            // V6.9.4 (FIX): hash 前进/后退到懒加载页时补加载组件, 防空白
+            if (window.__lazyLoaders && window.__lazyLoaders[hp] && window.__quantGoPage) {
+              window.__quantGoPage(hp, currentSubPage.value).catch(function () {});
             }
           });
 
@@ -117,6 +121,11 @@
             if (d) selectedDate.value = d;
             var v = localStorage.getItem('quant_last_view');
             if (v) currentView.value = v;
+            // V6.9.4 (FIX): 启动恢复懒加载页组件 — 刷新停留在懒加载页(research/ai/shortterm/ops/system)时
+            // 若不触发 __quantGoPage, 组件 chunk 不注册 → <component :is> resolveComponent 失败 → 工作区空白
+            if (window.__lazyLoaders && window.__lazyLoaders[currentPage.value] && window.__quantGoPage) {
+              window.__quantGoPage(currentPage.value, currentSubPage.value).catch(function () {});
+            }
           })();
 
           // v1.12: 加载服务版本号

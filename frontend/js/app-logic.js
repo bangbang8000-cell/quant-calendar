@@ -1002,6 +1002,9 @@ const allMenuDefs = [
                             }
                         });
                     }
+                    // V6.9.4 (FIX): 组件补注册后 tick 强制 pageComp 重算 —
+                    // 启动恢复/hashchange 同页赋值不触发响应, 需依赖 lazyTick 让 <component :is> 重新解析到新注册组件
+                    if (lazyTick) lazyTick.value++;
                     currentPage.value = page;
                     if (sub) currentSubPage.value = sub;
                 };

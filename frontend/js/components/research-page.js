@@ -10,9 +10,9 @@
     name: 'qc-research-page',
     template: `
                 <!-- V5.2.3: 市场复盘移入短线复盘 → 本组件在 shortterm 下也渲染该子页 (V6.9.1-fix: 异动扫描已删除) -->
-                <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && currentSubPage === 'market-review')" key="research">
+                <div key="research">
+                    <!-- V6.9.4 (FIX): 根 v-if currentPage 判断在组件内为死值导致整页空白 — 移除, 子页由 currentSubPage 控制 -->
                     <!-- V6.9.3 (F11.2): 策略研究菜单恒显 — 移除 researchMenuEnabled 占位分支 -->
-                    <template>
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
                         <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>
@@ -195,7 +195,7 @@
                             <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-select-lg" v-model="factorKey" size="small" placeholder="选择因子">
-                                    <el-option v-for="f in activeStrategy.factor_specs || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
+                                    <el-option v-for="f in (activeStrategy && activeStrategy.factor_specs) || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
                                 <el-button size="small" @click="runFactorLayer" :loading="factorLayerLoading">分层回测</el-button>
@@ -708,9 +708,8 @@
                                     <div class="market-review-ai-summary">{{ marketReviewDetail.ai_summary || '暂无解读' }}</div>
                                 </div>
                             </template>
-                        </template>
+                            </template>
                     </div>
-                    </template>
                 </div>`,
     setup() {
       const state = inject('qcState');
