@@ -761,7 +761,8 @@ async function triggerDataPull() {
         const res = await fetch('/api/data-refresh/pull', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stock_pool: dataRefreshConfig.value.stock_pool || [] })
+            // V6.9.3 (F11.1): 自选股票池拉取项已移除 — 全量拉取(留空=全部)
+            body: JSON.stringify({ stock_pool: [] })
         });
         const data = await res.json();
         if (data.success) {

@@ -269,26 +269,28 @@ def _overview_bundle(date: str) -> dict:
 
     V6.5 (PRD-6.5 F1): 任一指标异常不得拖垮整体看板 — 单指标降级失败时返回
     部分 bundle + error 标记, 保证 /overview 恒 200。
+    V6.9.3 (F8.3): 三部分并行构建, 首算提速 (store 读取为主, 线程安全)。
     """
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _safe(fn, key, default=None):
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001 — 指标级异常隔离
+            logger.warning('%s 构建失败(%s): %s', key, date, e)
+            return {key + '_error': str(e)[:120]} if default is None else default
+
     bundle = {}
-    try:
-        metrics = emotion_metrics.build_metrics(date)
-        bundle = {**bundle, **metrics}
-    except Exception as e:  # noqa: BLE001 — 指标级异常隔离
-        logger.warning('情绪指标构建失败(%s): %s', date, e)
-        bundle['emotion_error'] = str(e)[:120]
-    try:
-        facts = market_facts.build_facts(date)
-        bundle = {**bundle, **facts}
-    except Exception as e:  # noqa: BLE001 — 指标级异常隔离
-        logger.warning('市场事实构建失败(%s): %s', date, e)
-        bundle['facts_error'] = str(e)[:120]
-    try:
-        zt = store.load_pool(date, 'zt')
-        bundle['ladder'] = ladder.ladder_gap(zt or [])
-    except Exception as e:  # noqa: BLE001 — 梯队异常隔离
-        logger.warning('梯队计算失败(%s): %s', date, e)
-        bundle['ladder'] = {'available': False, 'reason': str(e)[:120]}
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        f_metrics = pool.submit(_safe, lambda: emotion_metrics.build_metrics(date), 'emotion', {})
+        f_facts = pool.submit(_safe, lambda: market_facts.build_facts(date), 'facts', {})
+        f_ladder = pool.submit(
+            _safe,
+            lambda: (lambda zt: {'ladder': ladder.ladder_gap(zt or [])})(store.load_pool(date, 'zt')),
+            'ladder', {'ladder': {'available': False, 'reason': '计算中断'}})
+        bundle = {**bundle, **f_metrics.result()}
+        bundle = {**bundle, **f_facts.result()}
+        bundle = {**bundle, **f_ladder.result()}
     return bundle
 
 

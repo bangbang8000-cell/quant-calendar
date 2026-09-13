@@ -362,7 +362,7 @@ const aiConfig = ref({
 const selectedPreset = ref('manual');
 const providerInfo = computed(() => {
     const presets = {
-        deepseek: { name: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1', model: 'deepseek-chat', website: 'https://platform.deepseek.com' },
+        deepseek: { name: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1', model: 'deepseek-v4-flash', website: 'https://platform.deepseek.com' },
         qwen: { name: '通义千问', endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus', website: 'https://help.aliyun.com/zh/dashscope' },
         glm: { name: '智谱 GLM', endpoint: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-plus', website: 'https://open.bigmodel.cn' },
         ernie: { name: '百度文心 ERNIE', endpoint: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat', model: 'ernie-4.0-8k-latest', website: 'https://yiyan.baidu.com' },
@@ -373,7 +373,7 @@ const providerInfo = computed(() => {
     return presets[aiConfig.value.provider] || presets.custom;
 });
 const aiPresets = {
-    deepseek: { name: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+    deepseek: { name: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1', model: 'deepseek-v4-flash' },
     qwen: { name: '通义千问', endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
     glm: { name: '智谱GLM', endpoint: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-plus' },
     ernie: { name: '百度文心', endpoint: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat', model: 'ernie-4.0' },

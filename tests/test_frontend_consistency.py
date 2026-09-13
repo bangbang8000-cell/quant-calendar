@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 486, f"qcState 唯一键数异常: {len(set(keys))} (期望 486; V6.1 F8 动态页签 +4: tabGroups/openTab/closeTab/activateTab; V6.1 F5 主题 +2: changeThemeMode/changeThemeHue; V6.1 F4 图标系统 -3: iconSystem/switchIconSystem/ICON_MAPS 移除; V6.3 F4 导航形态 +4: navMode/tabsEnabled/setNavMode/setTabsEnabled; V6.4 动态页签开关移除 -2: tabsEnabled/setTabsEnabled)"
+    assert len(set(keys)) == 490, f"qcState 唯一键数异常: {len(set(keys))} (期望 490; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu)"
 
 
 def test_watch_currentpage_single():
@@ -749,12 +749,16 @@ def test_scan_subpage_removed():
 
 
 def test_research_menu_enabled_by_default():
-    """v3.17 修复: 策略研究菜单默认可见（市场复盘/异动扫描 P0 功能可达）"""
+    """v3.17 修复: 策略研究菜单默认可见
+    V6.9.3 (F11.2): researchMenuEnabled 开关已删除 — 菜单恒显, 不再需要 opt-out 逻辑
+    """
     app = _read("js/app-logic.js")
-    assert "research_menu_enabled') !== '0'" in app, "research 菜单应默认开启（opt-out）"
-    # 后端用户配置默认同样为开启
-    ucfg = _read_backend("api/v1/user_config.py")
-    assert '"research_menu_enabled": True' in ucfg, "BASE_CONFIG_DEFAULTS 应将 research_menu_enabled 默认为 True"
+    assert "researchMenuEnabled.value" not in app, "V6.9.3: 研究菜单恒显, 不应再引用 researchMenuEnabled.value"
+    assert "toggleResearchMenu" not in app, "V6.9.3: 不应存在 toggleResearchMenu"
+    assert "{ key: 'research'" in app, "策略研究菜单应始终在 allMenuDefs 中"
+    # 页面组件不再有"功能未开启"占位
+    page = _read("js/components/research-page.js")
+    assert "!researchMenuEnabled" not in page, "research-page 不应引用研究开关占位"
 
 
 # V6.9.1-fix: 异动扫描已删除 — test_scan_subpage_no_inline_style 已废弃移除

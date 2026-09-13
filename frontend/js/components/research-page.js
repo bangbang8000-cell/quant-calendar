@@ -11,10 +11,8 @@
     template: `
                 <!-- V5.2.3: 市场复盘移入短线复盘 → 本组件在 shortterm 下也渲染该子页 (V6.9.1-fix: 异动扫描已删除) -->
                 <div v-if="currentPage === 'research' || (currentPage === 'shortterm' && currentSubPage === 'market-review')" key="research">
-                    <!-- v3.16 (16.8): 功能未开启时的统一占位 (仅策略研究菜单下生效, 短线复盘托管不受研究开关影响) -->
-                    <qc-state-panel v-if="currentPage === 'research' && !researchMenuEnabled" type="empty" icon="lock" title="研究功能未开启"
-                        desc="请在「系统配置 → 功能开关」中启用「策略研究」菜单"></qc-state-panel>
-                    <template v-else>
+                    <!-- V6.9.3 (F11.2): 策略研究菜单恒显 — 移除 researchMenuEnabled 占位分支 -->
+                    <template>
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
                         <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>

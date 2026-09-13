@@ -248,11 +248,11 @@
                         <!-- V6.1 (PRD-6.1 F3): 移除页内标题, 保留操作区 -->
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
-                                <el-select v-model="sectorType" size="small" style="width:120px" @change="loadSectorFlow">
+                                <el-select v-model="sectorType" size="small" class="w-120" @change="loadSectorFlow">
                                     <el-option label="行业资金流" value="行业资金流"></el-option>
                                     <el-option label="概念资金流" value="概念资金流"></el-option>
                                 </el-select>
-                                <el-select v-model="sectorIndicator" size="small" style="width:90px" @change="loadSectorFlow">
+                                <el-select v-model="sectorIndicator" size="small" class="w-90" @change="loadSectorFlow">
                                     <el-option label="今日" value="今日"></el-option>
                                     <el-option label="5日" value="5日"></el-option>
                                     <el-option label="10日" value="10日"></el-option>
@@ -378,7 +378,10 @@
       }
 
       // ─── V5.2.3 高效加载: 客户端 TTL 缓存 + 竞态防护 ───
+      // V6.9.3 (F8.2/H6): 缓存容量上限 50 条 + LRU 淘汰 (防长会话内存增长)
       const _cache = {};
+      const _cacheOrder = [];
+      const CACHE_MAX = 50;
       const CACHE_TTL = 60 * 1000;   // 60s 内同 URL 不重拉(切子页/回退秒开)
       let _reqSeq = 0;               // 请求序号: 旧响应丢弃, 防快速切换覆盖新数据
       // V5.2.5 (T-5.2.57): overview/review 并行加载共享 _reqSeq 会互相覆盖导致看板永远 loading → 独立序号
@@ -390,7 +393,15 @@
         const hit = _cache[url];
         if (!force && hit && now - hit.ts < CACHE_TTL) return Promise.resolve(hit.data);
         return fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); })
-          .then(function (data) { _cache[url] = { ts: Date.now(), data: data }; return data; });
+          .then(function (data) {
+            if (!_cache[url]) _cacheOrder.push(url);
+            _cache[url] = { ts: Date.now(), data: data };
+            if (_cacheOrder.length > CACHE_MAX) {
+              const oldest = _cacheOrder.shift();
+              delete _cache[oldest];
+            }
+            return data;
+          });
       }
 
       async function loadPools(force) {
@@ -869,6 +880,19 @@
         else if (sp === 'intraday') loadIntraday();
       }
 
+      // V6.9.3 (F8.1): 进入短线复盘页并行预取高频子页 — 写入 TTL 缓存, 切子页秒开; 失败静默不告警
+      function prefetchShortterm() {
+        const d = shortDate.value ? '?date=' + shortDate.value : '';
+        const urls = [
+          '/api/shortterm/overview' + d,
+          '/api/shortterm/pools' + d,
+          '/api/shortterm/lhb' + d,
+        ];
+        urls.forEach(function (u) {
+          cachedGet(u, false).catch(function () { /* 预取失败静默 */ });
+        });
+      }
+
       function refreshCurrent() {
         // 强制绕过 TTL 缓存重拉当前子页
         const sp = currentSubPage.value;
@@ -879,7 +903,7 @@
         else if (sp === 'intraday') loadIntraday(true);
       }
 
-      onMounted(function () { setSessionDates(); loadCurrent(); maybeShowShorttermTour(); });
+      onMounted(function () { setSessionDates(); loadCurrent(); prefetchShortterm(); maybeShowShorttermTour(); });
       Vue.watch(function () { return currentSubPage.value; }, function (sp) {
         loadCurrent();
         if (sp === 'overview') maybeShowShorttermTour();

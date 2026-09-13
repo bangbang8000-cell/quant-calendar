@@ -61,12 +61,18 @@ class AIModelsMixin:
             if data.get("version") == 2 or "vendors" in data:
                 vendors = [VendorConfig.from_dict(v) for v in data.get("vendors", [])]
                 if vendors:
+                    # V6.9.3 (F9): 清理 DeepSeek R1 残留 (幂等; 有改动则回写)
+                    vendors, changed = self._purge_r1(vendors)
+                    if changed:
+                        self._save_models(vendors)
+                        return vendors
                     self._models_cache = vendors
                     return vendors
             if "models" in data:
                 # legacy v1 平铺格式 → 一次性迁移到 v2（幂等: 迁移成功即写 version:2）
                 legacy = [ModelProvider.from_dict(m) for m in data.get("models", [])]
                 vendors = self._migrate_v1_to_v2(legacy)
+                vendors, _ = self._purge_r1(vendors)
                 self._save_models(vendors)
                 return vendors
         except (FileNotFoundError, json.JSONDecodeError):
@@ -75,6 +81,33 @@ class AIModelsMixin:
         vendors = self._seed_default_vendors()
         self._save_models(vendors)
         return vendors
+
+    @staticmethod
+    def _purge_r1(vendors: List[VendorConfig]):
+        """V6.9.3 (F9): 清理 DeepSeek R1 残留 — vendor_key 含 r1 或 DeepSeek 卡下模型名含 r1 均过滤。
+
+        幂等: 无残留时返回 (原列表, False); 有残留时返回清理后列表。
+        """
+        changed = False
+        out = []
+        for v in vendors:
+            key_l = (v.vendor_key or '').lower()
+            if 'r1' in key_l:
+                changed = True
+                continue
+            is_deepseek = 'deepseek' in key_l or 'deepseek' in (v.name or '').lower()
+            models = []
+            for m in v.models:
+                if is_deepseek and 'r1' in (m.name or '').lower():
+                    changed = True
+                    continue
+                models.append(m)
+            if len(models) != len(v.models):
+                changed = True
+            v.models = models
+            out.append(v)
+        return (out, changed) if changed else (vendors, False)
+
     def _save_models(self, vendors: List[VendorConfig]):
         """保存厂商模型配置 (v3.14: version 2 格式)"""
         os.makedirs(os.path.dirname(self._models_file), exist_ok=True)

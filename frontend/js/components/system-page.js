@@ -834,27 +834,10 @@
                                         </el-select>
                                     </div>
                                 </div>
-                                <div class="flex-c-gap-8-mt10-wrap">
-                                    <label class="text-base-primary-nowrap">股票池</label>
-                                    <el-select class="flex-1-min200" v-model="dataRefreshConfig.stock_pool" multiple filterable allow-create default-first-option collapse-tags @change="saveDataRefreshConfig" size="small" :disabled="!dataRefreshConfig.pull_enabled" placeholder="输入股票代码后回车, 留空=全部覆盖股票">
-                                        <el-option v-for="c in dataRefreshConfig.stock_pool" :key="c" :label="c" :value="c" />
-                                    </el-select>
-                                </div>
                                 <div class="text-sm-tertiary-mt6">
                                     拉取成功后自动刷新解析器/视图 (数据自动入库)
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- v1.9.2: 策略研究菜单开关 -->
-                    <div class="card mt-4">
-                        <div class="card-title"><qc-icon name="search-check" :size="14" /> 策略研究菜单</div>
-                        <div class="flex-between">
-                            <span class="text-base-secondary">
-                                {{ researchMenuEnabled ? '已显示策略研究菜单' : '已隐藏策略研究菜单' }}
-                            </span>
-                            <el-switch v-model="researchMenuEnabled" @change="toggleResearchMenu" size="small" />
                         </div>
                     </div>
                     <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 (V6.4: 动态页签开关已移除) -->
@@ -1340,23 +1323,15 @@
         // V6.6.1 (PRD F-6.6.8 方案A): 通知中心独立子页 — 进入即加载三 Tab 数据
         if (sub === 'notification') loadNotificationData();
       });
-      // V6.1 (PRD-6.1 F5): 外观设置 — 主题模式(明/暗/跟随系统) + 主题色色相(预设+自定义)
-      const themeHues = [45, 220, 0, 140, 270, 320];  // 金/蓝/红/绿/紫/粉
-      const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色' };
-      const themeMode = Vue.computed(() => {
-        const P = window.__quantModules && window.__quantModules.preferences;
-        return (P && P.getPreference && P.getPreference('theme')) || 'system';
-      });
-      const themeHue = Vue.ref(45);
-      (function () {
-        const P = window.__quantModules && window.__quantModules.preferences;
-        const h = (P && P.getPreference && P.getPreference('theme_hue'));
-        if (h != null && h !== '') themeHue.value = parseInt(h, 10);
-      })();
+      // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与功能配置子页一致)
+      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320];  // 金/蓝/红/绿/紫/粉
+      const themeHueNames = state.themeHueNames || {};
+      const themeMode = state.themeMode || Vue.computed(() => 'light');
+      const themeHue = state.themeHue || Vue.ref(45);
       function onThemeModeChange(mode) { if (state.changeThemeMode) state.changeThemeMode(mode); }
-      function setThemeHue(h) { themeHue.value = parseInt(h, 10); if (state.changeThemeHue) state.changeThemeHue(themeHue.value); }
-      function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
-      function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
+      function setThemeHue(h) { if (state.changeThemeHue) state.changeThemeHue(parseInt(h, 10)); }
+      function hueColor(h) { return state.hueColor ? state.hueColor(h) : 'hsl(' + h + ', 75%, 42%)'; }
+      function hueName(h) { return state.hueName ? state.hueName(h) : (themeHueNames[h] || ('自定义 ' + h)); }
       // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态即时生效 (V6.4: 页签开关已移除; state.navMode/setNavMode 经 ...state 展开)
       function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)

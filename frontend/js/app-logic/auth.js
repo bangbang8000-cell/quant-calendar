@@ -21,7 +21,7 @@
 
       // ===== v2.2: 初始化向导 =====
       const showSetupWizard = ref(false);
-      const setupForm = ref({ newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-chat', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' });
+      const setupForm = ref({ newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-v4-flash', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' });
       const setupStep = ref(1);
 
       // ===== v2.2: 初始化向导 =====
@@ -30,7 +30,7 @@
           const res = await fetch('/api/setup/status');
           const data = await res.json();
           if (data.needed) {
-            setupForm.value = { newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-chat', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' };
+            setupForm.value = { newPassword: '', aiKey: '', aiProvider: 'deepseek', aiModel: 'deepseek-v4-flash', aiEndpoint: 'https://api.deepseek.com/v1', tushareToken: '' };
             setupStep.value = 1;
             showSetupWizard.value = true;
           }

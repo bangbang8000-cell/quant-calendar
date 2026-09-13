@@ -20,6 +20,12 @@
                     <template v-if="currentSubPage !== 'pool'">
                         <!-- V6.1 (PRD-6.1 F3): 日历操作区 — 工作区内容顶部工具栏 (原 SubNav 顶部 Tab 形态迁出) -->
                         <div class="qc-page-tools">
+                            <!-- V6.9.3 (F7): 三段重排 — 视图切换器最左, 日期/刷新/导出居中, 上一/下一最右 -->
+                            <div class="flex-c-gap-6" role="tablist" aria-label="视图切换">
+                                <el-button v-for="v in ['day','week','month','year']" :key="v" size="small"
+                                    :type="currentView === v ? 'primary' : ''"
+                                    @click="switchViewLocal(v)">{{ viewLabel(v) }}</el-button>
+                            </div>
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-if="calType === 'date'" v-model="selectedDate" type="date"
                                     format="YYYY-MM-DD" value-format="YYYY-MM-DD" :placeholder="t('calendar.selectDate')"
@@ -40,12 +46,6 @@
                                     <span aria-hidden="true"><qc-icon name="download" :size="14" /></span> {{ t('common.export') }}
                                 </el-button>
                                 <span class="qc-subnav-lastload" v-if="lastLoadTime">{{ lastLoadTime }}</span>
-                                <!-- V6.6.1 (PRD F-6.6.7): 页内视图切换器 — 日/周/月/年 (替代原 4 个二级菜单) -->
-                                <div class="flex-c-gap-6" role="tablist" aria-label="视图切换">
-                                    <el-button v-for="v in ['day','week','month','year']" :key="v" size="small"
-                                        :type="currentView === v ? 'primary' : ''"
-                                        @click="switchViewLocal(v)">{{ viewLabel(v) }}</el-button>
-                                </div>
                             </div>
                             <div class="flex-c-gap-12">
                                 <el-button size="small" @click="navigateDate(-1)" :disabled="!canNavPrev">« {{ t('calendar.prev') }}{{ viewUnit }}</el-button>
@@ -77,28 +77,26 @@
                             <qc-state-panel v-else-if="stockPool.length === 0" type="empty" :title="t('common.empty')"></qc-state-panel>
                             
                             <div v-else class="stock-list">
-                                <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
-                                <qc-virtual-list class="h-calc-250" :items="stockPool" :row-height="78">
-                                    <template #default="{ item, index }">
-                                    <!-- V6.2 F5: 行样式对齐 qc-stock-row, 保留虚拟滚动 -->
-                                    <div class="qc-stock-row mb-0" :data-copy-code="item.code" @click="showStockDetail(item.code)" tabindex="0" role="button" :aria-label="t('common.view') + ' ' + item.name + ' ' + item.code" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                        <div class="qc-stock-rank">{{ index + 1 }}</div>
-                                        <div class="qc-stock-info">
-                                            <div class="qc-stock-code">
-                                                <span class="qc-stock-code-num">{{ item.code }}</span>
-                                                <span v-if="item.status === 'new'" class="qc-stock-status is-new">{{ t('calendar.newPool') }}</span>
-                                                <span v-else-if="item.status === 'out'" class="qc-stock-status is-out">{{ t('calendar.outPool') }}</span>
-                                            </div>
-                                            <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span></div>
-                                        </div>
-                                        <div class="qc-stock-tags">
-                                            <span v-for="s in (item.strategy_names || item.strategies).slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
-                                        </div>
-                                        <!-- v3.7.11: AI入池信号解读（固定行高内单行省略, V6.2: 整行占位） -->
-                                        <div class="cal-subtitle-ellipsis" v-if="poolSignals[item.code]"><qc-icon name="bot" :size="14" /> {{ poolSignals[item.code] }}</div>
-                                    </div>
-                                    </template>
-                                </qc-virtual-list>
+                                <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + name-suffix 图标 + footer 信号行) -->
+                                <qc-stock-list
+                                  class="h-calc-250"
+                                  :items="stockPool"
+                                  :virtual="true"
+                                  :row-height="78"
+                                  :copy-code="true"
+                                  show-rank
+                                  @select="(item) => showStockDetail(item.code)"
+                                >
+                                  <template #name-suffix="{ item }">
+                                    <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                                    <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span>
+                                    <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span>
+                                  </template>
+                                  <!-- v3.7.11: AI入池信号解读（整行占位, V6.9.3 经 footer 插槽渲染） -->
+                                  <template #footer="{ item }">
+                                    <span v-if="poolSignals[item.code]"><qc-icon name="bot" :size="14" /> {{ poolSignals[item.code] }}</span>
+                                  </template>
+                                </qc-stock-list>
                             </div>
                         </div>
                     </template>

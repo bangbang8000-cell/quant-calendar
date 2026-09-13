@@ -3,7 +3,7 @@
 // 工厂模式：window.__quantModules.system.create(deps) → 该域全部状态与函数。
 // deps（共享依赖，均为 ref/函数，由 app-logic 传入）:
 //   configChanged aiConfig aiLoading feishuConfig currentTheme changeTheme autoEvaluateConfig
-//   researchMenuEnabled currentUser strategyFilter applyTheme
+//   currentUser strategyFilter applyTheme
 //   dashboardData lastRefreshTime saveAiModels
 (function () {
   if (!window.__quantModules) window.__quantModules = {};
@@ -12,7 +12,7 @@
     create(deps) {
       const { ref, computed, watch } = Vue;
       const { configChanged, aiConfig, aiLoading, feishuConfig, currentTheme, changeTheme, autoEvaluateConfig,
-              researchMenuEnabled, currentUser, strategyFilter, applyTheme,
+              currentUser, strategyFilter, applyTheme,
               dashboardData, lastRefreshTime, saveAiModels } = deps;
 
 const configSaving = ref(false);
@@ -191,8 +191,7 @@ async function saveAllConfig() {
                 ai: aiConfig.value,
                 rate_limit: rateLimitConfig.value,
                 auto_evaluate: autoEvaluateConfig.value,
-                theme: currentTheme.value,
-                research_menu_enabled: researchMenuEnabled.value
+                theme: currentTheme.value
             }})
         }).then(r => ['userConfig', r.ok]),
         fetch('/api/market/tushare/config', {
@@ -262,7 +261,6 @@ async function resetAllConfig() {
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
             // Only apply config theme if user hasn't manually selected one
             if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
-            if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
         }
         globalConfigDirty.value = false;
         rateLimitDirty.value = false;
@@ -460,6 +458,11 @@ async function saveDatasourceConfig() {
 async function testDatasource(source) {
     datasourceStatus.value[source] = 'testing';
     try {
+        // V6.9.3 (F10.2): 解锁编辑态先保存再测试 — 保证测试即所输 token
+        const cfg = datasourceConfig.value[source];
+        if (cfg && cfg._editing) {
+            await saveDatasourceConfig();
+        }
         const res = await fetch(`/api/market/datasource/test/${source}`, { method: 'POST' });
         const data = await res.json();
         datasourceStatus.value[source] = data.success ? 'connected' : 'disconnected';
@@ -521,7 +524,6 @@ async function loadUserConfig() {
             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
             if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
-            if (c.research_menu_enabled !== undefined) { researchMenuEnabled.value = c.research_menu_enabled; localStorage.setItem('research_menu_enabled', c.research_menu_enabled ? '1' : '0'); }
         }
     } catch (e) {
         console.warn('加载用户配置失败，使用本地缓存', e);

@@ -57,4 +57,6 @@ def test_stocklist_registered():
     strategies = _read("js/components/strategies-page.js")
     assert "qc-stock-list" in strategies, "策略总览应使用 StockList"
     calendar = _read("js/components/calendar-page.js")
-    assert "qc-stock-row" in calendar, "日历股票池行应对齐 qc-stock-row"
+    assert "qc-stock-list" in calendar, "日历股票池应使用 StockList 组件"
+    stocklist = _read("src/components/common/StockList.vue")
+    assert "qc-stock-row" in stocklist, "StockList 行应对齐 qc-stock-row"

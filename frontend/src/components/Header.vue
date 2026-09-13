@@ -83,6 +83,52 @@ export default {
       set: (v) => { if (state.searchQuery) state.searchQuery.value = v },
     })
     // V6.1 (PRD-6.1 F5): 明/暗模式快捷切换 (保留当前主题色)
+    // V6.9.3 (F4): 通知铃铛面板 — 最近投递历史
+    const openBellMenu = ref(false)
+    const notifItems = ref([])
+    const notifLoading = ref(false)
+    const notifError = ref(false)
+    function authHeaders() {
+      const t = localStorage.getItem('quant_token') || ''
+      return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }
+               : { 'Content-Type': 'application/json' }
+    }
+    async function loadNotifications() {
+      notifLoading.value = true
+      notifError.value = false
+      try {
+        const res = await fetch('/api/alerts/history?limit=8', { headers: authHeaders() })
+        const data = await res.json()
+        if (data && data.success) notifItems.value = data.history || []
+        else notifItems.value = []
+      } catch (e) {
+        notifError.value = true
+        notifItems.value = []
+      } finally {
+        notifLoading.value = false
+      }
+    }
+    function toggleBell() {
+      openBellMenu.value = !openBellMenu.value
+      if (openBellMenu.value) loadNotifications()
+    }
+    function closeBell() { openBellMenu.value = false }
+    function goNotificationCenter() {
+      openBellMenu.value = false
+      if (state.activateTab) state.activateTab('system', 'notification')
+    }
+    // V6.9.3 (F6): 主题按钮 → 主题面板 (模式 + 6 色板 + 自定义 slider)
+    const openThemeMenu = ref(false)
+    const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320]
+    const themeHue = computed(() => (state.themeHue && state.themeHue.value) || 45)
+    const themeMode = computed(() => (state.themeMode && state.themeMode.value) || 'system')
+    function hueColor(h) { return state.hueColor ? state.hueColor(h) : 'hsl(' + h + ', 75%, 42%)' }
+    function hueName(h) { return state.hueName ? state.hueName(h) : (String(h)) }
+    function toggleThemeMenu() { openThemeMenu.value = !openThemeMenu.value }
+    function closeThemeMenu() { openThemeMenu.value = false }
+    function pickThemeMode(m) { if (state.changeThemeMode) state.changeThemeMode(m) }
+    function pickThemeHue(h) { if (state.changeThemeHue) state.changeThemeHue(h) }
+    // 兼容旧引用 (旧亮暗快捷切换保留语义: 切换模式)
     function toggleThemeQuick() {
       if (!state.changeThemeMode) return
       state.changeThemeMode(isDark.value ? 'light' : 'dark')
@@ -106,6 +152,11 @@ export default {
     return {
       state, showUserMenu, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
+      // V6.9.3 (F4): 通知铃铛面板
+      openBellMenu, notifItems, notifLoading, notifError, toggleBell, closeBell, goNotificationCenter,
+      // V6.9.3 (F6): 主题面板
+      openThemeMenu, themeHues, themeHue, themeMode, hueColor, hueName,
+      toggleThemeMenu, closeThemeMenu, pickThemeMode, pickThemeHue,
       // V6.7.1 (PRD F-6.7.1): 导航形态快速切换
       openNavModeMenu, NAV_MODES, navModeLabel, toggleNavModeMenu, closeNavModeMenu, pickNavMode,
       // V6.2 (PRD-6.2 F6): 移动端二级下拉
@@ -182,12 +233,48 @@ export default {
     </div>
 
     <div class="qc-header-right">
-      <button class="qc-icon-btn qc-has-dot" aria-label="通知">
-        <AppIcon name="bell" :size="20" />
-      </button>
-      <button class="qc-icon-btn" :aria-label="isDark ? '切换亮色主题' : '切换暗色主题'" :title="isDark ? '切换亮色主题' : '切换暗色主题'" @click="toggleThemeQuick">
-        <AppIcon :name="isDark ? 'sun' : 'moon'" :size="20" />
-      </button>
+      <!-- V6.9.3 (F4): 通知铃铛 → 面板 (最近投递历史) -->
+      <div class="qc-hdr-pop" v-click-outside="closeBell">
+        <button class="qc-icon-btn qc-has-dot" aria-label="通知" :aria-expanded="openBellMenu" @click="toggleBell">
+          <AppIcon name="bell" :size="20" />
+        </button>
+        <div v-if="openBellMenu" class="qc-header-popover qc-bell-panel" role="dialog" aria-label="通知面板">
+          <div class="qc-bell-header">通知</div>
+          <div v-if="notifLoading" class="qc-bell-state">加载中...</div>
+          <div v-else-if="notifError" class="qc-bell-state">加载失败</div>
+          <div v-else-if="!notifItems.length" class="qc-bell-state">暂无通知</div>
+          <div v-else class="qc-bell-list">
+            <div v-for="(n, i) in notifItems" :key="n.id || i" class="qc-bell-item" :class="{ 'is-fail': n.ok === 0 }">
+              <div class="qc-bell-item-title">{{ n.title || n.event_type || '事件' }}</div>
+              <div class="qc-bell-item-meta">{{ n.channel || '' }}<span v-if="n.recipient"> · {{ n.recipient }}</span><span class="qc-bell-item-time">{{ n.created_at || '' }}</span></div>
+            </div>
+          </div>
+          <button class="qc-bell-footer" @click="goNotificationCenter">前往通知中心 →</button>
+        </div>
+      </div>
+      <!-- V6.9.3 (F6): 主题按钮 → 主题面板 (外观模式 + 色板 + 自定义) -->
+      <div class="qc-hdr-pop" v-click-outside="closeThemeMenu">
+        <button class="qc-icon-btn" aria-label="主题设置" title="主题设置" :aria-expanded="openThemeMenu" @click="toggleThemeMenu">
+          <AppIcon name="palette" :size="20" />
+        </button>
+        <div v-if="openThemeMenu" class="qc-header-popover qc-theme-panel" role="dialog" aria-label="主题面板">
+          <div class="qc-theme-section-label">外观模式</div>
+          <div class="qc-theme-modes">
+            <button v-for="m in [{k:'light',n:'浅色'},{k:'dark',n:'深色'},{k:'system',n:'跟随'}]" :key="m.k"
+              class="qc-theme-mode" :class="{ 'is-active': themeMode === m.k }" @click="pickThemeMode(m.k)">{{ m.n }}</button>
+          </div>
+          <div class="qc-theme-section-label">主题色</div>
+          <div class="qc-theme-swatches">
+            <button v-for="h in themeHues" :key="h" class="qc-theme-swatch" :class="{ 'is-active': themeHue === h }"
+              :style="{ background: hueColor(h) }" :title="hueName(h)" :aria-label="hueName(h)" @click="pickThemeHue(h)">
+              <span v-if="themeHue === h" class="qc-theme-swatch-check">✓</span>
+            </button>
+          </div>
+          <el-slider class="qc-theme-slider" :model-value="themeHue" :min="0" :max="359" :step="1" size="small"
+            @change="pickThemeHue" aria-label="自定义主题色相" />
+          <div class="qc-theme-custom-label">自定义 {{ themeHue }}°</div>
+        </div>
+      </div>
       <!-- V6.7.1 (PRD F-6.7.1): 导航形态快速切换 (桌面) -->
       <div v-if="!isMobile" class="qc-navmode-switch" v-click-outside="closeNavModeMenu">
         <button class="qc-icon-btn" :aria-label="'切换导航形态: ' + navModeLabel" :title="'导航形态: ' + navModeLabel" :aria-expanded="openNavModeMenu" @click="toggleNavModeMenu">

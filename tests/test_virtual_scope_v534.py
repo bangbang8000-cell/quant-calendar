@@ -22,7 +22,9 @@ def test_virtual_list_covers_high_volume_lists():
     assert "qc-virtual-list" in ai, "ai-page 应使用虚拟滚动"
     assert ai.count("qc-virtual-list") >= 3, "评估历史/会话/自选均应有虚拟滚动实例"
     cal = _read("js/components/calendar-page.js")
-    assert "qc-virtual-list" in cal, "日历股票池应使用虚拟滚动"
+    assert "qc-stock-list" in cal and ':virtual="true"' in cal, "日历股票池应经 StockList 虚拟滚动"
+    stocklist = _read("src/components/common/StockList.vue")
+    assert "qc-virtual-list" in stocklist, "StockList 组件应含虚拟滚动实现"
 
 
 def test_long_tables_paginate():

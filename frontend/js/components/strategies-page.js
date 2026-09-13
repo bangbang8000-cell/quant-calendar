@@ -169,14 +169,15 @@
                             <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
+                        <!-- V6.9.3 (F1): 启用共识徽章/进度条/价格列, 移除冗余「N 策略」extra -->
                         <qc-stock-list
                           :items="filteredConsensusRank.slice(0, 5)"
                           empty-text="暂无共识数据"
+                          show-rank
+                          show-consensus
+                          show-price
                           @select="(item) => showStockDetail(item.code)"
                         >
-                          <template #extra="{ item }">
-                            <span class="qc-stock-tag">{{ item.strategy_count }} 策略</span>
-                          </template>
                           <template #actions="{ item }">
                             <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
                             <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
@@ -440,22 +441,24 @@
                     <!-- 策略共识度排行 -->
                     <div class="card">
                         <div class="card-title"><qc-icon name="trophy" :size="14" /> 策略共识度排行 (多策略同时选中)</div>
-                        <!-- v3.11 (FR-3.11.3): 虚拟滚动，仅渲染可视区行 -->
-                        <qc-virtual-list class="h-calc-240" :items="filteredConsensusRank" :row-height="78">
-                            <template #default="{ item, index }">
-                            <!-- V6.2 F5: 行样式对齐 qc-stock-row, 保留虚拟滚动 -->
-                            <div class="qc-stock-row mb-0" @click="showStockDetail(item.code)">
-                                <div class="qc-stock-rank">{{ item.strategy_count || index + 1 }}</div>
-                                <div class="qc-stock-info">
-                                    <div class="qc-stock-code"><span class="qc-stock-code-num">{{ item.code }}</span></div>
-                                    <div class="qc-stock-name">{{ item.name }} <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span><span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span><span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span></div>
-                                </div>
-                                <div class="qc-stock-tags">
-                                    <span v-for="s in item.strategy_names.slice(0, 2)" :key="s" class="qc-stock-tag">{{ s }}</span>
-                                </div>
-                            </div>
-                            </template>
-                        </qc-virtual-list>
+                        <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + 共识徽章/进度条/价格列) -->
+                        <qc-stock-list
+                          class="h-calc-240"
+                          :items="filteredConsensusRank"
+                          :virtual="true"
+                          :row-height="78"
+                          empty-text="暂无共识数据"
+                          show-rank
+                          show-consensus
+                          show-price
+                          @select="(item) => showStockDetail(item.code)"
+                        >
+                          <template #actions="{ item }">
+                            <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
+                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
+                            <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span>
+                          </template>
+                        </qc-stock-list>
                     </div>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->

@@ -400,6 +400,20 @@ class DataParser:
         """获取指定日期的策略共识度分析 (V4.9.3: 支持前向填充日期)"""
         stock_counts = defaultdict(list)
 
+        # V6.9.3 (F1.3): join 行情缓存补价格/涨跌幅 — 探测该日及最近 2 个自然日
+        market_rows = {}
+        try:
+            from market_cache import get_market_daily
+            d = datetime.strptime(date, '%Y-%m-%d')
+            for offset in range(3):
+                probe = (d - timedelta(days=offset)).strftime('%Y-%m-%d')
+                m = get_market_daily(probe)
+                if m:
+                    market_rows = m
+                    break
+        except Exception:
+            market_rows = {}
+
         for strategy_id in STRATEGY_CONFIG.keys():
             src = self._resolve_holdings_date(strategy_id, date)
             if src is None:
@@ -409,14 +423,20 @@ class DataParser:
 
         consensus = []
         for stock, strategies in stock_counts.items():
-            consensus.append({
+            item = {
                 'stock': stock,
                 'name': stock_manager.get_name(stock),
                 'strategy_count': len(strategies),
                 'strategies': strategies,
                 'strategy_names': [STRATEGY_CONFIG.get(s, {}).get('name', s) for s in strategies],  # V6.9.1-fix: 补中文名映射, 避免前端/AI 展示英文 key
                 'consensus_level': len(strategies) / len(STRATEGY_CONFIG)
-            })
+            }
+            # V6.9.3 (F1.3): 有行情缓存时补价格/涨跌幅 (无则优雅降级, 前端隐藏)
+            row = market_rows.get(stock) or {}
+            if row.get('close') is not None:
+                item['price'] = row.get('close')
+                item['change_pct'] = row.get('pct_chg')
+            consensus.append(item)
 
         return sorted(consensus, key=lambda x: -x['strategy_count'])
 

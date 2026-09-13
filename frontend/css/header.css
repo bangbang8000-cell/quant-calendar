@@ -136,7 +136,7 @@
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* V6.9.3: 右对齐 — 搜索框贴近右侧铃铛 */
   gap: var(--qc-space-2);
   /* V6.2 (PRD-6.2 F3): 增宽居中 */
   max-width: 640px;
@@ -266,8 +266,138 @@
   gap: var(--qc-space-3);
 }
 
+/* 导航形态快捷切换 (V6.7.1) */
+.qc-navmode-switch { position: relative; display: inline-flex; }
+.qc-navmode-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qc-space-2);
+}
+.qc-navmode-item-desc {
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-muted-foreground);
+  margin-top: 2px;
+}
+
+/* V6.9.3 (F4/F6): 铃铛/主题按钮容器 */
+.qc-hdr-pop { position: relative; display: inline-flex; }
+
+/* ─── 通知铃铛面板 ─── */
+.qc-bell-header {
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--qc-foreground);
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-bottom: 1px solid var(--qc-border);
+  margin-bottom: var(--qc-space-1);
+}
+.qc-bell-state {
+  padding: var(--qc-space-6) var(--qc-space-4);
+  text-align: center;
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+}
+.qc-bell-list { max-height: 320px; overflow-y: auto; }
+.qc-bell-item {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-radius: var(--qc-radius-medium);
+}
+.qc-bell-item:hover { background: var(--qc-muted); }
+.qc-bell-item-title {
+  font-size: var(--qc-font-size-base);
+  color: var(--qc-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qc-bell-item-meta {
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-muted-foreground);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qc-bell-item-time { margin-left: var(--qc-space-2); }
+.qc-bell-item.is-fail .qc-bell-item-title { color: var(--qc-state-error); }
+.qc-bell-footer {
+  display: block;
+  width: 100%;
+  margin-top: var(--qc-space-1);
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border: none;
+  border-top: 1px solid var(--qc-border);
+  background: transparent;
+  color: var(--qc-primary-700);
+  font-size: var(--qc-font-size-sm);
+  text-align: center;
+  cursor: pointer;
+}
+.qc-bell-footer:hover { color: var(--qc-primary); background: var(--qc-muted); }
+
+/* ─── 主题面板 ─── */
+.qc-theme-panel { min-width: 260px; }
+.qc-theme-section-label {
+  font-size: var(--qc-font-size-xs);
+  font-weight: var(--qc-font-weight-medium);
+  color: var(--qc-muted-foreground);
+  margin: var(--qc-space-2) var(--qc-space-3) var(--qc-space-1);
+}
+.qc-theme-modes { display: flex; gap: var(--qc-space-1); padding: 0 var(--qc-space-3); }
+.qc-theme-mode {
+  flex: 1;
+  padding: 4px 0;
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-small);
+  background: transparent;
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-sm);
+  cursor: pointer;
+}
+.qc-theme-mode.is-active {
+  border-color: var(--qc-primary);
+  color: var(--qc-primary-700);
+  background: var(--qc-primary-50);
+  font-weight: var(--qc-font-weight-medium);
+}
+.qc-theme-swatches { display: flex; gap: var(--qc-space-2); padding: var(--qc-space-1) var(--qc-space-3) var(--qc-space-2); }
+.qc-theme-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.qc-theme-swatch.is-active { border-color: var(--qc-foreground); box-shadow: 0 0 0 2px var(--qc-card); }
+.qc-theme-swatch-check { color: var(--qc-neutral-0); font-size: var(--qc-font-size-sm); font-weight: var(--qc-font-weight-bold); }
+.qc-theme-slider { margin: 0 var(--qc-space-3); }
+.qc-theme-custom-label {
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-muted-foreground);
+  text-align: center;
+  padding: var(--qc-space-1) 0 var(--qc-space-2);
+}
+
 /* 用户菜单 */
 .qc-user-menu { position: relative; }
+/* V6.9.3: 顶部栏通用浮层面板 (铃铛/主题/导航形态共用) — 基于 .qc-user-dropdown 观感提炼 */
+.qc-header-popover,
+.qc-navmode-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  min-width: 240px;
+  background: var(--qc-popover);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  box-shadow: var(--qc-shadow-lg);
+  padding: var(--qc-space-2);
+}
 .qc-user-avatar {
   width: 32px;
   height: 32px;

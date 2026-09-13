@@ -126,6 +126,21 @@
 }
 .el-select .el-select__wrapper { box-shadow: 0 0 0 1px var(--qc-input) inset; }
 .el-select .el-select__wrapper.is-focused { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
+/* V6.9.3 (F2): el-select 长选项不换行 + 内容省略 + 防 flex 拉伸 */
+.el-select__wrapper { flex-wrap: nowrap !important; }
+.el-select__selected-item,
+.el-select__selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qc-page-tools .el-select,
+.qc-page-tools .el-date-editor,
+.flex-c-gap-12 .el-select,
+.flex-c-gap-6 .el-select,
+.flex-c-gap-12 .el-date-editor,
+.flex-c-gap-6 .el-date-editor { flex: 0 0 auto; min-width: 0; }
+/* V6.9.3 (F2.3): 统一窄宽语义类 (替代散落 w-90/w-110/w-120/w-180) */
+.w-select { width: 140px; }
+.w-select-sm { width: 110px; }
+.w-select-xs { width: 90px; }
+.w-select-lg { width: 180px; }
 .el-textarea__inner { box-shadow: 0 0 0 1px var(--qc-input) inset; }
 .el-textarea__inner:focus { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
 .el-form-item__label { font-size: 13px; color: var(--qc-muted-foreground); }
@@ -251,7 +266,8 @@
 }
 .qc-stock-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  /* V6.9.3 (F1): 扩容列 — rank/info/tags/badge/data/extra/actions */
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
   align-items: center;
   gap: var(--qc-space-3);
   padding: var(--qc-space-3) var(--qc-space-4);
@@ -302,6 +318,60 @@
   background: var(--qc-muted);
   color: var(--qc-muted-foreground);
 }
+.qc-stock-tag.is-more { background: var(--qc-primary-100); color: var(--qc-primary-800); font-weight: var(--qc-font-weight-medium); }
+/* V6.9.3 (F1): 共识度徽章 + 迷你进度条 + 价格列 */
+.qc-stock-badge {
+  font-size: var(--qc-font-size-xs);
+  font-weight: var(--qc-font-weight-semibold);
+  padding: 2px 10px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-primary-100);
+  color: var(--qc-primary-800);
+  white-space: nowrap;
+}
+.qc-stock-consensus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.qc-stock-consensus-bar {
+  width: 64px;
+  height: 4px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-muted);
+  overflow: hidden;
+}
+.qc-stock-consensus-fill {
+  height: 100%;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-primary);
+  transition: width 0.3s;
+}
+.qc-stock-consensus-pct {
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-muted-foreground);
+}
+.qc-stock-data {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+.qc-stock-price {
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--qc-foreground);
+}
+.qc-stock-change {
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-xs);
+}
+.qc-stock-change.is-up { color: var(--color-up, var(--qc-state-error)); }
+.qc-stock-change.is-down { color: var(--color-down, var(--qc-state-success)); }
 /* V6.2 (PRD-6.2 F5): 股票状态徽标 (新增/调出) */
 .qc-stock-code-num { font-family: var(--qc-font-mono); }
 .qc-stock-status {

@@ -205,25 +205,51 @@ class DataSourceManager:
         self._init_clients()
 
     def test_connection(self, source_name):
-        """测试指定数据源连接"""
+        """测试指定数据源连接
+
+        V6.9.3 (F10): sxsc 客户端缺失时即时重建 (不依赖启动态); 测试用独立 timeout=10s;
+        错误分类提示 (未初始化/网络超时/token 无效)。
+        """
         sources = self.config.get('sources', {})
         cfg = sources.get(source_name, {})
 
         if not cfg.get('enabled', True):
             return {"success": False, "message": f"数据源 {source_name} 已禁用"}
 
-        if source_name not in self._clients:
-            return {"success": False, "message": f"数据源 {source_name} 未初始化"}
-
         _t0 = time.monotonic()
-        try:
-            if source_name == 'sxsc_tushare':
-                api = self._clients['sxsc_tushare']
+
+        # sxsc: 客户端缺失或超时配置 < 10s 时, 用 .env/配置 token 即时重建专用测试客户端
+        if source_name == 'sxsc_tushare':
+            token = cfg.get('token', '')
+            if not self._is_valid_token(token):
+                try:
+                    from config import settings
+                    token = getattr(settings, 'SXSC_TUSHARE_TOKEN', '')
+                except Exception:
+                    token = ''
+            if not token:
+                return {"success": False, "message": "❌ 未配置 Token (环境变量 SXSC_TUSHARE_TOKEN 或配置页填写)"}
+            try:
+                from sxsc_tushare import get_api
+                api = get_api(token, timeout=10, env='prd')
                 df = api.query('index_daily', ts_code='000001.SH', limit=1)
                 record_call(source_name, True, (time.monotonic() - _t0) * 1000)
                 return {"success": True, "message": f"✅ 连接成功，返回 {len(df)} 条数据"}
+            except Exception as e:
+                err = str(e)[:200]
+                record_call(source_name, False, (time.monotonic() - _t0) * 1000)
+                low = err.lower()
+                if 'timeout' in low or 'timed out' in low or 'connect' in low:
+                    return {"success": False, "message": f"❌ 网络超时: {err}"}
+                if 'token' in low or 'auth' in low or 'code' in low and 'msg' in low:
+                    return {"success": False, "message": f"❌ Token 无效或未授权: {err}"}
+                return {"success": False, "message": f"❌ 连接失败: {err}"}
 
-            elif source_name == 'tushare':
+        if source_name not in self._clients:
+            return {"success": False, "message": f"数据源 {source_name} 未初始化"}
+
+        try:
+            if source_name == 'tushare':
                 pro = self._clients['tushare']
                 df = pro.trade_cal(start_date='20240101', end_date='20240105')
                 record_call(source_name, True, (time.monotonic() - _t0) * 1000)
