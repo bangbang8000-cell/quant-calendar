@@ -128,7 +128,7 @@ async def lifespan(app: FastAPI):
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
 # V6.3 (PRD-6.3): 保留本地版本号 6.3.0 — 导航形态配置化(subnav/tree/toptab) + 顶部栏容器化 + 页签圆角矩形化 + 评估分析命名修复
-APP_VERSION = "6.9.4"  # V6.9.4: 下拉基础样式(EP CSS 对齐) + 主题模式高亮 + 深色输入框 + 策略研究可诊断 + 导航面板精简
+APP_VERSION = "6.9.5"  # V6.9.5: 用户菜单/修改密码/退出登录修复 + 一二级菜单去加粗 + 深色K线tab文字色 + EP消息服务挂载
 
 # 创建 FastAPI 应用
 # v3.17.15 (FR-3.17.15): Swagger 开关 — OPENAPI_ENABLED=false 时 /docs /redoc /openapi.json 一律 404

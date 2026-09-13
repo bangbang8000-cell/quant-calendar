@@ -1308,6 +1308,8 @@
             border: 1px solid var(--border-light);
             border-radius: var(--qc-radius-xl);
             background: var(--bg-input);
+            /* V6.9.5 (FIX): button 默认黑字在深色弹窗不可见 — 显式令牌色 (深色主题下为浅色文字) */
+            color: var(--text-primary);
             font-size: var(--qc-font-size-base);
             cursor: pointer;
             transition: all 0.2s ease;
@@ -3919,7 +3921,7 @@ text {
     transition: all 0.2s ease-out;
     color: var(--text-secondary);
     font-size: var(--qc-font-size-base);
-    font-weight: var(--font-medium);
+    font-weight: var(--font-normal);
     white-space: nowrap;
     user-select: none;
 }

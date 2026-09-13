@@ -55,7 +55,7 @@
 .qc-nav-group-label {
   display: block;
   font-size: var(--qc-font-size-xs);
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   color: var(--qc-nav-group-label);
   letter-spacing: 0.02em;
   padding: var(--qc-space-5) var(--qc-space-3) var(--qc-space-2);
@@ -82,7 +82,7 @@
   gap: var(--qc-space-3);
   color: var(--qc-nav-item-default);
   font-size: 14px;
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   text-decoration: none;
 }
 /* 内部导航链接 (桌面一级) */
@@ -96,7 +96,7 @@
   padding: 0 var(--qc-space-3);
   color: var(--qc-nav-item-default);
   font-size: 15px;
-  font-weight: var(--qc-font-weight-semibold);
+  font-weight: var(--qc-font-weight-normal);
   text-decoration: none;
   letter-spacing: 0.01em;
 }
@@ -273,7 +273,7 @@
   padding: 0 var(--qc-space-4);
   color: var(--qc-nav-item-default);
   font-size: 15px;
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   cursor: pointer;
   /* V6.0.1 (A1): 重置 button 默认底/边框, 消除浅灰底 */
   background: transparent;
@@ -286,7 +286,7 @@
 .qc-subnav-tab.is-active {
   color: var(--qc-nav-item-active);
   border-bottom-color: var(--qc-nav-item-active-border);
-  font-weight: var(--qc-font-weight-semibold);
+  font-weight: var(--qc-font-weight-normal);
 }
 .qc-subnav-tab:focus-visible {
   outline: 2px solid var(--qc-ring);
@@ -320,7 +320,7 @@
 }
 .qc-subnav-group-label {
   font-size: var(--qc-font-size-xs);
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   color: var(--qc-nav-group-label);
   padding: var(--qc-space-3) var(--qc-space-3) var(--qc-space-2);
   user-select: none;
@@ -350,7 +350,7 @@
 .qc-subnav-item.is-active {
   background: var(--qc-nav-item-active-bg);
   color: var(--qc-nav-item-active);
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
 }
 .qc-subnav-item.is-level-3 {
   padding-left: 28px;
@@ -385,7 +385,7 @@
   gap: 3px;
   color: var(--qc-nav-item-default);
   font-size: var(--qc-font-size-xs);
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   cursor: pointer;
   border: none;
   background: transparent;

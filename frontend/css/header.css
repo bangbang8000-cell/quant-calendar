@@ -193,7 +193,7 @@
   background: transparent;
   color: var(--qc-nav-item-default);
   font-size: 15px;
-  font-weight: var(--qc-font-weight-medium);
+  font-weight: var(--qc-font-weight-normal);
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
@@ -207,7 +207,7 @@
   background: var(--qc-muted);
   border-color: var(--qc-border);
   color: var(--qc-nav-item-active);
-  font-weight: var(--qc-font-weight-semibold);
+  font-weight: var(--qc-font-weight-normal);
 }
 .qc-top-tabs .qc-top-tab:focus-visible {
   outline: 2px solid var(--qc-ring);

@@ -13,6 +13,9 @@ export default {
     const state = inject('qcState')
     if (!state) return {}
     const showUserMenu = ref(false)
+    // V6.9.5 (FIX): qcState 为 ref 容器, 模板内 state.currentUser.role 无法自动解包 —
+    // 统一经 computed 解包, 否则头像/角色判断(admin 向导项)全部失效
+    const currentUser = computed(() => (state.currentUser && state.currentUser.value) || null)
     // V6.3 (PRD-6.3 F4): 导航形态 (动态页签 V6.4 已移除, 面包屑仅 tree 形态展示)
     const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
     // V6.7.1 (PRD F-6.7.9 / OBS-4): toptab 形态无子页时 Header 左区兜底显示当前页名
@@ -150,7 +153,7 @@ export default {
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
     return {
-      state, showUserMenu, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
+      state, showUserMenu, currentUser, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
       // V6.9.3 (F4): 通知铃铛面板
       openBellMenu, notifItems, notifLoading, notifError, toggleBell, closeBell, goNotificationCenter,
@@ -294,26 +297,26 @@ export default {
         </div>
       </div>
       <div class="qc-user-menu" v-click-outside="closeUserMenu">
-        <button class="qc-user-avatar" :aria-label="'用户菜单 ' + (state.currentUser?.username || '')" aria-haspopup="menu" :aria-expanded="showUserMenu" @click="openUserMenu">
-          {{ (state.currentUser?.username || 'A').charAt(0).toUpperCase() }}
+        <button class="qc-user-avatar" :aria-label="'用户菜单 ' + (currentUser?.username || '')" aria-haspopup="menu" :aria-expanded="showUserMenu" @click="openUserMenu">
+          {{ (currentUser?.username || 'A').charAt(0).toUpperCase() }}
         </button>
         <div v-if="showUserMenu" class="qc-user-dropdown" role="menu">
           <div class="qc-user-dropdown-header">
-            <span class="qc-user-dropdown-name">{{ state.currentUser?.username }}</span>
-            <span v-if="state.currentUser?.role === 'guest'" class="qc-user-dropdown-chip">访客</span>
+            <span class="qc-user-dropdown-name">{{ currentUser?.username }}</span>
+            <span v-if="currentUser?.role === 'guest'" class="qc-user-dropdown-chip">访客</span>
           </div>
           <div
-            v-if="state.currentUser?.role === 'admin'"
+            v-if="currentUser?.role === 'admin'"
             class="qc-user-dropdown-item" role="menuitem" tabindex="0"
-            @click="menuItem(state.resetSetupWizard)" @keydown.enter.prevent="menuItem(state.resetSetupWizard)()"
+            @click="menuItem(state.resetSetupWizard)()" @keydown.enter.prevent="menuItem(state.resetSetupWizard)()"
           >
             <AppIcon name="settings" :size="16" /> 重新运行初始化向导
           </div>
           <div
-            v-if="state.currentUser?.role !== 'guest'"
+            v-if="currentUser?.role !== 'guest'"
             class="qc-user-dropdown-item" role="menuitem" tabindex="0"
-            @click="menuItem(() => { state.showChangePassword = true })"
-            @keydown.enter.prevent="menuItem(() => { state.showChangePassword = true })()"
+            @click="menuItem(() => { if (state.showChangePassword) state.showChangePassword.value = true })()"
+            @keydown.enter.prevent="menuItem(() => { if (state.showChangePassword) state.showChangePassword.value = true })()"
           >
             <AppIcon name="lock" :size="16" /> 修改密码
           </div>
