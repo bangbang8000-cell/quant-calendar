@@ -65,7 +65,7 @@
     // V6.3 (PRD-6.3 F4): UI & navigation (V6.4: dynamic tabs removed)
     'navMode.subnav': 'Sidebar + sub-nav column',
     'navMode.tree': 'Tree in sidebar',
-    'navMode.toptab': 'Top secondary tabs',
+    'navMode.toptab': 'Top secondary tabs (default)',
     // 视图
     'view.day': 'Daily',
     'view.week': 'Weekly',

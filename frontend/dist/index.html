@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-title" content="量化日历">
     <!-- theme-color meta 需字面量色值（浏览器不解析 CSS 变量），与 manifest 品牌色一致 -->
     <meta name="theme-color" content="#667eea"><!-- qc-allow-hardcode -->
-    <link rel="manifest" href="/assets/manifest-DnF-hPJe.json">
+    <link rel="manifest" href="/assets/manifest-CmioyzmD.json">
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg"><!-- v3.22-logo: K线折线日历 logo (方案B) -->
     <title>量化日历</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -17,7 +17,9 @@
     <!-- v3.17.9 (FR-3.17.9): 关键 CSS 提前于脚本加载（render-blocking 但并行下载，保证首屏样式先就绪）；
          脚本全部 defer（并行下载、按序执行于 DOM 解析后），首屏 DOM + 启动骨架屏先渲染 -->
     <!-- V6.0 (PRD-6.0 D1): 弃 CDN vue/element-plus/zh-cn script — 改由 src/globals.js 经 npm 依赖挂载全局 (window.Vue/window.ElementPlus) -->
-    <link rel="stylesheet" href="/static/lib/element-plus.css">
+    <!-- V6.9.6: EP 样式表必须带版本号 — 该资源响应头为 immutable + max-age=1年, 无 ?v= 时浏览器永久沿用旧版 EP 样式,
+         而运行时 EP 2.14.5 渲染新 DOM (.el-select__wrapper), 版本错配即导致下拉框文字与倒三角箭头换行/高度异常 -->
+    <link rel="stylesheet" href="/static/lib/element-plus.css?v={{APP_VERSION}}">
     <!-- v3.17.9 (FR-3.17.9): echarts 改为按需懒加载（非首屏，见 charts.js ensureEcharts），不再同步阻塞首屏 -->
     <link rel="stylesheet" href="/static/css/tokens.css?v={{APP_VERSION}}">
     <link rel="stylesheet" href="/static/css/themes.css?v={{APP_VERSION}}">
@@ -39,8 +41,8 @@
     <!-- v3.11 (FR-3.11.1): 命令面板核心逻辑(纯函数) + 组件 -->
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
-    <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
-<script type="module" crossorigin src="/assets/index-sFM_zZfo.js"></script>
+    <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
+<script type="module" crossorigin src="/assets/index-BIU5cxsL.js"></script>
 <link rel="modulepreload" crossorigin href="/assets/vendor-vue-DDF9zi1T.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-ep-VOop1zGa.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-lucide-CnYCvXhM.js">

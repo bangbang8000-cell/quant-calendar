@@ -61,7 +61,7 @@
     // V6.3 (PRD-6.3 F4): UI・ナビゲーション (V6.4: 動的タブ削除)
     'navMode.subnav': 'サイドバー + サブナビ',
     'navMode.tree': 'サイドバーツリー',
-    'navMode.toptab': '上部セカンダリタブ',
+    'navMode.toptab': '上部セカンダリタブ（既定）',
     'view.day': '日ビュー',
     'view.week': '週ビュー',
     'view.month': '月ビュー',

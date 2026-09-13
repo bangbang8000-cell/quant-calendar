@@ -134,6 +134,10 @@
 }
 .el-select__selected-item,
 .el-select__selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* V6.9.6: 兜底 — 即便 EP 样式表版本错配/缓存陈旧, 下拉的倒三角也必须与文字同行不换行 */
+.el-select__wrapper { display: flex; align-items: center; }
+.el-select__suffix { flex: 0 0 auto; flex-shrink: 0; }
+.el-select__selection { flex-wrap: nowrap; min-width: 0; }
 .qc-page-tools .el-select,
 .qc-page-tools .el-date-editor,
 .flex-c-gap-12 .el-select,

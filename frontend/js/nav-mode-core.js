@@ -1,9 +1,9 @@
 // quant-calendar: 导航形态状态机纯函数 (V6.3 / PRD-6.3 F4; V6.4: 动态页签开关移除)
 // 纯函数便于单测 (UMD: Node require / 浏览器 __quantModules.navModeCore)
 // 形态 (PRD 3.1):
-//   - subnav: 中栏二级常驻 (默认, 即 V6.1+ 现状)
+//   - subnav: 中栏二级常驻 (V6.1+ 形态)
 //   - tree:   侧栏树状二级 (1+2 级树展开, 中栏隐藏)
-//   - toptab: 顶部二级横向标签 (中栏隐藏, 二级 tab 承担定位)
+//   - toptab: 顶部二级横向标签 (中栏隐藏, 二级 tab 承担定位) — **V6.9.6 起为默认形态**
 // V6.4 (PRD-6.4): 动态页签已移除, 不再有 tabsEnabled 状态
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -15,10 +15,11 @@
   'use strict';
 
   var NAV_MODES = ['subnav', 'tree', 'toptab'];
-  var DEFAULT_NAV_MODE = 'subnav';
+  // V6.9.6: 默认导航形态由 subnav 改为 toptab (顶部二级标签) — 用户需求
+  var DEFAULT_NAV_MODE = 'toptab';
   var KEY_NAV_MODE = 'nav_mode';
 
-  // 非法/缺失值归一化为默认形态 subnav
+  // 非法/缺失值归一化为默认形态 toptab (V6.9.6)
   function normalizeNavMode(v) {
     return NAV_MODES.indexOf(v) !== -1 ? v : DEFAULT_NAV_MODE;
   }

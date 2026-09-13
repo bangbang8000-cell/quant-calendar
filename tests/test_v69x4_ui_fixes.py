@@ -176,5 +176,5 @@ def test_select_no_legacy_width_classes():
 # ─── C1: 版本号 ──────────────────────────────────────────
 
 def test_version_bumped_694():
-    """T32: APP_VERSION = 6.9.4"""
-    assert 'APP_VERSION = "6.9.4"' in _read_b("main_new.py"), "APP_VERSION 应为 6.9.4"
+    """T32: APP_VERSION 提升 (6.9.4 → 6.9.6)"""
+    assert 'APP_VERSION = "6.9.6"' in _read_b("main_new.py"), "APP_VERSION 应为 6.9.6"

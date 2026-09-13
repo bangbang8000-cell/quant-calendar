@@ -61,7 +61,7 @@
     // V6.3 (PRD-6.3 F4): UI · 내비게이션 (V6.4: 동적 탭 제거)
     'navMode.subnav': '사이드바 + 보조 내비게이션',
     'navMode.tree': '사이드바 트리',
-    'navMode.toptab': '상단 보조 탭',
+    'navMode.toptab': '상단 보조 탭 (기본)',
     'view.day': '일별 보기',
     'view.week': '주별 보기',
     'view.month': '월별 보기',

@@ -11,12 +11,12 @@ assert.strictEqual(normalizeNavMode('subnav'), 'subnav');
 assert.strictEqual(normalizeNavMode('tree'), 'tree');
 assert.strictEqual(normalizeNavMode('toptab'), 'toptab');
 
-// TC-6.3.1.2 非法/缺失归一回退 subnav
-assert.strictEqual(normalizeNavMode('invalid'), 'subnav');
-assert.strictEqual(normalizeNavMode(undefined), 'subnav');
-assert.strictEqual(normalizeNavMode(null), 'subnav');
-assert.strictEqual(normalizeNavMode(''), 'subnav');
-assert.strictEqual(DEFAULT_NAV_MODE, 'subnav');
+// TC-6.3.1.2 非法/缺失归一回退默认形态 (V6.9.6: 默认改为 toptab)
+assert.strictEqual(normalizeNavMode('invalid'), 'toptab');
+assert.strictEqual(normalizeNavMode(undefined), 'toptab');
+assert.strictEqual(normalizeNavMode(null), 'toptab');
+assert.strictEqual(normalizeNavMode(''), 'toptab');
+assert.strictEqual(DEFAULT_NAV_MODE, 'toptab');
 assert.deepStrictEqual(NAV_MODES, ['subnav', 'tree', 'toptab']);
 
 // 形态显隐谓词
@@ -32,7 +32,7 @@ assert.strictEqual(topTabsVisible('subnav'), false);
 assert.strictEqual(typeof core.tabsVisible, 'undefined');
 
 // TC-6.3.1.4 readPrefs: 无 localStorage (Node) → 默认
-assert.deepStrictEqual(readPrefs(), { navMode: 'subnav' });
+assert.deepStrictEqual(readPrefs(), { navMode: 'toptab' });
 
 // TC-6.3.1.5 非法 localStorage 值归一化: 模拟存储
 const fake = {
@@ -47,7 +47,7 @@ try {
   assert.deepStrictEqual(readPrefs(), { navMode: 'tree' });
   // 非法写入值归一化
   writePrefs({ navMode: 'bogus' });
-  assert.strictEqual(readPrefs().navMode, 'subnav');
+  assert.strictEqual(readPrefs().navMode, 'toptab');
   // V6.4: tabs_enabled 键不再写入
   writePrefs({ navMode: 'toptab' });
   assert.strictEqual('tabs_enabled' in fake._s, false);

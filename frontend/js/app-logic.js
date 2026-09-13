@@ -154,15 +154,15 @@ const allMenuDefs = [
                     } catch(e) { console.warn('loadGroupConfig:', e); }
                 }
                 const currentPage = ref('strategies');
-                // V6.3 (PRD-6.3 F3/F4): 导航形态 — localStorage 持久化全局偏好 (默认 subnav)
+                // V6.3 (PRD-6.3 F3/F4): 导航形态 — localStorage 持久化全局偏好 (V6.9.6 起默认 toptab)
                 // V6.4 (PRD-6.4): 动态页签已移除 (tabsEnabled 不再需要)
                 const _navPrefs = (window.__quantModules && window.__quantModules.navModeCore)
                     ? window.__quantModules.navModeCore.readPrefs()
-                    : { navMode: 'subnav' };
+                    : { navMode: 'toptab' };
                 const navMode = ref(_navPrefs.navMode);
                 function setNavMode(v) {
                     const C = window.__quantModules && window.__quantModules.navModeCore;
-                    navMode.value = C ? C.normalizeNavMode(v) : ((v === 'tree' || v === 'toptab') ? v : 'subnav');
+                    navMode.value = C ? C.normalizeNavMode(v) : ((v === 'tree' || v === 'toptab') ? v : 'toptab');
                     if (C) C.writePrefs({ navMode: navMode.value });
                 }
                 const shortcutHelpItems = [

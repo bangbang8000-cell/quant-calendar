@@ -64,9 +64,9 @@
     'sub.usage': '用量统计',
     'sub.about': '关于',
     // V6.3 (PRD-6.3 F4): 界面与导航 (V6.4: 动态页签已移除)
-    'navMode.subnav': '中栏二级（默认）',
+    'navMode.subnav': '中栏二级',
     'navMode.tree': '侧栏树状',
-    'navMode.toptab': '顶部二级标签',
+    'navMode.toptab': '顶部二级标签（默认）',
     // 视图
     'view.day': '日视图',
     'view.week': '周视图',
