@@ -75,10 +75,9 @@
 | 策略选股 | 多因子、行业轮动、资金流、指数增强四套策略独立运行，共识榜交叉验证；V4.7 起引擎全市场选股(5550+ 只, 按交易日批量取数) |
 | 策略筛选 | 按策略多选过滤日历视图，并集/交集两种匹配模式，实时预览匹配数 |
 | 策略数据刷新 | 定时刷新 / 文件变动监听 / 定时拉取日线，支持股票池白名单 |
-| 策略研究菜单 | 研究菜单（量化研究/回测/市场复盘/异动扫描）显示开关 |
+| 策略研究菜单 | 研究菜单（量化研究/回测/市场复盘）显示开关（V6.9.1 起异动扫描已删除） |
 | 回测工作台 | 单/多策略回测对比，收益/回撤/夏普/净值/年度收益 + CSV 导出 |
 | 模拟组合 | 持仓/买卖调仓/实时盈亏/组合收益曲线/审计，按用户隔离 |
-| 异动扫描 | 涨停/跌停/放量/振幅/连板分类，自选/持仓事件提醒 |
 
 ### 🌐 宏观研判
 
@@ -144,8 +143,7 @@
 ```
 quant-calendar/
 ├── README.md
-├── docs/                        ← 当前文档（PRD/DEV-PLAN/TEST-PLAN v5.0、V5-ASSESSMENT、DESIGN-SYSTEM；旧版本归档于 docs/archive/ 本地保留）
-├── docs/                        ← 当前文档（PRD/DEV-PLAN/TEST-PLAN v4.1-4.5、UI-ASSESSMENT-V4.6；旧版本归档于 docs/archive/ 本地保留）
+├── docs/                        ← 当前文档（PRD/DEV-PLAN/TEST-PLAN v5.x-v6.x、V5-ASSESSMENT、DESIGN-SYSTEM；旧版本归档于 docs/archive/ 本地保留）
 ├── backend/                     ← FastAPI 后端 (Python)
 │   ├── main_new.py              ← 主入口（APP_VERSION 单一来源）
 │   ├── merrill_clock.py         ← 美林时钟引擎（五维度评分+周期判断）
@@ -162,12 +160,14 @@ quant-calendar/
 │   ├── metrics.py               ← Prometheus 可观测性 (/metrics)
 │   ├── scheduler.py             ← 定时任务调度
 │   └── api/v1/                  ← REST API（含 /api/openapi 开放端点）
-├── frontend/                    ← Vue 3 SPA（零构建）
-│   ├── index.html               ← 单文件应用
-│   ├── css/                     ← tokens.css / themes.css / layout.css
-│   ├── js/                      ← JS 模块（locales/ 5 语语言包、sw.js PWA、components/ 页面组件）
+├── frontend/                    ← Vue 3 SPA（Vite 构建, dist 入库, 部署免 Node）
+│   ├── index.html               ← 应用入口模板
+│   ├── src/                     ← main.js / Header 等 SFC 组件（Vite 构建入口）
+│   ├── css/                     ← tokens.css / themes.css / layout.css / nav.css
+│   ├── js/                      ← JS 模块（locales/ 5 语语言包、components/ 页面与弹窗组件）
+│   ├── dist/                    ← Vite 构建产物（已入库）
 │   └── lib/                     ← Element Plus / ECharts
-├── tests/                       ← pytest 全量 2260 项 + e2e 冒烟
+├── tests/                       ← pytest 全量 3000+ 项 + e2e 冒烟
 └── data/                        ← 本地数据（gitignore：stock_info.json 等；qresult 持仓 CSV 亦本地生成不入库）
 ```
 
@@ -219,11 +219,11 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
 | 项 | 链接 |
 |----|------|
-| 最新版本 | **v5.2.4**（联动·风格统一·打磨） |
+| 最新版本 | **v6.9.5**（用户菜单修复 · 导航字重归一 · 深色适配） |
 | Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
-| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.2.4.zip |
-| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.2.4.tar.gz |
-| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.2.4 |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.9.5.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.9.5.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:6.9.5 |
 
 > 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
 
@@ -294,6 +294,22 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v6.9.5 | 2026-09 | 用户菜单功能修复：修改密码/退出登录/重新运行初始化向导点击生效（EP 消息服务显式挂载 + 菜单项调用修复 + 用户信息响应式解包）/ 一二级菜单选中未选中均不加粗 / 深色股票弹窗 K 线周期 tab 文字色修复（选中主题色底+深字，未选中白字） |
+| v6.9.4 | 2026-09 | EP 样式表对齐 2.14.5 根治下拉按钮换行 / 三处股票列表移除共识进度条 / 主题深浅色模式按钮高亮 / 深色输入框适配 / 策略研究空数据可诊断 / 导航形态面板精简 / 宽度类收敛 / 页面组件静态预注册根治研究·系统等页空白 |
+| v6.9.3 | 2026-09 | 12 项 UI 优化 — 股票列表信息密度 / 下拉规范 / 搜索框右移 / 铃铛面板 / 主题按钮 / 日历工具栏 / 短线复盘提速 / R1 清理 / sxsc 测试修复 / 功能配置精简 / 菜单重排 |
+| v6.9.2 | 2026-09 | 菜单/工作区字体优化 + 主题颜色系统动态联动 |
+| v6.9.1 | 2026-09 | 菜单体系精简：删除异动扫描 / 系统状态一级菜单 / 暗色蓝色统一 / TOP5 策略中文名 / ops 菜单 i18n 与入口 / 拆分状态概览与配置保存 / 修复 ops 执行看板无数据 |
+| v6.9.0 | 2026-09 | AI 评估校准分析 |
+| v6.8.0 | 2026-09 | 行情日线批量缓存 |
+| v6.7.0 | 2026-09 | 易用性与操作便捷性 |
+| v6.6.1 | 2026-09 | 信息架构重构 — 菜单层重组 + 系统配置方案 A |
+| v6.5.1 | 2026-09 | 策略总览概览页去除半透明毛玻璃 |
+| v6.5.0 | 2026-09 | 全站 Lucide 图标 + 弹窗圆角 + 搜索框窄宽 + 短线复盘概览容错 + 龙虎榜降级透出 |
+| v6.3.0 | 2026-09 | 导航形态配置化（subnav/tree/toptab）+ 顶部栏容器化/页签圆角矩形 + 评估分析命名修复 + 功能配置页入口 |
+| v6.2.0 | 2026-09 | 导航与界面细节收口 |
+| v6.1.0 | 2026-09 | 三栏式布局与视觉系统统一：中栏二级常驻 / 动态页签 / 信息密度 / 移动端抽屉 / 页签关闭修复 |
+| v6.0.1 | 2026-09 | 设计系统落地（DS-6.0）：导航与视觉打磨 / 主题适配（dark-pro 金色 scale）/ 基础组件统一层 / KPI Dashboard / 动效收尾 |
+| v6.0.0 | 2026-09 | 导航与菜单系统重构：组件 SFC 化 + 设计系统地基 + 金色默认主题 |
 | v5.2.4 | 2026-09 | 联动·风格统一·打磨：短线 7 子页日期共享 / 个股弹窗「跳转日历」/ 验证条件次日核验闭环(记分板) / 复盘看板数据新鲜度状态条 / /overview 服务端 TTL 缓存 |
 | v5.3.13 | 2026-09 | 数据源健康优化：客户端缺失源不记失败 — _source_client_ready 辅助 + 7 处路由遍历跳过未初始化源(sxsc/tushare), 不 record_call 不冷却; dev 无 sxsc token 场景健康面板零假失败; 全量 2937 用例 |
 | v5.3.14 | 2026-09 | 股票池逻辑系统修复：多策略并集/交集对比(compare 500 修复+前端弹窗) / 周视图上一周口径统一 / 前向填充识别法定节假日(stock_calendar 交易日分层) / 年视图已出池全量(out_total) / 引擎周末运行防护 / 部分策略滞后 inherited_from 提示; 全量 2959 用例 |
