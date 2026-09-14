@@ -48,7 +48,12 @@ export default {
       const n = Number(item.consensus_level)
       return isFinite(n) ? Math.round(n * 100) : 0
     }
-    return { state, slots, select, displayTags, fmtPrice, fmtChange, pctOf }
+    // V5.15 (F1): 共识百分比仅在 consensus_level 为合法非 0 值时展示 — 缺失/0 不渲染「0% 共识」
+    function hasConsensus(item) {
+      const n = Number(item && item.consensus_level)
+      return isFinite(n) && n > 0
+    }
+    return { state, slots, select, displayTags, fmtPrice, fmtChange, pctOf, hasConsensus }
   },
 }
 </script>
@@ -81,7 +86,7 @@ export default {
                 {{ item.name }}
                 <slot name="name-suffix" :item="item" :index="index" />
               </div>
-              <span v-if="showConsensus" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
+              <span v-if="showConsensus && hasConsensus(item)" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
             </div>
             <div v-if="(item.strategy_names || item.strategies) && (item.strategy_names || item.strategies).length" class="qc-stock-tags">
               <span v-for="s in displayTags(item)" :key="s.text" class="qc-stock-tag" :class="{ 'is-more': s.more }">{{ s.text }}</span>
@@ -126,7 +131,7 @@ export default {
               {{ item.name }}
               <slot name="name-suffix" :item="item" :index="i" />
             </div>
-            <span v-if="showConsensus" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
+            <span v-if="showConsensus && hasConsensus(item)" class="qc-stock-consensus">{{ pctOf(item) }}% 共识</span>
           </div>
           <div v-if="(item.strategy_names || item.strategies) && (item.strategy_names || item.strategies).length" class="qc-stock-tags">
             <span v-for="s in displayTags(item)" :key="s.text" class="qc-stock-tag" :class="{ 'is-more': s.more }">{{ s.text }}</span>
