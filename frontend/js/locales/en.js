@@ -58,7 +58,7 @@
     'sub.status': 'System Status',
     'sub.autoeval': 'AI Services',   // V6.6.1 (Plan A): rename
     'sub.datasource': 'Data Source',
-    'sub.feature': 'Features',
+    'sub.feature': 'Basic',
     'sub.user': 'Users & Permissions',
     'sub.usage': 'Usage Stats',
     'sub.about': 'About',

@@ -27,7 +27,7 @@ const SYSTEM_GROUPS = [
   ]},
   { label: '平台设置', items: [
     { key: 'datasource', label: '数据源', icon: 'hard-drive' },
-    { key: 'feature', label: '功能配置', icon: 'sliders-horizontal' },
+    { key: 'feature', label: '基础配置', icon: 'sliders-horizontal' },
     { key: 'datadict', label: '数据字典', icon: 'file-text' },
     { key: 'notification', label: '通知中心', icon: 'bell' },
   ]},

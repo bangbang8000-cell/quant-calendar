@@ -54,7 +54,7 @@
     'sub.status': '系統状态',
     'sub.autoeval': 'AI 服務',   // V6.6.1 (方案A): 收斂更名
     'sub.datasource': '數据源',
-    'sub.feature': '功能配置',
+    'sub.feature': '基礎配置',
     'sub.user': '用户與權限',
     'sub.usage': '用量統計',
     'sub.about': '關于',

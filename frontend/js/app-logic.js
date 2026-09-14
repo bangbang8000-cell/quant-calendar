@@ -114,7 +114,7 @@ const allMenuDefs = [
                     { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.3: 市场复盘+异动扫描并入; V6.9.1-fix: 异动扫描删除
                     // V6.9.1-fix: 系统状态一级菜单 (自系统配置分离, 置于系统配置前) — 运行监控/数据/执行域
                     { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['status', 'health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] }, // V6.9.1-fix2: status(状态概览) 移入 ops 首位
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'feature', 'autoeval', 'datasource', 'user', 'about', 'notification'], guestSubPages: ['config', 'about'] } // V6.9.3: 菜单序重排 — 功能配置置后/通知中心移最后
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'feature', 'autoeval', 'datasource', 'user', 'about', 'notification'], guestSubPages: ['config', 'about'] } // V6.9.3: 菜单序重排 — 基础配置置后/通知中心移最后
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
@@ -361,7 +361,7 @@ const allMenuDefs = [
                     'shortterm.overview': '复盘看板', 'overview': '概览',
                     'shortterm.sector': '板块资金', 'sector': '板块资金',
                     'shortterm.intraday': '盘中核验', 'intraday': '盘中核验',
-                    'status': '状态概览', 'config': '配置保存', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': 'AI 服务', 'usage': '用量统计', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '功能配置', 'datadict': '数据字典', 'notification': '通知中心', 'user': '用户与权限', 'about': '关于' // V6.9.1-fix2: status→状态概览, 新增 config→配置保存
+                    'status': '状态概览', 'config': '配置保存', 'health': '数据源健康', 'schedule': '调度任务', 'autoeval': 'AI 服务', 'usage': '用量统计', 'guard': 'AI 事实护栏', 'datasource': '数据源', 'feature': '基础配置', 'datadict': '数据字典', 'notification': '通知中心', 'user': '用户与权限', 'about': '关于' // V6.9.1-fix2: status→状态概览, 新增 config→配置保存
                 };
 
                 // ===== V6.1 (PRD-6.1 F8): 动态页签状态 =====
@@ -453,7 +453,7 @@ const allMenuDefs = [
                 // ===== 主题 (V6.1 F5: 明/暗两套模式 + 色相) =====
                 const themes = ref({ light: { name: '浅色', color: '#f5f3ea' }, dark: { name: '深色', color: '#0f0f23' } });
                 const currentTheme = ref('light');  // 当前解析后模式: light|dark
-                // V6.9.3 (F6.2): 主题状态全局共享 — Header 主题面板与功能配置子页共用
+                // V6.9.3 (F6.2): 主题状态全局共享 — Header 主题面板与基础配置子页共用
                 // 色板: 金/蓝/红/绿/紫/粉 (与 themes.js HUES 一致)
                 const themeHues = [45, 220, 0, 140, 270, 320];
                 const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色' };

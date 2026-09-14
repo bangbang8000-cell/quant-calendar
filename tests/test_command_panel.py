@@ -87,7 +87,7 @@ SUB_PAGE_NAMES = {
     'overview': '概览', 'merrill': '美林时钟', 'market': '市场行情', 'consensus': '策略共识榜',
     'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池',
     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史',
-    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '功能配置', 'user': '用户与权限', 'about': '关于',
+    'status': '系统状态', 'autoeval': '自动评估', 'datasource': '数据源', 'feature': '基础配置', 'user': '用户与权限', 'about': '关于',
 }
 
 
