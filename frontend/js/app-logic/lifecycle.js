@@ -88,6 +88,10 @@
             applyTheme(savedTheme);
           }
 
+          // V5.15 (F2): 用户组配置先行 — 先加载组菜单可见性, 再恢复初始页面,
+          // 使下方 menus 校验基于组过滤结果 (组隐藏的一级菜单不得作为首屏页面)
+          await loadGroupConfig().catch(function () {});
+
           // v1.10: 恢复用户最后选择（无本地最后页面时回落偏好 default_view）
           // V6.0 (P1-3): URL hash 优先恢复 — 刷新定位到具体子页
           (function() {

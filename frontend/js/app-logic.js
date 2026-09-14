@@ -192,6 +192,28 @@ const allMenuDefs = [
                     localStorage.setItem('quant_last_subpage', subPage);
                 }
 
+                // V5.15 (F2): 页面可见性校验 — 用户组过滤后当前页被隐藏时重定向到首个可见菜单
+                function ensureVisiblePage() {
+                    const items = menus.value;
+                    if (!items || !items.length) return;
+                    const visible = items.some(function (m) { return m.key === currentPage.value; });
+                    if (!visible) {
+                        const first = items[0];
+                        console.info('[nav] 当前页已被用户组隐藏, 跳转至', first.key);
+                        currentPage.value = first.key;
+                        currentSubPage.value = (first.subPages && first.subPages[0]) || '';
+                        return;
+                    }
+                    // 子页越界兜底: 当前子页不在可见子页列表时重置为默认子页
+                    const menu = items.find(function (m) { return m.key === currentPage.value; });
+                    if (menu && menu.subPages && menu.subPages.length
+                        && !menu.subPages.includes(currentSubPage.value)) {
+                        currentSubPage.value = menu.subPages[0];
+                    }
+                }
+                // 组配置变更 → menus 重算 → 兜底重校验 (运行期任何隐藏都不滞留隐藏页)
+                watch(menus, function () { ensureVisiblePage(); });
+
                 // ===== v3.2.0-T21: 策略回测（护栏片段保留）=====
                 const backtestStrategies = [
                     { id: 'multifactor', name: '多因子策略' },
