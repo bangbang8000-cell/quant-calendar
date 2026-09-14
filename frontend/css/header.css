@@ -202,7 +202,7 @@
   height: 28px;
   border: 1px solid var(--qc-border);
   border-radius: var(--qc-radius-small);
-  background: var(--qc-surface);
+  background: var(--qc-card);   /* V5.15 F6: 令牌修正 --qc-surface → --qc-card */
   color: var(--qc-nav-item-default);
   font-size: 15px;
   line-height: 1;
@@ -212,7 +212,7 @@
 .qc-top-tabs-btn:hover:not(:disabled) {
   background: var(--qc-muted);
   color: var(--qc-nav-item-hover);
-  border-color: var(--qc-border-strong);
+  border-color: var(--qc-nav-border);   /* V5.15 F6: 令牌修正 --qc-border-strong → --qc-nav-border */
 }
 .qc-top-tabs-btn:disabled {
   opacity: 0.4;
