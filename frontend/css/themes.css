@@ -2788,6 +2788,24 @@
     max-width: 900px;
 }
 
+/* V5.15 (F4): 股票详情弹窗头部去渐变背景 — 透明 + 细分隔线 */
+.kline-dialog .el-dialog__header {
+    background: transparent;
+    border-bottom: 1px solid var(--border-light);
+}
+
+/* V5.15 (F4): X 按钮垂直居中 + 右侧留白 */
+.kline-dialog .el-dialog__headerbtn {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 24px;
+}
+
+/* V5.15 (F4): 关闭图标稍大 (16px → 18px) */
+.kline-dialog .el-dialog__close {
+    font-size: 18px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
     .kline-dialog .el-dialog {
