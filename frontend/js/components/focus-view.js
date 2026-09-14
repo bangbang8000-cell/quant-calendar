@@ -104,7 +104,8 @@
                 :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
                 @click="toggle(row.stock_code)" tabindex="0" role="button"
                 @keydown.enter.prevent="toggle(row.stock_code)">
-                <span class="focus-row-emoji"><span class="qc-status-dot" :class="ACTION_DOT[row.action] || 'is-info'"></span></span>
+                <!-- V5.15 (F5): 行结构对齐「关注」风格 — 状态点|名称(含入池徽章)|档位|评分|方向|操作 分列 -->
+                <span class="focus-row-status"><span class="qc-status-dot" :class="ACTION_DOT[row.action] || 'is-info'"></span></span>
                 <span class="focus-row-name">{{ row.stock_name }}
                   <span class="color-secondary">({{ row.stock_code }})</span>
                   <!-- V5.4.2 (FR): 入池状态徽标 — 新入池/在池/已出池 + 自选/持仓 -->
@@ -120,14 +121,17 @@
                     <el-tag v-if="poolStatus[row.stock_code].holding" size="small" type="danger" effect="light" class="focus-badge">持仓</el-tag>
                   </span>
                 </span>
-                <el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag>
+                <span class="focus-row-tier"><el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag></span>
                 <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
                 <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
-                <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
-                <el-button size="small" circle text type="primary" class="focus-row-open"
-                  @click.stop="openStockDetail(row.stock_code)"
-                  :title="'打开 ' + row.stock_code + ' 详情'"><qc-icon name="trending-up" :size="14" /></el-button>
-                <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
+                <!-- V5.15 (F5): 操作列 — 打开详情 + 展开箭头 -->
+                <span class="focus-row-actions">
+                  <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
+                  <el-button size="small" circle text type="primary" class="focus-row-open"
+                    @click.stop="openStockDetail(row.stock_code)"
+                    :title="'打开 ' + row.stock_code + ' 详情'"><qc-icon name="trending-up" :size="14" /></el-button>
+                  <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
+                </span>
                 <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
                   <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
                     <span v-if="row.model_provider === 'rule'" class="color-secondary">（规则快评降级）</span>
