@@ -100,7 +100,7 @@ def test_toptabs_registered_and_open_tab_driven():
 def test_toptab_style_rectangular():
     """TC-6.3.3.3: toptab 二级 tab 圆角矩形 (small), 与动态页签一致"""
     header = _read("css/header.css")
-    m = re.search(r"\.qc-top-tabs \.qc-top-tab\s*\{([^}]*)\}", header)
-    assert m, ".qc-top-tabs .qc-top-tab 规则缺失"
+    m = re.search(r"\.qc-top-tabs-scroll \.qc-top-tab\s*\{([^}]*)\}", header)
+    assert m, ".qc-top-tabs-scroll .qc-top-tab 规则缺失"  # V5.15 (F6): 标签容器改为 qc-top-tabs-scroll
     assert "var(--qc-radius-small)" in m.group(1), "top-tab 圆角应为 small (6px 矩形)"
     assert "var(--qc-radius-full)" not in m.group(1), "top-tab 不应为胶囊"

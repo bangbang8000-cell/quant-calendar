@@ -181,8 +181,55 @@
   mask-image: linear-gradient(to right, black 92%, transparent 100%);
 }
 .qc-header-tabs::-webkit-scrollbar { display: none; }
+/* V5.15 (F6): toptab 溢出控制 — 左右滚动按钮 + 「更多」下拉 */
+.qc-top-tabs-bar {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--qc-space-1);
+}
+.qc-top-tabs-scroll {
+  flex: 1;
+  min-width: 0;
+}
+.qc-top-tabs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-small);
+  background: var(--qc-surface);
+  color: var(--qc-nav-item-default);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.qc-top-tabs-btn:hover:not(:disabled) {
+  background: var(--qc-muted);
+  color: var(--qc-nav-item-hover);
+  border-color: var(--qc-border-strong);
+}
+.qc-top-tabs-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.qc-top-tabs-btn:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: -2px;
+}
+.qc-top-tabs-more { flex-shrink: 0; }
+.qc-top-tabs-more-btn {
+  width: auto;
+  padding: 0 var(--qc-space-3);
+  font-size: 13px;
+}
 /* V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (复用 qc-header-tabs 容器, 不可关闭/无右键) */
-.qc-top-tabs .qc-top-tab {
+.qc-top-tabs-scroll .qc-top-tab {
   display: inline-flex;
   align-items: center;
   gap: var(--qc-space-2);
@@ -199,17 +246,17 @@
   flex-shrink: 0;
   transition: color var(--duration-fast), background-color var(--duration-fast), border-color var(--duration-fast);
 }
-.qc-top-tabs .qc-top-tab:hover {
+.qc-top-tabs-scroll .qc-top-tab:hover {
   background: var(--qc-muted);
   color: var(--qc-nav-item-hover);
 }
-.qc-top-tabs .qc-top-tab.is-active {
+.qc-top-tabs-scroll .qc-top-tab.is-active {
   background: var(--qc-muted);
   border-color: var(--qc-border);
   color: var(--qc-nav-item-active);
   font-weight: var(--qc-font-weight-normal);
 }
-.qc-top-tabs .qc-top-tab:focus-visible {
+.qc-top-tabs-scroll .qc-top-tab:focus-visible {
   outline: 2px solid var(--qc-ring);
   outline-offset: -2px;
 }
