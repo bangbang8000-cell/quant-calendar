@@ -307,15 +307,29 @@
                                 <span><qc-icon name="history" :size="14" /> 历史周期时间轴</span>
                                 <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
                                 <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
+                                <button class="tl-back-latest" v-if="merrillTimeline?.cycles?.length" @click="scrollToLatest" title="滚动到最新周期">回到最新 ⤓</button>
+                            </div>
+                            <!-- V5.15 (F3): 阶段色图例 -->
+                            <div class="tl-legend" v-if="tlLegendStages.length">
+                                <span class="tl-legend-title">阶段图例</span>
+                                <span v-for="ls in tlLegendStages" :key="ls.key" class="tl-legend-item">
+                                    <span class="tl-legend-dot" :style="{ background: ls.color }"></span>{{ ls.name }}
+                                </span>
+                                <span class="tl-legend-hint">· 点击轮标签折叠/展开 · 点击阶段看详情</span>
                             </div>
                             <div class="merrill-timeline" v-if="merrillTimeline?.cycles?.length">
                                 <div class="tl-spine">
                                     <div class="tl-spine-arrow tl-top">▲ 历史</div>
-                                    <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci">
+                                    <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci"
+                                        :class="{ 'is-collapsed': isCycleCollapsed(ci) }">
                                         <div class="tl-cycle-node"><span class="tl-cycle-node-dot"></span></div>
                                         <div class="tl-cycle-body">
-                                            <div class="tl-cycle-label">{{ cycle.label }}<span class="tl-cycle-years" v-if="tlCycleYears(cycle)"> · {{ tlCycleYears(cycle) }}</span></div>
-                                            <div class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 120 : 60) + 'px'}">
+                                            <div class="tl-cycle-label" @click="toggleCycle(ci)" role="button" tabindex="0"
+                                                @keydown.enter.prevent="toggleCycle(ci)" @keydown.space.prevent="toggleCycle(ci)">
+                                                <span class="tl-cycle-toggle">{{ isCycleCollapsed(ci) ? '▸' : '▾' }}</span>
+                                                {{ cycle.label }}<span class="tl-cycle-years" v-if="tlCycleYears(cycle)"> · {{ tlCycleYears(cycle) }}</span>
+                                            </div>
+                                            <div v-show="!isCycleCollapsed(ci)" class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 100 : 52) + 'px'}">
                                                 <template v-for="(row, ri) in timelineRows(cycle.stages)" :key="ri">
                                                     <div class="tl-stage-row" :class="ri === 0 ? 'tl-row-top' : 'tl-row-bottom'">
                                                         <div v-for="(st, si) in row" :key="si"
@@ -354,7 +368,7 @@
                                                 </svg>
                                             </div>
                                             <!-- V4.0.5-D: 甘特式连续时间条 (按时长比例分段着色, 展示各阶段时间占比) -->
-                                            <div class="tl-gantt" v-if="cycle.stages.length > 1">
+                                            <div class="tl-gantt" v-if="cycle.stages.length > 1 && !isCycleCollapsed(ci)">
                                                 <div v-for="(st, gi) in cycle.stages" :key="gi" class="tl-gantt-seg" :style="tlGanttStyle(st, cycle.stages, gi)"></div>
                                             </div>
                                         </div>
@@ -1119,6 +1133,34 @@
       function setTlHover(key) { tlHoverKey.value = key; }
       function clearTlHover() { tlHoverKey.value = null; }
 
+      // V5.15 (F3): 轮次折叠 — collapsedCycles 记录折叠的轮次下标
+      const collapsedCycles = Vue.ref([]);
+      function isCycleCollapsed(ci) { return collapsedCycles.value.indexOf(ci) !== -1; }
+      function toggleCycle(ci) {
+        const arr = collapsedCycles.value.slice();
+        const idx = arr.indexOf(ci);
+        if (idx !== -1) arr.splice(idx, 1); else arr.push(ci);
+        collapsedCycles.value = arr;
+        // 折叠/展开后需重测连线 (行区域高度变化)
+        Vue.nextTick(function () { if (buildTlPaths) buildTlPaths(); });
+      }
+      // V5.15 (F3): 「回到最新」— 滚动时间轴块底部 (最新轮)
+      function scrollToLatest() {
+        const block = document.querySelector('.merrill-timeline-block');
+        if (!block) return;
+        const spine = block.querySelector('.tl-spine');
+        if (spine) spine.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        else block.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+      // V5.15 (F3): 阶段色图例数据 — 按配置顺序 (仅展示已配置阶段)
+      const tlLegendStages = Vue.computed(function () {
+        const cfg = _tlCfg();
+        const order = ['recovery', 'overheat', 'stagflation', 'recession', 'default'];
+        return order
+          .filter(function (k) { return cfg[k] && cfg[k].name; })
+          .map(function (k) { return { key: k, name: cfg[k].name, color: cfg[k].color || 'var(--color-primary)' }; });
+      });
+
       function scheduleTlRebuild(delay) {
         if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
         _tlRebuildTimer = setTimeout(() => { _tlRebuildTimer = null; Vue.nextTick(buildTlPaths); }, delay || 120);
@@ -1318,6 +1360,7 @@
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
         timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,
+        collapsedCycles, isCycleCollapsed, toggleCycle, scrollToLatest, tlLegendStages,
         tlClickStage, tlClickVisible, closeTlClick,
         tlClickPosStyle,
         merrillTimeline, timelineLoading, showTimelineStage,

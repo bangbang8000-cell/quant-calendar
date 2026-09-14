@@ -402,6 +402,27 @@
   .watchlist-item.swipe-reveal .watchlist-actions {
     display: none;
   }
+  /* V5.15 (F3): 时间轴移动端适配 — 蛇形折行改单行横向滚动 chip */
+  .merrill-timeline-block { padding: 8px; }
+  .tl-spine { padding-left: 18px; }
+  .tl-spine::before { left: 6px; }
+  .tl-cycle-node { left: -24px; }
+  .tl-legend { margin-left: 12px; gap: 4px 10px; }
+  .tl-legend-hint { display: none; }
+  .tl-stage-rows {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tl-stage-row {
+    position: static;
+    min-width: max-content;
+    height: auto;
+    padding: 4px 0;
+  }
+  .tl-row-bottom { top: auto; }
+  .tl-connector { display: none; }
+  .merrill-timeline-head { flex-wrap: wrap; }
+  .merrill-timeline-sub { width: 100%; order: 3; }
 }
 
 /* 下拉刷新指示器（日历页） */

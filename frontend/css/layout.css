@@ -219,13 +219,13 @@
 .tl-spine-arrow.tl-top { padding-top: 0; }
 .tl-spine-arrow.tl-bottom { padding: 8px 0 0; }
 
-/* 大周期块 — V4.0.4: 周期间距拉大(margin-bottom 32px 拉开轮与轮呼吸感) */
+/* 大周期块 — V4.0.4: 周期间距拉大 (V5.15 F3: 压缩 32→20px, 整块高度目标压缩 ≥25%) */
 .tl-cycle {
   position: relative;
   display: flex;
   gap: 8px;
-  padding: 12px 0 14px;
-  margin-bottom: 32px;
+  padding: 8px 0 10px;
+  margin-bottom: 20px;
 }
 .tl-cycle:last-child { margin-bottom: 4px; }
 .tl-cycle:not(:last-child)::after {
@@ -266,7 +266,62 @@
   font-size: var(--qc-font-size-sm);
   font-weight: var(--font-semibold, 600);
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;   /* V5.15 F3: 8→6px */
+  cursor: pointer;      /* V5.15 F3: 点击折叠/展开 */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--qc-radius-small);
+  padding: 2px 4px;
+  transition: background-color var(--duration-fast, 0.15s);
+}
+.tl-cycle-label:hover { background: var(--bg-tertiary); }
+.tl-cycle-toggle {
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-tertiary);
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+/* V5.15 F3: 折叠态轮次 — 行区/甘特隐藏, 只留节点与标签 */
+.tl-cycle.is-collapsed .tl-stage-rows,
+.tl-cycle.is-collapsed .tl-gantt { display: none; }
+.tl-cycle.is-collapsed { margin-bottom: 8px; }
+
+/* V5.15 F3: 阶段色图例 */
+.tl-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: -4px 0 10px 24px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--qc-radius-small);
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-secondary);
+}
+.tl-legend-title { font-weight: var(--font-semibold, 600); color: var(--text-primary); }
+.tl-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.tl-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tl-legend-hint { margin-left: auto; color: var(--text-tertiary); }
+
+/* V5.15 F3: 「回到最新」按钮 */
+.tl-back-latest {
+  flex-shrink: 0;
+  font-size: var(--qc-font-size-xs);
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--qc-radius-small);
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background-color var(--duration-fast, 0.15s), border-color var(--duration-fast, 0.15s);
+}
+.tl-back-latest:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--color-primary);
 }
 
 /* 蛇形折行区域: 固定高度(单行60 / 两行120), 相对定位让连线叠在行上 */
@@ -298,7 +353,7 @@
   padding: 4px 10px;
   border-radius: var(--qc-radius-medium);
   border: 1px solid transparent;
-  font-size: var(--qc-font-size-sm);
+  font-size: var(--qc-font-size-sm);   /* V5.15 F3: 统一 sm(13px) */
   color: var(--text-primary);
   cursor: pointer;
   transition: box-shadow 0.2s ease-out, transform 0.2s ease-out, opacity 0.2s ease-out;
@@ -324,7 +379,7 @@
   flex-shrink: 0;
 }
 .merrill-stage-chip-name { font-weight: var(--font-semibold, 600); }
-.merrill-stage-chip-date { font-size: var(--qc-font-size-xs); opacity: 0.85; }
+.merrill-stage-chip-date { font-size: var(--qc-font-size-xs); opacity: 0.7; font-weight: 400; } /* V5.15 F3: 年份弱化 */
 .merrill-stage-chip-current {
   font-size: var(--qc-font-size-xs);
   padding: 4px 5px;
@@ -361,8 +416,8 @@
 .tl-gantt {
   display: flex;
   gap: 4px;
-  margin-top: 8px;
-  height: 10px;
+  margin-top: 6px;
+  height: 6px;   /* V5.15 F3: 10→6px 压缩 */
   border-radius: var(--qc-radius-small);
   overflow: hidden;
   background: var(--bg-card-header);
@@ -414,6 +469,8 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
+  padding-bottom: 6px;              /* V5.15 F3: 阶段色条 */
+  border-bottom: 2px solid var(--glass-border);
 }
 .tl-tip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .tl-tip-title { font-weight: var(--font-semibold, 600); font-size: var(--qc-font-size-sm); }
