@@ -302,6 +302,31 @@
   .today-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* V5.15 (F7): 短线复盘双栏 → 上下堆叠 (列表折叠为顶部横向滚动) */
+  .shortterm-split {
+    grid-template-columns: 1fr;
+  }
+  .shortterm-date-list {
+    position: static;
+  }
+  .shortterm-date-items {
+    display: flex;
+    overflow-x: auto;
+    max-height: none;
+    padding: var(--qc-space-2);
+    gap: var(--qc-space-2);
+  }
+  .shortterm-date-item {
+    flex-shrink: 0;
+    min-width: 150px;
+    border-bottom: none;
+    border: 1px solid var(--border-light);
+    border-radius: var(--qc-radius-small);
+  }
+  .shortterm-date-item.is-active {
+    border-left: 1px solid var(--color-primary);
+    padding-left: var(--qc-space-3);
+  }
 }
 @media (max-width: 480px) {
   .today-hero-head {

@@ -11,7 +11,32 @@
     template: `
                 <div v-if="currentPage === 'shortterm'" key="shortterm">
                     <!-- 复盘看板 (V5.2.1 落地页: 硬指标卡 + 市场事实 + 验证条件 + 近5日热度) -->
-                    <div v-if="currentSubPage === 'overview'" class="card">
+                    <div v-if="currentSubPage === 'overview'" class="shortterm-split">
+                        <!-- V5.15 (F7): 左列表 — 最近交易日核心指标摘要 (默认选中最近一天) -->
+                        <div class="shortterm-date-list">
+                            <div class="shortterm-date-list-head">
+                                <span>复盘日历</span>
+                                <el-button size="small" text @click="loadDateList" aria-label="刷新日期列表">🔄</el-button>
+                            </div>
+                            <div v-if="dateListLoading" class="color-secondary shortterm-date-empty">加载中…</div>
+                            <div v-else-if="dateList.length === 0" class="color-secondary shortterm-date-empty">暂无已抓取日期</div>
+                            <div v-else class="shortterm-date-items">
+                                <div v-for="d in dateList" :key="d.date" class="shortterm-date-item"
+                                    :class="{ 'is-active': d.date === shortDate }" role="button" tabindex="0"
+                                    @click="pickDate(d.date)"
+                                    @keydown.enter.prevent="pickDate(d.date)"
+                                    @keydown.space.prevent="pickDate(d.date)">
+                                    <div class="shortterm-date-item-date">{{ d.date }}</div>
+                                    <div class="shortterm-date-item-meta">
+                                        <span>赚钱 <b>{{ fmtPct(d.money_effect) }}</b></span>
+                                        <span>情绪 <b>{{ d.emotion_score != null ? d.emotion_score.toFixed(2) : '—' }}</b></span>
+                                        <span>涨停 <b>{{ d.zt_count }}</b></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 右看板 (原 overview 内容) -->
+                        <div class="shortterm-split-content card">
                         <!-- V5.3.0 (T-5.3.1.3): 短线复盘 3 步新手引导 (首次进入, 可跳过) -->
                         <div v-if="shorttermTourVisible" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="shortterm-tour-title">
                             <div class="onboarding-card">
@@ -138,6 +163,7 @@
                             </div>
                             <div v-else class="text-xs-tertiary mb-4">{{ overview.weekly && overview.weekly.reason ? overview.weekly.reason : '近5日热度不可用' }}</div>
                         </template>
+                        </div>
                     </div>
 
                     <!-- 涨停复盘 -->
@@ -352,6 +378,26 @@
       const overviewError = ref(false);
       const overviewErrTitle = ref('数据加载失败');
       const overviewErrDesc = ref('请检查服务后重试');
+      // V5.15 (F7): 复盘日期列表 (近 N 日核心指标摘要)
+      const dateList = ref([]);
+      const dateListLoading = ref(false);
+      async function loadDateList() {
+        dateListLoading.value = true;
+        try {
+          const res = await cachedGet('/api/shortterm/dates/summary', false);
+          if (res && res.success) dateList.value = res.dates || [];
+        } catch (e) {
+          dateList.value = [];
+        } finally {
+          dateListLoading.value = false;
+        }
+      }
+      // 左列表点击 → 切换日期并刷新右看板
+      function pickDate(d) {
+        if (d === shortDate.value) return;
+        shortDate.value = d;
+        loadOverview(true);
+      }
       const sectorType = ref('行业资金流');
       const sectorIndicator = ref('今日');
       const sectorKeyword = ref('');   // V5.2.4 (T-5.2.43): 板块资金搜索/联动预选
@@ -903,7 +949,7 @@
         else if (sp === 'intraday') loadIntraday(true);
       }
 
-      onMounted(function () { setSessionDates(); loadCurrent(); prefetchShortterm(); maybeShowShorttermTour(); });
+      onMounted(function () { setSessionDates(); loadCurrent(); prefetchShortterm(); maybeShowShorttermTour(); loadDateList(); });
       Vue.watch(function () { return currentSubPage.value; }, function (sp) {
         loadCurrent();
         if (sp === 'overview') maybeShowShorttermTour();
@@ -979,6 +1025,7 @@
         shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter,
         lhbRows, lhbLoading, lhbError, lhbReason, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
+        dateList, dateListLoading, loadDateList, pickDate,
         sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorPageRows, sectorPage, sectorLoading, sectorError, sectorFlowSource,
         PAGE_SIZE, gotoSector,
         review, reviewRunning,

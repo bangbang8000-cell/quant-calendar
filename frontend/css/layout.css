@@ -863,3 +863,60 @@
 }
 .detail-pool-history b { color: var(--text-primary); font-weight: var(--font-semibold); }
 
+/* ===== V5.15 (F7): 短线复盘「列表 + 右边内容」双栏 ===== */
+.shortterm-split {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: var(--qc-space-3);
+  align-items: start;
+}
+.shortterm-date-list {
+  position: sticky;
+  top: var(--qc-space-3);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--qc-radius-medium);
+  overflow: hidden;
+}
+.shortterm-date-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--qc-space-2) var(--qc-space-3);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+.shortterm-date-empty { padding: var(--qc-space-3); text-align: center; }
+.shortterm-date-items {
+  max-height: 520px;
+  overflow-y: auto;
+}
+.shortterm-date-item {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color var(--duration-fast, 0.15s);
+}
+.shortterm-date-item:hover { background: var(--bg-tertiary); }
+.shortterm-date-item.is-active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--color-primary);
+  padding-left: calc(var(--qc-space-3) - 3px);
+}
+.shortterm-date-item-date {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  font-size: var(--qc-font-size-sm);
+}
+.shortterm-date-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--qc-space-3);
+  margin-top: 2px;
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-secondary);
+}
+.shortterm-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
+.shortterm-split-content { min-width: 0; }
+

@@ -108,6 +108,36 @@ async def get_dates(user: Optional[dict] = Depends(get_current_user)):
     return {'success': True, 'dates': store.list_dates()}
 
 
+@router.get("/dates/summary")
+async def get_dates_summary(limit: int = 15,
+                            user: Optional[dict] = Depends(get_current_user)):
+    """V5.15 (F7): 近 N 个已抓取交易日核心指标摘要 — 供复盘左列表对比选择。
+
+    每行复用 _cached_bundle (TTL 缓存) 提取 赚钱效应均值 / 情绪读数 / 涨停家数;
+    单日异常降级为 None, 不拖垮整体。
+    """
+    dates = (store.list_dates() or [])[:max(1, min(limit, 60))]
+    out = []
+    for d in dates:
+        try:
+            bundle = _cached_bundle(d)
+            me = bundle.get('money_effect') or {}
+            sc = bundle.get('sentiment_cycle') or {}
+            zt = store.load_pool(d, 'zt') or []
+            out.append({
+                'date': d,
+                'money_effect': me.get('median'),
+                'emotion_score': sc.get('current_score') if sc.get('available') else None,
+                'emotion_rising': sc.get('rising') if sc.get('available') else None,
+                'zt_count': len(zt),
+            })
+        except Exception as ex:  # noqa: BLE001 — 单日异常降级
+            logger.warning('dates/summary %s 摘要失败: %s', d, ex)
+            out.append({'date': d, 'money_effect': None, 'emotion_score': None,
+                        'emotion_rising': None, 'zt_count': None})
+    return {'success': True, 'dates': out}
+
+
 @router.post("/capture")
 async def capture(date: str = None, user: dict = Depends(get_current_active_user)):
     """抓取三池 + 龙虎榜 + 昨日涨停表现(定稿记录)并入库(调度/手动触发)"""
