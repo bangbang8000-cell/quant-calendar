@@ -2792,6 +2792,9 @@
 .kline-dialog .el-dialog__header {
     background: transparent;
     border-bottom: 1px solid var(--border-light);
+    /* FIX (v5.15-F4): header 须为包含块 — 否则 headerbtn 的 top:50% 相对整个弹窗定位,
+       X 按钮会飘到弹窗中部右侧、压在图表内容上, 用户看不到关闭按钮 */
+    position: relative;
 }
 
 /* V5.15 (F4): X 按钮垂直居中 + 右侧留白 */
