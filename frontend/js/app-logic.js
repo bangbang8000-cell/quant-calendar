@@ -211,8 +211,6 @@ const allMenuDefs = [
                         currentSubPage.value = menu.subPages[0];
                     }
                 }
-                // 组配置变更 → menus 重算 → 兜底重校验 (运行期任何隐藏都不滞留隐藏页)
-                watch(menus, function () { ensureVisiblePage(); });
 
                 // ===== v3.2.0-T21: 策略回测（护栏片段保留）=====
                 const backtestStrategies = [
@@ -356,6 +354,10 @@ const allMenuDefs = [
 
                 // ===== 登录状态 =====
                 const currentUser = ref(null);
+                // V5.15 (F2): 组配置变更 → menus 重算 → 兜底重校验 (运行期任何隐藏都不滞留隐藏页)
+                // 注意: watch 必须注册在 currentUser/groupsConfig 声明之后 — watch(source, cb) 创建时会立即求值 source 基线,
+                // 若在 currentUser 声明前注册会触发 TDZ ReferenceError (Cannot access 'currentUser' before initialization)
+                watch(menus, function () { ensureVisiblePage(); });
                 // v3.17.9 (FR-3.17.9): 会话先行恢复 — 主界面首帧即渲染（无需等 onMounted 再恢复登录态）
                 (function() {
                     if (typeof localStorage === 'undefined') return;
