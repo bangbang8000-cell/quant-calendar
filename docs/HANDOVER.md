@@ -1,8 +1,8 @@
 # 量化选股日历 — 交接文档 (HANDOVER)
 
-> 最后更新: 2026-09-05 (V5.3.13)
-> 当前状态: **v5.3.13 已发布双端**(HEAD `1d78f99`, tag v5.3.13), v5.3 系列(v5.3.0~v5.3.13)收官
-> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务**; origin + GitHub release + 群辉 三处均已推送; 三仓库 HEAD 一致
+> 最后更新: 2026-09-15 (V5.6.0)
+> 当前状态: **v5.6.0 已发布双端**(HEAD `d5ebfb7`, tag v5.6.0), v5.15 里程碑(F1-F8)收官
+> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务且运行 5.6.0**; GitHub origin + 群辉两远端 master 已推至 `d5ebfb7`, tag v5.6.0 已推送(触发 CI/Docker)
 > 数据源架构: **sxsc-tushare 优先**(短线三池/龙虎榜/指数/资金流/业绩), 6 位代码自动规范化, 客户端缺失源不记失败
 
 ---
@@ -15,7 +15,7 @@
 - 数据源: sxsc-tushare → tushare → akshare 三源热备(短线东财→同花顺/tushare 兜底)
 - 部署: 双环境(dev/ops) + GitHub + 群辉 NAS Git + Docker(ghcr.io 未推)
 
-## 2. 版本里程碑 (V4.0 → V5.2.4 全部完成)
+## 2. 版本里程碑 (V4.0 → V5.6.0 全部完成)
 
 | 版本 | 主题 | 关键成果 | tag |
 |---|---|---|---|
@@ -49,8 +49,10 @@
 | **v5.3.11** | **6 位代码规范化** | _normalize_ts_code + 5 个 _fetch_* 入口, 修复 K线/因子空数据与三源冷却级联 | v5.3.11 |
 | **v5.3.12** | **数据字典补全** | 5 类 26 字段 → 11 类 71 字段, 与真实模块键对拍守护 | v5.3.12 |
 | **v5.3.13** | **健康统计优化** | 客户端缺失源不记失败, _source_client_ready + 7 处遍历跳过 | v5.3.13 |
+| **v5.5.0** | **版本编号并入 5.X** | 原 6.x 开发线(6.0~6.9.6, 期间无 tag)整体并入 5.X 序列, 以 v5.5.0 为汇合点; APP_VERSION 6.9.6→5.5.0; 两远端 master + tag 对齐 | v5.5.0 |
+| **v5.6.0** | **交互体验与信息呈现优化 (v5.15)** | F1 0%共识移除 / F2 组配置首屏可见性兜底 / F3 美林时间轴优化 / F4 弹窗样式 / F5 重点跟踪列表网格化 / F6 顶部标签溢出(更多▾+滚动按钮) / F7 短线双栏 / F8 基础配置更名 | v5.6.0 |
 
-当前 master: **v5.3.13**(v5.3 系列收官; 数据源 sxsc 优先架构已稳定, 见 §5.4)
+当前 master: **v5.6.0**(v5.15 里程碑收官; F2 含 TDZ 崩溃修复, 见 §5.5)
 
 ## 3. 环境拓扑与同步
 
@@ -59,7 +61,7 @@
 | dev | /home/evergreen/dsh-workspace/quant-calendar-dev | git 操作点 (:8001), systemd 用户服务 |
 | ops | /home/evergreen/dsh-workspace/quant-calendar-ops | 生产 (:8000), fetch+ff-only 同步 |
 | workspace 镜像 | /home/evergreen/.openclaw/workspace/quant-calendar-ops | 与 dsh 同源同步镜像(非实跑) |
-| GitHub | origin: bangbang8000-cell/quant-calendar | 已推 master + v5.0.1~v5.3.13 tags + GitHub release v5.2.3/v5.2.4/v5.3.10~v5.3.13 |
+| GitHub | origin: bangbang8000-cell/quant-calendar | 已推 master(d5ebfb7) + v5.0.1~v5.6.0 tags + GitHub release v5.2.3/v5.2.4/v5.3.10~v5.3.13 |
 | 群辉 | synology: ssh://evergreenzhou@192.168.1.2/.../quant-calendar.git | 已推 master + v5 tags(v4.6/v4.7 旧浅克隆 tag 拒绝, 不影响) |
 
 同步链: `git push origin master` → ops `git fetch origin && git reset --hard origin/master` → `git push synology master --tags` → 双端 `systemctl --user restart quant-calendar-dev.service quant-calendar-ops.service`
@@ -70,6 +72,7 @@
 
 | 文档 | 说明 |
 |---|---|
+| PRD/DEV-PLAN/TEST-PLAN-v5.15.md | **v5.15 交互体验与信息呈现优化 (v5.6.0)** 三份规划(已批准, F1-F8 全部完成) |
 | PRD/DEV-PLAN/TEST-PLAN-v5.2.4.md | **v5.2.4 联动·风格统一·打磨** 三份规划(已批准, 大部分完成) |
 | PRD-v5.3.md / DEV&TEST-PLAN-v5.3.md | **v5.3 规划(已批准, v5.3.0~v5.3.13 全部完成)** |
 | PRD/DEV-PLAN/TEST-PLAN-v5.2.md | v5.2 短线复盘主线三份规划 |
@@ -122,11 +125,27 @@
 
 **测试规模**: v5.0.11 2304 → v5.2.4 **2768 用例**(短线专项 ~190, 模块覆盖 93%)
 
+### 4.4 V5.15 交付详情 (v5.6.0, 2026-09-15, HEAD d5ebfb7, tag v5.6.0)
+
+**规划**: docs/PRD-v5.15.md + docs/DEV-PLAN-v5.15.md + docs/TEST-PLAN-v5.15.md(已批准)。9 项需求 F1-F8 + 6 项决策 C1-C6(全部按推荐方案实施: C1 A 隐藏 / C2 B / C3 B / C4 A「基础配置」/ C5 A 版本 5.6.0 / C6 A 更多▾+按钮)。
+
+- **F1 0% 共识移除**: 共识达成率 0% 展示下线
+- **F2 组配置首屏**: 用户组过滤后当前页被隐藏时自动重定向到首个可见菜单(ensureVisiblePage + watch(menus)); 含 TDZ 崩溃修复(见 §5.5)
+- **F3 美林时钟时间轴优化**
+- **F4 个股弹窗样式**: kline-dialog 头部透明覆盖
+- **F5 重点跟踪列表网格化**: focus-view 网格类 focus-row(实测 18 行)
+- **F6 顶部标签溢出优化**: TopTabs.vue 容器类 qc-top-tabs → qc-top-tabs-bar, 溢出时左右滚动按钮 + 「更多▾」下拉(被裁切标签可达); 键盘 ←/→ 滚动
+- **F7 短线复盘双栏**: 左列表 + 右看板
+- **F8 基础配置更名**: 功能配置 → 基础配置(子页 sub.feature)
+
+**冒烟实证 (2026-09-15)**: dev(:8001) guest 登录, T48 全导航 **0 pageerror**, F1/F4/F5/F6/F7/F8 **17/17 全绿**(v515_smoke.py); 登录页 body_len 9419→16191、input 0→2(崩溃修复后)。
+**测试基线**: 全量 3343 passed + 7 failed(5 CSS 门禁 + test_data_sources_fetch 环境相关, 与 ops 基线一致) + 2 skipped; v5.15 新增 35 用例全绿。
+
 ## 5. 关键技术要点
 
 ### 5.1 开发流程 (TDD 纪律)
 1. 先写门禁测试 → 跑红 → 改源码 → 跑绿
-2. 前端改动: 零构建 SPA — 直接改 frontend/ 源码, 后端 serve 源码实时生效 (无需 vite build)
+2. 前端改动 (V4.3+): **Vite 构建管线** — 改 frontend/src|js 后必须 `cd frontend && ./node_modules/.bin/vite build` 重建 dist(产物 index-<hash>.js 入库), 再重启后端 + 硬刷新
 3. 后端改动: `systemctl --user restart quant-calendar-dev.service quant-calendar-ops.service`(无 --reload)
 4. 浏览器强刷(Ctrl+Shift+R) + 冒烟
 5. 全量回归: `cd .../quant-calendar-dev && pytest -q -m 'not e2e'`(注意 cwd 必须 dev 根, 否则误收 workspace 其他 tests)
@@ -141,7 +160,7 @@
 
 ### 5.3 已知事项
 - **沙箱**: ~/.local 只读 → 依赖 qc_ws_pkgs + UV_CACHE_DIR 重定向; urllib 502, 验证用 curl
-- **前端零构建 SPA**: 后端 serve frontend/ 源码(非 dist), 前端源码改立即生效(浏览器强刷即可); 仅首次/打包需要构建
+- **前端 Vite 构建 (V4.3+)**: 业务 JS 全打进 dist/assets/index-<hash>.js, 只改源码不 build 则浏览器拿到旧 bundle; 产物内容哈希 + immutable 头, 手改 dist 不改文件名对已访问浏览器无效 → 必须重建。npm 需 `--registry=https://registry.npmmirror.com --cache=<workspace>/.npm-cache`(registry.npmjs.org 不通)
 - **admin 口令**: dev 为 admin; **ops(:8000) 已轮换**(admin/admin123 失效)。公网 qc.evergreenzhou.com 建议保持轮换 + 密钥加固
 - **测试隔离坑 (已根治 v5.3.9)**: conftest patch_data_dir 现重定向 `DATASOURCE_CONFIG_FILE`; test_today_snapshot 顶层 import 已延迟到 fixture
 - **锁文件漂移**: test_lockfile_consistent 用默认 uv 缓存重编译比对; 漂移时用同条件 `uv pip compile` 重新生成
@@ -150,16 +169,20 @@
 - **sxsc 涨停池必须用 `limit_list_d`**(44 行), `limit_list` 返回 0 行; sxsc `up_stat` 是 `'X/Y'` 字符串需解析 X=连板数; U 类封单金额网关不填如实空
 - **测试用合成 token**: prepush gate 拦截真实 token 片段 → 测试/脚本用合成 hex(如 deadbeef...f)
 - **v4.6/v4.7 旧 tag**: 群辉浅克隆拒绝推送(预存问题, 不影响 v5 tags)
+- **前端 Vue watch TDZ 坑 (v5.15 F2 实战)**: `watch(source, cb)` 创建时**立即求值 source 基线**(oldValue = effect.run()), 与 computed 的惰性不同。若 watch 注册在依赖 ref(const) 声明之前 → TDZ ReferenceError(Cannot access 'X' before initialization), 应用初始化即崩溃、登录页白屏。**规则: watch 必须注册在其 source 求值所需的全部 ref/const 声明之后**; 排查 minify 崩溃先核对声明顺序(computed 惰性不报, watch/computed 立即 .value 才报)。
 
-## 6. 测试体系 (v5.3.13 基线 2937 用例)
+## 6. 测试体系 (v5.6.0 基线 3343 passed / 7 failed / 2 skipped)
 
 - 门禁: test_tokens_defined / contrast / accessibility / spacing_grid(4px) / typography / theme_contrast / tokens_no_hardcode / **market_review/scan 无内联样式** / 版本纪律 / 覆盖率门禁(短线模块 93%)
 - 前端一致性: test_frontend_consistency(令牌/类/注入/i18n/menu) + deps_audit + lockfile
 - 功能: 策略/日历/AI/美林/开放平台/回测/数据源/研究/风险/复盘/短线 全覆盖
+- v5.15 新增 35 用例(test_v515x_*.py 8 文件)全绿; 剩余 7 failed = 5 CSS 门禁(对比度/间距/排版/动效/阴影) + test_data_sources_fetch(dev 无 SXSC token, 环境相关; ops 同用例通过)
 - e2e(视觉/移动): continue-on-error(信息性)
 
 ## 7. 下一步 / 待办
 
+- [x] **v5.15 里程碑 (v5.6.0) 完成**: F1-F8 九项需求全部交付 — 0%共识移除 / 组配置首屏 / 美林时间轴 / 弹窗样式 / 重点跟踪网格 / 标签溢出 / 短线双栏 / 基础配置更名; 浏览器冒烟 17/17 + T48 0 pageerror; tag v5.6.0 已推送(CI/Docker 触发)
+- [x] **v5.6.0 发布链完成 (2026-09-15)**: 锁文件刷新(tqdm/tzdata/uvicorn/wrapt) → TDZ 崩溃修复 + dist 重建 → 冒烟 17/17 → 提交 e47f397/d5ebfb7 → push origin → ops reset 对齐 + 双端重启 → /api/health 双端 5.6.0 → tag v5.6.0 push
 - [x] **v5.3 系列 (v5.3.0~v5.3.13) 全部完成**: 工程卫生 / 体验统一 / 视觉设计系统 / 命令面板 / 性能容量 / 智能决策 / 运维发布 / 短线修复 / token 污染修复 / sxsc 优先调度 / 6 位代码规范化 / 数据字典补全 / 健康统计优化 — 全部 tag v5.3.N ↔ APP_VERSION + 双端推送 + GitHub release(v5.3.10~13)
 - [x] **Docker ghcr.io 镜像实际推送 (v5.3.7 验证完成)**: tag v5.3.6 推送自动触发 CI 构建, ghcr.io/bangbang8000-cell/quant-calendar:v5.3.6 + latest 已可拉取并运行健康 (version 5.3.6)
 - [x] **测试隔离坑根治 (v5.3.9)**: conftest 重定向 `DATASOURCE_CONFIG_FILE` + test_today_snapshot 顶层 import 延迟到 fixture
@@ -167,5 +190,6 @@
 - [ ] 观察短线 16:05 抓取: 每日验证三池/龙虎榜/prev_zt 入库 + AI 复盘生成
 - [ ] (可选) dev 环境配置 SXSC_TUSHARE_TOKEN 验证 sxsc 全链(当前 dev 无 token, sxsc 客户端缺失自动跳过; ops 已配置真实 token)
 - [ ] 旧版 v5.1.5/v5.2.0/v5.2.1/v5.2.2 未建 GitHub release(仅 v5.2.3/v5.2.4/v5.3.10~13 有); 如需补齐历史 release 可 gh release create
+- [ ] **确认 v5.6.0 的 CI/Docker 发布结果**(tag 已推送自动触发; 需在 GitHub Actions 页确认 ci + docker-publish 两个 workflow 绿, ghcr.io:v5.6.0 镜像可拉取)
 
-> v5.3 系列(工程打磨 + 短线修复 + 数据源优先调度)已收官; 后续主攻方向见 PRD-v5.3.md §2(数据源功能完整性与时效性深化)。
+> v5.15 里程碑(交互体验与信息呈现优化)已收官 (tag v5.6.0); 后续主攻方向见 PRD-v5.15.md 与 DEV-PLAN-v5.15.md 的后续规划。
