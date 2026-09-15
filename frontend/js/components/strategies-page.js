@@ -1391,7 +1391,7 @@
         const mkt = (state.marketData && state.marketData.value) || {};
         return {
           sub: sub,
-          split: !!state.detailSplitEnabled,
+          split: !!state.detailSplitEnabled.value,
           top5: rank.slice(0, 5),
           rank: rank,
           indices: (mkt.indices || []).map(function (x) { return x; }),

@@ -59,9 +59,8 @@
                             <!-- V4.9.4: 对比基准/沿用持仓提示(来自 /api/view note) -->
                             <div v-if="viewNote" class="cal-view-note" role="status">{{ viewNote }}</div>
 
-                            <!-- V5.16 (F1): 股票池 中栏+右栏详情工作区 (弹窗模式时仅中栏全宽, 面板不渲染) -->
-                            <div class="stock-pool-body" :class="{ 'detail-split': detailSplitEnabled }">
-                            <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                            <!-- V5.16.1: 四大池标签横跨双栏顶部公用空间 (全部/新入池/当前持仓/已出池) —
+                                 移出中栏列表, 置于中栏+右栏详情之上 -->
                             <!-- 状态筛选 -->
                             <div class="status-tabs" role="tablist">
                                 <div class="status-tab" :class="{active: statusFilter === 'all'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'all'" @click="statusFilter = 'all'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="file-text" :size="14" /> {{ t('calendar.all') }} <span class="count">{{ statusCounts.all }}</span></div>
@@ -70,6 +69,9 @@
                                 <div class="status-tab" :class="{active: statusFilter === 'out'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'out'" @click="statusFilter = 'out'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="upload" :size="14" /> {{ t('calendar.outPool') }} <span class="count">{{ statusCounts.out }}</span></div>
                             </div>
 
+                            <!-- V5.16 (F1): 股票池 中栏+右栏详情工作区 (弹窗模式时仅中栏全宽, 面板不渲染) -->
+                            <div class="stock-pool-body" :class="{ 'detail-split': detailSplitEnabled }">
+                            <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                             <div class="search-box">
                                 <el-input class="w-100" v-model="searchKeyword" :placeholder="t('common.searchPlaceholder')" clearable/>
                             </div>
@@ -308,7 +310,7 @@
       Vue.watch(() => {
         const pool = state.stockPool;
         const list = (pool && pool.value) || [];
-        return { n: list.length, first: list[0] && list[0].code, split: !!state.detailSplitEnabled };
+        return { n: list.length, first: list[0] && list[0].code, split: !!state.detailSplitEnabled.value };
       }, (v, old) => {
         if (!v.split) return;                       // 仅双栏模式
         if (!v.first || v.n === 0) return;          // 列表为空
