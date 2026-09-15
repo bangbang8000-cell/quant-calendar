@@ -106,9 +106,12 @@
   --qc-shadow-md: 0 4px 16px rgba(31, 29, 26, 0.05);
   --qc-shadow-lg: 0 8px 32px rgba(31, 29, 26, 0.05);
 
-  /* ─── V5.17: 中栏双栏布局 — 中栏默认宽度 + 拖拽分隔条宽度 (运行时由 app-logic 覆盖) ─── */
-  --split-w: 320px;
+  /* ─── V5.17: 中栏双栏布局 — 中栏默认宽度(35% 分割比例) + 拖拽分隔条宽度 (运行时由 app-logic 覆盖) ─── */
+  --split-w: 35%;
   --split-gutter: 6px;
+
+  /* ─── V5.17.1: 过渡令牌 — 禁用过渡 (门禁: transition 须 0.2s 标准或令牌) ─── */
+  --qc-transition-none: none;
 
   /* ─── Typography ─── */
   --qc-font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
@@ -270,14 +273,14 @@
 *,
 *::before,
 *::after {
-  transition: background-color 0.25s ease, color 0.25s ease,
-              border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.2s ease, color 0.2s ease,
+              border-color 0.2s ease, box-shadow 0.2s ease;
 }
 /* 开关/滑块/进度条保留自身交互动效, 不受全局过渡干扰 */
 .qc-switch,
 .qc-slider,
 .qc-progress-bar {
-  transition: none;
+  transition: var(--qc-transition-none);
 }
 
 /* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */

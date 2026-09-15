@@ -14,7 +14,7 @@
       embedded: { type: Boolean, default: false },
     },
     template: `
-        <el-dialog v-model="indexDetailVisible" title="指数详情分析" width="800px" class="kline-dialog"
+        <el-dialog v-model="indexDetailVisible" title="" width="800px" class="kline-dialog"
             :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
             :close-on-click-modal="!embedded" :class="{ 'qc-embedded-dialog': embedded }">
             <div v-if="indexDetail">

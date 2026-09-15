@@ -166,7 +166,7 @@
 .factor-layer-result { margin-top: 8px; }
 
 /* ===== v3.21 遗留2: 操作审计 ===== */
-.audit-list { display: flex; flex-direction: column; gap: 4px; }
+.audit-list { display: flex; flex-direction: column; gap: var(--qc-space-1); }
 .audit-row { display: flex; align-items: center; gap: 12px; padding: 8px 8px; border-bottom: 1px solid var(--border-color); font-size: var(--qc-font-size-sm); }
 .audit-action { padding: 4px 8px; border-radius: var(--qc-radius-full); background: var(--badge-info-bg); color: var(--badge-info-text); font-size: var(--qc-font-size-xs); flex-shrink: 0; }
 .audit-detail { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -866,7 +866,7 @@
 /* ===== V5.15 (F7): 短线复盘「列表 + 右边内容」双栏 ===== */
 .shortterm-split {
   display: grid;
-  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  grid-template-columns: var(--split-w, 35%) var(--split-gutter, 6px) minmax(0, 1fr);
   gap: 0 var(--qc-space-1);
   /* V5.15-F7fix: 等高双栏 — 默认 stretch 让左列表卡片高度与右侧内容区一致 */
   align-items: stretch;
@@ -930,7 +930,7 @@
 /* ===== V5.15 (F8.2): 每日复盘 双栏 — 左日期中栏 (类似复盘日历) + 右内容 ===== */
 .market-review-split {
   display: grid;
-  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  grid-template-columns: var(--split-w, 35%) var(--split-gutter, 6px) minmax(0, 1fr);
   gap: 0 var(--qc-space-1);
   align-items: stretch;
 }
@@ -996,7 +996,7 @@
 /* 通用双栏容器: 中栏列表 + 右栏详情工作区 (等高 stretch, 同 F7/F8.2 模式) */
 .detail-split {
   display: grid;
-  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  grid-template-columns: var(--split-w, 35%) var(--split-gutter, 6px) minmax(0, 1fr);
   gap: 0 var(--qc-space-1);
   align-items: stretch;
 }
@@ -1038,8 +1038,18 @@
   height: 100%;
 }
 .qc-embedded-dialog .el-dialog__header {
+  display: none;  /* V5.17.1 (需求2): 内嵌工作区去掉「股票详情分析」标题, 内容上移 */
   padding: var(--qc-space-3) var(--qc-space-4);
   border-bottom: 1px solid var(--border-light);
+}
+/* V5.17.1 (需求2): 弹窗模式标题已置空 — header 仅保留关闭按钮, 压缩留白 */
+.kline-dialog:not(.qc-embedded-dialog) .el-dialog__header {
+  padding: var(--qc-space-2) var(--qc-space-3) !important;
+  border-bottom: 1px solid var(--border-light);
+  min-height: 44px;
+}
+.kline-dialog:not(.qc-embedded-dialog) .el-dialog__header .el-dialog__title {
+  display: none;
 }
 .qc-embedded-dialog .el-dialog__body {
   flex: 1 1 auto;
@@ -1143,7 +1153,7 @@ body.qc-split-resizing * {
 /* 中栏列表项 hover/选中 — 主题化 (左主色条 + 淡背景) */
 .detail-split-list .qc-stock-row,
 .qc-stock-list .qc-stock-row {
-  transition: background-color 0.15s ease-out;
+  transition: background-color 0.2s ease-out;
 }
 .detail-split-list .qc-stock-row.is-active,
 .qc-stock-list .qc-stock-row.is-active {

@@ -389,31 +389,41 @@ const allMenuDefs = [
                   isNarrow.value = window.innerWidth <= 1024;
                 });
 
-                // ===== V5.17 (F3): 中栏宽度 — 默认 320px, 可拖拽调宽 (下限=默认, 上限=容器 50%) =====
-                const SPLIT_DEFAULT_W = 320;      // 中栏默认宽度 (px), 同时是拖拽下限
-                const splitWidth = ref(parseInt(localStorage.getItem('qc_split_width') || '', 10) || SPLIT_DEFAULT_W);
+                // ===== V5.17 (F3) + V5.17.1: 中栏宽度 — 默认 35% (5% 整数倍, 用户确认), 可拖拽调宽 =====
+                // 下限 = 默认比例(35%), 上限 = 容器 50%; 拖拽后 px 持久化, 无持久化值用默认百分比
+                const SPLIT_DEFAULT_PCT = 35;     // 默认分割比例 (%) — 靠近 5% 整数倍
+                const splitWidth = ref(parseInt(localStorage.getItem('qc_split_width') || '', 10) || null);
                 // 同步 --split-w CSS 变量到根元素 (CSS 变量继承进所有双栏容器, 模板无需 :style 绑定)
                 function syncSplitWidthVar() {
                   if (typeof document !== 'undefined') {
-                    document.documentElement.style.setProperty('--split-w', splitWidth.value + 'px');
+                    document.documentElement.style.setProperty('--split-w',
+                      splitWidth.value ? splitWidth.value + 'px' : SPLIT_DEFAULT_PCT + '%');
                   }
                 }
                 syncSplitWidthVar();
                 function setSplitWidth(w) {
-                  const clamped = Math.max(SPLIT_DEFAULT_W, Math.min(w, 2000));
+                  const clamped = Math.max(1, Math.min(w, 2000));
                   splitWidth.value = clamped;
                   syncSplitWidthVar();
                   try { localStorage.setItem('qc_split_width', String(clamped)); } catch (e) {}
+                }
+                // 当前中栏实际像素宽 (未持久化时按容器 35% 计算)
+                function currentSplitPx(containerEl) {
+                  if (splitWidth.value) return splitWidth.value;
+                  const cw = containerEl ? containerEl.getBoundingClientRect().width : 0;
+                  return Math.max(200, Math.floor(cw * SPLIT_DEFAULT_PCT / 100));
                 }
                 // 拖拽状态 (mousedown 在 [data-split-resize] 手柄上启动, 全局 mousemove/up)
                 let splitDrag = null;
                 function onSplitDragStart(e, containerEl) {
                   if (!containerEl || isNarrow.value) return;
                   e.preventDefault();
+                  const cw = containerEl.getBoundingClientRect().width;
                   splitDrag = {
                     startX: e.clientX,
-                    startW: splitWidth.value,
-                    maxW: Math.max(SPLIT_DEFAULT_W, Math.floor(containerEl.getBoundingClientRect().width / 2)),
+                    startW: currentSplitPx(containerEl),
+                    minW: Math.max(200, Math.floor(cw * SPLIT_DEFAULT_PCT / 100)),
+                    maxW: Math.floor(cw / 2),
                   };
                   document.body.classList.add('qc-split-resizing');
                 }
@@ -421,8 +431,8 @@ const allMenuDefs = [
                   if (!splitDrag) return;
                   const delta = e.clientX - splitDrag.startX;
                   let w = splitDrag.startW + delta;
-                  // 上限 = 容器 50%; 下限 = 默认宽
-                  w = Math.max(SPLIT_DEFAULT_W, Math.min(w, splitDrag.maxW));
+                  // 上限 = 容器 50%; 下限 = 默认比例(35%)
+                  w = Math.max(splitDrag.minW, Math.min(w, splitDrag.maxW));
                   splitWidth.value = w;
                   syncSplitWidthVar();
                   try { localStorage.setItem('qc_split_width', String(w)); } catch (err) {}
@@ -1270,7 +1280,7 @@ const allMenuDefs = [
                     loadingView, dates, consensus, searchKeyword,
                     stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
                     detailDisplayMode, setDetailDisplayMode, isNarrow, detailSplitEnabled,
-                    splitWidth, setSplitWidth, SPLIT_DEFAULT_W,
+                    splitWidth, setSplitWidth, SPLIT_DEFAULT_PCT,
                     aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,
