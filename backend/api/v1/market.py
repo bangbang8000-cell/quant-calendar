@@ -471,11 +471,47 @@ async def get_industry_heatmap():
 
 # ─── v3.17.2: AI 每日市场复盘 (只读端点) ──────────────────────
 
+# V5.15 (F8.2): 每日复盘日期指标摘要 — 与复盘日历 (dates/summary) 口径一致
+# 轻量提取 赚钱效应/情绪/涨停, 供每日复盘左侧中栏展示; 内存缓存避免重复计算
+_review_summary_cache: Dict[str, dict] = {}
+
+
+def _review_date_summary(date: str) -> dict:
+    """提取单日核心指标 (money_effect/emotion_score/zt_count), 单日异常降级为 None。"""
+    cached = _review_summary_cache.get(date)
+    if cached is not None:
+        return cached
+    try:
+        from shortterm import store, emotion_metrics
+        me = emotion_metrics.build_metrics(date) or {}
+        money_effect = me.get('money_effect') or {}
+        sentiment = me.get('sentiment_cycle') or {}
+        zt = store.load_pool(date, 'zt') or []
+        out = {
+            'money_effect': money_effect.get('median'),
+            'emotion_score': sentiment.get('current_score') if sentiment.get('available') else None,
+            'emotion_rising': sentiment.get('rising') if sentiment.get('available') else None,
+            'zt_count': len(zt),
+        }
+    except Exception as ex:  # noqa: BLE001 — 单日异常降级, 不拖垮列表
+        logger.warning('review summary %s 提取失败: %s', date, ex)
+        out = {'money_effect': None, 'emotion_score': None, 'emotion_rising': None, 'zt_count': None}
+    _review_summary_cache[date] = out
+    if len(_review_summary_cache) > 120:  # 简单上限, 防无界增长
+        _review_summary_cache.clear()
+    return out
+
+
 @router.get("/reviews")
 async def get_market_reviews(limit: int = 30):
-    """获取市场复盘报告列表 (按日期倒序)"""
+    """获取市场复盘报告列表 (按日期倒序), 每项附加日期指标摘要 (中栏信息)。"""
     from market_review import list_reviews
-    return {"success": True, "data": list_reviews(limit=limit)}
+    data = list_reviews(limit=limit)
+    for item in data:
+        d = item.get('date')
+        if d:
+            item['summary'] = _review_date_summary(d)
+    return {"success": True, "data": data}
 
 
 @router.get("/review")

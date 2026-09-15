@@ -868,7 +868,8 @@
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: var(--qc-space-3);
-  align-items: start;
+  /* V5.15-F7fix: 等高双栏 — 默认 stretch 让左列表卡片高度与右侧内容区一致 */
+  align-items: stretch;
 }
 .shortterm-date-list {
   position: sticky;
@@ -877,6 +878,10 @@
   border: 1px solid var(--border-color);
   border-radius: var(--qc-radius-medium);
   overflow: hidden;
+  /* V5.15-F7fix: flex column, 让日期滚动区填满与右侧等高的剩余空间 */
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
 }
 .shortterm-date-list-head {
   display: flex;
@@ -889,7 +894,9 @@
 }
 .shortterm-date-empty { padding: var(--qc-space-3); text-align: center; }
 .shortterm-date-items {
-  max-height: 520px;
+  /* V5.15-F7fix: 撑满左列表剩余高度 (与右侧内容区等高), 内容超出时内部滚动 */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 .shortterm-date-item {
@@ -919,4 +926,63 @@
 }
 .shortterm-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
 .shortterm-split-content { min-width: 0; }
+
+/* ===== V5.15 (F8.2): 每日复盘 双栏 — 左日期中栏 (类似复盘日历) + 右内容 ===== */
+.market-review-split {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: var(--qc-space-3);
+  align-items: stretch;
+}
+.market-review-date-list {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--qc-radius-medium);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+.market-review-date-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--qc-space-2) var(--qc-space-3);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+.market-review-date-empty { padding: var(--qc-space-3); text-align: center; }
+.market-review-date-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.market-review-date-item {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color var(--duration-fast, 0.15s);
+}
+.market-review-date-item:hover { background: var(--bg-tertiary); }
+.market-review-date-item.is-active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--color-primary);
+  padding-left: calc(var(--qc-space-3) - 3px);
+}
+.market-review-date-item-date {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary);
+  font-size: var(--qc-font-size-sm);
+}
+.market-review-date-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--qc-space-3);
+  margin-top: 2px;
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-secondary);
+}
+.market-review-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
+.market-review-split-content { min-width: 0; }
 

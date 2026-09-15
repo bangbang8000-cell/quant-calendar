@@ -604,34 +604,61 @@
                             </div>
                         </div>
 
-                        <!-- ===== 列表视图 ===== -->
-                        <template v-if="!selectedReviewDate">
-                            <qc-state-panel v-if="marketReviewLoading" type="loading"></qc-state-panel>
-                            <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
-                                desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
-                            <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
-                                desc="尚未生成任何市场复盘报告"></qc-state-panel>
-                            <div v-else class="market-review-list">
-                                <div class="flex-wrap mb-4">
-                                    <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
-                                    <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
+                        <!-- V5.15 (F8.2): 双栏 — 左日期中栏 (指标摘要) + 右内容 (列表/详情) -->
+                        <div class="market-review-split">
+                            <!-- 左: 日期中栏 (类似复盘日历) -->
+                            <div class="market-review-date-list">
+                                <div class="market-review-date-list-head">
+                                    <span>复盘日期</span>
+                                    <el-button size="small" text @click="loadMarketReviews" aria-label="刷新复盘日期">🔄</el-button>
                                 </div>
-                                <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
-                                     tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
-                                     @click="openMarketReview(item.date)"
-                                     @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                    <div class="market-review-row-main">
-                                        <span class="market-review-date">{{ item.date }}</span>
-                                        <span class="market-review-badge market-review-ai-badge">AI 解读</span>
-                                        <span v-for="(src, i) in marketReviewSrcEntries(item.data_sources)" :key="i"
-                                              class="market-review-src" :class="{ 'is-unavailable': src.unavailable }">
-                                            {{ src.label }} {{ src.value }}
-                                        </span>
+                                <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
+                                <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>
+                                <div v-else class="market-review-date-items">
+                                    <div v-for="item in marketReviews" :key="item.date" class="market-review-date-item"
+                                         :class="{ 'is-active': item.date === selectedReviewDate }" role="button" tabindex="0"
+                                         @click="toggleMarketReviewDate(item.date)"
+                                         @keydown.enter.prevent="toggleMarketReviewDate(item.date)"
+                                         @keydown.space.prevent="toggleMarketReviewDate(item.date)">
+                                        <div class="market-review-date-item-date">{{ item.date }}</div>
+                                        <div class="market-review-date-item-meta">
+                                            <span>赚钱 <b>{{ fmtPct(item.summary && item.summary.money_effect) }}</b></span>
+                                            <span>情绪 <b>{{ fmtEmotion(item.summary && item.summary.emotion_score) }}</b></span>
+                                            <span>涨停 <b>{{ item.summary && item.summary.zt_count != null ? item.summary.zt_count : '—' }}</b></span>
+                                        </div>
                                     </div>
-                                    <span class="market-review-arrow">›</span>
                                 </div>
                             </div>
-                        </template>
+                            <!-- 右: 内容 (列表 / 详情) -->
+                            <div class="market-review-split-content">
+                            <!-- ===== 列表视图 ===== -->
+                            <template v-if="!selectedReviewDate">
+                                <qc-state-panel v-if="marketReviewLoading" type="loading"></qc-state-panel>
+                                <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
+                                    desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
+                                <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
+                                    desc="尚未生成任何市场复盘报告"></qc-state-panel>
+                                <div v-else class="market-review-list">
+                                    <div class="flex-wrap mb-4">
+                                        <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
+                                        <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
+                                    </div>
+                                    <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
+                                         tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
+                                         @click="openMarketReview(item.date)"
+                                         @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
+                                        <div class="market-review-row-main">
+                                            <span class="market-review-date">{{ item.date }}</span>
+                                            <span class="market-review-badge market-review-ai-badge">AI 解读</span>
+                                            <span v-for="(src, i) in marketReviewSrcEntries(item.data_sources)" :key="i"
+                                                  class="market-review-src" :class="{ 'is-unavailable': src.unavailable }">
+                                                {{ src.label }} {{ src.value }}
+                                            </span>
+                                        </div>
+                                        <span class="market-review-arrow">›</span>
+                                    </div>
+                                </div>
+                            </template>
 
                         <!-- ===== 详情视图 ===== -->
                         <template v-else>
@@ -709,6 +736,8 @@
                                 </div>
                             </template>
                             </template>
+                            </div><!-- /.market-review-split-content -->
+                            </div><!-- /.market-review-split -->
                     </div>
                 </div>`,
     setup() {
@@ -759,6 +788,25 @@
       function openMarketReview(date) {
         selectedReviewDate.value = date;
         loadMarketReviewDetail(date);
+      }
+
+      // V5.15 (F8.2): 左中栏点击 — 选中/取消日期 (再点收起详情回列表)
+      function toggleMarketReviewDate(date) {
+        if (selectedReviewDate.value === date) {
+          backToMarketReviewList();
+        } else {
+          openMarketReview(date);
+        }
+      }
+
+      // V5.15 (F8.2): 中栏指标格式化 (与复盘日历口径一致)
+      function fmtPct(v) {
+        if (v == null || isNaN(Number(v))) return '—';
+        return (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2) + '%';
+      }
+      function fmtEmotion(v) {
+        if (v == null || isNaN(Number(v))) return '—';
+        return Number(v).toFixed(2);
       }
 
       function backToMarketReviewList() {
@@ -1597,8 +1645,9 @@
         toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,
-        loadMarketReviews, openMarketReview, backToMarketReviewList, loadMarketReviewDetail,
+        loadMarketReviews, openMarketReview, toggleMarketReviewDate, backToMarketReviewList, loadMarketReviewDetail,
         marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries,
+        fmtPct, fmtEmotion,
         strategies, strategiesLoading, strategiesError, strategiesErrorText, strategiesWarn,
         activeStrategyId, activeStrategy, paramValues,
         strategyRunning, ptradeCode, strategyRuns,

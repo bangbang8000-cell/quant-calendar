@@ -327,6 +327,29 @@
     border-left: 1px solid var(--color-primary);
     padding-left: var(--qc-space-3);
   }
+  /* V5.15 (F8.2): 每日复盘双栏 → 上下堆叠 (中栏折叠为顶部横向滚动) */
+  .market-review-split {
+    grid-template-columns: 1fr;
+  }
+  .market-review-date-items {
+    display: flex;
+    overflow-x: auto;
+    min-height: 0;
+    max-height: none;
+    padding: var(--qc-space-2);
+    gap: var(--qc-space-2);
+  }
+  .market-review-date-item {
+    flex-shrink: 0;
+    min-width: 150px;
+    border-bottom: none;
+    border: 1px solid var(--border-light);
+    border-radius: var(--qc-radius-small);
+  }
+  .market-review-date-item.is-active {
+    border-left: 1px solid var(--color-primary);
+    padding-left: var(--qc-space-3);
+  }
 }
 @media (max-width: 480px) {
   .today-hero-head {
