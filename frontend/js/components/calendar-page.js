@@ -58,7 +58,10 @@
                             <div class="card-title"><qc-icon name="gem" :size="16" /> {{ t('calendar.poolTitle') }}</div>
                             <!-- V4.9.4: 对比基准/沿用持仓提示(来自 /api/view note) -->
                             <div v-if="viewNote" class="cal-view-note" role="status">{{ viewNote }}</div>
-                            
+
+                            <!-- V5.16 (F1): 股票池 中栏+右栏详情工作区 (弹窗模式时仅中栏全宽, 面板不渲染) -->
+                            <div class="stock-pool-body" :class="{ 'detail-split': detailSplitEnabled }">
+                            <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                             <!-- 状态筛选 -->
                             <div class="status-tabs" role="tablist">
                                 <div class="status-tab" :class="{active: statusFilter === 'all'}" tabindex="0" role="tab" :aria-selected="statusFilter === 'all'" @click="statusFilter = 'all'" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="file-text" :size="14" /> {{ t('calendar.all') }} <span class="count">{{ statusCounts.all }}</span></div>
@@ -85,6 +88,7 @@
                                   :row-height="78"
                                   :copy-code="true"
                                   show-rank
+                                  :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                                   @select="(item) => showStockDetail(item.code)"
                                 >
                                   <template #name-suffix="{ item }">
@@ -98,6 +102,12 @@
                                   </template>
                                 </qc-stock-list>
                             </div>
+                            </div><!-- /.detail-split-list -->
+                            <!-- 右栏详情工作区 (仅双栏模式渲染, embedded 无关闭按钮) -->
+                            <div class="detail-split-pane" v-if="detailSplitEnabled">
+                                <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+                            </div>
+                            </div><!-- /.stock-pool-body -->
                         </div>
                     </template>
 
@@ -293,6 +303,24 @@
           compareLoading.value = false;
         }
       }
+      // V5.16 (F1/D2): 双栏模式默认选中第一条 — 列表就绪且无当前股时自动打开首条
+      let _autoOpened = '';
+      Vue.watch(() => {
+        const pool = state.stockPool;
+        const list = (pool && pool.value) || [];
+        return { n: list.length, first: list[0] && list[0].code, split: !!state.detailSplitEnabled };
+      }, (v, old) => {
+        if (!v.split) return;                       // 仅双栏模式
+        if (!v.first || v.n === 0) return;          // 列表为空
+        const cur = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
+        const inList = (state.stockPool.value || []).some(s => s.code === cur);
+        // 无当前股 或 当前股不在本列表(filter 切换) → 自动打开第一条
+        if (!cur || !inList) {
+          if (_autoOpened === v.first && cur && inList === false && v.n > 1) return;
+          _autoOpened = v.first;
+          if (state.showStockDetail) state.showStockDetail(v.first);
+        }
+      }, { immediate: true });
       return { ...state, calType, pullRefreshing, onCalTouchStart, onCalTouchEnd,
                viewLabel, switchViewLocal,
                compareVisible, compareLoading, compareError, compareData, comparePairs, openStrategyCompare };

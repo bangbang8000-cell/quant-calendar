@@ -168,6 +168,9 @@
                             <span>{{ t('strategies.consensusTop5') }}</span>
                             <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
+                        <!-- V5.16 (F2): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
+                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                         <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
                         <!-- V6.9.3 (F1): 启用共识徽章/进度条/价格列, 移除冗余「N 策略」extra -->
                         <qc-stock-list
@@ -176,6 +179,7 @@
                           show-rank
                           show-consensus
                           show-price
+                          :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                           @select="(item) => showStockDetail(item.code)"
                         >
                           <template #actions="{ item }">
@@ -183,6 +187,11 @@
                             <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
                           </template>
                         </qc-stock-list>
+                        </div><!-- /.detail-split-list -->
+                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                            <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+                        </div>
+                        </div><!-- /.detail-split-wrap -->
                     </div>
 
                     </div>
@@ -433,8 +442,13 @@
                         <div class="market-sentiment" v-if="marketData.market_sentiment">
                             <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
                         </div>
-                        <div class="market-grid">
-                            <div v-for="idx in marketData.indices" :key="idx.id" class="market-card clickable" :class="idx.pct_chg>= 0 ? 'up' : 'down'" @click="showIndexDetail(idx)">
+                        <!-- V5.16 (F4): 中栏指数列表 + 右栏指数详情工作区 (C4-A; 弹窗模式时仅列表全宽) -->
+                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                        <div class="market-grid" :class="{ 'is-vertical': detailSplitEnabled }">
+                            <div v-for="idx in marketData.indices" :key="idx.id" class="market-card clickable"
+                                 :class="['up-down-' + (idx.pct_chg >= 0 ? 'up' : 'down'), { 'is-active': detailSplitEnabled && indexDetail && indexDetail.code === idx.code }]"
+                                 @click="showIndexDetail(idx)">
                                 <div class="market-header">
                                     <span class="market-name">{{ idx.name }}</span>
                                     <span class="market-tag">{{ idx.market }}</span>
@@ -447,6 +461,11 @@
                                 </div>
                             </div>
                         </div>
+                        </div><!-- /.detail-split-list -->
+                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                            <qc-index-detail-dialog :embedded="true"></qc-index-detail-dialog>
+                        </div>
+                        </div><!-- /.detail-split-wrap -->
                     </div>
                     </div>
                     <!-- 子页: 策略共识榜 -->
@@ -455,6 +474,9 @@
                     <!-- 策略共识度排行 -->
                     <div class="card">
                         <div class="card-title"><qc-icon name="trophy" :size="14" /> 策略共识度排行 (多策略同时选中)</div>
+                        <!-- V5.16 (F3): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
+                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                         <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + 共识徽章/进度条/价格列) -->
                         <qc-stock-list
                           class="h-calc-240"
@@ -465,6 +487,7 @@
                           show-rank
                           show-consensus
                           show-price
+                          :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                           @select="(item) => showStockDetail(item.code)"
                         >
                           <template #actions="{ item }">
@@ -473,6 +496,11 @@
                             <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span>
                           </template>
                         </qc-stock-list>
+                        </div><!-- /.detail-split-list -->
+                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                            <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+                        </div>
+                        </div><!-- /.detail-split-wrap -->
                     </div>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->
@@ -1354,6 +1382,38 @@
       Vue.watch(function () { return state.currentSubPage && state.currentSubPage.value; }, function (sub) {
         if (sub === 'execution') { loadExecutionData(); loadExecutionMonitor(); }
         else { _stopExecPoll(); }
+      }, { immediate: true });
+
+      // V5.16 (F2/F3/F4): 双栏模式默认选中第一条 (股票/指数)
+      Vue.watch(function () {
+        const sub = state.currentSubPage && state.currentSubPage.value;
+        const rank = (state.filteredConsensusRank && state.filteredConsensusRank.value) || [];
+        const mkt = (state.marketData && state.marketData.value) || {};
+        return {
+          sub: sub,
+          split: !!state.detailSplitEnabled,
+          top5: rank.slice(0, 5),
+          rank: rank,
+          indices: (mkt.indices || []).map(function (x) { return x; }),
+        };
+      }, function (v, old) {
+        if (!v.split) return;  // 仅双栏模式
+        if (v.sub === 'overview') {
+          if (!v.top5.length) return;
+          const cur = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
+          const inList = v.top5.some(function (s) { return s.code === cur; });
+          if (!cur || !inList) { if (state.showStockDetail) state.showStockDetail(v.top5[0].code); }
+        } else if (v.sub === 'consensus') {
+          if (!v.rank.length) return;
+          const cur = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
+          const inList = v.rank.some(function (s) { return s.code === cur; });
+          if (!cur || !inList) { if (state.showStockDetail) state.showStockDetail(v.rank[0].code); }
+        } else if (v.sub === 'market') {
+          if (!v.indices.length) return;
+          const cur = state.indexDetail && state.indexDetail.value && state.indexDetail.value.code;
+          const inList = v.indices.some(function (x) { return x.code === cur; });
+          if (!cur || !inList) { if (state.showIndexDetail) state.showIndexDetail(v.indices[0]); }
+        }
       }, { immediate: true });
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, todaySignals, merrillConfigOpen,

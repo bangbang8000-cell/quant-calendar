@@ -375,6 +375,19 @@ const allMenuDefs = [
                 const stockDetail = ref(null);
                 // v3.16 (16.10-fix): 详情数据加载态 — 弹窗立即打开，数据异步填充
                 const stockDetailLoading = ref(false);
+                // ===== V5.16 (F2/F3): 详情展示模式 — 'split'(内嵌双栏) | 'dialog'(弹窗) =====
+                // localStorage 持久化; 移动端(≤1024px)强制弹窗 (isNarrow)
+                const detailDisplayMode = ref(localStorage.getItem('qc_detail_mode') || 'split');
+                const isNarrow = ref(window.innerWidth <= 1024);
+                const detailSplitEnabled = computed(() => detailDisplayMode.value === 'split' && !isNarrow.value);
+                function setDetailDisplayMode(mode) {
+                  detailDisplayMode.value = mode;
+                  try { localStorage.setItem('qc_detail_mode', mode); } catch (e) {}
+                }
+                // 视口窄时回退弹窗 (resize 联动)
+                window.addEventListener('resize', () => {
+                  isNarrow.value = window.innerWidth <= 1024;
+                });
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
@@ -1198,6 +1211,7 @@ const allMenuDefs = [
                     // v1.10
                     loadingView, dates, consensus, searchKeyword,
                     stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
+                    detailDisplayMode, setDetailDisplayMode, isNarrow, detailSplitEnabled,
                     aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,

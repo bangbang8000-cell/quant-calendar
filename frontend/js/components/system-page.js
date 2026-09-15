@@ -858,7 +858,13 @@
                     </div>
                     <!-- V6.6.1 (PRD F-6.6.8 方案A): 界面与个性化 — 外观/语言/K线显示自 status 归位至此 (个性化设置集中) -->
                     <div class="card mt-4">
-                        <div class="card-title"><qc-icon name="palette" :size="14" /> 界面与个性化 <span class="text-sm-tertiary">主题 · 语言 · 图表</span></div>
+                        <div class="card-title"><qc-icon name="palette" :size="14" /> 界面与个性化 <span class="text-sm-tertiary">主题 · 语言 · 图表 · 详情展示</span></div>
+                        <!-- V5.16 (F2): 详情展示模式 — 内嵌双栏 / 弹窗 (移动端强制弹窗) -->
+                        <div class="theme-section-label">详情展示模式 <span class="text-xs-tertiary" v-if="isNarrow">窄屏自动使用弹窗</span></div>
+                        <el-radio-group :model-value="detailDisplayMode" size="small" @change="setDetailDisplayMode" :disabled="isNarrow">
+                            <el-radio-button value="split">内嵌双栏</el-radio-button>
+                            <el-radio-button value="dialog">弹窗</el-radio-button>
+                        </el-radio-group>
                         <div class="theme-section-label">外观模式</div>
                         <el-radio-group :model-value="themeMode" size="small" @change="onThemeModeChange">
                             <el-radio-button value="light">浅色</el-radio-button>

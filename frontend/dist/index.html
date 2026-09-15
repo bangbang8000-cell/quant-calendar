@@ -42,7 +42,7 @@
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
     <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
-<script type="module" crossorigin src="/assets/index-DCkMECIi.js"></script>
+<script type="module" crossorigin src="/assets/index-CBpmRrxS.js"></script>
 <link rel="modulepreload" crossorigin href="/assets/vendor-vue-DDF9zi1T.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-ep-VOop1zGa.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-lucide-CnYCvXhM.js">
@@ -160,7 +160,8 @@
 </template>
 
         <!-- v3.11 (FR-3.11.2): 股票详情对话框 — 移至 components/dialogs/ -->
-        <qc-stock-detail-dialog></qc-stock-detail-dialog>
+        <!-- V5.16 (F2): 双栏内嵌模式(桌面)下不挂载全局弹窗, 由页面右栏面板接管 (防双实例) -->
+        <qc-stock-detail-dialog v-if="!detailSplitEnabled"></qc-stock-detail-dialog>
 
         <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
         <!-- 注意：in-DOM 模板必须用成对标签（HTML 解析器不认自闭合自定义元素） -->
@@ -170,7 +171,8 @@
         <qc-batch-evaluate-dialog></qc-batch-evaluate-dialog>
 
         <!-- v3.11 (FR-3.11.2): 指数详情对话框 — 移至 components/dialogs/ -->
-        <qc-index-detail-dialog></qc-index-detail-dialog>
+        <!-- V5.16 (F4): 双栏内嵌模式下不挂载全局弹窗, 由页面右栏面板接管 -->
+        <qc-index-detail-dialog v-if="!detailSplitEnabled"></qc-index-detail-dialog>
 
         <!-- v3.11 (FR-3.11.2): 自动评估设置对话框 — 移至 components/dialogs/ -->
         <qc-auto-evaluate-dialog></qc-auto-evaluate-dialog>

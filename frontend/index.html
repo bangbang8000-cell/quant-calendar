@@ -156,7 +156,8 @@
 </template>
 
         <!-- v3.11 (FR-3.11.2): 股票详情对话框 — 移至 components/dialogs/ -->
-        <qc-stock-detail-dialog></qc-stock-detail-dialog>
+        <!-- V5.16 (F2): 双栏内嵌模式(桌面)下不挂载全局弹窗, 由页面右栏面板接管 (防双实例) -->
+        <qc-stock-detail-dialog v-if="!detailSplitEnabled"></qc-stock-detail-dialog>
 
         <!-- v3.11 (FR-3.11.2): 对话框组件化 — 逻辑移至 components/dialogs/ -->
         <!-- 注意：in-DOM 模板必须用成对标签（HTML 解析器不认自闭合自定义元素） -->
@@ -166,7 +167,8 @@
         <qc-batch-evaluate-dialog></qc-batch-evaluate-dialog>
 
         <!-- v3.11 (FR-3.11.2): 指数详情对话框 — 移至 components/dialogs/ -->
-        <qc-index-detail-dialog></qc-index-detail-dialog>
+        <!-- V5.16 (F4): 双栏内嵌模式下不挂载全局弹窗, 由页面右栏面板接管 -->
+        <qc-index-detail-dialog v-if="!detailSplitEnabled"></qc-index-detail-dialog>
 
         <!-- v3.11 (FR-3.11.2): 自动评估设置对话框 — 移至 components/dialogs/ -->
         <qc-auto-evaluate-dialog></qc-auto-evaluate-dialog>

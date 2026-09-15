@@ -9,8 +9,14 @@
 
   window.__quantComponents.StockDetailDialog = {
     name: 'qc-stock-detail-dialog',
+    props: {
+      // V5.16 (F1): true=内嵌面板(双栏右栏, 无遮罩/无关闭按钮); false/缺省=全局弹窗
+      embedded: { type: Boolean, default: false },
+    },
     template: `
-        <el-dialog v-model="stockDetailVisible" :title="t('detail.title')" width="800px" class="kline-dialog">
+        <el-dialog v-model="stockDetailVisible" :title="t('detail.title')" width="800px" class="kline-dialog"
+            :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
+            :close-on-click-modal="!embedded" :class="{ 'qc-embedded-dialog': embedded }">
             <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
             <div v-if="stockDetailLoading && !stockDetail" class="empty-state p-48-0">
                 <div class="empty-state-icon-xs"><qc-icon name="loader" :size="24" /></div>

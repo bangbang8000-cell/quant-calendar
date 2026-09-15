@@ -16,10 +16,8 @@
     rows = incremental_daily("600519.SH", ["2026-09-10", "2026-09-11"], fetch_fn)
 """
 import logging
-import time
 
 import cache
-import lineage
 import stock_calendar
 
 logger = logging.getLogger(__name__)

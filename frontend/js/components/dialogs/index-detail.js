@@ -9,8 +9,14 @@
 
   window.__quantComponents.IndexDetailDialog = {
     name: 'qc-index-detail-dialog',
+    props: {
+      // V5.16 (F4): true=内嵌面板(双栏右栏, 无遮罩/无关闭按钮); false/缺省=全局弹窗
+      embedded: { type: Boolean, default: false },
+    },
     template: `
-        <el-dialog v-model="indexDetailVisible" title="指数详情分析" width="800px" class="kline-dialog">
+        <el-dialog v-model="indexDetailVisible" title="指数详情分析" width="800px" class="kline-dialog"
+            :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
+            :close-on-click-modal="!embedded" :class="{ 'qc-embedded-dialog': embedded }">
             <div v-if="indexDetail">
                 <!-- 头部信息 -->
                 <div class="detail-header">

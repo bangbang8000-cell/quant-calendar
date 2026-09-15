@@ -986,3 +986,88 @@
 .market-review-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
 .market-review-split-content { min-width: 0; }
 
+/* ===== V5.16 (F1/F4): 详情内嵌双栏工作区 ===== */
+/* 包装容器: 双栏模式开关的宿主 (策略页 detail-split-wrap / 日历页 stock-pool-body) */
+.detail-split-wrap,
+.stock-pool-body {
+  display: block;
+  min-width: 0;
+}
+/* 通用双栏容器: 中栏列表 + 右栏详情工作区 (等高 stretch, 同 F7/F8.2 模式) */
+.detail-split {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: var(--qc-space-3);
+  align-items: stretch;
+}
+.detail-split-list {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+.detail-split-pane {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+/* 内嵌弹窗: el-dialog 在 embedded 模式下渲染为普通块 (无遮罩/无浮层定位) */
+/* 关键: Element Plus 即使 modal=false 也会渲染 .el-modal-dialog (内联 position:fixed; inset:0)
+   与 .el-overlay-dialog (fixed 全屏) 两层容器 — 必须全部内嵌化, 否则覆盖整页拦截所有点击 */
+.el-overlay-dialog:has(> .qc-embedded-dialog),
+.el-modal-dialog:has(.qc-embedded-dialog) {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  inset: auto !important;
+  z-index: auto !important;
+}
+.qc-embedded-dialog {
+  position: static !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  border: 1px solid var(--border-color);
+  border-radius: var(--qc-radius-medium);
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.qc-embedded-dialog .el-dialog__header {
+  padding: var(--qc-space-3) var(--qc-space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+.qc-embedded-dialog .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--qc-space-3) var(--qc-space-4);
+}
+/* V5.16 (F4): 大盘行情 — 双栏模式下指数卡竖排列表 + 选中高亮 */
+.market-grid.is-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-space-2);
+}
+.market-grid.is-vertical .market-card {
+  width: 100%;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  border-radius: var(--qc-radius-small);
+}
+.market-grid.is-vertical .market-card.is-active {
+  border-color: var(--color-primary);
+  background: var(--bg-tertiary);
+}
+/* detail-split 列表区域内滚动兜底 */
+.detail-split-list > .stock-list,
+.detail-split-list > .qc-stock-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.detail-split-list { overflow: hidden; }
+
