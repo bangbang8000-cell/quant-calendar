@@ -388,6 +388,64 @@ const allMenuDefs = [
                 window.addEventListener('resize', () => {
                   isNarrow.value = window.innerWidth <= 1024;
                 });
+
+                // ===== V5.17 (F3): 中栏宽度 — 默认 320px, 可拖拽调宽 (下限=默认, 上限=容器 50%) =====
+                const SPLIT_DEFAULT_W = 320;      // 中栏默认宽度 (px), 同时是拖拽下限
+                const splitWidth = ref(parseInt(localStorage.getItem('qc_split_width') || '', 10) || SPLIT_DEFAULT_W);
+                // 同步 --split-w CSS 变量到根元素 (CSS 变量继承进所有双栏容器, 模板无需 :style 绑定)
+                function syncSplitWidthVar() {
+                  if (typeof document !== 'undefined') {
+                    document.documentElement.style.setProperty('--split-w', splitWidth.value + 'px');
+                  }
+                }
+                syncSplitWidthVar();
+                function setSplitWidth(w) {
+                  const clamped = Math.max(SPLIT_DEFAULT_W, Math.min(w, 2000));
+                  splitWidth.value = clamped;
+                  syncSplitWidthVar();
+                  try { localStorage.setItem('qc_split_width', String(clamped)); } catch (e) {}
+                }
+                // 拖拽状态 (mousedown 在 [data-split-resize] 手柄上启动, 全局 mousemove/up)
+                let splitDrag = null;
+                function onSplitDragStart(e, containerEl) {
+                  if (!containerEl || isNarrow.value) return;
+                  e.preventDefault();
+                  splitDrag = {
+                    startX: e.clientX,
+                    startW: splitWidth.value,
+                    maxW: Math.max(SPLIT_DEFAULT_W, Math.floor(containerEl.getBoundingClientRect().width / 2)),
+                  };
+                  document.body.classList.add('qc-split-resizing');
+                }
+                function onSplitDragMove(e) {
+                  if (!splitDrag) return;
+                  const delta = e.clientX - splitDrag.startX;
+                  let w = splitDrag.startW + delta;
+                  // 上限 = 容器 50%; 下限 = 默认宽
+                  w = Math.max(SPLIT_DEFAULT_W, Math.min(w, splitDrag.maxW));
+                  splitWidth.value = w;
+                  syncSplitWidthVar();
+                  try { localStorage.setItem('qc_split_width', String(w)); } catch (err) {}
+                }
+                function onSplitDragEnd() {
+                  if (!splitDrag) return;
+                  splitDrag = null;
+                  document.body.classList.remove('qc-split-resizing');
+                }
+                if (typeof document !== 'undefined') {
+                  document.addEventListener('mousemove', onSplitDragMove);
+                  document.addEventListener('mouseup', onSplitDragEnd);
+                }
+                // 拖拽起始: 事件委托, 命中 [data-split-resize] 手柄 (手柄在页面组件模板内)
+                function bindSplitResize(evt) {
+                  const handle = evt.target && evt.target.closest ? evt.target.closest('[data-split-resize]') : null;
+                  if (!handle) return;
+                  const container = handle.closest('[data-split-root]');
+                  onSplitDragStart(evt, container);
+                }
+                if (typeof document !== 'undefined') {
+                  document.addEventListener('mousedown', bindSplitResize, true);
+                }
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
@@ -1212,6 +1270,7 @@ const allMenuDefs = [
                     loadingView, dates, consensus, searchKeyword,
                     stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
                     detailDisplayMode, setDetailDisplayMode, isNarrow, detailSplitEnabled,
+                    splitWidth, setSplitWidth, SPLIT_DEFAULT_W,
                     aiLoading, aiEvalStage, aiEvalElapsed, aiEvalError, showBatchEvaluate, batchStocks, batchRunning, batchTotal, batchCompleted, batchCurrent, batchStatuses, batchResults, batchEvalErrors, aiConfig,
                     userList, showAddUser, editingUser, userForm, savingUser,
                     userSearch, filteredUsers, groupFilter, userPageTab, expandedGroups, addMemberGroupMap,

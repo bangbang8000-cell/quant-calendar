@@ -605,7 +605,7 @@
                         </div>
 
                         <!-- V5.15 (F8.2): 双栏 — 左日期中栏 (指标摘要) + 右内容 (列表/详情) -->
-                        <div class="market-review-split">
+                        <div class="market-review-split" data-split-root>
                             <!-- 左: 日期中栏 (类似复盘日历) -->
                             <div class="market-review-date-list">
                                 <div class="market-review-date-list-head">
@@ -629,6 +629,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="split-divider" data-split-resize></div>
                             <!-- 右: 内容 (列表 / 详情) -->
                             <div class="market-review-split-content">
                             <!-- ===== 列表视图 ===== -->

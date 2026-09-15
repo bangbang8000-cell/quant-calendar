@@ -11,7 +11,7 @@
     template: `
                 <div v-if="currentPage === 'shortterm'" key="shortterm">
                     <!-- 复盘看板 (V5.2.1 落地页: 硬指标卡 + 市场事实 + 验证条件 + 近5日热度) -->
-                    <div v-if="currentSubPage === 'overview'" class="shortterm-split">
+                    <div v-if="currentSubPage === 'overview'" class="shortterm-split" data-split-root>
                         <!-- V5.15 (F7): 左列表 — 最近交易日核心指标摘要 (默认选中最近一天) -->
                         <div class="shortterm-date-list">
                             <div class="shortterm-date-list-head">
@@ -35,6 +35,7 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="split-divider" data-split-resize></div>
                         <!-- 右看板 (原 overview 内容) -->
                         <div class="shortterm-split-content card">
                         <!-- V5.3.0 (T-5.3.1.3): 短线复盘 3 步新手引导 (首次进入, 可跳过) -->

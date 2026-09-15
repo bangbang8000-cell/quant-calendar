@@ -169,7 +169,7 @@
                             <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <!-- V5.16 (F2): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
                         <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                         <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
                         <!-- V6.9.3 (F1): 启用共识徽章/进度条/价格列, 移除冗余「N 策略」extra -->
@@ -188,6 +188,7 @@
                           </template>
                         </qc-stock-list>
                         </div><!-- /.detail-split-list -->
+                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
                         <div class="detail-split-pane" v-if="detailSplitEnabled">
                             <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
                         </div>
@@ -443,7 +444,7 @@
                             <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
                         </div>
                         <!-- V5.16 (F4): 中栏指数列表 + 右栏指数详情工作区 (C4-A; 弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
                         <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                         <div class="market-grid" :class="{ 'is-vertical': detailSplitEnabled }">
                             <div v-for="idx in marketData.indices" :key="idx.id" class="market-card clickable"
@@ -462,6 +463,7 @@
                             </div>
                         </div>
                         </div><!-- /.detail-split-list -->
+                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
                         <div class="detail-split-pane" v-if="detailSplitEnabled">
                             <qc-index-detail-dialog :embedded="true"></qc-index-detail-dialog>
                         </div>
@@ -475,7 +477,7 @@
                     <div class="card">
                         <div class="card-title"><qc-icon name="trophy" :size="14" /> 策略共识度排行 (多策略同时选中)</div>
                         <!-- V5.16 (F3): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" :class="{ 'detail-split': detailSplitEnabled }">
+                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
                         <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
                         <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + 共识徽章/进度条/价格列) -->
                         <qc-stock-list
@@ -497,6 +499,7 @@
                           </template>
                         </qc-stock-list>
                         </div><!-- /.detail-split-list -->
+                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
                         <div class="detail-split-pane" v-if="detailSplitEnabled">
                             <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
                         </div>

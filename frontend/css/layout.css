@@ -866,8 +866,8 @@
 /* ===== V5.15 (F7): 短线复盘「列表 + 右边内容」双栏 ===== */
 .shortterm-split {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: var(--qc-space-3);
+  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  gap: 0 var(--qc-space-1);
   /* V5.15-F7fix: 等高双栏 — 默认 stretch 让左列表卡片高度与右侧内容区一致 */
   align-items: stretch;
 }
@@ -930,8 +930,8 @@
 /* ===== V5.15 (F8.2): 每日复盘 双栏 — 左日期中栏 (类似复盘日历) + 右内容 ===== */
 .market-review-split {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: var(--qc-space-3);
+  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  gap: 0 var(--qc-space-1);
   align-items: stretch;
 }
 .market-review-date-list {
@@ -996,8 +996,8 @@
 /* 通用双栏容器: 中栏列表 + 右栏详情工作区 (等高 stretch, 同 F7/F8.2 模式) */
 .detail-split {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: var(--qc-space-3);
+  grid-template-columns: var(--split-w, 320px) var(--split-gutter, 6px) minmax(0, 1fr);
+  gap: 0 var(--qc-space-1);
   align-items: stretch;
 }
 .detail-split-list {
@@ -1070,4 +1070,93 @@
   min-height: 0;
 }
 .detail-split-list { overflow: hidden; }
+
+/* ===== V5.17 (F1-F3): 中栏主题适配美化 + 默认宽度 + 拖拽调宽 ===== */
+/* 拖拽分隔条 (grid 中间列, 数据属性 data-split-resize) */
+.split-divider {
+  position: relative;
+  cursor: col-resize;
+  min-width: 0;
+  align-self: stretch;
+  background: transparent;
+  transition: background-color 0.2s ease-out;
+}
+.split-divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  border-radius: 2px;
+  background: var(--border-light);
+  transition: background-color 0.2s ease-out;
+}
+.split-divider:hover::after,
+.split-divider.is-dragging::after {
+  background: var(--color-primary);
+}
+.split-divider:hover,
+.split-divider.is-dragging {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+/* 拖拽中全局禁用文本选择/图片拖拽 (body 类由 app-logic 切换) */
+body.qc-split-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.qc-split-resizing * {
+  cursor: col-resize !important;
+}
+/* 中栏列表容器 — 统一卡片化美化 (surface 背景 + 圆角 + 边框 + 内滚动), 适配全部主题 */
+.detail-split-list,
+.shortterm-date-list,
+.market-review-date-list {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--qc-radius-medium);
+  box-shadow: var(--qc-shadow-sm);
+  overflow: hidden;
+}
+/* 中栏头部 (标题/计数/操作) — 主题化 */
+.detail-split-list > .search-box { border-bottom: 1px solid var(--border-light); }
+/* 中栏列表区滚动条美化 (WebKit) */
+.detail-split-list ::-webkit-scrollbar,
+.shortterm-date-items::-webkit-scrollbar,
+.market-review-date-items::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.detail-split-list ::-webkit-scrollbar-thumb,
+.shortterm-date-items::-webkit-scrollbar-thumb,
+.market-review-date-items::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-tertiary) 45%, transparent);
+  border-radius: 3px;
+}
+.detail-split-list ::-webkit-scrollbar-thumb:hover,
+.shortterm-date-items::-webkit-scrollbar-thumb:hover,
+.market-review-date-items::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+/* 中栏列表项 hover/选中 — 主题化 (左主色条 + 淡背景) */
+.detail-split-list .qc-stock-row,
+.qc-stock-list .qc-stock-row {
+  transition: background-color 0.15s ease-out;
+}
+.detail-split-list .qc-stock-row.is-active,
+.qc-stock-list .qc-stock-row.is-active {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.detail-split-list .qc-stock-row:hover {
+  background: var(--bg-tertiary);
+}
+/* 窄屏 (≤1024px) 单列时隐藏分隔条 */
+@media (max-width: 1024px) {
+  .split-divider {
+    display: none;
+  }
+}
 
