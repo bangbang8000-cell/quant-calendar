@@ -34,5 +34,6 @@ def test_spacing_4px_grid_compliance():
 
 
 def test_spacing_tokens_used():
+    # V6.6 迁移后间距令牌为 --qc-space-* (旧 --sp-* 已弃用, 见 test_v66_m2_tokens.py)
     css = _css()
-    assert "var(--sp-" in css, "应有 spacing 令牌使用"
+    assert "var(--qc-space-" in css, "应有 spacing 令牌使用"

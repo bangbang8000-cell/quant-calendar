@@ -199,5 +199,14 @@ def test_pool_endpoint_returns_pool_state(client, monkeypatch):
 def test_focus_router_has_latest():
     """生产路由应含 /api/focus/latest。"""
     from api.v1.router import api_router
-    routes = {r.path for r in api_router.routes}
+    # fastapi>=0.141: include_router 嵌套产生 _IncludedRouter 包装(无 .path) — 递归展开收集
+    def _collect_paths(routes):
+        paths = set()
+        for r in routes:
+            if getattr(r, 'path', None):
+                paths.add(r.path)
+            for sub in getattr(r, 'routes', None) or []:
+                paths |= _collect_paths([sub])
+        return paths
+    routes = _collect_paths(api_router.routes)
     assert '/api/focus/latest' in routes

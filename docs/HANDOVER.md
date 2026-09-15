@@ -1,8 +1,8 @@
 # 量化选股日历 — 交接文档 (HANDOVER)
 
-> 最后更新: 2026-09-15 (V5.6.1)
-> 当前状态: **v5.6.1 已发布双端**(HEAD 056b67a), v5.16 里程碑(详情内嵌双栏工作区)收官
-> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务且运行 5.6.1**; GitHub origin + 群辉两远端 master 已推至 `056b67a`
+> 最后更新: 2026-09-15 (V5.17)
+> 当前状态: **v5.17 已发布双端**(HEAD 8f52710), v5.17 里程碑(中栏美化/默认宽度/拖拽调宽 + 标题移除 + CI 债务)收官
+> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务且运行 5.6.1**; GitHub origin + 群辉两远端 master 已推至 `8f52710`
 > 数据源架构: **sxsc-tushare 优先**(短线三池/龙虎榜/指数/资金流/业绩), 6 位代码自动规范化, 客户端缺失源不记失败
 
 ---
@@ -52,8 +52,10 @@
 | **v5.5.0** | **版本编号并入 5.X** | 原 6.x 开发线(6.0~6.9.6, 期间无 tag)整体并入 5.X 序列, 以 v5.5.0 为汇合点; APP_VERSION 6.9.6→5.5.0; 两远端 master + tag 对齐 | v5.5.0 |
 | **v5.6.0** | **交互体验与信息呈现优化 (v5.15)** | F1 0%共识移除 / F2 组配置首屏可见性兜底 / F3 美林时间轴优化 / F4 弹窗样式 / F5 重点跟踪列表网格化 / F6 顶部标签溢出(更多▾+滚动按钮) / F7 短线双栏 / F8 基础配置更名 | v5.6.0 |
 | **v5.6.1** | **详情内嵌双栏工作区 (v5.16)** | 大盘行情/策略共识TOP5/策略共识榜/量化日历(全部·新入池·当前持仓·已出池) 中栏列表+右栏详情内嵌面板; 默认显示首条, 切换跟随; 内嵌模式无关闭按钮; 配置可回退弹窗(界面与个性化); 移动端≤1024px 强制弹窗; C4-A 指数详情一并双栏 | v5.6.1 |
+| **v5.17** | **中栏美化/默认宽度/拖拽调宽 (v5.16.1 + 5.6.1-3)** | 四大池标签横跨双栏顶部公用空间; 中栏主题适配美化(卡片化/滚动条/选中态, 全 CSS 变量适配明暗); 默认宽度 260/250→320px; **拖拽调宽(下限=默认, 上限=50%, localStorage 持久化)**; 修复弹窗模式导航被 auto-open 弹窗拦截(!!state.detailSplitEnabled → .value) | v5.6.1 |
+| **v5.17.1** | **默认分割比例 35% + 标题移除 + CI 债务** | 中栏默认分割比例改为 35%(5% 整数倍, 用户确认); 个股/指数工作区移除「股票详情分析/指数详情分析」标题(内容上移, 弹窗保留关闭按钮); **CI 历史债务清零**: 5 项 CSS 门禁(对比度/间距/排版/动效/阴影) + focus 测试兼容 fastapi 0.141(_IncludedRouter) + akshare 补入依赖声明 + 锁文件刷新 | v5.6.1 |
 
-当前 master: **v5.6.1**(v5.16 里程碑收官; 详情内嵌双栏工作区, 见 §4.5)
+当前 master: **v5.17.1**(v5.17 里程碑收官; 中栏 35% 默认分割 + 详情标题移除 + CI 债务清零, 见 §4.6)
 
 ## 3. 环境拓扑与同步
 
@@ -156,6 +158,26 @@
 **冒烟实证 (2026-09-15)**: dev(:8001) guest 登录 + `qc_detail_mode=split`。F1 日历/F2 TOP5/F3 共识榜/F4 大盘行情 4 页双栏 `split=1 pane=1 embed=1 关闭按钮=0 等高差=0`; 默认首条(日历 600036 招商银行 / 大盘 上证指数 000001); 切换(日历 招行→白云机场, 共识榜 招行→茅台, 大盘 上证→深证成指); 弹窗模式回退(全局弹窗 + 关闭按钮); 800px 移动端强制弹窗(无双栏, 点击全局弹窗); **全程 0 pageerror**; v515_smoke.py 17/17 全绿。
 **测试基线**: 全量 3343 passed + 7 failed(5 CSS 门禁 + test_data_sources_fetch 环境相关 + research-page 🔄 历史遗留) + 2 skipped; 新增/更新门禁: qcstate 键数 490→494(V5.16 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled)、CSS 补 detail-split-wrap/stock-pool-body 定义、ruff 清 2 个 F401(market_cache)。
 
+### 4.6 V5.17 交付详情 (v5.6.1-3 + v5.6.1-4, 2026-09-15, HEAD 8f52710)
+
+**v5.17 (中栏美化 + 默认宽度 + 拖拽调宽)**:
+- 需求1 主题适配美化: 三套中栏(`.detail-split-list`/`.shortterm-date-list`/`.market-review-date-list`)统一卡片化(surface 背景+圆角+边框+轻阴影), 滚动条 6px 圆角美化, 行 hover(淡背景)/选中态(左侧主色条 + 淡色背景), 拖拽手柄 hover 主色高亮 — **全 CSS 变量, 明/暗主题自动适配**(dark-pro 实测: 中栏 `rgb(17,24,39)`、边框、行、选中态全部正确切换)。
+- 需求2 默认宽度: 260/250px → **320px**(CSS 变量 `--split-w` 定义于 tokens.css)。
+- 需求3 拖拽调宽: grid 中间列插入 `.split-divider`(data-split-resize) 手柄, app-logic 全局事件委托(mousedown capture → mousemove/up); **下限=默认宽, 上限=容器 50%**; `qc_split_width` localStorage 持久化(刷新保留); `--split-w` 同步到根元素继承(模板无 `:style` → 通过 market_review_no_inline_style 门禁); 窄屏 ≤1024px 隐藏分隔条。
+- 顺带修复 v5.16 遗留 bug: watch getter `!!state.detailSplitEnabled`(ref 恒 true) → 弹窗模式 auto-open 误触发全局弹窗覆盖侧栏拦截导航; 改 `.value`。
+- 覆盖: 量化日历/TOP5/共识榜/大盘行情(detail-split) + 短线复盘(shortterm-split) + 每日复盘(market-review-split)。
+
+**v5.17.1 (默认分割比例 + 标题移除 + CI 债务清零)**:
+- 需求1 默认分割比例: **默认 320px → 35%**(5% 整数倍, 用户确认)。机制改百分比制: `SPLIT_DEFAULT_PCT=35`, 无持久化值时 `--split-w: 35%`, 拖拽后 px 持久化; **拖拽下限=默认比例 35%, 上限=容器 50%**(实测 1138px 容器: 默认 398px=35%, 拖最左停 35%, 拖最右停 50%)。
+- 需求2 标题移除: stock-detail/index-detail 弹窗标题置空(移除「股票详情分析/指数详情分析」), **内嵌工作区 header display:none(内容上移)**, 弹窗模式 header 压缩至仅关闭按钮(8px 12px); 关闭按钮保留。
+- 需求3 CI 历史债务清零(9 项失败 → 仅剩环境相关 2 项):
+  - **CSS 门禁 5 项全修**: transition 非标(0.15s→0.2s + `--qc-transition-none` 令牌) / typography 裸字号(17/18/20px→var(--qc-font-size-*)) / spacing `--sp-` 令牌使用 / contrast dark 边框(`--border-base #2c4060` 1.66, `--border-heavy #4f6b99` 3.22) / theme_shadows chart 色(`--chart-split #2c4060` 1.59, `--chart-axis #4f6b99` 3.09)。
+  - **focus 测试兼容 fastapi 0.141.1**: `_IncludedRouter` 无 `.path` → 递归展开 routes 收集 path(focus_api/v542)。
+  - **akshare 补入 requirements.in**(三源热备数据源之一但从未声明 — 历史 bug, CI `ModuleNotFoundError` 根因) + 锁文件刷新(akshare 1.18.94)。
+  - 剩余 2 failed = test_data_sources_fetch(dev 无 SXSC token, 环境/凭据问题) + test_v65_m2_icons(research 页 🔄 历史遗留, 非代码缺陷)。
+
+**冒烟实证 (2026-09-15)**: 默认中栏 35%(1138px 容器 → 398px, pane 726px); 拖拽 +120 → 440px 持久化(刷新保留), 拖最左停 35%, 拖最右停 50%; 标题移除(embedded header none + 弹窗 title 空/关闭按钮保留); 4 页面双栏回归 0 pageerror; 暗色主题适配; 移动端 800px 无分隔条; v515_smoke 17/17。
+
 ## 5. 关键技术要点
 
 ### 5.1 开发流程 (TDD 纪律)
@@ -186,12 +208,13 @@
 - **v4.6/v4.7 旧 tag**: 群辉浅克隆拒绝推送(预存问题, 不影响 v5 tags)
 - **前端 Vue watch TDZ 坑 (v5.15 F2 实战)**: `watch(source, cb)` 创建时**立即求值 source 基线**(oldValue = effect.run()), 与 computed 的惰性不同。若 watch 注册在依赖 ref(const) 声明之前 → TDZ ReferenceError(Cannot access 'X' before initialization), 应用初始化即崩溃、登录页白屏。**规则: watch 必须注册在其 source 求值所需的全部 ref/const 声明之后**; 排查 minify 崩溃先核对声明顺序(computed 惰性不报, watch/computed 立即 .value 才报)。
 
-## 6. 测试体系 (v5.6.0 基线 3343 passed / 7 failed / 2 skipped)
+## 6. 测试体系 (v5.17.1 基线 3343+ passed / 2 failed / 2 skipped)
 
 - 门禁: test_tokens_defined / contrast / accessibility / spacing_grid(4px) / typography / theme_contrast / tokens_no_hardcode / **market_review/scan 无内联样式** / 版本纪律 / 覆盖率门禁(短线模块 93%)
 - 前端一致性: test_frontend_consistency(令牌/类/注入/i18n/menu) + deps_audit + lockfile
 - 功能: 策略/日历/AI/美林/开放平台/回测/数据源/研究/风险/复盘/短线 全覆盖
-- v5.15 新增 35 用例(test_v515x_*.py 8 文件)全绿; 剩余 7 failed = 5 CSS 门禁(对比度/间距/排版/动效/阴影) + test_data_sources_fetch(dev 无 SXSC token, 环境相关; ops 同用例通过)
+- v5.15 新增 35 用例(test_v515x_*.py 8 文件)全绿
+- **V5.17.1 更新**: 5 项 CSS 门禁(对比度/间距/排版/动效/阴影)全部转绿 + focus 测试适配 fastapi 0.141 + akshare 补依赖 + 锁文件刷新; **剩余 2 failed = test_data_sources_fetch(dev 无 SXSC token, 环境相关) + test_v65_m2_icons(research 页 🔄 历史遗留)**
 - e2e(视觉/移动): continue-on-error(信息性)
 
 ## 7. 下一步 / 待办

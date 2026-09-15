@@ -343,7 +343,7 @@
             --bg-dialog: rgba(16,26,46,0.98);
             --bg-input: #16233b; --bg-hover: #16233b;
             --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #0e1728;
-            --border-light: #16233b; --border-base: #23344f; --border-heavy: #3a5077;
+            --border-light: #1d2c47; --border-base: #2c4060; --border-heavy: #4f6b99;  /* V5.17.1: dark 边框对比度达标 (light 1.9/base 1.66/heavy 3.22) */  /* V5.17.1: dark 对比度 3.22 (门禁≥3.0) */
             /* V4.4 (FR-4.4.1): dark 覆盖补全令牌 */
             --border-color: #23344f; --surface: #111827; --bg-code: #0f172a;
             --bg-tertiary: #1f2937; --primary-color-dark: #3b82f6;
@@ -367,8 +367,8 @@
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45) ;
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55) ;
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
-            --chart-split: #23344f ;
-            --chart-axis: #3a5077 ;
+            --chart-split: #2c4060 ;  /* V5.17.1: dark 网格线对比度 1.59 (门禁≥1.5) */
+            --chart-axis: #4f6b99 ;  /* V5.17.1: dark 轴线对比度 3.09 (门禁≥2.5) */
             /* V5.5 (T-5.0.54): 图表画布背景暗色变体 (与 dark-pro --bg-card 一致) */
             --chart-bg: #101a2e ;
             --bg-page-rgb: 11, 18, 32;  /* 页面背景 rgb(loading 遮罩) */
@@ -945,7 +945,7 @@
             align-items: center;
         }
         .page-title {
-            font-size: 20px;
+            font-size: var(--qc-font-size-xl);  /* V5.17.1: 令牌化 20→22px */
             font-weight: var(--font-semibold);
             color: var(--text-primary);
             letter-spacing: 0.01em;
@@ -959,7 +959,7 @@
             box-shadow: var(--qc-shadow-md);  /* V4.6 (FR-4.6.5): 轻阴影, 专业感 */
         }
         .card-title {
-            font-size: 17px;
+            font-size: var(--qc-font-size-lg);  /* V5.17.1: 令牌化 17→18px */
             font-weight: var(--font-semibold);
             color: var(--text-primary);
             margin-bottom: 16px;
@@ -2806,7 +2806,7 @@
 
 /* V5.15 (F4): 关闭图标稍大 (16px → 18px) */
 .kline-dialog .el-dialog__close {
-    font-size: 18px;
+    font-size: var(--qc-font-size-lg);  /* V5.17.1: 令牌化 */
 }
 
 /* 移动端适配 */

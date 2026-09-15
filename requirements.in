@@ -22,3 +22,5 @@ wsproto>=1.2.0
 tushare>=1.4.0
 cryptography>=41.0.0
 pypinyin>=0.55.0
+# V5.17.1 (CI 债务): akshare 是三源热备数据源之一(data_sources/_manager.py 动态 import) — 历史遗漏声明, 补入
+akshare>=1.16.0

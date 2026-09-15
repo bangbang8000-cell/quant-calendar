@@ -170,7 +170,16 @@ def test_push_webhook_missing_fails_not_500(client, monkeypatch):
 def test_focus_router_registered_in_production_router():
     """防回归: 生产 api_router 必须包含 focus 路由 (v5.4.0 冒烟发现的缺口)"""
     from api.v1.router import api_router
-    routes = {r.path for r in api_router.routes}
+    # fastapi>=0.141: include_router 嵌套产生 _IncludedRouter 包装(无 .path) — 递归展开收集
+    def _collect_paths(routes):
+        paths = set()
+        for r in routes:
+            if getattr(r, 'path', None):
+                paths.add(r.path)
+            for sub in getattr(r, 'routes', None) or []:
+                paths |= _collect_paths([sub])
+        return paths
+    routes = _collect_paths(api_router.routes)
     for p in ('/api/focus/list', '/api/focus/results', '/api/focus/history',
               '/api/focus/push', '/api/focus/stock/{stock_code}',
               '/api/focus/stock/{stock_code}/pool'):

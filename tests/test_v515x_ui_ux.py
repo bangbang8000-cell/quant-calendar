@@ -41,12 +41,13 @@ def test_kline_headerbtn_position():
 
 
 def test_kline_close_icon_size():
-    """TC-5.15.33: 关闭图标 18px"""
+    """TC-5.15.33: 关闭图标 18px (V5.17.1: 令牌化 var(--qc-font-size-lg)=18px, 与 typography 门禁一致)"""
     themes = _read_f("css/themes.css")
     m = __import__("re").search(r"\.kline-dialog \.el-dialog__close\s*\{([^}]*)\}", themes)
     assert m, "应存在 kline-dialog close 图标规则"
     block = m.group(1)
-    assert "18px" in block, f"关闭图标应为 18px, 当前 {block.strip()}"
+    assert "18px" in block or "var(--qc-font-size-lg)" in block, \
+        f"关闭图标应为 18px(或令牌), 当前 {block.strip()}"
 
 
 def test_merrill_dialog_unchanged():

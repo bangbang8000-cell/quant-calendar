@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 497, f"qcState 唯一键数异常: {len(set(keys))} (期望 497; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_W)"
+    assert len(set(keys)) == 497, f"qcState 唯一键数异常: {len(set(keys))} (期望 497; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT)"
 
 
 def test_watch_currentpage_single():
