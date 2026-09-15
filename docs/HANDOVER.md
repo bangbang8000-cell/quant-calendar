@@ -1,8 +1,8 @@
 # 量化选股日历 — 交接文档 (HANDOVER)
 
-> 最后更新: 2026-09-15 (V5.6.0)
-> 当前状态: **v5.6.0 已发布双端**(HEAD `d5ebfb7`, tag v5.6.0), v5.15 里程碑(F1-F8)收官
-> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务且运行 5.6.0**; GitHub origin + 群辉两远端 master 已推至 `d5ebfb7`, tag v5.6.0 已推送(触发 CI/Docker)
+> 最后更新: 2026-09-15 (V5.6.1)
+> 当前状态: **v5.6.1 已发布双端**(HEAD 056b67a), v5.16 里程碑(详情内嵌双栏工作区)收官
+> 同步状态: **dev(:8001)/ops(:8000) 均跑 systemd 用户服务且运行 5.6.1**; GitHub origin + 群辉两远端 master 已推至 `056b67a`
 > 数据源架构: **sxsc-tushare 优先**(短线三池/龙虎榜/指数/资金流/业绩), 6 位代码自动规范化, 客户端缺失源不记失败
 
 ---
@@ -51,8 +51,9 @@
 | **v5.3.13** | **健康统计优化** | 客户端缺失源不记失败, _source_client_ready + 7 处遍历跳过 | v5.3.13 |
 | **v5.5.0** | **版本编号并入 5.X** | 原 6.x 开发线(6.0~6.9.6, 期间无 tag)整体并入 5.X 序列, 以 v5.5.0 为汇合点; APP_VERSION 6.9.6→5.5.0; 两远端 master + tag 对齐 | v5.5.0 |
 | **v5.6.0** | **交互体验与信息呈现优化 (v5.15)** | F1 0%共识移除 / F2 组配置首屏可见性兜底 / F3 美林时间轴优化 / F4 弹窗样式 / F5 重点跟踪列表网格化 / F6 顶部标签溢出(更多▾+滚动按钮) / F7 短线双栏 / F8 基础配置更名 | v5.6.0 |
+| **v5.6.1** | **详情内嵌双栏工作区 (v5.16)** | 大盘行情/策略共识TOP5/策略共识榜/量化日历(全部·新入池·当前持仓·已出池) 中栏列表+右栏详情内嵌面板; 默认显示首条, 切换跟随; 内嵌模式无关闭按钮; 配置可回退弹窗(界面与个性化); 移动端≤1024px 强制弹窗; C4-A 指数详情一并双栏 | v5.6.1 |
 
-当前 master: **v5.6.0**(v5.15 里程碑收官; F2 含 TDZ 崩溃修复, 见 §5.5)
+当前 master: **v5.6.1**(v5.16 里程碑收官; 详情内嵌双栏工作区, 见 §4.5)
 
 ## 3. 环境拓扑与同步
 
@@ -72,6 +73,7 @@
 
 | 文档 | 说明 |
 |---|---|
+| PRD/DEV-PLAN/TEST-PLAN-v5.16.md | **v5.16 详情内嵌双栏工作区 (v5.6.1)** 三份规划(已批准, F1-F4 + C1-C4 全部完成) |
 | PRD/DEV-PLAN/TEST-PLAN-v5.15.md | **v5.15 交互体验与信息呈现优化 (v5.6.0)** 三份规划(已批准, F1-F8 全部完成) |
 | PRD/DEV-PLAN/TEST-PLAN-v5.2.4.md | **v5.2.4 联动·风格统一·打磨** 三份规划(已批准, 大部分完成) |
 | PRD-v5.3.md / DEV&TEST-PLAN-v5.3.md | **v5.3 规划(已批准, v5.3.0~v5.3.13 全部完成)** |
@@ -140,6 +142,19 @@
 
 **冒烟实证 (2026-09-15)**: dev(:8001) guest 登录, T48 全导航 **0 pageerror**, F1/F4/F5/F6/F7/F8 **17/17 全绿**(v515_smoke.py); 登录页 body_len 9419→16191、input 0→2(崩溃修复后)。
 **测试基线**: 全量 3343 passed + 7 failed(5 CSS 门禁 + test_data_sources_fetch 环境相关, 与 ops 基线一致) + 2 skipped; v5.15 新增 35 用例全绿。
+
+### 4.5 V5.16 交付详情 (v5.6.1, 2026-09-15, HEAD 056b67a)
+
+**规划**: docs/PRD-v5.16.md + docs/DEV-PLAN-v5.16.md + docs/TEST-PLAN-v5.16.md(已批准)。需求 = 将「中栏列表+右栏内容工作区」模式推广到 大盘行情 / 策略共识TOP5 / 策略共识榜 / 量化日历(全部·新入池·当前持仓·已出池); 默认显示第一条内容, 切换后更新; 内嵌模式无关闭按钮; 原弹窗布局保留(配置可调); 移动端保留弹窗。决策 C1-C4 全部按推荐: C1 默认内嵌双栏 / C2 配置入口=系统配置界面与个性化 / C3 移动端 ≤1024px 强制弹窗 / **C4-A 大盘行情指数详情一并双栏**。
+
+- **架构(最终)**: stock/index-detail 弹窗组件加 `embedded` prop(`:append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"`); 双栏页在右栏渲染 `<qc-...-dialog embedded>`, 全局弹窗 `v-if="!detailSplitEnabled"` 门控 → **同一组件实例状态, 无双实例无内容复制**; `showStockDetail/showIndexDetail` 完全复用(仅设共享 visible 状态)。
+- **核心坑(Element Plus)**: `modal=false` 时 el-dialog 仍渲染 `.el-modal-dialog`(内联 `position:fixed; inset:0`) + `.el-overlay-dialog` 两层全屏容器 → 覆盖整页拦截所有点击(tab 点不动)。修复 = CSS `:has()` 内嵌化两层容器(`.el-overlay-dialog:has(> .qc-embedded-dialog), .el-modal-dialog:has(.qc-embedded-dialog)` → static)。
+- **auto-open 首条**: strategies-page/calendar-page 各加 `Vue.watch`(immediate) 联动 `{sub, split, list}` → 首条自动打开(TOP5 第一/共识榜首条/指数第一个/日历第一只); `_autoOpened` + cur-not-in-list 守卫防过滤重开; **必须传完整对象**(传 {code,name} 子集会让模板 `pct_chg.toFixed` 崩溃 → 渲染失败空面板)。
+- **配置**: `detailDisplayMode`(localStorage `qc_detail_mode`) + `isNarrow(≤1024px)` + `detailSplitEnabled = split && !isNarrow`; system-page 界面与个性化「详情展示模式」radio(内嵌双栏/弹窗, 窄屏 disabled + 提示)。
+- **4 页面接入**: 量化日历(`.stock-pool-body.detail-split`, 4 个 statusFilter 共用) / TOP5 / 共识榜(`.detail-split-wrap.detail-split`) / 大盘行情(`.market-grid.is-vertical` 指数卡竖排 + `.is-active` 高亮 + index-detail embedded)。
+
+**冒烟实证 (2026-09-15)**: dev(:8001) guest 登录 + `qc_detail_mode=split`。F1 日历/F2 TOP5/F3 共识榜/F4 大盘行情 4 页双栏 `split=1 pane=1 embed=1 关闭按钮=0 等高差=0`; 默认首条(日历 600036 招商银行 / 大盘 上证指数 000001); 切换(日历 招行→白云机场, 共识榜 招行→茅台, 大盘 上证→深证成指); 弹窗模式回退(全局弹窗 + 关闭按钮); 800px 移动端强制弹窗(无双栏, 点击全局弹窗); **全程 0 pageerror**; v515_smoke.py 17/17 全绿。
+**测试基线**: 全量 3343 passed + 7 failed(5 CSS 门禁 + test_data_sources_fetch 环境相关 + research-page 🔄 历史遗留) + 2 skipped; 新增/更新门禁: qcstate 键数 490→494(V5.16 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled)、CSS 补 detail-split-wrap/stock-pool-body 定义、ruff 清 2 个 F401(market_cache)。
 
 ## 5. 关键技术要点
 
