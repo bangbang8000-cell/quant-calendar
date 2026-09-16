@@ -122,7 +122,7 @@
 
 | 模块小类 | 说明 |
 |------|------|
-| UI 主题 | 7 套主题 + 4 套图标系统 + 设计 Token 体系 + 骨架屏加载 |
+| UI 主题 | 明/暗两套主题 + 主题色 HSL（6 色相）+ 统一 Lucide 图标 + 设计 Token 体系 + 骨架屏加载；文字对比度全站达标（WCAG AA） |
 | 导航形态 | 三种一级/二级导航形态可切换：**顶部二级标签**（默认）/ 中栏二级 / 侧栏树状；系统配置内切换并记住偏好 |
 | 键盘导航 | Tab/Enter 导航，面包屑，侧边栏折叠 |
 | 移动端 & PWA | 375px 三任务链路、手势操作、离线核心页可读、版本化缓存 |
@@ -221,11 +221,11 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
 | 项 | 链接 |
 |----|------|
-| 最新版本 | **v5.5.0**（6.x 编号并入 5.X · 默认顶部二级标签 · 下拉框换行根治） |
+| 最新版本 | **v5.7.3**（UX 全量优化 · 文字体系对比度达标 · 版本编号并入 5.X） |
 | Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
-| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.5.0.zip |
-| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.5.0.tar.gz |
-| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.5.0 |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.7.3.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.7.3.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.7.3 |
 
 > 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
 
@@ -294,11 +294,13 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 ## 版本历史
 
-> **版本编号说明（2026-09 起）**：v6.0.0–v6.9.6 此前是一条独立演进的开发线（期间未打过 tag），现已**整体并回 5.X**，当前发布版本为 **v5.5.0**。配套的 PRD / DEV-PLAN / TEST-PLAN / EVAL 文档按 **6.N → 5.(N+5)** 平移命名以保留该线的里程碑顺序（例如 `docs/PRD-v5.14.4.md` 即原 PRD-v6.9.4）。
+> **版本编号说明（2026-09 起）**：v6.0.0–v6.9.6 此前是一条独立演进的开发线（期间未打过 tag），现已**整体并回 5.X**，当前发布版本为 **v5.7.3**。配套的 PRD / DEV-PLAN / TEST-PLAN / EVAL 文档按 **6.N → 5.(N+5)** 平移命名以保留该线的里程碑顺序（例如 `docs/PRD-v5.14.4.md` 即原 PRD-v6.9.4）。
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **v5.5.0** | 2026-09 | **当前版本** — 编号并入 5.X：原 6.0–6.9.6 整条开发线的内容全部汇入此版本 / 默认导航形态改为**顶部二级标签**（toptab，显式用户选择仍被尊重）/ `element-plus.css` 补 `?v=` 版本号根治下拉框文字与倒三角箭头换行 |
+| **v5.7.3** | 2026-09 | **当前版本** — 全站文字/字体/字号/颜色优化：亮暗两套主题对比度全部达标（主按钮白字 2.92→4.53:1、muted-foreground 3.59→4.59:1、导航分组标签 5.91:1）/ 字号层级提升（xs 11→12px、sm 12→13px）/ Element Plus 组件字体统一为全站 Inter 栈（清除 Arial 回退）/ 金融数字等宽 tabular-nums |
+| v5.7.2 | 2026-09 | UX 全量修复：embedded 详情弹窗解除 body 滚动锁 / 移动端 Header 右侧用户区与多页面横向溢出修复 / 全站 emoji→Lucide 清零 / 旧主题 CSS 死代码清理（删 6 套旧主题）/ 评估档位服务端 hex→语义 token / 危险操作二次确认 / 页面切换滚动回顶 / 搜索框宽度定案 300px |
+| v5.7.1 | 2026-09 | 中栏默认分割比例 35% + 详情标题移除 + CI 历史债务清零 |
 | v5.2.4 | 2026-09 | 联动·风格统一·打磨：短线 7 子页日期共享 / 个股弹窗「跳转日历」/ 验证条件次日核验闭环(记分板) / 复盘看板数据新鲜度状态条 / /overview 服务端 TTL 缓存 |
 | v5.3.13 | 2026-09 | 数据源健康优化：客户端缺失源不记失败 — _source_client_ready 辅助 + 7 处路由遍历跳过未初始化源(sxsc/tushare), 不 record_call 不冷却; dev 无 sxsc token 场景健康面板零假失败; 全量 2937 用例 |
 | v5.3.14 | 2026-09 | 股票池逻辑系统修复：多策略并集/交集对比(compare 500 修复+前端弹窗) / 周视图上一周口径统一 / 前向填充识别法定节假日(stock_calendar 交易日分层) / 年视图已出池全量(out_total) / 引擎周末运行防护 / 部分策略滞后 inherited_from 提示; 全量 2959 用例 |
