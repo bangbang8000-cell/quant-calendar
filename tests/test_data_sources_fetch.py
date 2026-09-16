@@ -181,8 +181,15 @@ def test_fetch_moneyflow_tushare(mgr):
 # ==================== test_connection ====================
 
 
-def test_test_connection_sxsc(mgr):
-    mgr._clients['sxsc_tushare'] = _FakeApi(_df())
+def test_test_connection_sxsc(mgr, monkeypatch):
+    # V6.9.3+: sxsc test_connection 走 token 重建分支 (忽略 _clients) — mock get_api 返回成功
+    cfg = {'sources': {'sxsc_tushare': {'enabled': True, 'token': 'a' * 32}}}
+    mgr.config = cfg
+    import sxsc_tushare
+    class _FakeApi2:
+        def query(self, *a, **k):
+            return _df()
+    monkeypatch.setattr(sxsc_tushare, 'get_api', lambda *a, **k: _FakeApi2())
     r = mgr.test_connection('sxsc_tushare')
     assert r['success'] is True
 

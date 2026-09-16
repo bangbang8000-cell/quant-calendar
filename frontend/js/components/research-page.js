@@ -610,7 +610,7 @@
                             <div class="market-review-date-list">
                                 <div class="market-review-date-list-head">
                                     <span>复盘日期</span>
-                                    <el-button size="small" text @click="loadMarketReviews" aria-label="刷新复盘日期">🔄</el-button>
+                                    <el-button size="small" text @click="loadMarketReviews" aria-label="刷新复盘日期"><qc-icon name="refresh" :size="14" /></el-button>
                                 </div>
                                 <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
                                 <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>

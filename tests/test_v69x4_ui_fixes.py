@@ -48,7 +48,9 @@ def test_lib_ep_css_matches_node_modules():
     """T5: lib/element-plus.css 与 node_modules 2.14.5 字节一致"""
     lib = os.path.join(FRONTEND, "lib", "element-plus.css")
     mod = os.path.join(FRONTEND, "node_modules", "element-plus", "dist", "index.css")
-    assert os.path.exists(mod), "node_modules element-plus css 缺失"
+    if not os.path.exists(mod):
+        import pytest
+        pytest.skip("CI 不安装前端依赖 (node_modules 缺失) — 本地开发环境校验项")
     with open(lib, encoding="utf-8") as f:
         a = f.read()
     with open(mod, encoding="utf-8") as f:

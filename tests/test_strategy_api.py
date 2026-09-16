@@ -116,6 +116,9 @@ def test_api_strategies_list(authed_client):
     r = client.get("/api/strategies")
     assert r.status_code == 200
     data = r.json()
+    # V6.9.4 (F6.1): 持仓数据缺失时 list_strategies 返回 {strategies, warn} — 兼容两种返回
+    if isinstance(data, dict) and 'strategies' in data:
+        data = data['strategies']
     assert isinstance(data, list) and len(data) >= 4
     ids = {s["id"] for s in data}
     assert {"multi_factor", "sector_rotation", "index_enhance", "capital_flow"} <= ids
