@@ -411,6 +411,28 @@
     flex-wrap: wrap;
     max-width: 100%;
   }
+  /* UX-03: 移动端横向溢出兜底 — 工作区/卡片/工具栏宽度约束 */
+  .qc-work-area-content,
+  .qc-work-area-content > *,
+  .card {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .qc-page-tools > * { min-width: 0; }
+  .flex-c-gap-12,
+  .flex-c-gap-6,
+  .flex-c-gap-24-mb20-wrap {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .recent-card { flex: 0 0 160px; max-width: 160px; }
+  .el-date-editor.el-input { max-width: 150px; }
+  .el-input__icon.el-input__clear svg,
+  .el-input__suffix svg {
+    max-width: 16px;
+    max-height: 16px;
+  }
 }
 
 /* 左滑露出操作面板（自选列表核心落地）— 桌面保留内联操作按钮

@@ -508,7 +508,7 @@ function updateChecklist(result) {
         const score = dims[rule.key];
         if (score !== undefined) {
             items.push({
-                icon: score >= rule.good ? '●' : score >= rule.warn ? '▲' : '✕',
+                icon: score >= rule.good ? 'check-circle-2' : score >= rule.warn ? 'alert-triangle' : 'x-circle',
                 label: `${rule.label} ${Math.round(score)}分`
             });
         }

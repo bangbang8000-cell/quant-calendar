@@ -151,7 +151,7 @@
     'detail.evaluate': '智能評估',
     'detail.reevaluate': '重新評估',
     'detail.addWatch': '加入自選',
-    'detail.inWatch': '★ 已自選',
+    'detail.inWatch': '已自選',
     'detail.retry': '重試',
     'detail.factorTitle': '多因子体檢',
     'detail.factorLoading': '正在加載体檢數据…',

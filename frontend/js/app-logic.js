@@ -358,6 +358,11 @@ const allMenuDefs = [
                 // 注意: watch 必须注册在 currentUser/groupsConfig 声明之后 — watch(source, cb) 创建时会立即求值 source 基线,
                 // 若在 currentUser 声明前注册会触发 TDZ ReferenceError (Cannot access 'currentUser' before initialization)
                 watch(menus, function () { ensureVisiblePage(); });
+                // V5.7.2 (UX-18): 页面/子页切换 → 主内容滚动容器回顶 (避免停留旧位置)
+                watch([currentPage, currentSubPage], function () {
+                  const sc = document.querySelector('.main-content');
+                  if (sc) sc.scrollTop = 0;
+                });
                 // v3.17.9 (FR-3.17.9): 会话先行恢复 — 主界面首帧即渲染（无需等 onMounted 再恢复登录态）
                 (function() {
                     if (typeof localStorage === 'undefined') return;
@@ -938,6 +943,24 @@ const allMenuDefs = [
                 }
                 // v3.16 (16.6): 详情弹窗关闭后焦点归还触发器（watch 注册已下沉 js/app-logic/watch.js）
 
+                // ===== V5.7.2 (UX-09): AI 评估档位 → 语义色 token 映射 (替代服务端 level_color hex 内联) =====
+                const LEVEL_COLOR_MAP = {
+                  '强烈推荐': 'var(--el-danger)', '推荐': 'var(--el-success)',
+                  '谨慎推荐': 'var(--el-warning)', '中性': 'var(--el-info)',
+                  '观望': 'var(--text-tertiary)', '买入': 'var(--el-success)',
+                  '持有': 'var(--el-warning)', '减仓': 'var(--el-danger)',
+                  '卖出': 'var(--el-danger)',
+                };
+                const LEVEL_BG_MAP = {
+                  '强烈推荐': 'var(--badge-danger-bg)', '推荐': 'var(--badge-success-bg)',
+                  '谨慎推荐': 'var(--badge-warning-bg)', '中性': 'var(--badge-info-bg)',
+                  '观望': 'var(--bg-hover)', '买入': 'var(--badge-success-bg)',
+                  '持有': 'var(--badge-warning-bg)', '减仓': 'var(--badge-danger-bg)',
+                  '卖出': 'var(--badge-danger-bg)',
+                };
+                function levelColor(level) { return LEVEL_COLOR_MAP[level] || 'var(--text-tertiary)'; }
+                function levelBg(level) { return LEVEL_BG_MAP[level] || 'var(--bg-hover)'; }
+
                 // ===== v3.11(11.3): AI 问股域 — 逻辑移至 js/ai-chat.js 模块 =====
                 const __aiChatDomain = (window.__quantModules && window.__quantModules['ai-chat'])
                     ? window.__quantModules['ai-chat'].create({ stockKlineLoaded, stockDetailVisible, stockDetailTab, stockDetail, disposeStockKline })
@@ -1271,6 +1294,7 @@ const allMenuDefs = [
                     // v1.9.2: 评分动画
                     scoreAnimating, scoreDelta, scorePulse, refreshStockScore, animateScoreEntrance,
                     showMerrillDetail, merrillDetailData, showStageDetail, getCharLabel, getAssetName, getRankColor,
+                    levelColor, levelBg,
                     timelineStages, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted,
                     stages, indicatorList, dimensionScoreList, confidenceColor,
                     views, currentView, statusFilter,

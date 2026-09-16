@@ -16,7 +16,7 @@
                         <div class="shortterm-date-list">
                             <div class="shortterm-date-list-head">
                                 <span>复盘日历</span>
-                                <el-button size="small" text @click="loadDateList" aria-label="刷新日期列表">🔄</el-button>
+                                <el-button size="small" text @click="loadDateList" aria-label="刷新日期列表"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                             <div v-if="dateListLoading" class="color-secondary shortterm-date-empty">加载中…</div>
                             <div v-else-if="dateList.length === 0" class="color-secondary shortterm-date-empty">暂无已抓取日期</div>
@@ -60,7 +60,7 @@
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadOverview"></el-date-picker>
-                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="overviewLoading" type="loading"></qc-state-panel>
@@ -95,7 +95,7 @@
                             </div>
 
                             <!-- V5.2.6 (T-5.2.50): 指标降级时显示 reason, 不静默 — -->
-                            <div v-if="emotionNotice" class="text-xs-tertiary mb-4">⚠️ {{ emotionNotice }}</div>
+                            <div v-if="emotionNotice" class="text-xs-tertiary mb-4"><qc-icon name="alert-triangle" :size="14" /> {{ emotionNotice }}</div>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card">
                                     <div class="stat-label">赚钱效应均值</div>
@@ -125,7 +125,7 @@
                             </div>
 
                             <div class="text-base-secondary mb-2">市场事实</div>
-                            <div v-if="factsNotice" class="text-xs-tertiary mb-4">⚠️ {{ factsNotice }}</div>
+                            <div v-if="factsNotice" class="text-xs-tertiary mb-4"><qc-icon name="alert-triangle" :size="14" /> {{ factsNotice }}</div>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card">
                                     <div class="stat-label">封板质量</div>
@@ -173,8 +173,8 @@
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
-                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
-                                <span class="text-xs-tertiary" v-if="pools && pools.settled === false">⚠️ 未收盘, 数据可能不完整</span>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
+                                <span class="text-xs-tertiary" v-if="pools && pools.settled === false"><qc-icon name="alert-triangle" :size="14" /> 未收盘, 数据可能不完整</span>
                             </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
@@ -192,7 +192,7 @@
 
                             <div class="flex-c-gap-12 mb-2">
                                 <div class="text-base-secondary">涨停池 ({{ (pools.zt || []).length }} 家)</div>
-                                <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span role="button" tabindex="0" aria-label="清除筛选" style="cursor:pointer" @click="clearBoardFilter" @keydown.enter.prevent="clearBoardFilter" @keydown.space.prevent="clearBoardFilter">✕</span></span>
+                                <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span role="button" tabindex="0" aria-label="清除筛选" style="cursor:pointer;display:inline-flex" @click="clearBoardFilter" @keydown.enter.prevent="clearBoardFilter" @keydown.space.prevent="clearBoardFilter"><qc-icon name="x" :size="12" /></span></span>
                             </div>
                             <div class="table-container">
                                 <el-table :data="filteredZt" size="small">
@@ -240,14 +240,14 @@
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadLhb"></el-date-picker>
-                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="lhbLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="lhbError" type="error" :title="lhbErrTitle" :desc="lhbErrDesc" @retry="loadLhb"></qc-state-panel>
                         <div v-else-if="lhbRows">
                             <!-- V6.5 (PRD-6.5 F2): 数据源降级提示(非静默空表) -->
-                            <div v-if="lhbReason" class="text-xs-tertiary mb-4" title="点击展开完整原因" style="cursor:help">⚠️ {{ lhbReason.length > 120 ? lhbReason.slice(0, 120) + '…' : lhbReason }}</div>
+                            <div v-if="lhbReason" class="text-xs-tertiary mb-4" title="点击展开完整原因" style="cursor:help"><qc-icon name="alert-triangle" :size="14" /> {{ lhbReason.length > 120 ? lhbReason.slice(0, 120) + '…' : lhbReason }}</div>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon gold"><qc-icon name="bar-chart-3" :size="18" /></div><div class="stat-label">上榜家数</div><div class="stat-value">{{ lhbRows.length }}</div></div>
                                 <div class="stat-card"><div class="stat-icon success"><qc-icon name="landmark" :size="18" /></div><div class="stat-label">机构净买合计</div><div class="stat-value" style="font-size:1.15em">{{ fmtAmount(lhbInstitutionNetBuy) }}</div></div>
@@ -285,7 +285,7 @@
                                     <el-option label="10日" value="10日"></el-option>
                                 </el-select>
                                 <el-input v-model="sectorKeyword" size="small" placeholder="搜索板块..." clearable style="width:130px"></el-input>
-                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="sectorLoading" type="loading"></qc-state-panel>
@@ -317,7 +317,7 @@
                             <div class="flex-c-gap-12">
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadIntraday"></el-date-picker>
                                 <el-button size="small" type="primary" :loading="intradayCollecting" @click="collectSnapshot">采集当前快照</el-button>
-                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent">🔄</el-button>
+                                <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
                         <div class="text-xs-tertiary mb-4">快照仅在交易时段 6 个时点前后 8 分钟可采集 · 历史日绝不现抓</div>
@@ -602,9 +602,9 @@
         const st = overview.value && overview.value.session_status;
         if (!st) return '—';
         const d = overview.value.date;
-        if (d === st.latest_session && st.settled) return '✅ 已收盘';
+        if (d === st.latest_session && st.settled) return '已收盘';
         if (d === st.today && st.is_trade_day && !st.settled) return '⏳ 盘中 · 未收盘';
-        return '📅 历史交易日';
+        return '历史交易日';
       });
       const sessionStatusClass = computed(function () {
         const st = overview.value && overview.value.session_status;
@@ -807,7 +807,7 @@
           } else if (res && res.reason) {
             sectorError.value = true;
             sectorErrTitle.value = '数据加载失败';
-            sectorErrDesc.value = String(res.reason).replace(/^\[⚠️[^\]]*\]\s*/, '');
+            sectorErrDesc.value = String(res.reason).replace(/^\[[^\]]*\]\s*/, '');
           } else if (res && res.detail) {
             sectorError.value = true;
             sectorErrTitle.value = String(res.detail);
@@ -864,7 +864,7 @@
           }).then(function (r) { return r.json(); });
           chatAnswer.value = res.answer || '[无回复]';
         } catch (e) {
-          chatAnswer.value = '[⚠️ 发送失败]';
+          chatAnswer.value = '[发送失败]';
         } finally {
           chatLoading.value = false;
         }
@@ -893,7 +893,7 @@
               intradayMsg.value = '⏱ ' + (res.reason || '非快照时点');
               intradayMsgType.value = 'warn';
             } else {
-              intradayMsg.value = '✅ 已采集 ' + res.slot + ' 快照' +
+              intradayMsg.value = '已采集 ' + res.slot + ' 快照' +
                 (res.pools_available && !res.pools_available.zt ? ' (池源部分不可用)' : '');
               intradayMsgType.value = 'ok';
             }

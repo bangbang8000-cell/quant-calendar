@@ -10,7 +10,7 @@
   window.__quantComponents.EmptyState = {
     name: 'qc-empty',
     props: {
-      icon: { type: String, default: '📭' },
+      icon: { type: String, default: 'inbox' },
       title: { type: String, default: '' },
       desc: { type: String, default: '' },
       actionText: { type: String, default: '' },
@@ -18,7 +18,7 @@
     emits: ['action'],
     template: `
       <div class="qc-empty-state" role="status">
-        <div class="qc-empty-icon" aria-hidden="true">{{ icon }}</div>
+        <div class="qc-empty-icon" aria-hidden="true"><qc-icon :name="icon" :size="28" /></div>
         <div class="qc-empty-title">{{ title || t('common.emptyTitle') }}</div>
         <div class="qc-empty-desc">{{ desc || t('common.emptyDesc') }}</div>
         <el-button v-if="actionText" size="small" type="primary" @click="$emit('action')">{{ actionText }}</el-button>
@@ -40,7 +40,7 @@
   window.__quantComponents.ErrorState = {
     name: 'qc-error',
     props: {
-      icon: { type: String, default: '⚠️' },
+      icon: { type: String, default: 'alert-triangle' },
       title: { type: String, default: '' },
       desc: { type: String, default: '' },
       retrying: { type: Boolean, default: false },
@@ -48,7 +48,7 @@
     emits: ['retry'],
     template: `
       <div class="qc-error-state" role="alert">
-        <div class="qc-error-icon" aria-hidden="true">{{ icon }}</div>
+        <div class="qc-error-icon" aria-hidden="true"><qc-icon :name="icon" :size="28" /></div>
         <div class="qc-error-title">{{ title || t('common.errorTitle') }}</div>
         <div class="qc-error-desc">{{ desc || t('common.errorDesc') }}</div>
         <el-button v-if="!retrying" size="small" @click="$emit('retry')">{{ t('common.retry') }}</el-button>

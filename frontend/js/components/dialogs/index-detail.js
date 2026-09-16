@@ -16,7 +16,8 @@
     template: `
         <el-dialog v-model="indexDetailVisible" title="" width="800px" class="kline-dialog"
             :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
-            :close-on-click-modal="!embedded" :class="{ 'qc-embedded-dialog': embedded }">
+            :close-on-click-modal="!embedded" :lock-scroll="!embedded"
+            :class="{ 'qc-embedded-dialog': embedded }">
             <div v-if="indexDetail">
                 <!-- 头部信息 -->
                 <div class="detail-header">

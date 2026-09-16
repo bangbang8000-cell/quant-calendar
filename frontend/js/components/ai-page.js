@@ -111,12 +111,12 @@
                                     <div class="flex-between-mb8">
                                         <span class="text-md-semibold">{{ item.stock_code }}</span>
                                         <!-- V6.6: item.result.level_color 服务端返回实时色，保留内联 -->
-                                        <span :style="{color:item.result.level_color,fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
+                                        <span :style="{color: levelColor(item.result.level),fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb6">{{ item.stock_name }}</div>
                                     <div class="flex-between">
                                         <!-- V6.6: level_color 服务端实时色（含 20 透明底），保留内联 -->
-                                        <span :style="{background:item.result.level_color+'20',color:item.result.level_color,padding:'2px 8px',borderRadius:'10px',fontSize:'var(--font-xs)'}">{{ item.result.level }}</span>
+                                        <span :style="{background: levelBg(item.result.level),color: levelColor(item.result.level),padding:'2px 8px',borderRadius:'10px',fontSize:'var(--font-xs)'}">{{ item.result.level }}</span>
                                         <span class="text-xs-tertiary">{{ (item.evaluate_time||'').split('T')[0] }}</span>
                                     </div>
                                     <!-- V5.3.0 (T-5.3.5.1): 归因徽标 — 机会/风险因子计数 + 一致性提示 -->
@@ -385,7 +385,7 @@
                                             <span class="color-tertiary">{{ records[0].stock_name }}</span>
                                             <span class="count-badge-sm">{{ records.length }}次</span>
                                             <!-- V6.6: records[0].result.level_color 服务端实时色，保留内联 -->
-                                            <span :style="{color: records[0].result.level_color, fontSize: 'var(--font-sm)'}">最新{{ fmtNum(records[0].result.total_score) }}分</span>
+                                            <span :style="{color: levelColor(records[0].result.level), fontSize: 'var(--font-sm)'}">最新{{ fmtNum(records[0].result.total_score) }}分</span>
                                         </div>
                                     </div>
                                     <span class="group-toggle-arrow" :style="{transform: expandedStocks.includes(code) ? 'rotate(90deg)' : ''}">▶</span>
@@ -622,7 +622,7 @@
                                             <span class="watchlist-name">{{ stock.name }}</span>
                                             <span v-if="batchRunning && batchStatuses[stock.code]==='running'" class="watchlist-status spinning"><qc-icon name="loader" :size="12" /></span>
                                             <!-- V6.6: getWatchlistScore().color 函数计算色，保留内联 -->
-                                            <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).color+'20', color: getWatchlistScore(stock.code).color}">
+                                            <span v-else-if="getWatchlistScore(stock.code)" class="watchlist-score-badge" :style="{background: getWatchlistScore(stock.code).bg, color: getWatchlistScore(stock.code).color}">
                                                 {{ fmtNum(getWatchlistScore(stock.code).score) }}
                                             </span>
                                             <!-- v3.17.7 实时化 (FR-3.17.7): 行内实时报价（涨跌色/涨跌幅/量比/涨速 + 预警标记） -->

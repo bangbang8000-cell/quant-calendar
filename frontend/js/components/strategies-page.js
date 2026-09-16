@@ -183,8 +183,8 @@
                           @select="(item) => showStockDetail(item.code)"
                         >
                           <template #actions="{ item }">
-                            <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
+                            <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
+                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估"><qc-icon name="bot" :size="13" /></span>
                           </template>
                         </qc-stock-list>
                         </div><!-- /.detail-split-list -->
@@ -241,7 +241,7 @@
                             <div v-for="s in stages" :key="s.key" @click.prevent="showStageDetail(s.key)"
                                  class="merrill-stage-card" :class="{active: merrillData.stage === s.key}"
                                  :style="merrillData.stage === s.key ? {borderColor: s.color, background: s.bg} : {}">
-                                <div class="merrill-stage-icon">{{ s.icon }}</div>
+                                <div class="merrill-stage-icon"><qc-icon :name="s.icon" :size="20" /></div>
                                 <!-- V6.6: s.textColor 服务端配置色，保留内联 -->
                                 <div class="merrill-stage-name" :style="{color: s.textColor}">{{ s.name }}</div>
                                 <div class="merrill-stage-desc">{{ s.tagline }}</div>
@@ -493,9 +493,9 @@
                           @select="(item) => showStockDetail(item.code)"
                         >
                           <template #actions="{ item }">
-                            <span class="gold-link" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'">{{ watchlistCodes.has(item.code) ? '⭐' : '☆' }}</span>
-                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估">🤖</span>
-                            <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线">📈</span>
+                            <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
+                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估"><qc-icon name="bot" :size="13" /></span>
+                            <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线"><qc-icon name="trending-up" :size="13" /></span>
                           </template>
                         </qc-stock-list>
                         </div><!-- /.detail-split-list -->
@@ -711,7 +711,7 @@
                                 </div>
                                 <div class="flex-between">
                                     <span class="text-xs-tertiary">最近: {{ stats.last_run || '—' }}</span>
-                                    <span class="text-xs" :class="stats.last_status === 'success' ? 'color-success' : 'color-danger'">{{ stats.last_status === 'success' ? '✓ 成功' : '✗ 失败' }}</span>
+                                    <span class="text-xs" :class="stats.last_status === 'success' ? 'color-success' : 'color-danger'">{{ stats.last_status === 'success' ? '成功' : '失败' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -728,7 +728,7 @@
                                     </div>
                                 </div>
                                 <div class="stat-card success">
-                                    <div class="stat-icon success">{{ execStatusIcon }}</div>
+                                    <div class="stat-icon success"><qc-icon :name="execStatusIcon" :size="18" /></div>
                                     <div class="stat-content">
                                         <div class="stat-value">{{ execPhaseText }}</div>
                                         <div class="stat-label">{{ t('exec.statusTitle') }}</div>
@@ -754,7 +754,7 @@
                                 <div class="strategy-header">
                                     <span class="strategy-name">{{ p.name }}</span>
                                     <span class="strategy-count">
-                                        <span :class="p.enabled ? 'color-success' : 'color-danger'">{{ p.enabled ? '✓' : '✗' }}</span>
+                                        <span :class="p.enabled ? 'color-success' : 'color-danger'">{{ p.enabled ? '启用' : '停用' }}</span>
                                         <span class="text-tertiary"> | {{ p.schedule }} | {{ t('exec.lastRun') }}: {{ p.last_run || '—' }}</span>
                                     </span>
                                 </div>
@@ -765,7 +765,7 @@
                                     <span class="strategy-name">{{ r.date }}</span>
                                     <span class="strategy-count">
                                         <span class="text-tertiary">{{ t('exec.union') }}: {{ r.in_pool_union }} | {{ t('exec.dayTotal') }}: {{ r.day_view_total }}</span>
-                                        <span :class="r.visible ? 'color-success' : 'color-danger'">{{ r.visible ? '✓ ' + t('exec.visible') : '✗ ' + t('exec.invisible') }}</span>
+                                        <span :class="r.visible ? 'color-success' : 'color-danger'">{{ r.visible ? t('exec.visible') : t('exec.invisible') }}</span>
                                         <el-button size="small" link type="primary" @click="loadExecutionTrace(r.date)">{{ t('exec.traceTitle') }}</el-button>
                                     </span>
                                 </div>
@@ -820,7 +820,7 @@
                                         <tr v-for="(r, i) in execHistory" :key="i">
                                             <td class="text-sm-mono">{{ r.ts }}</td>
                                             <td><span class="strategy-tag">{{ r.task }}</span></td>
-                                            <td><span :class="r.success ? 'status-current' : 'status-out'">{{ r.success ? '✓ 成功' : '✗ 失败' }}</span></td>
+                                            <td><span :class="r.success ? 'status-current' : 'status-out'">{{ r.success ? '成功' : '失败' }}</span></td>
                                             <td class="text-sm-tertiary" :title="r.detail">{{ (r.detail || '—').slice(0, 60) }}{{ (r.detail || '').length > 60 ? '…' : '' }}</td>
                                         </tr>
                                     </tbody>
@@ -1301,7 +1301,7 @@
         return st.phase === 'done' ? _execT('exec.done') : _execT('exec.failed');
       });
       const execStatusIcon = Vue.computed(function () {
-        return execStatus.value && execStatus.value.phase === 'running' ? '🟡' : '🟢';
+        return execStatus.value && execStatus.value.phase === 'running' ? 'loader' : 'check-circle-2';
       });
       const execLastDate = Vue.computed(function () {
         const d = (execResults.value && execResults.value.dates) || [];
@@ -1316,7 +1316,7 @@
         const d = (execResults.value && execResults.value.dates) || [];
         const last = d[d.length - 1];
         if (!last) return '—';
-        return (last.visible ? '✓ ' : '✗ ') + last.day_view_total;
+        return last.day_view_total;
       });
 
       function _execFetch(url) {

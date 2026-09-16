@@ -8,13 +8,10 @@
   const { ref, computed, onMounted, inject } = Vue;
   window.__quantComponents = window.__quantComponents || {};
 
-  const EMOJI = { '买入': '🟢', '持有': '🟡', '观望': '⚪', '减仓': '🟠', '卖出': '🔴' };
   const ACTION_ORDER = ['买入', '持有', '观望', '减仓', '卖出'];
   // V6.6: 动作档位语义色 (qc-status-dot 渲染, 与图例 .focus-action-* 同色)
   const ACTION_DOT = { '买入': 'is-success', '持有': 'is-warning', '观望': 'is-info', '减仓': 'is-danger', '卖出': 'is-danger' };
-  // V5.4.2 (FR): 推荐档位 (level) 符号 — 与后端 focus_digest.LEVEL_EMOJI 同口径
-  const TIER_EMOJI = { '强烈推荐': '🔥', '推荐': '🟢', '谨慎推荐': '🟡', '中性': '⚪', '观望': '🔵' };
-  // V6.6: 推荐档位语义色 (qc-status-dot 渲染, 🔥/🟢/🟡/⚪/🔵 → 语义色)
+  // V6.6: 推荐档位语义色 (qc-status-dot 渲染)
   const TIER_DOT = { '强烈推荐': 'is-danger', '推荐': 'is-success', '谨慎推荐': 'is-warning', '中性': 'is-info', '观望': 'is-running' };
   const SESSIONS = [
     { v: 'pre_open', l: '盘前 09:00' },
@@ -67,7 +64,7 @@
               <div v-for="a in ACTION_ORDER" :key="a"
                    class="focus-action-seg" :class="'focus-action-' + a"
                    :style="{ width: actionPct(a) }"
-                   :title="EMOJI[a] + ' ' + a + ': ' + (results.actions[a] || 0)"></div>
+                   :title="a + ': ' + (results.actions[a] || 0)"></div>
             </div>
             <div class="focus-action-legend">
               <span v-for="a in ACTION_ORDER" :key="a" class="focus-action-legend-item">
@@ -113,11 +110,11 @@
                     <el-tag v-if="poolStatus[row.stock_code].source === 'both' || poolStatus[row.stock_code].source === 'watchlist'"
                       size="small" type="warning" effect="light" class="focus-badge"><qc-icon name="star" :size="14" /> 自选</el-tag>
                     <el-tag v-if="poolStatus[row.stock_code].pool_state === 'new_pool'"
-                      size="small" type="success" effect="light" class="focus-badge">🆕 新入池</el-tag>
+                      size="small" type="success" effect="light" class="focus-badge"><qc-icon name="sparkles" :size="14" /> 新入池</el-tag>
                     <el-tag v-else-if="poolStatus[row.stock_code].pool_state === 'in_pool'"
-                      size="small" type="primary" effect="light" class="focus-badge">📍 在池</el-tag>
+                      size="small" type="primary" effect="light" class="focus-badge"><qc-icon name="map-pin" :size="14" /> 在池</el-tag>
                     <el-tag v-else-if="poolStatus[row.stock_code].pool_state === 'exited'"
-                      size="small" type="warning" effect="light" class="focus-badge">🚪 已出池</el-tag>
+                      size="small" type="warning" effect="light" class="focus-badge"><qc-icon name="log-out" :size="14" /> 已出池</el-tag>
                     <el-tag v-if="poolStatus[row.stock_code].holding" size="small" type="danger" effect="light" class="focus-badge">持仓</el-tag>
                   </span>
                 </span>
@@ -400,7 +397,7 @@
       // V5.4.2 (fix): SESSION_LABELS 需经 setup 暴露, 模板才能访问 (Vue 模板仅见实例绑定)
       return { curDate, session, results, history, track, trackLoading, trackNote,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
-               TRACK_WINDOWS, EMOJI, ACTION_DOT, TIER_EMOJI, TIER_DOT, SESSION_LABELS, displayGroups, latestNote,
+               TRACK_WINDOWS, ACTION_DOT, TIER_DOT, SESSION_LABELS, displayGroups, latestNote,
                baseNote,
                sessionLabel, fmtScore, tagType, rateTagType,
                fmtRate, toggle, detailOf, loadResults, loadHistory, loadTrack,

@@ -267,10 +267,11 @@
 }
 .qc-header-search {
   /* V6.5 (PRD-6.5 F3): 固定窄宽 220px, 贴近右侧铃铛; 去掉弹性伸缩 */
-  flex: 0 0 220px;
-  width: 220px;
-  max-width: 220px;
-  min-width: 220px;
+  /* V5.7.2 (UX-15): 宽度定案 300px — 介于 v4 评估 420px 与实测 220px 之间, 桌面可读/移动端可收缩 */
+  flex: 0 0 300px;
+  width: 300px;
+  max-width: 300px;
+  min-width: 300px;
 }
 .qc-header-search .el-input { width: 100%; }
 .qc-header-search .el-input__wrapper {
@@ -544,12 +545,20 @@
   /* V6.2 (PRD-6.2 F3): 搜索框移动端显示并收缩 (原隐藏) */
   .qc-header-center {
     display: flex;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    min-width: 0;
     max-width: none;
     margin: 0 var(--qc-space-2);
   }
-  .qc-header-search { max-width: none; }
+  .qc-header-search {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
   .qc-header-search .el-input__suffix { display: none; }  /* 移动端隐藏 Ctrl+K */
+  .qc-header-left { flex: 0 0 auto; }
+  .qc-header-right { flex: 0 0 auto; }
   .qc-header {
     padding: 0 var(--qc-space-3);
     gap: var(--qc-space-2);
@@ -557,6 +566,5 @@
     border-radius: 0;
     margin-bottom: var(--qc-space-2);
   }
-  .qc-header-left { flex: 0 1 auto; }
   .qc-header-tabs { flex: 1; }
 }

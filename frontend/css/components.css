@@ -3,6 +3,17 @@
    克制专业 + 金色点缀: 静态卡边框优先 / EP 变量级覆盖收敛 / 状态点 / 空态 / 骨架
    全部颜色经 --qc-* token (硬编码仅限 qc-allow-hardcode 行) */
 
+/* V5.7.2 (UX-T1): EP 组件字体统一 — 显式覆盖继承链, 与全站 --qc-font-sans 一致
+   (仅 --el-font-family 变量不足以覆盖 EP 组件继承的 Arial) */
+.el-button, .el-input, .el-select, .el-textarea, .el-table, .el-dialog,
+.el-message, .el-message-box, .el-dropdown, .el-dropdown-menu, .el-tag,
+.el-date-picker, .el-date-editor, .el-autocomplete, .el-pagination,
+.el-form, .el-form-item, .el-radio, .el-checkbox, .el-tabs, .el-tooltip,
+.el-switch, .el-slider, .el-input-number, .el-upload, .el-badge, .el-empty,
+.el-loading-mask, .el-popper, .el-select-dropdown, .el-picker-panel {
+  font-family: var(--qc-font-sans);
+}
+
 /* ─── §2.1 卡片 ─────────────────────────────────────── */
 .qc-card {
   background: var(--qc-card);

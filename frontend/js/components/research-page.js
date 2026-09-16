@@ -458,7 +458,7 @@
                                 {{ backtestResult.message || '' }}
                             </div>
                         </template>
-                        <div v-else class="empty-state p-30-0">选择策略和日期范围后点击"运行回测"</div>
+                        <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」，结果将在此展示"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title flex-between">
@@ -610,7 +610,7 @@
                             <div class="market-review-date-list">
                                 <div class="market-review-date-list-head">
                                     <span>复盘日期</span>
-                                    <el-button size="small" text @click="loadMarketReviews" aria-label="刷新复盘日期">🔄</el-button>
+                                    <el-button size="small" text @click="loadMarketReviews" aria-label="刷新复盘日期"><qc-icon name="refresh" :size="14" /></el-button>
                                 </div>
                                 <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
                                 <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>

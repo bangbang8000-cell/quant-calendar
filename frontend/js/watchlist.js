@@ -11,6 +11,24 @@
 (function () {
   if (!window.__quantModules) window.__quantModules = {};
 
+  // V5.7.2 (UX-09): 评估档位 → 语义色 token (替代服务端 level_color hex, 暗色自适应)
+  const LEVEL_COLOR = {
+    '强烈推荐': 'var(--el-danger)', '推荐': 'var(--el-success)',
+    '谨慎推荐': 'var(--el-warning)', '中性': 'var(--el-info)',
+    '观望': 'var(--text-tertiary)', '买入': 'var(--el-success)',
+    '持有': 'var(--el-warning)', '减仓': 'var(--el-danger)',
+    '卖出': 'var(--el-danger)',
+  };
+  const LEVEL_BG = {
+    '强烈推荐': 'var(--badge-danger-bg)', '推荐': 'var(--badge-success-bg)',
+    '谨慎推荐': 'var(--badge-warning-bg)', '中性': 'var(--badge-info-bg)',
+    '观望': 'var(--bg-hover)', '买入': 'var(--badge-success-bg)',
+    '持有': 'var(--badge-warning-bg)', '减仓': 'var(--badge-danger-bg)',
+    '卖出': 'var(--badge-danger-bg)',
+  };
+  function levelVar(l) { return LEVEL_COLOR[l] || 'var(--text-tertiary)'; }
+  function levelBgVar(l) { return LEVEL_BG[l] || 'var(--bg-hover)'; }
+
   window.__quantModules.watchlist = {
     create(deps) {
       const { ref, computed, watch } = Vue;
@@ -54,7 +72,7 @@ function getWatchlistScore(code) {
     const records = aiHistory.value.filter(r => r.stock_code === code);
     if (records.length === 0) return null;
     const latest = records.reduce((a, b) => (a.evaluate_time > b.evaluate_time) ? a : b);
-    return { score: latest.result.total_score, color: latest.result.level_color };
+    return { score: latest.result.total_score, color: levelVar(latest.result.level), bg: levelBgVar(latest.result.level) };
 }
 function getLatestScore(code) {
     const s = getWatchlistScore(code);
