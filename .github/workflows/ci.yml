@@ -79,8 +79,10 @@ jobs:
             --cov=factor_ic --cov=fact_check --cov=eval_track --cov-report=term --cov-fail-under=70 -m "not e2e"
           # 数据源自愈门禁含既有 data_sources 测试 (test_data_sources/test_data_sources_fetch),
           # 否则仅路由测试对 data_sources 覆盖不足 (40% < 60%), CI 恒红
+          # V5.7.1: 补入 test_kline_minute_v540 (覆盖 _manager 限流逻辑, 58%→63%)
           python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
             tests/test_market_review_activation.py tests/test_event_alert_live.py tests/test_market_review.py \
+            tests/test_kline_minute_v540.py \
             --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
           # V5.0.1 (T-5.0.11~5.0.16): 数据中台模块覆盖率门禁 ≥70% (TEST-PLAN 2.3)
           python -m pytest tests/test_data_portal2.py tests/test_data_quality.py tests/test_pit_no_lookahead.py             tests/test_data_dict.py tests/test_survivorship.py tests/test_data_lineage.py             --cov=data_portal2 --cov=data_quality --cov=pit --cov=data_dict --cov=survivorship --cov=lineage             --cov-report=term --cov-fail-under=70 -m "not e2e"
