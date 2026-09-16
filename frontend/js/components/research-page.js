@@ -458,7 +458,7 @@
                                 {{ backtestResult.message || '' }}
                             </div>
                         </template>
-                        <div v-else class="empty-state p-30-0">选择策略和日期范围后点击"运行回测"</div>
+                        <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」，结果将在此展示"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title flex-between">

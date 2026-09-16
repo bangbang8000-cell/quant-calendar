@@ -35,14 +35,14 @@
                         <div class="batch-row" v-for="(status,code) in batchStatuses" :key="code">
                             <span class="color-token-primary" v-if="status==='running'">⏳</span>
                             <span class="color-el-success" v-else-if="status==='success'">●</span>
-                            <span class="color-el-danger" v-else-if="status==='error'">✕</span>
+                            <span class="color-el-danger" v-else-if="status==='error'"><qc-icon name="x" :size="12" /></span>
                             <span class="color-tertiary" v-else>⏸</span>
                             <span class="color-text-primary-flex1">
                                 <!-- v3.15: 名称优先展示, 代码小字跟随 -->
                                 <template v-if="batchResults[code] && batchResults[code].stock_name && batchResults[code].stock_name!==code">{{ batchResults[code].stock_name }}<span class="text-xs-tertiary"> ({{ code }})</span></template>
                                 <template v-else>{{ code }}</template>
                             </span>
-                            <span class="text-sm-bold" v-if="status==='success' && batchResults[code] && batchResults[code].result" :style="{color:batchResults[code].result.level_color||'var(--text-primary)'}">{{ fmtNum(batchResults[code].result.total_score) }}分</span>
+                            <span class="text-sm-bold" v-if="status==='success' && batchResults[code] && batchResults[code].result" :style="{color: levelColor(batchResults[code].result.level)}">{{ fmtNum(batchResults[code].result.total_score) }}分</span>
                             <span class="text-xs-danger-ellipsis" v-else-if="status==='error' && batchEvalErrors[code]" :title="batchEvalErrors[code]">{{ batchEvalErrors[code] }}</span>
                         </div>
                     </div>

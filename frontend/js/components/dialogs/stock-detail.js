@@ -16,7 +16,8 @@
     template: `
         <el-dialog v-model="stockDetailVisible" :title="''" width="800px" class="kline-dialog"
             :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
-            :close-on-click-modal="!embedded" :class="{ 'qc-embedded-dialog': embedded }">
+            :close-on-click-modal="!embedded" :lock-scroll="!embedded"
+            :class="{ 'qc-embedded-dialog': embedded }">
             <!-- v3.16 (16.10-fix): 数据未就绪时显示加载态（弹窗已立即打开，避免接口慢导致延迟） -->
             <div v-if="stockDetailLoading && !stockDetail" class="empty-state p-48-0">
                 <div class="empty-state-icon-xs"><qc-icon name="loader" :size="24" /></div>
@@ -245,7 +246,7 @@
                                     </div>
                                     <!-- 操作检查清单 -->
                                     <div class="meta-tags" v-if="checklistItems.length">
-                                        <span class="text-xs-secondary" v-for="c in checklistItems" :key="c.label">{{ c.icon }} {{ c.label }}</span>
+                                        <span class="text-xs-secondary" v-for="c in checklistItems" :key="c.label"><qc-icon :name="c.icon" :size="13" /> {{ c.label }}</span>
                                     </div>
                                 </div>
                             </div>

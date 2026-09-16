@@ -235,7 +235,7 @@
         try {
           await ElementPlus.ElMessageBox.confirm(
             `确定要从备份 ${name} 恢复吗？当前数据将被覆盖。`,
-            '⚠ 恢复确认',
+            '恢复确认',
             { type: 'warning', confirmButtonText: '恢复', cancelButtonText: '取消' }
           );
         } catch (e) { console.warn('[restoreBackup] confirm cancelled:', e); return; }
@@ -260,9 +260,9 @@
       const tourVisible = ref(false);
       const tourStep = ref(0);
       const tourSteps = [
-        { icon: '🗓', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
-        { icon: '🤖', title: 'AI 智能评估', desc: '在智能评估页可对股票发起多模型 AI 评估；点击右下角 🤖 按钮可随时快速问股。' },
-        { icon: '📮', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
+        { icon: 'calendar', title: '认识量化日历', desc: '日历页展示每日策略选股结果，支持日/周/月/年视图切换。红色=新增入选，蓝色=当前持有，灰色=已出池。' },
+        { icon: 'bot', title: 'AI 智能评估', desc: '在智能评估页可对股票发起多模型 AI 评估；点击右下角 AI 按钮可随时快速问股。' },
+        { icon: 'send', title: '设置推送与反馈', desc: '在系统配置页可设置飞书推送、数据源和 AI 模型；关于页可提交问题反馈。' },
       ];
       function maybeShowTour() {
         // V5.4.2: 向导弹窗默认取消 — 未显式开启全局引导开关则不再弹出

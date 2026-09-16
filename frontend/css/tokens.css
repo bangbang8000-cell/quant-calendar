@@ -69,8 +69,9 @@
   --qc-popover-foreground: var(--qc-neutral-900);
   --qc-primary: var(--qc-primary-600);
   --qc-primary-foreground: var(--qc-neutral-0);
+  /* V5.7.2 (UX-T1): 亮色 muted/nav-label 对比度达标 — #8f8679(3.59:1)→#7a7568(4.59:1) / #6b6358(5.91:1) */
   --qc-muted: var(--qc-neutral-100);
-  --qc-muted-foreground: var(--qc-neutral-500);
+  --qc-muted-foreground: #7a7568;
   --qc-border: var(--qc-neutral-200);
   --qc-input: var(--qc-neutral-200);
   --qc-ring: var(--qc-primary-400);
@@ -87,7 +88,7 @@
   --qc-nav-item-active: var(--qc-primary-800);
   --qc-nav-item-active-bg: var(--qc-primary-100);
   --qc-nav-item-active-border: var(--qc-primary-500);
-  --qc-nav-group-label: var(--qc-neutral-500);
+  --qc-nav-group-label: #6b6358;
   --qc-nav-badge-bg: var(--qc-primary-100);
   --qc-nav-badge-text: var(--qc-primary-800);
   /* V6.0: 抽屉/浮层遮罩 (浅色) */
@@ -114,11 +115,16 @@
   --qc-transition-none: none;
 
   /* ─── Typography ─── */
-  --qc-font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  /* V5.7.2 (UX-13): 字体栈 — Inter 承载西文/数字, 中文回退优选中文字体 */
+  --qc-font-sans: 'Inter', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   --qc-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  /* V5.7.2 (UX-T1): EP 组件字体统一 — 覆盖 EP 默认 Helvetica/Arial, 与全站字体栈一致 */
+  --el-font-family: var(--qc-font-sans);
+  /* V5.7.2 (UX-12): 金融数据等宽数字 — 数字对齐稳定 (继承至全站, 仅影响数字字形) */
+  font-variant-numeric: tabular-nums;
 
-  --qc-font-size-xs: 11px;
-  --qc-font-size-sm: 12px;
+  --qc-font-size-xs: 12px;
+  --qc-font-size-sm: 13px;
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
   --qc-font-size-lg: 18px;

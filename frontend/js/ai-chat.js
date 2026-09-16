@@ -143,6 +143,15 @@ function selectAllChatSessions() {
     }
 }
 async function deleteSelectedChatSessions() {
+    // V5.7.2 (UX-17): 批量删除二次确认
+    if (!selectedChatIds.value.length) return;
+    try {
+        await ElementPlus.ElMessageBox.confirm(
+            `确定要删除选中的 ${selectedChatIds.value.length} 段对话吗？此操作不可恢复。`,
+            '删除确认',
+            { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+        );
+    } catch (e) { return; }
     for (const id of [...selectedChatIds.value]) {
         await deleteChatSession(id);
     }

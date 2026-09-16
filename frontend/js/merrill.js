@@ -18,10 +18,17 @@
   };
 
   const assetNames = {
-    stock: '📈 股票',
-    bond: '📜 债券',
-    commodity: '🛢 大宗商品',
-    cash: '💰 现金'
+    stock: '股票',
+    bond: '债券',
+    commodity: '大宗商品',
+    cash: '现金'
+  };
+
+  // V5.7.2 (UX-07): 美林阶段 emoji → Lucide 图标名映射 (服务端配置 icon 为 emoji 时前端映射)
+  const STAGE_ICON_MAP = {
+    '🌱': 'sprout', '🔥': 'flame', '🌾': 'wheat', '❄️': 'snowflake',
+    '📈': 'trending-up', '📉': 'trending-down', '📊': 'bar-chart-3',
+    '💹': 'line-chart', '🏭': 'factory', '💰': 'banknote', '🛢': 'fuel'
   };
 
   const stageTaglines = {
@@ -39,7 +46,7 @@
       stage_cn: '复苏',
       stage_name: '复苏期',
       name: '复苏期',
-      icon: '🌱',
+      icon: 'sprout',
       color: '#27AE60',
       description: '2025年开启新一轮复苏周期，政策发力，经济触底回升',
       timing: {
@@ -76,7 +83,7 @@
       return order.map(key => {
         const s = cfg[key] || {};
         return {
-          key, name: s.name || key, icon: s.icon || '📊',
+          key, name: s.name || key, icon: STAGE_ICON_MAP[s.icon] || 'bar-chart-3',
           color: s.color || getCSSVar('--text-tertiary') || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
           textColor: s.color || getCSSVar('--text-primary') || '#333',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
@@ -273,7 +280,7 @@
           const oldName = cfg[merrillPrevStage.value]?.name || merrillPrevStage.value;
           const newName = cfg[stage]?.name || stage;
           ElementPlus.ElMessage({
-            message: '🔔 美林时钟阶段切换：' + oldName + ' → ' + newName,
+            message: '美林时钟阶段切换：' + oldName + ' → ' + newName,
             type: 'warning',
             duration: 6000,
             showClose: true

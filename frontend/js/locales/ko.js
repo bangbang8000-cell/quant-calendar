@@ -151,7 +151,7 @@
     'detail.evaluate': 'Evaluate',
     'detail.reevaluate': 'Re-evaluate',
     'detail.addWatch': 'Add to Watchlist',
-    'detail.inWatch': '★ In Watchlist',
+    'detail.inWatch': 'In Watchlist',
     'detail.retry': 'Retry',
     'detail.factorTitle': '멀티팩터 점검',
     'detail.factorLoading': 'Loading factor data…',

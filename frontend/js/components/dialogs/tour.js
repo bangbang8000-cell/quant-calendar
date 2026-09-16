@@ -11,7 +11,7 @@
     template: `
         <el-dialog v-model="tourVisible" title="" width="440px" :show-close="false" class="tour-dialog">
             <div class="text-center-pad8-0">
-                <div class="empty-state-icon-sm">{{ tourSteps[tourStep].icon }}</div>
+                <div class="empty-state-icon-sm"><qc-icon :name="tourSteps[tourStep].icon" :size="26" /></div>
                 <div class="text-lg-semibold-mb8">{{ tourSteps[tourStep].title }}</div>
                 <div class="text-base-secondary-lh">{{ tourSteps[tourStep].desc }}</div>
             </div>

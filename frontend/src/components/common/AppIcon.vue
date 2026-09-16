@@ -21,6 +21,9 @@ import {
   // V6.6 (PRD-6.6 F2): 美术收尾 — emoji 清理补充图标
   StarOff, Upload, Gem, FolderOpen, Link, Save, Trash2, Pause, HelpCircle,
   PlayCircle, Pencil, Folder, Code,
+  // V5.7.2 (UX-07): 全站 emoji → Lucide 收尾补充
+  Sprout, Wheat, Snowflake, Fuel, Banknote, Send, Inbox,
+  WifiOff, CheckCircle2, XCircle,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -131,6 +134,17 @@ const ICON_MAP = {
   'pencil': Pencil,
   'folder': Folder,
   'code': Code,
+  // V5.7.2 (UX-07): 全站 emoji → Lucide 收尾补充
+  'sprout': Sprout,
+  'wheat': Wheat,
+  'snowflake': Snowflake,
+  'fuel': Fuel,
+  'banknote': Banknote,
+  'send': Send,
+  'inbox': Inbox,
+  'wifi-off': WifiOff,
+  'check-circle-2': CheckCircle2,
+  'x-circle': XCircle,
 }
 
 const comp = () => ICON_MAP[props.name] || ICON_MAP['circle-dot']

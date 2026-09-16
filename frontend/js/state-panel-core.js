@@ -5,7 +5,7 @@
 (function () {
   const VARIANTS = {
     empty: {
-      icon: '📭',
+      icon: 'inbox',
       title: '暂无数据',
       desc: '当前没有可展示的内容',
       tone: 'neutral',
@@ -21,7 +21,7 @@
       skeleton: true,
     },
     error: {
-      icon: '⚠',
+      icon: 'alert-triangle',
       title: '加载失败',
       desc: '数据获取出错，请稍后重试',
       tone: 'danger',
@@ -29,7 +29,7 @@
       skeleton: false,
     },
     offline: {
-      icon: '📡',
+      icon: 'wifi-off',
       title: '网络不可用',
       desc: '请检查网络连接后重试',
       tone: 'danger',

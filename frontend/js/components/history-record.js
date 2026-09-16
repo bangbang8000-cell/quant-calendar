@@ -30,12 +30,12 @@
               <template v-if="type === 'history'">
                 <span @click.stop="toggleWatchlist(item.stock_code, item.stock_name)" tabindex="0" role="button"
                       :aria-label="watchState.label" :title="watchState.label" class="history-star"
-                      @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">{{ watchState.icon }}</span>
+                      @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="star" :size="14" :class="watchState.isWatched ? 'is-watched' : ''" /></span>
                 <span v-if="evaluatedCodes.has(item.stock_code)" title="已AI评估" class="history-flag"><qc-icon name="bot" :size="14" /></span>
                 <span v-if="klineLoadedCodes.has(item.stock_code)" title="已加载K线" class="history-flag"><qc-icon name="trending-up" :size="14" /></span>
               </template>
             </div>
-            <span v-if="type === 'history'" class="score-badge-small" :style="{background: item.result.level_color + '20', color: item.result.level_color}">
+            <span v-if="type === 'history'" class="score-badge-small" :style="{background: levelBg(item.result.level), color: levelColor(item.result.level)}">
               <span class="score-num">{{ fmtNum(item.result.total_score) }}</span>
               <span class="score-level">{{ item.result.level }}</span>
             </span>
@@ -68,7 +68,7 @@
       const watchState = computed(() => {
         // v3.16 (bugfix): watchlistCodes 为 computed ref，须取 .value（否则 .has 未定义→渲染 TypeError→行空白）
         const has = state.watchlistCodes.value.has(props.item.stock_code);
-        return { icon: has ? '⭐' : '☆', label: has ? '取消收藏' : '加入收藏' };
+        return { icon: 'star', isWatched: has, label: has ? '取消收藏' : '加入收藏' };
       });
 
       const providerIcon = computed(() => (props.type === 'history' ? 'bot' : 'message-circle'));
@@ -99,7 +99,15 @@
         if (props.type === 'history') state.viewAiResult(props.item);
         else state.viewChatSession(props.item);
       }
-      function remove() {
+      async function remove() {
+        // V5.7.2 (UX-17): 危险操作二次确认
+        try {
+          await ElementPlus.ElMessageBox.confirm(
+            props.type === 'history' ? '确定删除这条评估记录吗？此操作不可恢复。' : '确定删除这段对话吗？此操作不可恢复。',
+            '删除确认',
+            { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+          );
+        } catch (e) { return; }
         if (props.type === 'history') state.deleteSingleHistory(props.item.id);
         else state.deleteChatSession(props.item.id);
       }
@@ -112,6 +120,8 @@
         fmtNum: state.fmtNum,
         evaluatedCodes: state.evaluatedCodes,
         klineLoadedCodes: state.klineLoadedCodes,
+        levelColor: state.levelColor,
+        levelBg: state.levelBg,
       };
     },
   };
