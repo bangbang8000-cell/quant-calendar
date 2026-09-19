@@ -28,8 +28,8 @@
                                     @keydown.space.prevent="pickDate(d.date)">
                                     <div class="shortterm-date-item-date">{{ d.date }}</div>
                                     <div class="shortterm-date-item-meta">
-                                        <span>赚钱 <b>{{ fmtPct(d.money_effect) }}</b></span>
-                                        <span>情绪 <b>{{ d.emotion_score != null ? d.emotion_score.toFixed(2) : '—' }}</b></span>
+                                        <span>赚钱 <b :class="riseFall(d.money_effect)">{{ fmtPct(d.money_effect) }}</b></span>
+                                        <span>情绪 <b :class="(d.emotion_score != null && d.emotion_score >= 0.8) ? 'meta-emotion-hot' : ((d.emotion_score != null && d.emotion_score < 0.6) ? 'meta-emotion-cold' : '')">{{ d.emotion_score != null ? d.emotion_score.toFixed(2) : '—' }}</b></span>
                                         <span>涨停 <b>{{ d.zt_count }}</b></span>
                                     </div>
                                 </div>

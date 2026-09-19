@@ -9,6 +9,12 @@
     name: 'qc-global-header',
     template: `
       <div class="global-header-root">
+        <!-- v5.18 (F1): 非交易日全局提示条 -->
+        <div v-if="true" class="non-trading-banner" role="status">
+          <qc-icon name="alert-triangle" :size="14" />
+          <span>今日非交易日 · 展示最近交易日 {{ marketData.date }} 数据</span>
+          <button class="non-trading-banner-close" @click="dismissBanner" aria-label="关闭提示">×</button>
+        </div>
         <div class="global-header">
           <div class="sub-nav-wrapper">
             <template v-for="menu in menus" :key="menu.key">
@@ -89,11 +95,18 @@
       const state = inject('qcState');
       if (!state) return {};
       const showUserMenu = ref(false);
+      // v5.18 (F1): 非交易日提示条本次会话关闭记忆
+      const bannerDismissed = ref(localStorage.getItem('qc.hideNonTradingBanner') === '1');
+      const dismissBanner = () => { bannerDismissed.value = true; try { localStorage.setItem('qc.hideNonTradingBanner','1'); } catch(e){} };
+      const marketData = computed(() => (state.marketData && state.marketData.value) || {});
       // V4.5 (FR-4.5.1): 美林时钟全局快捷入口
       const goMerrill = () => { if (window.__quantGoPage) window.__quantGoPage('strategies', 'merrill'); };
 
       return {
         menus: state.menus,
+        marketData,
+        bannerDismissed,
+        dismissBanner,
         goMerrill,
         currentPage: state.currentPage,
         currentSubPage: state.currentSubPage,

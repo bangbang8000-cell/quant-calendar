@@ -568,3 +568,26 @@
   }
   .qc-header-tabs { flex: 1; }
 }
+
+
+/* ===== v5.18 (F1): 非交易日全局提示条 ===== */
+.non-trading-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--qc-warning-50, #fffbeb);
+  color: var(--qc-warning-700, #b45309);
+  font-size: 13px;
+  border-bottom: 1px solid var(--qc-warning-100, #fef3c7);
+}
+.non-trading-banner .non-trading-banner-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}

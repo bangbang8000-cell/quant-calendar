@@ -152,7 +152,12 @@ export default {
     function menuItem(fn) { return () => { closeUserMenu(); if (fn) fn() } }
     function handleLogout() { closeUserMenu(); if (state.handleLogout) state.handleLogout() }
 
+    // v5.18 (F1): 非交易日全局提示条
+    const marketData = computed(() => (state.marketData && state.marketData.value) || {})
+    const bannerDismissed = ref((typeof window !== 'undefined' && localStorage.getItem('qc.hideNonTradingBanner') === '1'))
+    const dismissBanner = () => { bannerDismissed.value = true; try { localStorage.setItem('qc.hideNonTradingBanner','1') } catch(e) {} }
     return {
+      marketData, bannerDismissed, dismissBanner,
       state, showUserMenu, currentUser, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
       // V6.9.3 (F4): 通知铃铛面板
@@ -171,6 +176,13 @@ export default {
 </script>
 
 <template>
+  <div class="qc-header-wrap">
+  <!-- v5.18 (F1): 非交易日全局提示条 -->
+  <div v-if="marketData && marketData.is_trading_day === false && !bannerDismissed" class="non-trading-banner" role="status">
+    <AppIcon name="alert-triangle" :size="14" />
+    <span>今日非交易日 · 当前展示最近交易日历史数据</span>
+    <button class="non-trading-banner-close" @click="dismissBanner" aria-label="关闭提示">×</button>
+  </div>
   <header class="qc-header">
     <div class="qc-header-left">
       <button class="qc-icon-btn" :aria-label="state.sidebarCollapsed?.value ? '展开侧边栏' : '折叠侧边栏'" @click="toggleSidebar">
@@ -328,4 +340,5 @@ export default {
       </div>
     </div>
   </header>
+  </div>
 </template>

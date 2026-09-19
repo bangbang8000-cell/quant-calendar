@@ -900,31 +900,41 @@
   overflow-y: auto;
 }
 .shortterm-date-item {
-  padding: var(--qc-space-2) var(--qc-space-3);
+  padding: 10px 12px 10px 14px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
-  transition: background-color var(--duration-fast, 0.15s);
+  border-left: 3px solid transparent;
+  transition: background-color var(--duration-fast, 0.15s), border-color var(--duration-fast, 0.15s);
 }
 .shortterm-date-item:hover { background: var(--bg-tertiary); }
 .shortterm-date-item.is-active {
   background: var(--bg-tertiary);
-  border-left: 3px solid var(--color-primary);
-  padding-left: calc(var(--qc-space-3) - 3px);
+  border-left-color: var(--color-primary);
+  padding-left: 11px;
 }
 .shortterm-date-item-date {
   font-weight: var(--font-semibold, 600);
   color: var(--text-primary);
   font-size: var(--qc-font-size-sm);
+  letter-spacing: .2px;
 }
+.shortterm-date-item.is-active .shortterm-date-item-date { color: var(--color-primary); }
 .shortterm-date-item-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--qc-space-3);
-  margin-top: 2px;
+  gap: 1px 10px;
+  margin-top: 3px;
   font-size: var(--qc-font-size-xs);
-  color: var(--text-secondary);
+  color: var(--text-tertiary, var(--text-secondary));
 }
-.shortterm-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
+.shortterm-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
+/* 指标值颜色编码: 红涨 / 绿跌 / 灰中性 (A股习惯) */
+.meta-val-up { color: var(--qc-market-up) !important; font-weight: 600; }
+.meta-val-down { color: var(--qc-market-down) !important; font-weight: 600; }
+.meta-val-flat { color: var(--text-tertiary, var(--text-secondary)); }
+/* 情绪分强弱色阶: >=0.8 情绪热(红) / <0.6 情绪冷(绿) / 中间中性 */
+.meta-emotion-hot { color: var(--qc-market-up) !important; font-weight: 600; }
+.meta-emotion-cold { color: var(--qc-market-down) !important; font-weight: 600; }
 .shortterm-split-content { min-width: 0; }
 
 /* ===== V5.15 (F8.2): 每日复盘 双栏 — 左日期中栏 (类似复盘日历) + 右内容 ===== */
@@ -959,31 +969,34 @@
   overflow-y: auto;
 }
 .market-review-date-item {
-  padding: var(--qc-space-2) var(--qc-space-3);
+  padding: 10px 12px 10px 14px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
-  transition: background-color var(--duration-fast, 0.15s);
+  border-left: 3px solid transparent;
+  transition: background-color var(--duration-fast, 0.15s), border-color var(--duration-fast, 0.15s);
 }
 .market-review-date-item:hover { background: var(--bg-tertiary); }
 .market-review-date-item.is-active {
   background: var(--bg-tertiary);
-  border-left: 3px solid var(--color-primary);
-  padding-left: calc(var(--qc-space-3) - 3px);
+  border-left-color: var(--color-primary);
+  padding-left: 11px;
 }
 .market-review-date-item-date {
   font-weight: var(--font-semibold, 600);
   color: var(--text-primary);
   font-size: var(--qc-font-size-sm);
+  letter-spacing: .2px;
 }
+.market-review-date-item.is-active .market-review-date-item-date { color: var(--color-primary); }
 .market-review-date-item-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--qc-space-3);
-  margin-top: 2px;
+  gap: 1px 10px;
+  margin-top: 3px;
   font-size: var(--qc-font-size-xs);
-  color: var(--text-secondary);
+  color: var(--text-tertiary, var(--text-secondary));
 }
-.market-review-date-item-meta b { color: var(--text-primary); font-weight: var(--font-medium, 500); }
+.market-review-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
 .market-review-split-content { min-width: 0; }
 
 /* ===== V5.16 (F1/F4): 详情内嵌双栏工作区 ===== */

@@ -622,8 +622,8 @@
                                          @keydown.space.prevent="toggleMarketReviewDate(item.date)">
                                         <div class="market-review-date-item-date">{{ item.date }}</div>
                                         <div class="market-review-date-item-meta">
-                                            <span>赚钱 <b>{{ fmtPct(item.summary && item.summary.money_effect) }}</b></span>
-                                            <span>情绪 <b>{{ fmtEmotion(item.summary && item.summary.emotion_score) }}</b></span>
+                                            <span>赚钱 <b :class="(item.summary && item.summary.money_effect > 0) ? 'is-rise' : ((item.summary && item.summary.money_effect < 0) ? 'is-fall' : '')">{{ fmtPct(item.summary && item.summary.money_effect) }}</b></span>
+                                            <span>情绪 <b :class="(item.summary && item.summary.emotion_score != null && item.summary.emotion_score >= 0.8) ? 'meta-emotion-hot' : ((item.summary && item.summary.emotion_score != null && item.summary.emotion_score < 0.6) ? 'meta-emotion-cold' : '')">{{ fmtEmotion(item.summary && item.summary.emotion_score) }}</b></span>
                                             <span>涨停 <b>{{ item.summary && item.summary.zt_count != null ? item.summary.zt_count : '—' }}</b></span>
                                         </div>
                                     </div>
