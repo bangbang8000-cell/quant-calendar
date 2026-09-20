@@ -2755,7 +2755,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                     <div v-if="expandedDates.includes(date)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动（分组较大时仅渲染可视区记录） -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="96">
                                             <template #default="{ item: record }">
                                             <qc-history-record :item="record" type="history" :show-dims="true" time-format="time"></qc-history-record>
                                             </template>
@@ -2786,7 +2786,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                     <div v-if="expandedMonths.includes(month)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="96">
                                             <template #default="{ item: record }">
                                             <qc-history-record :item="record" type="history" time-format="datetime"></qc-history-record>
                                             </template>
@@ -2822,7 +2822,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                     <div class="trend-chart-box" v-if="records.length> 1" :ref="el => registerTrendChart(el, code, records)"></div>
                                     <!-- v3.16 (16.7): 内层虚拟滚动（单股多次评估时仅渲染可视区） -->
                                     <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                    <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
+                                    <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="96">
                                         <template #default="{ item: record }">
                                     <qc-history-record :item="record" type="history" time-format="time"></qc-history-record>
                                         </template>
@@ -2907,7 +2907,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                     <div v-if="expandedChatDates.includes(date)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="96">
                                             <template #default="{ item: session }">
                                         <qc-history-record :item="session" type="chat" time-format="time"></qc-history-record>
                                             </template>
@@ -2938,7 +2938,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                     <div v-if="expandedChatMonths.includes(month)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="96">
                                             <template #default="{ item: session }">
                                         <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
                                             </template>
@@ -2969,7 +2969,7 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                 <div class="records-indent-sm" v-if="expandedChatStocks.includes(code)">
                                     <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                     <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                    <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
+                                    <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="96">
                                         <template #default="{ item: session }">
                                     <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
                                         </template>
