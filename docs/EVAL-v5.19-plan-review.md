@@ -225,3 +225,22 @@ DEV-PLAN §0 所列 12 条现状, 逐条实证结果:
 
 **批次3 结论**: 验收通过。
 
+### 7.5 批次4 执行结果 (2026-09-19, F6 重点跟踪双栏)
+
+**关键技术判断**: 本页**不宜改用 `qc-stock-list`** —— 该组件不支持**分组表头**, 而「按推荐档位分组 (强烈推荐→推荐→谨慎推荐→中性→观望)」是本页核心语义。这与批次2 的 C10 决策 (保留原行结构) 结论一致, 故沿用同一路线。
+
+| 项 | 结果 |
+|---|---|
+| 双栏结构 | `cls=detail-split-wrap detail-split`, `cols=3`, `pct=35`, `divider/pane=true` |
+| 中栏 | 原档位分组 `.focus-row` 列表; 实测档位头 **3** 组 / 行 **12** |
+| 右栏 | `qc-stock-detail-dialog :embedded="true"`; 复用全局弹窗的 `v-if="!detailSplitEnabled"` 机制, `openStockDetail()` 两模式共用 |
+| 手风琴移除 | **`nAccordion=0`** (原 `.focus-detail` 行内展开已删) |
+| 窄栏两行适配 | `.focus-row` 6 列 → **4 列 2 行** (`28px 224px 42px 40px`, rowH 70); 名称改 `white-space: normal` 以免徽章被 ellipsis 截断 |
+| 聚合块归属 | 历史记录 + 效果块在结果卡之外, 保持**双栏之下全宽** (按 C5-A) |
+| 弹窗模式回退 | `cols=1`, `pct=100`; 行 grid 恢复 **6 列** (rowH 48) |
+| setup 透传 | `focus-view.js` 只返回本地 refs, 故显式补 `detailSplitEnabled` / `stockDetail` |
+| 全量回归 | 批次1 (拖拽 + 弹窗回退) / 批次2 (报价无溢出 + 行点击) / 批次3 (美林 858 字) 全绿; **0 pageerror** |
+| pytest 子集 | 51 passed / 2 failed (均为既有版本门禁红, 与本次无关) |
+
+**批次4 结论**: 验收通过。**v5.19 五项需求 (F1/F4/F5/F6, 原 F2/F3/F7 已撤销或移出) 全部完成**, 余批次5 发布链 (APP_VERSION 5.8.0 → 5.9.0 + 版本门禁断言同步 + HANDOVER)。
+

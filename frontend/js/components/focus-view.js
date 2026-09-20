@@ -83,13 +83,16 @@
         <!-- 当日多时点结果 -->
         <div class="card mb-4">
           <div class="card-title"><qc-icon name="bar-chart-3" :size="14" /> 当日多时点结果
-            <span class="card-title-hint">时段: {{ sessionLabel }} · 点击行展开详情</span>
+            <span class="card-title-hint">时段: {{ sessionLabel }} · 点击行查看右栏详情</span>
           </div>
           <div v-if="loading" class="color-secondary">加载中…</div>
           <div v-else-if="results.rows.length === 0" class="color-secondary">
             该日期/时段暂无评估结果（多时点评估由调度执行, 盘前 09:00 / 盘后 20:00 必做）
           </div>
           <div v-else>
+            <!-- V5.19 (F6): 中栏档位分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
+            <qc-detail-split :enabled="detailSplitEnabled">
+            <template #list>
             <!-- V5.4.2 (FR): 按推荐档位归类 (强烈推荐→观望), 组内评分降序 — 后端 results.groups 已就绪 -->
             <template v-for="(rows, lv) in displayGroups" :key="lv">
               <div class="focus-tier-header">
@@ -98,9 +101,9 @@
                 <span class="color-secondary">({{ rows.length }})</span>
               </div>
               <div v-for="row in rows" :key="row.stock_code" class="focus-row"
-                :class="{ 'focus-row-expanded': expanded.includes(row.stock_code) }"
-                @click="toggle(row.stock_code)" tabindex="0" role="button"
-                @keydown.enter.prevent="toggle(row.stock_code)">
+                :class="{ 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === row.stock_code }"
+                @click="openStockDetail(row.stock_code)" tabindex="0" role="button"
+                @keydown.enter.prevent="openStockDetail(row.stock_code)">
                 <!-- V5.15 (F5): 行结构对齐「关注」风格 — 状态点|名称(含入池徽章)|档位|评分|方向|操作 分列 -->
                 <span class="focus-row-status"><span class="qc-status-dot" :class="ACTION_DOT[row.action] || 'is-info'"></span></span>
                 <span class="focus-row-name">{{ row.stock_name }}
@@ -127,32 +130,14 @@
                   <el-button size="small" circle text type="primary" class="focus-row-open"
                     @click.stop="openStockDetail(row.stock_code)"
                     :title="'打开 ' + row.stock_code + ' 详情'"><qc-icon name="trending-up" :size="14" /></el-button>
-                  <span class="focus-row-toggle">{{ expanded.includes(row.stock_code) ? '▲' : '▼' }}</span>
                 </span>
-                <div v-if="expanded.includes(row.stock_code)" class="focus-detail">
-                  <div class="focus-detail-line">评估来源: {{ row.model_provider || '—' }} / {{ row.model_used || '—' }}
-                    <span v-if="row.model_provider === 'rule'" class="color-secondary">（规则快评降级）</span>
-                  </div>
-                  <div class="focus-detail-line" v-if="detailOf(row).level">评级: {{ detailOf(row).level }}</div>
-                  <div class="focus-detail-line" v-if="detailOf(row).data_quality_note">数据时效: {{ detailOf(row).data_quality_note }}</div>
-                  <div class="focus-detail-line" v-if="detailOf(row).sniper_points">买卖点参考: {{ detailOf(row).sniper_points }}</div>
-                  <div class="focus-detail-line" v-if="detailOf(row).signal_attribution">信号归因: {{ detailOf(row).signal_attribution }}</div>
-                  <!-- V5.4.0 (FR-5.4.9): 入池历史 -->
-                  <div class="focus-detail-line" v-if="poolStatus[row.stock_code] && poolStatus[row.stock_code].pool_history">
-                    <span class="color-secondary">入池:</span>
-                    <template v-if="poolStatus[row.stock_code].pool_history.first_appear">
-                      首入 {{ poolStatus[row.stock_code].pool_history.first_appear }} · 最近在池 {{ poolStatus[row.stock_code].pool_history.last_appear }}
-                      <span v-if="poolStatus[row.stock_code].pool_state === 'exited'" class="color-secondary"> · 已出池</span>
-                      <span v-else-if="poolStatus[row.stock_code].pool_state === 'in_pool'" class="color-secondary"> · 当前在池</span>
-                      <span v-if="poolStatus[row.stock_code].pool_history.pool_entries.length > 1" class="color-secondary">
-                        · {{ poolStatus[row.stock_code].pool_history.pool_entries.length }} 段
-                      </span>
-                    </template>
-                    <span v-else class="color-secondary">从未入池</span>
-                  </div>
-                </div>
               </div>
             </template>
+            </template>
+            <template #pane>
+              <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+            </template>
+            </qc-detail-split>
           </div>
         </div>
 
@@ -396,6 +381,8 @@
       });
       // V5.4.2 (fix): SESSION_LABELS 需经 setup 暴露, 模板才能访问 (Vue 模板仅见实例绑定)
       return { curDate, session, results, history, track, trackLoading, trackNote,
+               // V5.19 (F6): 双栏模式所需 (Vue 模板仅见实例绑定, 故须显式透传)
+               detailSplitEnabled: state.detailSplitEnabled, stockDetail: state.stockDetail,
                loading, expanded, stockCode, stockHistory, SESSIONS, ACTION_ORDER,
                TRACK_WINDOWS, ACTION_DOT, TIER_DOT, SESSION_LABELS, displayGroups, latestNote,
                baseNote,

@@ -53,11 +53,15 @@
 - **CSS ✅**: `layout.css` 增 `.grid-2col-gap8-mb14.is-vertical` 单列规则。
 - **实测**: `cls=detail-split-wrap detail-split`, `cols=3`, `pct=35`, `divider/pane=true`, 右栏 `qc-embedded-dialog` 正文 **858 字** (自动载入生效), 内嵌头 `display:none`, overlay 为 `static`; 弹窗模式 `cols=1` / `pct=100`、无内嵌类、overlay 为 `fixed`、网格回 2 列; **0 pageerror**。
 
-### F. 重点跟踪双栏 (F6)
-- **F1**: `focus-view.js` — 日期 / 时段 / 五档分布条 → 双栏之上; 档位分组列表 → 中栏 `qc-stock-list`; 右栏 → `qc-stock-detail-dialog :embedded="true"`。
-- **F2**: 删除 `.focus-detail` 行内手风琴与行内「打开详情」按钮 (详情统一由右栏承载)。
-- **F3**: 历史记录 + 效果块 → 双栏之下全宽 (按 C5-A)。
-- **F4**: 档位分组头 (强烈推荐→观望) 在中栏内保留。
+### F. 重点跟踪双栏 (F6) ✅ **已完成 (2026-09-19)**
+- **F1 ✅**: `focus-view.js` 的「当日多时点结果」卡片内层包入 `qc-detail-split`; `#list` = 原档位分组 `.focus-row` 列表; `#pane` = `qc-stock-detail-dialog :embedded="true"`。今日概览卡 (日期/时段/分布条) 留在其上方不动。
+- **F2 ✅**: 删除 `.focus-detail` 行内手风琴与展开箭头; 行点击由 `toggle()` 改为 `openStockDetail()` (双栏/弹窗共用同一入口)。保留 K线图标按钮作显式入口。
+- **F3 ✅**: 历史记录 + 效果块卡片未被包入双栏, 保持全宽 (在结果卡片之外)。
+- **F4 ✅**: 档位分组头 (强烈推荐→观望) 保留在 `#list` 内 (实测 3 组)。
+- **未改用 `qc-stock-list`**: 该组件不支持分组表头, 而档位分组是本页核心语义。
+- **setup 透传**: `focus-view.js` 的 return 增 `detailSplitEnabled` / `stockDetail` (该组件只返回本地 refs, 不透传 `...state`)。
+- **CSS ✅**: `layout.css` 增 `.detail-split .focus-row` 4 列 2 行适配 + `.is-active` 选中态。
+- **实测**: `cls=detail-split-wrap detail-split`, `cols=3`, `pct=35`, `divider/pane=true`; 档位头 3 / 行 12 / **手风琴 0**; 双栏行 grid `28px 224px 42px 40px` (4 列, rowH 70); 点击行右栏正文 293 字 + `is-active` 1 行 + overlay `static`; 弹窗模式 `cols=1` / `pct=100`、行 grid 恢复 6 列 (rowH 48); **0 pageerror**。
 
 ### G. 发布链
 - **G1**: `backend/main_new.py` APP_VERSION 5.8.0 → 5.9.0 (按 C1; 版本门禁测试若断言旧值需同步)。
@@ -81,9 +85,9 @@
 | `frontend/js/components/calendar-page.js` | 改用 `qc-detail-split` (A2) |
 | `frontend/js/components/strategies-page.js` | ×3 改用组件 (A2) ✅ + 美林双栏 (E2) ✅ |
 | `frontend/js/components/ai-page.js` | 自选双栏 (D) ✅已完成 |
-| `frontend/js/components/focus-view.js` | 重点跟踪双栏 (F) |
+| `frontend/js/components/focus-view.js` | 重点跟踪双栏 (F) ✅已完成 |
 | `frontend/js/components/dialogs/merrill-detail.js` | `embedded` (E1) ✅已完成 |
-| `frontend/css/layout.css` | 自选窄栏两行适配 (D) ✅; 重点跟踪行样式 (F) 待做 |
+| `frontend/css/layout.css` | 自选两行适配 (D) ✅; 美林阶段卡竖排 (E) ✅; 重点跟踪两行适配 (F) ✅ |
 | `frontend/dist/*` | Vite 重建产物 (G2) |
 | `backend/main_new.py` | APP_VERSION (G1) |
 | `docs/HANDOVER.md` | 更新 (G6) |
@@ -98,7 +102,7 @@
 | 批次1 | A (组件抽取, 4 处) — B 已撤销 | 低 (纯重构) | ✅ **已完成**: 4 页实测 cols=3 / pct=35 / divider+pane 齐备 / 拖拽+持久化 / 弹窗回退 / 0 pageerror |
 | 批次2 | D (我的自选双栏) — C 已移除 | 高 (行信息密度) | ✅ **已完成**: 双栏结构 + 行点击载入右栏 + 两行适配无溢出 + 弹窗回退 + 0 pageerror |
 | 批次3 | E (美林时钟) | 低 (内容零新增) | ✅ **已完成**: 右栏自动载入当前阶段 (858 字), 阶段卡竖排, 弹窗模式回 2 列, 0 pageerror |
-| 批次4 | F (重点跟踪) | 中 (信息架构调整) | 概览在上/列表在中/详情在右/聚合在下 |
+| 批次4 | F (重点跟踪) | 中 (信息架构调整) | ✅ **已完成**: 概览在上/档位分组列表在中/详情在右/聚合在下; 手风琴移除; 两行适配; 0 pageerror |
 | 批次5 | G (发布链 + 回滚预案) | 中 | 0 pageerror + 全量 pytest ≤ 基线 + dist 入库 |
 
 ## 4. 发布链
