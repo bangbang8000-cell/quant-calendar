@@ -1075,6 +1075,10 @@ const allMenuDefs = [
                     currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached,
                     loadHealthMetrics, loadConsensusData, applyTheme, maybeShowTour,
                     loadAiVendors,  // V4.6: 登录成功即加载 AI 厂商(修复自动评估子页厂商卡不显示)
+                    // V5.21-fix: 组菜单可见性配置 — 登录流程必须重新加载。此前仅在应用启动的
+                    // 会话恢复路径 (lifecycle.js) 加载, 表单登录不刷新页面时 groupsConfig 为空,
+                    // 使 menus 的组过滤整体失效 => 已关闭的一级菜单(如策略研究)仍然显示
+                    loadGroupConfig, groupsConfig,
                 });
                 const { loginForm, logining, guestLogining,
                         showChangePassword, changePasswordForm, changingPassword,

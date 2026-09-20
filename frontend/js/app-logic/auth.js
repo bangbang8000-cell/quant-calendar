@@ -7,7 +7,8 @@
   window.__quantAppLogic.auth = {
     create: function (ctx) {
       const { currentUser, loadUserConfig, loadDates, loadDashboardData, loadDashboardCached, loadHealthMetrics,
-              loadConsensusData, applyTheme, maybeShowTour, loadAiVendors } = ctx;
+              loadConsensusData, applyTheme, maybeShowTour, loadAiVendors,
+              loadGroupConfig, groupsConfig } = ctx;
 
       // ===== 登录状态 =====
       // V5.20-fix: 记住上次登录的用户名 (仅用户名, 绝不存口令) — 修复「输入用户名无法保存」
@@ -103,6 +104,9 @@
             applyTheme(data.user.theme || 'gold');
             // V5.20-fix: 登录成功即记住用户名 — 下次打开登录页自动回填
             try { localStorage.setItem(LOGIN_USERNAME_KEY, loginForm.value.username || ''); } catch (e) { /* 存储不可用则忽略 */ }
+            // V5.21-fix: 登录后必须重新加载组配置 — 否则 groupsConfig 为空, 一级菜单的组级隐藏失效
+            // (此前只在应用启动的会话恢复路径加载, 表单登录不刷新页面时不会触发)
+            if (typeof loadGroupConfig === 'function') await loadGroupConfig().catch(function () {});
             // V4.6 修复: 登录成功立即加载 AI 厂商(提前发出, 避免与系统配置页请求排队导致延迟)
             if (typeof loadAiVendors === 'function') loadAiVendors();
             await loadUserConfig();
@@ -149,6 +153,8 @@
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
             applyTheme(data.user.theme || 'gold');
+            // V5.21-fix: 访客登录后同样重载组配置 (与 handleLogin 一致)
+            if (typeof loadGroupConfig === 'function') await loadGroupConfig().catch(function () {});
             await loadUserConfig();
             await loadDates();
             await loadDashboardData();
@@ -176,6 +182,8 @@
           // V4.2 (FR-4.2.7): 登出双清凭证 + 断开 WS
           localStorage.removeItem('quant_user');
           localStorage.removeItem('quant_token');
+          // V5.21-fix: 清空组配置 — 避免下一个登录用户沿用上一个用户的菜单可见性
+          try { if (groupsConfig) groupsConfig.value = {}; } catch (e) {}
           try {
             if (window.__quantWs && window.__quantWs.close) window.__quantWs.close();
           } catch (e) {}
