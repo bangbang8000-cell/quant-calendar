@@ -47,9 +47,6 @@
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
             --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
-            /* V5.27: 浅色面板 (运行期由 themes.js 按主题色相覆盖) */
-            --gradient-panel: linear-gradient(135deg, #c3d8fa 0%, #a8c7f6 100%);
-            --panel-fg: #11213f;
             --card-border: #bfdbfe;
             /* 主按钮令牌 (v3.13: 令牌化, 各主题覆写) */
             --btn-primary-bg: #1d4ed8; --btn-primary-border: #1d4ed8; --btn-primary-color: #fff;
@@ -94,8 +91,6 @@
             --qc-overlay: rgba(0, 0, 0, 0.6);
             --secondary-color: #5e6ad2;
             --gradient: linear-gradient(135deg, #0b1220 0%, #101a2e 50%, #1a2a44 100%);
-            --gradient-panel: linear-gradient(135deg, #d3dcf5 0%, #b9c8ee 100%);
-            --panel-fg: #0b1220;
             --card-border: #1a2a44;
             --text-primary: #e6f1ff; --text-secondary: #a0aec8; --text-tertiary: #8b9bb5;
             --text-link: #64ffda;
@@ -216,7 +211,8 @@
             --qc-primary-700: #8f6f1f; --qc-primary-800: #6d5218;
             --secondary-color: #e6c450;
             --gradient: linear-gradient(135deg, #80630e 0%, #927210 50%, #be9721 100%);
-            --gradient-panel: linear-gradient(135deg, #e9dda0 0%, #dccb85 100%);
+            /* V5.29: 详情头卡浅色面板 (运行期由 themes.js 按色相覆盖); 静态兜底仅满足令牌完整性门禁 */
+            --gradient-panel: linear-gradient(135deg, #dccb85 0%, #c3a83f 100%);
             --panel-fg: #2b2109;
             --card-border: #e8d5a3;
             --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847;
@@ -254,12 +250,16 @@
         }
         /* 🌙 暗色专业版 - 组件激活态 */
         [data-theme="dark-pro"] .nav-item.active,
-        /* V5.27: 详情金卡与同屏同族元素已改用 --gradient-panel / --panel-fg (深浅两模式统一),
-           故从本 dark-pro 覆盖列表移除; 下列 4 项为导航/装饰类, 不在本次范围内, 保持原样 */
+        [data-theme="dark-pro"] .sub-nav-tab.active,
+        [data-theme="dark-pro"] .status-tab.active,
+        [data-theme="dark-pro"] .consensus-badge,
         [data-theme="dark-pro"] .stat-icon,
         [data-theme="dark-pro"] .user-avatar,
         [data-theme="dark-pro"] .user-menu-avatar,
-        [data-theme="dark-pro"] .login-icon {
+        [data-theme="dark-pro"] .login-icon,
+        /* V5.29: .detail-header 已改用 --gradient-panel (深浅两模式统一), 从本覆盖列表移除 */
+        [data-theme="dark-pro"] .hold-days,
+        [data-theme="dark-pro"] .kline-tab.active {
             background: var(--gradient-brand) ; color: var(--bg-page) ;
         }
         [data-theme="dark-pro"] .sub-nav-tab.active {
@@ -936,7 +936,8 @@
         }
         /* 详情弹窗 */
         .detail-header {
-            /* V5.27: 浅色面板 + 深色前景 (原深底白字最浅端仅 2.74:1) */
+            /* V5.29: 仅个股/指数详情头卡改为"浅色面板 + 深色文字"(原深底白字最浅端仅 2.43~2.74:1);
+               其余 --gradient 使用点(状态标签/导航/进度条等)保持原样 */
             background: var(--gradient-panel);
             color: var(--panel-fg);
             padding: 20px;
@@ -955,7 +956,7 @@
             font-weight: var(--font-semibold);
         }
         .detail-subtitle {
-            /* V5.27: 浅色面板下 .85 会明显发灰, 提到 .9 (实测对比仍 >=4.5) */
+            /* V5.29: 头卡改浅底深字后 .85 会发灰, 提到 .9 */
             opacity: 0.9;
             font-size: var(--qc-font-size-base);
             margin-top: 4px;
@@ -1042,8 +1043,8 @@
         .hold-name { font-weight: var(--font-medium); font-size: var(--qc-font-size-base); }
         .hold-days {
             padding: 4px 10px;
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            background: var(--gradient);
+            color: var(--white);
             border-radius: var(--qc-radius-medium);
             font-size: var(--qc-font-size-sm);
             font-weight: var(--font-semibold);
@@ -1076,8 +1077,8 @@
             color: var(--primary-color);
         }
         .kline-tab.active {
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            background: var(--gradient);
+            color: var(--white);
             border-color: transparent;
             font-weight: var(--font-medium);
         }
@@ -1225,8 +1226,8 @@
             background: color-mix(in srgb, var(--white) 25%, transparent);
         }
         .status-tab.active {
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            background: var(--gradient);
+            color: var(--white);
         }
         .status-badge {
             display: inline-block;
@@ -1587,8 +1588,8 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            background: var(--gradient);
+            color: var(--white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3712,8 +3713,8 @@ text {
             color: var(--primary-color);
 }
 .sub-nav-tab.active {
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            background: var(--gradient);
+            color: var(--white);
             box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
 }
 
