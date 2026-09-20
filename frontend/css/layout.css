@@ -1235,6 +1235,34 @@ body.qc-split-resizing * {
 /* 双栏时中栏顶部含 rt-bar/搜索/排序, 列表高度相应收缩, 避免超出中栏被裁切 */
 .detail-split .watchlist-vlist { height: calc(100vh - 460px); }
 
+/* ===== V5.20 (F3): 评估历史 / 问股历史 — 中栏窄栏行压缩 =====
+   35% 中栏内容宽仅约 242px, 原始行 (padding16 + header 换行 + footer 换行) 自然高约 150px,
+   远超固定槽位 72px => 裁切。此处压缩内边距/间距/字号, 并去掉固定行高下的 margin-bottom
+   (外边距会直接叠加进 .qc-vrow 的内容高度), 配合模板 :row-height 双栏态 72 -> 96 */
+.detail-split .ai-history-item {
+  padding: var(--qc-space-2);
+  gap: var(--qc-space-2);
+  margin-bottom: 0;
+  border-width: 1px;
+  align-items: flex-start;
+}
+.detail-split .ai-history-item .history-header {
+  margin-bottom: var(--qc-space-1);
+  gap: var(--qc-space-1);
+}
+.detail-split .ai-history-item .stock-info { gap: var(--qc-space-1); flex-wrap: wrap; }
+.detail-split .ai-history-item .stock-code { font-size: var(--qc-font-size-sm); }
+.detail-split .ai-history-item .stock-name { font-size: var(--qc-font-size-xs); }
+.detail-split .ai-history-item .score-badge-small { padding: 2px 6px; gap: var(--qc-space-1); }
+.detail-split .ai-history-item .score-badge-small .score-num { font-size: var(--qc-font-size-sm); }
+.detail-split .ai-history-item .score-badge-small .score-level { font-size: var(--qc-font-size-xs); }
+.detail-split .ai-history-item .history-footer {
+  gap: var(--qc-space-2);
+  font-size: var(--qc-font-size-xs);
+  margin-top: 0;
+}
+.detail-split .ai-history-item .history-checkbox .checkbox-inner { width: 18px; height: 18px; }
+
 /* 窄屏 (≤1024px) 单列时隐藏分隔条 */
 @media (max-width: 1024px) {
   .split-divider {

@@ -331,7 +331,7 @@
                                     <div v-if="expandedDates.includes(date)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动（分组较大时仅渲染可视区记录） -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
                                             <template #default="{ item: record }">
                                             <qc-history-record :item="record" type="history" :show-dims="true" time-format="time"></qc-history-record>
                                             </template>
@@ -362,7 +362,7 @@
                                     <div v-if="expandedMonths.includes(month)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
                                             <template #default="{ item: record }">
                                             <qc-history-record :item="record" type="history" time-format="datetime"></qc-history-record>
                                             </template>
@@ -398,7 +398,7 @@
                                     <div class="trend-chart-box" v-if="records.length> 1" :ref="el => registerTrendChart(el, code, records)"></div>
                                     <!-- v3.16 (16.7): 内层虚拟滚动（单股多次评估时仅渲染可视区） -->
                                     <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                    <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="72">
+                                    <qc-virtual-list class="vlist-max-h-420" :items="records" :row-height="detailSplitEnabled ? 96 : 72">
                                         <template #default="{ item: record }">
                                     <qc-history-record :item="record" type="history" time-format="time"></qc-history-record>
                                         </template>
@@ -483,7 +483,7 @@
                                     <div v-if="expandedChatDates.includes(date)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
                                             <template #default="{ item: session }">
                                         <qc-history-record :item="session" type="chat" time-format="time"></qc-history-record>
                                             </template>
@@ -514,7 +514,7 @@
                                     <div v-if="expandedChatMonths.includes(month)" class="date-group-records records-indent">
                                         <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                         <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="72">
+                                        <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
                                             <template #default="{ item: session }">
                                         <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
                                             </template>
@@ -545,7 +545,7 @@
                                 <div class="records-indent-sm" v-if="expandedChatStocks.includes(code)">
                                     <!-- v3.16 (16.7): 内层虚拟滚动 -->
                                     <!-- v3.16 (16.9): 行模板收敛至 qc-history-record -->
-                                    <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="72">
+                                    <qc-virtual-list class="vlist-max-h-420" :items="sessions" :row-height="detailSplitEnabled ? 96 : 72">
                                         <template #default="{ item: session }">
                                     <qc-history-record :item="session" type="chat" time-format="datetime"></qc-history-record>
                                         </template>
@@ -997,6 +997,56 @@
         },
         { immediate: true }
       );
+      // ===== V5.20 (F2): 双栏模式默认载入首条 — 自动展开首组 + 载入该组首条到右栏 =====
+      // 仅双栏生效; 同一子页内已有内容时不覆盖用户选择; 切换子页时重新载入
+      // (镜像 strategies-page.js 的 V5.16 双栏默认选中 watch)
+      let _autoFocusSub = '';
+      let _autoFocusLoading = false;
+      watch(function () {
+        const sub = state.currentSubPage && state.currentSubPage.value;
+        const split = !!(state.detailSplitEnabled && state.detailSplitEnabled.value);
+        const out = { sub: sub, split: split, kind: '', view: '', key: '', first: null, expandList: null, expandFn: null };
+        if (sub === 'history') {
+          const v = (state.aiHistoryView && state.aiHistoryView.value) || 'date';
+          const src = (v === 'date' ? state.groupedByDate : v === 'month' ? state.groupedByMonth : state.aiHistoryByStock);
+          const data = (src && src.value) || {};
+          const keys = Object.keys(data);
+          out.kind = 'history';
+          out.view = v;
+          out.key = keys.length ? keys[0] : '';
+          out.first = keys.length ? ((data[keys[0]] || [])[0] || null) : null;
+          out.expandList = v === 'date' ? state.expandedDates : v === 'month' ? state.expandedMonths : state.expandedStocks;
+          out.expandFn = v === 'date' ? state.toggleDateExpand : v === 'month' ? state.toggleMonthExpand : state.toggleStockExpand;
+        } else if (sub === 'chat_history') {
+          const v = (state.chatHistoryView && state.chatHistoryView.value) || 'date';
+          const src = (v === 'date' ? state.chatGroupedByDate : v === 'month' ? state.chatGroupedByMonth : state.chatGroupedByStock);
+          const data = (src && src.value) || {};
+          const keys = Object.keys(data);
+          out.kind = 'chat';
+          out.view = v;
+          out.key = keys.length ? keys[0] : '';
+          out.first = keys.length ? ((data[keys[0]] || [])[0] || null) : null;
+          out.expandList = v === 'date' ? state.expandedChatDates : v === 'month' ? state.expandedChatMonths : state.expandedChatStocks;
+          out.expandFn = v === 'date' ? state.toggleChatDateExpand : v === 'month' ? state.toggleChatMonthExpand : state.toggleChatStockExpand;
+        }
+        return out;
+      }, function (v) {
+        if (!v.split || !v.first || !v.kind) return;
+        const subChanged = v.sub !== _autoFocusSub;
+        const cur = state.stockDetail && state.stockDetail.value;
+        const hasContent = !!(cur && cur.stock);
+        if (!subChanged && hasContent) return;
+        if (_autoFocusLoading) return;
+        _autoFocusSub = v.sub;
+        _autoFocusLoading = true;
+        try {
+          if (v.key && v.expandList && v.expandFn && v.expandList.value && v.expandList.value.indexOf(v.key) < 0) v.expandFn(v.key);
+        } catch (e) { /* 展开失败不阻断载入 */ }
+        const p = v.kind === 'history' ? state.viewAiResult(v.first) : state.viewChatSession(v.first);
+        if (p && typeof p.finally === 'function') p.finally(function () { _autoFocusLoading = false; });
+        else _autoFocusLoading = false;
+      }, { immediate: true });
+
       return {
         ...state, trackData, trackLoading, trackWindows, fmtTrackRate, loadTrack,
         trackWindow, setTrackWindow, trackHitText,
