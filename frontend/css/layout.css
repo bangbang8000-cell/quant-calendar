@@ -926,8 +926,8 @@
 }
 .shortterm-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
 /* 指标值颜色编码: 红涨 / 绿跌 / 灰中性 (A股习惯) */
-.meta-val-up { color: var(--qc-market-up) !important; font-weight: 600; }
-.meta-val-down { color: var(--qc-market-down) !important; font-weight: 600; }
+.meta-val-up { color: var(--market-up-text) !important; font-weight: 600; }
+.meta-val-down { color: var(--market-down-text) !important; font-weight: 600; }
 .meta-val-flat { color: var(--text-tertiary, var(--text-secondary)); }
 /* 情绪分强弱色阶: >=0.8 情绪热(红) / <0.6 情绪冷(绿) / 中间中性 */
 .meta-emotion-hot { color: var(--market-up-text) !important; font-weight: 600; }

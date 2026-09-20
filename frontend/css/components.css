@@ -88,8 +88,8 @@
   line-height: 1.15;
 }
 .qc-kpi-trend { font-size: var(--qc-font-size-sm); display: inline-flex; align-items: center; gap: var(--qc-space-1); font-variant-numeric: tabular-nums; }
-.qc-kpi-trend.is-up { color: var(--qc-market-up); }
-.qc-kpi-trend.is-down { color: var(--qc-market-down); }
+.qc-kpi-trend.is-up { color: var(--market-up-text); }
+.qc-kpi-trend.is-down { color: var(--market-down-text); }
 .qc-kpi-trend.is-flat { color: var(--qc-muted-foreground); }
 
 /* ─── §2.2 表格 (Element Plus CSS 变量覆盖, 全站收敛) ── */

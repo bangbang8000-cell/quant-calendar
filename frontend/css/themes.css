@@ -544,23 +544,23 @@
         /* ===== Element Plus 语义色按钮全局覆盖 ===== */
         /* v4.9.5: 排除 .is-text/.is-plain — 修复 text/plain 变体(如 🗑 行内删除) 橙字橙底不可见; 文字/朴素按钮保留 Element 默认高对比 */
         .el-button--success:not(.is-text):not(.is-plain) {
-            background-color: var(--el-success) !important;
-            border-color: var(--el-success) !important;
+            background-color: var(--success-text) !important;
+            border-color: var(--success-text) !important;
         }
         .el-button--success:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--warning:not(.is-text):not(.is-plain) {
-            background-color: var(--el-warning) !important;
-            border-color: var(--el-warning) !important;
+            background-color: var(--warning-text) !important;   /* V5.31: 原 #f59e0b 上白字仅 2.15:1 */
+            border-color: var(--warning-text) !important;
         }
         .el-button--warning:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--danger:not(.is-text):not(.is-plain) {
-            background-color: var(--el-danger) !important;
-            border-color: var(--el-danger) !important;
+            background-color: var(--danger-text) !important;
+            border-color: var(--danger-text) !important;
         }
         .el-button--danger:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--info:not(.is-text):not(.is-plain) {
-            background-color: var(--el-info) !important;
-            border-color: var(--el-info) !important;
+            background-color: var(--info-text) !important;
+            border-color: var(--info-text) !important;
         }
         .el-button--info:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         /* el-tag 语义色覆盖 */
@@ -2162,7 +2162,7 @@
     .market-price { font-size: var(--qc-font-size-lg); font-weight: var(--font-bold); color: var(--text-primary); }
     .market-chg { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); }
     .market-chg.up { color: var(--primary-text); }
-    .market-chg.down { color: var(--color-down); }
+    .market-chg.down { color: var(--market-down-text); }
     .market-info-row { display: flex; justify-content: space-between; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light); }
     .market-sentiment { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: var(--white); padding: 12px 16px; border-radius: var(--qc-radius-large); text-align: center; margin-bottom: 16px; }
     .market-sentiment-text { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); }
@@ -2996,7 +2996,7 @@ text {
     display: flex; align-items: center; gap: 8px;
     padding: 8px 12px; margin-bottom: 8px;
     border-radius: 8px;
-    color: var(--sem-risk);
+    color: var(--market-down-text);
     background: color-mix(in srgb, var(--sem-risk) 10%, transparent);
     border: 1px solid color-mix(in srgb, var(--sem-risk) 30%, transparent);
     font-size: var(--qc-font-size-sm);
@@ -4800,13 +4800,13 @@ text {
 /* 空状态占位: 实心虚线卡 (用量统计页统一, v3.18.5) */
 .usage-ai-empty { border: 1px dashed var(--border-base); border-radius: var(--qc-radius-large); background: var(--bg-card); box-shadow: var(--qc-shadow-sm); padding: 16px 16px; text-align: center; font-size: var(--qc-font-size-sm); color: var(--text-tertiary); }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
-.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--el-success) !important; border-color: var(--el-success) !important; }
+.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--success-text) !important; border-color: var(--success-text) !important; }
 .el-button--success:not(.is-text):not(.is-plain):hover, .el-button--success:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--el-warning) !important; border-color: var(--el-warning) !important; }
+.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--warning-text) !important; border-color: var(--warning-text) !important; }
 .el-button--warning:not(.is-text):not(.is-plain):hover, .el-button--warning:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--el-danger) !important; border-color: var(--el-danger) !important; }
+.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--danger-text) !important; border-color: var(--danger-text) !important; }
 .el-button--danger:not(.is-text):not(.is-plain):hover, .el-button--danger:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--el-info) !important; border-color: var(--el-info) !important; }
+.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--info-text) !important; border-color: var(--info-text) !important; }
 .el-button--info:not(.is-text):not(.is-plain):hover, .el-button--info:not(.is-text):not(.is-plain):focus { opacity: .85; }
 .stage-chip { padding: 4px 6px; border-radius: var(--qc-radius-small); font-size: var(--qc-font-size-xs); margin-right: 8px; background: var(--el-fill-color-light); }
 .stat-card-gold { cursor:pointer; border-left: 3px solid var(--color-gold); }
