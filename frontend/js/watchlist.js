@@ -13,11 +13,11 @@
 
   // V5.7.2 (UX-09): 评估档位 → 语义色 token (替代服务端 level_color hex, 暗色自适应)
   const LEVEL_COLOR = {
-    '强烈推荐': 'var(--el-danger)', '推荐': 'var(--el-success)',
-    '谨慎推荐': 'var(--el-warning)', '中性': 'var(--el-info)',
-    '观望': 'var(--text-tertiary)', '买入': 'var(--el-success)',
-    '持有': 'var(--el-warning)', '减仓': 'var(--el-danger)',
-    '卖出': 'var(--el-danger)',
+    '强烈推荐': 'var(--danger-text)', '推荐': 'var(--success-text)',
+    '谨慎推荐': 'var(--warning-text)', '中性': 'var(--info-text)',
+    '观望': 'var(--text-tertiary)', '买入': 'var(--success-text)',
+    '持有': 'var(--warning-text)', '减仓': 'var(--danger-text)',
+    '卖出': 'var(--danger-text)',
   };
   const LEVEL_BG = {
     '强烈推荐': 'var(--badge-danger-bg)', '推荐': 'var(--badge-success-bg)',
@@ -851,11 +851,11 @@ const scoreDistribution = computed(() => {
     const total = aiHistory.value.length;
     if (total === 0) return [];
     const bins = [
-        { label: '90+', min: 90, max: 100, color: 'var(--el-success)' },
-        { label: '80-89', min: 80, max: 89, color: 'var(--color-success)' },
-        { label: '70-79', min: 70, max: 79, color: 'color-mix(in srgb, var(--color-success) 55%, var(--bg-card))' },
-        { label: '60-69', min: 60, max: 69, color: 'var(--el-warning)' },
-        { label: '<60', min: 0, max: 59, color: 'var(--el-danger)' },
+        { label: '90+', min: 90, max: 100, color: 'var(--success-text)' },
+        { label: '80-89', min: 80, max: 89, color: 'var(--success-text)' },
+        { label: '70-79', min: 70, max: 79, color: 'color-mix(in srgb, var(--success-text) 55%, var(--bg-card))' },
+        { label: '60-69', min: 60, max: 69, color: 'var(--warning-text)' },
+        { label: '<60', min: 0, max: 59, color: 'var(--danger-text)' },
     ];
     return bins.map(b => {
         const count = aiHistory.value.filter(r => r.result.total_score >= b.min && r.result.total_score <= b.max).length;

@@ -546,21 +546,25 @@
         .el-button--success:not(.is-text):not(.is-plain) {
             background-color: var(--success-text) !important;
             border-color: var(--success-text) !important;
+            color: var(--bg-page) !important;   /* V5.31: 实底文字随明暗取页面底 (浅色逆白 / 暗色逆深) */
         }
         .el-button--success:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--warning:not(.is-text):not(.is-plain) {
-            background-color: var(--warning-text) !important;   /* V5.31: 原 #f59e0b 上白字仅 2.15:1 */
+            background-color: var(--warning-text) !important;   /* V5.31: 原浅琥珀上白字仅 2.15:1 */
             border-color: var(--warning-text) !important;
+            color: var(--bg-page) !important;
         }
         .el-button--warning:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--danger:not(.is-text):not(.is-plain) {
             background-color: var(--danger-text) !important;
             border-color: var(--danger-text) !important;
+            color: var(--bg-page) !important;
         }
         .el-button--danger:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         .el-button--info:not(.is-text):not(.is-plain) {
             background-color: var(--info-text) !important;
             border-color: var(--info-text) !important;
+            color: var(--bg-page) !important;
         }
         .el-button--info:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         /* el-tag 语义色覆盖 */
@@ -4800,13 +4804,13 @@ text {
 /* 空状态占位: 实心虚线卡 (用量统计页统一, v3.18.5) */
 .usage-ai-empty { border: 1px dashed var(--border-base); border-radius: var(--qc-radius-large); background: var(--bg-card); box-shadow: var(--qc-shadow-sm); padding: 16px 16px; text-align: center; font-size: var(--qc-font-size-sm); color: var(--text-tertiary); }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
-.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--success-text) !important; border-color: var(--success-text) !important; }
+.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--success-text) !important; border-color: var(--success-text) !important; color: var(--bg-page) !important; }
 .el-button--success:not(.is-text):not(.is-plain):hover, .el-button--success:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--warning-text) !important; border-color: var(--warning-text) !important; }
+.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--warning-text) !important; border-color: var(--warning-text) !important; color: var(--bg-page) !important; }
 .el-button--warning:not(.is-text):not(.is-plain):hover, .el-button--warning:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--danger-text) !important; border-color: var(--danger-text) !important; }
+.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--danger-text) !important; border-color: var(--danger-text) !important; color: var(--bg-page) !important; }
 .el-button--danger:not(.is-text):not(.is-plain):hover, .el-button--danger:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--info-text) !important; border-color: var(--info-text) !important; }
+.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--info-text) !important; border-color: var(--info-text) !important; color: var(--bg-page) !important; }
 .el-button--info:not(.is-text):not(.is-plain):hover, .el-button--info:not(.is-text):not(.is-plain):focus { opacity: .85; }
 .stage-chip { padding: 4px 6px; border-radius: var(--qc-radius-small); font-size: var(--qc-font-size-xs); margin-right: 8px; background: var(--el-fill-color-light); }
 .stat-card-gold { cursor:pointer; border-left: 3px solid var(--color-gold); }
