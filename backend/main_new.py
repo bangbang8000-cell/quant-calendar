@@ -128,7 +128,7 @@ async def lifespan(app: FastAPI):
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
 # V6.3 (PRD-6.3): 保留本地版本号 6.3.0 — 导航形态配置化(subnav/tree/toptab) + 顶部栏容器化 + 页签圆角矩形化 + 评估分析命名修复
-APP_VERSION = "5.8.0"  # V5.18: UI 基础体验硬化 — 非交易日全局提示条 + 语义色/空态错误态统一(中栏优化已并入)
+APP_VERSION = "5.9.0"  # V5.19: 详情双栏全站统一 — qc-detail-split 通用壳 + 我的自选/美林时钟/重点跟踪双栏化 (F2/F3 撤销, F7 移出)
 # V5.17.3: 全站文字/字体/字号/颜色优化 — 亮暗两套对比度达标 + 字号层级提升 + EP字体统一
 
 # 创建 FastAPI 应用

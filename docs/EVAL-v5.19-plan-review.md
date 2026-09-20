@@ -244,3 +244,21 @@ DEV-PLAN §0 所列 12 条现状, 逐条实证结果:
 
 **批次4 结论**: 验收通过。**v5.19 五项需求 (F1/F4/F5/F6, 原 F2/F3/F7 已撤销或移出) 全部完成**, 余批次5 发布链 (APP_VERSION 5.8.0 → 5.9.0 + 版本门禁断言同步 + HANDOVER)。
 
+### 7.6 批次5 执行结果 (2026-09-19, 发布链)
+
+| 项 | 结果 |
+|---|---|
+| 版本号 | backend/main_new.py 5.8.0 → **5.9.0** |
+| 版本门禁同步 | 修复 2 处既有红断言 (原断言 APP_VERSION = "5.7.1", 自 v5.18 起即红): test_v69x3_ui_opts.py::test_version_bumped / test_v69x4_ui_fixes.py::test_version_bumped_694 |
+| 契约变更退役 | test_v515x_focus_list.py::test_focus_detail_and_open_kept — F6 按 PRD 移除行内手风琴后, 该守护的 focus-detail 断言失效; 已改为守护「显式入口 + 双栏壳」并在 docstring 记录原因 |
+| 全量 pytest | **9 failed / 3341 passed / 2 skipped** (121s) |
+| **基线对照 (关键)** | 以 **ops 未改动副本 (2f5007b)** 跑同一批用例 → **9 failed / 1 passed**; 9 项**逐项一致** → 本次改动**净增 0 项失败** |
+| 既有 9 项红 (非本次引入) | test_bundle_budget_v534 (app-logic.js 98656 > 98304 字节; 该文件本次未改) / test_contrast / test_theme_contrast / test_frontend_consistency ×3 (watch-star 未定义类等) / test_lockfile_consistent (PyPI 漂移) / test_nav_tokens + test_tokens_no_hardcode (header.css v5.18 遗留兜底色) |
+| 我的 CSS 违规核查 | 逐项检查失败明细: **未出现任何本次新增类** (watchlist-vlist / wl-btn-label / detail-split .focus-row 等) |
+| 服务状态 | dev(:8001) 重启后 **5.9.0**; ops(:8000) 仍 **5.8.0** |
+| HANDOVER | 头部 (最后更新/当前状态/同步状态) + 里程碑表新增 v5.19 行 + 文档索引 均已更新 |
+
+**ops 未同步的说明 (有意为之)**: v5.19 提交目前**仅存在于本地 dev**。按项目发布纪律, ops 常规经 origin 同步, 而 **GitHub 当前 TLS 握手不通**, 推送待用户确认。若从本地仓强推 ops, 会造成「ops 运行的代码在远端无备份」—— 故**未执行**, 待推送成功后再同步 ops。
+
+**批次5 结论**: 发布链完成 (推送与 ops 升级待网络/用户确认)。**v5.19 全部 5 批次收官。**
+

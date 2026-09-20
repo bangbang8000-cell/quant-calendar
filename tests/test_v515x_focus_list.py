@@ -43,10 +43,16 @@ def test_focus_tier_group_kept():
 
 
 def test_focus_detail_and_open_kept():
-    """TC-5.15.54: 展开详情 + 打开个股详情保留"""
+    """TC-5.15.54: 打开个股详情入口保留。
+
+    V5.19 (PRD-v5.19 F6) 契约变更: 行内手风琴 (focus-detail) **已按 PRD 移除**,
+    详情改由 qc-detail-split 的右栏 #pane (qc-stock-detail-dialog :embedded) 承载;
+    故此处不再守护 focus-detail, 改为守护「显式入口 + 双栏壳」两项。
+    """
     src = _read_f("js/components/focus-view.js")
-    assert "focus-detail" in src and "focus-row-open" in src, "应保留展开详情与打开详情按钮"
+    assert "focus-row-open" in src, "应保留打开详情按钮 (显式入口)"
     assert "openStockDetail" in src, "应保留 openStockDetail 事件"
+    assert "qc-detail-split" in src, "V5.19 起应以 qc-detail-split 承载 中栏列表 + 右栏详情"
 
 
 def test_focus_badges_kept():

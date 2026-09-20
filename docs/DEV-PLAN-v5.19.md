@@ -69,7 +69,15 @@
 - **G3**: 全量 pytest (`-m "not e2e"`, 门禁同 CI) + 前端一致性测试 + 硬编码色 grep。
 - **G4**: 浏览器冒烟 0 pageerror — 浅色/深色 × 双栏/弹窗 × 3 新页 (自选/美林/重点跟踪) + 2 回迁页。
 - **G5**: 重启双端加载新版本 (systemd 用户服务; 沙箱内若 `systemctl --user` 连不上总线, 用 D-Bus `org.freedesktop.systemd1.Manager.RestartUnit`)。
-- **G6**: commit + `docs/HANDOVER.md` 更新。
+- **G6 ✅**: 批次5 commit + `docs/HANDOVER.md` 头部/里程碑表/文档索引更新。
+
+**批次5 实测明细 (2026-09-19)**:
+- **G1**: APP_VERSION 5.8.0 → **5.9.0**; 修复 2 处既有版本门禁红 (原断言 5.7.1, 自 v5.18 起即红)。
+- **G3**: 全量 pytest → **9 failed / 3341 passed / 2 skipped** (121s)。以 **ops 未改动副本 (2f5007b)** 跑同一批用例对照得 **9 failed / 1 passed**, 9 项**逐项一致** → **净增 0 项失败**。
+- **既有 9 项红 (非本次引入)**: `test_bundle_budget_v534` (app-logic.js 98656 > 98304, 该文件本次未改) / `test_contrast` / `test_theme_contrast` / `test_frontend_consistency` ×3 (`watch-star` 未定义类等) / `test_lockfile_consistent` (PyPI 漂移) / `test_nav_tokens` + `test_tokens_no_hardcode` (header.css v5.18 遗留兜底色)。
+- **契约变更退役**: `test_v515x_focus_list.py::test_focus_detail_and_open_kept` 原断言须保留 `focus-detail` 手风琴; F6 按 PRD 移除后该断言失效, 已改为守护「显式入口 + 双栏壳」并在 docstring 记录原因。
+- **G4**: 4 个批次浏览器冒烟全绿 0 pageerror。
+- **G5 (部分)**: dev(:8001) 重启运行 **5.9.0**; **ops(:8000) 仍 5.8.0** — v5.19 提交仅在本地 dev, GitHub TLS 不通、推送待用户确认, 按发布纪律未从本地仓强推 ops (避免 ops 运行远端无备份的代码)。
 
 ### G-bis. 回滚与应急降级 (C7)
 - **回滚边界**: 每批次一个独立 commit; 单批次出问题 `git revert` 该 commit 即可 (批次间无交叉依赖)。
@@ -103,7 +111,7 @@
 | 批次2 | D (我的自选双栏) — C 已移除 | 高 (行信息密度) | ✅ **已完成**: 双栏结构 + 行点击载入右栏 + 两行适配无溢出 + 弹窗回退 + 0 pageerror |
 | 批次3 | E (美林时钟) | 低 (内容零新增) | ✅ **已完成**: 右栏自动载入当前阶段 (858 字), 阶段卡竖排, 弹窗模式回 2 列, 0 pageerror |
 | 批次4 | F (重点跟踪) | 中 (信息架构调整) | ✅ **已完成**: 概览在上/档位分组列表在中/详情在右/聚合在下; 手风琴移除; 两行适配; 0 pageerror |
-| 批次5 | G (发布链 + 回滚预案) | 中 | 0 pageerror + 全量 pytest ≤ 基线 + dist 入库 |
+| 批次5 | G (发布链 + 回滚预案) | 中 | ✅ **已完成**: APP_VERSION 5.9.0 + 2 项版本门禁同步; 全量 pytest 9 failed/3341 passed (基线对照净增 0); dev 重启运行 5.9.0 |
 
 ## 4. 发布链
 1. bump APP_VERSION 5.8.0 → 5.9.0
