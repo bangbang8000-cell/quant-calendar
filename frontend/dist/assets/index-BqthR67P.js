@@ -2723,6 +2723,9 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                             </div>
                         </div>
 
+                        <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
+                        <qc-detail-split :enabled="detailSplitEnabled">
+                        <template #list>
                         <!-- 视图切换 -->
                         <div class="flex-gap-8-mb12" v-if="aiHistory.length> 0">
                             <el-button size="small" @click="aiHistoryView = 'date'" :type="aiHistoryView === 'date' ? 'primary' : ''">{{ t('ai.byDate') }}</el-button>
@@ -2834,6 +2837,11 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                 加载更多（剩余 {{ aiHistoryTotal - aiHistory.length }} 条）
                             </el-button>
                         </div>
+                        </template>
+                        <template #pane>
+                            <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+                        </template>
+                        </qc-detail-split>
                     </div>
                     </div>
 
@@ -2868,6 +2876,9 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                             </div>
                         </div>
 
+                        <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
+                        <qc-detail-split :enabled="detailSplitEnabled">
+                        <template #list>
                         <!-- 视图切换 -->
                         <div class="flex-gap-8-mb12" v-if="allChatSessionsFlat.length> 0">
                             <el-button size="small" @click="chatHistoryView = 'date'" :type="chatHistoryView === 'date' ? 'primary' : ''"><qc-icon name="calendar" :size="14" /> 按日期</el-button>
@@ -2966,6 +2977,11 @@ var Cd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as qd,L
                                 </div>
                             </div>
                         </div>
+                        </template>
+                        <template #pane>
+                            <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
+                        </template>
+                        </qc-detail-split>
                         </div>
                     </div>
 
