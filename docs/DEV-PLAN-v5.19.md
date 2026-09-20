@@ -34,17 +34,16 @@
 - **B1/B2/B3 不做**: 两页模板与旧类名保持原样; 不为"单类族"做纯 churn 的 CSS 合并。
 - **B4** 由 F1 实测覆盖 (拖拽 / 持久化已在日历页验证)。
 
-### C. StockList 多选 (F3)
-- **C1**: `StockList.vue` props 增 `selectable`(Boolean, default false) / `selected`(Array, default []); emits 增 `toggle-select`。
-- **C2**: 模板 `selectable` 时行首渲染复选框 (`@click.stop` 派发 `toggle-select(item)`, 不触发 `select`); 虚拟 (`virtual` 分支) 与非虚拟两分支同步。
-- **C3**: 既有 6 处调用不传 `selectable`, 行为不变 (回归冒烟守护)。
+### C. StockList 多选 (F3) — **已移除 (C11), 不执行**
+- **移除理由**: F4 按 C10 保留现有自选行结构, F3 失去唯一使用方; 不为共享组件增加无使用方的 API 面。
 
-### D. 我的自选双栏 (F4)
-- **D1**: `ai-page.js` watchlist 段 — 工具栏 / 搜索 / 排序 → 中栏顶部; 列表 → `qc-stock-list` (`virtual` + `selectable` + `copy-code` + `active-code`); 右栏 → `qc-stock-detail-dialog :embedded="true"`。
-- **D2**: 行点击 — `detailSplitEnabled` 时 `showStockDetail(code)` 载入右栏; 否则沿用 `showStockKline` 弹窗 (保持 `detailDisplayMode` 双态语义)。
-- **D3**: 实时报价 (现价 / 涨跌幅 / 量比 / 涨速 / 预警标记) 迁入 `name-suffix` 或 `actions` 插槽, **信息项不减少**。
-- **D4**: 保留 `.swipe-reveal` 左滑删除与长按复制代码 (`data-copy-code`)。
-- **D5**: 批量操作 (全选 / 评估选中 / 移除选中 / 清空 / 预加载K线) 接 `selectable` + `toggle-select`。
+### D. 我的自选双栏 (F4) ✅ **已完成 (2026-09-19)**
+- **D1 ✅**: `ai-page.js` watchlist 段改用 `qc-detail-split :enabled="detailSplitEnabled"`; `#list` = 实时报价条 / 搜索 / 排序 / 虚拟列表 (保留原 `qc-virtual-list` + `.watchlist-item` 行); `#pane` = `qc-stock-detail-dialog :embedded="true"`; 批量工具栏保留双栏之上全宽。
+- **D2 ✅**: 行点击 `detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(...)`; 选中态 `is-active` 绑定 `stockDetail.stock`。
+- **D3 ✅ (按 C10 改为两行适配)**: 报价块移出 `.watchlist-info` 至行级; 双栏时 `flex-basis:100%` 独占第二行 (实测 380×25px 单行); 按钮文案 `<span class="wl-btn-label">` 在双栏时收起; `:row-height` 56→76。**信息项一项未减**。
+- **D4 ✅**: `.swipe-reveal` 左滑删除、`data-copy-code` 长按复制、复选框批量操作全部保留。
+- **D5 ✅ (无需改造)**: 批量操作沿用原复选框与函数, F3 移除后无影响。
+- **实测**: `cls="detail-split-wrap detail-split"`, `cols=3`, `pct=35`, `divider/pane=true`, `vrowH=76`, 注入报价后 `rowScrollH=69` (无溢出), 点击行右栏正文 344 字 + `is-active`, 弹窗模式 `cols=1/pct=100/vrowH=56` 且按钮文案恢复显示, **0 pageerror**。
 
 ### E. 美林时钟双栏 (F5)
 - **E1**: `merrill-detail.js` 加 `embedded` prop + 条件绑定 `:append-to-body="!embedded"` / `:modal="!embedded"` / `:show-close="!embedded"` / `:close-on-click-modal="!embedded"` / `:lock-scroll="!embedded"` + `:class="{ "qc-embedded-dialog": embedded }"` (逐字照 `stock-detail.js` L14/L18-20)。
@@ -76,13 +75,12 @@
 |---|---|
 | `frontend/src/components/common/DetailSplit.vue` | 新建 (A1) ✅已完成 |
 | `frontend/src/main.js` | 组件注册 (A1) ✅已完成 |
-| `frontend/src/components/common/StockList.vue` | 多选扩展 (C1/C2) |
 | `frontend/js/components/calendar-page.js` | 改用 `qc-detail-split` (A2) |
 | `frontend/js/components/strategies-page.js` | ×3 改用组件 (A2) + 美林双栏 (E2) |
-| `frontend/js/components/ai-page.js` | 自选双栏 (D) |
+| `frontend/js/components/ai-page.js` | 自选双栏 (D) ✅已完成 |
 | `frontend/js/components/focus-view.js` | 重点跟踪双栏 (F) |
 | `frontend/js/components/dialogs/merrill-detail.js` | `embedded` (E1) |
-| `frontend/css/layout.css` | 自选/重点跟踪行样式 (D/F) |
+| `frontend/css/layout.css` | 自选窄栏两行适配 (D) ✅; 重点跟踪行样式 (F) 待做 |
 | `frontend/dist/*` | Vite 重建产物 (G2) |
 | `backend/main_new.py` | APP_VERSION (G1) |
 | `docs/HANDOVER.md` | 更新 (G6) |
@@ -95,7 +93,7 @@
 | 批次 | 内容 | 风险 | 出口 |
 |---|---|---|---|
 | 批次1 | A (组件抽取, 4 处) — B 已撤销 | 低 (纯重构) | ✅ **已完成**: 4 页实测 cols=3 / pct=35 / divider+pane 齐备 / 拖拽+持久化 / 弹窗回退 / 0 pageerror |
-| 批次2 | C (StockList 多选) + D (我的自选) | 高 (行信息密度) | 自选双栏可用 + 报价/滑删不丢 + 既有 6 处无回归 |
+| 批次2 | D (我的自选双栏) — C 已移除 | 高 (行信息密度) | ✅ **已完成**: 双栏结构 + 行点击载入右栏 + 两行适配无溢出 + 弹窗回退 + 0 pageerror |
 | 批次3 | E (美林时钟) | 低 (内容零新增) | 右栏常驻, 与弹窗内容一致 |
 | 批次4 | F (重点跟踪) | 中 (信息架构调整) | 概览在上/列表在中/详情在右/聚合在下 |
 | 批次5 | G (发布链 + 回滚预案) | 中 | 0 pageerror + 全量 pytest ≤ 基线 + dist 入库 |
@@ -112,7 +110,7 @@
 
 | 风险 | 对策 |
 |---|---|
-| 自选行实时报价迁窄中栏丢失 | 报价进 `name-suffix`/`actions` 插槽并逐项比对改前改后 DOM |
+| 自选行实时报价迁窄中栏丢失 | ✅ 已消解: 保留原行结构 + 报价独占第二行 (实测 `rowScrollH=69 ≤ 76`) |
 | StockList 多选破坏既有调用 | `selectable` 默认 false; 前端一致性测试守护 |
 | 美林阶段卡竖排可读性下降 | 双栏竖排 / 单栏网格 响应式分支 |
 | 4 处重构回归 | ✅ 已完成: 逐页浏览器实测 (宽度/拖拽/弹窗回退) 全绿 |

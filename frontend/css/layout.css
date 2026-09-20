@@ -1176,6 +1176,44 @@ body.qc-split-resizing * {
 .detail-split-list .qc-stock-row:hover {
   background: var(--bg-tertiary);
 }
+
+/* ===== V5.19 (F4): 我的自选 — 中栏窄栏两行适配 =====
+   35% 中栏 (约 413px) 装不下「复选框|代码 名称 评分 现价 涨跌 量比 涨速 预警|3 按钮」单行, 故:
+   报价折到第二行 (占满中栏宽) + 按钮文案收起为纯图标; 行高由模板 :row-height 56→76 提供 */
+/* 报价块已移出 .watchlist-info 成为行级子元素 (V5.19 F4), 用 order 还原全宽模式下的视觉顺序:
+   复选框(0) → 名称组(1) → 报价(2) → 操作按钮(3)  —— 两种模式一致 */
+.watchlist-info { order: 1; }
+.watchlist-quote { order: 2; }
+.watchlist-actions { order: 3; }
+
+/* 注: 作用域用 .detail-split (仅 enabled=true 时存在) — 不能用 .detail-split-list,
+   因为该类在弹窗模式下同样渲染 (w-100 全宽), 否则会误收起全宽模式的按钮文案 */
+.detail-split .watchlist-item {
+  flex-wrap: wrap;
+  align-content: center;
+  row-gap: var(--qc-space-1);
+}
+.detail-split .watchlist-info {
+  flex-wrap: wrap;
+  row-gap: var(--qc-space-1);
+}
+.detail-split .watchlist-quote {
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  margin-left: 0;
+}
+/* 双栏窄栏: 按钮回到第一行 (info 收缩让位), 报价独占第二行 (flex-basis:100%) */
+.detail-split .watchlist-actions { order: 2; }
+.detail-split .watchlist-quote { order: 3; }
+.detail-split .wl-btn-label { display: none; }
+.detail-split .watchlist-item.is-active {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.detail-split .watchlist-item:hover { background: var(--bg-tertiary); }
+/* 双栏时中栏顶部含 rt-bar/搜索/排序, 列表高度相应收缩, 避免超出中栏被裁切 */
+.detail-split .watchlist-vlist { height: calc(100vh - 460px); }
+
 /* 窄屏 (≤1024px) 单列时隐藏分隔条 */
 @media (max-width: 1024px) {
   .split-divider {
