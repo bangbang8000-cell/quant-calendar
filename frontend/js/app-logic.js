@@ -947,11 +947,12 @@ const allMenuDefs = [
 
                 // ===== V5.7.2 (UX-09): AI 评估档位 → 语义色 token 映射 (替代服务端 level_color hex 内联) =====
                 const LEVEL_COLOR_MAP = {
-                  '强烈推荐': 'var(--el-danger)', '推荐': 'var(--el-success)',
-                  '谨慎推荐': 'var(--el-warning)', '中性': 'var(--el-info)',
-                  '观望': 'var(--text-tertiary)', '买入': 'var(--el-success)',
-                  '持有': 'var(--el-warning)', '减仓': 'var(--el-danger)',
-                  '卖出': 'var(--el-danger)',
+                  // V5.31: 档位文字色改用语义「文字色」令牌 (原 --el-warning #f59e0b 在浅底仅 2.07:1)
+                  '强烈推荐': 'var(--danger-text)', '推荐': 'var(--success-text)',
+                  '谨慎推荐': 'var(--warning-text)', '中性': 'var(--info-text)',
+                  '观望': 'var(--text-tertiary)', '买入': 'var(--success-text)',
+                  '持有': 'var(--warning-text)', '减仓': 'var(--danger-text)',
+                  '卖出': 'var(--danger-text)',
                 };
                 const LEVEL_BG_MAP = {
                   '强烈推荐': 'var(--badge-danger-bg)', '推荐': 'var(--badge-success-bg)',

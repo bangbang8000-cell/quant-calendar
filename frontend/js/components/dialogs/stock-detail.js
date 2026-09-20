@@ -259,7 +259,7 @@
                                     <div class="dim-track">
                                         <div :style="{width:score+'%',height:'100%',background:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)',borderRadius:'6px',transition:'width 0.5s'}"></div>
                                     </div>
-                                    <span class="dim-value" :style="{color:score>=70?'var(--el-success)':score>=50?'var(--el-warning)':'var(--el-danger)'}">{{ fmtNum(score, 0) }}</span>
+                                    <span class="dim-value" :style="{color:score>=70?'var(--success-text)':score>=50?'var(--warning-text)':'var(--danger-text)'}">{{ fmtNum(score, 0) }}</span>
                                 </div>
                             </div>
                             <div class="ai-eval-grid grid-3col-gap12">
@@ -461,10 +461,10 @@
       const levelRingColor = computed(() => {
         const lv = state.aiResult && state.aiResult.value && state.aiResult.value.result && state.aiResult.value.result.level;
         if (!lv) return 'var(--color-primary)';
-        if (lv === '强烈推荐' || lv === '推荐') return 'var(--el-success)';
-        if (lv === '谨慎推荐') return 'var(--el-warning)';
+        if (lv === '强烈推荐' || lv === '推荐') return 'var(--success-text)';
+        if (lv === '谨慎推荐') return 'var(--warning-text)';
         if (lv === '中性' || lv === '观望') return 'var(--text-secondary)';
-        if (lv === '评估失败' || lv === '无可用模型') return 'var(--el-danger)';
+        if (lv === '评估失败' || lv === '无可用模型') return 'var(--danger-text)';
         return 'var(--color-primary)';
       });
       // v3.15 (15.3): 复制报告 — detailed_report + 九维度评分

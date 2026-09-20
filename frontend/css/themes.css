@@ -476,7 +476,7 @@
         /* ===== Element Plus 主按钮令牌化 (v3.13) ===== */
         /* V6.9.2: EP 品牌色全局映射 — Switch/Slider/Progress/Checkbox 等内置组件随主题切换 */
         :root {
-            --el-color-primary: var(--qc-primary);
+            --el-color-primary: var(--primary-solid);   /* V5.31: EP 主色既作填充又作文字, 取「实底」档 (原 --qc-primary hsl(h,75,42) 作文字仅 2.88:1) */
             --el-color-primary-light-3: var(--qc-primary-400);
             --el-color-primary-light-5: var(--qc-primary-300);
             --el-color-primary-light-7: var(--qc-primary-200);
