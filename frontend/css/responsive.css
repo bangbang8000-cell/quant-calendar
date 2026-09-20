@@ -187,7 +187,7 @@
     transition: color 0.2s ease-out;
   }
   .mobile-nav-item.active {
-    color: var(--primary-color);
+    color: var(--primary-text);
     background: transparent;
   }
   .mobile-nav-icon { font-size: var(--qc-font-size-lg); line-height: 1; }

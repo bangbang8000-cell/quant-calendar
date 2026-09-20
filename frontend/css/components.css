@@ -59,6 +59,9 @@
 /* V5.31: EP 遗留低对比文字 (空表占位色 3.08:1 / 禁用态) */
 .el-table__empty-text { color: var(--qc-muted-foreground); }
 .el-button.is-disabled, .el-button.is-disabled:hover { color: var(--qc-muted-foreground); }
+.el-button { --el-button-disabled-text-color: var(--qc-muted-foreground); --el-button-disabled-bg-color: var(--qc-muted); --el-button-disabled-border-color: var(--qc-border); }
+.el-textarea__inner { --el-disabled-text-color: var(--qc-muted-foreground); }
+:root { --el-text-color-disabled: var(--qc-muted-foreground); --el-text-color-placeholder: var(--qc-muted-foreground); }
 /* V5.31: 单选按钮组选中态 — EP 用 --el-color-primary 作底 + 白字 (金色主题仅 2.88:1) */
 .el-radio-button { --el-radio-button-checked-bg-color: var(--primary-solid); --el-radio-button-checked-text-color: var(--primary-on-solid); --el-radio-button-checked-border-color: var(--primary-solid); }
 .el-radio-button__original-radio:checked + .el-radio-button__inner {

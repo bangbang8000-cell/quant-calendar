@@ -311,7 +311,7 @@
 .tl-back-latest {
   flex-shrink: 0;
   font-size: var(--qc-font-size-xs);
-  color: var(--color-primary);
+  color: var(--primary-text);
   background: transparent;
   border: 1px solid var(--border-light);
   border-radius: var(--qc-radius-small);
@@ -698,7 +698,7 @@
 .intraday-slot.is-empty .intraday-dot { background: transparent; border: 1px solid currentColor; }
 
 /* V5.2.3: 短线个股可点击弹窗详情 */
-.stock-link { color: var(--primary-color); cursor: pointer; }
+.stock-link { color: var(--primary-text); cursor: pointer; }
 .stock-link:hover { text-decoration: underline; }
 
 /* V5.2.4: 摘要条次级数值(替代内联 font-size) */
@@ -746,7 +746,7 @@
 }
 .focus-row-tier { text-align: center; }
 .focus-row-score {
-  color: var(--text-disabled);
+  color: var(--qc-muted-foreground);   /* V5.31: --text-disabled 在卡片上仅 2.54:1 */
   font-size: var(--qc-font-size-sm);
   text-align: center;
   white-space: nowrap;
@@ -760,7 +760,7 @@
   white-space: nowrap;
 }
 /* V5.26: .focus-row-actions / .focus-row-open 已随行尾圆形按钮一并移除 */
-.focus-row-toggle { color: var(--text-disabled); font-size: var(--qc-font-size-xs); }
+.focus-row-toggle { color: var(--qc-muted-foreground); font-size: var(--qc-font-size-xs); }
 .focus-row-badges { margin-left: var(--qc-space-2); vertical-align: middle; }
 .focus-badge { margin-right: var(--qc-space-1); }
 .focus-detail {
@@ -771,7 +771,7 @@
   background: var(--bg-tertiary);
   border-radius: var(--qc-radius-small);
 }
-.focus-detail-line { font-size: var(--qc-font-size-sm); color: var(--text-disabled); margin-bottom: var(--qc-space-1); }
+.focus-detail-line { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); margin-bottom: var(--qc-space-1); }
 .focus-row-sm {
   font-size: var(--qc-font-size-sm);
   color: var(--text-on-chip);
@@ -914,7 +914,7 @@
   font-size: var(--qc-font-size-md);
   letter-spacing: .2px;
 }
-.shortterm-date-item.is-active .shortterm-date-item-date { color: var(--color-primary); }
+.shortterm-date-item.is-active .shortterm-date-item-date { color: var(--primary-text); }
 .shortterm-date-item-meta {
   display: flex;
   flex-wrap: wrap;
@@ -985,7 +985,7 @@
   font-size: var(--qc-font-size-md);
   letter-spacing: .2px;
 }
-.market-review-date-item.is-active .market-review-date-item-date { color: var(--color-primary); }
+.market-review-date-item.is-active .market-review-date-item-date { color: var(--primary-text); }
 .market-review-date-item-meta {
   display: flex;
   flex-wrap: wrap;
