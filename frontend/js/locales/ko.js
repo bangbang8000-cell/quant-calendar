@@ -164,6 +164,8 @@
     'detail.cachedResult': 'Cached result',
     'detail.noEvalYet': 'AI 평가 버튼을 클릭하여 분석 결과 확인',
     'detail.scoreUnit': '점',
+        'detail.ruleScore': '종목 점수',
+    'detail.notEvaluated': '미평가',
     'detail.lastScore': 'Last {score} pts → This {score2} pts',
     'detail.loadKline': 'Load K-line',
     'detail.loadingKline': 'Loading K-line data...',

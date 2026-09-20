@@ -174,6 +174,8 @@
     'detail.cachedResult': 'Cached result',
     'detail.noEvalYet': 'Click Evaluate to get the analysis',
     'detail.scoreUnit': 'pts',
+        'detail.ruleScore': 'Rule score',
+    'detail.notEvaluated': 'Not scored',
     'detail.lastScore': 'Last {score} pts → This {score2} pts',
     'detail.loadKline': 'Load K-line',
     'detail.loadingKline': 'Loading K-line data...',

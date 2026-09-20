@@ -164,6 +164,8 @@
     'detail.cachedResult': 'Cached result',
     'detail.noEvalYet': 'AI評価ボタンをクリックして分析結果を取得',
     'detail.scoreUnit': '点',
+        'detail.ruleScore': '選股スコア',
+    'detail.notEvaluated': '未評価',
     'detail.lastScore': 'Last {score} pts → This {score2} pts',
     'detail.loadKline': 'Load K-line',
     'detail.loadingKline': 'Loading K-line data...',

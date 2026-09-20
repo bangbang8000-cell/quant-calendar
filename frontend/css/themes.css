@@ -954,20 +954,22 @@
             font-size: var(--qc-font-size-base);
             margin-top: 4px;
         }
-        .score-badge {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: color-mix(in srgb, var(--white) 20%, transparent);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        /* V5.22: 圆形评分徽标已移除 — 该分值为"选股评分"(规则口径), 与大模型评估分
+           口径不一致, 圆形大徽标易被误读为 AI 评分。改为行内分值 + 明确来源标注,
+           保留评分变化(pulse / +N 浮标)反馈。 */
+        .detail-score-inline {
+            display: inline-flex;
+            align-items: baseline;
+            gap: var(--qc-space-2);
+            padding: var(--qc-space-1) var(--qc-space-3);
+            border-radius: var(--qc-radius-medium);
+            background: color-mix(in srgb, var(--white) 18%, transparent);
         }
-        .score-badge .num { font-size: var(--qc-font-size-xl); font-weight: bold; }
-        .score-badge .label { font-size: var(--qc-font-size-xs); opacity: 0.9; }
-        /* v1.9.2: 评分动画 */
-        .score-badge.pulse {
+        .detail-score-inline .dsi-label { font-size: var(--qc-font-size-xs); opacity: 0.85; }
+        .detail-score-inline .dsi-num { font-size: var(--qc-font-size-lg); font-weight: bold; }
+        .detail-score-inline .dsi-level { font-size: var(--qc-font-size-xs); opacity: 0.9; }
+        /* v1.9.2: 评分动画 (V5.22: 目标由圆形徽标改为行内分值) */
+        .detail-score-inline.pulse {
             animation: scorePulse 0.6s ease-out;
         }
         @keyframes scorePulse {

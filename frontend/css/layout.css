@@ -915,7 +915,8 @@
 .shortterm-date-item-date {
   font-weight: var(--font-semibold, 600);
   color: var(--text-primary);
-  font-size: var(--qc-font-size-sm);
+  /* V5.22 (需求3): 用户反馈中栏字号偏小 — sm(13px) → md(15px) */
+  font-size: var(--qc-font-size-md);
   letter-spacing: .2px;
 }
 .shortterm-date-item.is-active .shortterm-date-item-date { color: var(--color-primary); }
@@ -923,8 +924,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1px 10px;
-  margin-top: 3px;
-  font-size: var(--qc-font-size-xs);
+  margin-top: 4px;
+  /* V5.22 (需求3): 中栏副信息同步提升 — xs(12px) → sm(13px) */
+  font-size: var(--qc-font-size-sm);
   color: var(--text-tertiary, var(--text-secondary));
 }
 .shortterm-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
@@ -984,7 +986,8 @@
 .market-review-date-item-date {
   font-weight: var(--font-semibold, 600);
   color: var(--text-primary);
-  font-size: var(--qc-font-size-sm);
+  /* V5.22 (需求3): 与复盘看板中栏保持一致 — sm(13px) → md(15px) */
+  font-size: var(--qc-font-size-md);
   letter-spacing: .2px;
 }
 .market-review-date-item.is-active .market-review-date-item-date { color: var(--color-primary); }
@@ -992,8 +995,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1px 10px;
-  margin-top: 3px;
-  font-size: var(--qc-font-size-xs);
+  margin-top: 4px;
+  /* V5.22 (需求3): 中栏副信息同步提升 — xs(12px) → sm(13px) */
+  font-size: var(--qc-font-size-sm);
   color: var(--text-tertiary, var(--text-secondary));
 }
 .market-review-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
@@ -1037,12 +1041,17 @@
   overflow: visible !important;
   inset: auto !important;
   z-index: auto !important;
+  /* V5.22 (需求1): 内嵌模式下 EP 两层容器仍带内边距 → 右栏表头上方出现 ~17px 死区, 一并清零 */
+  padding: 0 !important;
+  margin: 0 !important;
 }
 .qc-embedded-dialog {
   position: static !important;
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
+  /* V5.22 (需求1): EP .el-dialog 自带 16px 内边距 → 内嵌时表头上方多出 17px 死区, 清零 */
+  padding: 0 !important;
   border: 1px solid var(--border-color);
   border-radius: var(--qc-radius-medium);
   box-shadow: none !important;
@@ -1068,8 +1077,21 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--qc-space-3) var(--qc-space-4);
+  /* V5.22 (需求1): 顶部内边距清零 — 原 body(24px) + 容器间隙 使表头上方出现大片空白,
+     用户反馈"信息密度低", 故顶不留白, 左右下保留呼吸感。
+     注: themes.css 的 .el-dialog__body{padding:24px!important} 优先级更高, 此处必须同样 !important。 */
+  padding: 0 var(--qc-space-4) var(--qc-space-3) !important;
 }
+/* V5.22 (需求1): 内嵌右栏表头压缩 — 原 20px 内边距 + 70px 圆形徽标 → 表头高达 110px。
+   徽标已移除(需求: 与大模型评分口径不一致), 表头改为 12/16 内边距 + 标题降一档, 约 70px。 */
+.qc-embedded-dialog .detail-header {
+  padding: var(--qc-space-3) var(--qc-space-4);
+  border-radius: 0;
+  gap: var(--qc-space-2);
+}
+.qc-embedded-dialog .detail-header h3 { font-size: var(--qc-font-size-lg); }
+.qc-embedded-dialog .detail-subtitle { margin-top: 0; }
+.qc-embedded-dialog .detail-content { padding: var(--qc-space-3) var(--qc-space-4); }
 /* V5.16 (F4): 大盘行情 — 双栏模式下指数卡竖排列表 + 选中高亮 */
 .market-grid.is-vertical {
   display: flex;
@@ -1335,10 +1357,21 @@ body.qc-split-resizing * {
 .mc-band-axis { position: relative; display: flex; justify-content: space-between; margin-top: var(--qc-space-1); font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 .mc-band-axis-now { position: absolute; transform: translateX(-50%); color: var(--color-primary); font-weight: var(--font-semibold); }
 
-.mc-hrow { display: flex; align-items: center; gap: var(--qc-space-3); padding: var(--qc-space-1) 0; }
+.mc-hrow { display: flex; align-items: flex-start; gap: var(--qc-space-3); padding: var(--qc-space-1) 0; }
 .mc-hlab { flex: 0 0 96px; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--text-secondary); }
 .mc-hlab small { display: block; font-weight: var(--font-normal); color: var(--text-tertiary); }
 .mc-hrow .mc-band { flex: 1; }
+/* V5.22 (需求4): 历史周期 = 周期带 + 每阶段时间清单 (阶段带按持续时长首尾相接, 时间信息逐段列出) */
+.mc-hbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--qc-space-1); }
+/* 注意: .mc-hrow .mc-band{flex:1} 在纵向 flex 容器里会把周期带压成 0 高, 故显式锁定高度 */
+.mc-hbody .mc-band { flex: 0 0 auto; }
+.mc-times { display: flex; flex-wrap: wrap; gap: var(--qc-space-1) var(--qc-space-3); }
+.mc-time-chip { display: inline-flex; align-items: center; gap: var(--qc-space-1); font-size: var(--qc-font-size-xs); color: var(--text-secondary); cursor: pointer; }
+.mc-time-chip:hover { color: var(--text-primary); }
+.mc-time-chip b { font-weight: var(--font-medium, 500); color: var(--text-primary); }
+.mc-time-dot { width: 8px; height: 8px; border-radius: var(--qc-radius-full); flex-shrink: 0; }
+.mc-time-range { color: var(--text-tertiary); }
+.mc-time-months { color: var(--text-tertiary); }
 
 /* ③ 阶段矩阵 (跨周期比较) */
 .mc-mx { width: 100%; border-collapse: collapse; font-size: var(--qc-font-size-sm); }

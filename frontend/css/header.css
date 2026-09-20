@@ -133,13 +133,17 @@
 /* 中区搜索 (V6.0.1 P0-1: 覆盖 EP autocomplete 内部结构 — el-autocomplete 渲染为
    .el-input__wrapper 嵌套, 原按自定义 flex 容器写导致圆角/背景/focus 不生效) */
 .qc-header-center {
-  flex: 1;
+  /* V5.22 (需求2): 原 flex:1 与左侧标签区(.qc-header-left 也是 flex:1)"平分"剩余宽度,
+     各约 460px, 搜索区远未达 640px 上限, 标签却已折叠成「更多▾」——空间分配不合理。
+     改为固定基宽(可收缩、默认不增长) + 最小宽度兜底, 剩余宽度全部让给二级标签,
+     「更多」只在标签真的放不下时才出现; 窄屏时搜索框仍可收缩到 180px。 */
+  flex: 0 1 360px;
   display: flex;
   align-items: center;
   justify-content: flex-end; /* V6.9.3: 右对齐 — 搜索框贴近右侧铃铛 */
   gap: var(--qc-space-2);
-  /* V6.2 (PRD-6.2 F3): 增宽居中 */
   max-width: 640px;
+  min-width: 180px;
   margin: 0 var(--qc-space-4);
 }
 /* V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态的 Header 位置指示 (V6.2 动态页签已移除) */

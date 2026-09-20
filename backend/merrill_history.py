@@ -396,6 +396,12 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
         ]}]}
     """
     cycles = {}
+    # V5.22 修复: 每条转换记录的 duration_months 描述的是"在该时点结束的阶段"(from_stage)
+    # 的持续时长, 原实现直接挂到"在该时点开始的阶段"(to_stage) 上 → 每轮各阶段时长整体
+    # 错位一格 (例: 第2轮 复苏期显示 6.0 个月, 实际 44.3 个月)。下面按 start→end 实际
+    # 跨度归位, 末尾阶段用全局下一条转换记录回填。
+    all_tr = sorted([t for t in transitions if t.get('transition_date')],
+                    key=lambda x: _parse_date(x.get('transition_date')) or (0, 0))
     # 按轮分组 + 每条转换生成一个"到达阶段"
     for t in transitions:
         label = t.get('cycle_label') or '未知轮'
@@ -468,4 +474,38 @@ def build_timeline(transitions, current_stage='', current_stage_start='', max_cy
             else:
                 s['end'] = ''
         result.append({'label': label, 'stages': stages})
+
+    # V5.22: 阶段时长归位 + 跨轮衔接
+    # 1) 每轮末尾阶段若缺 end, 用"时间上后一轮的起点"补齐 → 相邻周期也首尾相接;
+    # 2) 每阶段 duration_months = start→end 实际跨度 (与周期带宽度完全一致, 无缝隙);
+    #    补不到时退回"该阶段结束后第一条转换记录"的时长;
+    # 3) 当前阶段保持 None (由实时进度计算)。
+    for idx, cyc in enumerate(result):
+        stages = cyc['stages']
+        if not stages:
+            continue
+        last = stages[-1]
+        if not last.get('end') and not last.get('is_current') and idx > 0:
+            # result 为时间降序 → idx-1 即"时间上的下一轮"
+            nxt_stages = result[idx - 1]['stages']
+            cand = (nxt_stages[0].get('start') if nxt_stages else '') or ''
+            d_last, d_c = _parse_date(last.get('start')), _parse_date(cand)
+            if d_last and d_c and d_c > d_last:
+                last['end'] = cand[:10]
+        for s in stages:
+            if s.get('is_current'):
+                continue
+            d1, d2 = _parse_date(s.get('start')), _parse_date(s.get('end'))
+            span = None
+            if d1 and d2:
+                span = round((d2[0] * 12 + d2[1]) - (d1[0] * 12 + d1[1]), 1)
+                if span <= 0:
+                    span = None
+            if span is None and d1:
+                nxt = next((x for x in all_tr
+                            if (_parse_date(x.get('transition_date')) or (0, 0)) > d1), None)
+                if nxt:
+                    span = round(float(nxt.get('duration_months') or 0), 1) or None
+            if span is not None:
+                s['duration_months'] = span
     return {'cycles': result}

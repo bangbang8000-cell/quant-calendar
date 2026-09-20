@@ -164,6 +164,8 @@
     'detail.cachedResult': '缓存结果',
     'detail.noEvalYet': '點击 AI 評估按钮獲取分析结果',
     'detail.scoreUnit': '分',
+        'detail.ruleScore': '選股評分',
+    'detail.notEvaluated': '未評估',
     'detail.lastScore': '上次 {score} 分 → 本次 {score2} 分',
     'detail.loadKline': '加載K線',
     'detail.loadingKline': '加載K線數据中...',

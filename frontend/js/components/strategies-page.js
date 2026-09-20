@@ -298,7 +298,7 @@
                             <div class="mc-band-block" v-if="mcCurrentBand.segs.length">
                                 <div class="mc-band-title">
                                     <qc-icon name="activity" :size="14" /> 本轮演进
-                                    <span class="mc-band-hint">实色=已发生 · 斜纹=预测 · 宽度∝真实时长</span>
+                                    <span class="mc-band-hint">实色=已发生 · 斜纹=预测 · 宽度∝持续时长 · 阶段首尾相接</span>
                                 </div>
                                 <div class="mc-band">
                                     <div v-for="(g, i) in mcCurrentBand.segs" :key="i" class="mc-seg"
@@ -326,12 +326,24 @@
                                     </el-radio-group>
                                 </div>
                                 <template v-if="mcHistView === 'band'">
+                                    <!-- V5.22 (需求4): 历史周期逐段列出时间信息; 周期带按持续时长首尾相接 -->
                                     <div v-for="(cyc, i) in mcHistoryBands" :key="i" class="mc-hrow">
                                         <div class="mc-hlab">{{ cyc.label }}<small>{{ cyc.years }}</small></div>
-                                        <div class="mc-band mc-band-sm">
-                                            <div v-for="(g, j) in cyc.segs" :key="j" class="mc-seg" :style="mcSegStyle(g)"
-                                                 @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
-                                                <span class="mc-seg-name" v-if="g.width > 12">{{ g.name }}</span>
+                                        <div class="mc-hbody">
+                                            <div class="mc-band mc-band-sm">
+                                                <div v-for="(g, j) in cyc.segs" :key="j" class="mc-seg" :style="mcSegStyle(g)"
+                                                     @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
+                                                    <span class="mc-seg-name" v-if="g.width > 12">{{ g.name }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="mc-times">
+                                                <span v-for="(g, j) in cyc.segs" :key="'t' + j" class="mc-time-chip"
+                                                      @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
+                                                    <span class="mc-time-dot" :style="{background: getTimelineStageColor(g.stage)}"></span>
+                                                    <b>{{ g.name }}</b>
+                                                    <span class="mc-time-range" v-if="g.start">{{ g.start }}<template v-if="g.end"> → {{ g.end }}</template></span>
+                                                    <span class="mc-time-months" v-if="g.months">{{ g.months }} 月</span>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1422,52 +1434,65 @@
       function _mcColor() {
         return (state.merrillData && state.merrillData.value && state.merrillData.value.color) || 'var(--color-success)';
       }
-      // 生成一条时间比例带: 当前阶段拆成 实色(已过) + 斜纹(预测剩余), 可选再接下一阶段预测
+      // 生成一条"首尾相接"的周期带 (V5.22 需求4):
+      //   1) 各阶段按持续时间累计铺满整条轴 -- 不再按真实日期留数据间隙, 阶段之间严丝合缝;
+      //   2) 每段携带真实起止月份(start/end)与时长(months), 可直接读出"哪个阶段在什么时候";
+      //   3) 当前阶段 = 实色(已发生) + 斜纹(预测剩余) [+ 下一阶段预测], "今天"落在实色/斜纹分界。
       function _mcBand(stages, withNext) {
         const tm = _mcTiming();
         const avg = Number(tm.avg_duration_months) || 0;
         const prog = Math.min(100, Number(tm.progress_percent) || 0);
         const curStart = _mcYm(tm.current_stage_start_date);
-        const segs = [];
+        const parts = [];
+        let firstStart = null;
         (stages || []).forEach(function (s) {
           const t0 = _mcYm(s.start);
-          if (t0 == null) return;
+          if (firstStart == null && t0 != null) firstStart = t0;
           const isCur = !!(s.is_current || (curStart != null && t0 === curStart && !s.duration_months));
+          const nm = s.name || getTimelineStageName(s.stage);
           if (isCur && avg > 0) {
-            const elapsed = avg / 12 * prog / 100;
-            segs.push({ stage: s.stage, name: s.name || getTimelineStageName(s.stage), t0: t0,
-                        t1: t0 + Math.max(elapsed, 0.04), live: true, months: avg * prog / 100 });
-            const remain = avg / 12 - elapsed;
-            if (remain > 0.04) {
-              segs.push({ stage: s.stage, name: '剩余(预测)', t0: t0 + elapsed, t1: t0 + avg / 12, ghost: true });
-            }
+            const elapsed = avg * prog / 100;
+            if (elapsed > 0.5) parts.push({ stage: s.stage, name: nm, months: elapsed, live: true, start: s.start });
+            const remain = avg - elapsed;
+            if (remain > 0.5) parts.push({ stage: s.stage, name: '剩余(预测)', months: remain, ghost: true, start: s.start });
           } else {
-            const dur = (Number(s.duration_months) || 0) / 12;
-            const t1 = dur > 0 ? t0 + dur : (_mcYm(s.end) || t0 + 0.25);
-            segs.push({ stage: s.stage, name: s.name || getTimelineStageName(s.stage), t0: t0,
-                        t1: Math.max(t1, t0 + 0.06), months: s.duration_months, live: isCur });
-          }
-          if (isCur && withNext && segs.length) {
-            const np = state.merrillData && state.merrillData.value && state.merrillData.value.next_stage_prediction;
-            if (np && avg > 0) {
-              const tail = segs[segs.length - 1].t1;
-              segs.push({ stage: np.next_stage, name: (np.next_stage_name || '下一阶段') + ' (预测)',
-                          t0: tail, t1: tail + avg / 12, ghost: true, prob: np.transition_probability });
+            let months = Number(s.duration_months) || 0;
+            if (!months && t0 != null) {
+              const e0 = _mcYm(s.end);
+              if (e0 != null && e0 > t0) months = Math.max(1, Math.round((e0 - t0) * 12));
             }
+            if (!months) months = 1;
+            parts.push({ stage: s.stage, name: nm, months: months, live: isCur, start: s.start, end: s.end });
+          }
+          if (isCur && withNext && avg > 0) {
+            const np = state.merrillData && state.merrillData.value && state.merrillData.value.next_stage_prediction;
+            if (np) parts.push({ stage: np.next_stage, name: (np.next_stage_name || '下一阶段') + ' (预测)',
+                                 months: avg, ghost: true, prob: np.transition_probability });
           }
         });
-        if (!segs.length) return { segs: [], axisStart: '', axisEnd: '', nowPct: null };
-        const min = Math.min.apply(null, segs.map(function (x) { return x.t0; }));
-        let max = Math.max.apply(null, segs.map(function (x) { return x.t1; }));
-        if (!(max > min)) max = min + 1;
-        const out = segs.map(function (x) {
-          return { stage: x.stage, name: x.name, months: x.months, ghost: !!x.ghost, live: !!x.live, prob: x.prob,
-                   left: (x.t0 - min) / (max - min) * 100,
-                   width: Math.max(1.2, (x.t1 - x.t0) / (max - min) * 100) };
+        if (!parts.length) return { segs: [], axisStart: '', axisEnd: '', nowPct: null };
+        const total = parts.reduce(function (a, p) { return a + p.months; }, 0) || 1;
+        const base = firstStart != null ? firstStart : 0;
+        let acc = 0, doneMonths = 0;
+        const segs = parts.map(function (p) {
+          const leftM = acc;
+          if (!p.ghost) doneMonths += p.months;
+          acc += p.months;
+          const seg = { stage: p.stage, name: p.name, months: Math.round(p.months), ghost: !!p.ghost, live: !!p.live,
+                        prob: p.prob, left: leftM / total * 100, width: Math.max(2, p.months / total * 100) };
+          // 时间信息统一为"年-月": 源数据里 end 与 duration_months 口径不一致,
+          // 故只展示 真实起始月 + 时长(与带宽一致), 不展示推算区间。
+          const ss = _mcYm(p.start), ee = _mcYm(p.end);
+          seg.start = ss != null ? _mcYmStr(ss) : _mcYmStr(base + (leftM / 12));
+          seg.end = ee != null ? _mcYmStr(ee) : '';
+          seg.predicted = ss == null;
+          return seg;
         });
-        let nowPct = null;
-        if (curStart != null && curStart >= min && curStart <= max) nowPct = (curStart - min) / (max - min) * 100;
-        return { segs: out, axisStart: _mcYmStr(min), axisEnd: _mcYmStr(max), nowPct: nowPct };
+        const last = parts[parts.length - 1];
+        const hasGhost = parts.some(function (p) { return p.ghost; });
+        const axisEnd = (last && last.end) ? last.end : _mcYmStr(base + total / 12);
+        return { segs: segs, axisStart: _mcYmStr(base), axisEnd: axisEnd,
+                 nowPct: hasGhost ? doneMonths / total * 100 : null };
       }
       function _mcIsCurrentCycle(c) {
         return (c.stages || []).some(function (s) { return s.is_current; });
@@ -1545,7 +1570,8 @@
       }
       function mcSegTitle(g) {
         const parts = [g.name];
-        if (g.months) parts.push('约 ' + Math.round(g.months) + ' 个月');
+        if (g.start) parts.push((g.predicted ? '预计起始 ' : '起始 ') + g.start + (g.end ? ' → ' + g.end : ''));
+        if (g.months) parts.push('约 ' + g.months + ' 个月');
         if (g.ghost) parts.push('预测(尚未发生)');
         if (g.prob != null) parts.push('转移概率 ' + (g.prob * 100).toFixed(0) + '%');
         return parts.join(' · ');
