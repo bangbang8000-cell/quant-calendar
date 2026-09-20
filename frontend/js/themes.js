@@ -46,6 +46,35 @@
     return Math.round(255 * f(0)) + ', ' + Math.round(255 * f(8)) + ', ' + Math.round(255 * f(4));
   }
 
+  // ===== V5.28: 浅色面板底色自适应求解 =====
+  // 面板 = "浅底 + 深字"; 固定目标对比度, 反解出该色相下**尽可能深**的底色明度:
+  //   冷色相(蓝/紫)在相同明度下相对亮度更低、深字对比更差 → 自动留浅;
+  //   暖色相(金/红/绿/粉)可明显更深, 避免"全色相统一取最保守值"导致整体发白。
+  // 调深浅只需改 PANEL_TARGET(越大越浅/越保守)。
+  const PANEL_TARGET = 5.0;
+  function _panelTuple(h, s, l) {
+    return hslToRgb(h, s, l).split(',').map(function (x) { return parseInt(x, 10); });
+  }
+  function _panelLum(t) {
+    const f = function (c) { c = c / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(t[0]) + 0.7152 * f(t[1]) + 0.0722 * f(t[2]);
+  }
+  function _panelContrast(a, b) {
+    const la = _panelLum(a), lb = _panelLum(b);
+    const hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  // 二分求"满足目标对比度的最小明度"(明度越低底越深, 对比越低)
+  function _panelL(hue, fgSat, fgLight, sat, target) {
+    let lo = 38, hi = 76;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (_panelContrast(_panelTuple(hue, sat, mid), _panelTuple(hue, fgSat, fgLight)) >= target) hi = mid;
+      else lo = mid;
+    }
+    return Math.round(hi * 10) / 10;
+  }
+
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
   function generateLightTokens(hue) {
     const rgb = hslToRgb(hue, 75, 42);
@@ -87,8 +116,8 @@
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, 34) + ' 0%, ' + hsl(hue, 85, 26) + ' 100%)',
       // V5.27: 浅色面板 (详情金卡 / 同屏同族元素) — 浅底 + 深字, 全色相 >=4.5:1
       //   (旧的 --gradient 是"深底白字", 最浅端白字仅 2.43~2.74:1, 已不达标)
-      //   贴近"浅一档"档位(用户选定 55%)同时保证全色相 AA: 较深 stop 定在 64% (最差色相 4.7:1)
-      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, 69) + ' 0%, ' + hsl(hue, 58, 64) + ' 100%)',
+      //   明度按色相自适应 (目标对比度 PANEL_TARGET), 暖色更深、冷色自动留浅
+      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, Math.min(74, _panelL(hue, 45, 14, 58, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 58, _panelL(hue, 45, 14, 58, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 45, 14),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro/gold 块硬编码, 不随主题切换)
       '--qc-nav-item-active': hsl(hue, 80, 35),
@@ -139,7 +168,7 @@
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 35) + ' 0%, ' + hsl(hue, 85, 50) + ' 50%, ' + hsl(hue, 85, 65) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, 65) + ' 0%, ' + hsl(hue, 80, 40) + ' 100%)',
       // V5.27: 暗色模式同样改为浅色面板 + 深字 (旧 --gradient-brand 深端深字仅 2.12~3.10:1)
-      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, 74) + ' 0%, ' + hsl(hue, 55, 67) + ' 100%)',
+      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, Math.min(76, _panelL(hue, 40, 12, 55, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 55, _panelL(hue, 40, 12, 55, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 40, 12),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro 块硬编码 #ffd166, 不随主题切换)
       '--qc-nav-item-active': hsl(hue, 85, 65),
