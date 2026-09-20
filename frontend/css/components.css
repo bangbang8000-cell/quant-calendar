@@ -56,6 +56,17 @@
 .el-button--default { border-radius: var(--qc-radius-small); }
 .el-message, .el-message-box, .el-notification { border-radius: var(--qc-radius-medium); }
 .el-dialog { border-radius: var(--qc-radius-large); }
+/* V5.31: EP 遗留低对比文字 (空表占位色 3.08:1 / 禁用态) */
+.el-table__empty-text { color: var(--qc-muted-foreground); }
+.el-button.is-disabled, .el-button.is-disabled:hover { color: var(--qc-muted-foreground); }
+/* V5.31: 单选按钮组选中态 — EP 用 --el-color-primary 作底 + 白字 (金色主题仅 2.88:1) */
+.el-radio-button { --el-radio-button-checked-bg-color: var(--primary-solid); --el-radio-button-checked-text-color: var(--primary-on-solid); --el-radio-button-checked-border-color: var(--primary-solid); }
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background-color: var(--primary-solid);
+  border-color: var(--primary-solid);
+  box-shadow: -1px 0 0 0 var(--primary-solid);
+  color: var(--primary-on-solid);
+}
 
 /* D1: 既有 .card 收敛到 DS-6.0 克制视觉 — 边框优先 + 轻阴影 (与 .qc-card 同源, 4 大高频页即得统一) */
 .card {
@@ -80,6 +91,8 @@
 
 /* ─── §2.2 表格 (Element Plus CSS 变量覆盖, 全站收敛) ── */
 /* 注: EP 将 --el-table-* 变量声明于 .el-table 作用域, 覆盖必须挂在 .el-table 上 (:root 会被遮蔽) */
+/* V5.31: EP 浅色填充变量默认冷灰, 与暖中性族冲突 — 统一到主题中性面 */
+:root { --el-fill-color-light: var(--qc-muted); --el-fill-color-lighter: var(--qc-neutral-100); }
 .el-table {
   --el-table-border-color: var(--qc-border);
   --el-table-header-bg-color: var(--qc-muted);

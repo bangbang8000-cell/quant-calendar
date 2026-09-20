@@ -38,7 +38,7 @@
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.aiService') }}</div>
                                     <!-- V6.6: 已配置/未配置 品牌强调色，非语义三态，保留内联 -->
-                                    <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
+                                    <div class="status-value" :style="{color: aiStatus === 'ok' ? 'var(--primary-text)' : 'var(--text-secondary)'}">
                                         {{ aiStatus === 'ok' ? t('system.ok') : t('system.needsConfig') }}
                                     </div>
                                 </div>
@@ -48,7 +48,7 @@
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.feishuPush') }}</div>
                                     <!-- V6.6: 已配置/未配置 品牌强调色，非语义三态，保留内联 -->
-                                    <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-color)' : 'var(--text-secondary)'}">
+                                    <div class="status-value" :style="{color: feishuConfig.webhook_url ? 'var(--primary-text)' : 'var(--text-secondary)'}">
                                         {{ feishuConfig.webhook_url ? t('system.configured') : t('system.notConfigured') }}
                                     </div>
                                 </div>
@@ -58,7 +58,7 @@
                                 <div class="status-info">
                                     <div class="status-label">{{ t('system.tushare') }}</div>
                                     <!-- V6.6: 已连接/未连接 品牌强调色，非语义三态，保留内联 -->
-                                    <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-color)' : 'var(--text-secondary)'}">
+                                    <div class="status-value" :style="{color: tushareStatus === 'connected' ? 'var(--primary-text)' : 'var(--text-secondary)'}">
                                         {{ tushareStatus === 'connected' ? t('system.connected') : t('system.notConnected') }}
                                     </div>
                                 </div>

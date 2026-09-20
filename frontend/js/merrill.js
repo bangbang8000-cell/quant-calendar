@@ -87,8 +87,11 @@
         const s = cfg[key] || {};
         return {
           key, name: s.name || key, icon: STAGE_ICON_MAP[s.icon] || 'bar-chart-3',
-          color: s.color || getCSSVar('--text-tertiary') || '#888', bg: s.bg_color || getCSSVar('--bg-card') || '#f5f5f5',
-          textColor: s.color || getCSSVar('--text-primary') || '#333',
+          color: s.color || getCSSVar('--text-tertiary') || '#888',
+          // V5.31: 服务端阶段色为 Material 浅色系, 直接作底 + 白字仅 1.73~2.23:1; 改用「阶段色 14% 与卡片底
+          // 混合」的浅底纹 (color-mix 随明暗主题自适应, 暗色不再是刺眼亮块), 文字用「阶段色 48% + 前景色」压深/提亮
+          bg: 'color-mix(in srgb, ' + (s.color || '#888') + ' 14%, var(--bg-card))',
+          textColor: 'color-mix(in srgb, ' + (s.color || '#888') + ' 48%, var(--qc-foreground))',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
         };
       });

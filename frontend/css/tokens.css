@@ -71,11 +71,21 @@
   --qc-primary-foreground: var(--qc-neutral-0);
   /* V5.7.2 (UX-T1): 亮色 muted/nav-label 对比度达标 — #8f8679(3.59:1)→#7a7568(4.59:1) / #6b6358(5.91:1) */
   --qc-muted: var(--qc-neutral-100);
-  --qc-muted-foreground: #7a7568;
+  /* V5.31: 原 #7a7568 在 --qc-muted(#f7f4ee) 底上仅 4.18:1 (表格头/标签大量命中) → 4.73:1 */
+  --qc-muted-foreground: #6e6a5f;
   /* V5.30 (P0-1): 页面底色改中性后卡片需可见分界线 — 200(#efe9df, 1.08:1) → 300(#ded5c6) */
   --qc-border: var(--qc-neutral-300);
   --qc-input: var(--qc-neutral-200);
   --qc-ring: var(--qc-primary-400);
+
+  /* V5.31 (语义色分层): 文字色 / 实底色 与「填充色」分离 —— 原 --primary-color(hsl 75,42%) 同时充当
+白色画布上的文字色 (2.88:1) 与白字实底 (2.88:1), 二者都不可读。此处给静态兜底, 运行期由 themes.js 按色相求解。 */
+  --primary-text: var(--qc-primary-700);        /* 浅底上的品牌文字色 */
+  --primary-solid: var(--btn-primary-bg);       /* 承载白字的品牌实底色 */
+  --primary-on-solid: var(--btn-primary-color); /* 实底上的文字色 */
+  /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
+  --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
+  --market-up-text: #c62828; --market-down-text: #1b5e20;
 
   /* ─── Navigation Specific Tokens ─── */
   --qc-nav-bg: var(--qc-neutral-0);
@@ -207,7 +217,7 @@
   --border-color: #d9dee8;
   --surface: #ffffff;
   --bg-code: #f6f8fa;
-  --bg-tertiary: #f1f5f9;
+  --bg-tertiary: #f2efe7;   /* V5.31: 原 #f1f5f9 为冷灰, 与暖中性族 (#f7f4ee/#fcfaf7) 混用 */
   /* V5.30 (P0-2): 原硬编码 #2563eb (Tailwind blue-600) — AI 悬浮球渐变尾色/2 处边框
      在金色主题下渲染出蓝色异物; 改为随色相联动的品牌深档 */
   --primary-color-dark: var(--qc-primary-800);
@@ -239,8 +249,10 @@
   --color-danger:  #C62828;  --color-info:    #1976d2;
   --color-accent:  #F59E0B;
   --color-up:      #E63946;  --color-down:    #2E7D32;
-  --color-rise:    var(--color-up);
-  --color-fall:    var(--color-down);
+  /* V5.31: rise/fall are used as TEXT (stat-value / num / pct)
+     old #E63946/#2E7D32 gave 3.9-4.2:1 on cards and 3.1-3.4:1 in dark -> semantic text colors */
+  --color-rise:    var(--market-up-text);
+  --color-fall:    var(--market-down-text);
   --color-neutral: #43a047;
   --color-up-strong:    #C62828;
   --color-up-weak:      #F5A0A6;

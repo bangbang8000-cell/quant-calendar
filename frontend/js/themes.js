@@ -80,11 +80,12 @@
   const GRAD_TARGET = 4.6;
   var _gradFgWhite = [255, 255, 255];
   var _gradFgDark = [11, 18, 32];   // = --bg-page (dark-pro #0b1220)
-  function _gradL(hue, sat, fg, lo, hi, wantMax) {
+  function _gradL(hue, sat, fg, lo, hi, wantMax, target) {
+    var _t = target || GRAD_TARGET;
     var a = lo, b = hi;
     for (var i = 0; i < 24; i++) {
       var mid = (a + b) / 2;
-      var ok = _panelContrast(_panelTuple(hue, sat, mid), fg) >= GRAD_TARGET;
+      var ok = _panelContrast(_panelTuple(hue, sat, mid), fg) >= _t;
       if (wantMax) { if (ok) { a = mid; } else { b = mid; } }
       else { if (ok) { b = mid; } else { a = mid; } }
     }
@@ -98,6 +99,12 @@
     const gL = _gradL(hue, 68, _gradFgWhite, 14, 62, true);
     const gL2 = Math.max(12, gL - 5);
     const gL1 = Math.max(10, gL - 11);
+    // V5.31: 品牌文字/实底 —— 文字色对白底 4.8:1, 实底色对白字 >=4.6:1 (原 --primary-color hsl(h,75,42) 仅 2.88:1)
+    const _mut = [247, 244, 238];
+    const txtL = _gradL(hue, 78, _mut, 10, 58, true, 4.6);   // 对淡底求解 (页面/表格头 #f7f4ee 也达标)
+    const navL = _gradL(hue, 80, _mut, 10, 58, true, 4.6);
+    // V5.31: 实底色 = 原 32% 与「对白字达标的最亮值」取小 —— 绿/青等亮色相在原 32% 仅 3.99:1, 自动压深
+    const solidL = Math.min(32, _gradL(hue, 80, _gradFgWhite, 8, 60, true, 4.6));   // 实底实际用 80% 饱和度, 需按同一饱和度求解
     return {
       '--primary-color': hsl(hue, 75, 42),
       '--primary-rgb': rgb,
@@ -119,8 +126,8 @@
       '--card-border': hsl(hue, 22, 80),
       '--bg-selected': 'rgba(' + rgb + ', 0.08)',
       // V5.7.2 (UX-T1): 亮色主按钮对比度达标 — lightness 42%→32% (白字 2.92:1→4.53:1)
-      '--btn-primary-bg': hsl(hue, 80, 32),
-      '--btn-primary-border': hsl(hue, 80, 32),
+      '--btn-primary-bg': hsl(hue, 80, solidL),
+      '--btn-primary-border': hsl(hue, 80, solidL),
       '--btn-primary-color': '#ffffff',
       '--btn-primary-hover-bg': hsl(hue, 82, 28),
       '--btn-primary-hover-border': hsl(hue, 82, 28),
@@ -128,17 +135,20 @@
       '--btn-primary-active-border': hsl(hue, 85, 24),
       '--btn-primary-plain-bg': 'rgba(' + rgb + ', 0.08)',
       '--btn-primary-plain-border': 'rgba(' + rgb + ', 0.25)',
-      '--btn-primary-plain-color': hsl(hue, 80, 32),
+      '--btn-primary-plain-color': hsl(hue, 80, txtL),   // V5.31: 原 32% 在页面底仅 4.33:1
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 80, 32),
-      '--btn-primary-text-color': hsl(hue, 80, 32),
+      '--btn-primary-text-color': hsl(hue, 80, txtL),   // V5.31: 原 32% 在页面底仅 4.33:1
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, gL1) + ' 0%, ' + hsl(hue, 76, gL2) + ' 50%, ' + hsl(hue, 70, gL) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, gL2) + ' 0%, ' + hsl(hue, 85, gL1) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (深色前景), 明度按色相自适应到 PANEL_TARGET
+      '--primary-text': hsl(hue, 78, txtL),
+      '--primary-solid': 'var(--btn-primary-bg)',
+      '--primary-on-solid': 'var(--btn-primary-color)',
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, Math.min(74, _panelL(hue, 45, 14, 58, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 58, _panelL(hue, 45, 14, 58, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 45, 14),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro/gold 块硬编码, 不随主题切换)
-      '--qc-nav-item-active': hsl(hue, 80, 35),
+      '--qc-nav-item-active': hsl(hue, 80, navL),   // V5.31: 作为文字色 (侧栏/顶部页签), 对淡底 >=4.6:1 (原 hsl(h,80,35) 对 #fcf3d9 仅 3.47:1)
       '--qc-nav-item-active-bg': hsl(hue, 85, 92),
       '--qc-nav-item-active-border': hsl(hue, 75, 48),
       '--qc-nav-badge-bg': hsl(hue, 85, 92),
@@ -154,6 +164,9 @@
     const dL = _gradL(hue, 80, _gradFgDark, 30, 92, false);
     const dL2 = Math.min(94, dL + 8);
     const dL3 = Math.min(96, dL + 16);
+    const _mutDark = [22, 35, 59];    // = --qc-muted (dark-pro) —— 暗色下文字实际落在卡片/浅层底上, 取最亮的参考底
+    const navD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
+    const txtD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
     return {
       '--primary-color': hsl(hue, 85, 65),
       '--primary-rgb': rgb,
@@ -190,10 +203,13 @@
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, dL) + ' 0%, ' + hsl(hue, 85, dL2) + ' 50%, ' + hsl(hue, 85, dL3) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, dL3) + ' 0%, ' + hsl(hue, 80, dL) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (暗色模式同样走面板令牌, 深浅观感一致)
+      '--primary-text': hsl(hue, 85, txtD),
+      '--primary-solid': 'var(--btn-primary-bg)',
+      '--primary-on-solid': 'var(--btn-primary-color)',
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, Math.min(76, _panelL(hue, 40, 12, 55, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 55, _panelL(hue, 40, 12, 55, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 40, 12),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro 块硬编码 #ffd166, 不随主题切换)
-      '--qc-nav-item-active': hsl(hue, 85, 65),
+      '--qc-nav-item-active': hsl(hue, 85, navD),   // V5.31: 暗色下作为文字色对卡片底 >=4.6:1 (原 65% 对紫色仅 4.44:1)
       '--qc-nav-item-active-bg': 'rgba(' + rgb + ', 0.10)',
       '--qc-nav-item-active-border': hsl(hue, 85, 65),
       '--qc-nav-badge-bg': 'rgba(' + rgb + ', 0.12)',

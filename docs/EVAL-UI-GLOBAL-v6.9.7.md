@@ -388,3 +388,39 @@ body { background: var(--gradient); }   /* 品牌三档渐变铺满整个视口 
 P1：中性色族统一、字号标尺收敛（12/14/16/20/28，消灭 6 处 15px）、功能色语义分层以修掉 153 处对比度、卡片图标去彩虹化、按钮尺寸与命中区、登录页重做。
 
 P2：暗色独立设计（含美林时钟在暗色下仍为亮底的四象限）、密度模式、死 token 与 228 个 `!important` 清理、断点统一、毛玻璃收敛、ECharts 接入死令牌 `--chart-bg`/`--chart-axis`。
+
+---
+
+## 10. P1 实施记录（V5.31：语义色分层 / 中性族统一 / 字号标尺）
+
+P0 之后重跑全站文本对比度审计（10 页 x 明暗，逐文本节点回溯最近不透明背景），**223 处 / 55 组**低于 AA。
+本阶段按「根因分层」一次修完，**复测 0 处**。
+
+### 10.1 根因与解法
+
+| 根因 | 命中量 | 解法 |
+|---|---|---|
+| A. 品牌色 --primary-color 同时充当「浅底文字色」与「白字实底色」（hsl(h,75,42) → 2.88:1） | ~20 | 新增 --primary-text（按色相求解：对白底 4.8:1 / 对淡底 4.6:1）、--primary-solid、--primary-on-solid 三个语义令牌，把「文字」与「实底」拆开 |
+| B. 美林阶段色来自服务端（Material 300/400 浅色），被当作实底配白字 | ~70 | 填充侧：.mc-seg / .strategy-tag-pill / .today-merrill-badge 统一改固定深字 --merrill-chip-text（#1f2937，与填充色无关、明暗通用，实测 5.4~7.9:1）；文字侧：阶段名改 color-mix(in srgb, 阶段色 48%, var(--qc-foreground))，卡片底纹改 color-mix(in srgb, 阶段色 14%, var(--bg-card))（随主题自适应，暗色不再出现刺眼亮块） |
+| C. 涨跌与语义色只有「填充色」没有「文字色」 | ~25 | 新增 --success-text / --warning-text / --danger-text / --info-text / --market-up-text / --market-down-text（浅色 + 暗色两套）；--color-rise / --color-fall（全站涨跌幅文字色）指向语义文字色；批量把 themes/layout 中 79 处 color: var(--el-*/--color-*) 换成 -text 变体，并把误伤的 20 处 background/border 上下文还原 |
+| D. 中性色族混用 | ~23 | --qc-muted-foreground #7a7568 → #6e6a5f（对 --qc-muted 由 4.18 → 4.73:1）；--bg-tertiary 冷灰 #f1f5f9 → 暖中性 #f2efe7，暗色 #1f2937 → 海军蓝 #16233b；EP 的 --el-fill-color-light/-lighter 映射到主题中性面 |
+| E. Element Plus 遗留 | ~7 | .el-table__empty-text、禁用按钮文字、.el-radio-button 选中态（EP 经 --el-radio-button-checked-* 变量取色，需变量级覆盖） |
+| F. 越标尺字号 | 6 | font-size: 15px x 6（顶栏页签 / 侧栏 / 二级导航）→ var(--qc-font-size-base)（14px），字号档位回到标尺内 |
+
+### 10.2 复测结果
+
+| 指标 | P0 后 | P1 后 |
+|---|---|---|
+| 全站文本对比度 < AA 的实例 | 223（55 组） | **0** |
+| 字号档位（标尺外） | 含 15px x 6 | 已消除 |
+| 中性色族 | 暖 + 冷两族并存 | 单一中性族（浅暖 / 暗海军蓝） |
+| 明/暗视觉 | 暗色下美林阶段卡为亮块 | 自适应底纹，无亮块 |
+| 测试基线 | 9 failed / 3341 passed | 见 §10.3 |
+
+### 10.3 仍未做（P2 建议）
+
+- 卡片图标「去彩虹化」（今日一屏 4 张卡的 3px 彩色左边框与同色图标不承载语义）
+- 交互目标尺寸：56.4% 的元素 < 32px（EP size=small 默认 24px），需与信息密度一并决策
+- 登录页重做（仍是整屏品牌渐变 + 两个等权主按钮）
+- 暗色主题独立设计（图表色板、密度观感）
+- 工程债：59 个死 token、228 个 !important、断点统一、毛玻璃收敛、ECharts 接入 --chart-bg / --chart-axis

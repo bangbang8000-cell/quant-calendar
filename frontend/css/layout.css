@@ -694,7 +694,7 @@
 }
 .intraday-slot .intraday-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .intraday-slot.is-done { background: var(--badge-success-bg); color: var(--badge-success-text); border-color: transparent; }
-.intraday-slot.is-current { border-color: var(--color-warning); color: var(--color-warning); }
+.intraday-slot.is-current { border-color: var(--el-warning); color: var(--warning-text); }
 .intraday-slot.is-empty .intraday-dot { background: transparent; border: 1px solid currentColor; }
 
 /* V5.2.3: 短线个股可点击弹窗详情 */
@@ -930,8 +930,8 @@
 .meta-val-down { color: var(--qc-market-down) !important; font-weight: 600; }
 .meta-val-flat { color: var(--text-tertiary, var(--text-secondary)); }
 /* 情绪分强弱色阶: >=0.8 情绪热(红) / <0.6 情绪冷(绿) / 中间中性 */
-.meta-emotion-hot { color: var(--qc-market-up) !important; font-weight: 600; }
-.meta-emotion-cold { color: var(--qc-market-down) !important; font-weight: 600; }
+.meta-emotion-hot { color: var(--market-up-text) !important; font-weight: 600; }
+.meta-emotion-cold { color: var(--market-down-text) !important; font-weight: 600; }
 .shortterm-split-content { min-width: 0; }
 
 /* ===== V5.15 (F8.2): 每日复盘 双栏 — 左日期中栏 (类似复盘日历) + 右内容 ===== */
@@ -1306,11 +1306,11 @@ body.qc-split-resizing * {
 .mc-now-name { font-size: var(--qc-font-size-md); font-weight: var(--font-semibold); color: var(--text-primary); }
 .mc-now-badge {
   font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold);
-  color: var(--color-primary); background: var(--bg-tertiary);
+  color: var(--primary-text); background: var(--qc-muted);  /* V5.31: cool-gray bg gave 4.32:1 */
   border: 1px solid var(--border-light); border-radius: var(--qc-radius-full);
   padding: var(--qc-space-1) var(--qc-space-2);
 }
-.mc-conf { font-size: var(--qc-font-size-xs); color: var(--color-success); }
+.mc-conf { font-size: var(--qc-font-size-xs); color: var(--success-text); }
 .mc-eval-ts { margin-left: auto; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 
 .mc-prog-track { position: relative; height: 8px; border-radius: var(--qc-radius-full); background: var(--bg-tertiary); overflow: hidden; }
@@ -1324,7 +1324,7 @@ body.qc-split-resizing * {
 .mc-next { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; font-size: var(--qc-font-size-sm); }
 .mc-next-lab { color: var(--text-tertiary); font-size: var(--qc-font-size-xs); }
 .mc-next-name { font-weight: var(--font-semibold); color: var(--text-primary); }
-.mc-next-prob { font-weight: var(--font-semibold); color: var(--color-warning); }
+.mc-next-prob { font-weight: var(--font-semibold); color: var(--warning-text); }
 .mc-next-sig { flex-basis: 100%; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 .mc-end { font-size: var(--qc-font-size-sm); color: var(--text-secondary); margin-left: auto; }
 .mc-end-lab { color: var(--text-tertiary); font-size: var(--qc-font-size-xs); margin-right: var(--qc-space-1); }
@@ -1344,14 +1344,14 @@ body.qc-split-resizing * {
 .mc-hist-head .el-radio-group { margin-left: auto; }
 .mc-band { position: relative; height: 32px; border-radius: var(--qc-radius-small); background: var(--bg-tertiary); overflow: hidden; }
 .mc-band-sm { height: 24px; }
-.mc-seg { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; gap: var(--qc-space-2); padding: 0 var(--qc-space-2); overflow: hidden; white-space: nowrap; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--white); cursor: pointer; transition: filter 0.2s ease-out, box-shadow 0.2s ease-out; }
+.mc-seg { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; gap: var(--qc-space-2); padding: 0 var(--qc-space-2); overflow: hidden; white-space: nowrap; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--merrill-chip-text); cursor: pointer; transition: filter 0.2s ease-out, box-shadow 0.2s ease-out; }
 .mc-seg:hover { filter: brightness(1.08); box-shadow: 0 4px 12px var(--qc-shadow-sm); z-index: 3; }
 .mc-seg.is-ghost { font-weight: var(--font-normal); }
 .mc-seg.is-cur { box-shadow: inset 0 0 0 4px var(--color-primary); z-index: 2; }
 .mc-seg-name { overflow: hidden; text-overflow: ellipsis; }
 .mc-seg-months { opacity: 0.85; font-weight: var(--font-normal); }
 .mc-band-axis { position: relative; display: flex; justify-content: space-between; margin-top: var(--qc-space-1); font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
-.mc-band-axis-now { position: absolute; transform: translateX(-50%); color: var(--color-primary); font-weight: var(--font-semibold); }
+.mc-band-axis-now { position: absolute; transform: translateX(-50%); color: var(--primary-text); font-weight: var(--font-semibold); }
 
 .mc-hrow { display: flex; align-items: flex-start; gap: var(--qc-space-3); padding: var(--qc-space-1) 0; }
 .mc-hlab { flex: 0 0 96px; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--text-secondary); }
