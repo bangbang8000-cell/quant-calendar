@@ -29,27 +29,36 @@
                     <!-- V5.23: 金色表头块 → 圆角矩形卡片, 与下方「入池历史」行同宽
                          (同处 .detail-content 内边距容器, 宽度天然一致); 评分展示已按用户要求移除 -->
                     <div class="detail-header">
-                        <div>
+                        <div class="dh-main">
                             <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
-                            <div class="detail-subtitle">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</div>
+                            <!-- V5.24: 入池历史并入金色卡片 (原先独占一行) — 与持仓天数同排, 提升信息密度 -->
+                            <div class="detail-subtitle dh-meta">
+                                <span class="dh-item">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</span>
+                                <template v-if="poolInfo && poolInfo.pool_history && poolInfo.pool_history.first_appear">
+                                    <span class="dh-sep">·</span>
+                                    <span class="dh-item">首入 <b>{{ poolInfo.pool_history.first_appear }}</b></span>
+                                    <span class="dh-sep">·</span>
+                                    <span class="dh-item">最近在池 <b>{{ poolInfo.pool_history.last_appear }}</b></span>
+                                    <span class="dh-sep">·</span>
+                                    <span class="dh-item">累计 <b>{{ poolInfo.pool_history.pooled_days }}</b> 天</span>
+                                    <template v-if="poolInfo.pool_history.pool_entries.length > 1">
+                                        <span class="dh-sep">·</span>
+                                        <span class="dh-item"><b>{{ poolInfo.pool_history.pool_entries.length }}</b> 段</span>
+                                    </template>
+                                </template>
+                                <template v-else-if="poolInfo && poolInfo.pool_history">
+                                    <span class="dh-sep">·</span>
+                                    <span class="dh-item">从未入池</span>
+                                </template>
+                            </div>
                         </div>
-                    </div>
-                    <!-- V5.4.1 (R3): 自选/入池状态 + 入池历史 (重点跟踪弹窗信息) -->
-                    <div v-if="poolInfo" class="detail-pool-row">
-                        <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'watchlist'"
-                            size="small" type="warning" effect="light"><qc-icon name="star" :size="13" /> 自选</el-tag>
-                        <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'new_pool'"
-                            size="small" type="success" effect="light"><qc-icon name="badge-check" :size="13" /> 入池</el-tag>
-                        <el-tag v-if="poolInfo.holding" size="small" type="danger" effect="light">持仓</el-tag>
-                        <span v-if="poolInfo.pool_history && poolInfo.pool_history.first_appear"
-                              class="detail-pool-history">
-                            入池历史: 首入 <b>{{ poolInfo.pool_history.first_appear }}</b>
-                            · 最近在池 <b>{{ poolInfo.pool_history.last_appear }}</b>
-                            · 累计 <b>{{ poolInfo.pool_history.pooled_days }}</b> 天
-                            <span v-if="poolInfo.pool_history.pool_entries.length > 1"
-                                  class="color-secondary">· {{ poolInfo.pool_history.pool_entries.length }} 段</span>
-                        </span>
-                        <span v-else-if="poolInfo.pool_history" class="detail-pool-history color-secondary">从未入池</span>
+                        <div class="dh-tags" v-if="poolInfo">
+                            <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'watchlist'"
+                                size="small" type="warning" effect="light"><qc-icon name="star" :size="13" /> 自选</el-tag>
+                            <el-tag v-if="poolInfo.source === 'both' || poolInfo.source === 'new_pool'"
+                                size="small" type="success" effect="light"><qc-icon name="badge-check" :size="13" /> 入池</el-tag>
+                            <el-tag v-if="poolInfo.holding" size="small" type="danger" effect="light">持仓</el-tag>
+                        </div>
                     </div>
                     <!-- Tab 切换 -->
                     <div class="flex-gap-6-mb16-wrap">

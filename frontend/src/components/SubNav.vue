@@ -96,6 +96,15 @@ export default {
         'overview': 'layout-dashboard', 'market-review': 'line-chart', 'ztpool': 'trending-up',
         'lhb': 'users', 'sector': 'layers', 'intraday': 'clock', 'scan': 'search-check',
       },
+      // V5.24: 系统状态 / 系统配置 二级图标 (与 TopTabs.vue 同步)
+      'ops': {
+        'status': 'activity', 'health': 'gauge', 'schedule': 'clock', 'usage': 'bar-chart-3',
+        'guard': 'shield', 'datadict': 'book-open', 'execution': 'clipboard-list',
+      },
+      'system': {
+        'config': 'save', 'feature': 'sliders-horizontal', 'autoeval': 'bot', 'datasource': 'database',
+        'user': 'users', 'about': 'info', 'notification': 'bell',
+      },
     }
     const subIcon = (page, sp) => (SUB_ICONS[page] && SUB_ICONS[page][sp]) || 'circle-dot'
 

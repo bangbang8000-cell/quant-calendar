@@ -27,6 +27,15 @@ const SUB_ICONS = {
     'overview': 'layout-dashboard', 'market-review': 'line-chart', 'ztpool': 'trending-up',
     'lhb': 'users', 'sector': 'layers', 'intraday': 'clock', 'scan': 'search-check',
   },
+  // V5.24: 系统状态 / 系统配置 二级图标 (原先缺映射 → 全部回退 circle-dot, 看起来一模一样)
+  'ops': {
+    'status': 'activity', 'health': 'gauge', 'schedule': 'clock', 'usage': 'bar-chart-3',
+    'guard': 'shield', 'datadict': 'book-open', 'execution': 'clipboard-list',
+  },
+  'system': {
+    'config': 'save', 'feature': 'sliders-horizontal', 'autoeval': 'bot', 'datasource': 'database',
+    'user': 'users', 'about': 'info', 'notification': 'bell',
+  },
 }
 
 const STEP = 200 // 步进滚动像素

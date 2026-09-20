@@ -955,6 +955,12 @@
             font-size: var(--qc-font-size-base);
             margin-top: 4px;
         }
+        /* V5.24: 金色表头卡片内信息重排 — 左主块(标题+元信息) / 右状态标签; 元信息单行硬排, 超宽自动换行 */
+        .detail-header .dh-main { flex: 1 1 auto; min-width: 0; }
+        .detail-header .dh-tags { flex: 0 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: var(--qc-space-1); }
+        .detail-header .dh-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--qc-space-1) var(--qc-space-2); }
+        .detail-header .dh-meta .dh-item b { font-weight: var(--font-semibold); }
+        .detail-header .dh-meta .dh-sep { opacity: 0.65; }
         /* V5.23: 「选股评分」展示已按用户要求移除 (规则选股评分与大模型评估分口径不一致,
            单独成行亦无必要); 如后续需要恢复, 可复用 .score-num-wrap / .score-delta 与
            @keyframes scorePulse (v1.9.2 保留), 或直接放回表头卡片内。 */
