@@ -167,9 +167,11 @@ var Md=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Td,L
                         </div>
 
                         <div class="card">
-                            <div class="card-title"><qc-icon name="gem" :size="16" /> {{ t('calendar.poolTitle') }}</div>
-                            <!-- V4.9.4: 对比基准/沿用持仓提示(来自 /api/view note) -->
-                            <div v-if="viewNote" class="cal-view-note" role="status">{{ viewNote }}</div>
+                            <div class="card-title">
+                                <qc-icon name="gem" :size="16" /> {{ t('calendar.poolTitle') }}
+                                <!-- V5.25: 对比基准/沿用持仓提示(来自 /api/view note) 并入标题行 — 原先独占一行, 信息密度低 -->
+                                <span v-if="viewNote" class="cal-view-note" role="status">{{ viewNote }}</span>
+                            </div>
 
                             <!-- V5.16.1: 四大池标签横跨双栏顶部公用空间 (全部/新入池/当前持仓/已出池) —
                                  移出中栏列表, 置于中栏+右栏详情之上 -->

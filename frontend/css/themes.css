@@ -4427,6 +4427,10 @@ text {
 .cal-count-badge { background: var(--primary-color); color: white; border-radius: var(--qc-radius-large); padding: 4px 8px; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); min-width: 20px; text-align: center; }
 .cal-note-box { margin-bottom: 12px; padding: 8px 12px; background: var(--bg-card-header); border-radius: var(--qc-radius-medium); border: 1px solid var(--border-light); }
 .cal-view-note { margin-bottom: 12px; padding: 8px 10px; font-size: var(--qc-font-size-xs); color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 8%, transparent); border-left: 3px solid var(--color-warning); border-radius: var(--qc-radius-small); line-height: 1.5; }
+/* V5.25: 入池/出池对比基准提示并入卡片标题行 — 由整行警告块改为行内轻量标签(保留 warning 语义色),
+   与标题同一行显示, 省掉一整行高度; 内容过长时随标题行整体换行 */
+.card-title:has(> .cal-view-note) { flex-wrap: wrap; }
+.card-title > .cal-view-note { margin: 0; padding: var(--qc-space-1) var(--qc-space-2); font-weight: var(--font-normal); }
 .cal-compare-section { margin-bottom: 12px; }
 .cal-compare-title { font-size: var(--qc-font-size-sm); font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
 .cal-compare-codes { font-size: var(--qc-font-size-xs); line-height: 1.6; color: var(--text-secondary); word-break: break-all; }
