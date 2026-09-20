@@ -63,6 +63,16 @@
     const hi = Math.max(la, lb), lo = Math.min(la, lb);
     return (hi + 0.05) / (lo + 0.05);
   }
+  // V5.12.2 (FR-5.12.2.1): 按目标相对亮度反解明度
+  function _lumL(hue, sat, targetLum) {
+    var lo = 8, hi = 92;
+    for (var i = 0; i < 26; i++) {
+      var mid = (lo + hi) / 2;
+      if (_panelLum(_panelTuple(hue, sat, mid)) < targetLum) lo = mid; else hi = mid;
+    }
+    return Math.round(hi * 10) / 10;
+  }
+
   function _panelL(hue, fgSat, fgLight, sat, target) {
     let lo = 38, hi = 76;
     for (let i = 0; i < 24; i++) {
@@ -96,8 +106,11 @@
       out['--qc-neutral-900'] = hsl(hue, 10, 12);
       out['--qc-background'] = hsl(hue, 18, 98);
       out['--qc-muted'] = hsl(hue, 16, 95);
-      out['--qc-border'] = hsl(hue, 14, 88);
-      out['--qc-input'] = hsl(hue, 14, 88);
+      // V5.12.2 (FR-5.12.2.3): 描边 1.3 -> ~2.0:1
+      out['--qc-border'] = hsl(hue, 12, 72);
+      out['--qc-input'] = hsl(hue, 12, 72);
+      out['--chart-axis'] = hsl(hue, 12, 55);
+      out['--chart-split'] = hsl(hue, 10, 88);
       out['--qc-foreground'] = hsl(hue, 10, 12);
       out['--qc-muted-foreground'] = hsl(hue, 9, 38);
       out['--qc-nav-item-default'] = hsl(hue, 9, 38);
@@ -125,7 +138,7 @@
       out['--qc-popover'] = '#ffffff';
       out['--qc-card-foreground'] = hsl(hue, 10, 12);
       out['--qc-popover-foreground'] = hsl(hue, 10, 12);
-      out['--qc-nav-border'] = hsl(hue, 14, 88);
+      out['--qc-nav-border'] = hsl(hue, 12, 72);
       out['--qc-nav-item-hover-bg'] = hsl(hue, 16, 95);
       out['--qc-overlay'] = 'rgba(31, 29, 26, 0.5)';
       out['--bg-card'] = '#ffffff';
@@ -138,8 +151,10 @@
       out['--qc-card'] = hsl(hue, 11, 11);
       out['--qc-popover'] = hsl(hue, 11, 11);
       out['--qc-muted'] = hsl(hue, 12, 14);
-      out['--qc-border'] = hsl(hue, 13, 22);
-      out['--qc-input'] = hsl(hue, 13, 22);
+      out['--qc-border'] = hsl(hue, 14, 30);
+      out['--qc-input'] = hsl(hue, 14, 30);
+      out['--chart-axis'] = hsl(hue, 16, 52);
+      out['--chart-split'] = hsl(hue, 14, 26);
       out['--qc-nav-bg'] = hsl(hue, 10, 9);
       out['--qc-nav-border'] = hsl(hue, 13, 22);
       out['--qc-nav-item-hover-bg'] = hsl(hue, 12, 14);
@@ -180,7 +195,12 @@
 
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
   function generateLightTokens(hue) {
-    const rgb = hslToRgb(hue, 75, 42);
+    // V5.12.2: 主色/色阶按感知亮度求解 (消除「蓝暗绿亮」)
+    const pL = _lumL(hue, 75, 0.18);
+    const pL5 = _lumL(hue, 75, 0.26);
+    const pL4 = _lumL(hue, 70, 0.36);
+    const pL7 = _lumL(hue, 85, 0.12);
+    const rgb = hslToRgb(hue, 75, pL);
     // V5.12.1: 中性面/描边/文字中性随色相 (见 _neutralRamp)
     // V5.30: 渐变三档对白字均 >= GRAD_TARGET (原最浅档仅 2.74:1, 14px 白字不达 AA)
     const gL = _gradL(hue, 68, _gradFgWhite, 14, 62, true);
@@ -196,18 +216,18 @@
     const solidL = Math.min(32, _gradL(hue, 80, _gradFgWhite, 8, 60, true, 4.6));   // 实底实际用 80% 饱和度, 需按同一饱和度求解
     return {
       ..._neutralRamp(hue, 'light'),
-      '--primary-color': hsl(hue, 75, 42),
+      '--primary-color': hsl(hue, 75, pL),
       '--primary-rgb': rgb,
-      '--color-primary': hsl(hue, 75, 42),
-      '--qc-primary': hsl(hue, 75, 42),
+      '--color-primary': hsl(hue, 75, pL),
+      '--qc-primary': hsl(hue, 75, pL),
       '--qc-primary-50': hsl(hue, 90, 96),
       '--qc-primary-100': hsl(hue, 85, 92),
       '--qc-primary-200': hsl(hue, 80, 84),
       '--qc-primary-300': hsl(hue, 75, 72),
-      '--qc-primary-400': hsl(hue, 70, 58),
-      '--qc-primary-500': hsl(hue, 75, 48),
-      '--qc-primary-600': hsl(hue, 80, 42),
-      '--qc-primary-700': hsl(hue, 85, 35),
+      '--qc-primary-400': hsl(hue, 70, pL4),
+      '--qc-primary-500': hsl(hue, 75, pL5),
+      '--qc-primary-600': hsl(hue, 80, pL),
+      '--qc-primary-700': hsl(hue, 85, pL7),
       '--qc-primary-800': hsl(hue, 88, 28),
       '--qc-primary-900': hsl(hue, 90, 20),
       '--qc-primary-foreground': '#ffffff',
@@ -249,7 +269,10 @@
 
   // 暗色模式 token (覆盖在 themes.css [data-theme=dark-pro] 基底之上, 同色相高亮)
   function generateDarkTokens(hue) {
-    const rgb = hslToRgb(hue, 85, 65);
+    // V5.12.2: 暗色主色同样归一 (目标 0.34)
+    const pLd = _lumL(hue, 85, 0.34);
+    const pLd5 = _lumL(hue, 85, 0.46);
+    const rgb = hslToRgb(hue, 85, pLd);
     // V5.12.1: 暗色中性面同样按色相做极低饱和倾斜
     // V5.30: 暗色渐变对深字 (--bg-page) 均 >= GRAD_TARGET (原暗端仅 1.72-4.47:1)
     const dL = _gradL(hue, 80, _gradFgDark, 30, 92, false);
@@ -260,17 +283,17 @@
     const txtD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
     return {
       ..._neutralRamp(hue, 'dark'),
-      '--primary-color': hsl(hue, 85, 65),
+      '--primary-color': hsl(hue, 85, pLd),
       '--primary-rgb': rgb,
-      '--color-primary': hsl(hue, 85, 65),
-      '--qc-primary': hsl(hue, 90, 65),
+      '--color-primary': hsl(hue, 85, pLd),
+      '--qc-primary': hsl(hue, 90, pLd),
       '--qc-primary-50': hsl(hue, 50, 18),
       '--qc-primary-100': hsl(hue, 55, 22),
       '--qc-primary-200': hsl(hue, 55, 26),
       '--qc-primary-300': hsl(hue, 60, 30),
       '--qc-primary-400': hsl(hue, 65, 38),
-      '--qc-primary-500': hsl(hue, 80, 52),
-      '--qc-primary-600': hsl(hue, 90, 65),
+      '--qc-primary-500': hsl(hue, 85, pLd5),
+      '--qc-primary-600': hsl(hue, 90, pLd),
       '--qc-primary-700': hsl(hue, 92, 72),
       '--qc-primary-800': hsl(hue, 90, 80),
       '--qc-primary-900': hsl(hue, 92, 88),

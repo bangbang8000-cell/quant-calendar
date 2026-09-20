@@ -130,6 +130,8 @@
             --glass-bg: #101a2e;
             --glass-border: rgba(255, 255, 255, 0.10);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 46%);
+            --glass-edge: rgba(255, 255, 255, 0.10);
             --gradient-brand: linear-gradient(135deg, #64ffda 0%, #5e6ad2 100%);
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
@@ -1513,8 +1515,9 @@
             font-weight: var(--font-bold);
             font-size: var(--qc-font-size-md);
         }
-        .pool-change-val.up { color: var(--success-text); }
-        .pool-change-val.down { color: var(--danger-text); }
+        .pool-change-val { padding: 0 4px; border-radius: var(--qc-radius-small); }
+        .pool-change-val.up { color: var(--success-text); background: color-mix(in srgb, var(--success-text) 12%, transparent); }
+        .pool-change-val.down { color: var(--danger-text); background: color-mix(in srgb, var(--danger-text) 12%, transparent); }
         .pool-change-label {
             font-size: var(--qc-font-size-xs);
             color: var(--text-secondary);
@@ -4072,8 +4075,10 @@ text {
 .today-sentiment.muted { color: var(--text-tertiary); font-weight: var(--font-normal); }
 .today-pool-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; font-size: var(--qc-font-size-sm); }
 .today-pool-val { font-size: var(--qc-font-size-md); font-weight: var(--font-bold); }
-.today-pool-val.up { color: var(--market-up-text); }
-.today-pool-val.down { color: var(--market-down-text); }
+/* V5.12.2 (FR-5.12.2.2, D1): 涨跌双通道 —— 颜色 + 符号 + 浅底 */
+.today-pool-val { padding: 0 4px; border-radius: var(--qc-radius-small); }
+.today-pool-val.up { color: var(--market-up-text); background: color-mix(in srgb, var(--market-up-text) 12%, transparent); }
+.today-pool-val.down { color: var(--market-down-text); background: color-mix(in srgb, var(--market-down-text) 12%, transparent); }
 .today-pool-name { color: var(--text-secondary); }
 .today-focus-list { display: flex; flex-direction: column; gap: 4px; }
 .today-focus-empty { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }

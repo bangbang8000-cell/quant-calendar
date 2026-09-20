@@ -246,6 +246,9 @@
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.35);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+  /* V5.12.2 (FR-5.12.2.4): 类玻璃 —— 顶部高光 + 浅渐变 (真 backdrop-filter 仅留给浮层) */
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 46%);
+  --glass-edge: rgba(255, 255, 255, 0.7);
 
   /* ─── Semantic Colors (global, not theme-dependent) ─── */
   --color-success: #4CAF50;  --color-warning: #FF9800;
