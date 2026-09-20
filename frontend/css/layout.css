@@ -1086,6 +1086,9 @@
   border-color: var(--color-primary);
   background: var(--bg-tertiary);
 }
+/* V5.19 (F5): 美林时钟阶段卡 — 双栏时由 2 列网格改竖排列表 (中栏) */
+.grid-2col-gap8-mb14.is-vertical { grid-template-columns: 1fr; }
+
 /* detail-split 列表区域内滚动兜底 */
 .detail-split-list > .stock-list,
 .detail-split-list > .qc-stock-list {

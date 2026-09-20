@@ -8,8 +8,16 @@
 
   window.__quantComponents.MerrillDetailDialog = {
     name: 'qc-merrill-detail-dialog',
+    // V5.19 (F5): 支持内嵌右栏工作区 (embedded=true → 渲染为普通块, 无遮罩/浮层/关闭按钮)
+    // 与 stock-detail.js / index-detail.js 同模式 (见 layout.css 的 .qc-embedded-dialog 规则)
+    props: {
+      embedded: { type: Boolean, default: false },
+    },
     template: `
-        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog">
+        <el-dialog v-model="showMerrillDetail" custom-class="merrill-detail-dialog" :title="(merrillDetailData.name || '经济周期分析') + ' - 详细分析报告'" width="800px" class="merrill-detail-dialog"
+            :append-to-body="!embedded" :modal="!embedded" :show-close="!embedded"
+            :close-on-click-modal="!embedded" :lock-scroll="!embedded"
+            :class="{ 'qc-embedded-dialog': embedded }">
             <!-- 骨架屏加载 -->
             <div v-if="!merrillDetailData.name" class="skeleton-loader">
                 <div class="skeleton-header"></div>

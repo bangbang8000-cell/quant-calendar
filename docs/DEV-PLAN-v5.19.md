@@ -45,10 +45,13 @@
 - **D5 ✅ (无需改造)**: 批量操作沿用原复选框与函数, F3 移除后无影响。
 - **实测**: `cls="detail-split-wrap detail-split"`, `cols=3`, `pct=35`, `divider/pane=true`, `vrowH=76`, 注入报价后 `rowScrollH=69` (无溢出), 点击行右栏正文 344 字 + `is-active`, 弹窗模式 `cols=1/pct=100/vrowH=56` 且按钮文案恢复显示, **0 pageerror**。
 
-### E. 美林时钟双栏 (F5)
-- **E1**: `merrill-detail.js` 加 `embedded` prop + 条件绑定 `:append-to-body="!embedded"` / `:modal="!embedded"` / `:show-close="!embedded"` / `:close-on-click-modal="!embedded"` / `:lock-scroll="!embedded"` + `:class="{ "qc-embedded-dialog": embedded }"` (逐字照 `stock-detail.js` L14/L18-20)。
-- **E2**: `strategies-page.js` merrill 段 — 阶段卡 / 轮次列表 → 中栏 (双栏时竖排, 复用 `.market-grid.is-vertical` 同类做法); 右栏 → `qc-merrill-detail-dialog :embedded="true"`。
-- **E3**: `detailSplitEnabled=false` 时保持原 2 列网格 + 弹窗。
+### E. 美林时钟双栏 (F5) ✅ **已完成 (2026-09-19)**
+- **E1 ✅**: `merrill-detail.js` 增 `props: { embedded: { type: Boolean, default: false } }`; `el-dialog` 的 `append-to-body` / `modal` / `show-close` / `close-on-click-modal` / `lock-scroll` 全绑 `!embedded`, 并加 `qc-embedded-dialog` 条件类。
+- **E2 ✅**: `strategies-page.js` merrill 段 — 四阶段网格包入 `qc-detail-split`; `#list` = 阶段卡网格 (加 `is-vertical` 条件类); `#pane` = `qc-merrill-detail-dialog :embedded="true"`。
+- **E4 ✅ (新增)**: 扩展 V5.16 双栏默认选中 watch — computed 增 `stageKeys` / `curStage`, 新增 `merrill` 分支: 右栏无内容 (`merrillDetailData.name` 为空) 时自动 `showStageDetail(当前阶段 || 首个阶段)`。
+- **E3 ✅**: `detailSplitEnabled=false` 时保持原 2 列网格 + 弹窗 (实测 564px 564px)。
+- **CSS ✅**: `layout.css` 增 `.grid-2col-gap8-mb14.is-vertical` 单列规则。
+- **实测**: `cls=detail-split-wrap detail-split`, `cols=3`, `pct=35`, `divider/pane=true`, 右栏 `qc-embedded-dialog` 正文 **858 字** (自动载入生效), 内嵌头 `display:none`, overlay 为 `static`; 弹窗模式 `cols=1` / `pct=100`、无内嵌类、overlay 为 `fixed`、网格回 2 列; **0 pageerror**。
 
 ### F. 重点跟踪双栏 (F6)
 - **F1**: `focus-view.js` — 日期 / 时段 / 五档分布条 → 双栏之上; 档位分组列表 → 中栏 `qc-stock-list`; 右栏 → `qc-stock-detail-dialog :embedded="true"`。
@@ -76,10 +79,10 @@
 | `frontend/src/components/common/DetailSplit.vue` | 新建 (A1) ✅已完成 |
 | `frontend/src/main.js` | 组件注册 (A1) ✅已完成 |
 | `frontend/js/components/calendar-page.js` | 改用 `qc-detail-split` (A2) |
-| `frontend/js/components/strategies-page.js` | ×3 改用组件 (A2) + 美林双栏 (E2) |
+| `frontend/js/components/strategies-page.js` | ×3 改用组件 (A2) ✅ + 美林双栏 (E2) ✅ |
 | `frontend/js/components/ai-page.js` | 自选双栏 (D) ✅已完成 |
 | `frontend/js/components/focus-view.js` | 重点跟踪双栏 (F) |
-| `frontend/js/components/dialogs/merrill-detail.js` | `embedded` (E1) |
+| `frontend/js/components/dialogs/merrill-detail.js` | `embedded` (E1) ✅已完成 |
 | `frontend/css/layout.css` | 自选窄栏两行适配 (D) ✅; 重点跟踪行样式 (F) 待做 |
 | `frontend/dist/*` | Vite 重建产物 (G2) |
 | `backend/main_new.py` | APP_VERSION (G1) |
@@ -94,7 +97,7 @@
 |---|---|---|---|
 | 批次1 | A (组件抽取, 4 处) — B 已撤销 | 低 (纯重构) | ✅ **已完成**: 4 页实测 cols=3 / pct=35 / divider+pane 齐备 / 拖拽+持久化 / 弹窗回退 / 0 pageerror |
 | 批次2 | D (我的自选双栏) — C 已移除 | 高 (行信息密度) | ✅ **已完成**: 双栏结构 + 行点击载入右栏 + 两行适配无溢出 + 弹窗回退 + 0 pageerror |
-| 批次3 | E (美林时钟) | 低 (内容零新增) | 右栏常驻, 与弹窗内容一致 |
+| 批次3 | E (美林时钟) | 低 (内容零新增) | ✅ **已完成**: 右栏自动载入当前阶段 (858 字), 阶段卡竖排, 弹窗模式回 2 列, 0 pageerror |
 | 批次4 | F (重点跟踪) | 中 (信息架构调整) | 概览在上/列表在中/详情在右/聚合在下 |
 | 批次5 | G (发布链 + 回滚预案) | 中 | 0 pageerror + 全量 pytest ≤ 基线 + dist 入库 |
 
