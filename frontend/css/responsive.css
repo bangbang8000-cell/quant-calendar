@@ -526,3 +526,22 @@
 @keyframes qc-spin {
   to { transform: rotate(360deg); }
 }
+
+
+/* ===== V5.30 (P0-4): 窄屏「重点跟踪」行改两行布局 =====
+   原 5 列 (状态|名称|档位|评分|方向) 在 390px 下名称列仅剩 ~116px,
+   股票名/代码/入池标签被 overflow:hidden 裁切。改为两行 (名称占满第一行,
+   评分/方向下沉第二行), 与 .detail-split .focus-row 的既有处理保持一致。 */
+@media (max-width: 768px) {
+  .focus-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    column-gap: var(--qc-space-2);
+    align-items: center;
+  }
+  .focus-row-status { grid-row: 1; grid-column: 1; }
+  .focus-row-name   { grid-row: 1; grid-column: 2; }
+  .focus-row-tier   { grid-row: 1; grid-column: 3; }
+  .focus-row-score  { grid-row: 2; grid-column: 2; text-align: left; }
+  .focus-row-dir    { grid-row: 2; grid-column: 3; }
+  .focus-row-badges { margin-left: 0; }
+}

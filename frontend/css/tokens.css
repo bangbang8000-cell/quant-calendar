@@ -72,7 +72,8 @@
   /* V5.7.2 (UX-T1): 亮色 muted/nav-label 对比度达标 — #8f8679(3.59:1)→#7a7568(4.59:1) / #6b6358(5.91:1) */
   --qc-muted: var(--qc-neutral-100);
   --qc-muted-foreground: #7a7568;
-  --qc-border: var(--qc-neutral-200);
+  /* V5.30 (P0-1): 页面底色改中性后卡片需可见分界线 — 200(#efe9df, 1.08:1) → 300(#ded5c6) */
+  --qc-border: var(--qc-neutral-300);
   --qc-input: var(--qc-neutral-200);
   --qc-ring: var(--qc-primary-400);
 
@@ -93,6 +94,15 @@
   --qc-nav-badge-text: var(--qc-primary-800);
   /* V6.0: 抽屉/浮层遮罩 (浅色) */
   --qc-overlay: rgba(31, 29, 26, 0.5);
+
+  /* V5.30 (P0-5): 圆角收敛 — EP 默认 3/4px 统一到 6px 标尺 (原与 12/16px 卡片并存, 9 种圆角值) */
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 6px;
+  /* EP 自带变量: 标签 4px / 浮层 4px 与全站 6-12px 标尺脱节, 一并对齐 */
+  --el-tag-border-radius: 6px;
+  --el-popover-border-radius: 12px;
+  --el-border-radius-round: 9999px;
+  --el-border-radius-circle: 50%;
 
   /* ─── Radius Scale ─── */
   --qc-radius-small: 6px;
@@ -198,7 +208,9 @@
   --surface: #ffffff;
   --bg-code: #f6f8fa;
   --bg-tertiary: #f1f5f9;
-  --primary-color-dark: #2563eb;
+  /* V5.30 (P0-2): 原硬编码 #2563eb (Tailwind blue-600) — AI 悬浮球渐变尾色/2 处边框
+     在金色主题下渲染出蓝色异物; 改为随色相联动的品牌深档 */
+  --primary-color-dark: var(--qc-primary-800);
   --text-disabled: #9ca3af;
   --radius-2: 10px;
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);

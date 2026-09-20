@@ -26,7 +26,7 @@
             /* 阴影 */
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             /* 渐变品牌色 */
-            --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            --gradient-brand: linear-gradient(135deg, hsl(220, 76%, 49.4%) 0%, hsl(220, 85%, 43.4%) 100%);
             /* v3.22-logo: K线折线日历 logo 品牌渐变 (与 manifest theme-color #667eea 一致) */
             /* v3.22-logo: 三柱三色(蓝黄红, 语义固定) + 背景固定白底(2026-08-20: 统一白底, 不再随主题黑白) */
             --logo-blue: #2563eb;
@@ -46,8 +46,9 @@
             --color-primary-600: #2563eb;
             --primary-rgb: 37, 99, 235;
             --secondary-color: #60a5fa;
-            --gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
-            --card-border: #bfdbfe;
+            /* V5.30 (P0-3): 静态兜底同步运行期求解值 (220 蓝, 三档白字 6.92/5.66/4.64) */
+            --gradient: linear-gradient(135deg, hsl(220, 80%, 43.4%) 0%, hsl(220, 76%, 49.4%) 50%, hsl(220, 70%, 54.4%) 100%);
+            --card-border: #c9c9cf;   /* V5.30: 去冷蓝描边 */
             /* 主按钮令牌 (v3.13: 令牌化, 各主题覆写) */
             --btn-primary-bg: #1d4ed8; --btn-primary-border: #1d4ed8; --btn-primary-color: #fff;
             --btn-primary-hover-bg: #1e40af; --btn-primary-hover-border: #1e40af;
@@ -210,11 +211,12 @@
             --qc-primary-500: #c49b2e; --qc-primary-600: #b8922a;
             --qc-primary-700: #8f6f1f; --qc-primary-800: #6d5218;
             --secondary-color: #e6c450;
-            --gradient: linear-gradient(135deg, #80630e 0%, #927210 50%, #be9721 100%);
+            /* V5.30 (P0-3): 原 #be9721 最浅档白字仅 2.75:1 — 同步运行期求解值 (45 金, 7.81/5.68/4.56) */
+            --gradient: linear-gradient(135deg, hsl(45, 80%, 22.2%) 0%, hsl(45, 76%, 28.2%) 50%, hsl(45, 70%, 33.2%) 100%);
             /* V5.29: 详情头卡浅色面板 (运行期由 themes.js 按色相覆盖); 静态兜底仅满足令牌完整性门禁 */
             --gradient-panel: linear-gradient(135deg, #dccb85 0%, #c3a83f 100%);
             --panel-fg: #2b2109;
-            --card-border: #e8d5a3;
+            --card-border: #dcd4c4;   /* V5.30: 去金色描边, 改暖中性 */
             --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847;
             --text-link: #8b6914;
             --bg-page: #fdfaf3; --bg-card: #fff;
@@ -226,7 +228,7 @@
             --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
             --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
             --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.08);
-            --gradient-brand: linear-gradient(135deg, #b8922a 0%, #8b6914 100%);
+            --gradient-brand: linear-gradient(135deg, hsl(45, 76%, 28.2%) 0%, hsl(45, 85%, 22.2%) 100%);
             --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
             --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
             --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
@@ -259,6 +261,11 @@
         [data-theme="dark-pro"] .login-icon,
         /* V5.29: .detail-header 已改用 --gradient-panel (深浅两模式统一), 从本覆盖列表移除 */
         [data-theme="dark-pro"] .hold-days,
+        /* V5.30 (P0-3): 补齐渐变族 — 原 4 处仍走暗色鲜亮 --gradient 且为白字, 暗端对比不足 */
+        [data-theme="dark-pro"] .badge,
+        [data-theme="dark-pro"] .record-number,
+        [data-theme="dark-pro"] .progress-bar,
+        [data-theme="dark-pro"] .time-bar-fill,
         [data-theme="dark-pro"] .kline-tab.active {
             background: var(--gradient-brand) ; color: var(--bg-page) ;
         }
@@ -566,7 +573,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: var(--font-sans);
-            background: var(--gradient);
+            /* V5.30 (P0-1): 页面画布回归中性表面 — 原用品牌渐变铺满整屏
+               (实测系统配置页金色占 60.3%、登录页 ~100%), 品牌渐变只保留给强调元素 */
+            background: var(--qc-background);
             color: var(--text-primary);
             min-height: 100vh;
             transition: all 0.2s ease;
@@ -2809,7 +2818,7 @@ text {
 .factor-semantic {
     font-size: var(--qc-font-size-xs);
     padding: 4px 8px;
-    border-radius: 999px;
+    border-radius: var(--qc-radius-full);
     font-weight: var(--font-medium);
 }
 .factor-sem-low { color: var(--el-success); background: var(--badge-success-bg); }
@@ -3884,7 +3893,7 @@ text {
 /* v3.17 UI优化: 侧边栏收起按钮 — 细长圆角矩形(上下长左右细) + 三点拖拽手柄, 替代原圆形三角箭头 */
 .sidebar-collapse-btn {
     position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
-    width: 14px; height: 58px; border-radius: 999px;
+    width: 14px; height: 58px; border-radius: var(--qc-radius-full);
     background: var(--bg-card); border: 1px solid var(--border-light);
     box-shadow: var(--qc-shadow-sm);
     cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 101;
@@ -3990,7 +3999,7 @@ text {
 .today-signals { display: flex; gap: 8px; margin-bottom: 12px; }
 .today-signal-chip {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 12px; border-radius: 999px; cursor: pointer;
+    padding: 4px 12px; border-radius: var(--qc-radius-full); cursor: pointer;
     font-size: var(--qc-font-size-xs); border: 1px solid var(--border-light);
     transition: opacity 0.2s var(--easing-standard);
 }
@@ -4652,7 +4661,7 @@ text {
 .panel-title { font-size:var(--qc-font-size-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom: 8px; }
 .panel-title-mb8 { font-size:var(--qc-font-size-md);font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:8px; }
 .progress-fill-4 { height: 100%; border-radius: var(--qc-radius-small); transition: width 0.2s ease-out; }
-.progress-track-6 { height:6px;background:var(--border-light);border-radius:3px;overflow:hidden; }
+.progress-track-6 { height:6px;background:var(--border-light);border-radius:var(--qc-radius-small);overflow:hidden; }
 .progress-track-8 { width: 100%; height: 8px; background: var(--border-light); border-radius: var(--qc-radius-small); overflow: hidden; }
 .rec-card { background: var(--bg-card-header); border-radius: var(--qc-radius-medium); padding: 12px; }
 .recent-card { flex:0 0 220px;background:var(--bg-card-header);border-radius: var(--qc-radius-medium);padding: 12px;cursor:pointer;border:1px solid var(--border-light);transition:all 0.2s ease-out; }
@@ -4681,8 +4690,8 @@ text {
 .sys-health-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border-light); }
 .sys-health-row:first-of-type { border-top: 0; }
 .sys-health-meta { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.meter-bar { height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; margin-top: 8px; }
-.meter-fill { height: 100%; border-radius: 999px; background: var(--color-primary); transition: width 0.2s ease; }
+.meter-bar { height: 6px; border-radius: var(--qc-radius-full); background: var(--border-light); overflow: hidden; margin-top: 8px; }
+.meter-fill { height: 100%; border-radius: var(--qc-radius-full); background: var(--color-primary); transition: width 0.2s ease; }
 .chip-warning { background: var(--badge-warning-bg); color: var(--el-warning); padding: 4px 10px; border-radius: var(--qc-radius-large); font-size: var(--qc-font-size-sm); }
 .chip-danger { background: var(--badge-danger-bg); color: var(--el-danger); padding: 4px 10px; border-radius: var(--qc-radius-large); font-size: var(--qc-font-size-sm); }
 .rank-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
@@ -4690,8 +4699,8 @@ text {
 .rank-no { width: 22px; height: 22px; border-radius: var(--qc-radius-small); background: var(--bg-card-header); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--qc-font-size-sm); flex: none; }
 .rank-no-top { background: var(--badge-info-bg); color: var(--color-primary); font-weight: var(--font-semibold); }
 .rank-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-bar { flex: 0 0 120px; height: 6px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
-.rank-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--color-primary); }
+.rank-bar { flex: 0 0 120px; height: 6px; border-radius: var(--qc-radius-full); background: var(--border-light); overflow: hidden; }
+.rank-bar-fill { display: block; height: 100%; border-radius: var(--qc-radius-full); background: var(--color-primary); }
 .rank-views { flex: none; font-variant-numeric: tabular-nums; }
 /* v3.17.6 (FR-3.17.6): AI 用量 — 模型分布 + 近30天调用趋势迷你柱状图 */
 .usage-sub-block { margin-top: 12px; }
@@ -4749,13 +4758,13 @@ text {
 .usage-ai-model-no { width: 20px; height: 20px; border-radius: var(--qc-radius-small); background: var(--bg-hover); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--qc-font-size-xs); flex: none; }
 .usage-ai-model-no-top { background: var(--bg-selected); color: var(--color-primary); font-weight: var(--font-semibold); }
 .usage-ai-model-name { min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; color: var(--text-primary); font-size: var(--qc-font-size-sm); }
-.usage-ai-model-bar { flex: 0 0 90px; height: 7px; border-radius: 999px; background: var(--border-light); overflow: hidden; }
-.usage-ai-model-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600)); }
+.usage-ai-model-bar { flex: 0 0 90px; height: 7px; border-radius: var(--qc-radius-full); background: var(--border-light); overflow: hidden; }
+.usage-ai-model-fill { display: block; height: 100%; border-radius: var(--qc-radius-full); background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600)); }
 .usage-ai-model-pct { flex: none; min-width: 42px; text-align: right; font-size: var(--qc-font-size-xs); color: var(--color-primary); font-variant-numeric: tabular-nums; }
 .usage-ai-model-count { flex: none; min-width: 44px; text-align: right; font-size: var(--qc-font-size-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .usage-ai-chart { display: flex; align-items: flex-end; gap: 4px; height: 86px; padding: 4px 2px 0; overflow: hidden; }
 .usage-ai-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
-.usage-ai-bar { width: 100%; max-width: 12px; border-radius: 3px 3px 0 0; background: var(--color-primary); opacity: 0.5; min-height: 1px; transition: opacity .2s ease, transform .2s ease; }
+.usage-ai-bar { width: 100%; max-width: 12px; border-radius: var(--qc-radius-small) var(--qc-radius-small) 0 0; background: var(--color-primary); opacity: 0.5; min-height: 1px; transition: opacity .2s ease, transform .2s ease; }
 .usage-ai-bar-col:hover .usage-ai-bar { opacity: 0.9; transform: scaleY(1.03); transform-origin: bottom; }
 .usage-ai-bar-today { opacity: 1; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
 .usage-ai-bar-label { font-size: var(--font-2xs); color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
@@ -4979,8 +4988,8 @@ text {
 .onboarding-card { width: min(420px, 90vw); background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--qc-radius-xl); padding: 24px; box-shadow: var(--qc-shadow-lg); }
 .onboarding-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .onboarding-step-badge { flex: 0 0 auto; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--text-primary); background: var(--bg-card-header); border-radius: var(--qc-radius-small); padding: 4px 8px; }
-.onboarding-progress-track { flex: 1; height: 6px; background: var(--bg-card-header); border-radius: 999px; overflow: hidden; }
-.onboarding-progress-fill { height: 100%; background: var(--primary-color); border-radius: 999px; transition: width var(--transition-base); }
+.onboarding-progress-track { flex: 1; height: 6px; background: var(--bg-card-header); border-radius: var(--qc-radius-full); overflow: hidden; }
+.onboarding-progress-fill { height: 100%; background: var(--primary-color); border-radius: var(--qc-radius-full); transition: width var(--transition-base); }
 .onboarding-title { font-size: var(--qc-font-size-lg); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 8px; }
 .onboarding-desc { font-size: var(--qc-font-size-sm); color: var(--text-secondary); line-height: var(--lh-relaxed); margin-bottom: 20px; min-height: 42px; }
 .onboarding-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }

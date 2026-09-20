@@ -45,6 +45,18 @@
 .qc-card-hover { transition: box-shadow var(--duration-base), border-color var(--duration-base); }
 .qc-card-hover:hover { box-shadow: var(--qc-shadow-sm); border-color: var(--qc-neutral-300); }
 
+/* V5.30 (P0-5): 圆角标尺归一 — EP 自身变量 (标签 4px / 小号按钮 calc(base-1px)=5px) 与全站
+   6/12/16px 标尺脱节。EP 把 --el-tag-border-radius 声明在 .el-tag 自身作用域, :root 覆盖不到,
+   故此处按组件作用域对齐; 头部搜索等已用更高特异性覆盖为胶囊, 不受影响。 */
+.el-tag { --el-tag-border-radius: var(--qc-radius-small); }
+.el-button,
+.el-button--small,
+.el-button--large,
+.el-button--primary,
+.el-button--default { border-radius: var(--qc-radius-small); }
+.el-message, .el-message-box, .el-notification { border-radius: var(--qc-radius-medium); }
+.el-dialog { border-radius: var(--qc-radius-large); }
+
 /* D1: 既有 .card 收敛到 DS-6.0 克制视觉 — 边框优先 + 轻阴影 (与 .qc-card 同源, 4 大高频页即得统一) */
 .card {
   border: 1px solid var(--qc-border);

@@ -547,12 +547,15 @@
 /* 移动端 */
 @media (max-width: 767px) {
   /* V6.2 (PRD-6.2 F3): 搜索框移动端显示并收缩 (原隐藏) */
+  /* V5.30 (P0-4): 390px 实测搜索框被挤到 58px, 而内部 Ctrl+K(34px)+suffix(min-width:36px!important
+     来自 themes.css) 超出容器 → 提示文案压在铃铛图标上。此处: ①给搜索区最小可用宽度
+     ②隐藏整个 suffix 槽 (Ctrl+K / 清除按钮) 并解除 36px 最小宽 ③收窄左右区间距让出空间 */
   .qc-header-center {
     display: flex;
     flex: 1 1 auto;
-    min-width: 0;
+    min-width: 96px;
     max-width: none;
-    margin: 0 var(--qc-space-2);
+    margin: 0 var(--qc-space-1);
   }
   .qc-header-search {
     flex: 1 1 auto;
@@ -560,7 +563,11 @@
     min-width: 0;
     max-width: none;
   }
-  .qc-header-search .el-input__suffix { display: none; }  /* 移动端隐藏 Ctrl+K */
+  .qc-header-search .el-input__wrapper { padding: 0 var(--qc-space-2); }
+  .qc-header-search .el-input__suffix,
+  .qc-header-search-kbd { display: none !important; min-width: 0 !important; }
+  .qc-header-left { gap: var(--qc-space-1); }
+  .qc-header-right { gap: var(--qc-space-1); }
   .qc-header-left { flex: 0 0 auto; }
   .qc-header-right { flex: 0 0 auto; }
   .qc-header {

@@ -133,4 +133,4 @@ def test_sxsc_rebuild_on_test():
 def test_version_bumped():
     """TC-6.9.3.28: 版本号提升 (随发布迭代: 6.9.3 → ... → 5.5.0 并入 5.X → 5.6.0 → 5.7.1 → 5.8.0 → 5.9.0 → V5.20: 5.10.0)"""
     main = _read_b("main_new.py")
-    assert 'APP_VERSION = "5.10.1"' in main, "APP_VERSION 应为 5.10.1"
+    assert 'APP_VERSION = "5.11.0"' in main, "APP_VERSION 应为 5.11.0"

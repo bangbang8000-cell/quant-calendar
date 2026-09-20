@@ -73,9 +73,31 @@
     return Math.round(hi * 10) / 10;
   }
 
+  // ===== V5.30: 品牌渐变对比度求解 (P0-3) =====
+  // 16+4 处渐变元素 (页签激活态/持仓天数/编号徽标/进度条/AI 悬浮球等) 在亮色下用白字、暗色下用深字。
+  // 固定目标对比度反解**该色相允许的最亮档**, 保证渐变最浅的一档仍达标 (暖色可深、冷色自动留浅),
+  // 再据此外推其余档位, 使渐变保持层次而非退化成实色。
+  const GRAD_TARGET = 4.6;
+  var _gradFgWhite = [255, 255, 255];
+  var _gradFgDark = [11, 18, 32];   // = --bg-page (dark-pro #0b1220)
+  function _gradL(hue, sat, fg, lo, hi, wantMax) {
+    var a = lo, b = hi;
+    for (var i = 0; i < 24; i++) {
+      var mid = (a + b) / 2;
+      var ok = _panelContrast(_panelTuple(hue, sat, mid), fg) >= GRAD_TARGET;
+      if (wantMax) { if (ok) { a = mid; } else { b = mid; } }
+      else { if (ok) { b = mid; } else { a = mid; } }
+    }
+    return Math.round((wantMax ? a : b) * 10) / 10;
+  }
+
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
   function generateLightTokens(hue) {
     const rgb = hslToRgb(hue, 75, 42);
+    // V5.30: 渐变三档对白字均 >= GRAD_TARGET (原最浅档仅 2.74:1, 14px 白字不达 AA)
+    const gL = _gradL(hue, 68, _gradFgWhite, 14, 62, true);
+    const gL2 = Math.max(12, gL - 5);
+    const gL1 = Math.max(10, gL - 11);
     return {
       '--primary-color': hsl(hue, 75, 42),
       '--primary-rgb': rgb,
@@ -94,7 +116,7 @@
       '--qc-primary-foreground': '#ffffff',
       '--text-link': hsl(hue, 70, 40),
       '--secondary-color': hsl(hue, 70, 55),
-      '--card-border': hsl(hue, 55, 82),
+      '--card-border': hsl(hue, 22, 80),
       '--bg-selected': 'rgba(' + rgb + ', 0.08)',
       // V5.7.2 (UX-T1): 亮色主按钮对比度达标 — lightness 42%→32% (白字 2.92:1→4.53:1)
       '--btn-primary-bg': hsl(hue, 80, 32),
@@ -110,8 +132,8 @@
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 80, 32),
       '--btn-primary-text-color': hsl(hue, 80, 32),
-      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 28) + ' 0%, ' + hsl(hue, 76, 34) + ' 50%, ' + hsl(hue, 70, 44) + ' 100%)',
-      '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, 34) + ' 0%, ' + hsl(hue, 85, 26) + ' 100%)',
+      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, gL1) + ' 0%, ' + hsl(hue, 76, gL2) + ' 50%, ' + hsl(hue, 70, gL) + ' 100%)',
+      '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, gL2) + ' 0%, ' + hsl(hue, 85, gL1) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (深色前景), 明度按色相自适应到 PANEL_TARGET
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, Math.min(74, _panelL(hue, 45, 14, 58, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 58, _panelL(hue, 45, 14, 58, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 45, 14),
@@ -128,6 +150,10 @@
   // 暗色模式 token (覆盖在 themes.css [data-theme=dark-pro] 基底之上, 同色相高亮)
   function generateDarkTokens(hue) {
     const rgb = hslToRgb(hue, 85, 65);
+    // V5.30: 暗色渐变对深字 (--bg-page) 均 >= GRAD_TARGET (原暗端仅 1.72-4.47:1)
+    const dL = _gradL(hue, 80, _gradFgDark, 30, 92, false);
+    const dL2 = Math.min(94, dL + 8);
+    const dL3 = Math.min(96, dL + 16);
     return {
       '--primary-color': hsl(hue, 85, 65),
       '--primary-rgb': rgb,
@@ -161,8 +187,8 @@
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 85, 65),
       '--btn-primary-text-color': hsl(hue, 85, 65),
-      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 35) + ' 0%, ' + hsl(hue, 85, 50) + ' 50%, ' + hsl(hue, 85, 65) + ' 100%)',
-      '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, 65) + ' 0%, ' + hsl(hue, 80, 40) + ' 100%)',
+      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, dL) + ' 0%, ' + hsl(hue, 85, dL2) + ' 50%, ' + hsl(hue, 85, dL3) + ' 100%)',
+      '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, dL3) + ' 0%, ' + hsl(hue, 80, dL) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (暗色模式同样走面板令牌, 深浅观感一致)
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, Math.min(76, _panelL(hue, 40, 12, 55, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 55, _panelL(hue, 40, 12, 55, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 40, 12),

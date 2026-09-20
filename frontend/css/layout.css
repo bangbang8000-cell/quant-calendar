@@ -1192,7 +1192,7 @@ body.qc-split-resizing * {
 .shortterm-date-items::-webkit-scrollbar-thumb,
 .market-review-date-items::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--text-tertiary) 45%, transparent);
-  border-radius: 3px;
+  border-radius: var(--qc-radius-small);
 }
 .detail-split-list ::-webkit-scrollbar-thumb:hover,
 .shortterm-date-items::-webkit-scrollbar-thumb:hover,
