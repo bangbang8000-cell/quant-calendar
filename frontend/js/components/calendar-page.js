@@ -70,8 +70,8 @@
                             </div>
 
                             <!-- V5.16 (F1): 股票池 中栏+右栏详情工作区 (弹窗模式时仅中栏全宽, 面板不渲染) -->
-                            <div class="stock-pool-body" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
-                            <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                            <qc-detail-split :enabled="detailSplitEnabled" root-class="stock-pool-body">
+                            <template #list>
                             <div class="search-box">
                                 <el-input class="w-100" v-model="searchKeyword" :placeholder="t('common.searchPlaceholder')" clearable/>
                             </div>
@@ -104,13 +104,11 @@
                                   </template>
                                 </qc-stock-list>
                             </div>
-                            </div><!-- /.detail-split-list -->
-                            <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
-                            <!-- 右栏详情工作区 (仅双栏模式渲染, embedded 无关闭按钮) -->
-                            <div class="detail-split-pane" v-if="detailSplitEnabled">
+                            </template>
+                            <template #pane>
                                 <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
-                            </div>
-                            </div><!-- /.stock-pool-body -->
+                            </template>
+                            </qc-detail-split>
                         </div>
                     </template>
 

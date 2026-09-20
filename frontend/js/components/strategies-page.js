@@ -169,8 +169,8 @@
                             <span class="text-sm-primary-link" @click="currentSubPage = 'consensus'">{{ t('strategies.viewAll') }} {{ filteredConsensusRank.length }}只 →</span>
                         </div>
                         <!-- V5.16 (F2): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
-                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                        <qc-detail-split :enabled="detailSplitEnabled">
+                        <template #list>
                         <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
                         <!-- V6.9.3 (F1): 启用共识徽章/进度条/价格列, 移除冗余「N 策略」extra -->
                         <qc-stock-list
@@ -187,12 +187,11 @@
                             <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估"><qc-icon name="bot" :size="13" /></span>
                           </template>
                         </qc-stock-list>
-                        </div><!-- /.detail-split-list -->
-                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
-                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                        </template>
+                        <template #pane>
                             <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
-                        </div>
-                        </div><!-- /.detail-split-wrap -->
+                        </template>
+                        </qc-detail-split>
                     </div>
 
                     </div>
@@ -444,8 +443,8 @@
                             <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
                         </div>
                         <!-- V5.16 (F4): 中栏指数列表 + 右栏指数详情工作区 (C4-A; 弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
-                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                        <qc-detail-split :enabled="detailSplitEnabled">
+                        <template #list>
                         <div class="market-grid" :class="{ 'is-vertical': detailSplitEnabled }">
                             <div v-for="idx in marketData.indices" :key="idx.id" class="market-card clickable"
                                  :class="['up-down-' + (idx.pct_chg >= 0 ? 'up' : 'down'), { 'is-active': detailSplitEnabled && indexDetail && indexDetail.code === idx.code }]"
@@ -462,12 +461,11 @@
                                 </div>
                             </div>
                         </div>
-                        </div><!-- /.detail-split-list -->
-                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
-                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                        </template>
+                        <template #pane>
                             <qc-index-detail-dialog :embedded="true"></qc-index-detail-dialog>
-                        </div>
-                        </div><!-- /.detail-split-wrap -->
+                        </template>
+                        </qc-detail-split>
                     </div>
                     </div>
                     <!-- 子页: 策略共识榜 -->
@@ -477,8 +475,8 @@
                     <div class="card">
                         <div class="card-title"><qc-icon name="trophy" :size="14" /> 策略共识度排行 (多策略同时选中)</div>
                         <!-- V5.16 (F3): 中栏列表 + 右栏详情工作区 (弹窗模式时仅列表全宽) -->
-                        <div class="detail-split-wrap" data-split-root :class="{ 'detail-split': detailSplitEnabled }">
-                        <div class="detail-split-list" :class="{ 'w-100': !detailSplitEnabled }">
+                        <qc-detail-split :enabled="detailSplitEnabled">
+                        <template #list>
                         <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + 共识徽章/进度条/价格列) -->
                         <qc-stock-list
                           class="h-calc-240"
@@ -498,12 +496,11 @@
                             <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线"><qc-icon name="trending-up" :size="13" /></span>
                           </template>
                         </qc-stock-list>
-                        </div><!-- /.detail-split-list -->
-                        <div class="split-divider" data-split-resize v-if="detailSplitEnabled"></div>
-                        <div class="detail-split-pane" v-if="detailSplitEnabled">
+                        </template>
+                        <template #pane>
                             <qc-stock-detail-dialog :embedded="true"></qc-stock-detail-dialog>
-                        </div>
-                        </div><!-- /.detail-split-wrap -->
+                        </template>
+                        </qc-detail-split>
                     </div>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->

@@ -40,6 +40,8 @@ import SubNavV6 from './components/SubNav.vue'
 import MobileNavV6 from './components/MobileNav.vue'
 // V6.2 (PRD-6.2 F5): 通用股票列表组件
 import StockListV6 from './components/common/StockList.vue'
+// V5.19 (F1): 通用双栏壳组件 (中栏列表 + 右栏详情工作区)
+import DetailSplitV6 from './components/common/DetailSplit.vue'
 // V6.3 (PRD-6.3 F4): toptab 形态 — Header 顶部二级横向标签
 import TopTabsV6 from './components/TopTabs.vue'
 // V6.5 (PRD-6.5 F5): AppIcon 全局注册 — JS 模板(弹窗/页面组件)可直接用 <qc-icon>
@@ -51,6 +53,7 @@ window.__quantComponents.Header = HeaderV6
 window.__quantComponents.SubNav = SubNavV6
 window.__quantComponents.MobileNav = MobileNavV6
 window.__quantComponents.StockList = StockListV6
+window.__quantComponents.DetailSplit = DetailSplitV6
 window.__quantComponents.TopTabs = TopTabsV6
 window.__quantComponents.AppIcon = AppIconV6
 import '../js/components/global-header.js'
