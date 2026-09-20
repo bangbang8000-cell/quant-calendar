@@ -51,6 +51,14 @@
 - 信息不丢失，但视觉分量与「AI 评估分」明确区分；<code>score_data</code> 缺失时整块不渲染。
 - 新增 i18n 键 <code>detail.ruleScore</code> / <code>detail.notEvaluated</code>（zh-CN / zh-TW / en / ja / ko 五包齐全，**每键单独一行** —— tests/test_i18n.py 按行提取键名）。
 
+### 2.6 选股评分块 → 与「入池历史」行同款整宽圆角矩形（V5.22.1，用户追加）
+- 评分块从渐变表头移入内容区顶部，与 <code>.detail-pool-row</code> 同级；容器规格逐项对齐：
+  内容区 100% 宽 / <code>--bg-tertiary</code> 底 / <code>--qc-radius-small</code> 圆角 / 1px 描边 /
+  <code>8px 12px</code> 内边距 / <code>12px</code> 下间距。
+- <code>.detail-score-inline</code>（表头内嵌小胶囊）→ <code>.detail-score-row</code>；保留 pulse 动画与 +N/-N 浮标（行内收窄偏移，不再溢出）。
+- **实测（dev 与 ops 一致）**: 评分行 **660px** = 入池历史行 **660px**；背景 <code>rgb(241,245,249)</code>、
+  圆角 <code>6px</code>、描边 <code>1px rgb(217,222,232)</code>、内边距 <code>8px/12px</code> 全部相同。
+
 ## 三、验证
 
 | 项 | 方法 | 结果 |
@@ -60,7 +68,8 @@
 | 3 | 计算样式读取 | date 16px、meta 13px（复盘看板 15 条日期卡片） |
 | 4 | 读取色块 left/width 与时间清单文本 | gaps 全 0；清单含「阶段 + 起止月 + 时长」 |
 | 5 | 截图 + DOM 断言 | 圆形徽标消失，行内分值正常 |
-| 回归 | pytest -m "not e2e" | **9 failed / 3339 passed / 2 skipped** —— 与修改前基线一致（9 项均为既有失败：bundle 预算、既有对比度/硬编码色/token 类） |
+| 6 | Playwright 量测评分行 / 入池历史行几何（dev + ops） | 两行同宽 660px，背景/圆角/描边/内边距逐项相同 |
+| 回归 | pytest -m "not e2e"（最终） | **9 failed / 3341 passed / 2 skipped** —— 与修改前基线一致（9 项均为既有失败：bundle 预算、既有对比度/硬编码色/token 类） |
 | 数据 | merrill 相关 4 个测试文件 | 79 passed |
 | 契约 | test_v69x3_ui_opts / test_v69x4_ui_fixes（版本号） | 28 passed（APP_VERSION 5.10.1） |
 
