@@ -86,7 +86,9 @@
 
                 // v3.0: 美林时钟模块 - 从 merrill.js 加载
                 const merrill = useMerrillClock();
-                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh } = merrill;
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
+                    // V5.21: 评估轨迹 (快照) — 周期演进板的"随大模型评估更新"数据源
+                    merrillSnapshots, merrillSnapshotsTotal, fetchMerrillSnapshots } = merrill;
 
                 // V6.1 (PRD-6.1 F4): 图标系统统一 — 移除 emoji/ink/edge/crystal 四套冗余映射 (原 js/icons.js)
                 // 图标仅经 AppIcon.vue (lucide) 渲染, 菜单数据只保留 iconName
@@ -1257,7 +1259,8 @@ const allMenuDefs = [
                     // V6.9.3 (F6.2): 主题面板全局共享状态
                     themeHues, themeHueNames, themeHue, themeMode, hueColor, hueName,
 
-                    marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
+                    marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
+                    merrillSnapshots, merrillSnapshotsTotal, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,

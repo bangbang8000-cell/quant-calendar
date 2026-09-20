@@ -64,11 +64,21 @@ def test_timeline_current_emphasis():
 
 
 def test_timeline_interactions():
-    """TC-5.15.24: 轮次折叠 / 阶段色图例 / 回到最新"""
+    """TC-5.15.24 — V5.21 契约变更 (用户反馈"绘制不美观")。
+
+    旧「蛇形时间轴」的交互 (轮次折叠 / 阶段色图例 / 回到最新) 已随模板整体退役,
+    由新「周期演进板」替代。新交互契约:
+      ① 阶段块点击 → 打开阶段详情报告 (showTimelineStage)
+      ② 周期带 / 阶段矩阵 视图切换 (mcHistView)
+      ③ 评估轨迹: 随大模型评估与时间演进更新 (mcTrailRuns)
+      ④ 当前阶段实时进度/剩余/成熟度 (mcProgStyle / mcEndRange)
+    """
     src = _read_f("js/components/strategies-page.js")
-    assert "collapsedCycles" in src or "toggleCycle" in src, "应支持轮次折叠"
-    assert "tl-legend" in src, "应含阶段色图例"
-    assert "tl-back-latest" in src or "回到最新" in src, "应含「回到最新」"
+    assert "mc-board" in src, "应含新「周期演进板」"
+    assert "showTimelineStage" in src, "阶段块应可点击查看阶段详情"
+    assert "mcHistView" in src, "应支持 周期带 / 阶段矩阵 视图切换"
+    assert "mcTrailRuns" in src, "应含评估轨迹 (随大模型评估与时间演进更新)"
+    assert "mcProgStyle" in src and "mcCurrentBand" in src, "应含实时进度与本轮演进带"
 
 
 def test_timeline_responsive():

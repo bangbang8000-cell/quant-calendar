@@ -252,28 +252,113 @@
                             {{ merrillData.description }}
                         </div>
 
-                        <!-- 时间 + 进度 -->
-                        <div class="gold-note-box" v-if="merrillData.timing">
-                            <div class="flex-between-base-mb6">
-                                <span class="color-secondary"><qc-icon name="calendar" :size="14" /> {{ merrillData.timing.current_stage_start_date || '—' }}</span>
-                                <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
-                                <span class="strategy-badge" v-if="merrillData.timing.maturity" :style="{color: merrillData.color}">{{ merrillData.timing.maturity }}</span>
+                        <!-- V5.21: 周期演进板 — 随大模型评估与时间演进动态更新 (替代原 金框 + 历史周期时间轴) -->
+                        <div class="mc-board">
+                            <!-- ① 当前阶段 · 进行中 (时间演进: 进度/剩余/成熟度实时刷新) -->
+                            <div class="mc-now" v-if="merrillData.timing">
+                                <div class="mc-now-head">
+                                    <span class="mc-now-dot" :style="{background: merrillData.color || 'var(--color-success)'}"></span>
+                                    <span class="mc-now-name">{{ merrillData.stage_cn || merrillData.name }}</span>
+                                    <span class="mc-now-badge">{{ merrillData.timing.maturity || '—' }}</span>
+                                    <span class="mc-conf" v-if="merrillData.confidence">置信度 {{ merrillData.confidence.level }}</span>
+                                    <span class="mc-eval-ts" v-if="merrillClockLastUpdated">上次评估 {{ merrillClockLastUpdated }}</span>
+                                </div>
+                                <div class="mc-prog">
+                                    <div class="mc-prog-track">
+                                        <div class="mc-prog-fill" :style="mcProgStyle"></div>
+                                        <div class="mc-prog-avg" :style="{left: mcAvgMark + '%'}" title="历史平均时长刻度"></div>
+                                    </div>
+                                    <div class="mc-prog-meta">
+                                        <span>已过 <b>{{ merrillData.timing.duration_days }}</b> 天</span>
+                                        <span>进度 <b>{{ fmtNum(merrillData.timing.progress_percent) }}%</b></span>
+                                        <span v-if="merrillData.timing.days_remaining">预计还需 <b>{{ merrillData.timing.days_remaining }}</b> 天</span>
+                                        <span class="mc-avg-note">历史均值 {{ fmtNum(merrillData.timing.avg_duration_months) }} 月</span>
+                                    </div>
+                                </div>
+                                <div class="mc-now-foot">
+                                    <div class="mc-next" v-if="merrillData.next_stage_prediction">
+                                        <span class="mc-next-lab">下一阶段</span>
+                                        <span class="mc-next-name">→ {{ merrillData.next_stage_prediction.next_stage_name }}</span>
+                                        <span class="mc-next-prob">{{ fmtNum(merrillData.next_stage_prediction.transition_probability * 100) }}%</span>
+                                        <span class="mc-next-sig" v-if="(merrillData.next_stage_prediction.transition_signals || []).length">触发信号: {{ (merrillData.next_stage_prediction.transition_signals || []).join(' · ') }}</span>
+                                    </div>
+                                    <div class="mc-end" v-if="mcEndRange"><span class="mc-end-lab">预计结束</span>{{ mcEndRange }}</div>
+                                </div>
+                                <!-- 评估轨迹 (快照: 同一阶段多次评估会连成一段, 阶段切换则出现断点) -->
+                                <div class="mc-trail" v-if="mcTrailRuns.length">
+                                    <span class="mc-trail-lab">评估轨迹</span>
+                                    <span v-for="(run, i) in mcTrailRuns" :key="i" class="mc-trail-run" :class="{ 'is-latest': i === mcTrailRuns.length - 1 }" :title="run.first + ' → ' + run.last">
+                                        <span class="mc-trail-dot" :style="{background: getTimelineStageColor(run.stage)}"></span>{{ run.name }} ×{{ run.count }}
+                                    </span>
+                                    <span class="mc-trail-note">近 {{ merrillSnapshotsTotal || merrillSnapshots.length }} 次评估{{ mcTrailRuns.length > 1 ? ' · 阶段有变更' : ' · 阶段稳定' }}</span>
+                                </div>
                             </div>
-                            <div class="flex-between-xs-mb7">
-                                <span>已过 {{ merrillData.timing.duration_days }}天 · 剩余 {{ merrillData.timing.days_remaining || '—' }}天</span>
-                                <span class="text-warning-semibold" v-if="merrillData.next_stage_prediction?.transition_probability> 0.2">
-                                    →{{ merrillData.next_stage_prediction.next_stage_name }} {{ (merrillData.next_stage_prediction.transition_probability*100).toFixed(2) }}%
-                                </span>
-                                <span v-else>均值 {{ fmtNum(merrillData.timing.avg_duration_months) }}月</span>
+
+                            <!-- ② 本轮演进带: 实色=已发生, 斜纹=预测; 当前段宽度随时间生长 -->
+                            <div class="mc-band-block" v-if="mcCurrentBand.segs.length">
+                                <div class="mc-band-title">
+                                    <qc-icon name="activity" :size="14" /> 本轮演进
+                                    <span class="mc-band-hint">实色=已发生 · 斜纹=预测 · 宽度∝真实时长</span>
+                                </div>
+                                <div class="mc-band">
+                                    <div v-for="(g, i) in mcCurrentBand.segs" :key="i" class="mc-seg"
+                                         :class="{ 'is-ghost': g.ghost, 'is-cur': g.live }" :style="mcSegStyle(g)"
+                                         @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
+                                        <span class="mc-seg-name" v-if="g.width > 9">{{ g.name }}</span>
+                                        <span class="mc-seg-months" v-if="g.width > 17 && g.months">{{ fmtNum(g.months) }}月</span>
+                                    </div>
+                                </div>
+                                <div class="mc-band-axis">
+                                    <span>{{ mcCurrentBand.axisStart }}</span>
+                                    <span class="mc-band-axis-now" v-if="mcCurrentBand.nowPct != null" :style="{left: mcCurrentBand.nowPct + '%'}">今天</span>
+                                    <span>{{ mcCurrentBand.axisEnd }}</span>
+                                </div>
                             </div>
-                            <div class="progress-track-8">
-                                <!-- V6.6: 超期渐变插值（实时色→warning），保留内联 -->
-                                <div class="progress-fill-4" :style="{width: Math.min(100, merrillData.timing.progress_percent || 0) + '%', background: (merrillData.timing.progress_percent || 0)> 100 ? 'linear-gradient(90deg, ' + (merrillData.color || 'var(--color-success)') + ', var(--color-warning))' : (merrillData.color || 'var(--color-success)')}"></div>
+
+                            <!-- ③ 历史周期: 已确认, 低强调; 可切「阶段矩阵」做跨周期比较 -->
+                            <div class="mc-hist-block" v-if="mcHistoryBands.length">
+                                <div class="mc-hist-head">
+                                    <span class="mc-hist-title"><qc-icon name="history" :size="14" /> 历史周期</span>
+                                    <span class="mc-hist-sub">近 {{ mcHistoryBands.length }} 轮 · 点击色块看阶段详情</span>
+                                    <el-radio-group v-model="mcHistView" size="small">
+                                        <el-radio-button value="band">周期带</el-radio-button>
+                                        <el-radio-button value="matrix">阶段矩阵</el-radio-button>
+                                    </el-radio-group>
+                                </div>
+                                <template v-if="mcHistView === 'band'">
+                                    <div v-for="(cyc, i) in mcHistoryBands" :key="i" class="mc-hrow">
+                                        <div class="mc-hlab">{{ cyc.label }}<small>{{ cyc.years }}</small></div>
+                                        <div class="mc-band mc-band-sm">
+                                            <div v-for="(g, j) in cyc.segs" :key="j" class="mc-seg" :style="mcSegStyle(g)"
+                                                 @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
+                                                <span class="mc-seg-name" v-if="g.width > 12">{{ g.name }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <table v-else class="mc-mx">
+                                    <thead>
+                                        <tr>
+                                            <th class="mc-mx-lab">周期</th>
+                                            <th v-for="k in mcStageKeys" :key="k">
+                                                <span class="mc-mx-dot" :style="{background: getTimelineStageColor(k)}"></span>{{ getTimelineStageName(k) }}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(row, i) in mcMatrix" :key="i">
+                                            <td class="mc-mx-lab">{{ row.label }}</td>
+                                            <td v-for="k in mcStageKeys" :key="k">
+                                                <span v-if="row.sum[k]" class="mc-mx-cell" :class="{ 'is-cur': row.cur === k }" :style="mcMxCellStyle(k, row.sum[k])">{{ fmtNum(row.sum[k]) }} 月</span>
+                                                <span v-else class="mc-mx-cell is-zero">—</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="flex-between-xs-mt4">
-                                <span>{{ merrillData.timing.progress_percent || 0 }}%<template v-if="(merrillData.timing.progress_percent || 0) > 100"> ⚠超期</template></span>
-                                <span v-if="merrillData.timing.predicted_end">预计结束 {{ merrillData.timing.predicted_end.base || merrillData.timing.predicted_end }}</span>
-                            </div>
+
+                            <div class="merrill-timeline-empty" v-if="!mcCurrentBand.segs.length && !timelineLoading">暂无历史周期数据</div>
+                            <div class="merrill-timeline-empty" v-else-if="!mcCurrentBand.segs.length && timelineLoading">加载中...</div>
                         </div>
 
                         <!-- 多维度评分 -->
@@ -310,116 +395,6 @@
                             <qc-icon name="lightbulb" :size="14" /> 点击阶段卡片查看详细分析和投资建议
                         </div>
 
-                        <!-- v3.22-I4 + V4.0.1: 历史周期时间轴(最近4轮, 历史在上/最新在下, 蛇形连线, hover介绍) -->
-                        <div class="merrill-timeline-block">
-                            <div class="merrill-timeline-head">
-                                <span><qc-icon name="history" :size="14" /> 历史周期时间轴</span>
-                                <span class="merrill-timeline-sub" v-if="merrillTimeline?.cycles?.length">最近 {{ merrillTimeline.cycles.length }} 轮 · 自上而下 历史→最新 · 悬浮阶段看介绍</span>
-                                <span class="merrill-timeline-sub" v-else-if="timelineLoading">加载中...</span>
-                                <button class="tl-back-latest" v-if="merrillTimeline?.cycles?.length" @click="scrollToLatest" title="滚动到最新周期">回到最新 ⤓</button>
-                            </div>
-                            <!-- V5.15 (F3): 阶段色图例 -->
-                            <div class="tl-legend" v-if="tlLegendStages.length">
-                                <span class="tl-legend-title">阶段图例</span>
-                                <span v-for="ls in tlLegendStages" :key="ls.key" class="tl-legend-item">
-                                    <span class="tl-legend-dot" :style="{ background: ls.color }"></span>{{ ls.name }}
-                                </span>
-                                <span class="tl-legend-hint">· 点击轮标签折叠/展开 · 点击阶段看详情</span>
-                            </div>
-                            <div class="merrill-timeline" v-if="merrillTimeline?.cycles?.length">
-                                <div class="tl-spine">
-                                    <div class="tl-spine-arrow tl-top">▲ 历史</div>
-                                    <div class="tl-cycle" v-for="(cycle, ci) in merrillTimeline.cycles" :key="ci"
-                                        :class="{ 'is-collapsed': isCycleCollapsed(ci) }">
-                                        <div class="tl-cycle-node"><span class="tl-cycle-node-dot"></span></div>
-                                        <div class="tl-cycle-body">
-                                            <div class="tl-cycle-label" @click="toggleCycle(ci)" role="button" tabindex="0"
-                                                @keydown.enter.prevent="toggleCycle(ci)" @keydown.space.prevent="toggleCycle(ci)">
-                                                <span class="tl-cycle-toggle">{{ isCycleCollapsed(ci) ? '▸' : '▾' }}</span>
-                                                {{ cycle.label }}<span class="tl-cycle-years" v-if="tlCycleYears(cycle)"> · {{ tlCycleYears(cycle) }}</span>
-                                            </div>
-                                            <div v-show="!isCycleCollapsed(ci)" class="tl-stage-rows" :style="{height: (cycle.stages.length > 4 ? 100 : 52) + 'px'}">
-                                                <template v-for="(row, ri) in timelineRows(cycle.stages)" :key="ri">
-                                                    <div class="tl-stage-row" :class="ri === 0 ? 'tl-row-top' : 'tl-row-bottom'">
-                                                        <div v-for="(st, si) in row" :key="si"
-                                                             class="merrill-stage-chip"
-                                                             :class="{ 'is-current': st.is_current }"
-                                                             :style="tlChipStyle(st.stage)"
-                                                             @click.prevent="showTimelineStage(st.stage, $event)"
-                                                             @mouseenter="setTlHover(ci + '-' + ri + '-' + si)"
-                                                             @mouseleave="clearTlHover()">
-                                                            <!-- V6.6: getTimelineStageColor() 函数计算色，保留内联 -->
-                                                            <span class="tl-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
-                                                            <span class="merrill-stage-chip-name">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
-                                                            <span class="merrill-stage-chip-date" v-if="st.start">{{ st.start.slice(0,4) }}<template v-if="st.end">–{{ st.end.slice(0,4) }}</template></span>
-                                                            <span class="merrill-stage-chip-current" v-if="st.is_current">当前</span>
-                                                            <div class="tl-tip" v-if="tlHoverKey === (ci + '-' + ri + '-' + si)">
-                                                                <div class="tl-tip-head">
-                                                                    <span class="tl-tip-dot" :style="{background: getTimelineStageColor(st.stage)}"></span>
-                                                                    <span class="tl-tip-title">{{ st.name || getTimelineStageName(st.stage) || st.stage }}</span>
-                                                                    <span class="tl-tip-current" v-if="st.is_current">当前</span>
-                                                                </div>
-                                                                <div class="tl-tip-meta">
-                                                                    <span v-if="tlTipYears(st)">{{ tlTipYears(st) }}</span>
-                                                                    <template v-if="st.duration_months"><span class="tl-tip-sep">·</span><span>约 {{ Math.round(st.duration_months) }} 个月</span></template>
-                                                                    <template v-if="st.is_current && merrillData?.timing?.duration_days != null">
-                                                                        <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
-                                                                    </template>
-                                                                </div>
-                                                                <div class="tl-tip-brief" v-if="st.is_current && tlCurrentBrief()">{{ tlCurrentBrief() }}</div>
-                                                                <div class="tl-tip-brief" v-else-if="!st.is_current && tlTipBrief(st)">{{ tlTipBrief(st) }}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                                <svg v-if="cycle.stages.length > 1" class="tl-connector" :viewBox="tlPathFor(ci).vb" preserveAspectRatio="none" aria-hidden="true">
-                                                    <path :d="tlPathFor(ci).d" class="tl-line" :class="{ 'is-active': tlHoverKey && String(tlHoverKey).indexOf(ci + '-') === 0 }" />
-                                                </svg>
-                                            </div>
-                                            <!-- V4.0.5-D: 甘特式连续时间条 (按时长比例分段着色, 展示各阶段时间占比) -->
-                                            <div class="tl-gantt" v-if="cycle.stages.length > 1 && !isCycleCollapsed(ci)">
-                                                <div v-for="(st, gi) in cycle.stages" :key="gi" class="tl-gantt-seg" :style="tlGanttStyle(st, cycle.stages, gi)"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tl-spine-arrow tl-bottom">▼ 最新</div>
-                                </div>
-                            </div>
-                            <!-- V4.8 (R1): 时间轴小阶段点击紧凑弹窗 — 仅展示该阶段独有信息 -->
-                            <div class="tl-click-pop" v-if="tlClickVisible && tlClickStage" :style="tlClickPosStyle" @click.self="closeTlClick">
-                                <div class="tl-click-card" role="dialog" aria-label="阶段详情">
-                                    <button class="tl-click-close" @click="closeTlClick" aria-label="关闭">✕</button>
-                                    <div class="tl-click-head">
-                                        <span class="tl-tip-dot" :style="{background: getTimelineStageColor(tlClickStage.stage)}"></span>
-                                        <span class="tl-click-title">{{ tlClickStage.name || getTimelineStageName(tlClickStage.stage) || tlClickStage.stage }}</span>
-                                        <span class="tl-tip-current" v-if="tlClickStage.is_current">当前</span>
-                                    </div>
-                                    <div class="tl-click-meta">
-                                        <span v-if="tlClickStage.start">{{ String(tlClickStage.start).slice(0,4) }}<template v-if="tlClickStage.end">–{{ String(tlClickStage.end).slice(0,4) }}</template><template v-else>–至今</template></span>
-                                        <template v-if="tlClickStage.duration_months"><span class="tl-tip-sep">·</span><span>约 {{ Math.round(tlClickStage.duration_months) }} 个月</span></template>
-                                        <template v-if="tlClickStage.is_current && merrillData?.timing?.duration_days != null">
-                                            <span class="tl-tip-sep">·</span><span>已 {{ merrillData.timing.duration_days }} 天<template v-if="merrillData.timing.days_remaining != null"> / 剩 {{ merrillData.timing.days_remaining }} 天</template></span>
-                                        </template>
-                                    </div>
-                                    <div class="tl-click-brief" v-if="tlClickStage.essence">{{ tlClickStage.essence }}</div>
-                                    <div class="tl-click-trigger" v-if="tlClickStage.trigger && !tlClickStage.is_current">
-                                        <span class="tl-click-label">触发</span>{{ tlClickStage.trigger }}
-                                    </div>
-                                    <div class="tl-click-trigger" v-else-if="tlClickStage.is_current && tlCurrentBrief()">
-                                        <span class="tl-click-label">实时</span>{{ tlCurrentBrief() }}
-                                    </div>
-                                    <div class="tl-click-indicators" v-if="tlClickStage.key_indicators && Object.keys(tlClickStage.key_indicators).length">
-                                        <span v-for="(v, k) in tlClickStage.key_indicators" :key="k" class="tl-click-ind-card">
-                                            {{ k === 'gdp_growth' ? 'GDP' : k === 'cpi' ? 'CPI' : k === 'pmi' ? 'PMI' : k === 'ppi' ? 'PPI' : k === 'm2_growth' ? 'M2' : k }} {{ v }}%
-                                        </span>
-                                    </div>
-                                    <div class="tl-click-highlight" v-if="tlClickStage.highlight">
-                                        <span class="tl-click-label">亮点</span>{{ tlClickStage.highlight }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="merrill-timeline-empty" v-else-if="!timelineLoading">暂无历史周期数据</div>
-                        </div>
                     </div>
                     </div>
                     
@@ -1124,6 +1099,9 @@
 
       // 测量每轮 chip 真实中心点 → 生成精确连接线 (行1 左→右, 跨行竖下, 行2 右→左)
       function buildTlPaths() {
+        // V5.21: 旧「历史周期时间轴」模板已由「周期演进板」替代, 连线测量随之废弃。
+        // 容器不存在时直接返回, 避免空查询与无谓的 reactive 写入 (原实现依赖 .tl-cycle/.tl-stage-rows)。
+        if (!document.querySelector('.merrill-timeline-block')) return;
         try {
           const cycles = document.querySelectorAll('.merrill-timeline .tl-cycle');
           cycles.forEach((c, ci) => {
@@ -1194,11 +1172,13 @@
         _tlRebuildTimer = setTimeout(() => { _tlRebuildTimer = null; Vue.nextTick(buildTlPaths); }, delay || 120);
       }
       Vue.onMounted(() => {
+        // V5.21: 旧时间轴已移除 → 连线重测与「全 body MutationObserver」一并停用。
+        // (原实现对 document.body 做 subtree 观察, 任何 DOM 变化都会排一次重建, 属纯耗损)
+        if (!document.querySelector('.merrill-timeline-block')) return;
         scheduleTlRebuild(0);
-        scheduleTlRebuild(800);   // 数据可能后到: 兜底重测
+        scheduleTlRebuild(800);
         _tlResizeHandler = () => scheduleTlRebuild(150);
         window.addEventListener('resize', _tlResizeHandler);
-        // DOM 变化(时间轴数据渲染/布局变化) → debounce 重测, 不依赖 Vue watch 时序
         _tlObserver = new MutationObserver(() => scheduleTlRebuild(120));
         _tlObserver.observe(document.body || document.documentElement, { childList: true, subtree: true });
       });
@@ -1416,11 +1396,174 @@
         }
       }, { immediate: true });
 
+      // ===== V5.21: 周期演进板 (Living Cycle Board) =====
+      // 设计要点: ①当前阶段=进行中 (进度/剩余/成熟度随时间为实时值) ②本轮带: 实色=已发生 /
+      //          斜纹=预测, 当前段宽度随进度"生长" ③历史周期压缩 (可切阶段矩阵) ④评估轨迹:
+      //          快照按阶段压缩成连续段, 阶段切换即出现第二段 => "大模型评估修订"可见
+      const mcHistView = Vue.ref('band');
+      const MC_STAGE_KEYS = ['recession', 'recovery', 'overheating', 'stagflation'];
+      function _mcYm(s) {
+        if (!s) return null;
+        const p = String(s).split('-');
+        const y = parseInt(p[0], 10), m = parseInt(p[1] || '1', 10);
+        if (!isFinite(y)) return null;
+        return y + (m - 1) / 12;
+      }
+      function _mcYmStr(v) {
+        const y = Math.floor(v);
+        let m = Math.round((v - y) * 12) + 1;
+        if (m > 12) m = 12;
+        if (m < 1) m = 1;
+        return y + '-' + (m < 10 ? '0' + m : '' + m);
+      }
+      function _mcTiming() {
+        return (state.merrillData && state.merrillData.value && state.merrillData.value.timing) || {};
+      }
+      function _mcColor() {
+        return (state.merrillData && state.merrillData.value && state.merrillData.value.color) || 'var(--color-success)';
+      }
+      // 生成一条时间比例带: 当前阶段拆成 实色(已过) + 斜纹(预测剩余), 可选再接下一阶段预测
+      function _mcBand(stages, withNext) {
+        const tm = _mcTiming();
+        const avg = Number(tm.avg_duration_months) || 0;
+        const prog = Math.min(100, Number(tm.progress_percent) || 0);
+        const curStart = _mcYm(tm.current_stage_start_date);
+        const segs = [];
+        (stages || []).forEach(function (s) {
+          const t0 = _mcYm(s.start);
+          if (t0 == null) return;
+          const isCur = !!(s.is_current || (curStart != null && t0 === curStart && !s.duration_months));
+          if (isCur && avg > 0) {
+            const elapsed = avg / 12 * prog / 100;
+            segs.push({ stage: s.stage, name: s.name || getTimelineStageName(s.stage), t0: t0,
+                        t1: t0 + Math.max(elapsed, 0.04), live: true, months: avg * prog / 100 });
+            const remain = avg / 12 - elapsed;
+            if (remain > 0.04) {
+              segs.push({ stage: s.stage, name: '剩余(预测)', t0: t0 + elapsed, t1: t0 + avg / 12, ghost: true });
+            }
+          } else {
+            const dur = (Number(s.duration_months) || 0) / 12;
+            const t1 = dur > 0 ? t0 + dur : (_mcYm(s.end) || t0 + 0.25);
+            segs.push({ stage: s.stage, name: s.name || getTimelineStageName(s.stage), t0: t0,
+                        t1: Math.max(t1, t0 + 0.06), months: s.duration_months, live: isCur });
+          }
+          if (isCur && withNext && segs.length) {
+            const np = state.merrillData && state.merrillData.value && state.merrillData.value.next_stage_prediction;
+            if (np && avg > 0) {
+              const tail = segs[segs.length - 1].t1;
+              segs.push({ stage: np.next_stage, name: (np.next_stage_name || '下一阶段') + ' (预测)',
+                          t0: tail, t1: tail + avg / 12, ghost: true, prob: np.transition_probability });
+            }
+          }
+        });
+        if (!segs.length) return { segs: [], axisStart: '', axisEnd: '', nowPct: null };
+        const min = Math.min.apply(null, segs.map(function (x) { return x.t0; }));
+        let max = Math.max.apply(null, segs.map(function (x) { return x.t1; }));
+        if (!(max > min)) max = min + 1;
+        const out = segs.map(function (x) {
+          return { stage: x.stage, name: x.name, months: x.months, ghost: !!x.ghost, live: !!x.live, prob: x.prob,
+                   left: (x.t0 - min) / (max - min) * 100,
+                   width: Math.max(1.2, (x.t1 - x.t0) / (max - min) * 100) };
+        });
+        let nowPct = null;
+        if (curStart != null && curStart >= min && curStart <= max) nowPct = (curStart - min) / (max - min) * 100;
+        return { segs: out, axisStart: _mcYmStr(min), axisEnd: _mcYmStr(max), nowPct: nowPct };
+      }
+      function _mcIsCurrentCycle(c) {
+        return (c.stages || []).some(function (s) { return s.is_current; });
+      }
+      const mcCurrentBand = Vue.computed(function () {
+        const cycles = (state.merrillTimeline && state.merrillTimeline.value && state.merrillTimeline.value.cycles) || [];
+        if (!cycles.length) return { segs: [], axisStart: '', axisEnd: '', nowPct: null };
+        let cur = null;
+        for (let i = cycles.length - 1; i >= 0; i--) { if (_mcIsCurrentCycle(cycles[i])) { cur = cycles[i]; break; } }
+        if (!cur) cur = cycles[cycles.length - 1];
+        return _mcBand(cur.stages, true);
+      });
+      const mcHistoryBands = Vue.computed(function () {
+        const cycles = (state.merrillTimeline && state.merrillTimeline.value && state.merrillTimeline.value.cycles) || [];
+        return cycles.filter(function (c) { return !_mcIsCurrentCycle(c); }).map(function (c) {
+          return { label: c.label, years: tlCycleYears(c), segs: _mcBand(c.stages, false).segs };
+        });
+      });
+      const mcStageKeys = MC_STAGE_KEYS;
+      const mcMatrix = Vue.computed(function () {
+        const cycles = (state.merrillTimeline && state.merrillTimeline.value && state.merrillTimeline.value.cycles) || [];
+        return cycles.map(function (c) {
+          const sum = {};
+          MC_STAGE_KEYS.forEach(function (k) { sum[k] = 0; });
+          let cur = null;
+          (c.stages || []).forEach(function (s) {
+            if (sum[s.stage] != null) sum[s.stage] += (Number(s.duration_months) || 0);
+            if (s.is_current) cur = s.stage;
+          });
+          return { label: c.label, sum: sum, cur: cur };
+        });
+      });
+      const mcMaxMonths = Vue.computed(function () {
+        let m = 0;
+        mcMatrix.value.forEach(function (r) { MC_STAGE_KEYS.forEach(function (k) { if (r.sum[k] > m) m = r.sum[k]; }); });
+        return m || 1;
+      });
+      const mcTrailRuns = Vue.computed(function () {
+        const items = (state.merrillSnapshots && state.merrillSnapshots.value) || [];
+        const runs = [];
+        items.forEach(function (it) {
+          const last = runs[runs.length - 1];
+          if (last && last.stage === it.stage) { last.count++; last.last = it.timestamp; }
+          else runs.push({ stage: it.stage, name: it.stage_name || getTimelineStageName(it.stage), count: 1, first: it.timestamp, last: it.timestamp });
+        });
+        return runs;
+      });
+      const mcProgScale = Vue.computed(function () {
+        return Math.max(100, Math.min(200, Number(_mcTiming().progress_percent) || 0));
+      });
+      const mcProgStyle = Vue.computed(function () {
+        const p = Number(_mcTiming().progress_percent) || 0;
+        return {
+          width: Math.max(0, Math.min(100, p / mcProgScale.value * 100)) + '%',
+          background: p > 100 ? 'linear-gradient(90deg, ' + _mcColor() + ', var(--color-warning))' : _mcColor()
+        };
+      });
+      const mcAvgMark = Vue.computed(function () { return 100 / mcProgScale.value * 100; });
+      const mcEndRange = Vue.computed(function () {
+        const pe = _mcTiming().predicted_end;
+        if (!pe) return '';
+        if (typeof pe === 'string') return pe;
+        const lo = pe.optimistic || pe.earliest || '';
+        const hi = pe.pessimistic || pe.latest || '';
+        if (lo && hi) return lo + ' ~ ' + hi;
+        return pe.base || pe.mid || lo || hi || '';
+      });
+      function mcSegStyle(g) {
+        const c = getTimelineStageColor(g.stage) || 'var(--color-primary)';
+        if (g.ghost) {
+          return { left: g.left + '%', width: g.width + '%', borderColor: c, color: 'var(--text-secondary)',
+                   background: 'repeating-linear-gradient(45deg, ' + c + '44, ' + c + '44 5px, transparent 5px, transparent 10px)' };
+        }
+        return { left: g.left + '%', width: g.width + '%', background: c };
+      }
+      function mcSegTitle(g) {
+        const parts = [g.name];
+        if (g.months) parts.push('约 ' + Math.round(g.months) + ' 个月');
+        if (g.ghost) parts.push('预测(尚未发生)');
+        if (g.prob != null) parts.push('转移概率 ' + (g.prob * 100).toFixed(0) + '%');
+        return parts.join(' · ');
+      }
+      function mcMxCellStyle(k, v) {
+        const c = getTimelineStageColor(k) || 'var(--color-primary)';
+        const p = Math.max(0.28, v / mcMaxMonths.value);
+        return { background: c, opacity: (0.45 + 0.55 * p).toFixed(2) };
+      }
+
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, todaySignals, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
         timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
         tlHoverKey, setTlHover, clearTlHover,
         collapsedCycles, isCycleCollapsed, toggleCycle, scrollToLatest, tlLegendStages,
+        // V5.21: 周期演进板
+        mcHistView, mcCurrentBand, mcHistoryBands, mcStageKeys, mcMatrix, mcTrailRuns,
+        mcProgStyle, mcAvgMark, mcEndRange, mcSegStyle, mcSegTitle, mcMxCellStyle,
         tlClickStage, tlClickVisible, closeTlClick,
         tlClickPosStyle,
         merrillTimeline, timelineLoading, showTimelineStage,

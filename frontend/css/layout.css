@@ -1267,3 +1267,93 @@ body.qc-split-resizing * {
   }
 }
 
+/* ===== V5.21: 美林时钟「周期演进板」(Living Cycle Board) =====
+   替代原「金框 + 历史周期时间轴」。表达三层确定性:
+   实色=已发生 · 斜纹=预测(尚未发生) · 当前段宽度随实时进度"生长"
+   动态来源: ① merrillData.timing 随时间刷新(进度/剩余/成熟度) ② 大模型重评估后
+   stage/confidence/next_stage_prediction 变化即重渲染 ③ 评估轨迹来自快照, 阶段切换出断点
+   规范: 间距一律落在 4px 网格; 过渡统一 0.2s ease-out */
+.mc-board { display: flex; flex-direction: column; gap: var(--qc-space-3); margin-top: var(--qc-space-3); }
+
+/* ① 当前阶段 · 进行中 */
+.mc-now {
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--qc-radius-medium);
+  background: var(--surface);
+  padding: var(--qc-space-3) var(--qc-space-4);
+}
+.mc-now-head { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; margin-bottom: var(--qc-space-2); }
+.mc-now-dot { width: 8px; height: 8px; border-radius: var(--qc-radius-full); flex-shrink: 0; }
+.mc-now-name { font-size: var(--qc-font-size-md); font-weight: var(--font-semibold); color: var(--text-primary); }
+.mc-now-badge {
+  font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold);
+  color: var(--color-primary); background: var(--bg-tertiary);
+  border: 1px solid var(--border-light); border-radius: var(--qc-radius-full);
+  padding: var(--qc-space-1) var(--qc-space-2);
+}
+.mc-conf { font-size: var(--qc-font-size-xs); color: var(--color-success); }
+.mc-eval-ts { margin-left: auto; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+
+.mc-prog-track { position: relative; height: 8px; border-radius: var(--qc-radius-full); background: var(--bg-tertiary); overflow: hidden; }
+.mc-prog-fill { height: 100%; border-radius: var(--qc-radius-full); transition: width 0.2s ease-out, background 0.2s ease-out; }
+.mc-prog-avg { position: absolute; top: 0; bottom: 0; width: 4px; background: var(--text-tertiary); opacity: 0.55; }
+.mc-prog-meta { display: flex; gap: var(--qc-space-3); flex-wrap: wrap; margin-top: var(--qc-space-2); font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
+.mc-prog-meta b { color: var(--text-primary); }
+.mc-avg-note { margin-left: auto; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+
+.mc-now-foot { display: flex; gap: var(--qc-space-4); flex-wrap: wrap; align-items: center; margin-top: var(--qc-space-2); padding-top: var(--qc-space-2); border-top: 1px dashed var(--border-light); }
+.mc-next { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; font-size: var(--qc-font-size-sm); }
+.mc-next-lab { color: var(--text-tertiary); font-size: var(--qc-font-size-xs); }
+.mc-next-name { font-weight: var(--font-semibold); color: var(--text-primary); }
+.mc-next-prob { font-weight: var(--font-semibold); color: var(--color-warning); }
+.mc-next-sig { flex-basis: 100%; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.mc-end { font-size: var(--qc-font-size-sm); color: var(--text-secondary); margin-left: auto; }
+.mc-end-lab { color: var(--text-tertiary); font-size: var(--qc-font-size-xs); margin-right: var(--qc-space-1); }
+
+/* ④ 评估轨迹 (快照: 阶段切换可见) */
+.mc-trail { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; margin-top: var(--qc-space-2); font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.mc-trail-lab { font-weight: var(--font-semibold); color: var(--text-secondary); }
+.mc-trail-run { display: inline-flex; align-items: center; gap: var(--qc-space-1); padding: var(--qc-space-1) var(--qc-space-2); border: 1px solid var(--border-light); border-radius: var(--qc-radius-full); color: var(--text-secondary); }
+.mc-trail-run.is-latest { border-color: var(--color-primary); color: var(--text-primary); }
+.mc-trail-dot { width: 8px; height: 8px; border-radius: var(--qc-radius-full); flex-shrink: 0; }
+.mc-trail-note { margin-left: auto; }
+
+/* ②③ 周期带 */
+.mc-band-block, .mc-hist-block { border: 1px solid var(--border-color); border-radius: var(--qc-radius-medium); background: var(--surface); padding: var(--qc-space-3) var(--qc-space-4); }
+.mc-band-title, .mc-hist-head { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; margin-bottom: var(--qc-space-2); font-weight: var(--font-semibold); color: var(--text-primary); font-size: var(--qc-font-size-sm); }
+.mc-band-hint, .mc-hist-sub { font-weight: var(--font-normal); font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.mc-hist-head .el-radio-group { margin-left: auto; }
+.mc-band { position: relative; height: 32px; border-radius: var(--qc-radius-small); background: var(--bg-tertiary); overflow: hidden; }
+.mc-band-sm { height: 24px; }
+.mc-seg { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; gap: var(--qc-space-2); padding: 0 var(--qc-space-2); overflow: hidden; white-space: nowrap; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--white); cursor: pointer; transition: filter 0.2s ease-out, box-shadow 0.2s ease-out; }
+.mc-seg:hover { filter: brightness(1.08); box-shadow: 0 4px 12px var(--qc-shadow-sm); z-index: 3; }
+.mc-seg.is-ghost { font-weight: var(--font-normal); }
+.mc-seg.is-cur { box-shadow: inset 0 0 0 4px var(--color-primary); z-index: 2; }
+.mc-seg-name { overflow: hidden; text-overflow: ellipsis; }
+.mc-seg-months { opacity: 0.85; font-weight: var(--font-normal); }
+.mc-band-axis { position: relative; display: flex; justify-content: space-between; margin-top: var(--qc-space-1); font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.mc-band-axis-now { position: absolute; transform: translateX(-50%); color: var(--color-primary); font-weight: var(--font-semibold); }
+
+.mc-hrow { display: flex; align-items: center; gap: var(--qc-space-3); padding: var(--qc-space-1) 0; }
+.mc-hlab { flex: 0 0 96px; font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--text-secondary); }
+.mc-hlab small { display: block; font-weight: var(--font-normal); color: var(--text-tertiary); }
+.mc-hrow .mc-band { flex: 1; }
+
+/* ③ 阶段矩阵 (跨周期比较) */
+.mc-mx { width: 100%; border-collapse: collapse; font-size: var(--qc-font-size-sm); }
+.mc-mx th, .mc-mx td { padding: var(--qc-space-2); text-align: center; border-bottom: 1px solid var(--border-light); }
+.mc-mx th { font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold); color: var(--text-secondary); }
+.mc-mx-lab { text-align: left !important; font-weight: var(--font-semibold); color: var(--text-primary); white-space: nowrap; }
+.mc-mx-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--qc-radius-full); margin-right: var(--qc-space-1); vertical-align: middle; }
+.mc-mx-cell { display: inline-block; min-width: 56px; padding: var(--qc-space-1) var(--qc-space-2); border-radius: var(--qc-radius-small); font-weight: var(--font-semibold); color: var(--white); }
+.mc-mx-cell.is-zero { background: transparent !important; color: var(--text-tertiary); font-weight: var(--font-normal); opacity: 1 !important; }
+.mc-mx-cell.is-cur { box-shadow: 0 0 0 4px var(--surface), 0 0 0 8px var(--color-primary); }
+
+/* 窄屏: 隐藏次要说明, 标签收窄 */
+@media (max-width: 1024px) {
+  .mc-band-hint, .mc-hist-sub { display: none; }
+  .mc-hlab { flex: 0 0 72px; }
+  .mc-end { margin-left: 0; }
+  .mc-eval-ts { margin-left: 0; flex-basis: 100%; }
+}

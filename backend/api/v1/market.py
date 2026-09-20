@@ -84,6 +84,43 @@ async def get_merrill_timeline():
         return {"success": False, "message": str(exc)}
 
 
+@router.get("/merrill-clock/snapshots")
+async def get_merrill_snapshots(limit: int = 30):
+    """V5.21: 美林时钟「评估轨迹」— 最近 N 次评估快照 (只读)。
+
+    用途: 让前端体现"展示随大模型/规则评估与时间演进动态更新":
+    同一阶段的多次评估会留下轨迹, 阶段切换时轨迹上会出现断点(修订可见)。
+    数据源 = data/merrill_snapshots.json (升序列表, 取尾部 N 条)。
+    """
+    try:
+        import json
+        import os
+        from paths import MERRILL_SNAPSHOT_FILE
+        if not os.path.exists(MERRILL_SNAPSHOT_FILE):
+            return {"success": True, "data": {"items": [], "total": 0}}
+        with open(MERRILL_SNAPSHOT_FILE, "r", encoding="utf-8") as f:
+            snaps = json.load(f)
+        if not isinstance(snaps, list):
+            snaps = []
+        n = max(1, min(int(limit or 30), 200))
+        # 文件由 _save_snapshot 以 insert(0) 写入 => 新→旧; 取最新 n 条后翻转为旧→新,
+        # 便于前端按时间顺序渲染「评估轨迹」
+        snaps = list(reversed(snaps[:n]))
+        items = []
+        for s in snaps:
+            conf = s.get("confidence") or {}
+            items.append({
+                "timestamp": s.get("timestamp") or "",
+                "stage": s.get("stage") or "",
+                "stage_name": s.get("stage_name") or "",
+                "confidence_level": conf.get("level") if isinstance(conf, dict) else None,
+                "weighted_score": conf.get("weighted_score") if isinstance(conf, dict) else None,
+            })
+        return {"success": True, "data": {"items": items, "total": len(snaps)}}
+    except Exception as exc:
+        return {"success": False, "message": str(exc)}
+
+
 @router.post("/merrill-clock/reevaluate")
 async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
     """强制重评估美林时钟（忽略缓存）"""

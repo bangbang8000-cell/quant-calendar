@@ -65,6 +65,9 @@
     const merrillDetailData = ref({});
     // v3.22-I4: 历史周期时间轴
     const merrillTimeline = ref({ cycles: [] });
+    // V5.21: 评估轨迹 (最近 N 次评估快照) — 体现「随大模型评估动态更新」
+    const merrillSnapshots = ref([]);
+    const merrillSnapshotsTotal = ref(0);
     const timelineLoading = ref(false);
     const merrillClockConfig = ref({ autoRefresh: true, refreshInterval: 300 });
     const merrillClockLastUpdated = ref('');
@@ -240,6 +243,8 @@
     async function loadMerrillTimeline() {
       timelineLoading.value = true;
       try {
+        // V5.21: 评估轨迹与时间轴同批加载 (两者共同表达"周期演进")
+        fetchMerrillSnapshots();
         const res = await fetch('/api/market/merrill-clock/timeline');
         const data = await res.json();
         if (data.success && data.data) {
@@ -257,6 +262,20 @@
     // v3.22-I4: 点击时间轴阶段 → 复用阶段详情弹窗
     async function showTimelineStage(stage) {
       await showStageDetail(stage);
+    }
+
+    // V5.21: 拉取评估轨迹 (非关键路径, 失败静默不影响主视图)
+    async function fetchMerrillSnapshots() {
+      try {
+        const res = await fetch('/api/market/merrill-clock/snapshots?limit=30');
+        const data = await res.json();
+        if (data && data.success && data.data) {
+          merrillSnapshots.value = data.data.items || [];
+          merrillSnapshotsTotal.value = data.data.total || 0;
+        }
+      } catch (e) {
+        console.warn('获取美林时钟评估轨迹失败');
+      }
     }
 
     async function fetchMerrillClock() {
@@ -413,6 +432,9 @@
       merrillDetailData,
       // v3.22-I4: 历史周期时间轴
       merrillTimeline,
+      merrillSnapshots,
+      merrillSnapshotsTotal,
+      fetchMerrillSnapshots,
       timelineLoading,
       merrillClockConfig,
       merrillClockLastUpdated,

@@ -18,15 +18,13 @@ def _layout():
 
 
 def test_timeline_popup_anchored_to_click_v482fix():
-    """点击阶段 chip 后弹窗锚定该 chip (右侧合适位置), 而非固定时间轴下方"""
+    """V5.21 契约变更: 旧「点击 chip 弹出锚定浮层」已随蛇形时间轴整体退役。
+
+    新「周期演进板」改为点击阶段块**直接打开阶段详情报告** (showStageDetail),
+    不再需要锚点定位, 故原 4 条断言 (传 $event / tlClickPosStyle / 绝对定位) 失去对象。
+    本用例改为守护新契约。
+    """
     s = _strat()
-    # 1) click 传事件目标
-    assert re.search(r'@click\.prevent="showTimelineStage\(st\.stage, \$event\)"', s), \
-        "模板 click 未传 $event, 无法计算锚点位置"
-    # 2) 弹窗绑定位置样式
-    assert ':style="tlClickPosStyle"' in s, '弹窗未绑定 tlClickPosStyle'
-    # 3) setup 暴露位置计算
-    assert "tlClickPosStyle" in s, "setup 未暴露 tlClickPosStyle"
-    # 4) CSS 绝对定位
-    m = re.search(r"\.tl-click-pop \{[\s\S]*?\}", _layout())
-    assert m and "position: absolute" in m.group(0), ".tl-click-pop 未改为绝对定位"
+    assert "showTimelineStage" in s, "阶段块应绑定 showTimelineStage (点击看阶段详情)"
+    assert "mc-board" in s, "应为「周期演进板」实现"
+    assert "mcHistView" in s, "应含 周期带/阶段矩阵 视图切换"
