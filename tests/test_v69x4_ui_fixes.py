@@ -179,4 +179,4 @@ def test_select_no_legacy_width_classes():
 
 def test_version_bumped_694():
     """T32: APP_VERSION 提升 (V5.15: 5.5.0 → 5.6.0 → ... → V5.19: 5.9.0 → V5.20: 5.10.0)"""
-    assert 'APP_VERSION = "5.12.0"' in _read_b("main_new.py"), "APP_VERSION 应为 5.12.0"
+    assert 'APP_VERSION = "5.12.1"' in _read_b("main_new.py"), "APP_VERSION 应为 5.12.1"

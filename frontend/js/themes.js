@@ -73,6 +73,92 @@
     return Math.round(hi * 10) / 10;
   }
 
+  // ===== V5.12.1 (UX-7): 中性族随色相联动 =====
+  // 问题: [data-theme=gold] / :root 里的 13 个「表面/描边/文字中性」令牌是硬编码暖色
+  //   (hsl 36~48°), themes.js 只联动品牌色 —— 换到蓝/绿/紫等色相后画布、卡片头、表头、
+  //   标签底、悬浮态、金描边仍是米黄, 与冷色主色冲突。
+  // 解法: 中性能量梯度按「同色相 + 低饱和」生成 (明度沿用原值), 于是
+  //   - 金色(hue=45) 仍是暖米色, 只是黄味略降;
+  //   - 蓝/绿/紫/红/粉 得到各自色相的中性面, 不再有米黄框。
+  // 语义色底 (--badge-success/info/warning-bg) 不参与联动 —— 它们承载语义, 与色相无关。
+  function _neutralRamp(hue, mode) {
+    var out = {};
+    if (mode === 'light') {
+      out['--qc-neutral-50']  = hsl(hue, 18, 98);
+      out['--qc-neutral-100'] = hsl(hue, 16, 95);
+      out['--qc-neutral-200'] = hsl(hue, 14, 90);
+      out['--qc-neutral-300'] = hsl(hue, 12, 83);
+      out['--qc-neutral-400'] = hsl(hue, 10, 68);
+      out['--qc-neutral-500'] = hsl(hue, 10, 53);
+      out['--qc-neutral-600'] = hsl(hue, 10, 40);
+      out['--qc-neutral-700'] = hsl(hue, 10, 30);
+      out['--qc-neutral-800'] = hsl(hue, 10, 20);
+      out['--qc-neutral-900'] = hsl(hue, 10, 12);
+      out['--qc-background'] = hsl(hue, 18, 98);
+      out['--qc-muted'] = hsl(hue, 16, 95);
+      out['--qc-border'] = hsl(hue, 14, 88);
+      out['--qc-input'] = hsl(hue, 14, 88);
+      out['--qc-foreground'] = hsl(hue, 10, 12);
+      out['--qc-muted-foreground'] = hsl(hue, 9, 38);
+      out['--qc-nav-item-default'] = hsl(hue, 9, 38);
+      out['--qc-nav-item-hover'] = hsl(hue, 10, 12);
+      out['--qc-nav-group-label'] = hsl(hue, 9, 40);
+      out['--qc-nav-bg'] = '#ffffff';
+      out['--bg-page'] = hsl(hue, 20, 97);
+      out['--bg-stripe'] = hsl(hue, 20, 97);
+      out['--bg-card-header'] = hsl(hue, 24, 96);
+      out['--card-gradient-header'] = 'linear-gradient(135deg, ' + hsl(hue, 24, 96) + ' 0%, #ffffff 100%)';
+      out['--bg-dialog-header'] = 'linear-gradient(135deg, ' + hsl(hue, 24, 96) + ' 0%, #ffffff 100%)';
+      out['--bg-hover'] = hsl(hue, 26, 94);
+      out['--bg-tertiary'] = hsl(hue, 14, 93);
+      out['--badge-gold-bg'] = hsl(hue, 26, 96);
+      out['--gold-bg'] = hsl(hue, 20, 97);
+      out['--border-light'] = hsl(hue, 22, 89);
+      out['--border-base'] = hsl(hue, 24, 79);
+      out['--border-color'] = hsl(hue, 14, 88);
+      out['--text-primary'] = hsl(hue, 12, 12);
+      out['--text-secondary'] = hsl(hue, 12, 32);
+      out['--text-tertiary'] = hsl(hue, 14, 40);
+      out['--text-disabled'] = hsl(hue, 9, 58);
+      // 与暗色分支保持键集一致 (applyTheme 只覆盖不清理, 缺键会导致跨模式残留)
+      out['--qc-card'] = '#ffffff';
+      out['--qc-popover'] = '#ffffff';
+      out['--qc-card-foreground'] = hsl(hue, 10, 12);
+      out['--qc-popover-foreground'] = hsl(hue, 10, 12);
+      out['--qc-nav-border'] = hsl(hue, 14, 88);
+      out['--qc-nav-item-hover-bg'] = hsl(hue, 16, 95);
+      out['--qc-overlay'] = 'rgba(31, 29, 26, 0.5)';
+      out['--bg-card'] = '#ffffff';
+      out['--bg-sidebar'] = '#ffffff';
+      out['--surface'] = '#ffffff';
+      out['--border-heavy'] = hsl(hue, 22, 72);
+    } else {
+      // 暗色: 保留「接近黑」的海军蓝基调, 仅按色相做 8~12% 极低饱和倾斜 (原为固定 #0b1220/#101a2e)
+      out['--qc-background'] = hsl(hue, 10, 8);
+      out['--qc-card'] = hsl(hue, 11, 11);
+      out['--qc-popover'] = hsl(hue, 11, 11);
+      out['--qc-muted'] = hsl(hue, 12, 14);
+      out['--qc-border'] = hsl(hue, 13, 22);
+      out['--qc-input'] = hsl(hue, 13, 22);
+      out['--qc-nav-bg'] = hsl(hue, 10, 9);
+      out['--qc-nav-border'] = hsl(hue, 13, 22);
+      out['--qc-nav-item-hover-bg'] = hsl(hue, 12, 14);
+      out['--bg-page'] = hsl(hue, 10, 8);
+      out['--bg-card'] = hsl(hue, 11, 11);
+      out['--bg-card-header'] = hsl(hue, 12, 14);
+      out['--bg-stripe'] = hsl(hue, 10, 9);
+      out['--bg-hover'] = hsl(hue, 12, 14);
+      out['--bg-tertiary'] = hsl(hue, 12, 14);
+      out['--bg-sidebar'] = hsl(hue, 10, 8);
+      out['--border-light'] = hsl(hue, 13, 18);
+      out['--border-base'] = hsl(hue, 14, 26);
+      out['--border-heavy'] = hsl(hue, 16, 38);
+      out['--border-color'] = hsl(hue, 13, 22);
+      out['--surface'] = hsl(hue, 11, 11);
+    }
+    return out;
+  }
+
   // ===== V5.30: 品牌渐变对比度求解 (P0-3) =====
   // 16+4 处渐变元素 (页签激活态/持仓天数/编号徽标/进度条/AI 悬浮球等) 在亮色下用白字、暗色下用深字。
   // 固定目标对比度反解**该色相允许的最亮档**, 保证渐变最浅的一档仍达标 (暖色可深、冷色自动留浅),
@@ -95,17 +181,21 @@
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
   function generateLightTokens(hue) {
     const rgb = hslToRgb(hue, 75, 42);
+    // V5.12.1: 中性面/描边/文字中性随色相 (见 _neutralRamp)
     // V5.30: 渐变三档对白字均 >= GRAD_TARGET (原最浅档仅 2.74:1, 14px 白字不达 AA)
     const gL = _gradL(hue, 68, _gradFgWhite, 14, 62, true);
     const gL2 = Math.max(12, gL - 5);
     const gL1 = Math.max(10, gL - 11);
     // V5.31: 品牌文字/实底 —— 文字色对白底 4.8:1, 实底色对白字 >=4.6:1 (原 --primary-color hsl(h,75,42) 仅 2.88:1)
-    const _mut = [247, 244, 238];
-    const txtL = _gradL(hue, 78, _mut, 10, 58, true, 4.6);   // 对淡底求解 (页面/表格头 #f7f4ee 也达标)
-    const navL = _gradL(hue, 80, _mut, 10, 58, true, 4.6);
+    const _mut = hslToRgb(hue, 16, 95).split(',').map(function (x) { return parseInt(x, 10); });
+    const _navActiveBg = hslToRgb(hue, 85, 92).split(',').map(function (x) { return parseInt(x, 10); });
+    const txtL = _gradL(hue, 78, _mut, 10, 58, true, 4.6);   // 对淡底求解 (页面/表格头也达标)
+    // V5.12.1: 导航激活文字落在「激活底色 hsl(hue,85,92)」上 (比 muted 更暗), 必须对它求解
+    const navL = _gradL(hue, 80, _navActiveBg, 10, 58, true, 4.6);
     // V5.31: 实底色 = 原 32% 与「对白字达标的最亮值」取小 —— 绿/青等亮色相在原 32% 仅 3.99:1, 自动压深
     const solidL = Math.min(32, _gradL(hue, 80, _gradFgWhite, 8, 60, true, 4.6));   // 实底实际用 80% 饱和度, 需按同一饱和度求解
     return {
+      ..._neutralRamp(hue, 'light'),
       '--primary-color': hsl(hue, 75, 42),
       '--primary-rgb': rgb,
       '--color-primary': hsl(hue, 75, 42),
@@ -160,6 +250,7 @@
   // 暗色模式 token (覆盖在 themes.css [data-theme=dark-pro] 基底之上, 同色相高亮)
   function generateDarkTokens(hue) {
     const rgb = hslToRgb(hue, 85, 65);
+    // V5.12.1: 暗色中性面同样按色相做极低饱和倾斜
     // V5.30: 暗色渐变对深字 (--bg-page) 均 >= GRAD_TARGET (原暗端仅 1.72-4.47:1)
     const dL = _gradL(hue, 80, _gradFgDark, 30, 92, false);
     const dL2 = Math.min(94, dL + 8);
@@ -168,6 +259,7 @@
     const navD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
     const txtD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
     return {
+      ..._neutralRamp(hue, 'dark'),
       '--primary-color': hsl(hue, 85, 65),
       '--primary-rgb': rgb,
       '--color-primary': hsl(hue, 85, 65),
@@ -218,6 +310,9 @@
     };
   }
 
+  // V5.12.1: 记录上一次由 applyTheme 写入的内联变量, 用于切换时清理残留
+  var _appliedKeys = [];
+
   function prefersDark() {
     return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
@@ -247,7 +342,15 @@
     root.setAttribute('data-theme', isDark ? 'dark-pro' : 'gold');
     root.setAttribute('data-theme-mode', isDark ? 'dark' : 'light');
     const tokens = isDark ? generateDarkTokens(h) : generateLightTokens(h);
-    Object.keys(tokens).forEach(function (k) { root.style.setProperty(k, tokens[k]); });
+    // V5.12.1 (关键修复): 应用前先清掉「上一次写入但本次不再提供」的内联变量。
+    // 否则明↔暗或不同色相切换时, 上一套的 inline 变量会残留 (实测: 亮色下卡片/头部变暗、
+    // 暗色下侧栏文字变深色, 全站对比度崩塌)。
+    var keys = Object.keys(tokens);
+    for (var _i = 0; _i < _appliedKeys.length; _i++) {
+      if (keys.indexOf(_appliedKeys[_i]) === -1) root.style.removeProperty(_appliedKeys[_i]);
+    }
+    keys.forEach(function (k) { root.style.setProperty(k, tokens[k]); });
+    _appliedKeys = keys;
     try {
       localStorage.setItem('quant_theme_mode', isDark ? 'dark' : 'light');
       localStorage.setItem('quant_theme_hue', String(h));
