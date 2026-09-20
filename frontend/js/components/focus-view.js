@@ -124,13 +124,8 @@
                 <span class="focus-row-tier"><el-tag :type="tagType(row.action)" size="small">{{ row.action }}</el-tag></span>
                 <span class="focus-row-score">评分 {{ fmtScore(row.total_score) }}</span>
                 <span class="focus-row-dir">{{ row.direction || '震荡' }}</span>
-                <!-- V5.15 (F5): 操作列 — 打开详情 + 展开箭头 -->
-                <span class="focus-row-actions">
-                  <!-- V5.4.1 (R3): K线详情 → 图表图标按钮 -->
-                  <el-button size="small" circle text type="primary" class="focus-row-open"
-                    @click.stop="openStockDetail(row.stock_code)"
-                    :title="'打开 ' + row.stock_code + ' 详情'"><qc-icon name="trending-up" :size="14" /></el-button>
-                </span>
+                <!-- V5.26: 行尾圆形「打开详情」按钮已移除 —— 整行点击即打开,
+                     且右栏 (qc-detail-split #pane) 默认已展示详情, 该按钮是重复入口 -->
               </div>
             </template>
             </template>

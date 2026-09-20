@@ -709,7 +709,8 @@
 /* V5.15 (F5): 行结构对齐「关注」风格 — 关键信息分列展示 (grid 列布局, 行高一致, 不再换行堆叠) */
 .focus-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto auto auto auto;
+  /* V5.26: 行尾圆形按钮移除 → 列数 6→5 (状态|名称|档位|评分|方向) */
+  grid-template-columns: 28px minmax(0, 1fr) auto auto auto;
   align-items: center;
   column-gap: var(--qc-space-3);
   row-gap: var(--qc-space-1);
@@ -758,13 +759,7 @@
   text-align: center;
   white-space: nowrap;
 }
-.focus-row-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--qc-space-1);
-  justify-content: flex-end;
-}
-.focus-row-open { margin-left: 0; }
+/* V5.26: .focus-row-actions / .focus-row-open 已随行尾圆形按钮一并移除 */
 .focus-row-toggle { color: var(--text-disabled); font-size: var(--qc-font-size-xs); }
 .focus-row-badges { margin-left: var(--qc-space-2); vertical-align: middle; }
 .focus-badge { margin-right: var(--qc-space-1); }
@@ -1110,17 +1105,17 @@
   background: var(--bg-tertiary);
 }
 /* ===== V5.19 (F6): 重点跟踪 — 双栏窄栏两行适配 =====
-   35% 中栏装不下 6 列单行 (状态|名称+徽章|档位|评分|方向|操作), 改 4 列 2 行:
-   第1行 状态 | 名称(含徽章, 允许换行) | (跨列) | 档位
-   第2行 (空) | 评分 | 方向 | 操作
+   35% 中栏装不下单行 5 列 (状态|名称+徽章|档位|评分|方向), 改 3 列 2 行:
+   第1行 状态 | 名称(含徽章, 允许换行) | 档位
+   第2行 (空) | 评分 | 方向
+   V5.26: 行尾圆形「打开详情」按钮移除后, 4 列 → 3 列 (第1行布列与原先完全一致)
    注: 焦点列表为非虚拟 v-for, 行高可变, 故无需固定 row-height */
-.detail-split .focus-row { grid-template-columns: 28px minmax(0, 1fr) auto auto; }
+.detail-split .focus-row { grid-template-columns: 28px minmax(0, 1fr) auto; }
 .detail-split .focus-row-status  { grid-row: 1; grid-column: 1; }
-.detail-split .focus-row-name    { grid-row: 1; grid-column: 2 / 4; white-space: normal; overflow: visible; text-overflow: clip; }
-.detail-split .focus-row-tier    { grid-row: 1; grid-column: 4; }
+.detail-split .focus-row-name    { grid-row: 1; grid-column: 2; white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-split .focus-row-tier    { grid-row: 1; grid-column: 3; }
 .detail-split .focus-row-score   { grid-row: 2; grid-column: 2; text-align: left; }
 .detail-split .focus-row-dir     { grid-row: 2; grid-column: 3; }
-.detail-split .focus-row-actions { grid-row: 2; grid-column: 4; }
 .detail-split .focus-row.is-active {
   border-color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 8%, var(--surface));

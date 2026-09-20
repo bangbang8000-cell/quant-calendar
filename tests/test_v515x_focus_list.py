@@ -20,9 +20,13 @@ def _read_f(rel):
 
 
 def test_focus_row_separate_columns():
-    """TC-5.15.51: 行模板含独立列容器 — 档位/评分/方向/操作"""
+    """TC-5.15.51: 行模板含独立列容器 — 状态/档位/评分/方向
+
+    V5.26 契约变更: 行尾圆形「打开详情」按钮 (focus-row-actions) 已移除 ——
+    整行点击即打开详情, 且双栏右栏默认已展开, 该按钮为重复入口。
+    """
     src = _read_f("js/components/focus-view.js")
-    for cls in ("focus-row-tier", "focus-row-score", "focus-row-dir", "focus-row-actions", "focus-row-status"):
+    for cls in ("focus-row-tier", "focus-row-score", "focus-row-dir", "focus-row-status"):
         assert cls in src, f"行模板应含独立列容器 {cls}"
 
 
@@ -46,11 +50,13 @@ def test_focus_detail_and_open_kept():
     """TC-5.15.54: 打开个股详情入口保留。
 
     V5.19 (PRD-v5.19 F6) 契约变更: 行内手风琴 (focus-detail) **已按 PRD 移除**,
-    详情改由 qc-detail-split 的右栏 #pane (qc-stock-detail-dialog :embedded) 承载;
-    故此处不再守护 focus-detail, 改为守护「显式入口 + 双栏壳」两项。
+    详情改由 qc-detail-split 的右栏 #pane (qc-stock-detail-dialog :embedded) 承载。
+    V5.26 契约变更: 行尾圆形按钮 (focus-row-open) 亦移除 —— 右栏默认已展开详情, 重复入口取消;
+    故此处守护「整行可点 + 双栏壳」。
     """
     src = _read_f("js/components/focus-view.js")
-    assert "focus-row-open" in src, "应保留打开详情按钮 (显式入口)"
+    assert "focus-row-open" not in src, "V5.26 起应移除行尾重复的圆形打开按钮"
+    assert 'class="focus-row"' in src and "openStockDetail(row.stock_code)" in src, "整行点击应仍是打开详情入口"
     assert "openStockDetail" in src, "应保留 openStockDetail 事件"
     assert "qc-detail-split" in src, "V5.19 起应以 qc-detail-split 承载 中栏列表 + 右栏详情"
 
