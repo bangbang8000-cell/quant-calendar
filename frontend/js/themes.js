@@ -85,6 +85,11 @@
       '--btn-primary-text-color': hsl(hue, 80, 32),
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 28) + ' 0%, ' + hsl(hue, 76, 34) + ' 50%, ' + hsl(hue, 70, 44) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, 34) + ' 0%, ' + hsl(hue, 85, 26) + ' 100%)',
+      // V5.27: 浅色面板 (详情金卡 / 同屏同族元素) — 浅底 + 深字, 全色相 >=4.5:1
+      //   (旧的 --gradient 是"深底白字", 最浅端白字仅 2.43~2.74:1, 已不达标)
+      //   贴近"浅一档"档位(用户选定 55%)同时保证全色相 AA: 较深 stop 定在 64% (最差色相 4.7:1)
+      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, 69) + ' 0%, ' + hsl(hue, 58, 64) + ' 100%)',
+      '--panel-fg': hsl(hue, 45, 14),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro/gold 块硬编码, 不随主题切换)
       '--qc-nav-item-active': hsl(hue, 80, 35),
       '--qc-nav-item-active-bg': hsl(hue, 85, 92),
@@ -133,6 +138,9 @@
       '--btn-primary-text-color': hsl(hue, 85, 65),
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, 35) + ' 0%, ' + hsl(hue, 85, 50) + ' 50%, ' + hsl(hue, 85, 65) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, 65) + ' 0%, ' + hsl(hue, 80, 40) + ' 100%)',
+      // V5.27: 暗色模式同样改为浅色面板 + 深字 (旧 --gradient-brand 深端深字仅 2.12~3.10:1)
+      '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, 74) + ' 0%, ' + hsl(hue, 55, 67) + ' 100%)',
+      '--panel-fg': hsl(hue, 40, 12),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro 块硬编码 #ffd166, 不随主题切换)
       '--qc-nav-item-active': hsl(hue, 85, 65),
       '--qc-nav-item-active-bg': 'rgba(' + rgb + ', 0.10)',
