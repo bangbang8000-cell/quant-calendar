@@ -424,3 +424,33 @@ P0 之后重跑全站文本对比度审计（10 页 x 明暗，逐文本节点�
 - 登录页重做（仍是整屏品牌渐变 + 两个等权主按钮）
 - 暗色主题独立设计（图表色板、密度观感）
 - 工程债：59 个死 token、228 个 !important、断点统一、毛玻璃收敛、ECharts 接入 --chart-bg / --chart-axis
+
+
+### 10.4 管理端复核（V5.31.1 ~ V5.31.4）
+
+dev 审计以**访客**身份运行，未覆盖管理端独有组件（AI 评估历史、策略研究、用户权限等）。
+在 ops 以**管理员**重测发现 **48 处 / 14 组**，按类修完并复测 **0 处**：
+
+| 轮次 | 提交 | 修掉 | 生产端复测 |
+|---|---|---|---|
+| V5.31.1 | 4c10a6e | 品牌色文字 43 处（color: var(--primary-color|--color-primary) → --primary-text）、focus-row-score/toggle/detail-line（--text-disabled 2.54:1）、stat-icon-gold（2.78:1）、EP 禁用/占位文字（2.30:1） | 48 → 23 |
+| V5.31.2 | 6fb33c8 | 语义实底按钮（浅琥珀上白字 2.15:1 / 浅红 3.19:1）改用深色底、market-chg / qc-kpi-trend / meta-val-* 涨跌文字色 | 23 → 19 |
+| V5.31.3 | 5830602 | 按钮文字随明暗取 --bg-page（暗色下实底为浅色，白字 1.67:1）、AI 归因角标（--sem-opportunity/risk）、档位色 LEVEL_COLOR、评分分布 bins | 19 → 6 |
+| V5.31.4 | 362b88f | 档位色映射（app-logic.js LEVEL_COLOR_MAP）、评分文字色、--el-color-primary 取「实底」档（EP 主色既作填充又作文字，原 hsl(h,75,42) 作文字 2.88:1） | **6 → 0** |
+
+同时更新 `tests/test_theme_walkthrough.py::test_score_distribution_uses_vars` 的契约（评分分布色由 --color-success/--el-warning/--el-danger 收敛为 --success-text/--warning-text/--danger-text，测试意图不变）。
+
+### 10.5 最终验收
+
+| 指标 | 起始（P0 前） | 最终 |
+|---|---|---|
+| 访客可见页文本对比度 < AA | 223 处 / 55 组 | **0** |
+| 管理端可见页文本对比度 < AA | 48 处 / 14 组 | **0** |
+| 品牌渐变 + 白字对比度（12 套主题） | 2.43 ~ 4.03:1 | **≥4.54:1** |
+| 新增语义令牌（6 色相 x 明暗） | — | **4.55 ~ 5.03:1** |
+| 圆角取值 | 9 种 | **4 档**（6/8/12/16）+ 胶囊/圆 |
+| 字号档位（标尺外） | 含 15px x 6 | 标尺内 |
+| 中性色族 | 暖 + 冷两族 | 单一族 |
+| 移动端头部重叠 | 搜索框 58px 被压 | **96px，无重叠** |
+| 测试 | 9 failed / 3341 passed | **9 failed / 3341 passed**（无新增，1 项契约随实现更新） |
+| 提交 | — | 08eb8aa → 4c94acb → 4c10a6e → 6fb33c8 → 5830602 → 362b88f（群辉 master 与 dev/ops 三方一致） |

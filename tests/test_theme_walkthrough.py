@@ -125,10 +125,11 @@ class TestHardcodedChartColors:
         assert "getCSSVar('--color-success')" in WATCHLIST
 
     def test_score_distribution_uses_vars(self):
-        """评分分布色改用主题变量 (暗色可用)"""
-        assert "color: 'var(--color-success)'" in WATCHLIST
-        assert 'var(--el-warning)' in WATCHLIST
-        assert "color: 'var(--el-danger)'" in WATCHLIST
+        """评分分布色改用主题变量 (暗色可用) — V5.31: 文字色收敛到语义「文字色」令牌
+        (原 --color-success/#f59e0b/--el-danger 在浅底仅 2.0~3.9:1)"""
+        assert "color: 'var(--success-text)'" in WATCHLIST
+        assert 'var(--warning-text)' in WATCHLIST
+        assert "color: 'var(--danger-text)'" in WATCHLIST
 
 
 class TestThemesJsAligned:
