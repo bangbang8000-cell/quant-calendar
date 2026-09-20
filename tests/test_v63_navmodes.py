@@ -66,7 +66,8 @@ def test_breakpoint_overrides_present():
     css = _read("css/nav.css")
     # 按 @media 分段, 找到含 data-navmode 覆盖的移动断点块
     for seg in re.split(r"@media ", css):
-        if seg.startswith("(max-width: 767px)") and "[data-navmode=\"tree\"] .main-content" in seg:
+        # V5.12.0 (FR-5.12.5.2): 断点归一 767 -> 768
+        if seg.startswith("(max-width: 768px)") and "[data-navmode=\"tree\"] .main-content" in seg:
             assert "[data-navmode=\"toptab\"] .main-content" in seg, \
                 "移动端应覆盖 toptab 左边距"
             assert "margin-left: 0;" in seg, "移动端 tree/toptab 左边距应归零"

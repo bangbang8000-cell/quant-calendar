@@ -580,6 +580,12 @@ const allMenuDefs = [
                     const h = (P && P.getPreference && P.getPreference('theme_hue'));
                     if (h != null && h !== '') themeHue.value = parseInt(h, 10);
                 })();
+                // V5.12.0 (FR-5.12.1.1): 信息密度 — 原 applyDensity() 定义了却无调用点, 三档偏好从未生效
+                const density = ref('comfortable');
+                (function () {
+                    const P = window.__quantModules && window.__quantModules.preferences;
+                    if (P && P.applyDensity) density.value = P.applyDensity() || 'comfortable';
+                })();
                 function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
                 function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
 
@@ -672,6 +678,14 @@ const allMenuDefs = [
                     changeTheme(mode, hue);
                 }
                 // V6.1: 主题色切换 (预设/自定义色相) — 保留当前模式
+                // V5.12.0 (FR-5.12.1.1/.2): 切换信息密度 — 立即应用到 <html data-density> 并持久化
+                function changeDensity(v) {
+                    const P = window.__quantModules && window.__quantModules.preferences;
+                    if (!P || !P.applyDensity) return;
+                    density.value = P.applyDensity(v) || 'comfortable';
+                    if (P.setPreference) P.setPreference('info_density', density.value);
+                }
+
                 function changeThemeHue(hue) {
                     themeHue.value = parseInt(hue, 10);  // V6.9.3: 同步全局色相 ref
                     const P = window.__quantModules && window.__quantModules.preferences;
@@ -1259,6 +1273,7 @@ const allMenuDefs = [
                     themes, currentTheme, changeTheme, changeThemeMode, changeThemeHue, handleLogout,
                     // V6.9.3 (F6.2): 主题面板全局共享状态
                     themeHues, themeHueNames, themeHue, themeMode, hueColor, hueName,
+                    density, changeDensity,
 
                     marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
                     merrillSnapshots, merrillSnapshotsTotal, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,

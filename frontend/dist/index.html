@@ -42,7 +42,7 @@
     <!-- v3.11 (FR-3.11.2): 对话框组件（逻辑移至 components/dialogs/，index 仅留挂载点） -->
     <!-- v3.17.11 (FR-3.17.11.1): App 逻辑层按域拆分 — 拆分域工厂（须早于 app-logic.js 装配） -->
     <!-- V4.3 (方案A): 构建入口 — 全部业务 JS 由 vite 打包为单一 chunk, 首屏缓存哈希破坏 -->
-<script type="module" crossorigin src="/assets/index-BpmTSehl.js"></script>
+<script type="module" crossorigin src="/assets/index-BCk9nRG5.js"></script>
 <link rel="modulepreload" crossorigin href="/assets/vendor-vue-DDF9zi1T.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-ep-VOop1zGa.js">
 <link rel="modulepreload" crossorigin href="/assets/vendor-lucide-DidEUx9K.js">
@@ -71,7 +71,9 @@
     <div id="app" v-cloak>
         <!-- 登录页 (v3.16 / 16.9: 品牌化) -->
         <div v-if="!currentUser" class="app-container login-screen">
-            <div class="card login-box">
+          <!-- V5.12.0 (FR-5.12.2): 双栏登录 — 左品牌区 + 右表单区 (窄屏品牌区折叠为顶部条) -->
+          <div class="login-shell">
+            <aside class="login-brand-pane">
                 <div class="login-brand">
                     <div class="login-icon">
                         <svg viewBox="0 0 100 100" width="40" height="40" aria-label="量化日历 logo" role="img">
@@ -90,7 +92,11 @@
                         <div class="login-subtitle">{{ t('login.subtitle') }}</div>
                     </div>
                 </div>
-                <div class="login-desc">{{ t('login.desc') }}</div>
+                <p class="login-tagline">{{ t('login.desc') }}</p>
+                <div class="login-brand-bar" aria-hidden="true"></div>
+            </aside>
+            <section class="login-form-pane">
+            <div class="card login-box">
                 <el-form @submit.prevent="handleLogin">
                     <el-form-item>
                         <el-input v-model="loginForm.username" name="username" autocomplete="username" :placeholder="t('login.username')" size="large" @keyup.enter="handleLogin">
@@ -118,11 +124,14 @@
                         </el-button>
                     </el-form-item>
                 </el-form>
-                <el-button type="primary" size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
+                <!-- V5.12.0 (FR-5.12.2.2): 访客登录降级为次要按钮 — 全页仅一个主 CTA -->
+                <el-button size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
                     {{ t('login.guest') }}
                 </el-button>
                 <div class="login-footer">{{ t('login.footer') }}</div>
             </div>
+            </section>
+          </div>
         </div>
 
         <!-- 主界面 --><template v-else>
@@ -193,7 +202,7 @@
         <!-- V5.6 (T-5.6.2): 空态/错误态通用组件 qc-empty / qc-error (按需挂载) -->
 
         <!-- v3.2.0-T13: 浮动 AI 按钮 (V5.6 T-5.6.5: 补 aria-label 可访问性) -->
-        <div class="ai-fab" v-if="!aiFabHidden" @click="openAiFab" title="AI 智能问股" role="button" tabindex="0" aria-label="打开 AI 智能问股">
+        <div class="ai-fab" v-if="!aiFabHidden && currentUser" @click="openAiFab" title="AI 智能问股" role="button" tabindex="0" aria-label="打开 AI 智能问股">
             <span class="ai-fab-icon"><qc-icon name="bot" :size="22" /></span>
         </div>
 

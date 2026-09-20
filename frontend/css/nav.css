@@ -478,7 +478,7 @@
 .qc-main-offset.sidebar-collapsed-nav { margin-left: var(--qc-sidebar-collapsed-width); }
 
 /* 响应式 */
-@media (max-width: 1279px) {
+@media (max-width: 1280px) {
   .qc-sidebar:not(.force-expanded) { width: var(--qc-sidebar-collapsed-width); padding: var(--qc-space-4) var(--qc-space-2); }
   .qc-sidebar:not(.force-expanded) .qc-sidebar-logo { justify-content: center; padding: 0; }
   .qc-sidebar:not(.force-expanded) .qc-logo-text,
@@ -489,7 +489,7 @@
   .qc-sidebar:not(.force-expanded) .qc-sidebar-children { display: none; }
   .qc-sidebar:not(.force-expanded) .qc-sidebar-item { justify-content: center; padding: 0; width: 100%; }
 }
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .qc-sidebar { display: none; }
   .qc-mobile-nav { display: flex; }
   .qc-subnav-left-nav { width: 160px; }
@@ -574,7 +574,7 @@
 }
 
 /* 平板 (768-1279): 侧边栏自动折叠为图标, 中栏仍常驻 */
-@media (max-width: 1279px) {
+@media (max-width: 1280px) {
   .qc-subnav-column { left: var(--qc-sidebar-collapsed-width); }
   .main-content,
   .main-content.expanded {
@@ -591,7 +591,7 @@
 }
 
 /* 移动 (<768): 中栏隐藏, 工作区全宽 */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .qc-subnav-column { display: none; }
   .main-content,
   .main-content.expanded {
@@ -638,7 +638,7 @@
 
 /* ─── V6.2 (PRD-6.2 F7): 断点细化 — 中栏宽度分档 ─────────── */
 /* 变量联动: 中栏宽 + 工作区 margin-left(calc) 自动生效 */
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 1024px) and (max-width: 1280px) {
   :root { --qc-subnav-width: 180px; }
 }
 @media (min-width: 768px) and (max-width: 1023px) {

@@ -15,7 +15,6 @@
   --qc-primary-600: #b8922a;
   --qc-primary-700: #8f6f1f;
   --qc-primary-800: #6d5218;
-  --qc-primary-900: #4a3710;
 
   /* ─── Neutral Scale (Warm Slate) ─── */
   --qc-neutral-0: #ffffff;
@@ -26,8 +25,6 @@
   --qc-neutral-400: #b8ae9f;
   --qc-neutral-500: #8f8679;
   --qc-neutral-600: #6b6358;
-  --qc-neutral-700: #4d473f;
-  --qc-neutral-800: #332f2a;
   --qc-neutral-900: #1f1d1a;
 
   /* ─── Semantic State Colors ─── */
@@ -38,7 +35,6 @@
   --qc-state-error: #dc2626;
   --qc-state-error-bg: #fef2f2;
   --qc-state-info: #2563eb;
-  --qc-state-info-bg: #eff6ff;
 
   /* V6.9.4 (H6): 状态别名 — components.css fallback 引用 (--qc-success 系) 与 state 系对齐 */
   --qc-success: var(--qc-state-success);
@@ -58,17 +54,13 @@
   /* ─── Market Semantics (fixed, not theme-dependent) ─── */
   --qc-market-up: #e63946;
   --qc-market-down: #2e7d32;
-  --qc-market-neutral: #64748b;
 
   /* ─── Semantic Aliases (required by head contract) ─── */
   --qc-background: var(--qc-neutral-50);
   --qc-foreground: var(--qc-neutral-900);
   --qc-card: var(--qc-neutral-0);
-  --qc-card-foreground: var(--qc-neutral-900);
   --qc-popover: var(--qc-neutral-0);
-  --qc-popover-foreground: var(--qc-neutral-900);
   --qc-primary: var(--qc-primary-600);
-  --qc-primary-foreground: var(--qc-neutral-0);
   /* V5.7.2 (UX-T1): 亮色 muted/nav-label 对比度达标 — #8f8679(3.59:1)→#7a7568(4.59:1) / #6b6358(5.91:1) */
   --qc-muted: var(--qc-neutral-100);
   /* V5.31: 原 #7a7568 在 --qc-muted(#f7f4ee) 底上仅 4.18:1 (表格头/标签大量命中) → 4.73:1 */
@@ -105,6 +97,18 @@
   /* V6.0: 抽屉/浮层遮罩 (浅色) */
   --qc-overlay: rgba(31, 29, 26, 0.5);
 
+  /* ─── V5.12.0 (FR-5.12.1): 信息密度 — 控件高度与命中区下限 ───
+     三档由 preferences.applyDensity() 写入 <html data-density>; 默认(无属性)即"标准"档。
+     标准档相对旧版只做一件事: 把 EP size=small 的 24px 控件抬到 32px (可达性下限)。 */
+  --qc-ctrl-h: 32px;        /* EP default 控件高度 (输入框/下拉/常规按钮) */
+  --qc-ctrl-h-sm: 32px;     /* EP size=small (旧值 24px) */
+  --qc-ctrl-h-lg: 40px;
+  --qc-icon-btn-size: 32px;
+  --qc-hit-min: 32px;       /* 命中区下限 (指针设备); 触控设备由媒体查询抬到 44px */
+  --el-component-size: var(--qc-ctrl-h);
+  --el-component-size-small: var(--qc-ctrl-h-sm);
+  --el-component-size-large: var(--qc-ctrl-h-lg);
+
   /* V5.30 (P0-5): 圆角收敛 — EP 默认 3/4px 统一到 6px 标尺 (原与 12/16px 卡片并存, 9 种圆角值) */
   --el-border-radius-base: 6px;
   --el-border-radius-small: 6px;
@@ -122,7 +126,6 @@
   --qc-radius-full: 9999px;
 
   /* ─── Shadows (floating layers only, static cards use border) ─── */
-  --qc-shadow-xs: 0 1px 2px rgba(31, 29, 26, 0.04);
   --qc-shadow-sm: 0 2px 8px rgba(31, 29, 26, 0.05);
   --qc-shadow-md: 0 4px 16px rgba(31, 29, 26, 0.05);
   --qc-shadow-lg: 0 8px 32px rgba(31, 29, 26, 0.05);
@@ -149,7 +152,6 @@
   --qc-font-size-md: 16px;
   --qc-font-size-lg: 18px;
   --qc-font-size-xl: 22px;
-  --qc-font-size-2xl: 28px;
   --qc-font-size-3xl: 36px;
 
   --qc-font-weight-normal: 400;
@@ -179,7 +181,6 @@
   /* ═══ Legacy Tokens (V6.0 渐进别名 → --qc-*, 值不一致者保留原值防回归) ═══ */
   /* ─── Spacing Scale ─── */
   --sp-1: var(--qc-space-1);   --sp-2: var(--qc-space-2);   --sp-3: var(--qc-space-3);  --sp-4: var(--qc-space-4);
-  --sp-5: var(--qc-space-5);   --sp-6: var(--qc-space-6);   --sp-8: var(--qc-space-8);  --sp-10: var(--qc-space-10);  --sp-12: var(--qc-space-12);
   /* ─── Border Radius ─── */
   --r-sm: var(--qc-radius-small);   --r-md: var(--qc-radius-medium);   --r-lg: var(--qc-radius-large);  --r-xl: 16px;  --r-full: var(--qc-radius-full);
 
@@ -198,7 +199,6 @@
   --font-semibold: var(--qc-font-weight-semibold);  --font-bold: var(--qc-font-weight-bold);
 
   /* ─── Typography: Line Height ─── */
-  --lh-tight: 1.2;   --lh-normal: 1.5;   --lh-relaxed: 1.8;
 
   /* ─── Shadows (保留原值防回归) ─── */
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
@@ -208,8 +208,9 @@
   /* V4.1: 全局边框强调色与 chip 固定深字 */
   --border-strong: #d9dee8;
   /* V4.8.2 (D4): ECharts 网格线/轴线令牌 (dark 由 themes.css 覆盖) */
-  --chart-split: #e2e8f0;   /* 图表网格线(弱) */
-  --chart-axis:  #cbd5e1;   /* 图表轴线(中) */
+  /* V5.12.0 (FR-5.12.4.2): 图表轴/网格随暖中性族 (原 #cbd5e1/#e2e8f0 为冷灰) */
+  --chart-split: #e7e1d6;   /* 图表网格线(弱) */
+  --chart-axis:  #b9b2a6;   /* 图表轴线(中) */
   /* V5.5 (T-5.0.54): 图表画布背景令牌 (dark 由 themes.css 覆盖) */
   --chart-bg:     #ffffff;
   --text-on-chip:  #1f2937;
@@ -225,6 +226,9 @@
   --radius-2: 10px;
   --shadow-top: 0 -4px 20px rgba(0,0,0,0.1);
 
+  /* V5.12.0: --lh-tight 已无引用故删除; --lh-normal/relaxed 仍在使用, 保留 */
+  --lh-normal: 1.5;   --lh-relaxed: 1.8;
+
   /* ─── Transitions ─── */
   --duration-fast: 150ms;
   --duration-base: 250ms;
@@ -234,7 +238,6 @@
   --easing-exit: cubic-bezier(0.36, 0, 0.66, -0.56);
   --transition-fast: var(--duration-fast) var(--easing-standard);
   --transition-base: var(--duration-base) var(--easing-standard);
-  --transition-slow: var(--duration-slow) var(--easing-standard);
   --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */
@@ -265,6 +268,9 @@
   --color-ai:      #6366f1;
   --white:         #ffffff;
 
+  /* V5.12.0 (FR-5.12.1): 密度三档 — 紧凑为"与改动前完全一致"的兜底档 */
+  /* 见文件末尾 html[data-density] 块 */
+
   /* ─── Badge / Label Colors ─── */
   --badge-success-bg:   #E8F5E9;  --badge-success-text: #2E7D32;
   --badge-warning-bg:   #FFF3E0;  --badge-warning-text: #E65100;
@@ -283,14 +289,7 @@
   /* ─── Component Tokens (V6.0: 导航布局尺寸按新规范别名) ─── */
   --sidebar-width:          var(--qc-sidebar-width);
   --sidebar-collapsed-width: var(--qc-sidebar-collapsed-width);
-  --header-height:          var(--qc-header-height);
-  --card-padding:            16px;
   --card-radius:             12px;
-  --dialog-radius:           16px;
-  --nav-item-height:         40px;
-  --mobile-nav-height:       var(--qc-mobile-nav-height);
-  --subnav-width:            var(--qc-subnav-width);
-  --content-max-width:       var(--qc-content-max-width);
 }
 
 /* V6.0.1: 删除死代码 — 原 .dark {} 块从不触发 (实际暗色由 themes.css [data-theme="dark-pro"] 驱动) */
@@ -315,3 +314,21 @@
 
 /* V4.6 (FR-4.6.3): 数字等宽 — 量化指标/涨跌幅/表格 */
 .num-tabular { font-variant-numeric: tabular-nums; }
+
+/* ═══ V5.12.0 (FR-5.12.1): 信息密度三档 ═══
+   compact  = 与 v5.11.1 完全一致 (EP 默认: small 24 / default 32)
+   standard = 默认档 — small 抬到 32px, 其余不变 (可达性下限)
+   spacious = 整体放大一档
+   触控设备 (pointer: coarse) 命中区下限一律 44px */
+html[data-density="compact"] {
+  --qc-ctrl-h: 32px; --qc-ctrl-h-sm: 24px; --qc-ctrl-h-lg: 40px;
+  --qc-icon-btn-size: 32px; --qc-hit-min: 24px;
+}
+html[data-density="spacious"] {
+  --qc-ctrl-h: 36px; --qc-ctrl-h-sm: 32px; --qc-ctrl-h-lg: 44px;
+  --qc-icon-btn-size: 36px; --qc-hit-min: 36px;
+}
+@media (pointer: coarse) {
+  /* 注意: 必须用 :root (0,1,0) — 用 html (0,0,1) 会被上方 :root 的 32px 压回去 */
+  :root { --qc-hit-min: 44px; }
+}

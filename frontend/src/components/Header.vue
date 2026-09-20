@@ -125,6 +125,14 @@ export default {
     const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320]
     const themeHue = computed(() => (state.themeHue && state.themeHue.value) || 45)
     const themeMode = computed(() => (state.themeMode && state.themeMode.value) || 'system')
+    // V5.12.0 (FR-5.12.1.2): 信息密度三档 (面板已硬编码中文标签, 此处保持一致, 不新增 i18n key)
+    const DENSITY_MODES = [
+      { k: 'compact', n: '紧凑' },
+      { k: 'comfortable', n: '标准' },
+      { k: 'spacious', n: '宽松' },
+    ]
+    const density = computed(() => (state.density && state.density.value) || 'comfortable')
+    function pickDensity(v) { if (state.changeDensity) state.changeDensity(v) }
     function hueColor(h) { return state.hueColor ? state.hueColor(h) : 'hsl(' + h + ', 75%, 42%)' }
     function hueName(h) { return state.hueName ? state.hueName(h) : (String(h)) }
     function toggleThemeMenu() { openThemeMenu.value = !openThemeMenu.value }
@@ -165,6 +173,7 @@ export default {
       // V6.9.3 (F6): 主题面板
       openThemeMenu, themeHues, themeHue, themeMode, hueColor, hueName,
       toggleThemeMenu, closeThemeMenu, pickThemeMode, pickThemeHue,
+      DENSITY_MODES, density, pickDensity,
       // V6.7.1 (PRD F-6.7.1): 导航形态快速切换
       openNavModeMenu, NAV_MODES, navModeLabel, toggleNavModeMenu, closeNavModeMenu, pickNavMode,
       // V6.2 (PRD-6.2 F6): 移动端二级下拉
@@ -288,6 +297,11 @@ export default {
           <el-slider class="qc-theme-slider" :model-value="themeHue" :min="0" :max="359" :step="1" size="small"
             @change="pickThemeHue" aria-label="自定义主题色相" />
           <div class="qc-theme-custom-label">自定义 {{ themeHue }}°</div>
+          <div class="qc-theme-section-label">信息密度</div>
+          <div class="qc-theme-modes">
+            <button v-for="d in DENSITY_MODES" :key="d.k"
+              class="qc-theme-mode" :class="{ 'is-active': density === d.k }" @click="pickDensity(d.k)">{{ d.n }}</button>
+          </div>
         </div>
       </div>
       <!-- V6.7.1 (PRD F-6.7.1): 导航形态快速切换 (桌面) -->

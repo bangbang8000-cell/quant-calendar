@@ -11,10 +11,7 @@
             /* V5.6 T-5.0.65: 模态遮罩 (onboarding 覆盖层背景) */
             --mask-bg: rgba(15, 35, 55, 0.55);
             --bg-card-header: #f8f9fa;
-            --bg-sidebar: rgba(255,255,255,0.95);
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
             --card-gradient-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
-            --bg-dialog: rgba(255,255,255,0.95);
             --bg-input: #ffffff;
             --bg-hover: #e9ecef;
             --bg-selected: rgba(37,99,235,0.05);
@@ -24,7 +21,6 @@
             --border-base: #e9ecef;
             --border-heavy: #ddd;
             /* 阴影 */
-            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.1);
             /* 渐变品牌色 */
             --gradient-brand: linear-gradient(135deg, hsl(220, 76%, 49.4%) 0%, hsl(220, 85%, 43.4%) 100%);
             /* v3.22-logo: K线折线日历 logo 品牌渐变 (与 manifest theme-color #667eea 一致) */
@@ -73,7 +69,6 @@
             --qc-card: #101a2e; --qc-card-foreground: #e6f1ff;
             --qc-popover: #101a2e; --qc-popover-foreground: #e6f1ff;
             --qc-primary: #ffd166;
-            --qc-primary-foreground: #1a1814;
             /* V6.0.1: 补全 dark-pro 金色 scale — 暗底适配 (50-300 深金底 / 400-900 亮金主色与文字) */
             --qc-primary-50: #2b2314; --qc-primary-100: #3d3422;
             --qc-primary-200: #4a3d1a; --qc-primary-300: #5c4c1e;
@@ -97,9 +92,6 @@
             --text-link: #64ffda;
             --bg-page: #0b1220; --bg-card: #101a2e;
             --bg-card-header: #16233b;
-            --bg-sidebar: rgba(11,18,32,0.98);
-            --bg-dialog-header: linear-gradient(135deg, #16233b 0%, #101a2e 100%);
-            --bg-dialog: rgba(16,26,46,0.98);
             --bg-input: #16233b; --bg-hover: #16233b;
             --bg-selected: rgba(100,255,218,0.06); --bg-stripe: #0e1728;
             --border-light: #1d2c47; --border-base: #2c4060; --border-heavy: #4f6b99;  /* V5.17.1: dark 边框对比度达标 (light 1.9/base 1.66/heavy 3.22) */  /* V5.17.1: dark 对比度 3.22 (门禁≥3.0) */
@@ -138,7 +130,6 @@
             --glass-bg: #101a2e;
             --glass-border: rgba(255, 255, 255, 0.10);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.4);
             --gradient-brand: linear-gradient(135deg, #64ffda 0%, #5e6ad2 100%);
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
@@ -226,13 +217,9 @@
             --text-link: #8b6914;
             --bg-page: #fdfaf3; --bg-card: #fff;
             --bg-card-header: #fdf8ec;
-            --bg-sidebar: rgba(255,255,255,0.95);
-            --bg-dialog-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
-            --bg-dialog: rgba(255,255,255,0.95);
             --bg-input: #fff; --bg-hover: #fef5e0;
             --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
             --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
-            --shadow-sidebar: 2px 0 20px rgba(0,0,0,0.08);
             --gradient-brand: linear-gradient(135deg, hsl(45, 76%, 28.2%) 0%, hsl(45, 85%, 22.2%) 100%);
             --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
             --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
@@ -600,8 +587,9 @@
         /* ===== 桌面端: 左侧导航栏 */
         .sidebar {
             width: 220px;
-            background: var(--bg-sidebar);
-            backdrop-filter: blur(10px);
+            /* V5.12.0 (FR-5.12.3.2, 决策 D5): 结构性表面去毛玻璃 — 实底 + 1px 边, 文字更锐利 */
+            background: var(--qc-card);
+            border-right: 1px solid var(--qc-border);
             padding: 20px 0;
             box-shadow: var(--qc-shadow-lg);
             display: flex;
@@ -713,8 +701,7 @@
             border-radius: var(--qc-radius-small);
         }
         .page-header {
-            background: var(--bg-sidebar);
-            backdrop-filter: blur(10px);
+            background: var(--qc-card);
             border-radius: var(--qc-radius-xl);
             padding: 20px 24px;
             margin-bottom: 20px;
@@ -880,17 +867,71 @@
                 border-radius: var(--qc-radius-large) !important;
             }
         }
-        /* 登录页 (v3.16 / 16.9: 品牌化) */
+        /* V5.12.0 (FR-5.12.2): 登录页重塑 — 双栏 (左品牌区 / 右表单区), 品牌渐变仅作一条细条出现 */
         .login-screen {
+            display: block;
+            padding: 0;
+            background: var(--qc-background);
+        }
+        .login-shell {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+        .login-brand-pane {
+            flex: 0 0 520px;
+            max-width: 46%;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
+            gap: var(--qc-space-5);
+            padding: 48px 56px;
+            background: var(--bg-card-header);
+            border-right: 1px solid var(--qc-border);
+        }
+        .login-brand-bar {
+            width: 96px;
+            height: 4px;
+            border-radius: var(--qc-radius-full);
+            background: var(--gradient);
+        }
+        .login-tagline {
+            font-size: var(--qc-font-size-lg);
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin: 0;
+            max-width: 380px;
+        }
+        .login-form-pane {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            padding: 32px;
         }
         .login-box {
-            max-width: 420px;
-            margin: 8vh auto;
+            width: 100%;
+            max-width: 400px;
+            margin: 0;
             padding: 32px;
             border-radius: var(--qc-radius-xl);
+        }
+        @media (max-width: 900px) {
+            .login-shell { flex-direction: column; }
+            .login-brand-pane {
+                flex: 0 0 auto;
+                max-width: none;
+                justify-content: flex-start;
+                gap: var(--qc-space-3);
+                padding: 24px 20px;
+                border-right: 0;
+                border-bottom: 1px solid var(--qc-border);
+            }
+            .login-tagline { font-size: var(--qc-font-size-base); max-width: none; }
+            .login-brand-bar { width: 64px; height: 3px; }
+            .login-form-pane { justify-content: flex-start; padding: 24px 16px 40px; }
+            .login-box { max-width: 100%; padding: 20px; }
         }
         .login-brand {
             display: flex;
@@ -925,14 +966,6 @@
             font-size: var(--qc-font-size-xs);
             color: var(--text-tertiary);
             letter-spacing: 0.5px;
-        }
-        .login-desc {
-            text-align: center;
-            font-size: var(--qc-font-size-sm);
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-light);
         }
         .login-btn {
             width: 100%;
@@ -3692,8 +3725,7 @@ text {
     margin-bottom: 20px;
 }
 .global-header {
-    background: var(--bg-sidebar);
-    backdrop-filter: blur(10px);
+    background: var(--qc-card);
     border-radius: var(--qc-radius-xl);
     padding: 0 24px;
     box-shadow: var(--qc-shadow-lg);
@@ -4777,7 +4809,7 @@ text {
 .usage-ai-bar-col:hover .usage-ai-bar { opacity: 0.9; transform: scaleY(1.03); transform-origin: bottom; }
 .usage-ai-bar-today { opacity: 1; background: linear-gradient(180deg, var(--color-primary-400), var(--color-primary-600)); }
 .usage-ai-bar-label { font-size: var(--font-2xs); color: var(--text-tertiary); margin-top: 4px; white-space: nowrap; }
-@media (max-width: 1100px) { .usage-ai-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) { .usage-ai-grid { grid-template-columns: 1fr; } }
 /* ===== 系统状态/资源监控/数据源健康 视觉统一 (v3.18.3) ===== */
 /* 系统状态概览卡: 左侧渐变强调条 + 悬停微动效 */
 .status-item { position: relative; overflow: hidden; }
@@ -4813,11 +4845,9 @@ text {
 .el-button--info:not(.is-text):not(.is-plain) { background-color: var(--info-text) !important; border-color: var(--info-text) !important; color: var(--bg-page) !important; }
 .el-button--info:not(.is-text):not(.is-plain):hover, .el-button--info:not(.is-text):not(.is-plain):focus { opacity: .85; }
 .stage-chip { padding: 4px 6px; border-radius: var(--qc-radius-small); font-size: var(--qc-font-size-xs); margin-right: 8px; background: var(--el-fill-color-light); }
-.stat-card-gold { cursor:pointer; border-left: 3px solid var(--color-gold); }
-.stat-card-info-border { border-left: 3px solid var(--el-info); }
-.stat-card-primary { cursor:pointer; border-left: 3px solid var(--color-primary); }
-.stat-card-success { cursor:pointer; border-left: 3px solid var(--el-success); }
-.stat-card-warning { cursor:pointer; border-left: 3px solid var(--el-warning); }
+/* V5.12.0 (FR-5.12.3.1): 同上 — 统计卡变体一律去彩边 (保留可点击态) */
+.stat-card-gold, .stat-card-primary, .stat-card-success, .stat-card-warning { cursor: pointer; border-left: none; }
+.stat-card-info-border { border-left: none; }
 .stat-fill-5 { height: 100%; border-radius: var(--qc-radius-small); transition: width 0.2s ease-out; }
 .stat-icon-gold { background: var(--badge-gold-bg); color: var(--primary-text); }   /* V5.31: 图标对底 2.78:1 */
 .stat-icon-info { background: var(--badge-info-bg); color: var(--primary-text); }
@@ -4950,15 +4980,14 @@ text {
 .w-90 { width: 90px; }
 .warning-banner { margin-top: 8px; padding: 8px 14px; background: linear-gradient(135deg, var(--badge-warning-bg), var(--badge-danger-bg)); border-radius: var(--qc-radius-medium); border-left: 4px solid var(--color-warning); font-size: var(--qc-font-size-base); }
 .warning-note { margin-top: 12px; padding: 8px 14px; background: var(--badge-warning-bg); border-radius: var(--qc-radius-medium); font-size: var(--qc-font-size-sm); }
-/* ===== v4.9.5: 策略总览/执行看板 — 非可点击语义色统计卡 (对齐 AI 页 stat-card-*/stat-icon-* 彩色设计语言, 随主题令牌) ===== */
-.stat-card.info { border-left: 3px solid var(--el-info); }
-.stat-card.success { border-left: 3px solid var(--el-success); }
-.stat-card.gold { border-left: 3px solid var(--color-gold); }
-.stat-card.warning { border-left: 3px solid var(--el-warning); }
-.stat-icon.info { background: var(--badge-info-bg); color: var(--info-text); }
-.stat-icon.success { background: var(--badge-success-bg); color: var(--success-text); }
-.stat-icon.gold { background: var(--badge-gold-bg); color: var(--color-gold); }
-.stat-icon.warning { background: var(--badge-warning-bg); color: var(--warning-text); }
+/* ===== V5.12.0 (FR-5.12.3.1, 决策 D4): KPI 卡去装饰性彩边 =====
+   原先 4 张卡各带一条无语义的彩色左边框 (蓝/绿/琥珀/橙), 稀释了真正的语义色信号。
+   现统一为「品牌浅底图标 + 无彩边」; 语义色只保留给涨/跌/警告/错误。 */
+.stat-card.info, .stat-card.success, .stat-card.gold, .stat-card.warning { border-left: none; }
+.stat-icon.info, .stat-icon.success, .stat-icon.gold, .stat-icon.warning {
+  background: var(--badge-gold-bg);
+  color: var(--primary-text);
+}
 /* 执行看板 各任务成功率进度条 — 状态色走 CSS 类 (仓库约定禁内联 style) */
 .progress-bar.status-ok { background: var(--color-success); }
 .progress-bar.status-warn { background: var(--color-warning); }

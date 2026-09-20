@@ -71,6 +71,19 @@
   color: var(--primary-on-solid);
 }
 
+/* V5.12.0 (FR-5.12.1.3/.4): 控件高度随密度三档 + 命中区下限
+   作用范围按决策 D2 限定: 按钮 / 输入框 / 下拉 / 数字框 / 图标按钮 / role=button,
+   表格标签与胶囊 (.el-tag/.qc-stock-tag) 不受影响。 */
+.el-button { height: var(--qc-ctrl-h); }
+.el-button--small { height: var(--qc-ctrl-h-sm); }
+.el-button--large { height: var(--qc-ctrl-h-lg); }
+.el-button,
+.el-input__wrapper,
+.el-select__wrapper,
+.el-input-number,
+.qc-icon-btn,
+[role="button"] { min-height: var(--qc-hit-min); }
+
 /* D1: 既有 .card 收敛到 DS-6.0 克制视觉 — 边框优先 + 轻阴影 (与 .qc-card 同源, 4 大高频页即得统一) */
 .card {
   border: 1px solid var(--qc-border);
@@ -302,10 +315,11 @@
 }
 .dashboard-grid .stat-trend { font-size: var(--qc-font-size-sm); font-weight: var(--qc-font-weight-medium); font-variant-numeric: tabular-nums; }
 /* 保留各状态左边界语义色 (components.css 后加载会覆盖 border 简写, 需重挂) */
-.dashboard-grid .stat-card.info    { border-left: 3px solid var(--el-info); }
-.dashboard-grid .stat-card.success { border-left: 3px solid var(--el-success); }
-.dashboard-grid .stat-card.gold    { border-left: 3px solid var(--color-gold); }
-.dashboard-grid .stat-card.warning { border-left: 3px solid var(--el-warning); }
+/* V5.12.0 (FR-5.12.3.1, 决策 D4): 原 4 条装饰性彩边 (蓝/绿/金/琥珀) 无语义, 一律移除 */
+.dashboard-grid .stat-card.info,
+.dashboard-grid .stat-card.success,
+.dashboard-grid .stat-card.gold,
+.dashboard-grid .stat-card.warning { border-left: none; }
 
 /* ─── V6.1 (PRD-6.1 F7): 统一股票列表 .qc-stock-list ─────── */
 /* 只读型卡片列表 (股票池/共识排名/涨停池等) 收敛为同一视觉语言 */

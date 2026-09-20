@@ -985,9 +985,13 @@ function registerTrendChart(el, code, records) {
         primary: getCSSVar('--qc-primary-600') || '#b8922a',
         textPrimary: getCSSVar('--text-primary') || '#1f2937',
         textSecondary: getCSSVar('--text-secondary') || '#6b7280',
-        border: getCSSVar('--border-light') || '#e5e7eb',
-        up: getCSSVar('--color-success') || '#67c23a',
-        down: getCSSVar('--color-danger') || '#f56c6c',
+        border: getCSSVar('--chart-axis') || '#b9b2a6',
+        // V5.12.0 (FR-5.12.4.2): 轴/网格走专用图表令牌 (原来借用 --border-light, 明暗层次不统一)
+        axis: getCSSVar('--chart-axis') || '#b9b2a6',
+        split: getCSSVar('--chart-split') || '#e7e1d6',
+        // V5.12.0 (FR-5.12.4): 修正为 A 股口径 (红涨绿跌) — 原用 success/danger 语义 (绿涨红跌) 与全站相反
+        up: getCSSVar('--qc-market-up') || '#e63946',
+        down: getCSSVar('--qc-market-down') || '#2e7d32',
     };
     // find significant changes (>20 pts between consecutive evals)
     const markPoints = [];
@@ -997,6 +1001,9 @@ function registerTrendChart(el, code, records) {
         }
     }
     const chart = echarts.init(el);
+    // V5.12.0 (FR-5.12.4.1): 基础 option 统一来自 getEChartsTheme() (文字/轴/网格/提示框/序列色板)
+    const _EC = window.__quantModules && window.__quantModules.echartsTheme;
+    if (_EC && typeof _EC.getEChartsTheme === 'function') chart.setOption(_EC.getEChartsTheme());
     chart.setOption({
         tooltip: { trigger: 'axis', backgroundColor: getCSSVar('--bg-card') || '#ffffff', borderColor: themeColors.border, textStyle: { color: themeColors.textPrimary }, formatter: function (params) {
             const idx = params[0]?.dataIndex;
@@ -1004,8 +1011,8 @@ function registerTrendChart(el, code, records) {
             return dates[idx] + '<br/>得分: ' + scores[idx] + (level ? ' (' + level + ')' : '');
         }},
         grid: { left: 40, right: 16, top: 16, bottom: 24 },
-        xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, rotate: 30, color: themeColors.textSecondary }, axisLine: { lineStyle: { color: themeColors.border } }, boundaryGap: false },
-        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { fontSize: 10, color: themeColors.textSecondary }, splitLine: { lineStyle: { color: themeColors.border } } },
+        xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, rotate: 30, color: themeColors.textSecondary }, axisLine: { lineStyle: { color: themeColors.axis } }, boundaryGap: false },
+        yAxis: { type: 'value', min: 0, max: 100, axisLabel: { fontSize: 10, color: themeColors.textSecondary }, splitLine: { lineStyle: { color: themeColors.split } } },
         series: [{
             data: scores, type: 'line', smooth: true,
             lineStyle: { color: themeColors.primary, width: 2 },

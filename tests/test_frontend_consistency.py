@@ -334,7 +334,9 @@ def test_login_branded():
     assert 'style="width: 100%"' not in idx.split("<!-- 登录页")[1].split("</div>")[0], \
         "登录页不应残留 inline width"
     css = _read("css/themes.css")
-    for cls in (".login-screen", ".login-brand", ".login-subtitle", ".login-desc", ".login-footer"):
+    # V5.12.0 (FR-5.12.2): 登录页改双栏 — .login-desc(整行说明) 由品牌区 .login-tagline 取代
+    for cls in (".login-screen", ".login-brand", ".login-subtitle", ".login-tagline", ".login-footer",
+                ".login-brand-pane", ".login-form-pane", ".login-brand-bar"):
         assert cls in css, f"themes.css 应定义 {cls}"
 
 

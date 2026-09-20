@@ -31,8 +31,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--qc-icon-btn-size);
+  height: var(--qc-icon-btn-size);
   border: 1px solid transparent;
   border-radius: var(--qc-radius-medium);
   background: transparent;
@@ -545,7 +545,7 @@
 .qc-theme-check { color: var(--qc-primary); }
 
 /* 移动端 */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   /* V6.2 (PRD-6.2 F3): 搜索框移动端显示并收缩 (原隐藏) */
   /* V5.30 (P0-4): 390px 实测搜索框被挤到 58px, 而内部 Ctrl+K(34px)+suffix(min-width:36px!important
      来自 themes.css) 超出容器 → 提示文案压在铃铛图标上。此处: ①给搜索区最小可用宽度

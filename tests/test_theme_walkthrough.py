@@ -122,7 +122,8 @@ class TestHardcodedChartColors:
         """趋势图轴/文字/序列色随主题"""
         assert 'themeColors.primary' in WATCHLIST
         assert 'getCSSVar(--bg-card)' in WATCHLIST or "getCSSVar('--bg-card')" in WATCHLIST
-        assert "getCSSVar('--color-success')" in WATCHLIST
+        # V5.12.0 (FR-5.12.4): 涨跌标记色改用 A 股口径语义令牌 (原 success/danger 为绿涨红跌, 与全站相反)
+        assert "getCSSVar('--qc-market-up')" in WATCHLIST and "getCSSVar('--qc-market-down')" in WATCHLIST
 
     def test_score_distribution_uses_vars(self):
         """评分分布色改用主题变量 (暗色可用) — V5.31: 文字色收敛到语义「文字色」令牌
