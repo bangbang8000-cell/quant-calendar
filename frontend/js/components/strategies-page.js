@@ -234,11 +234,8 @@
                             </div>
                         </div>
 
-                        <!-- V5.19 (F5): 中栏阶段列表 + 右栏阶段详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
-                        <qc-detail-split :enabled="detailSplitEnabled">
-                        <template #list>
-                        <!-- 四阶段网格 (双栏时竖排为列表) -->
-                        <div class="grid-2col-gap8-mb14" :class="{ 'is-vertical': detailSplitEnabled }">
+                        <!-- 四阶段网格 -->
+                        <div class="grid-2col-gap8-mb14">
                             <!-- V6.6: 阶段色来自服务端 merrillStagesConfig 配置，保留内联 -->
                             <div v-for="s in stages" :key="s.key" @click.prevent="showStageDetail(s.key)"
                                  class="merrill-stage-card" :class="{active: merrillData.stage === s.key}"
@@ -249,11 +246,6 @@
                                 <div class="merrill-stage-desc">{{ s.tagline }}</div>
                             </div>
                         </div>
-                        </template>
-                        <template #pane>
-                            <qc-merrill-detail-dialog :embedded="true"></qc-merrill-detail-dialog>
-                        </template>
-                        </qc-detail-split>
 
                         <!-- 描述 -->
                         <div class="text-center-secondary-lh" v-if="merrillData.description">
@@ -1403,9 +1395,6 @@
           top5: rank.slice(0, 5),
           rank: rank,
           indices: (mkt.indices || []).map(function (x) { return x; }),
-          // V5.19 (F5): 美林阶段 (双栏默认载入当前阶段详情)
-          stageKeys: ((state.stages && state.stages.value) || []).map(function (s) { return s.key; }),
-          curStage: (state.merrillData && state.merrillData.value && state.merrillData.value.stage) || '',
         };
       }, function (v, old) {
         if (!v.split) return;  // 仅双栏模式
@@ -1424,13 +1413,6 @@
           const cur = state.indexDetail && state.indexDetail.value && state.indexDetail.value.code;
           const inList = v.indices.some(function (x) { return x.code === cur; });
           if (!cur || !inList) { if (state.showIndexDetail) state.showIndexDetail(v.indices[0]); }
-        } else if (v.sub === 'merrill') {
-          // V5.19 (F5): 双栏进入美林时, 若右栏尚无内容则载入"当前阶段"详情 (无则首个阶段)
-          if (!v.stageKeys.length) return;
-          const loaded = !!(state.merrillDetailData && state.merrillDetailData.value && state.merrillDetailData.value.name);
-          if (loaded) return;
-          const key = v.stageKeys.indexOf(v.curStage) >= 0 ? v.curStage : v.stageKeys[0];
-          if (state.showStageDetail) state.showStageDetail(key);
         }
       }, { immediate: true });
 

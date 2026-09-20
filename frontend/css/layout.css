@@ -1086,9 +1086,6 @@
   border-color: var(--color-primary);
   background: var(--bg-tertiary);
 }
-/* V5.19 (F5): 美林时钟阶段卡 — 双栏时由 2 列网格改竖排列表 (中栏) */
-.grid-2col-gap8-mb14.is-vertical { grid-template-columns: 1fr; }
-
 /* ===== V5.19 (F6): 重点跟踪 — 双栏窄栏两行适配 =====
    35% 中栏装不下 6 列单行 (状态|名称+徽章|档位|评分|方向|操作), 改 4 列 2 行:
    第1行 状态 | 名称(含徽章, 允许换行) | (跨列) | 档位

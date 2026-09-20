@@ -10,7 +10,12 @@
               loadConsensusData, applyTheme, maybeShowTour, loadAiVendors } = ctx;
 
       // ===== 登录状态 =====
-      const loginForm = ref({ username: '', password: '' });
+      // V5.20-fix: 记住上次登录的用户名 (仅用户名, 绝不存口令) — 修复「输入用户名无法保存」
+      // 优先用 localStorage, 失败 (隐私模式/禁用存储) 时静默降级为空
+      const LOGIN_USERNAME_KEY = 'qc_login_username';
+      let _savedLoginUser = '';
+      try { _savedLoginUser = localStorage.getItem(LOGIN_USERNAME_KEY) || ''; } catch (e) { _savedLoginUser = ''; }
+      const loginForm = ref({ username: _savedLoginUser, password: '' });
       const logining = ref(false);
       const guestLogining = ref(false);  // v1.8.0: 访客登录
 
@@ -96,6 +101,8 @@
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
             applyTheme(data.user.theme || 'gold');
+            // V5.20-fix: 登录成功即记住用户名 — 下次打开登录页自动回填
+            try { localStorage.setItem(LOGIN_USERNAME_KEY, loginForm.value.username || ''); } catch (e) { /* 存储不可用则忽略 */ }
             // V4.6 修复: 登录成功立即加载 AI 厂商(提前发出, 避免与系统配置页请求排队导致延迟)
             if (typeof loadAiVendors === 'function') loadAiVendors();
             await loadUserConfig();

@@ -51,7 +51,11 @@ V5.15-v5.16 确立了「中栏列表 + 右栏详情工作区」双栏模式 (通
 - 批量工具栏保留在**双栏之上全宽** (6 个按钮置于 35% 中栏会挤)
 - 保留: ≤1024px 强制弹窗; 左滑删除 (`.swipe-reveal`) 与长按复制代码
 
-### F5: 美林时钟 → 双栏 (P0) ✅ **已完成 (2026-09-19)**
+### F5: 美林时钟 → 双栏 (P0) — ⛔ **已于 2026-09-20 回退**
+
+> **回退说明 (2026-09-20, 用户反馈)**: 用户反馈「美林时钟改中栏效果不好, 请恢复原先的样式」。已回退: 阶段卡恢复 **2 列网格**、阶段详情恢复**弹窗**、移除右栏内嵌面板与双栏自动载入分支、移除 `is-vertical` CSS。
+> `merrill-detail.js` 的 `embedded` prop **保留** (无调用方即 inert, 便于日后复用)。实测: 双栏模式下阶段网格 `565px 565px` 两列、页面无双栏根、点阶段卡弹窗 (`overlay: fixed`, `embedded: 0`)。
+> 原设计记录如下 (供参考)。
 - **E1**: `merrill-detail.js` 增 `embedded` prop + 条件绑定 (`append-to-body` / `modal` / `show-close` / `close-on-click-modal` / `lock-scroll` 全绑 `!embedded`) + `qc-embedded-dialog` 条件类 (照 `stock-detail.js` / `index-detail.js` 既有模式)
 - **中栏**: 四阶段卡 (双栏时由 2 列网格改竖排列表, 单栏时保持 2 列)
 - **右栏**: `qc-merrill-detail-dialog :embedded="true"`
