@@ -941,8 +941,9 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
-            /* V6.5 (PRD-6.5 F4): 渐变头部贴合弹窗容器圆角(容器 16px xl), 顶部圆角消除直角溢出 */
-            border-radius: var(--qc-radius-xl) var(--qc-radius-xl) 0 0;
+            /* V5.23: 金色表头块改为独立圆角矩形卡片 (四角圆角), 与「入池历史」行同宽同节奏 */
+            border-radius: var(--qc-radius-large);
+            margin-bottom: var(--qc-space-3);
         }
         .detail-header h3 {
             font-size: var(--qc-font-size-xl);
@@ -954,30 +955,9 @@
             font-size: var(--qc-font-size-base);
             margin-top: 4px;
         }
-        /* V5.22: 圆形评分徽标已移除 — 该分值为"选股评分"(规则口径), 与大模型评估分
-           口径不一致, 圆形大徽标易被误读为 AI 评分。
-           V5.22.1: 改为与「入池历史」行(.detail-pool-row)完全同款的整宽圆角矩形 —
-           同宽(内容区 100%)、同底色(--bg-tertiary)、同圆角(--qc-radius-small)、同描边。 */
-        .detail-score-row {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: var(--qc-space-2);
-            margin-bottom: var(--qc-space-3);
-            padding: var(--qc-space-2) var(--qc-space-3);
-            background: var(--bg-tertiary);
-            border-radius: var(--qc-radius-small);
-            border: 1px solid var(--border-color);
-        }
-        .detail-score-row .dsr-label { font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
-        .detail-score-row .dsr-num { font-size: var(--qc-font-size-lg); font-weight: bold; color: var(--text-primary); }
-        .detail-score-row .dsr-level { font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
-        /* +N/-N 浮标在整宽行内收窄偏移, 避免溢出容器 */
-        .detail-score-row .score-delta { top: -8px; right: -20px; }
-        /* v1.9.2: 评分动画 (V5.22: 目标由圆形徽标 → 行内分值 → V5.22.1 整宽行) */
-        .detail-score-row.pulse {
-            animation: scorePulse 0.6s ease-out;
-        }
+        /* V5.23: 「选股评分」展示已按用户要求移除 (规则选股评分与大模型评估分口径不一致,
+           单独成行亦无必要); 如后续需要恢复, 可复用 .score-num-wrap / .score-delta 与
+           @keyframes scorePulse (v1.9.2 保留), 或直接放回表头卡片内。 */
         @keyframes scorePulse {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.5); }
             50% { transform: scale(1.08); box-shadow: 0 0 20px 6px rgba(var(--primary-rgb), 0.3); }

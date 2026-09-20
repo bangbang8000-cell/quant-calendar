@@ -51,13 +51,18 @@
 - 信息不丢失，但视觉分量与「AI 评估分」明确区分；<code>score_data</code> 缺失时整块不渲染。
 - 新增 i18n 键 <code>detail.ruleScore</code> / <code>detail.notEvaluated</code>（zh-CN / zh-TW / en / ja / ko 五包齐全，**每键单独一行** —— tests/test_i18n.py 按行提取键名）。
 
-### 2.6 选股评分块 → 与「入池历史」行同款整宽圆角矩形（V5.22.1，用户追加）
-- 评分块从渐变表头移入内容区顶部，与 <code>.detail-pool-row</code> 同级；容器规格逐项对齐：
-  内容区 100% 宽 / <code>--bg-tertiary</code> 底 / <code>--qc-radius-small</code> 圆角 / 1px 描边 /
-  <code>8px 12px</code> 内边距 / <code>12px</code> 下间距。
-- <code>.detail-score-inline</code>（表头内嵌小胶囊）→ <code>.detail-score-row</code>；保留 pulse 动画与 +N/-N 浮标（行内收窄偏移，不再溢出）。
-- **实测（dev 与 ops 一致）**: 评分行 **660px** = 入池历史行 **660px**；背景 <code>rgb(241,245,249)</code>、
-  圆角 <code>6px</code>、描边 <code>1px rgb(217,222,232)</code>、内边距 <code>8px/12px</code> 全部相同。
+### 2.6 金色表头块 → 与「入池历史」同宽的圆角矩形卡片（定稿）
+- **需求原意（用户澄清）**：要改的是**整个金色表头块**（<code>601318.SH 中国平安</code> / <code>策略持仓 452 天</code> / 评分），
+  把它变成圆角矩形、宽度与「入池历史」这一段相同；不是只把评分块单独成行。
+- **过程更正**：中间曾误解为只处理评分块（V5.22.1 把评分做成 <code>.detail-score-row</code> 整宽行），已回退并按澄清重做。
+- **实现**：表头块移入 <code>.detail-content</code> 内边距容器（与 <code>.detail-pool-row</code> 同容器 → 宽度天然一致），
+  <code>border-radius: var(--qc-radius-large)</code>（四角 12px）+ <code>margin-bottom: 12px</code>（与「入池历史」同节奏）；
+  内嵌模式同步为圆角（原为 0，因旧表头是贴边色带）。
+- **评分展示整体移除**：圆形徽标（V5.22 删）与单独评分行（V5.22.1 加）一并取消 —— 该分值为规则选股评分，
+  与大模型评估分口径不一致，单独成行亦无必要。如需恢复：可复用保留的 <code>.score-num-wrap</code> / <code>.score-delta</code>
+  或直接放回表头卡片内。
+- **实测**: 金色卡片 **660px** = 入池历史行 **660px**，圆角 **12px**，卡片顶 335（右栏顶 322 + 内容 12px 内边距）；
+  <code>.detail-score-row</code> 已不存在；无 pageerror。
 
 ## 三、验证
 

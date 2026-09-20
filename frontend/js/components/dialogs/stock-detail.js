@@ -25,24 +25,14 @@
                 <div class="text-sm-tertiary-mt8">{{ t('detail.loadingHint') }}</div>
             </div>
             <div v-else-if="stockDetail">
-                <div class="detail-header">
-                    <div>
-                        <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
-                        <div class="detail-subtitle">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</div>
-                    </div>
-                </div>
                 <div class="detail-content">
-                    <!-- V5.22.1: 选股评分 — 与「入池历史」行同款整宽圆角矩形 (同宽/同底色/同圆角);
-                         圆形徽标已于 V5.22 移除, 该分值为规则选股评分, 与大模型评估分口径独立 -->
-                    <div v-if="stockDetail.score_data" class="detail-score-row" :class="{ pulse: scorePulse }">
-                        <span class="dsr-label">{{ t('detail.ruleScore') }}</span>
-                        <span class="score-num-wrap">
-                            <b class="dsr-num">{{ stockDetail.score_data.score || '-' }}</b>
-                            <span v-if="scoreDelta" class="score-delta" :class="scoreDelta.dir">
-                                {{ scoreDelta.value > 0 ? '+' : '' }}{{ fmtNum(scoreDelta.value) }}
-                            </span>
-                        </span>
-                        <span class="dsr-level">{{ stockDetail.score_data.level || t('detail.notEvaluated') }}</span>
+                    <!-- V5.23: 金色表头块 → 圆角矩形卡片, 与下方「入池历史」行同宽
+                         (同处 .detail-content 内边距容器, 宽度天然一致); 评分展示已按用户要求移除 -->
+                    <div class="detail-header">
+                        <div>
+                            <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
+                            <div class="detail-subtitle">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</div>
+                        </div>
                     </div>
                     <!-- V5.4.1 (R3): 自选/入池状态 + 入池历史 (重点跟踪弹窗信息) -->
                     <div v-if="poolInfo" class="detail-pool-row">

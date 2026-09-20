@@ -1086,7 +1086,8 @@
    徽标已移除(需求: 与大模型评分口径不一致), 表头改为 12/16 内边距 + 标题降一档, 约 70px。 */
 .qc-embedded-dialog .detail-header {
   padding: var(--qc-space-3) var(--qc-space-4);
-  border-radius: 0;
+  /* V5.23: 内嵌右栏表头已是内容区内的卡片, 保留与全站一致的圆角 */
+  border-radius: var(--qc-radius-large);
   gap: var(--qc-space-2);
 }
 .qc-embedded-dialog .detail-header h3 { font-size: var(--qc-font-size-lg); }
