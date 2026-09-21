@@ -871,6 +871,7 @@ const allMenuDefs = [
                 const getFetchPoolSignals = () => fetchPoolSignals;
                 const getLoadAiHistory = () => loadAiHistory;
                 const getShowBatchEvaluate = () => showBatchEvaluate;
+                const getSelectedDate = () => selectedDate;
 
                 // ===== 域装配: 拆分工厂（FR-3.17.11.1）=====
                 // v3.17.11.1: 日历数据加载/缓存域 (js/app-logic/data.js)
@@ -917,7 +918,7 @@ const allMenuDefs = [
                     menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
                     navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
                     getLoadAiHistory, exportCSV, getShowBatchEvaluate,
-                    openAiFab, toggleSidebar, showStockDetail,
+                    openAiFab, toggleSidebar, showStockDetail, getSelectedDate,
                 });
                 const { searchQuery, searchStocks, onSearchSelect,
                         shortcutHelpVisible, commandPaletteVisible,

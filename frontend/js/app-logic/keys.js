@@ -10,7 +10,7 @@
       const { menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
               navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
               getLoadAiHistory, exportCSV, getShowBatchEvaluate,
-              openAiFab, toggleSidebar, showStockDetail } = ctx;
+              openAiFab, toggleSidebar, showStockDetail, getSelectedDate } = ctx;
 
       // ===== v1.10 / v3.11(11.2): 全局搜索 =====
       // v3.11: 升级为三域检索——菜单跳页 / 指令动作 / 股票直达详情（复用 command-panel-core 纯逻辑）
@@ -87,9 +87,29 @@
           if (currentPage.value !== 'calendar' || currentSubPage.value !== 'calendar') {
             navigateTo('calendar', 'calendar');
           }
-          if (typeof showStockDetail === 'function') showStockDetail(d.code, d.name);
+          _openStockFromSearch(d.code, d.name);
           return;
         }
+      }
+      // 首次从其他页切到日历页时 selectedDate 尚未加载 (日历数据异步) —
+      // 直接 showStockDetail 会以空日期请求 → 详情空白/错股。等待日期就绪后再打开。
+      let _stockNavTimer = null;
+      function _openStockFromSearch(code, name) {
+        if (_stockNavTimer) { clearInterval(_stockNavTimer); _stockNavTimer = null; }
+        const openDetail = function () {
+          if (typeof showStockDetail === 'function') showStockDetail(code, name);
+        };
+        const sd = getSelectedDate ? getSelectedDate() : null;
+        if (sd && sd.value) { openDetail(); return; }
+        const start = Date.now();
+        _stockNavTimer = setInterval(function () {
+          const ready = getSelectedDate ? getSelectedDate().value : true;
+          if (ready || Date.now() - start > 4000) {
+            clearInterval(_stockNavTimer);
+            _stockNavTimer = null;
+            openDetail();
+          }
+        }, 60);
       }
       function runGlobalCommand(key) {
         if (key === 'refresh') {
