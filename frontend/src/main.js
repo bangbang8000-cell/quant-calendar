@@ -30,6 +30,8 @@ import '../js/undo-core.js'
 import '../js/form-memory-core.js'
 // 6.1.4 (D5): 会话恢复 (sessionStorage)
 import '../js/session-restore-core.js'
+// 6.1.3 (C4): PWA 安装引导条
+import '../js/install-prompt.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
