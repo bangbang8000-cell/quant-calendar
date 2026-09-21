@@ -319,6 +319,15 @@ const allMenuDefs = [
                     });
                 }
                 const currentSubPage = ref('overview');
+                // 6.1.4 (D5): 会话恢复 — 刷新恢复页面/子页 (sessionStorage)
+                (function () {
+                  const sr = window.QuantSessionRestore;
+                  if (sr) {
+                    const st = sr.restore();
+                    if (st && st.page) { currentPage.value = st.page; if (st.sub) currentSubPage.value = st.sub; }
+                  }
+                })();
+                Vue.watch(currentSubPage, function () { saveSessionState(); });
                 const currentPageName = computed(() => {
                     const menu = allMenuDefs.find(m => m.key === currentPage.value);
                     return menu ? menu.name : currentPage.value;
@@ -1163,8 +1172,14 @@ const allMenuDefs = [
                 // ===== 监听页面切换（护栏: 页面切换 watch 全仓唯一）=====
                 // v1.11: 策略总览定时刷新（每5分钟）
                 let strategyPollTimer;
+                // 6.1.4 (D5): 保存会话 (page + sub) — 供刷新恢复
+                function saveSessionState() {
+                  const sr = window.QuantSessionRestore;
+                  if (sr) sr.save({ page: currentPage.value, sub: currentSubPage.value || '' });
+                }
                 watch(currentPage, async (page) => {
                     hapticFeedback('light');
+                    saveSessionState();
                     // V4.5 (FR-4.5.6): 页面 title 随切换更新(体验小项)
                     try {
                         const menu = allMenuDefs.find(function (m) { return m.key === page; });

@@ -28,6 +28,8 @@ import '../js/ai-chat.js'
 import '../js/undo-core.js'
 // 6.1.1 (A4): 表单参数记忆 (按用户+表单+版本隔离)
 import '../js/form-memory-core.js'
+// 6.1.4 (D5): 会话恢复 (sessionStorage)
+import '../js/session-restore-core.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
