@@ -9,7 +9,8 @@
             --bg-page: #f8f9fa;
             --bg-card: #ffffff;
             /* V5.6 T-5.0.65: 模态遮罩 (onboarding 覆盖层背景) */
-            --mask-bg: rgba(15, 35, 55, 0.55);
+            /* V6.10 (配色专项·A): 统一走 --qc-overlay (原 rgba(15,35,55,.55) 为海蓝色残留, 明暗同值) */
+            --mask-bg: var(--qc-overlay);
             --bg-card-header: #f8f9fa;
             --card-gradient-header: linear-gradient(135deg, var(--bg-card-header) 0%, var(--bg-card) 100%);
             --bg-input: #ffffff;
@@ -84,9 +85,8 @@
             --qc-nav-item-active-border: #ffd166;
             --qc-nav-group-label: #8892b0;
             --qc-nav-badge-bg: #16233b; --qc-nav-badge-text: #ffd166;
-            --qc-overlay: rgba(0, 0, 0, 0.6);
             --secondary-color: #5e6ad2;
-            --gradient: linear-gradient(135deg, #0b1220 0%, #101a2e 50%, #1a2a44 100%);
+            --gradient: linear-gradient(135deg, hsl(45, 80%, 34%) 0%, hsl(45, 85%, 42%) 50%, hsl(45, 85%, 50%) 100%);
             --card-border: #1a2a44;
             --text-primary: #e6f1ff; --text-secondary: #a0aec8; --text-tertiary: #8b9bb5;
             --text-link: #64ffda;
@@ -101,20 +101,13 @@
             --primary-color-dark: var(--qc-primary-800);   /* V5.31: 原 #3b82f6 蓝色残留 */
             --surface: #101a2e; --bg-code: #0d1526;
             --text-disabled: #64748b;   /* EP 禁用态文本 */
-            /* V6.9.4 (F5): EP 2.14.5 变量级深色映射 — 输入/选择器/日期弹层内部统一走暗底 */
-            --el-input-bg-color: var(--bg-card);
-            --el-input-text-color: var(--text-primary);
-            --el-input-placeholder-color: var(--text-disabled);
-            --el-input-border-color: var(--border-heavy);
-            --el-fill-color-blank: var(--bg-card);
-            --el-fill-color-light: var(--border-base);
-            --el-bg-color: var(--bg-card);
-            --el-border-color-light: var(--border-base);
-            --el-text-color-regular: var(--text-primary);
-            --el-text-color-secondary: var(--text-secondary);
-            --el-text-color-placeholder: var(--text-disabled);
-            --scrollbar-thumb: rgba(138,146,176,0.5);  /* EP 滚动条滑块(半透明次级色) */
-            --border-strong: #3a4a6a;   /* V4.8.1 D5: 时间轴连接线暗色变体(原亮灰 #d9dee8 刺眼) */
+            /* V6.10 (配色专项·A): EP 变量级深色映射已上移至 tokens.css 的「EP 变量桥」(明暗两侧全量桥接)。
+               原先此处只桥接 8 个变量, 导致 --el-text-color-primary(#303133)、--el-border-color(#dcdfe6)
+               等 EP 基础变量在暗色下保持浅色值 —— 实测 .el-range-separator 仅 1.28:1。 */
+            /* V6.10 (配色专项·A): 表面统一到「色相联动暖中性族」, 删除海军蓝硬编码面
+               (原 #101a2e/#16233b/#0d1526/#3a4a6a 不在运行期覆盖列表内, 与 --qc-card 形成双面族) */
+            --bg-input: var(--surface-input);
+            --bg-code: var(--surface-sunken);
             /* V4.8.2 (D3): 暗色阴影变体 — 亮色 6-12% 黑在暗底不可见, 加深并保持 sm<md<lg 层级 */
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35) ;
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45) ;
@@ -122,12 +115,12 @@
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
             --chart-split: #2c4060 ;  /* V5.17.1: dark 网格线对比度 1.59 (门禁≥1.5) */
             --chart-axis: #4f6b99 ;  /* V5.17.1: dark 轴线对比度 3.09 (门禁≥2.5) */
-            /* V5.5 (T-5.0.54): 图表画布背景暗色变体 (与 dark-pro --bg-card 一致) */
-            --chart-bg: #101a2e ;
-            --bg-page-rgb: 11, 18, 32;  /* 页面背景 rgb(loading 遮罩) */
+            /* V5.5 (T-5.0.54): 图表画布背景 = 卡片表面 (V6.10: 原硬编码 #101a2e 海军蓝与 --qc-card 形成双面族) */
+            --chart-bg: var(--surface-card) ;
             /* V4.0.2 毛玻璃深色浮层 */
             /* V6.6 (PRD-6.6 F4): 暗色浮层实底 — 0.72 半透明改不透明, 消除玻璃透底 */
-            --glass-bg: #101a2e;
+            /* V6.10: 浮层底 = --surface-raised (色相联动暖中性), 原 #101a2e 为海军蓝残留 */
+            --glass-bg: var(--surface-raised);
             --glass-border: rgba(255, 255, 255, 0.10);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 46%);
@@ -158,9 +151,9 @@
             --color-info: var(--el-info);
             --bg-hover: var(--qc-nav-item-hover-bg);
             --qc-muted-foreground: #a0aec8;
-            --el-dialog-bg-color: var(--qc-card, #101a2e);
-            --el-dropdown-bg-color: var(--qc-card, #101a2e);
-            --el-popover-bg-color: var(--qc-card, #101a2e);
+            --el-dialog-bg-color: var(--surface-raised);
+            --el-dropdown-bg-color: var(--surface-raised);
+            --el-popover-bg-color: var(--surface-raised);
         }
         /* V6.9.1-fix: 暗色 body/html/app-container 背景明确覆盖 — 确保最底层不出现鲜艳亮色 */
         [data-theme="dark-pro"] body,
@@ -189,14 +182,16 @@
             backdrop-filter: none ;
             -webkit-backdrop-filter: none ;
         }
+        /* V6.10 (配色专项·A): 浮层外壳与内容面板统一走 --surface-raised —— 原外壳用 --qc-card、
+           内层 .el-select-dropdown 用 --glass-bg(#101a2e 海军蓝), 同屏出现两种深色面 */
         [data-theme="dark-pro"] .el-popper.is-light,
         [data-theme="dark-pro"] .el-picker__popper.el-popper.is-light {
-            background: var(--qc-card, #1a1a3e) ;
+            background: var(--surface-raised) ;
             border-color: var(--qc-border, #2e4162) ;
             color: var(--qc-foreground, #e6f1ff) ;
         }
         [data-theme="dark-pro"] .el-popper.is-light .el-popper__arrow::before {
-            background: var(--qc-card, #1a1a3e) ;
+            background: var(--surface-raised) ;
             border-color: var(--qc-border, #2e4162) ;
         }
         /* 🟠 V6.0 金色主题 (PRD-6.0 FR-6.0.6) — 默认主题, 对齐 colors_and_type.css 金色 scale */
@@ -281,9 +276,10 @@
         [data-theme="dark-pro"] .el-input__inner::placeholder { color: var(--text-disabled) ; }
         [data-theme="dark-pro"] .el-select .el-input__inner { background-color: var(--border-base) ; }
         /* V6.9.4 (F5): 深色输入框适配 — EP 2.14.5 输入/选择器可见盒子为 .el-input__wrapper / .el-select__wrapper (非 .el-input__inner) */
+        /* V6.10 (配色专项·A): 输入/选择器底走 --surface-input 角色令牌 (原 --bg-card 语义不符) */
         [data-theme="dark-pro"] .el-input__wrapper,
         [data-theme="dark-pro"] .el-select__wrapper {
-            background-color: var(--bg-card) ;
+            background-color: var(--surface-input) ;
             box-shadow: 0 0 0 1px var(--border-heavy) inset ;
         }
         [data-theme="dark-pro"] .el-input__wrapper.is-focus,
@@ -408,8 +404,10 @@
         }
         [data-theme="dark-pro"] .el-notification__title { color: var(--text-primary) ; }
         [data-theme="dark-pro"] .el-notification__content { color: var(--text-secondary) ; }
-        [data-theme="dark-pro"] .el-message { background-color: var(--bg-card) ; border-color: var(--border-base) ; }
-        [data-theme="dark-pro"] .el-message__content { color: var(--text-secondary) ; }
+        /* V6.10 (配色专项·A): 原此处把四类消息统一压成中性底 + 次级文字色, 暗色下 success/warning/error/info
+           完全无法区分。改为交由 EP 的 --el-message-bg-color / --el-message-text-color 类型变量驱动
+           (已由 tokens.css 的 EP 变量桥映射到 --state-*-tint / --state-*-text)。 */
+        [data-theme="dark-pro"] .el-message { border-color: var(--el-message-border-color, var(--border-base)) ; }
         [data-theme="dark-pro"] .el-message-box__message p { color: var(--text-secondary) ; }
         /* form 标签 */
         [data-theme="dark-pro"] .el-form-item__label { color: var(--text-secondary) ; }

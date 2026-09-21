@@ -285,14 +285,192 @@
   /* ─── 固定装饰色（不随主题的组件变体） ─── */
   --avatar-dark-bg:     #1E293B;  --avatar-dark-text: #E2E8F0;
 
-  /* ─── Element Plus Override Colors ─── */
+  /* ─── Element Plus Override Colors (V6.10 起为遗留别名, 真正的桥接见下方 EP 变量桥) ─── */
   --el-success: #4CAF50;  --el-warning: #FF9800;
   --el-danger:  #C62828;  --el-info:    #1976D2;
+
+  /* ═══ V6.10 (配色专项·A): 表面角色令牌 (Layer 2, 静态兜底) ═══
+     运行期由 themes.js 按色相/模式覆盖; 此处仅保证首屏与无 JS 时的可用值。
+     契约: 明暗同名, 组件只允许引用角色名, 不允许再出现 #0b1220/#101a2e/#16233b 等模式专属硬编码面。 */
+  --surface-canvas: hsl(45, 18%, 98%);
+  --surface-card: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: hsl(45, 16%, 96%);
+  --surface-input: #ffffff;
+  --surface-hover: hsl(45, 26%, 94%);
+
+  /* ═══ V6.10 (配色专项·A/B): 语义槽位 (4 状态 + 2 市场) ═══
+     取代 --qc-state-* / --success-text 系 / --badge-* 三套并行定义:
+     以已按明暗适配且对比度达标的 --badge-* 为唯一取值来源, 对外只暴露 --state-* 四个变体。 */
+  --state-success-text: var(--badge-success-text);
+  --state-success-tint: var(--badge-success-bg);
+  --state-success-solid: var(--badge-success-text);
+  --state-success-on-solid: #ffffff;
+  --state-success-border: color-mix(in srgb, var(--badge-success-text) 32%, transparent);
+  --state-warning-text: var(--badge-warning-text);
+  --state-warning-tint: var(--badge-warning-bg);
+  --state-warning-solid: var(--badge-warning-text);
+  --state-warning-on-solid: #ffffff;
+  --state-warning-border: color-mix(in srgb, var(--badge-warning-text) 32%, transparent);
+  --state-danger-text: var(--badge-danger-text);
+  --state-danger-tint: var(--badge-danger-bg);
+  --state-danger-solid: var(--badge-danger-text);
+  --state-danger-on-solid: #ffffff;
+  --state-danger-border: color-mix(in srgb, var(--badge-danger-text) 32%, transparent);
+  --state-info-text: var(--badge-info-text);
+  --state-info-tint: var(--badge-info-bg);
+  --state-info-solid: var(--badge-info-text);
+  --state-info-on-solid: #ffffff;
+  --state-info-border: color-mix(in srgb, var(--badge-info-text) 32%, transparent);
+
+  /* ═══ V6.10 (配色专项·A): Element Plus 变量桥 (Light) ═══
+     本仓库 frontend/lib/element-plus.css 是「仅亮色」构建, 不含 EP 官方暗色变量集
+     (html.dark 作用域 0 处), 因此 EP 的语义色/表面色必须在此显式桥接。
+     桥接后 EP 的组件级变量 (table / datepicker / message / tag / select …) 自动继承,
+     不再需要逐组件打补丁 —— 修复 .el-range-separator 1.28:1、ElMessage 2.04–2.80:1 一类残留。 */
+  /* 品牌 */
+  --el-color-primary: var(--btn-primary-bg);
+  --el-color-primary-rgb: var(--primary-rgb);
+  --el-color-primary-dark-2: var(--qc-primary-700);
+  --el-color-primary-light-3: color-mix(in srgb, var(--btn-primary-bg) 70%, var(--surface-card));
+  --el-color-primary-light-5: color-mix(in srgb, var(--btn-primary-bg) 50%, var(--surface-card));
+  --el-color-primary-light-7: color-mix(in srgb, var(--btn-primary-bg) 30%, var(--surface-card));
+  --el-color-primary-light-8: color-mix(in srgb, var(--btn-primary-bg) 20%, var(--surface-card));
+  --el-color-primary-light-9: color-mix(in srgb, var(--btn-primary-bg) 12%, var(--surface-card));
+  /* 语义 (EP 的 danger 与 error 同源) */
+  --el-color-success: var(--state-success-solid);
+  --el-color-success-light-3: color-mix(in srgb, var(--state-success-solid) 70%, var(--surface-card));
+  --el-color-success-light-5: color-mix(in srgb, var(--state-success-solid) 50%, var(--surface-card));
+  --el-color-success-light-7: color-mix(in srgb, var(--state-success-solid) 30%, var(--surface-card));
+  --el-color-success-light-8: color-mix(in srgb, var(--state-success-solid) 20%, var(--surface-card));
+  --el-color-success-light-9: var(--state-success-tint);
+  --el-color-warning: var(--state-warning-solid);
+  --el-color-warning-light-3: color-mix(in srgb, var(--state-warning-solid) 70%, var(--surface-card));
+  --el-color-warning-light-5: color-mix(in srgb, var(--state-warning-solid) 50%, var(--surface-card));
+  --el-color-warning-light-7: color-mix(in srgb, var(--state-warning-solid) 30%, var(--surface-card));
+  --el-color-warning-light-8: color-mix(in srgb, var(--state-warning-solid) 20%, var(--surface-card));
+  --el-color-warning-light-9: var(--state-warning-tint);
+  --el-color-danger: var(--state-danger-solid);
+  --el-color-danger-light-3: color-mix(in srgb, var(--state-danger-solid) 70%, var(--surface-card));
+  --el-color-danger-light-5: color-mix(in srgb, var(--state-danger-solid) 50%, var(--surface-card));
+  --el-color-danger-light-7: color-mix(in srgb, var(--state-danger-solid) 30%, var(--surface-card));
+  --el-color-danger-light-8: color-mix(in srgb, var(--state-danger-solid) 20%, var(--surface-card));
+  --el-color-danger-light-9: var(--state-danger-tint);
+  --el-color-error: var(--state-danger-solid);
+  --el-color-error-light-3: color-mix(in srgb, var(--state-danger-solid) 70%, var(--surface-card));
+  --el-color-error-light-5: color-mix(in srgb, var(--state-danger-solid) 50%, var(--surface-card));
+  --el-color-error-light-7: color-mix(in srgb, var(--state-danger-solid) 30%, var(--surface-card));
+  --el-color-error-light-8: color-mix(in srgb, var(--state-danger-solid) 20%, var(--surface-card));
+  --el-color-error-light-9: var(--state-danger-tint);
+  --el-color-info: var(--state-info-solid);
+  --el-color-info-light-3: color-mix(in srgb, var(--state-info-solid) 70%, var(--surface-card));
+  --el-color-info-light-5: color-mix(in srgb, var(--state-info-solid) 50%, var(--surface-card));
+  --el-color-info-light-7: color-mix(in srgb, var(--state-info-solid) 30%, var(--surface-card));
+  --el-color-info-light-8: color-mix(in srgb, var(--state-info-solid) 20%, var(--surface-card));
+  --el-color-info-light-9: var(--state-info-tint);
+  /* 文本 */
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--qc-muted-foreground);
+  --el-text-color-disabled: var(--text-disabled);
+  /* 边框 */
+  --el-border-color: var(--qc-border);
+  --el-border-color-light: var(--border-base);
+  --el-border-color-lighter: var(--border-light);
+  --el-border-color-extra-light: var(--border-light);
+  --el-border-color-dark: var(--border-heavy);
+  --el-border-color-darker: var(--border-heavy);
+  --el-border-color-hover: var(--qc-border);
+  --el-border-color-translucent: var(--qc-border);
+  /* 表面 / 填充 */
+  --el-bg-color: var(--surface-card);
+  --el-bg-color-page: var(--surface-canvas);
+  --el-bg-color-overlay: var(--surface-raised);
+  --el-fill-color: var(--surface-hover);
+  --el-fill-color-light: var(--surface-hover);
+  --el-fill-color-lighter: var(--surface-sunken);
+  --el-fill-color-extra-light: var(--surface-sunken);
+  --el-fill-color-dark: var(--border-light);
+  --el-fill-color-darker: var(--border-base);
+  --el-fill-color-blank: var(--surface-card);
+  --el-disabled-bg-color: var(--surface-hover);
+  --el-disabled-text-color: var(--text-disabled);
+  --el-disabled-border-color: var(--border-base);
+  /* 遮罩 / 阴影 */
+  --el-mask-color: var(--qc-overlay);
+  --el-mask-color-extra-light: color-mix(in srgb, var(--qc-overlay) 30%, transparent);
+  --el-overlay-color: var(--qc-overlay);
+  --el-overlay-color-light: var(--qc-overlay);
+  --el-overlay-color-lighter: var(--qc-overlay);
+  --el-box-shadow: var(--qc-shadow-md);
+  --el-box-shadow-light: var(--qc-shadow-sm);
+  --el-box-shadow-lighter: var(--qc-shadow-sm);
+  --el-box-shadow-dark: var(--qc-shadow-lg);
+  /* 表单控件 */
+  --el-input-bg-color: var(--surface-input);
+  --el-input-text-color: var(--text-primary);
+  --el-input-border-color: var(--qc-input);
+  --el-input-hover-border-color: var(--qc-border);
+  --el-input-focus-border-color: var(--qc-ring);
+  --el-input-border: 1px solid var(--qc-input);
+  --el-input-hover-border: 1px solid var(--qc-border);
+  --el-input-focus-border: 1px solid var(--qc-ring);
+  --el-input-icon-color: var(--text-tertiary);
+  --el-input-placeholder-color: var(--qc-muted-foreground);
+  --el-select-input-color: var(--qc-muted-foreground);
+  /* 组件表面 (EP 组件级变量同样指向角色令牌, 避免逐组件补丁) */
+  --el-table-bg-color: var(--surface-card);
+  --el-table-tr-bg-color: var(--surface-card);
+  --el-table-header-bg-color: var(--surface-sunken);
+  --el-table-row-hover-bg-color: var(--surface-hover);
+  --el-table-current-row-bg-color: var(--surface-hover);
+  --el-table-expanded-cell-bg-color: var(--surface-card);
+  --el-table-border-color: var(--border-light);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--qc-muted-foreground);
+  --el-card-bg-color: var(--surface-card);
+  --el-card-border-color: var(--border-light);
+  --el-dialog-bg-color: var(--surface-raised);
+  --el-drawer-bg-color: var(--surface-raised);
+  --el-popover-bg-color: var(--surface-raised);
+  --el-popper-bg-color-light: var(--surface-raised);
+  --el-datepicker-bg-color: var(--surface-raised);
+  --el-cascader-menu-fill: var(--surface-raised);
+  --el-menu-bg-color: var(--surface-card);
+  --el-message-bg-color: var(--surface-raised);
+  --el-message-text-color: var(--text-secondary);
+  --el-message-border-color: var(--border-light);
+  --el-notification-border-color: var(--border-light);
+  --el-pagination-bg-color: var(--surface-card);
+  --el-tag-bg-color: var(--surface-sunken);
+  --el-switch-off-color: var(--border-base);
+  --el-segmented-bg-color: var(--surface-sunken);
 
   /* ─── Component Tokens (V6.0: 导航布局尺寸按新规范别名) ─── */
   --sidebar-width:          var(--qc-sidebar-width);
   --sidebar-collapsed-width: var(--qc-sidebar-collapsed-width);
   --card-radius:             12px;
+}
+
+/* ═══ V6.10 (配色专项·A): 暗色兜底 (运行期 themes.js 会按色相覆盖) ═══
+   与上方 :root 同名同结构 —— 明暗对称是硬契约, 缺键即视为缺陷 (由 tests/test_color_tokens.py 断言)。 */
+[data-theme="dark-pro"] {
+  --surface-canvas: hsl(45, 10%, 8%);
+  --surface-card: hsl(45, 11%, 11%);
+  --surface-raised: hsl(45, 12%, 14%);
+  --surface-sunken: hsl(45, 12%, 9%);
+  --surface-input: hsl(45, 12%, 9%);
+  --surface-hover: hsl(45, 12%, 15%);
+  --border-strong: hsl(45, 16%, 42%);
+  --scrollbar-thumb: rgba(138, 146, 176, 0.5);
+  --bg-page-rgb: 20, 19, 16;
+  --qc-overlay: rgba(0, 0, 0, 0.6);
+  /* 语义实底上的文字: 暗色实底为浅色档 → 文字取页面底 (与 --btn-primary-color 同策略) */
+  --state-success-on-solid: var(--surface-canvas);
+  --state-warning-on-solid: var(--surface-canvas);
+  --state-danger-on-solid: var(--surface-canvas);
+  --state-info-on-solid: var(--surface-canvas);
 }
 
 /* V6.0.1: 删除死代码 — 原 .dark {} 块从不触发 (实际暗色由 themes.css [data-theme="dark-pro"] 驱动) */

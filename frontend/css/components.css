@@ -141,42 +141,84 @@
 .el-table .cell { font-variant-numeric: tabular-nums; }
 
 /* 状态点列: 8px 圆点 + 语义色 (借鉴 QuantDinger) */
+/* V6.10 (配色专项·B): 语义槽位收敛 — 组件层只允许引用 --state-* 四变体,
+   不再直接引用模式未适配的 --qc-state-*(亮色警告 2.15:1 / 暗色错误 3.47:1、信息 3.24:1)。 */
 .qc-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.qc-status-dot.is-success { background: var(--qc-state-success); }
-.qc-status-dot.is-warning { background: var(--qc-state-warning); }
-.qc-status-dot.is-danger  { background: var(--qc-state-error); }
-.qc-status-dot.is-info    { background: var(--qc-state-info); }
+.qc-status-dot.is-success { background: var(--state-success-solid); }
+.qc-status-dot.is-warning { background: var(--state-warning-solid); }
+.qc-status-dot.is-danger  { background: var(--state-danger-solid); }
+.qc-status-dot.is-info    { background: var(--state-info-solid); }
 .qc-status-dot.is-running { background: var(--qc-primary-500); }
 .qc-status-cell { display: inline-flex; align-items: center; gap: var(--qc-space-2); }
 
 /* V6.6 (PRD-6.6 F3): 语义工具类 — 文本色 / 背景 subtle / 美林时钟阶段 */
-.qc-text-success { color: var(--qc-state-success, var(--qc-success)); }
-.qc-text-warning { color: var(--qc-state-warning, var(--qc-warning)); }
-.qc-text-error   { color: var(--qc-state-error, var(--qc-error)); }
-.qc-text-info    { color: var(--qc-state-info, var(--qc-info)); }
+.qc-text-success { color: var(--state-success-text); }
+.qc-text-warning { color: var(--state-warning-text); }
+.qc-text-error   { color: var(--state-danger-text); }
+.qc-text-info    { color: var(--state-info-text); }
 .qc-text-muted   { color: var(--qc-muted-foreground); }
 .qc-bg-primary-subtle { background: var(--qc-primary-50); }
-.qc-bg-success-subtle { background: var(--qc-success-50, var(--badge-success-bg)); }
-.qc-bg-warning-subtle { background: var(--qc-warning-50, var(--badge-warning-bg)); }
-.qc-bg-error-subtle   { background: var(--qc-error-50, var(--badge-danger-bg)); }
-.qc-merrill-bearish   { background: var(--qc-error-100, var(--badge-danger-bg)); color: var(--qc-error-700, var(--badge-danger-text)); }
-.qc-merrill-bullish   { background: var(--qc-success-100, var(--badge-success-bg)); color: var(--qc-success-700, var(--badge-success-text)); }
-.qc-merrill-overheat  { background: var(--qc-warning-100, var(--badge-warning-bg)); color: var(--qc-warning-700, var(--badge-warning-text)); }
+.qc-bg-success-subtle { background: var(--state-success-tint); }
+.qc-bg-warning-subtle { background: var(--state-warning-tint); }
+.qc-bg-error-subtle   { background: var(--state-danger-tint); }
+.qc-merrill-bearish   { background: var(--state-danger-tint); color: var(--state-danger-text); }
+.qc-merrill-bullish   { background: var(--state-success-tint); color: var(--state-success-text); }
+.qc-merrill-overheat  { background: var(--state-warning-tint); color: var(--state-warning-text); }
 .qc-merrill-recovery  { background: var(--qc-primary-100); color: var(--qc-primary-700); }
 
 /* ─── §2.3 按钮 (Element Plus 变量级覆盖) ────────────── */
 /* 注: 主按钮/次按钮已由 themes.css --btn-primary-* 全量 token 化 (gold 主题对齐 §2.3),
-   此处仅补充字重统一 + 危险/文本变体对齐 DS-6.0 语义色 */
+   此处仅补充字重统一 + 语义变体对齐 --state-* 四变体 */
 .el-button { font-weight: var(--qc-font-weight-medium); }
-/* 危险按钮 */
+/* 语义按钮: 实底取 solid 档, 文字取 on-solid 档 —— 保证明暗两模式均 ≥4.5:1
+   (V6.10: 原 danger 用 --qc-state-error + 硬编码白字; success/warning/info 直接走 EP 默认 #67c23a/#e6a23c/#909399, 浅色下 2.04–2.80:1) */
 .el-button--danger {
-  --el-button-bg-color: var(--qc-state-error);
-  --el-button-border-color: var(--qc-state-error);
-  --el-button-text-color: var(--qc-neutral-0);
-  --el-button-hover-bg-color: var(--qc-state-error);
-  --el-button-hover-border-color: var(--qc-state-error);
-  --el-button-active-bg-color: var(--qc-state-error);
-  --el-button-active-border-color: var(--qc-state-error);
+  --el-button-bg-color: var(--state-danger-solid);
+  --el-button-border-color: var(--state-danger-solid);
+  --el-button-text-color: var(--state-danger-on-solid);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-danger-solid) 86%, var(--surface-card));
+  --el-button-hover-border-color: color-mix(in srgb, var(--state-danger-solid) 86%, var(--surface-card));
+  --el-button-active-bg-color: color-mix(in srgb, var(--state-danger-solid) 74%, var(--surface-card));
+  --el-button-active-border-color: color-mix(in srgb, var(--state-danger-solid) 74%, var(--surface-card));
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--state-danger-solid) 45%, var(--surface-card));
+  --el-button-disabled-border-color: color-mix(in srgb, var(--state-danger-solid) 45%, var(--surface-card));
+  --el-button-disabled-text-color: var(--state-danger-on-solid);
+}
+.el-button--success {
+  --el-button-bg-color: var(--state-success-solid);
+  --el-button-border-color: var(--state-success-solid);
+  --el-button-text-color: var(--state-success-on-solid);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-success-solid) 86%, var(--surface-card));
+  --el-button-hover-border-color: color-mix(in srgb, var(--state-success-solid) 86%, var(--surface-card));
+  --el-button-active-bg-color: color-mix(in srgb, var(--state-success-solid) 74%, var(--surface-card));
+  --el-button-active-border-color: color-mix(in srgb, var(--state-success-solid) 74%, var(--surface-card));
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--state-success-solid) 45%, var(--surface-card));
+  --el-button-disabled-border-color: color-mix(in srgb, var(--state-success-solid) 45%, var(--surface-card));
+  --el-button-disabled-text-color: var(--state-success-on-solid);
+}
+.el-button--warning {
+  --el-button-bg-color: var(--state-warning-solid);
+  --el-button-border-color: var(--state-warning-solid);
+  --el-button-text-color: var(--state-warning-on-solid);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-warning-solid) 86%, var(--surface-card));
+  --el-button-hover-border-color: color-mix(in srgb, var(--state-warning-solid) 86%, var(--surface-card));
+  --el-button-active-bg-color: color-mix(in srgb, var(--state-warning-solid) 74%, var(--surface-card));
+  --el-button-active-border-color: color-mix(in srgb, var(--state-warning-solid) 74%, var(--surface-card));
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--state-warning-solid) 45%, var(--surface-card));
+  --el-button-disabled-border-color: color-mix(in srgb, var(--state-warning-solid) 45%, var(--surface-card));
+  --el-button-disabled-text-color: var(--state-warning-on-solid);
+}
+.el-button--info {
+  --el-button-bg-color: var(--state-info-solid);
+  --el-button-border-color: var(--state-info-solid);
+  --el-button-text-color: var(--state-info-on-solid);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-info-solid) 86%, var(--surface-card));
+  --el-button-hover-border-color: color-mix(in srgb, var(--state-info-solid) 86%, var(--surface-card));
+  --el-button-active-bg-color: color-mix(in srgb, var(--state-info-solid) 74%, var(--surface-card));
+  --el-button-active-border-color: color-mix(in srgb, var(--state-info-solid) 74%, var(--surface-card));
+  --el-button-disabled-bg-color: color-mix(in srgb, var(--state-info-solid) 45%, var(--surface-card));
+  --el-button-disabled-border-color: color-mix(in srgb, var(--state-info-solid) 45%, var(--surface-card));
+  --el-button-disabled-text-color: var(--state-info-on-solid);
 }
 /* 文本按钮: 金色文字 */
 .el-button--text { color: var(--qc-primary-700); }
@@ -434,8 +476,10 @@
   font-family: var(--qc-font-mono);
   font-size: var(--qc-font-size-xs);
 }
-.qc-stock-change.is-up { color: var(--color-up, var(--qc-state-error)); }
-.qc-stock-change.is-down { color: var(--color-down, var(--qc-state-success)); }
+/* V6.10 (配色专项·B): 涨跌文字必须走「文字档」—— 原引用 --color-up/--color-down (填充色, 明暗同值)
+   在暗色卡片上仅 4.02:1 / 3.27:1, 不达 AA。 */
+.qc-stock-change.is-up { color: var(--market-up-text); }
+.qc-stock-change.is-down { color: var(--market-down-text); }
 /* V6.2 (PRD-6.2 F5): 股票状态徽标 (新增/调出) */
 .qc-stock-code-num { font-family: var(--qc-font-mono); }
 .qc-stock-status {

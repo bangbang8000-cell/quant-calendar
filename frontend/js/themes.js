@@ -145,6 +145,16 @@
       out['--bg-sidebar'] = '#ffffff';
       out['--surface'] = '#ffffff';
       out['--border-heavy'] = hsl(hue, 22, 72);
+      // V6.10 (配色专项·A): 表面角色令牌 — 明暗同名契约, 消除「CSS 硬编码面 vs 运行期生成面」双面族
+      out['--surface-canvas'] = hsl(hue, 18, 98);
+      out['--surface-card'] = '#ffffff';
+      out['--surface-raised'] = '#ffffff';
+      out['--surface-sunken'] = hsl(hue, 16, 96);
+      out['--surface-input'] = '#ffffff';
+      out['--surface-hover'] = hsl(hue, 26, 94);
+      out['--border-strong'] = hsl(hue, 22, 72);
+      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 12, 72) + ', 0.5)';
+      out['--bg-page-rgb'] = hslToRgb(hue, 20, 97);
     } else {
       // 暗色: 保留「接近黑」的海军蓝基调, 仅按色相做 8~12% 极低饱和倾斜 (原为固定 #0b1220/#101a2e)
       out['--qc-background'] = hsl(hue, 10, 8);
@@ -170,6 +180,18 @@
       out['--border-heavy'] = hsl(hue, 16, 38);
       out['--border-color'] = hsl(hue, 13, 22);
       out['--surface'] = hsl(hue, 11, 11);
+      // V6.10 (配色专项·A): 表面角色令牌 — 统一到色相联动暖中性族, 替代海军蓝硬编码面
+      //   (#0b1220/#101a2e/#16233b/#0d1526/#3a4a6a 等运行时未被覆盖的残留面)
+      out['--surface-canvas'] = hsl(hue, 10, 8);
+      out['--surface-card'] = hsl(hue, 11, 11);
+      out['--surface-raised'] = hsl(hue, 12, 14);
+      out['--surface-sunken'] = hsl(hue, 12, 9);
+      out['--surface-input'] = hsl(hue, 12, 9);
+      out['--surface-hover'] = hsl(hue, 12, 15);
+      out['--border-strong'] = hsl(hue, 16, 42);
+      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 16, 52) + ', 0.5)';
+      out['--bg-page-rgb'] = hslToRgb(hue, 10, 8);
+      out['--qc-overlay'] = 'rgba(0, 0, 0, 0.6)';
     }
     return out;
   }

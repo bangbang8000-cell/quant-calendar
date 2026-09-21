@@ -54,7 +54,7 @@
   width: 7px;
   height: 7px;
   border-radius: var(--qc-radius-full);
-  background: var(--qc-state-error);
+  background: var(--state-danger-solid);
   border: 1.5px solid var(--qc-card);
 }
 
@@ -370,7 +370,7 @@
   white-space: nowrap;
 }
 .qc-bell-item-time { margin-left: var(--qc-space-2); }
-.qc-bell-item.is-fail .qc-bell-item-title { color: var(--qc-state-error); }
+.qc-bell-item.is-fail .qc-bell-item-title { color: var(--state-danger-text); }
 .qc-bell-footer {
   display: block;
   width: 100%;
@@ -526,8 +526,8 @@
   outline: 2px solid var(--qc-ring);
   outline-offset: -2px;
 }
-.qc-user-dropdown-item.is-danger { color: var(--qc-state-error); }
-.qc-user-dropdown-item.is-danger:hover { background: var(--qc-state-error-bg); color: var(--qc-state-error); }
+.qc-user-dropdown-item.is-danger { color: var(--state-danger-text); }
+.qc-user-dropdown-item.is-danger:hover { background: var(--state-danger-tint); color: var(--state-danger-text); }
 .qc-user-dropdown-divider {
   height: 1px;
   background: var(--qc-border);
