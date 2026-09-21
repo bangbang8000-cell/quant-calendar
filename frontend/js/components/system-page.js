@@ -592,7 +592,34 @@
                         <span class="color-tertiary-ml-auto">按优先级依次尝试</span>
                     </div>
 
-                    <!-- v3.16 (FR-3.16.1): 数据同步入口 (syncStockData) -->
+                    <!-- 6.1.2 (B5): 数据新鲜度 -->
+                    <div class="card mb-14">
+                        <div class="card-title flex-between">
+                            <span><qc-icon name="activity" :size="14" /> 数据新鲜度</span>
+                            <el-button size="small" text @click="loadFreshness"><qc-icon name="refresh" :size="12" /> 刷新</el-button>
+                        </div>
+                        <div v-if="freshnessLoading" class="qc-glossary-loading">加载中…</div>
+                        <el-table v-else :data="freshnessItems" size="small" max-height="320">
+                            <el-table-column prop="label" label="数据表" width="120" />
+                            <el-table-column prop="source" label="来源" width="110" />
+                            <el-table-column label="最后成功" width="150">
+                                <template #default="{ row }">{{ row.last_success ? row.last_success.slice(5, 16) : '-' }}</template>
+                            </el-table-column>
+                            <el-table-column label="行数" width="80">
+                                <template #default="{ row }">{{ row.rows != null ? row.rows : '-' }}</template>
+                            </el-table-column>
+                            <el-table-column label="间隔" width="80">
+                                <template #default="{ row }">{{ row.expected_hours }}h</template>
+                            </el-table-column>
+                            <el-table-column label="状态" width="90">
+                                <template #default="{ row }">
+                                    <span :class="row.stale ? 'qc-text-error' : 'qc-text-success'">{{ row.stale ? '过期' : '正常' }}</span>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                    <!-- 数据同步入口 (syncStockData) -->
                     <div class="card mb-14">
                         <div class="card-title"><qc-icon name="refresh" :size="14" /> 数据同步</div>
                         <div class="flex-c-gap-12-wrap">
@@ -1332,6 +1359,8 @@
         if (sub === 'health') refreshHealth();
         // V6.6.1 (PRD F-6.6.8 方案A): 通知中心独立子页 — 进入即加载三 Tab 数据
         if (sub === 'notification') loadNotificationData();
+        // 6.1.2 (B5): 数据源子页进入即加载新鲜度
+        if (sub === 'datasource') loadFreshness();
       });
       // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与基础配置子页一致)
       const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, -1];  // 金/蓝/红/绿/紫/粉 + 中性无色相
@@ -1347,6 +1376,18 @@
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
+      // 6.1.2 (B5): 数据新鲜度 (datasource 子页)
+      const freshnessItems = Vue.ref([]);
+      const freshnessLoading = Vue.ref(false);
+      async function loadFreshness() {
+        freshnessLoading.value = true;
+        try {
+          const r = await fetch('/api/meta/freshness');
+          const d = await r.json();
+          if (d && d.success) freshnessItems.value = d.items || [];
+        } catch (e) { /* 忽略 */ }
+        freshnessLoading.value = false;
+      }
       const openApiKeyName = Vue.ref('');
       const openApiKeyRole = Vue.ref('read');
       const newOpenApiKey = Vue.ref('');
@@ -1730,6 +1771,8 @@
         ncNewThreshold, ncSilence, ncSilenceMinutes, ncMsg, ncTypeLabel,
         onNcTab, loadAlertRules, loadAlertHistory, loadAlertChannels,
         addAlertRule, toggleAlertRule, removeAlertRule, applySilence, clearSilence,
+        // 6.1.2 (B5): 数据新鲜度
+        freshnessItems, freshnessLoading, loadFreshness,
         goSystemSub,
       };
     },
