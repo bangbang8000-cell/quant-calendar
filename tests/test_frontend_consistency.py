@@ -64,7 +64,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 497, f"qcState 唯一键数异常: {len(set(keys))} (期望 497; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT)"
+    assert len(set(keys)) == 503, f"qcState 唯一键数异常: {len(set(keys))} (期望 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT)"
 
 
 def test_watch_currentpage_single():
@@ -368,11 +368,20 @@ def test_inline_style_governance():
 
 # ─── v3.16 (16.10 / FR-3.16.8) 质量护栏回归 ─────────────────────────────
 
-def test_seven_themes_defined():
-    """FR-3.16.8 (16.10) + V6.0 (PRD-6.0 FR-6.0.6): 主题数量 8（V6.0 新增 gold 默认主题）"""
+def test_theme_model_is_mode_x_hue():
+    """V6.1 (PRD-6.1 F5) 主题模型收敛: CSS 只保留 gold / dark-pro 两套基底,
+    其余主题由运行期 themes.js 按「模式(light/dark/system) × 色相(hue)」生成。
+
+    旧断言要求 CSS 里存在 8 个 data-theme 块 (classic-*/tech-blue/... 模型), 该模型早已下线,
+    断言长期恒失败 —— V6.10 配色专项·D 按现行模型重写。
+    """
     css = _read("css/themes.css")
-    themes = re.findall(r'data-theme="([^"]+)"', css)
-    assert len(set(themes)) == 8, f"应恰有 8 个主题，当前 {len(set(themes))}: {sorted(set(themes))}"
+    themes = sorted(set(re.findall(r'data-theme="([^"]+)"', css)))
+    assert themes == ["dark-pro", "gold"], f"CSS 主题基底应为 gold/dark-pro, 当前 {themes}"
+    themes_js = _read("js/themes.js")
+    assert "NEUTRAL_HUE" in themes_js, "themes.js 应导出中性无色相档 (NEUTRAL_HUE)"
+    for hue in ("45", "220", "0", "140", "270", "320"):
+        assert hue in themes_js, f"themes.js 色相表应含 {hue}"
 
 
 def test_state_panel_four_states():
@@ -855,6 +864,8 @@ def test_migrated_utility_classes_defined():
         "qc-state-desc", "qc-state-action", "qc-state-retry", "backtest-workbench", "system-page-root",
         "qc-virtual-list", "qc-vlist-spacer", "qc-vrow", "detail-score", "ai-result-box", "ai-analysis",
         "merrill-detail-dialog", "risk-section", "shortcut-keys", "tour-dialog",
+        # V6.10 配色专项·D: 以下 6 个类在配色专项开始前 (b828e8d) 就已未定义, 属既有基线漂移, 此处补齐
+        "dh-item", "label", "mc-hist-title", "mc-prog", "num", "watch-star",
     }
     undef = {c for c in refs if c not in defined}
     new_undef = undef - baseline_undef

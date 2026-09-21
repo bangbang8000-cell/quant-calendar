@@ -27,8 +27,8 @@
   --qc-neutral-600: #6b6358;
   --qc-neutral-900: #1f1d1a;
 
-  /* V6.10 (C·治理): 原 --qc-state-* / --qc-success|warning|error|info 两套并行定义已删除 ——
-     统一为下方 --state-{k}-{text,tint,solid,on-solid} 四个变体 (唯一语义槽位)。 */
+  /* V6.10 (C·治理): 原 --qc-state-* / --qc-success|warning|error|info 两套并行定义已删除,
+     统一为下方 --state-* 系列 (text / tint / solid / on-solid 四个变体, 唯一语义槽位)。 */
   --qc-market-up: var(--market-up-fill);
   --qc-market-down: var(--market-down-fill);
 
@@ -180,6 +180,13 @@
   --font-2xs: 9px;   --font-icon: 44px;   --font-hero: 64px;
   --font-sm: var(--qc-font-size-sm);   --font-base: var(--qc-font-size-base);  --font-md: var(--qc-font-size-md);
   --font-2xl: 26px;
+  /* V6.10 (D): V6.6 M2 兼容层 (--sp-*/--r-*/--easing-exit) —— 旧组件与外部脚本仍可能引用,
+     属「设计标尺别名」而非死代码, 由 test_v66_m2_tokens.py 作为契约固定。 */
+  --sp-1: var(--qc-space-1);   --sp-2: var(--qc-space-2);   --sp-3: var(--qc-space-3);  --sp-4: var(--qc-space-4);
+  --r-sm: var(--qc-radius-small);   --r-md: var(--qc-radius-medium);   --r-lg: var(--qc-radius-large);
+  --r-xl: var(--qc-radius-xl);  --r-full: var(--qc-radius-full);
+  --easing-exit: cubic-bezier(0.36, 0, 0.66, -0.56);
+
   /* ─── Typography: Font Weight ─── */
   --font-normal: var(--qc-font-weight-normal);    --font-medium: var(--qc-font-weight-medium);
   --font-semibold: var(--qc-font-weight-semibold);  --font-bold: var(--qc-font-weight-bold);
@@ -202,7 +209,7 @@
   --surface: #ffffff;
   --bg-code: #f6f8fa;
   --bg-tertiary: #f2efe7;   /* V5.31: 原 #f1f5f9 为冷灰, 与暖中性族 (#f7f4ee/#fcfaf7) 混用 */
-  /* V5.30 (P0-2): 原硬编码 #2563eb (Tailwind blue-600) — AI 悬浮球渐变尾色/2 处边框
+  /* V5.30 (P0-2): 原硬编码为 Tailwind blue-600 — AI 悬浮球渐变尾色/2 处边框
      在金色主题下渲染出蓝色异物; 改为随色相联动的品牌深档 */
   --primary-color-dark: var(--qc-primary-800);
   --text-disabled: #9ca3af;
@@ -240,7 +247,7 @@
   --color-up:      var(--market-up-fill);
   --color-down:    var(--market-down-fill);
   /* V5.31: rise/fall are used as TEXT (stat-value / num / pct)
-     old #E63946/#2E7D32 gave 3.9-4.2:1 on cards and 3.1-3.4:1 in dark -> semantic text colors */
+     原填充档在卡片上仅 3.9-4.2:1、暗色 3.1-3.4:1 -> 改用语义文字档 */
   --color-rise:    var(--market-up-text);
   --color-fall:    var(--market-down-text);
   --color-neutral: #43a047;
@@ -269,7 +276,7 @@
 
   /* ═══ V6.10 (配色专项·A): 表面角色令牌 (Layer 2, 静态兜底) ═══
      运行期由 themes.js 按色相/模式覆盖; 此处仅保证首屏与无 JS 时的可用值。
-     契约: 明暗同名, 组件只允许引用角色名, 不允许再出现 #0b1220/#101a2e/#16233b 等模式专属硬编码面。 */
+     契约: 明暗同名, 组件只允许引用角色名, 不允许再出现模式专属的硬编码面色。 */
   --surface-canvas: hsl(45, 18%, 98%);
   --surface-card: #ffffff;
   --surface-raised: #ffffff;

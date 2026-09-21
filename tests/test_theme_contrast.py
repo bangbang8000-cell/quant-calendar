@@ -1,85 +1,139 @@
 # -*- coding: utf-8 -*-
 """
-V4.6 (FR-4.6.6): 配色主题门禁 — 主色对比度 + classic bg 完备
+V6.10 (配色专项·D): 主题对比度门禁 — **运行期 14 套配置全断言**
+
+背景 (为什么重写):
+- 旧版本从 themes.css 里静态抓取 `[data-theme="classic-white"]` 等主题块的 hex 值,
+  而 V6.1 起主题模型已收敛为「模式(明/暗) × 色相(hue)」, 由 frontend/js/themes.js 在运行期生成,
+  classic-* 主题块早已删除 → 门禁恒失败 (KeyError), 且覆盖不到真实的 14 套配置。
+- 现在改为: 由 tests/color_probe.js 以 Node 执行 themes.js (运行期唯一权威) 收集令牌,
+  再由 tests/color_gate.py 按级联模型解析, 对**明/暗 × 7 色相(含中性) = 14 套**逐项断言。
+
+阈值依据: WCAG 2.1 —— 正文 4.5:1; 大字号 3:1; 非文本 (组件边界/焦点指示/图形对象) 3:1。
 """
 import os
 import re
+import sys
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import color_gate as g  # noqa: E402
 
-def _rgb(h):
-    h = h.lstrip("#")
-    if len(h) == 3:
-        h = "".join(c * 2 for c in h)
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+CONFIGS = g.CONFIGS
 
-
-def _lum(rgb):
-    def f(c):
-        c = c / 255.0
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-    r, g, b = map(f, rgb)
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def _contrast(a, b):
-    la, lb = _lum(_rgb(a)), _lum(_rgb(b))
-    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
-
-
-def _themes():
-    src = open(os.path.join(BASE, "frontend", "css", "themes.css"), encoding="utf-8").read()
-    themes = {}
-    for m in re.finditer(r'\[data-theme="([^"]+)"\] \{([\s\S]*?)\}', src):
-        name, body = m.group(1), m.group(2)
-        def tok(k):
-            mm = re.search(r"--" + k + r":\s*(#[0-9a-fA-F]{3,6})\b", body)
-            return mm.group(1) if mm else None
-        themes[name] = {"primary": tok("primary-color"), "bg": tok("bg-page")}
-    return themes
-
-
-def test_primary_contrast_on_bg():
-    """每主题主色 vs 背景对比度 >= 3:1 (大按钮文字)"""
-    bad = []
-    for name, t in _themes().items():
-        if not t["primary"] or not t["bg"]:
-            continue
-        c = _contrast(t["primary"], t["bg"])
-        if c < 3.0:
-            bad.append(f"{name}: primary {t['primary']} vs bg {t['bg']} = {c:.2f}")
-    assert not bad, "主色对比度不足: " + str(bad)
-
-
-def test_classic_themes_have_bg():
-    """classic 系列主题必须定义 --bg-page"""
-    themes = _themes()
-    for name in ("classic-white", "classic-red", "classic-gold"):
-        assert themes[name]["bg"], f"{name} 缺 --bg-page 定义"
-
-
-# V4.8.1 (DEV-PLAN 2.3): 时间轴 dark 适配守护 — 连接线暗色令牌 + 徽标深字 + chip 暗底
-import re as _re
+# (断言说明, 前景令牌, 背景令牌, 背景叠加基准令牌, 阈值)
+CHECKS = [
+    # 文本: 基础层级
+    ("正文/卡片", "--text-primary", "--surface-card", None, 4.5),
+    ("正文/页底", "--text-primary", "--surface-canvas", None, 4.5),
+    ("次文/卡片", "--text-secondary", "--surface-card", None, 4.5),
+    ("次文/页底", "--text-secondary", "--surface-canvas", None, 4.5),
+    ("三级文/卡片", "--text-tertiary", "--surface-card", None, 4.5),
+    ("三级文/表头底", "--text-tertiary", "--bg-card-header", None, 4.5),
+    ("禁用文/卡片 (3:1)", "--text-disabled", "--surface-card", None, 3.0),
+    ("表格头 muted/淡底", "--qc-muted-foreground", "--qc-muted", None, 4.5),
+    # 品牌与链接
+    ("品牌文字/卡片", "--primary-text", "--surface-card", None, 4.5),
+    ("品牌文字/页底", "--primary-text", "--surface-canvas", None, 4.5),
+    ("文字链接/卡片", "--text-link", "--surface-card", None, 4.5),
+    ("文字按钮/卡片", "--btn-primary-text-color", "--surface-card", None, 4.5),
+    ("主按钮文字/实底", "--btn-primary-color", "--btn-primary-bg", None, 4.5),
+    ("主按钮文字/hover", "--btn-primary-color", "--btn-primary-hover-bg", None, 4.5),
+    ("主按钮文字/active", "--btn-primary-color", "--btn-primary-active-bg", None, 4.5),
+    # 导航
+    ("导航默认项/导航底", "--qc-nav-item-default", "--qc-nav-bg", None, 4.5),
+    ("导航激活项/激活底", "--qc-nav-item-active", "--qc-nav-item-active-bg", "--qc-nav-bg", 4.5),
+    ("导航分组标签/导航底", "--qc-nav-group-label", "--qc-nav-bg", None, 4.5),
+    ("导航徽标文字/徽标底", "--qc-nav-badge-text", "--qc-nav-badge-bg", "--qc-nav-bg", 4.5),
+    # 语义: 文字与淡底
+    ("成功文字/卡片", "--state-success-text", "--surface-card", None, 4.5),
+    ("警告文字/卡片", "--state-warning-text", "--surface-card", None, 4.5),
+    ("危险文字/卡片", "--state-danger-text", "--surface-card", None, 4.5),
+    ("信息文字/卡片", "--state-info-text", "--surface-card", None, 4.5),
+    ("成功文字/淡底", "--state-success-text", "--state-success-tint", None, 4.5),
+    ("警告文字/淡底", "--state-warning-text", "--state-warning-tint", None, 4.5),
+    ("危险文字/淡底", "--state-danger-text", "--state-danger-tint", None, 4.5),
+    ("信息文字/淡底", "--state-info-text", "--state-info-tint", None, 4.5),
+    # 行情涨跌 (文字档 >=4.5 / 填充档 >=3)
+    ("涨文字/卡片", "--market-up-text", "--surface-card", None, 4.5),
+    ("跌文字/卡片", "--market-down-text", "--surface-card", None, 4.5),
+    ("涨填充/卡片 (3:1)", "--market-up-fill", "--surface-card", None, 3.0),
+    ("跌填充/卡片 (3:1)", "--market-down-fill", "--surface-card", None, 3.0),
+    # 非文本: 焦点指示与组件边界 (WCAG 1.4.11)
+    ("焦点环/页底", "--qc-ring", "--surface-canvas", None, 3.0),
+    ("焦点环/卡片", "--qc-ring", "--surface-card", None, 3.0),
+    ("控件边界/卡片", "--border-control", "--surface-card", None, 3.0),
+    ("控件边界/输入底", "--border-control", "--surface-input", None, 3.0),
+]
 
 
-def _darkpro_section():
-    src_css = open(os.path.join(BASE, "frontend", "css", "themes.css"), encoding="utf-8").read()
-    m = _re.search(r'\[data-theme="dark-pro"\] \{([\s\S]*?)\}', src_css)
-    return m.group(1) if m else ""
+def _fmt(mode, hue):
+    return "%s/%s" % (mode, "中性" if hue < 0 else hue)
 
 
-def test_darkpro_timeline_adaption_v481():
-    """D5: dark-pro 时间轴可读性 — 徽标深字(亮青主色上白字不可读), chip 暗底, 连接线暗色"""
-    block = _darkpro_section()
-    src_css = open(os.path.join(BASE, "frontend", "css", "themes.css"), encoding="utf-8").read()
-    # 1) 徽标/当前 tag 用深字 (var(--bg-page) = 深底)
-    m = _re.search(
-        r'\[data-theme="dark-pro"\] \.merrill-stage-chip-current,\s*\[data-theme="dark-pro"\] \.tl-tip-current \{ color: var\(--bg-page\) ; \}',
-        src_css)
-    assert m, "D5: 当前徽标未适配深字 (white on #64ffda = 1.25:1 不可读)"
-    # 2) chip 暗底
-    m = _re.search(r'\[data-theme="dark-pro"\] \.merrill-stage-chip \{[\s\S]*?background: var\(--bg-card\) !important', src_css)
-    assert m, "D5: 阶段 chip 未适配暗底"
-    # 3) 连接线暗色令牌在 dark-pro 块内定义
-    assert "--border-strong: #3a4a6a" in block, "D5: dark-pro 缺 --border-strong 暗色变体 (连接线)"
+def test_runtime_configs_available():
+    """探针必须覆盖 明/暗 × 7 色相 = 14 套配置。"""
+    rt = g.runtime_tokens()
+    assert len(rt) == 14, "color_probe 配置数应为 14, 实际 %d" % len(rt)
+    for mode, hue in CONFIGS:
+        assert "%s:%s" % (mode, hue) in rt, "缺少配置 %s:%s" % (mode, hue)
+
+
+def test_contrast_contract_all_configs():
+    """§4.5 对比度契约: 14 套配置逐项达标。"""
+    failures = []
+    for label, fg, bg, base, need in CHECKS:
+        for mode, hue in CONFIGS:
+            v = g.pair(mode, hue, fg, bg, base)
+            if v is None:
+                failures.append("%s @%s: 令牌缺失 (%s / %s)" % (label, _fmt(mode, hue), fg, bg))
+            elif v < need:
+                failures.append("%s @%s: %.2f < %.1f" % (label, _fmt(mode, hue), v, need))
+    assert not failures, "对比度契约未达标 (%d 项):\n  %s" % (len(failures), "\n  ".join(failures[:25]))
+
+
+def test_light_and_dark_surface_contract():
+    """明暗表面契约: 五种表面角色在两侧都必须存在, 且卡片与画布有可见差异。"""
+    roles = ("--surface-canvas", "--surface-card", "--surface-raised", "--surface-input", "--surface-sunken")
+    for mode, hue in CONFIGS:
+        r = g.resolved(mode, hue)
+        for token in roles:
+            assert token in r, "%s 缺 %s" % (_fmt(mode, hue), token)
+        card = g.color(mode, hue, "--surface-card")
+        canvas = g.color(mode, hue, "--surface-canvas")
+        assert card != canvas, "%s: 卡片与画布同色" % _fmt(mode, hue)
+
+
+def test_chart_canvas_matches_card():
+    """图表画布必须等于卡片表面 (V6.10 前暗色为海军蓝硬编码, 与卡片形成双面族)。"""
+    for mode, hue in CONFIGS:
+        r = g.resolved(mode, hue)
+        assert r["--chart-bg"] == r["--surface-card"], \
+            "%s: --chart-bg(%s) != --surface-card(%s)" % (_fmt(mode, hue), r["--chart-bg"], r["--surface-card"])
+
+
+def test_element_plus_bridge_connected():
+    """EP 变量桥必须接通: EP 基础变量不得停留在其浅色默认值。"""
+    for mode, hue in CONFIGS:
+        r = g.resolved(mode, hue)
+        for token, forbidden in (("--el-text-color-primary", "#303133"),
+                                 ("--el-border-color", "#dcdfe6"),
+                                 ("--el-color-success", "#67c23a"),
+                                 ("--el-color-warning", "#e6a23c"),
+                                 ("--el-color-danger", "#f56c6c"),
+                                 ("--el-color-info", "#909399")):
+            val = r.get(token, "")
+            assert val and val.lower() != forbidden.lower(), \
+                "%s: %s 仍是 EP 默认值 %s" % (_fmt(mode, hue), token, forbidden)
+        assert r.get("--el-message-bg-color"), "缺 --el-message-bg-color (消息语义桥)"
+
+
+def test_neutral_brand_has_zero_saturation():
+    """「中性无色相」档: 关键品牌令牌的 hsl 彩度必须为 0。"""
+    for mode in g.MODES:
+        r = g.resolved(mode, -1)
+        for token in ("--primary-text", "--btn-primary-bg", "--qc-ring", "--text-link", "--border-control"):
+            val = r.get(token, "")
+            m = re.match(r"hsl\(([\d.]+),\s*([\d.]+)%,", val or "")
+            assert m, "%s: %s 不是 hsl 值 (%s)" % (mode, token, val)
+            assert float(m.group(2)) == 0, "%s: %s 彩度非 0 (%s)" % (mode, token, val)

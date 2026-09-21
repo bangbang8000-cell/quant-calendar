@@ -90,8 +90,8 @@
           color: s.color || getCSSVar('--text-tertiary') || '#888',
           // V5.31: 服务端阶段色为 Material 浅色系, 直接作底 + 白字仅 1.73~2.23:1; 改用「阶段色 14% 与卡片底
           // 混合」的浅底纹 (color-mix 随明暗主题自适应, 暗色不再是刺眼亮块), 文字用「阶段色 48% + 前景色」压深/提亮
-          bg: 'color-mix(in srgb, ' + (s.color || '#888') + ' 14%, var(--bg-card))',
-          textColor: 'color-mix(in srgb, ' + (s.color || '#888') + ' 48%, var(--qc-foreground))',
+          bg: 'color-mix(in srgb, ' + (s.color || 'var(--text-tertiary)') + ' 14%, var(--bg-card))',
+          textColor: 'color-mix(in srgb, ' + (s.color || 'var(--text-tertiary)') + ' 48%, var(--qc-foreground))',
           tagline: s.allocation ? (stageTaglines[key] || '') : ''
         };
       });
@@ -140,7 +140,8 @@
 
     const confidenceColor = computed(() => {
       const lvl = merrillData.value.confidence?.level || '';
-      return lvl === '高' ? '#43a047' : lvl === '中' ? '#FF9800' : lvl === '低' ? '#E53935' : 'var(--text-secondary)';
+      // V6.10 (D): 硬编码色改语义令牌
+      return lvl === '高' ? 'var(--state-success-text)' : lvl === '中' ? 'var(--state-warning-text)' : lvl === '低' ? 'var(--state-danger-text)' : 'var(--text-secondary)';
     });
 
     const timelineStages = computed(() => {

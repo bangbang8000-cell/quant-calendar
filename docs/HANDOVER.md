@@ -1,10 +1,11 @@
 # 量化选股日历 — 交接文档 (HANDOVER)
 
-> 最后更新: 2026-09-20 (V5.20)
+> 最后更新: 2026-09-21 (V6.10 配色专项 A~D)
 > 当前状态: **v5.20 已完成 (APP_VERSION 5.10.0)** — 评估历史 / 问股历史 双栏化 (复用 `qc-stock-detail-dialog` 内嵌 + 自动载入首条 + 窄栏行压缩 + 修复既有行裁切)。前序: v5.19 详情双栏全站统一 (5.9.0) / v5.18 UI 基础体验硬化 (5.8.0)
 > 近期修复 (2026-09-20): ① **登录页记住用户名** — 前端新增 localStorage `qc_login_username` 回填 + 输入框补 `name`/`autocomplete` (修复「输入用户名无法保存」) ② **美林时钟双栏回退** — 用户反馈中栏效果不好, 已恢复原样式 (2 列网格 + 弹窗详情)
 > 同步状态: **dev(:8001)/ops(:8000) 均运行 5.10.0**; **群晖已推至 `4523313`** (pre-push 安全门禁通过), ops 经 `fetch synology + reset --hard` 对齐; **GitHub origin 仍停在 `762f509` 未推** (TLS 握手不通)
 > 数据源架构: **sxsc-tushare 优先**(短线三池/龙虎榜/指数/资金流/业绩), 6 位代码自动规范化, 客户端缺失源不记失败
+> **配色专项 (V6.10, 2026-09-21)**: 评估报告 `docs/EVAL-UI-COLOR-SYSTEM.md` + 冻结决策 §5.0; 已交付 A/B/C 三批 (`745ddec`/`f545805`/`9baa901`), D 批为门禁与文档。要点: ① 深色表面统一到「色相联动暖中性族」(删除海军蓝硬编码面) ② Element Plus 变量桥明暗全量接通 (修 `.el-range-separator` 1.28:1、ElMessage 2.04–2.80:1) ③ 语义收敛为唯一槽位 `--state-{k}-{text,tint,solid,on-solid}` ④ 焦点环/控件边界/文字链接走对比度求解 ⑤ 涨跌拆「填充/文字」档 ⑥ 图表改跨色相定性色板 ⑦ 新增「中性无色相」品牌档 ⑧ PWA `theme-color` 动态化 + 系统主题实时跟随 ⑨ token 治理: 悬空引用 0 / 死 token 4 / 门禁口径硬编码 0
 
 ---
 
@@ -218,6 +219,14 @@
 ## 6. 测试体系 (v5.17.1 基线 3343+ passed / 2 failed / 2 skipped)
 
 - 门禁: test_tokens_defined / contrast / accessibility / spacing_grid(4px) / typography / theme_contrast / tokens_no_hardcode / **market_review/scan 无内联样式** / 版本纪律 / 覆盖率门禁(短线模块 93%)
+- **V6.10 配色专项·D 新增/重写 (运行期口径)**:
+  - `tests/color_probe.js` — Node 最小 DOM shim 执行 `frontend/js/themes.js`, 导出 14 套配置的运行期令牌 (唯一真相源)
+  - `tests/color_gate.py` — 按 index.html 加载顺序复现 CSS 级联 + 递归解析 `var()`, 提供对比度工具
+  - `tests/test_theme_contrast.py` (重写) — 14 套 × 36 项契约: 文本/品牌/导航/语义/涨跌/焦点环/控件边界/图表画布/EP 桥/中性档
+  - `tests/test_contrast.py` (重写) — 文字层级 4 级 × 2 表面 + 占位符/弱化文本 + 涨跌文字档
+  - `tests/test_color_tokens.py` (新增) — 悬空引用 0 / 死 token 白名单 / 语义层明暗对称 / 双源上限 / 散落硬编码 0
+  - `tests/e2e/color_audit.py` — 固化的 DOM 实测审计 (14 套 × 6 页面, 逐文本节点, 含渐变底色合成)
+  - CI 增加 `actions/setup-node` (运行期门禁需要 Node 执行 themes.js)
 - 前端一致性: test_frontend_consistency(令牌/类/注入/i18n/menu) + deps_audit + lockfile
 - 功能: 策略/日历/AI/美林/开放平台/回测/数据源/研究/风险/复盘/短线 全覆盖
 - v5.15 新增 35 用例(test_v515x_*.py 8 文件)全绿

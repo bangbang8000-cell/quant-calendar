@@ -116,11 +116,22 @@ def test_theme_mode_shared():
 # ─── F5 (A5): 深色输入框适配 ───────────────────────────────
 
 def test_dark_input_vars_mapped():
-    """T17: dark-pro 块含 --el-input-*/--el-fill-color-* 映射"""
-    css = _read_f("css/themes.css")
-    dark_block = css[css.index('[data-theme="dark-pro"] {'):]
-    for token in ("--el-input-bg-color", "--el-fill-color-blank", "--el-input-text-color"):
-        assert token in dark_block, f"dark-pro 块应映射 {token}"
+    """T17: 暗色下 EP 输入相关变量必须完成映射。
+
+    V6.10 (D) 口径修订: 原先只检查 themes.css 的 dark-pro 块, 而 EP 变量桥 (明暗两侧全量)
+    已统一上移到 tokens.css 的 `[data-theme="dark-pro"]` 块 —— 门禁应校验**运行期解析结果**
+    而不是某个文件里是否有这行文本, 否则实现搬家就会误报。
+    """
+    import os as _os
+    import sys as _sys
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    import color_gate as _g
+    dark = _g.resolved("dark", 45)
+    light = _g.resolved("light", 45)
+    for token in ("--el-input-bg-color", "--el-fill-color-blank", "--el-input-text-color",
+                  "--el-bg-color", "--el-text-color-regular", "--el-border-color"):
+        assert token in dark, f"暗色缺 {token} 映射"
+        assert dark[token] != light[token], f"{token} 在明暗两侧取值相同 ({dark[token]}), 映射未生效"
 
 
 def test_dark_input_wrapper_override():

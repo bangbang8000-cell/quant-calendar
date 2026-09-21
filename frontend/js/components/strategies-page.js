@@ -1561,7 +1561,7 @@
         return pe.base || pe.mid || lo || hi || '';
       });
       // V6.10 (配色专项·C·f2): 阶段色来自后端配置 (不随主题), 文字色必须按底色亮度自适应,
-      //   原固定 --merrill-chip-text(#1f2937) 只对浅色底有效; 且 `c + '44'` 拼 alpha 仅对 6 位 hex 成立。
+      //   原固定 chip 文字色只对浅色底有效; 且 `c + '44'` 拼 alpha 仅对 6 位 hex 颜色成立。
       function _chipFg(c) {
         const m = /^#([0-9a-f]{6})$/i.exec(String(c || '').trim());
         if (!m) return 'var(--merrill-chip-text)';

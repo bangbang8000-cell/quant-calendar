@@ -108,7 +108,6 @@
       out['--qc-muted'] = hsl(hue, 16, 95);
       // V5.12.2 (FR-5.12.2.3): 描边 1.3 -> ~2.0:1
       out['--qc-border'] = hsl(hue, 12, 72);
-      out['--qc-input'] = hsl(hue, 12, 72);
       out['--chart-axis'] = hsl(hue, 12, 55);
       out['--chart-split'] = hsl(hue, 10, 88);
       out['--qc-foreground'] = hsl(hue, 10, 12);
@@ -121,7 +120,6 @@
       out['--bg-stripe'] = hsl(hue, 20, 97);
       out['--bg-card-header'] = hsl(hue, 24, 96);
       out['--card-gradient-header'] = 'linear-gradient(135deg, ' + hsl(hue, 24, 96) + ' 0%, #ffffff 100%)';
-      out['--bg-dialog-header'] = 'linear-gradient(135deg, ' + hsl(hue, 24, 96) + ' 0%, #ffffff 100%)';
       out['--bg-hover'] = hsl(hue, 26, 94);
       out['--bg-tertiary'] = hsl(hue, 14, 93);
       out['--badge-gold-bg'] = hsl(hue, 26, 96);
@@ -132,17 +130,14 @@
       out['--text-primary'] = hsl(hue, 12, 12);
       out['--text-secondary'] = hsl(hue, 12, 32);
       out['--text-tertiary'] = hsl(hue, 14, 40);
-      out['--text-disabled'] = hsl(hue, 9, 58);
+      out['--text-disabled'] = hsl(hue, 9, _gradL(hue, 9, _rgbTuple(hue, 18, 98), 25, 70, true, 3.2));
       // 与暗色分支保持键集一致 (applyTheme 只覆盖不清理, 缺键会导致跨模式残留)
       out['--qc-card'] = '#ffffff';
       out['--qc-popover'] = '#ffffff';
-      out['--qc-card-foreground'] = hsl(hue, 10, 12);
-      out['--qc-popover-foreground'] = hsl(hue, 10, 12);
       out['--qc-nav-border'] = hsl(hue, 12, 72);
       out['--qc-nav-item-hover-bg'] = hsl(hue, 16, 95);
       out['--qc-overlay'] = 'rgba(31, 29, 26, 0.5)';
       out['--bg-card'] = '#ffffff';
-      out['--bg-sidebar'] = '#ffffff';
       out['--surface'] = '#ffffff';
       out['--border-heavy'] = hsl(hue, 22, 72);
       // V6.10 (配色专项·A): 表面角色令牌 — 明暗同名契约, 消除「CSS 硬编码面 vs 运行期生成面」双面族
@@ -162,7 +157,6 @@
       out['--qc-popover'] = hsl(hue, 11, 11);
       out['--qc-muted'] = hsl(hue, 12, 14);
       out['--qc-border'] = hsl(hue, 14, 30);
-      out['--qc-input'] = hsl(hue, 14, 30);
       out['--chart-axis'] = hsl(hue, 16, 52);
       out['--chart-split'] = hsl(hue, 14, 26);
       out['--qc-nav-bg'] = hsl(hue, 10, 9);
@@ -174,7 +168,6 @@
       out['--bg-stripe'] = hsl(hue, 10, 9);
       out['--bg-hover'] = hsl(hue, 12, 14);
       out['--bg-tertiary'] = hsl(hue, 12, 14);
-      out['--bg-sidebar'] = hsl(hue, 10, 8);
       out['--border-light'] = hsl(hue, 13, 18);
       out['--border-base'] = hsl(hue, 14, 26);
       out['--border-heavy'] = hsl(hue, 16, 38);
@@ -260,7 +253,6 @@
       '--qc-primary-700': hsl(hue, 85, pL7),
       '--qc-primary-800': hsl(hue, 88, 28),
       '--qc-primary-900': hsl(hue, 90, 20),
-      '--qc-primary-foreground': '#ffffff',
       '--text-link': hsl(hue, 78, txtL),   // V6.10 (B): 原 hsl(h,70,40) 亮色金 3.27:1 / 绿 2.93:1, 与品牌文字同求解器
       '--secondary-color': hsl(hue, 70, 55),
       '--card-border': hsl(hue, 22, 80),
@@ -344,7 +336,6 @@
       '--qc-primary-700': hsl(hue, 92, p700d),
       '--qc-primary-800': hsl(hue, 90, p800d),
       '--qc-primary-900': hsl(hue, 92, Math.min(98, p800d + 8)),
-      '--qc-primary-foreground': '#101014',
       '--text-link': hsl(hue, 85, txtD),   // V6.10 (B): 原固定 65% 在紫色相 4.43:1, 改用品牌文字求解档
       '--secondary-color': hsl(hue, 70, 60),
       '--card-border': hsl(hue, 30, 25),

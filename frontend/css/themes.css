@@ -103,11 +103,16 @@
             --primary-color-dark: var(--qc-primary-800);   /* V5.31: 原 #3b82f6 蓝色残留 */
             --surface: #101a2e; --bg-code: #0d1526;
             --text-disabled: #64748b;   /* EP 禁用态文本 */
+            /* V6.10 (D): 暗色阴影补全到当前族 --qc-shadow-* —— 原先只有 legacy --shadow-* 的暗色变体,
+               而全站引用的是 --qc-shadow-*(亮色 5% 黑), 在暗底完全不可见 (真实缺陷)。 */
+            --qc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35) ;
+            --qc-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45) ;
+            --qc-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55) ;
             /* V6.10 (配色专项·A): EP 变量级深色映射已上移至 tokens.css 的「EP 变量桥」(明暗两侧全量桥接)。
-               原先此处只桥接 8 个变量, 导致 --el-text-color-primary(#303133)、--el-border-color(#dcdfe6)
-               等 EP 基础变量在暗色下保持浅色值 —— 实测 .el-range-separator 仅 1.28:1。 */
+               原先此处只桥接 8 个变量, 导致 EP 基础文本/边框变量在暗色下保持浅色默认值 ——
+               实测日期区间的分隔符文字仅 1.28:1。 */
             /* V6.10 (配色专项·A): 表面统一到「色相联动暖中性族」, 删除海军蓝硬编码面
-               (原 #101a2e/#16233b/#0d1526/#3a4a6a 不在运行期覆盖列表内, 与 --qc-card 形成双面族) */
+               (原值不在运行期覆盖列表内, 与 --qc-card 形成双面族) */
             --bg-input: var(--surface-input);
             --bg-code: var(--surface-sunken);
             /* V6.10 (C·治理): 原 legacy --shadow-* 暗色变体已删除 (全树无引用, 阴影统一走 --qc-shadow-*) */

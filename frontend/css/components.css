@@ -177,7 +177,8 @@
    此处仅补充字重统一 + 语义变体对齐 --state-* 四变体 */
 .el-button { font-weight: var(--qc-font-weight-medium); }
 /* 语义按钮: 实底取 solid 档, 文字取 on-solid 档 —— 保证明暗两模式均 ≥4.5:1
-   (V6.10: 原 danger 用 --qc-state-error + 硬编码白字; success/warning/info 直接走 EP 默认 #67c23a/#e6a23c/#909399, 浅色下 2.04–2.80:1) */
+   (V6.10: 原 danger 用 --qc-state-error + 硬编码白字; success/warning/info 直接走 Element Plus 默认语义色,
+   浅色下实测 2.04–2.80:1) */
 .el-button--danger {
   --el-button-bg-color: var(--state-danger-solid);
   --el-button-border-color: var(--state-danger-solid);

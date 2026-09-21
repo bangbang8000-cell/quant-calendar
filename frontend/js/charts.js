@@ -69,7 +69,14 @@
   }
 
   // v3.15 (15.4): 单令牌运行时读取 — ECharts canvas 无法解析 CSS var(), 令牌优先, 字面量兜底
-  const getCSSVar = (n) => (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+  // V6.10 (D): 纯函数构建器会在 Node 下被测试直接调用 —— 无 DOM 时必须优雅降级为空串,
+  // 由调用点的 `|| 兜底色` 接管, 而不是抛 ReferenceError。
+  const getCSSVar = (n) => {
+    try {
+      if (typeof getComputedStyle !== 'function' || typeof document === 'undefined') return '';
+      return (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+    } catch (e) { return ''; }
+  };
 
   // V5.0.5 (T-5.0.54): 图表语义配色 palette — 语义角色 → 令牌 (令牌优先, 显式字面量兜底)
   // 语义角色: up/down(涨跌) neutral(中性) accent(强调) risk(风险) warn(警示)
@@ -426,7 +433,7 @@
   // nav 与 drawdown 数组等长; drawdown 以 % 计 (负值向下)。
   function buildNavDrawdownOption(nav, drawdown, dates, opts) {
     opts = opts || {};
-    const ddColor = opts.drawdownColor || getCSSVar('--state-danger-solid');
+    const ddColor = opts.drawdownColor || getCSSVar('--state-danger-solid') || '#C62828';  /* qc-allow-hardcode: Node 无 DOM 兜底 */
     return {
       tooltip: { trigger: 'axis' },
       legend: { data: [opts.navLabel || '净值', opts.ddLabel || '回撤'] },
@@ -450,7 +457,7 @@
   // data: { dates, median[], q25[], q75[] }
   function buildIcBandOption(data, opts) {
     opts = opts || {};
-    const bandColor = opts.bandColor || getCSSVar('--state-info-solid');
+    const bandColor = opts.bandColor || getCSSVar('--state-info-solid') || '#1976d2';  /* qc-allow-hardcode: Node 无 DOM 兜底 */
     const dates = (data && data.dates) || [];
     const median = (data && data.median) || [];
     const q25 = (data && data.q25) || [];
@@ -479,7 +486,7 @@
   // data: { dates, value[], upper[], lower[] }
   function buildSentimentBandOption(data, opts) {
     opts = opts || {};
-    const color = opts.color || getCSSVar('--color-ai');
+    const color = opts.color || getCSSVar('--color-ai') || '#7c3aed';  /* qc-allow-hardcode: Node 无 DOM 兜底 */
     const dates = (data && data.dates) || [];
     const value = (data && data.value) || [];
     const upper = (data && data.upper) || [];

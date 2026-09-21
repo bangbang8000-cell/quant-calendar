@@ -46,7 +46,7 @@ def _root_block():
 def test_darkpro_shadow_tokens_v482():
     """D3: dark-pro 必须覆盖阴影令牌 (亮色 6-12% 黑在暗底不可见)"""
     block = _darkpro_block()
-    for tok in ("--shadow-sm", "--shadow-md", "--shadow-lg"):
+    for tok in ("--qc-shadow-sm", "--qc-shadow-md", "--qc-shadow-lg"):
         line_m = re.search(tok + r":[^;]+;", block)
         assert line_m, f"D3: dark-pro 缺 {tok} 覆盖"
         # 阴影必须有明显黑色不透明度 (alpha >= 0.25)
@@ -61,11 +61,11 @@ def test_darkpro_shadow_hierarchy_v482():
     """D3: 阴影层级 — 弹窗(lg) > 卡片(md) > 页面(sm) 逐级加深"""
     block = _darkpro_block()
     alphas = {}
-    for tok in ("--shadow-sm", "--shadow-md", "--shadow-lg"):
+    for tok in ("--qc-shadow-sm", "--qc-shadow-md", "--qc-shadow-lg"):
         m = re.search(tok + r":[^;]*rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)", block)
         assert m, f"D3: {tok} 非 rgba 阴影"
         alphas[tok] = float(m.group(4))
-    assert alphas["--shadow-sm"] < alphas["--shadow-md"] < alphas["--shadow-lg"], (
+    assert alphas["--qc-shadow-sm"] < alphas["--qc-shadow-md"] < alphas["--qc-shadow-lg"], (
         f"D3: 阴影层级应递增 sm<md<lg, 实际 {alphas}")
 
 

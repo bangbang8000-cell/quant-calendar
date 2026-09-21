@@ -44,7 +44,7 @@ def test_components_css_uses_qc_tokens():
     required_tokens = [
         "--qc-card", "--qc-border", "--qc-radius-large", "--qc-space-4",
         "--qc-muted-foreground", "--qc-primary-500", "--qc-primary-100",
-        "--qc-primary-800", "--qc-state-error", "--qc-ring", "--qc-input",
+        "--qc-primary-800", "--state-danger-solid", "--qc-ring", "--border-control",
         "--qc-overlay", "--qc-nav-item-hover-bg",
     ]
     missing = [t for t in required_tokens if t not in css]

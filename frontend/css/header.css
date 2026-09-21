@@ -587,10 +587,10 @@
   align-items: center;
   gap: 8px;
   padding: 6px 16px;
-  background: var(--qc-warning-50, #fffbeb);
-  color: var(--qc-warning-700, #b45309);
+  background: var(--qc-warning-50);
+  color: var(--qc-warning-700);
   font-size: 13px;
-  border-bottom: 1px solid var(--qc-warning-100, #fef3c7);
+  border-bottom: 1px solid var(--qc-warning-100);
 }
 .non-trading-banner .non-trading-banner-close {
   margin-left: auto;

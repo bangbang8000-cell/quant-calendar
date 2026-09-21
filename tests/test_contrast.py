@@ -1,97 +1,66 @@
 # -*- coding: utf-8 -*-
 """
-V4.4 (FR-4.4.3): WCAG 对比度门禁 — 亮色(classic-white) + dark-pro 双主题
+V6.10 (配色专项·D): WCAG 文字对比度门禁 — 运行期 14 套配置
 
-核心文字令牌 vs 背景令牌对比度:
-- text-primary vs bg-card/bg-page  >= 4.5 (正文)
-- text-secondary vs bg-card        >= 3.0 (次要)
-- text-tertiary vs bg-card         >= 3.0 (弱化, 大字号/辅助)
+与 tests/test_theme_contrast.py 的分工:
+- test_theme_contrast.py: 完整契约表 (品牌/导航/语义/行情/非文本边界)
+- 本文件: 文字层级 (primary/secondary/tertiary/disabled/placeholder) 的最小充分断言,
+  便于快速定位「层级下沉」类回归, 并对齐 ui-visual-design 规范的四级文字色阶要求。
+
+旧版本依赖 themes.css 中已删除的 `classic-white` 主题块 → 恒失败; 现改为驱动运行期令牌。
 """
 import os
-import re
+import sys
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import color_gate as g  # noqa: E402
 
-def _hex_to_rgb(h):
-    h = h.lstrip("#")
-    if len(h) == 3:
-        h = "".join(c * 2 for c in h)
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
-
-def _lum(rgb):
-    def f(c):
-        c = c / 255.0
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-    r, g, b = map(f, rgb)
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+# 文字层级 vs 两种表面 (正文 4.5 / 辅助 3.0 —— 辅助文字用于注释与弱化信息)
+TEXT_LEVELS = (
+    ("--text-primary", 4.5),
+    ("--text-secondary", 4.5),
+    ("--text-tertiary", 4.5),
+    ("--text-disabled", 3.0),
+)
+SURFACES = ("--surface-card", "--surface-canvas")
 
 
-def _contrast(a, b):
-    la, lb = _lum(_hex_to_rgb(a)), _lum(_hex_to_rgb(b))
-    hi, lo = max(la, lb), min(la, lb)
-    return (hi + 0.05) / (lo + 0.05)
+def test_text_levels_on_surfaces():
+    failures = []
+    for mode, hue in g.CONFIGS:
+        for tok, need in TEXT_LEVELS:
+            for surface in SURFACES:
+                v = g.pair(mode, hue, tok, surface)
+                if v is None:
+                    failures.append("%s @%s/%s: 令牌缺失" % (tok, mode, hue))
+                elif v < need:
+                    failures.append("%s on %s @%s/%s: %.2f < %.1f" % (tok, surface, mode, hue, v, need))
+    assert not failures, "文字层级对比度不足 (%d 项):\n  %s" % (len(failures), "\n  ".join(failures[:20]))
 
 
-def _theme_tokens(theme_name):
-    """从 themes.css 提取指定主题块的令牌值"""
-    src = open(os.path.join(BASE, "frontend", "css", "themes.css"), encoding="utf-8").read()
-    m = re.search(r'\[data-theme="' + re.escape(theme_name) + r'"\] \{([\s\S]*?)\}', src)
-    assert m, f"theme {theme_name} block not found"
-    tokens = {}
-    for name, val in re.findall(r"(--[a-zA-Z0-9-]+):\s*(#[0-9a-fA-F]{3,6})\b", m.group(1)):
-        tokens[name] = val
-    return tokens
+def test_text_levels_are_distinct():
+    """四级文字色阶必须真正分层 (相邻层级不得同值, 否则层级形同虚设)。"""
+    for mode, hue in g.CONFIGS:
+        vals = [g.resolved(mode, hue).get(t) for t, _ in TEXT_LEVELS]
+        assert len(set(vals)) == len(vals), "%s/%s: 文字色阶存在重复 %s" % (mode, hue, vals)
 
 
-def test_light_theme_contrast_wcag():
-    t = _theme_tokens("classic-white")
-    bg_card = t.get("--bg-card", "#ffffff")
-    bg_page = t.get("--bg-page", "#f8f9fa")
-    cases = [
-        ("--text-primary", bg_card, 4.5),
-        ("--text-primary", bg_page, 4.5),
-        ("--text-secondary", bg_card, 3.0),
-        ("--text-tertiary", bg_card, 3.0),
-    ]
-    for tok, bg, min_c in cases:
-        if tok in t:
-            c = _contrast(t[tok], bg)
-            assert c >= min_c, f"亮色 {tok} ({t[tok]}) vs {bg} 对比度 {c:.2f} < {min_c}"
+def test_placeholder_and_muted_contrast():
+    """占位符/表头等「弱化但仍是文本」的场景必须达 4.5:1 (WCAG 不豁免占位符)。"""
+    failures = []
+    for mode, hue in g.CONFIGS:
+        for fg, bg in (("--qc-muted-foreground", "--surface-card"),
+                       ("--qc-muted-foreground", "--qc-muted"),
+                       ("--qc-muted-foreground", "--surface-sunken")):
+            v = g.pair(mode, hue, fg, bg)
+            if v is None or v < 4.5:
+                failures.append("%s on %s @%s/%s: %s" % (fg, bg, mode, hue, v))
+    assert not failures, "弱化文本对比度不足:\n  %s" % "\n  ".join(failures[:20])
 
 
-def test_dark_theme_contrast_wcag():
-    t = _theme_tokens("dark-pro")
-    bg_card = t.get("--bg-card", "#1a1a3e")
-    bg_page = t.get("--bg-page", "#0f0f23")
-    cases = [
-        ("--text-primary", bg_card, 4.5),
-        ("--text-primary", bg_page, 4.5),
-        ("--text-secondary", bg_card, 3.0),
-        ("--text-tertiary", bg_card, 3.0),
-    ]
-    for tok, bg, min_c in cases:
-        if tok in t:
-            c = _contrast(t[tok], bg)
-            assert c >= min_c, f"dark {tok} ({t[tok]}) vs {bg} 对比度 {c:.2f} < {min_c}"
-
-
-# V4.8.1 (DEV-PLAN 2.2): dark-pro 次级文本/边框/占位符对比度补强
-# - text-disabled (占位符/禁用文本) vs bg-card/bg-page >= 3.0 (辅助文本 AA)
-# - border-heavy (控件边框/focus 轮廓) vs bg-card >= 3.0 (WCAG 1.4.11 非文本对比)
-# - border-base (分隔线) vs bg-card >= 1.5 (可见性; 装饰性不强制 3:1)
-def test_dark_pro_secondary_wcag_v481():
-    t = _theme_tokens("dark-pro")
-    bg_card = t.get("--bg-card", "#1a1a3e")
-    bg_page = t.get("--bg-page", "#0f0f23")
-    cases = [
-        ("--text-disabled", bg_card, 3.0),
-        ("--text-disabled", bg_page, 3.0),
-        ("--border-heavy", bg_card, 3.0),
-        ("--border-base", bg_card, 1.5),
-    ]
-    for tok, bg, min_c in cases:
-        assert tok in t, f"dark-pro 缺令牌 {tok}"
-        c = _contrast(t[tok], bg)
-        assert c >= min_c, f"dark {tok} ({t[tok]}) vs {bg} 对比度 {c:.2f} < {min_c}"
+def test_market_text_uses_text_grade():
+    """涨跌「文字档」必须比对卡片 >=4.5 (不能用填充档当文字色 —— V6.10 前 .qc-stock-change 即此缺陷)。"""
+    for mode, hue in g.CONFIGS:
+        assert g.pair(mode, hue, "--market-up-text", "--surface-card") >= 4.5, "%s/%s 涨文字" % (mode, hue)
+        assert g.pair(mode, hue, "--market-down-text", "--surface-card") >= 4.5, "%s/%s 跌文字" % (mode, hue)
