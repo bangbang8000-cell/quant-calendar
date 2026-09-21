@@ -36,7 +36,11 @@ def _quote(price=10.0, pct_chg=0.0, volume=1_000_000, avg_vol=1_000_000,
 class TestValidate:
     def test_valid_types(self):
         for t in ALERT_TYPES:
-            assert validate_rule(t, 1.0) is None
+            if t == "price_range":
+                # 6.1.2 (B4): 区间规则需要 low,high 两个值
+                assert validate_rule(t, "1,2") is None
+            else:
+                assert validate_rule(t, 1.0) is None
 
     def test_unknown_type(self):
         assert validate_rule("no_such", 1.0) is not None

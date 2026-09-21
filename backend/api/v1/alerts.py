@@ -112,26 +112,62 @@ async def delete_rule(rule_id: int, user: dict = Depends(get_current_active_user
     return {"success": True, "deleted": rule_id}
 
 
+@router.get("/templates")
+async def alert_templates(user: dict = Depends(get_current_active_user)):
+    """6.1.2 (B4): 预警模板库 — 6 类常用规则一键套用"""
+    from rules_alert import get_alert_templates
+    return {"success": True, "templates": get_alert_templates()}
+
+
+# 6.1.2 (B4): 合并推送 — 同股票 15 分钟内多条命中合并为一条 (内存窗口)
+_MERGE_WINDOW_SECONDS = 15 * 60
+_dedupe_merge = {}
+
+
+def _merge_publishable(user: str, code: str) -> bool:
+    import time
+    now = time.time()
+    key = (user, code)
+    last = _dedupe_merge.get(key, 0.0)
+    if now - last < _MERGE_WINDOW_SECONDS:
+        return False
+    _dedupe_merge[key] = now
+    # 防内存膨胀: 保留最近 200 个窗口
+    if len(_dedupe_merge) > 200:
+        _dedupe_merge.clear()
+    return True
+
+
 @router.post("/evaluate")
 async def evaluate(body: Dict[str, Any],
                    user: dict = Depends(get_current_active_user)):
-    """用当前行情评估用户启用规则 → 命中事件走事件引擎投递 (静默期内不投递)。"""
+    """用当前行情评估用户启用规则 → 命中事件走事件引擎投递 (静默期内不投递; 同股 15min 合并)。"""
     from rules_alert import evaluate_alerts, hit_to_event
     hits = evaluate_alerts(user["username"], body.get("quotes") or {})
     triggered = [h for h in hits if h.get("triggered")]
     silenced = is_silenced(user["username"])
     published = 0
+    merged = 0
     if not silenced:
         try:
             from events import EventEngine
             eng = EventEngine(db_store=True)
+            seen_codes = set()
             for h in triggered:
+                code = h.get("stock_code") or h.get("code") or ""
+                if code and code in seen_codes:
+                    merged += 1
+                    continue
+                if code and not _merge_publishable(user["username"], code):
+                    merged += 1
+                    continue
+                seen_codes.add(code)
                 res = eng.publish(hit_to_event(h), user=user["username"])
                 published += len(res)
         except Exception as e:
             logger.warning("预警评估投递失败: %s", e)
     return {"success": True, "hits": hits, "triggered": len(triggered),
-            "published": published, "silenced": silenced}
+            "published": published, "merged": merged, "silenced": silenced}
 
 
 @router.get("/history")
