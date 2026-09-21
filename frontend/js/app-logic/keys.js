@@ -7,7 +7,7 @@
   window.__quantAppLogic = window.__quantAppLogic || {};
   window.__quantAppLogic.keys = {
     create: function (ctx) {
-      const { menus, subPageNames, navigateTo, currentPage, currentView,
+      const { menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
               navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
               getLoadAiHistory, exportCSV, getShowBatchEvaluate,
               openAiFab, toggleSidebar, showStockDetail } = ctx;
@@ -82,8 +82,13 @@
           navigateTo('research', 'overview');
           return;
         }
-        if (d.action === 'stock' && typeof showStockDetail === 'function') {
-          showStockDetail(d.code, d.name);
+        if (d.action === 'stock') {
+          // 全局搜索选中股票 → 自动切到「量化日历 - 个股信息界面」(日历主视图 calendar 子页) 后打开详情
+          if (currentPage.value !== 'calendar' || currentSubPage.value !== 'calendar') {
+            navigateTo('calendar', 'calendar');
+          }
+          if (typeof showStockDetail === 'function') showStockDetail(d.code, d.name);
+          return;
         }
       }
       function runGlobalCommand(key) {

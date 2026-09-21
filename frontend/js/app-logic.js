@@ -914,7 +914,7 @@ const allMenuDefs = [
                         switchView, navigateDate, disabledDate, onDateChange } = __nav;
                 // v3.17.11.1: 全局搜索/快捷键/命令面板状态域 (js/app-logic/keys.js)
                 const __keys = window.__quantAppLogic.keys.create({
-                    menus, subPageNames, navigateTo, currentPage, currentView,
+                    menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
                     navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
                     getLoadAiHistory, exportCSV, getShowBatchEvaluate,
                     openAiFab, toggleSidebar, showStockDetail,
