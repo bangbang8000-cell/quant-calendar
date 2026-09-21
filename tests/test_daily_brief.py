@@ -13,7 +13,7 @@ def test_morning_brief_with_data():
     })
     assert ok is True
     assert "盘前早报" in text and "复苏期" in text and "招商银行" in text
-    assert "自选关注: 12 只" in text and "待验证条件" in text
+    assert "**自选关注**: 12 只" in text and "待验证条件" in text
 
 
 def test_morning_brief_degrades_without_stage():
@@ -35,7 +35,7 @@ def test_evening_brief_with_summary():
     })
     assert ok is True
     assert "盘后晚报" in text and "复盘摘要" in text and "明日验证条件" in text
-    assert "持仓变动: 今日 2 只" in text
+    assert "**持仓变动**: 今日 2 只" in text
 
 
 def test_evening_brief_degrades_without_summary():
