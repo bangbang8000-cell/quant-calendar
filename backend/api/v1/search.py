@@ -5,9 +5,12 @@
 支持按股票代码/名称模糊搜索
 """
 import logging
+from typing import Optional, Dict
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from functools import lru_cache
+
+from auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -140,8 +143,9 @@ def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None, u
 
 
 @router.get("")
-async def search(q: str = Query(default="", min_length=1, description="搜索关键词")):
-    """全局搜索：股票代码/名称模糊匹配
+async def search(q: str = Query(default="", min_length=1, description="搜索关键词"),
+                 user: Optional[Dict] = Depends(get_current_user)):
+    """全局搜索：股票代码/名称模糊匹配 (可选认证: 带 token 时评估历史实体参与分组)
 
     Returns:
         results: [{code, name, source}] 最多20条
@@ -201,6 +205,6 @@ async def search(q: str = Query(default="", min_length=1, description="搜索关
         "results": results[:20],
         "query": q,
         "total": len(results),
-        # V5.3.0 (T-5.3.3.3): 分组检索 (股票/板块/策略/菜单)
-        "groups": build_grouped_results(q, max_items=20),
+        # V5.3.0 (T-5.3.3.3): 分组检索 (股票/板块/策略/菜单); 6.1.4 (D2): 评估历史实体(带 token 时)
+        "groups": build_grouped_results(q, max_items=20, user=user),
     }
