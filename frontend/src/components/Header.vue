@@ -201,6 +201,8 @@ export default {
     <button class="non-trading-banner-close" @click="dismissBanner" aria-label="关闭提示">×</button>
   </div>
   <header class="qc-header">
+    <!-- 6.2.0 (F6): 页面大纲 h1 — 可视隐藏, 屏幕阅读器可读 (业务页不再散落 h 标签) -->
+    <h1 class="visually-hidden">{{ crumbRoot || '量化日历' }}</h1>
     <div class="qc-header-left">
       <button class="qc-icon-btn" :aria-label="state.sidebarCollapsed?.value ? '展开侧边栏' : '折叠侧边栏'" @click="toggleSidebar">
         <AppIcon name="menu" :size="20" />

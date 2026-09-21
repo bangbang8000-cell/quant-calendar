@@ -30,7 +30,7 @@
                          (同处 .detail-content 内边距容器, 宽度天然一致); 评分展示已按用户要求移除 -->
                     <div class="detail-header">
                         <div class="dh-main">
-                            <h3 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h3>
+                            <h2 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h2>
                             <!-- V5.24: 入池历史并入金色卡片 (原先独占一行) — 与持仓天数同排, 提升信息密度 -->
                             <div class="detail-subtitle dh-meta">
                                 <span class="dh-item">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</span>
@@ -118,7 +118,7 @@
 
                     <!-- Tab: K线图表 -->
                     <div v-if="stockDetailTab === 'kline'">
-                    <div class="section-title">{{ t('detail.sectionQuote') }}</div>
+                    <div class="page-section-title">{{ t('detail.sectionQuote') }}</div>
                     <div class="grid-auto">
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.close') }}</div>

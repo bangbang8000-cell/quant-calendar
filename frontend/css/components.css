@@ -3,6 +3,19 @@
    克制专业 + 金色点缀: 静态卡边框优先 / EP 变量级覆盖收敛 / 状态点 / 空态 / 骨架
    全部颜色经 --qc-* token (硬编码仅限 qc-allow-hardcode 行) */
 
+/* 6.2.0 (F6): 视觉隐藏 — 屏幕阅读器仍可读 (页面大纲 h1 语义, 不占视觉布局) */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* V5.7.2 (UX-T1): EP 组件字体统一 — 显式覆盖继承链, 与全站 --qc-font-sans 一致
    (仅 --el-font-family 变量不足以覆盖 EP 组件继承的 Arial) */
 .el-button, .el-input, .el-select, .el-textarea, .el-table, .el-dialog,
@@ -15,6 +28,32 @@
 }
 
 /* ─── §2.1 卡片 ─────────────────────────────────────── */
+/* 6.2.0 (F5): 全局分区约定 — 页面内容分节统一 (新页遵循, 替代散落的 section-* 5 种写法) */
+.page-section {
+  margin-top: var(--qc-space-6);
+  padding-top: var(--qc-space-4);
+  border-top: 1px solid var(--border-light);
+}
+.page-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.page-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  margin-bottom: var(--qc-space-3);
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+.page-section-title .qc-page-section-sub {
+  margin-left: auto;
+  font-size: var(--qc-font-size-xs);
+  font-weight: var(--font-normal);
+  color: var(--text-tertiary);
+}
 .qc-card {
   background: var(--qc-card);
   border: 1px solid var(--qc-border);
