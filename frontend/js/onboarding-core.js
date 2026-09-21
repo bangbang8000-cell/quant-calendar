@@ -17,12 +17,19 @@
 
   // ─── 5 步引导任务定义 ─────────────────────────────────
   // target: 步骤指向的页面/动作 (由组件用于跳转或高亮)
+  // 6.1.1 (A2): 引导二期 — 5 步操作导向 (看懂今日一屏 → 日历 → 评估 → 自选 → 配置)
+  // 每步含 target(目标页面) 与 desc(操作指引); selector 预留目标元素高亮
   var ONBOARDING_STEPS = [
-    { key: 'welcome', title: '欢迎使用量化日历', target: '' },
-    { key: 'pool', title: '认识今日股票池', target: 'strategies' },
-    { key: 'calendar', title: '日历视图', target: 'calendar' },
-    { key: 'ai', title: 'AI 评估', target: 'ai' },
-    { key: 'finish', title: '完成', target: 'research' },
+    { key: 'today', title: '看懂今日一屏', target: 'strategies', selector: '.today-hero',
+      desc: '先看美林时钟阶段与今日一屏：宏观周期、策略共识、股票池一目了然' },
+    { key: 'calendar', title: '量化日历与策略池', target: 'calendar', selector: '.stock-pool-body',
+      desc: '日/周/月/年切换视图，按全部/新入池/当前持仓/已出池筛选股票' },
+    { key: 'evaluate', title: '智能评估一只股票', target: 'ai', selector: '.qc-work-area',
+      desc: '点击任意股票查看详情：多模型 AI 评估、五维体检、历史趋势' },
+    { key: 'watchlist', title: '我的自选与重点跟踪', target: 'ai', selector: '',
+      desc: '在智能评估页把心仪股票加入自选，重点跟踪持续盯盘' },
+    { key: 'config', title: '系统配置要点', target: 'system', selector: '.system-page-root',
+      desc: '数据源、AI Key、通知与主题都在系统配置，按需设置' },
   ];
   var STEP_COUNT = ONBOARDING_STEPS.length;
 

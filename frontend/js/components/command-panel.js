@@ -194,6 +194,9 @@
           state.toggleSidebar();
         } else if (key === 'today') {
           state.navigateTo('strategies', 'overview');
+        } else if (key === 'onboarding') {
+          // 6.1.1 (A2): 新手引导可回看
+          window.dispatchEvent(new CustomEvent('qc:onboarding-replay'));
         } else if (key === 'add-portfolio') {
           state.currentPage.value = 'ai'; state.currentSubPage.value = 'portfolio';
         } else if (key === 'open-system') {

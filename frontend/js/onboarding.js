@@ -52,10 +52,33 @@
         });
       }
 
-      function next() { st.value = OC.next(st.value); }
-      function prev() { st.value = OC.prev(st.value); }
+      function goto(page) {
+        if (page && window.__quantGoPage) {
+          window.__quantGoPage(page, '');
+        } else if (page && window.__quantState && window.__quantState.currentPage) {
+          window.__quantState.currentPage.value = page;
+          if (window.__quantState.currentSubPage) window.__quantState.currentSubPage.value = '';
+        }
+      }
+
+      function next() {
+        st.value = OC.next(st.value);
+        const t = OC.steps()[st.value.stepIndex];
+        if (t && t.target) goto(t.target);
+      }
+      function prev() {
+        st.value = OC.prev(st.value);
+        const t = OC.steps()[st.value.stepIndex];
+        if (t && t.target) goto(t.target);
+      }
       function finish() { st.value = OC.complete(st.value); persist(); visible.value = false; }
       function skip() { st.value = OC.dismiss(st.value); persist(); visible.value = false; }
+      // 6.1.1 (A2): 可回看 — 命令面板/帮助菜单触发 qc:onboarding-replay 事件重开引导
+      function replay() {
+        st.value = OC.createOnboardingState();
+        persist();
+        visible.value = true;
+      }
 
       function init() {
         fetch('/api/user_config/preferences')
@@ -75,10 +98,11 @@
             }
             if (!OC.isComplete(st.value) && !st.value.dismissed) visible.value = true;
           });
+        window.addEventListener('qc:onboarding-replay', replay);
       }
 
       onMounted(init);
-      return { visible, st, step, prog, isLast, stepKey, next, prev, finish, skip };
+      return { visible, st, step, prog, isLast, stepKey, next, prev, finish, skip, replay };
     },
   };
 })();

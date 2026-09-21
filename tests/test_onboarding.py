@@ -267,3 +267,25 @@ def test_shortterm_tour_should_hide_when_dismissed():
         "const s = OC.shorttermTourDismiss(OC.createShorttermTourState());"
         "return OC.shorttermTourShouldShow(s);")
     assert out is False
+
+
+# ═════════════════ 6.1.1 (A2): 引导二期 — 5 步操作导向 + 可回看 ═════════════════
+
+@NEEDS_NODE
+def test_611_steps_are_action_oriented():
+    """引导二期: 5 步 key 固定为 today/calendar/evaluate/watchlist/config, 每步含 desc 与 target"""
+    out = _run_js("return OC.steps();")
+    keys = [s["key"] for s in out]
+    assert keys == ["today", "calendar", "evaluate", "watchlist", "config"]
+    for s in out:
+        assert s.get("desc"), f"步骤 {s['key']} 缺 desc (操作指引)"
+        assert s.get("target"), f"步骤 {s['key']} 缺 target (目标页面)"
+
+
+@NEEDS_NODE
+def test_611_replay_resets_state():
+    """可回看: 重新创建引导状态 = stepIndex 0 且未完成未跳过"""
+    out = _run_js("return OC.createOnboardingState();")
+    assert out["stepIndex"] == 0
+    assert out["completed"] is False
+    assert out["dismissed"] is False

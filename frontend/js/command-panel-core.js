@@ -177,6 +177,8 @@
     { key: 'ai', label: '打开 AI 问股', icon: 'message-circle', keywords: 'chat ask 问股' },
     { key: 'sidebar', label: '折叠/展开侧边栏', icon: 'folder', keywords: 'sidebar nav 侧边栏' },
     { key: 'today', label: '今日一屏', icon: 'calendar', keywords: 'today 今日 一屏 看板' },
+    // 6.1.1 (A2): 新手引导可回看
+    { key: 'onboarding', label: '新手引导（重新查看）', icon: 'sparkles', keywords: 'guide tour onboarding 引导 新手 帮助' },
     { key: 'add-portfolio', label: '加入组合', icon: 'bar-chart-3', keywords: 'portfolio 组合 加入 持仓' },
     { key: 'open-system', label: '打开系统设置', icon: 'cpu', keywords: 'system 系统 设置 配置' },
     { key: 'refresh-data-source', label: '刷新数据源', icon: 'radio-tower', keywords: 'datasource 数据源 刷新 tushare akshare' },
