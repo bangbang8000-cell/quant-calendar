@@ -55,7 +55,7 @@
                 </div>
                 <div class="text-right-mt20">
                     <el-button @click="showBatchEvaluate = false" :disabled="batchRunning">取消</el-button>
-                    <el-button type="primary" @click="doBatchEvaluate" :loading="batchRunning" :disabled="batchRunning">开始评估</el-button>
+                    <el-button type="primary" @click="onBatchEvaluate" :loading="batchRunning" :disabled="batchRunning">开始评估</el-button>
                 </div>
             </div>
         </el-dialog>
@@ -63,6 +63,26 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
+      // 6.1.1 (A4): 表单记忆 — 批量评估输入 (打开时恢复上次, 提交时保存)
+      const FM = window.QuantFormMemory;
+      function _user() {
+        const u = state.currentUser;
+        return (u && u.value && u.value.username) || 'guest';
+      }
+      Vue.watch(() => (state.showBatchEvaluate && state.showBatchEvaluate.value) || false, (open) => {
+        if (open && FM) {
+          const saved = FM.loadForm('batch-evaluate', _user(), 1);
+          if (saved && saved.batchStocks && !(state.batchStocks && state.batchStocks.value)) {
+            state.batchStocks.value = saved.batchStocks;
+          }
+        }
+      });
+      function onBatchEvaluate() {
+        if (FM) {
+          FM.saveForm('batch-evaluate', { batchStocks: (state.batchStocks && state.batchStocks.value) || '' }, _user(), 1);
+        }
+        return state.doBatchEvaluate();
+      }
       // v3.14.2: 已用计时 — 批量评估期间显示秒数, 避免"进度冻结"误判为卡死
       const batchElapsed = Vue.ref(0);
       let batchTimer = null;
@@ -76,7 +96,7 @@
           }
         });
       }
-      return { ...state, batchElapsed };
+      return { ...state, batchElapsed, onBatchEvaluate };
     },
   };
 })();

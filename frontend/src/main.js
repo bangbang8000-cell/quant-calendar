@@ -24,6 +24,10 @@ import '../js/ai.js'
 import '../js/system.js'
 import '../js/users.js'
 import '../js/ai-chat.js'
+// 6.1.1 (A3): 可撤销操作注册栈 (破坏性操作 → 5s 撤销)
+import '../js/undo-core.js'
+// 6.1.1 (A4): 表单参数记忆 (按用户+表单+版本隔离)
+import '../js/form-memory-core.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'

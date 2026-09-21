@@ -29,6 +29,24 @@
   function levelVar(l) { return LEVEL_COLOR[l] || 'var(--text-tertiary)'; }
   function levelBgVar(l) { return LEVEL_BG[l] || 'var(--bg-hover)'; }
 
+  // 6.1.1 (A3): 可撤销操作 — 破坏性操作成功后 5s 内可撤销 (undo-core 注册栈 + toast 撤销按钮)
+  const UC = window.QuantUndoCore;
+  const undoStack = UC ? UC.createUndoStack() : null;
+  function showUndoMessage(text, undoId) {
+    if (!undoStack || !window.Vue || !window.Vue.h) return;
+    const h = window.Vue.h;
+    ElementPlus.ElMessage.success({
+      message: h('span', null, [
+        text,
+        h('a', {
+          style: 'margin-left:8px;color:var(--primary-text);cursor:pointer;text-decoration:underline',
+          onClick: () => { if (undoStack.undo(undoId)) ElementPlus.ElMessage.success('已撤销'); },
+        }, '撤销'),
+      ]),
+      duration: 5000,
+    });
+  }
+
   window.__quantModules.watchlist = {
     create(deps) {
       const { ref, computed, watch } = Vue;
@@ -573,20 +591,39 @@ async function addToWatchlist(code, name) {
 }
 async function removeFromWatchlist(code) {
     try {
+        const item = watchlist.value.find(s => s.code === code);
+        const name = item ? (item.name || '') : '';
         await fetch(`/api/watchlist/${encodeURIComponent(code)}`, {
             method: 'DELETE'
         });
         watchlist.value = watchlist.value.filter(s => s.code !== code);
+        if (watchlistCodes.value && watchlistCodes.value.delete) watchlistCodes.value.delete(code);
+        // 6.1.1 (A3): 5s 内可撤销 (恢复 = 重新加入自选)
+        if (undoStack) {
+            const id = undoStack.register(() => { addToWatchlist(code, name); }, '移除自选', 5000);
+            showUndoMessage('已移除自选', id);
+        } else {
+            ElementPlus.ElMessage.info('已移除自选');
+        }
     } catch (e) { console.warn('removeFromWatchlist failed:', e); }
 }
 async function clearWatchlist() {
     try {
         await ElementPlus.ElMessageBox.confirm('确定清空所有自选股？', '提示', { type: 'warning' });
+        const snapshot = watchlist.value.slice();
         await fetch('/api/watchlist', {
             method: 'DELETE'
         });
         watchlist.value = [];
+        if (watchlistCodes.value && watchlistCodes.value.clear) watchlistCodes.value.clear();
         ElementPlus.ElMessage.success('自选已清空');
+        // 6.1.1 (A3): 5s 内可撤销 (恢复 = 快照重加入)
+        if (undoStack && snapshot.length) {
+            const id = undoStack.register(() => {
+                snapshot.forEach(s => addToWatchlist(s.code, s.name || ''));
+            }, '清空自选', 5000);
+            showUndoMessage('自选已清空', id);
+        }
     } catch (e) { console.warn('clearWatchlist failed:', e); }
 }
 async function toggleWatchlist(code, name) {
