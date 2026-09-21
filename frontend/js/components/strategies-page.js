@@ -18,7 +18,7 @@
                     <!-- v3.11 (FR-3.11.7): 今日一屏 — 聚合当日决策要素（美林/情绪/池变动/健康/重点） -->
                     <div v-if="!(loading && loadingView === 'overview')" class="today-hero card">
                         <div class="today-hero-head">
-                            <div class="today-hero-title">{{ t('strategies.todayScreen') }}</div>
+                            <div class="today-hero-title">{{ t('strategies.todayScreen') }} <qc-glossary-hint gkey="merrill_clock" :size="14" /></div>
                             <div class="today-hero-date">
                                 <span>{{ todayText }}</span>
                                 <span class="today-hero-status">{{ tradingStatus }}</span>

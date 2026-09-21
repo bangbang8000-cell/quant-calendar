@@ -580,3 +580,61 @@
 .dialog-fade-enter-from .el-dialog { transform: scale(0.96); }
 .dialog-fade-leave-to .el-dialog { transform: scale(0.98); }
 .el-button:not(:disabled):not(.is-loading):active { transform: scale(0.98); }
+
+/* ─── 6.1.1 (A1): 量化术语体系 — 问号浮层 + 术语表页 ── */
+.qc-glossary-trigger {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -1px;
+  margin-left: 3px;
+  color: var(--qc-muted-foreground);
+  cursor: help;
+  opacity: 0.75;
+  transition: color var(--duration-fast), opacity var(--duration-fast);
+}
+.qc-glossary-trigger:hover { color: var(--qc-primary-700); opacity: 1; }
+.qc-glossary-card { line-height: 1.5; }
+.qc-glossary-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.qc-glossary-term { font-size: var(--qc-font-size-md); font-weight: var(--qc-font-weight-semibold); color: var(--qc-foreground); }
+.qc-glossary-cat {
+  font-size: var(--qc-font-size-xs);
+  color: var(--qc-primary-700);
+  background: var(--qc-primary-50);
+  border-radius: var(--qc-radius-full);
+  padding: 1px 8px;
+}
+.qc-glossary-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: var(--qc-font-size-sm); }
+.qc-glossary-label { flex: 0 0 auto; color: var(--qc-muted-foreground); }
+.qc-glossary-text { color: var(--qc-foreground); }
+.qc-glossary-foot { margin-top: 8px; text-align: right; }
+.qc-glossary-link { color: var(--qc-primary-700); cursor: pointer; font-size: var(--qc-font-size-sm); }
+.qc-glossary-link:hover { text-decoration: underline; }
+
+.qc-glossary-page .card-title { margin-bottom: var(--qc-space-3); }
+.qc-glossary-search { width: 240px; }
+.qc-glossary-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--qc-space-3); }
+.qc-glossary-tab {
+  padding: 2px 12px;
+  border-radius: var(--qc-radius-full);
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-muted-foreground);
+  border: 1px solid var(--qc-border);
+  cursor: pointer;
+  transition: color var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast);
+}
+.qc-glossary-tab:hover { color: var(--qc-primary-700); border-color: var(--qc-primary-300); }
+.qc-glossary-tab.is-active {
+  color: var(--brand-soft-text);
+  background: var(--brand-soft-bg);
+  border-color: var(--brand-soft-border);
+}
+.qc-glossary-list { display: flex; flex-direction: column; gap: var(--qc-space-3); }
+.qc-glossary-item {
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  padding: var(--qc-space-3);
+}
+.qc-glossary-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.qc-glossary-item-def { font-size: var(--qc-font-size-sm); color: var(--qc-foreground); margin-bottom: 4px; }
+.qc-glossary-item-calc { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); display: flex; gap: 6px; }
+.qc-glossary-loading, .qc-glossary-empty { padding: 24px; text-align: center; color: var(--qc-muted-foreground); }

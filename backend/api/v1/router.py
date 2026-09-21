@@ -42,6 +42,7 @@ from .rbac import router as rbac_router
 from .collab import router as collab_router
 from .shortterm import router as shortterm_router
 from .focus import router as focus_router
+from .glossary import router as glossary_router
 from api.v3.router import router as v3_router
 
 # 创建 v1 路由汇总
@@ -90,6 +91,7 @@ api_router.include_router(jobs_router)
 api_router.include_router(rbac_router)
 api_router.include_router(collab_router)
 api_router.include_router(shortterm_router)
+api_router.include_router(glossary_router)  # 6.1.1 (A1): 量化术语词条
 api_router.include_router(v3_router)
 
 __all__ = ["api_router"]

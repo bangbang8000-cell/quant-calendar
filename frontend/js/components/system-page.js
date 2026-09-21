@@ -1309,6 +1309,10 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 6.1.1 (A1): 量化术语表子页 -->
+                    <div v-else-if="currentSubPage === 'glossary'">
+                        <qc-glossary-page />
+                    </div>
                     </div>
     `,
     setup() {
