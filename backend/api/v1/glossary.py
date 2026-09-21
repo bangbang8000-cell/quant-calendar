@@ -34,3 +34,19 @@ def get_glossary_item(key: str):
     if not item:
         return {"success": False, "error": f"词条不存在: {key}"}
     return {"success": True, "item": item}
+
+
+@router.get("/freshness")
+def get_freshness():
+    """6.1.2 (B5): 数据表新鲜度 — 每表来源/最后成功/行数/期望间隔/是否过期"""
+    from data_sources._health import get_health_metrics
+    from freshness import build_freshness, DEFAULT_EXPECTED_HOURS
+    items = build_freshness(get_health_metrics())
+    stale_count = sum(1 for i in items if i["stale"])
+    return {
+        "success": True,
+        "default_expected_hours": DEFAULT_EXPECTED_HOURS,
+        "count": len(items),
+        "stale_count": stale_count,
+        "items": items,
+    }
