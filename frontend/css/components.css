@@ -657,3 +657,20 @@
 .qc-wg-rename { display: flex; gap: 6px; flex: 1; }
 .qc-wg-add { display: flex; gap: 8px; margin-top: 8px; }
 .qc-wg-newinput { flex: 1; }
+
+/* ─── 6.1.3 (C3): 页面内容进入过渡 (克制 8px) ── */
+.qc-work-area-content > * { animation: qc-page-enter 0.2s ease-out both; }
+@keyframes qc-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 6.1.3 (C3): 系统减动效 — 全站动画/过渡降级为瞬时 (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
