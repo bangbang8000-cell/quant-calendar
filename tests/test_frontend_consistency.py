@@ -986,9 +986,10 @@ def test_storage_convergence_no_json_double_write():
     save_seg = chat_src[chat_src.index("def _save_history"):chat_src.index("def _load_session_messages")]
     assert "json.dump" not in save_seg and 'HISTORY_FILE, \'w\'' not in save_seg, \
         "_save_history 不应再写 JSON (SQLite 为主)"
-    # 自选写路径: _save_watchlist 内不得再写 watchlist.json
+    # 自选写路径: _save_watchlist 以 SQLite 为主; 6.1.2 (B2) 起 SQLite 不可用时 JSON 容错回退 (防数据静默丢失)
     wl_seg = wl_src[wl_src.index("def _save_watchlist"):wl_src.index("@router.get(\"\")")]
-    assert "json.dump" not in wl_seg, "_save_watchlist 不应再写 JSON (SQLite 为主)"
+    assert ("json.dump" not in wl_seg) or ("saved_db" in wl_seg and "if not saved_db" in wl_seg), \
+        "_save_watchlist: JSON 写入仅允许在 SQLite 不可用时的容错回退 (6.1.2 B2)"
     # 用户写路径: _save_users 内不得再写 users.json
     um_seg = um_src[um_src.index("def _save_users"):um_src.index("def _hash_password")]
     assert "json.dump" not in um_seg, "_save_users 不应再写 JSON (SQLite 为主)"
