@@ -10,6 +10,13 @@
               loadConsensusData, applyTheme, maybeShowTour, loadAiVendors,
               loadGroupConfig, groupsConfig } = ctx;
 
+      // V6.11 (R2-11): 旧主题名应用必须保留已持久化色相 —— 走 themes.applyLegacyTheme,
+      // 否则用户记录里的 'gold' 会把用户选的色相覆盖成默认 45 (实测刷新后主题色回退金色)。
+      const _applyLegacyTheme = function (name) {
+        const T = window.__quantModules && window.__quantModules.themes;
+        return (T && T.applyLegacyTheme) ? T.applyLegacyTheme(name) : applyTheme(name);
+      };
+
       // ===== 登录状态 =====
       // V5.20-fix: 记住上次登录的用户名 (仅用户名, 绝不存口令) — 修复「输入用户名无法保存」
       // 优先用 localStorage, 失败 (隐私模式/禁用存储) 时静默降级为空
@@ -101,7 +108,9 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'gold');
+            // V6.11 (R2-11): 用户记录的 theme 是旧主题名 (如 gold) —— 必须走 applyLegacyTheme,
+            // 否则会把已持久化的色相覆盖成该主题的默认色相 (刷新后主题色回退金色)。
+            _applyLegacyTheme(data.user.theme || 'gold');
             // V5.20-fix: 登录成功即记住用户名 — 下次打开登录页自动回填
             try { localStorage.setItem(LOGIN_USERNAME_KEY, loginForm.value.username || ''); } catch (e) { /* 存储不可用则忽略 */ }
             // V5.21-fix: 登录后必须重新加载组配置 — 否则 groupsConfig 为空, 一级菜单的组级隐藏失效
@@ -152,7 +161,7 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
-            applyTheme(data.user.theme || 'gold');
+            _applyLegacyTheme(data.user.theme || 'gold');
             // V5.21-fix: 访客登录后同样重载组配置 (与 handleLogin 一致)
             if (typeof loadGroupConfig === 'function') await loadGroupConfig().catch(function () {});
             await loadUserConfig();

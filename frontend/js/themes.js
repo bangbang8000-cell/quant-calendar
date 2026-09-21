@@ -519,6 +519,28 @@
     return { mode: isDark ? 'dark' : 'light', hue: h };
   }
 
+  // V6.11 (需求轮2·批次2·R2-11): 读取「已持久化的色相」—— 旧主题名应用时必须带上传,
+  //   否则 LEGACY_MAP 会回退到该主题的默认色相 (gold→45), 把用户选的色相静默覆盖。
+  //   实测: 登录/会话恢复路径 applyTheme('gold') 会在主题正确应用 ~120ms 后再覆盖成金色。
+  function persistedHue() {
+    try {
+      var v = localStorage.getItem('quant_theme_hue');
+      if (v !== null && v !== '') return normalizeHue(v);
+    } catch (e) { /* 存储不可用 */ }
+    var P = (typeof window !== 'undefined' && window.__quantModules) ? window.__quantModules.preferences : null;
+    if (P && P.getPreference) {
+      var h = P.getPreference('theme_hue');
+      if (h != null && h !== '') return normalizeHue(h);
+    }
+    return null;
+  }
+
+  // 应用旧主题名 (兼容路径): 保留已持久化色相
+  function applyLegacyTheme(name) {
+    var h = persistedHue();
+    return applyTheme(name, h == null ? undefined : h);
+  }
+
   // 存量迁移: 检测旧 quant_theme (8 主题名) → 返回 { mode, hue } 或 null
   // 若已存在新色相偏好 (quant_theme_hue / 新模型已写入) 则不重复迁移 (一次写入)
   function migrateLegacyTheme() {
@@ -551,10 +573,15 @@
     generateLightTokens: generateLightTokens,
     generateDarkTokens: generateDarkTokens,
     migrateLegacyTheme: migrateLegacyTheme,
+    persistedHue: persistedHue,
+    applyLegacyTheme: applyLegacyTheme,
     applyTheme: applyTheme,
     init: init,
   };
 
-  // 启动立即应用 (首屏样式就绪)
-  init();
+  // 启动应用主题 (首屏样式就绪)。
+  // V6.11: 推迟到微任务 —— preferences.js 与本文件在同一个 bundle 内紧随其后导入,
+  //   同步 init() 读不到偏好, 会先用默认金色并把错误的色相写进 localStorage (首屏闪烁 + 状态污染)。
+  if (typeof queueMicrotask === 'function') queueMicrotask(init);
+  else init();
 })();

@@ -11,6 +11,14 @@
       const { ref, computed } = Vue;
       const { currentUser, applyTheme, allMenuDefs, loadGroupConfig } = deps;
 
+
+      // V6.11 (R2-11): 旧主题名应用必须保留已持久化色相 —— 走 themes.applyLegacyTheme,
+      // 否则用户记录里的 'gold' 会把用户选的色相覆盖成默认 45。
+      const _applyLegacyTheme = function (name) {
+        const T = window.__quantModules && window.__quantModules.themes;
+        return (T && T.applyLegacyTheme) ? T.applyLegacyTheme(name) : applyTheme(name);
+      };
+
       // ===== 用户管理（列表/搜索/分组过滤）=====
       const userList = ref([]);
       const userSearch = ref('');
@@ -348,7 +356,7 @@
               if (newTheme && newTheme !== currentUser.value.theme) {
                 currentUser.value.theme = newTheme;
                 localStorage.setItem('quant_user', JSON.stringify(currentUser.value));
-                applyTheme(newTheme);
+                _applyLegacyTheme(newTheme);
               }
             }
             showAddUser.value = false;

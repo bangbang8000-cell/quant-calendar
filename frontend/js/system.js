@@ -15,6 +15,14 @@
               currentUser, strategyFilter, applyTheme,
               dashboardData, lastRefreshTime, saveAiModels } = deps;
 
+
+      // V6.11 (R2-11): 旧主题名应用必须保留已持久化色相 —— 走 themes.applyLegacyTheme,
+      // 否则用户记录里的 'gold' 会把用户选的色相覆盖成默认 45。
+      const _applyLegacyTheme = function (name) {
+        const T = window.__quantModules && window.__quantModules.themes;
+        return (T && T.applyLegacyTheme) ? T.applyLegacyTheme(name) : applyTheme(name);
+      };
+
 const configSaving = ref(false);
 // configChanged: 由 app-logic 提升为共享 ref（AI 配置段与本域共用），此处不再定义
 // v1.3.0: 全局配置变更跟踪
@@ -260,7 +268,7 @@ async function resetAllConfig() {
             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
             // Only apply config theme if user hasn't manually selected one
-            if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
+            if (c.theme && !localStorage.getItem('quant_theme')) _applyLegacyTheme(c.theme);
         }
         globalConfigDirty.value = false;
         rateLimitDirty.value = false;
@@ -522,7 +530,7 @@ async function loadUserConfig() {
             }
             if (c.ai) aiConfig.value = { ...aiConfig.value, ...c.ai };
             if (c.rate_limit) rateLimitConfig.value = { ...rateLimitConfig.value, ...c.rate_limit };
-            if (c.theme && !localStorage.getItem('quant_theme')) applyTheme(c.theme);
+            if (c.theme && !localStorage.getItem('quant_theme')) _applyLegacyTheme(c.theme);
             if (c.auto_evaluate) autoEvaluateConfig.value = { ...autoEvaluateConfig.value, ...c.auto_evaluate };
         }
     } catch (e) {

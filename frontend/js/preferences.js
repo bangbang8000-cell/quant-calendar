@@ -41,7 +41,10 @@
   // V6.1: theme_hue 为 0-360 整数 (预设色板与自定义共用), 不走数组白名单
   function _validThemeHue(v) {
     v = parseInt(v, 10);
-    return !isNaN(v) && v >= 0 && v <= 360;
+    if (isNaN(v)) return false;
+    // V6.11 (需求轮2·R2-02): -1 = 「中性无色相」品牌档 (themes.NEUTRAL_HUE), 与 0-360 一样是合法值。
+    // 原条件 v >= 0 会把 -1 静默过滤掉 → 选了中性也不落偏好, 刷新即回退金色。
+    return v === -1 || (v >= 0 && v <= 360);
   }
 
   // 主题模式 → 具体主题名（仍经 themes.applyTheme 应用，不另起实现）
@@ -150,13 +153,27 @@
         const data = await res.json();
         if (data.success && data.preferences) {
           const server = data.preferences;
+          // V6.11 (需求轮2·R2-01): 按 key 分流校验 —— theme_hue 是 0-360(含 -1) 的整数, 不在
+          // PREFERENCE_VALUES 白名单里; 原实现直接对它调用 .indexOf 会抛 TypeError, 该异常被外层
+          // catch 静默吞掉并中断 forEach → theme_hue 及其之后的所有键 (chart_period/language/
+          // info_density/kline_show_minutes) 都不会从后端恢复 (实测复现见 docs/EVAL-UI-ROUND2.md §5.1)。
           PREFERENCE_KEYS.forEach(function (k) {
-            if (PREFERENCE_VALUES[k].indexOf(server[k]) !== -1) merged[k] = server[k];
+            const sv = server[k];
+            if (k === 'theme_hue') {
+              if (_validThemeHue(sv)) merged[k] = parseInt(sv, 10);
+              return;
+            }
+            if (PREFERENCE_VALUES[k].indexOf(sv) !== -1) merged[k] = sv;
           });
           _writeLocal(merged);
         }
       }
-    } catch (e) { /* 后端不可达：用本地偏好 */ }
+    } catch (e) {
+      // V6.11: 后端不可达/解析失败时用本地偏好, 但保留可诊断痕迹 (原实现完全静默, 曾掩盖 R2-01)
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[preferences] 读取服务端偏好失败, 回退本地偏好:', e && e.message);
+      }
+    }
     return merged;
   }
 

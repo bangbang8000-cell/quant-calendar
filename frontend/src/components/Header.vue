@@ -122,7 +122,8 @@ export default {
     }
     // V6.9.3 (F6): 主题按钮 → 主题面板 (模式 + 6 色板 + 自定义 slider)
     const openThemeMenu = ref(false)
-    const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320]
+    // V6.11: fallback 色板与 app-logic 对齐 (含 -1 中性无色相档)
+    const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320, -1]
     // V6.11 (用户需求5): 色相 0(红) 与 -1(中性) 都是合法值但 falsy —— 原 `|| 45` 会把红色
     // 显示成金色(勾选/滑杆/自定义度数全错)。改用 Number.isFinite 判定。
     const themeHue = computed(() => {
@@ -139,7 +140,9 @@ export default {
     const density = computed(() => (state.density && state.density.value) || 'comfortable')
     function pickDensity(v) { if (state.changeDensity) state.changeDensity(v) }
     function hueColor(h) { return state.hueColor ? state.hueColor(h) : 'hsl(' + h + ', 75%, 42%)' }
-    function hueName(h) { return state.hueName ? state.hueName(h) : (String(h)) }
+    // V6.11: 名称兜底改为可读中文 (原回退成数字字符串)
+    const HUE_FALLBACK_NAMES = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色', '-1': '中性' }
+    function hueName(h) { return state.hueName ? state.hueName(h) : (HUE_FALLBACK_NAMES[h] || ('自定义 ' + h)) }
     function toggleThemeMenu() { openThemeMenu.value = !openThemeMenu.value }
     function closeThemeMenu() { openThemeMenu.value = false }
     function pickThemeMode(m) { if (state.changeThemeMode) state.changeThemeMode(m) }
