@@ -155,13 +155,6 @@ const timeBarPercent = computed(() => {
 });
 // 上次刷新时间文字
 const lastRefreshTime = ref(null);
-const timeSinceRefresh = computed(() => {
-    if (!lastRefreshTime.value) return '';
-    const sec = Math.floor((Date.now() - lastRefreshTime.value) / 1000);
-    if (sec < 60) return sec + '秒前刷新';
-    if (sec < 3600) return Math.floor(sec/60) + '分钟前刷新';
-    return Math.floor(sec/3600) + '小时前刷新';
-});
 // 点击策略跳转日历筛选
 function navigateToStrategyFilter(strategyName) {
     // 设置策略筛选为仅该策略
@@ -177,7 +170,7 @@ function navigateToStrategyFilter(strategyName) {
       return {
         applyStrategyFilter, statusCounts, stockPool, strategyDistribution, strategyPreviewCount,
         saveStrategyFilter, filteredConsensusRank, currentPoolSize, filteredStrategyCounts,
-        poolChangeBadge, timeBarPercent, lastRefreshTime, timeSinceRefresh,
+        poolChangeBadge, timeBarPercent, lastRefreshTime,
         navigateToStrategyFilter,
       };
     }

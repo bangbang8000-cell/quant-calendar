@@ -1016,7 +1016,7 @@ const allMenuDefs = [
                     : {};
                 const { applyStrategyFilter, statusCounts, stockPool, strategyDistribution, strategyPreviewCount,
                         saveStrategyFilter, filteredConsensusRank, currentPoolSize, filteredStrategyCounts,
-                        poolChangeBadge, timeBarPercent, lastRefreshTime, timeSinceRefresh,
+                        poolChangeBadge, timeBarPercent, lastRefreshTime,
                         navigateToStrategyFilter } = __stockPoolDomain;
 
                 // ===== v3.11(11.3): AI 评估域 — 逻辑移至 js/ai.js 模块 =====
@@ -1386,7 +1386,7 @@ const allMenuDefs = [
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,
                     // v1.11: 策略总览增强
-                    poolChangeBadge, timeBarPercent, timeSinceRefresh, navigateToStrategyFilter,
+                    poolChangeBadge, timeBarPercent, navigateToStrategyFilter,
                     // v1.5.0
                     showUserMenu,
                     // v3.0: 侧边栏折叠

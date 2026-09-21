@@ -72,6 +72,8 @@ jobs:
           else
             echo "workflow_dispatch/分支触发: 仅校验 APP_VERSION 存在 ($V)"
           fi
+      - name: 6.1.X 版本治理门禁 (T-6.1.0.1: APP_VERSION/README/HANDOVER 单一来源)
+        run: python scripts/bump_version.py --check
 
       - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
         run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"

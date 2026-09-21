@@ -60,7 +60,8 @@ def test_e2e_screenshot_diff():
     with open(REPORT, encoding='utf-8') as f:
         html = f.read()
     assert '视觉回归' in html, '报告内容异常（缺少标题）'
-    # 报告应包含全部 7 个 SM 验收场景
+    # 报告应包含全部视觉回归场景 (SM 验收 + 6.1.0 扩展 4 个一级导航页)
     for key in ('login', 'strategies_desktop', 'calendar', 'stock_detail',
-                'command_panel', 'strategies_mobile', 'dark_theme'):
+                'command_panel', 'strategies_mobile', 'dark_theme',
+                'ai_overview', 'research', 'ops_status', 'system_config'):
         assert key in html, f'报告缺少场景: {key}'

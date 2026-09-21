@@ -246,6 +246,11 @@ SCENARIOS = [
      lambda p: _click_nav(p, '策略')),
     ('dark_theme', '深色主题(暗色专业)',
      lambda p: p.evaluate("""() => { const w=document.querySelector('.user-menu-wrapper'); if(w) w.click(); return true; }""")),
+    # 6.1.0 (T-6.1.0.4): 视觉回归基线扩展 — 4 个一级导航页面
+    ('ai_overview', '智能评估(评估概览)', lambda p: _click_nav(p, '智能评估')),
+    ('research', '策略研究(研究概览)', lambda p: _click_nav(p, '策略研究')),
+    ('ops_status', '系统状态', lambda p: _click_nav(p, '系统状态')),
+    ('system_config', '系统配置', lambda p: _click_nav(p, '系统配置')),
 ]
 
 

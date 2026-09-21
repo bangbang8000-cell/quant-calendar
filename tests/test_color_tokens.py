@@ -26,6 +26,11 @@ BASE = g.BASE
 FRONTEND = g.FRONTEND
 
 # 设计资产白名单: 定义后暂无引用但必须保留 (色阶补全 / 布局 / 间距)
+# 6.1.0 (T-6.1.0.2) 审计结论: 逐项复核, 全部为有意保留的设计资产/兼容契约, 无「无保留价值」项;
+#   ① 色阶补全 (neutral-500/700/800, primary-900) —— 运行期按色相发射的前置档位, 语义层引用可能随时接入
+#   ② 布局/间距契约 (content-max-width, space-12) —— 4px 网格标尺完整度
+#   ③ V6.6 M2 兼容层 (sp-*/r-*/easing-exit) —— test_v66_m2_tokens.py 契约固定
+#   ④ V6.11 实底档家族 (btn-primary-*) —— 浅底彩字改版后作为同一契约保留, 改回实底按钮时可整族复用
 DEAD_TOKEN_WHITELIST = {
     "--qc-neutral-500",      # 中性色阶补全 (运行期按色相发射)
     "--qc-neutral-700",      # 中性色阶补全
@@ -158,7 +163,7 @@ def test_no_hardcoded_colors_outside_token_sources():
     """非 token 源文件不得散落字面量颜色 (运行时兜底与显式豁免除外)。"""
     offenders = []
     for path in _tracked_frontend_files():
-        rel = os.path.relpath(path, FRONTEND)
+        rel = os.path.relpath(path, FRONTEND).replace("\\", "/")  # Windows 反斜杠归一, 保证 _SRC_OK 匹配
         if rel in _SRC_OK:
             continue
         in_block = False
