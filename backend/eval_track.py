@@ -136,6 +136,33 @@ def compute_stats(records: List[Dict]) -> Dict:
     return {"overall": overall, "by_model": by_model, "by_level": by_level}
 
 
+def recommend_models(stats: Dict, window: str = "n5", min_samples: int = 20, top_n: int = 3) -> Dict:
+    """6.1.6 (F2): 推荐模型组合 — 按命中率 + 样本量给最优模型建议 (纯规则, 不自动切换)
+
+    stats: compute_stats 输出; 仅展示不改配置; 样本不足标注 confident=False。
+    返回 {"recommendations": [{model, rate, sample_count, confident}], "note"}
+    """
+    if not stats or not stats.get("by_model"):
+        return {"recommendations": [], "note": "暂无评估样本"}
+    w = window if window in TRACK_WINDOWS else "n5"
+    ranked = []
+    for model, group in (stats.get("by_model") or {}).items():
+        agg = group.get(w) or {}
+        total = int(agg.get("total") or 0)
+        rate = agg.get("rate")
+        ranked.append({
+            "model": model,
+            "rate": rate,
+            "sample_count": total,
+            "confident": total >= min_samples,
+        })
+    ranked.sort(key=lambda x: (x["rate"] is not None, x["rate"] or 0), reverse=True)
+    recs = ranked[:top_n]
+    note = ("推荐按近 30 日命中率与样本量排序，仅作参考；样本 < %d 标注样本不足。"
+            % min_samples)
+    return {"recommendations": recs, "note": note}
+
+
 def compute_trend(records: List[Dict], window: str = 'n5', bucket: str = 'week') -> Dict:
     """V5.3.0 (T-5.3.5.3 / FR-5.3.5.3): 评估分析深化 — 胜率趋势
 
