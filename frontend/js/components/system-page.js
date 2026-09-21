@@ -1361,6 +1361,8 @@
         if (sub === 'notification') loadNotificationData();
         // 6.1.2 (B5): 数据源子页进入即加载新鲜度
         if (sub === 'datasource') loadFreshness();
+        // 6.1.5 (E4): 离开 usage 子页停止任务队列轮询
+        if (sub !== 'usage') _stopJobQueuePolling();
       });
       // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与基础配置子页一致)
       const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, -1];  // 金/蓝/红/绿/紫/粉 + 中性无色相
@@ -1438,6 +1440,16 @@
       function _startJobQueuePolling() {
         loadJobQueue();
         jobQueueTimer.value = window.setInterval(loadJobQueue, 15000);
+      }
+      // 6.1.5 (E4): 定时器清理 — 离开 usage 子页/组件卸载时停止轮询 (防泄漏)
+      function _stopJobQueuePolling() {
+        if (jobQueueTimer.value) {
+          clearInterval(jobQueueTimer.value);
+          jobQueueTimer.value = null;
+        }
+      }
+      if (Vue.onBeforeUnmount) {
+        Vue.onBeforeUnmount(function () { _stopJobQueuePolling(); });
       }
       const freshnessData = Vue.ref({ items: [] });
       const healHistory = Vue.ref([]);

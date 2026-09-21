@@ -37,6 +37,8 @@ import '../js/batch-add-core.js'
 // 6.1.4 (D4): 右键菜单 (核心 + 全局组件)
 import '../js/context-menu-core.js'
 import '../js/components/context-menu.js'
+// 6.1.5 (E5): 请求竞态治理 (stale guard / dedupe / abort)
+import '../js/request-core.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
