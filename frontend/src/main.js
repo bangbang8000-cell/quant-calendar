@@ -32,6 +32,8 @@ import '../js/form-memory-core.js'
 import '../js/session-restore-core.js'
 // 6.1.3 (C4): PWA 安装引导条
 import '../js/install-prompt.js'
+// 6.1.4 (D3): 批量加入自选 (纯逻辑: import 文本构建 + 结果汇总)
+import '../js/batch-add-core.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
