@@ -244,6 +244,8 @@
             background-color: var(--border-heavy) ; border-color: var(--text-disabled) ; color: var(--text-primary) ;
         }
         /* 🌙 暗色专业版 - 组件激活态 */
+        /* V6.11 (用户反馈「类似的深底一起优化」): 承载文字/图标的品牌色块在暗色下同样改「暗底彩字」,
+           与亮色侧的浅底彩字一一对应 (tokens.css 的 --brand-soft-* 明暗自适应)。 */
         [data-theme="dark-pro"] .nav-item.active,
         [data-theme="dark-pro"] .sub-nav-tab.active,
         [data-theme="dark-pro"] .status-tab.active,
@@ -252,15 +254,18 @@
         [data-theme="dark-pro"] .user-avatar,
         [data-theme="dark-pro"] .user-menu-avatar,
         [data-theme="dark-pro"] .login-icon,
-        /* V5.29: .detail-header 已改用 --gradient-panel (深浅两模式统一), 从本覆盖列表移除 */
         [data-theme="dark-pro"] .hold-days,
-        /* V5.30 (P0-3): 补齐渐变族 — 原 4 处仍走暗色鲜亮 --gradient 且为白字, 暗端对比不足 */
         [data-theme="dark-pro"] .badge,
         [data-theme="dark-pro"] .record-number,
-        [data-theme="dark-pro"] .progress-bar,
-        [data-theme="dark-pro"] .time-bar-fill,
+        [data-theme="dark-pro"] .stage-badge,
+        [data-theme="dark-pro"] .version-badge,
         [data-theme="dark-pro"] .kline-tab.active {
-            background: var(--gradient-brand) ; color: var(--bg-page) ;
+            background: var(--brand-soft-bg) ; color: var(--brand-soft-text) ;
+        }
+        /* 纯填充 (无文字): 保留品牌渐变作为进度/时间条语义 */
+        [data-theme="dark-pro"] .progress-bar,
+        [data-theme="dark-pro"] .time-bar-fill {
+            background: var(--gradient-brand) ;
         }
         [data-theme="dark-pro"] .sub-nav-tab.active {
             box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3) ;
@@ -653,8 +658,8 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -822,10 +827,10 @@
             justify-content: center;
             font-size: var(--qc-font-size-base);
             font-weight: var(--font-bold);
-            color: var(--white);
+            color: var(--brand-soft-text);
             margin-right: 12px;
             flex-shrink: 0;
-            background: var(--gradient);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
         }
         /* 弹窗样式 */
         .el-dialog {
@@ -928,12 +933,12 @@
             height: 64px;
             flex-shrink: 0;
             border-radius: 50%;
-            background: var(--gradient);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: var(--font-2xl);
-            color: var(--white);
+            color: var(--brand-soft-text);
             border: 2px solid var(--border-light);
         }
         .login-brand-text {
@@ -1078,8 +1083,8 @@
         .hold-name { font-weight: var(--font-medium); font-size: var(--qc-font-size-base); }
         .hold-days {
             padding: 4px 10px;
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             border-radius: var(--qc-radius-medium);
             font-size: var(--qc-font-size-sm);
             font-weight: var(--font-semibold);
@@ -1112,8 +1117,8 @@
             color: var(--primary-text);
         }
         .kline-tab.active {
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             border-color: transparent;
             font-weight: var(--font-medium);
         }
@@ -1169,8 +1174,8 @@
             color: var(--primary-text);
         }
         .ma-toggle-btn.active {
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             border-color: transparent;
             font-weight: var(--font-medium);
         }
@@ -1261,8 +1266,8 @@
             background: color-mix(in srgb, var(--white) 25%, transparent);
         }
         .status-tab.active {
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
         }
         .status-badge {
             display: inline-block;
@@ -1361,7 +1366,7 @@
             width: 52px;
             height: 52px;
             border-radius: var(--qc-radius-xl);
-            background: var(--gradient);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1624,8 +1629,8 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2119,8 +2124,8 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2376,8 +2381,8 @@
     }
     .stage-badge {
         padding: 8px 16px;
-        background: var(--gradient-brand) !important;
-        color: var(--white);
+        background: var(--brand-soft-bg) !important;
+        color: var(--brand-soft-text);
         border-radius: var(--qc-radius-xl);
         font-size: var(--qc-font-size-sm);
         font-weight: var(--font-semibold);
@@ -3748,8 +3753,8 @@ text {
             color: var(--primary-text);
 }
 .sub-nav-tab.active {
-            background: var(--gradient);
-            color: var(--white);
+            background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+            color: var(--brand-soft-text);
             box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
 }
 
@@ -3772,8 +3777,8 @@ text {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--gradient);
-    color: var(--white);
+    background: var(--brand-soft-bg);   /* V6.11: 深底白字 -> 浅底彩字 (同类深底统一收敛) */
+    color: var(--brand-soft-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3969,7 +3974,10 @@ text {
 .ai-fab {
     position: fixed; right: 24px; bottom: 96px; z-index: 200;
     width: 56px; height: 56px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark, var(--primary-color)));
+    /* V6.11: 原 --primary-color -> --primary-color-dark 为「深->更深」, 亮色下是全屏最深色块;
+       改中调品牌渐变 (400 -> 600 档) + 白图标。 */
+    background: linear-gradient(135deg, var(--qc-primary-400, var(--primary-color)), var(--qc-primary-600, var(--primary-color)));
+    color: var(--white);
     box-shadow: var(--qc-shadow-md); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
