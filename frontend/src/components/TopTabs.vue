@@ -34,7 +34,7 @@ const SUB_ICONS = {
   },
   'system': {
     'config': 'save', 'feature': 'sliders-horizontal', 'autoeval': 'bot', 'datasource': 'database',
-    'user': 'users', 'glossary': 'book-open', 'notification': 'bell', 'about': 'info',
+    'user': 'users', 'notification': 'bell', 'about': 'info',
   },
 }
 

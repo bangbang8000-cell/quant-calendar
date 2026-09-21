@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 from freshness import build_freshness, TABLES, DEFAULT_EXPECTED_HOURS
-from api.v1.glossary import router
+from api.v1.freshness import router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

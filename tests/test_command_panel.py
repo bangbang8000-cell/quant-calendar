@@ -268,7 +268,7 @@ def test_6114_command_palette_expanded_over_40():
         'open-watchlist', 'open-focus', 'open-portfolio', 'open-backtest',
         'open-market-review', 'open-usage', 'open-datadict', 'open-health',
         'open-schedule', 'open-guard', 'open-notification', 'open-users',
-        'open-glossary', 'open-status', 'theme-gold', 'theme-dark', 'theme-light',
+        'open-status', 'theme-gold', 'theme-dark', 'theme-light',
     ]
     for k in required:
         assert k in keys, f"缺少命令: {k}"

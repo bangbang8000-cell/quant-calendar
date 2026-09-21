@@ -248,8 +248,6 @@
           state.navigateTo('system', 'feature');
         } else if (key === 'open-config') {
           state.navigateTo('system', 'config');
-        } else if (key === 'open-glossary') {
-          state.navigateTo('system', 'glossary');
         } else if (key === 'theme-dark') {
           state.changeTheme('dark-pro');
         } else if (key === 'theme-light') {

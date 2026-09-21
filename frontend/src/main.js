@@ -69,12 +69,6 @@ import TopTabsV6 from './components/TopTabs.vue'
 // V6.5 (PRD-6.5 F5): AppIcon 全局注册 — JS 模板(弹窗/页面组件)可直接用 <qc-icon>
 import AppIconV6 from './components/common/AppIcon.vue'
 AppIconV6.name = 'qc-icon'
-// 6.1.1 (A1): 量化术语浮层 — 问号图标 + 定义/口径
-import GlossaryHintV6 from './components/common/GlossaryHint.vue'
-GlossaryHintV6.name = 'qc-glossary-hint'
-// 6.1.1 (A1): 量化术语表页 — 系统配置子页
-import GlossaryPageV6 from './components/common/GlossaryPage.vue'
-GlossaryPageV6.name = 'qc-glossary-page'
 if (!window.__quantComponents) window.__quantComponents = {}
 window.__quantComponents.Sidebar = SidebarV6
 window.__quantComponents.Header = HeaderV6
@@ -84,8 +78,6 @@ window.__quantComponents.StockList = StockListV6
 window.__quantComponents.DetailSplit = DetailSplitV6
 window.__quantComponents.TopTabs = TopTabsV6
 window.__quantComponents.AppIcon = AppIconV6
-window.__quantComponents.GlossaryHint = GlossaryHintV6
-window.__quantComponents.GlossaryPage = GlossaryPageV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'

@@ -206,7 +206,6 @@
     { key: 'open-autoeval', label: '打开AI服务配置', icon: 'bot', keywords: 'autoeval 自动评估 AI 服务 模型' },
     { key: 'open-feature', label: '打开基础配置', icon: 'settings', keywords: 'feature 基础 配置 功能' },
     { key: 'open-config', label: '打开配置保存', icon: 'save', keywords: 'config 配置 保存 备份' },
-    { key: 'open-glossary', label: '打开术语表', icon: 'help-circle', keywords: 'glossary 术语 词条 解释' },
     { key: 'theme-gold', label: '金色主题', icon: 'palette', keywords: 'theme gold 金色 主题 颜色' },
     { key: 'theme-blue', label: '蓝色主题', icon: 'palette', keywords: 'theme blue 蓝色 主题' },
     { key: 'theme-red', label: '红色主题', icon: 'palette', keywords: 'theme red 红色 主题' },
