@@ -38,6 +38,8 @@ DEAD_TOKEN_WHITELIST = {
     "--qc-primary-900",      # 品牌色阶补全
     "--qc-content-max-width",  # 布局契约
     "--qc-space-12",         # 间距标尺补全
+    # 6.2.1 (F4): 弹窗宽度标尺 — el-dialog width 为属性值, 变量作设计标尺/文档契约 (由 test_dialog_width_scale_621 约束)
+    "--qc-dialog-width-sm", "--qc-dialog-width-md", "--qc-dialog-width-lg", "--qc-dialog-width-xl",
     # V6.6 M2 兼容层 (旧组件/外部脚本仍可能引用, 由 test_v66_m2_tokens.py 作为契约固定)
     "--sp-1", "--sp-2", "--sp-3", "--sp-4",
     "--r-sm", "--r-md", "--r-lg", "--r-xl", "--r-full",

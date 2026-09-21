@@ -388,6 +388,22 @@
 .qc-chip.is-info    { background: var(--state-info-tint); color: var(--state-info-text); }
 .qc-chip.is-gold    { background: var(--qc-primary-100); color: var(--qc-primary-800); }
 
+/* 6.1.7: 右键菜单空态项 (无可用操作) — 灰字非交互 */
+.qc-ctx-empty {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+/* 6.1.7: 自选分组空态提示 */
+.qc-wg-empty {
+  padding: var(--qc-space-4);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--qc-font-size-sm);
+  border: 1px dashed var(--border-light);
+  border-radius: var(--qc-radius-small);
+  margin-bottom: var(--qc-space-2);
+}
+
 /* ─── §2.8 空态 / 错误态 / 骨架 ───────────────────────── */
 .qc-empty {
   display: flex;
