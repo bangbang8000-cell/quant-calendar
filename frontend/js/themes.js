@@ -6,8 +6,8 @@
 // applyTheme 仍为全局唯一权威 (data-theme / data-theme-mode / 内联 token / localStorage 兜底)
 (function () {
 
-  // 色相预设: 金/蓝/红/绿/紫/粉
-  const HUES = [45, 220, 0, 140, 270, 320];
+  // 色相预设: 金/蓝/红/绿/紫/粉 + 青/橙/靛 (6.2.1 F11 扩展)
+  const HUES = [45, 220, 0, 140, 270, 320, 180, 25, 250];
 
   // 旧 8 主题 → (mode, hue) 迁移映射
   const LEGACY_MAP = {

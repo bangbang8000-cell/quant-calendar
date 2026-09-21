@@ -576,9 +576,9 @@ const allMenuDefs = [
                 const themes = ref({ light: { name: '浅色', color: 'var(--surface-canvas)' }, dark: { name: '深色', color: 'hsl(45, 10%, 8%)' } });
                 const currentTheme = ref('light');  // 当前解析后模式: light|dark
                 // V6.9.3 (F6.2): 主题状态全局共享 — Header 主题面板与基础配置子页共用
-                // 色板: 金/蓝/红/绿/紫/粉 + 中性无色相 (与 themes.js HUES / NEUTRAL_HUE 一致)
-                const themeHues = [45, 220, 0, 140, 270, 320, -1];
-                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色', '-1': '中性' };
+                // 色板: 金/蓝/红/绿/紫/粉 + 青/橙/靛 (6.2.1 F11) + 中性无色相 (与 themes.js HUES / NEUTRAL_HUE 一致)
+                const themeHues = [45, 220, 0, 140, 270, 320, 180, 25, 250, -1];
+                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色', 180: '青色', 25: '橙色', 250: '靛蓝', '-1': '中性' };
                 const themeHue = ref(45);
                 // V6.9.4 (F4/H2): themeMode 改响应式 ref — computed 依赖非响应式 getPreference 无法在切换后重算
                 const themeMode = ref((function () {

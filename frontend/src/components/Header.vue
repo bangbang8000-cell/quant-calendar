@@ -123,7 +123,7 @@ export default {
     // V6.9.3 (F6): 主题按钮 → 主题面板 (模式 + 6 色板 + 自定义 slider)
     const openThemeMenu = ref(false)
     // V6.11: fallback 色板与 app-logic 对齐 (含 -1 中性无色相档)
-    const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320, -1]
+    const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320, 180, 25, 250, -1]
     // V6.11 (用户需求5): 色相 0(红) 与 -1(中性) 都是合法值但 falsy —— 原 `|| 45` 会把红色
     // 显示成金色(勾选/滑杆/自定义度数全错)。改用 Number.isFinite 判定。
     const themeHue = computed(() => {

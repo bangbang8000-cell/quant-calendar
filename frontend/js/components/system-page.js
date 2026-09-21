@@ -1365,7 +1365,7 @@
         if (sub !== 'usage') _stopJobQueuePolling();
       });
       // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与基础配置子页一致)
-      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, -1];  // 金/蓝/红/绿/紫/粉 + 中性无色相
+      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, 180, 25, 250, -1];  // 金/蓝/红/绿/紫/粉 + 青/橙/靛 + 中性无色相
       const themeHueNames = state.themeHueNames || {};
       const themeMode = state.themeMode || Vue.computed(() => 'light');
       const themeHue = state.themeHue || Vue.ref(45);
