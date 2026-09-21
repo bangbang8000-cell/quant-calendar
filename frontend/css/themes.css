@@ -454,14 +454,8 @@
         [data-theme="dark-pro"] .el-textarea__inner {
             background-color: var(--border-base) ; border-color: var(--border-heavy) ; color: var(--text-primary) ;
         }
-        /* V4.8.1 D5: 时间轴 dark 适配 — 「当前」徽标深字(亮青主色上白字对比 1.25 不可读, 深字 15.15);
-           阶段 chip 暗底+浅字(保留内联阶段色描边); 连接线用暗色令牌 */
-        [data-theme="dark-pro"] .merrill-stage-chip-current,
-        [data-theme="dark-pro"] .tl-tip-current { color: var(--bg-page) ; }
-        [data-theme="dark-pro"] .merrill-stage-chip {
-            background: var(--bg-card) !important ;
-            color: var(--text-primary) !important ;
-        }
+        /* V6.11 (需求轮2·批次3): 旧时间轴的 .merrill-stage-chip / .tl-tip-* 暗色适配规则已随
+           死代码删除 (阶段带改走 color-mix 主题原生底 + 正文色, 不再需要逐类暗色覆盖)。 */
         [data-theme="dark-pro"] .el-textarea__inner::placeholder { color: var(--text-disabled) ; }
 
         /* ===== Element Plus 主按钮令牌化 (v3.13) ===== */

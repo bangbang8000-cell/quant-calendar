@@ -39,16 +39,22 @@ PAGES = (
 
 AUDIT_JS = r"""
 () => {
-  const P = (c) => { const m = String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:[,\s/]+([\d.]+%?))?\)/);
-    if (!m) return null; let a = 1;
-    if (m[4] !== undefined) a = m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
-    return [+m[1], +m[2], +m[3], a]; };
+  const P = (c) => {
+    const s = String(c);
+    let m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:[,\s/]+([\d.]+%?))?\)/);
+    if (m) { let a = 1;
+      if (m[4] !== undefined) a = m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+      return [+m[1], +m[2], +m[3], a]; }
+    // V6.11: Chrome 会把 color-mix() 计算值序列化为 color(srgb r g b) —— 必须识别, 否则渐变/合成色被漏读
+    m = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/);
+    if (m) { return [+m[1] * 255, +m[2] * 255, +m[3] * 255, m[4] === undefined ? 1 : parseFloat(m[4])]; }
+    return null; };
   const lum = (t) => { const f = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
     return 0.2126 * f(t[0]) + 0.7152 * f(t[1]) + 0.0722 * f(t[2]); };
   const cr = (a, b) => { const la = lum(a), lb = lum(b); const hi = Math.max(la, lb), lo = Math.min(la, lb);
     return (hi + 0.05) / (lo + 0.05); };
   const mix = (fg, bg) => [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3]));
-  const gradStops = (img) => { const out = []; const re = /rgba?\([^)]+\)/g; let m;
+  const gradStops = (img) => { const out = []; const re = /(?:rgba?|color)\([^)]*\)/g; let m;
     while ((m = re.exec(img))) { const c = P(m[0]); if (c) out.push(c); } return out; };
   const baseOf = (el) => { let n = el;
     while (n && n !== document.documentElement) {

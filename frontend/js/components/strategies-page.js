@@ -326,17 +326,10 @@
                                             <div class="mc-band mc-band-sm">
                                                 <div v-for="(g, j) in cyc.segs" :key="j" class="mc-seg" :style="mcSegStyle(g)"
                                                      @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
-                                                    <span class="mc-seg-name" v-if="g.width > 12">{{ g.name }}</span>
+                                                    <!-- V6.11: 历史周期文字收进色带内 (原带外阶段标签行已移除) -->
+                                                    <span class="mc-seg-name" v-if="g.width > 5">{{ g.name }}</span>
+                                                    <span class="mc-seg-months" v-if="g.width > 14 && g.months">{{ fmtNum(g.months) }}月</span>
                                                 </div>
-                                            </div>
-                                            <div class="mc-times">
-                                                <span v-for="(g, j) in cyc.segs" :key="'t' + j" class="mc-time-chip"
-                                                      @click.prevent="g.stage && showTimelineStage(g.stage)" :title="mcSegTitle(g)">
-                                                    <span class="mc-time-dot" :style="{background: getTimelineStageColor(g.stage)}"></span>
-                                                    <b>{{ g.name }}</b>
-                                                    <span class="mc-time-range" v-if="g.start">{{ g.start }}<template v-if="g.end"> → {{ g.end }}</template></span>
-                                                    <span class="mc-time-months" v-if="g.months">{{ g.months }} 月</span>
-                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -926,75 +919,12 @@
       // V4.0.5: 修复时间轴点击无弹窗 — qcState 未注入 showTimelineStage, 改用同源的 showStageDetail(阶段详情弹窗)
       // V4.8 (R1): 点击改为时间轴内嵌紧凑弹窗 — 仅展示该小阶段独有信息(essence/highlight/指标),
       //            不再跳转大而全的阶段详情弹窗 (showStageDetail 保留其他入口用)
-      const tlClickStage = Vue.ref(null);   // 当前点击的阶段对象 (含 essence/highlight/key_indicators)
-      const tlClickVisible = Vue.ref(false);
-      const tlClickPos = Vue.reactive({ top: 0, left: 0, right: null, bottom: null, maxWidth: 460 });
-      // V4.8.2-fix (用户反馈): 弹窗锚定被点击阶段 chip 的右侧合适位置
-      // 定位策略: 优先 chip 右侧垂直居中; 右侧空间不足时左侧; 上下空间不足时贴边
-      function computeTlClickPos(ev) {
-        const el = ev && ev.currentTarget;
-        const pop = document.querySelector('.tl-click-pop');
-        if (!el || !pop) return;
-        const cRect = el.getBoundingClientRect();
-        const popW = pop.offsetWidth || 340;
-        const popH = pop.offsetHeight || 220;
-        const pad = 10;
-        // 定位祖先: .merrill-timeline-block (relative), 弹窗 absolute 相对它
-        const cont = el.closest('.merrill-timeline-block');
-        const contRect = cont ? cont.getBoundingClientRect() : cRect;
-        const cLeft = cRect.left - contRect.left;   // chip 相对容器坐标
-        const cTop = cRect.top - contRect.top;
-        const cW = cRect.width, cH = cRect.height;
-        const contW = contRect.width, contH = contRect.height;
-        // 水平: 优先右侧, 空间不足放左侧
-        let left = null, right = null;
-        if (cLeft + cW + pad + popW <= contW) {
-          left = cLeft + cW + pad;
-        } else if (cLeft - pad - popW >= 0) {
-          left = cLeft - pad - popW;
-        } else {
-          left = Math.max(8, Math.min(cLeft, contW - popW - 8));
-        }
-        // 垂直: chip 中心对齐, 容器内贴边
-        const idealTop = cTop + cH / 2 - popH / 2;
-        const top = Math.max(8, Math.min(idealTop, contH - popH - 8));
-        tlClickPos.top = top;
-        tlClickPos.left = left;
-        tlClickPos.right = null;
-        tlClickPos.bottom = null;
-      }
-      // V4.8.2-fix: 弹窗位置样式 (relative 容器内 absolute 定位)
-      const tlClickPosStyle = Vue.computed(function () {
-        const st = {};
-        if (tlClickPos.top != null) st.top = tlClickPos.top + 'px';
-        if (tlClickPos.left != null) st.left = tlClickPos.left + 'px';
-        if (tlClickPos.right != null) st.right = tlClickPos.right + 'px';
-        return st;
-      });
-      function showTimelineStage(stageKey, ev) {
-        // 从时间轴数据中找完整阶段对象 (含 V4.8 注入的独有信息)
-        let found = null;
-        const cycles = (merrillTimeline.value && merrillTimeline.value.cycles) || [];
-        for (const c of cycles) {
-          const s = (c.stages || []).find(x => x.stage === stageKey && x.is_current);
-          if (s) { found = s; break; }
-        }
-        if (!found) {
-          for (const c of cycles) {
-            const s = (c.stages || []).find(x => x.stage === stageKey);
-            if (s) { found = s; break; }
-          }
-        }
-        if (found) {
-          tlClickStage.value = found;
-          tlClickVisible.value = true;
-          // 锚定位置: 弹窗渲染后 nextTick 测量并定位
-          Vue.nextTick(function () { computeTlClickPos(ev); });
-        }
-      }
-      function closeTlClick() {
-        tlClickVisible.value = false;
-        tlClickStage.value = null;
+      // V6.11 (需求轮2·批次3): 旧「时间轴内嵌紧凑弹窗」(.tl-click-pop) 的标记已随旧时间轴移除,
+      // 其状态与定位逻辑成为死代码 (且导致点击阶段无任何反馈) —— 统一委派到阶段详情弹窗。
+      function showTimelineStage(stageKey) {
+        // showStageDetail 由 qcState 注入 (经 ...state 暴露给模板), 故此处从 state 取, 不能当本地绑定用
+        const fn = state.showStageDetail;
+        if (typeof fn === 'function') fn(stageKey);
       }
 
       // v3.22-I4: 美林时间轴阶段取色
@@ -1021,177 +951,12 @@
       function getTimelineStageDesc(stage) {
         return (_tlCfg()[stage] && _tlCfg()[stage].description) || '';
       }
-      // V4.0.5-A: 轮次年份范围 (首阶段 start → 末阶段 end 取年)
-      function tlCycleYears(cycle) {
-        const stages = cycle && cycle.stages ? cycle.stages : [];
-        if (!stages.length) return '';
-        const y1 = stages[0] && stages[0].start ? String(stages[0].start).slice(0, 4) : '';
-        const last = stages[stages.length - 1] || {};
-        const y2 = last.end ? String(last.end).slice(0, 4) : (last.start ? String(last.start).slice(0, 4) : '');
-        return (y1 || y2) ? (y1 ? y1 + '–' + y2 : y2) : '';
-      }
-      // V4.0.6: tooltip 精简 — 年份短格式 (如 2009–2011; 无 end 用 start 或至今)
-      function tlTipYears(st) {
-        const y1 = st.start ? String(st.start).slice(0, 4) : '';
-        const y2 = st.end ? String(st.end).slice(0, 4) : (y1 ? '至今' : '');
-        return y1 ? (y2 ? y1 + '–' + y2 : y1) : '';
-      }
-      // V4.0.8: tooltip 内容重写 — 历史阶段显示「本周期·本阶段」凝练要点(essence), 与四方格子通用描述不同; 无 essence 回落触发原因
-      // V4.8 (R1): 补充 highlight 独特性亮点 (若存在, 追加在 essence 后)
-      function tlTipBrief(st) {
-        const base = st.essence || st.trigger || getTimelineStageDesc(st.stage) || '';
-        if (st.highlight) return base ? base + ' · ' + st.highlight : st.highlight;
-        return base;
-      }
-      // V4.0.8: 当前阶段 tooltip — 本周期实时核心指标(替代四方格子通用描述), 按当前阶段选最相关指标
-      function tlCurrentBrief() {
-        const ind = merrill.value.indicators || {};
-        const stage = merrill.value.stage || '';
-        const map = {
-          recovery: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['M2', ind.m2_growth]],
-          overheat: [['PPI', ind.ppi], ['CPI', ind.cpi], ['PMI', ind.pmi]],
-          stagflation: [['CPI', ind.cpi], ['PPI', ind.ppi], ['GDP', ind.gdp_growth]],
-          recession: [['PMI', ind.pmi], ['GDP', ind.gdp_growth], ['CPI', ind.cpi]],
-        };
-        const picks = (map[stage] || map.recession).filter(p => p[1] != null && p[1] !== 0);
-        if (!picks.length) return '';
-        return '实时 · ' + picks.map(p => p[0] + ' ' + p[1] + '%').join(' ｜ ');
-      }
-      // V4.0.5-D: 甘特式连续时间条段样式 — 按时长比例 flex-basis + 阶段色填充
-      function tlGanttStyle(st, stages, gi) {
-        const cfg = _tlCfg()[st.stage] || {};
-        const color = cfg.color || 'var(--color-primary)';
-        const arr = stages || [];
-        const durs = arr.map(s => s.duration_months || 0);
-        const total = durs.reduce((a, b) => a + b, 0);
-        const basis = total > 0 ? (durs[gi] / total) * 100 : 100 / Math.max(1, arr.length);
-        const isFirst = gi === 0, isLast = gi === arr.length - 1;
-        return {
-          flex: '0 0 ' + basis + '%',
-          background: color,
-          borderRadius: isFirst ? '6px 0 0 6px' : (isLast ? '0 6px 6px 0' : '0')
-        };
-      }
-      // 蛇形折行: n<=4 单行; n>=5 两行(行2 DOM 反向, 普通 row → 视觉从左到右为时间倒序, 右端短连接)
-      function timelineRows(stages) {
-        const n = stages.length;
-        if (n <= 4) return [stages];
-        const half = Math.ceil(n / 2);
-        return [stages.slice(0, half), stages.slice(half).reverse()];
-      }
-      // 阶段 chip 样式: 浅色底 + 阶段色细描边 + 固定深字
-      // V4.0.4+V4.1: color 固定深字令牌 var(--text-on-chip)(tokens.css 定义, 深浅主题一致) — dark 下不随 --text-primary 变浅
-      function tlChipStyle(stage) {
-        const s = _tlCfg()[stage] || {};
-        const color = s.color || 'var(--color-primary)';
-        const bg = s.bg_color || 'var(--bg-card)';
-        return {
-          background: bg,
-          borderColor: color,
-          color: 'var(--text-on-chip)',
-          boxShadow: 'inset 0 0 0 1px rgba(var(--primary-rgb, 37 99 235), 0.06)'
-        };
-      }
-
-      // ─── V4.0.3: 测量式精确连线 + chip 内嵌玻璃 hover 浮层 ───
-      // 连线基于每个 chip 的真实 DOM 坐标生成, 真正"接上"各阶段, 而非等分估算
-      // 用 querySelectorAll 直接测量(不依赖函数 ref, 兼容运行时编译模板)
-      const tlPaths = Vue.reactive({});     // ci -> {d, vb}
-      const tlHoverKey = Vue.ref(null);
-      let _tlResizeHandler = null;
-      let _tlRebuildTimer = null;
-      let _tlObserver = null;
-
-      // 测量每轮 chip 真实中心点 → 生成精确连接线 (行1 左→右, 跨行竖下, 行2 右→左)
-      function buildTlPaths() {
-        // V5.21: 旧「历史周期时间轴」模板已由「周期演进板」替代, 连线测量随之废弃。
-        // 容器不存在时直接返回, 避免空查询与无谓的 reactive 写入 (原实现依赖 .tl-cycle/.tl-stage-rows)。
-        if (!document.querySelector('.merrill-timeline-block')) return;
-        try {
-          const cycles = document.querySelectorAll('.merrill-timeline .tl-cycle');
-          cycles.forEach((c, ci) => {
-            const rows = c.querySelector('.tl-stage-rows');
-            const topRow = c.querySelector('.tl-row-top');
-            const botRow = c.querySelector('.tl-row-bottom');
-            const chipsTop = topRow ? Array.from(topRow.querySelectorAll('.merrill-stage-chip')) : [];
-            const chipsBot = botRow ? Array.from(botRow.querySelectorAll('.merrill-stage-chip')).reverse() : [];
-            const chips = chipsTop.concat(chipsBot);  // 时间正序: 行1 左→右, 行2 右→左
-            if (!rows || chips.length < 2) { tlPaths[ci] = { d: '', vb: '0 0 1 1' }; return; }
-            const rowRect = rows.getBoundingClientRect();
-            const W = Math.max(1, rowRect.width);
-            const H = Math.max(1, rowRect.height);
-            const half = chipsTop.length;
-            const pts = chips.map(el => {
-              const r = el.getBoundingClientRect();
-              return { x: r.left + r.width / 2 - rowRect.left, y: r.top + r.height / 2 - rowRect.top };
-            });
-            let d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
-            for (let i = 1; i < pts.length; i++) {
-              const prev = pts[i - 1], cur = pts[i];
-              if (i === half) {
-                d += ' L ' + prev.x.toFixed(1) + ' ' + cur.y.toFixed(1);  // 行1 末竖下到行2
-                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);   // 横接到行2 首(最右)
-              } else {
-                d += ' L ' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);
-              }
-            }
-            tlPaths[ci] = { d, vb: '0 0 ' + W.toFixed(1) + ' ' + H.toFixed(1) };
-          });
-        } catch (e) { console.error('[tl] buildTlPaths error', e); }
-      }
-      function tlPathFor(ci) { return tlPaths[ci] || { d: '', vb: '0 0 1 1' }; }
-
-      function setTlHover(key) { tlHoverKey.value = key; }
-      function clearTlHover() { tlHoverKey.value = null; }
-
-      // V5.15 (F3): 轮次折叠 — collapsedCycles 记录折叠的轮次下标
-      const collapsedCycles = Vue.ref([]);
-      function isCycleCollapsed(ci) { return collapsedCycles.value.indexOf(ci) !== -1; }
-      function toggleCycle(ci) {
-        const arr = collapsedCycles.value.slice();
-        const idx = arr.indexOf(ci);
-        if (idx !== -1) arr.splice(idx, 1); else arr.push(ci);
-        collapsedCycles.value = arr;
-        // 折叠/展开后需重测连线 (行区域高度变化)
-        Vue.nextTick(function () { if (buildTlPaths) buildTlPaths(); });
-      }
-      // V5.15 (F3): 「回到最新」— 滚动时间轴块底部 (最新轮)
-      function scrollToLatest() {
-        const block = document.querySelector('.merrill-timeline-block');
-        if (!block) return;
-        const spine = block.querySelector('.tl-spine');
-        if (spine) spine.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        else block.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
-      // V5.15 (F3): 阶段色图例数据 — 按配置顺序 (仅展示已配置阶段)
-      const tlLegendStages = Vue.computed(function () {
-        const cfg = _tlCfg();
-        const order = ['recovery', 'overheat', 'stagflation', 'recession', 'default'];
-        return order
-          .filter(function (k) { return cfg[k] && cfg[k].name; })
-          .map(function (k) { return { key: k, name: cfg[k].name, color: cfg[k].color || 'var(--color-primary)' }; });
-      });
-
-      function scheduleTlRebuild(delay) {
-        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
-        _tlRebuildTimer = setTimeout(() => { _tlRebuildTimer = null; Vue.nextTick(buildTlPaths); }, delay || 120);
-      }
-      Vue.onMounted(() => {
-        // V5.21: 旧时间轴已移除 → 连线重测与「全 body MutationObserver」一并停用。
-        // (原实现对 document.body 做 subtree 观察, 任何 DOM 变化都会排一次重建, 属纯耗损)
-        if (!document.querySelector('.merrill-timeline-block')) return;
-        scheduleTlRebuild(0);
-        scheduleTlRebuild(800);
-        _tlResizeHandler = () => scheduleTlRebuild(150);
-        window.addEventListener('resize', _tlResizeHandler);
-        _tlObserver = new MutationObserver(() => scheduleTlRebuild(120));
-        _tlObserver.observe(document.body || document.documentElement, { childList: true, subtree: true });
-      });
-      Vue.onBeforeUnmount(() => {
-        if (_tlResizeHandler) window.removeEventListener('resize', _tlResizeHandler);
-        if (_tlRebuildTimer) clearTimeout(_tlRebuildTimer);
-        if (_tlObserver) { _tlObserver.disconnect(); _tlObserver = null; }
-      });
+      // V6.11 (需求轮2·批次3): 旧「历史周期时间轴」下线后的死代码已删除 ——
+      //   tlCycleYears / tlTipYears / tlTipBrief / tlCurrentBrief / tlGanttStyle / timelineRows /
+      //   tlChipStyle / tlPathFor / tlPaths / tlHoverKey / setTlHover / clearTlHover /
+      //   collapsedCycles / isCycleCollapsed / toggleCycle / scrollToLatest / tlLegendStages /
+      //   连线测量 buildTlPaths / scheduleTlRebuild 与 body 级 MutationObserver 观察器。
+      //   旧 CSS (71 条规则约 11.9KB) 同步删除; .merrill-timeline-empty 仍在用故保留。
 
       // ─── V4.9 (P1): 执行看板 ───
       const execHistory = Vue.ref([]);
@@ -1498,6 +1263,17 @@
         if (!cur) cur = cycles[cycles.length - 1];
         return _mcBand(cur.stages, true);
       });
+      // V4.0.5-A: 轮次年份范围 (首阶段 start → 末阶段 end 取年)
+      // V6.11: 仍被 mcHistoryBands 使用 (历史周期行左侧「轮次 + 年份」标签), 不属于死代码。
+      function tlCycleYears(cycle) {
+        const stages = cycle && cycle.stages ? cycle.stages : [];
+        if (!stages.length) return '';
+        const y1 = stages[0] && stages[0].start ? String(stages[0].start).slice(0, 4) : '';
+        const last = stages[stages.length - 1] || {};
+        const y2 = last.end ? String(last.end).slice(0, 4) : (last.start ? String(last.start).slice(0, 4) : '');
+        return (y1 || y2) ? (y1 ? y1 + '–' + y2 : y2) : '';
+      }
+
       const mcHistoryBands = Vue.computed(function () {
         const cycles = (state.merrillTimeline && state.merrillTimeline.value && state.merrillTimeline.value.cycles) || [];
         return cycles.filter(function (c) { return !_mcIsCurrentCycle(c); }).map(function (c) {
@@ -1563,15 +1339,24 @@
         const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
         return L > 0.42 ? 'var(--merrill-chip-text)' : 'var(--merrill-chip-text-invert)';
       }
+      // V6.11 (需求轮2·批次3 / 用户需求2): 阶段带改「主题原生底 + 阶段色标识」——
+      //   原实现直接把后端下发的 Material 浅色当底色, 与主题/明暗无关:
+      //   亮色下对白卡片仅 1.73–2.23:1 (发糊), 暗色下对深卡片 7.5–9.7:1 (刺眼)。
+      //   现改为阶段色 22% 与卡片表面混合 (自动随 6 色相 + 明暗联动), 左侧 3px 阶段色条保留阶段身份,
+      //   文字统一用正文色 (实测对合成底色 >= 13:1)。
+      var MC_SEG_MIX = 22;
+      function _segFill(c) { return 'color-mix(in srgb, ' + c + ' ' + MC_SEG_MIX + '%, var(--surface-card))'; }
       function mcSegStyle(g) {
         const c = getTimelineStageColor(g.stage) || 'var(--color-primary)';
         if (g.ghost) {
-          // 斜纹底为低透明度色块叠加在卡片上 → 文字用正文色 (对明暗两种卡片底均 >=4.5:1)
-          return { left: g.left + '%', width: g.width + '%', borderColor: c, color: 'var(--text-primary)',
-                   background: 'repeating-linear-gradient(45deg, color-mix(in srgb, ' + c + ' 27%, transparent) 0, '
-                     + 'color-mix(in srgb, ' + c + ' 27%, transparent) 5px, transparent 5px, transparent 10px)' };
+          // 预测段: 低透明度斜纹 + 正文色文字
+          return { left: g.left + '%', width: g.width + '%', color: 'var(--text-primary)',
+                   borderLeft: '3px solid ' + c,
+                   background: 'repeating-linear-gradient(45deg, ' + _segFill(c) + ' 0, '
+                     + _segFill(c) + ' 5px, var(--surface-card) 5px, var(--surface-card) 10px)' };
         }
-        return { left: g.left + '%', width: g.width + '%', background: c, color: _chipFg(c) };
+        return { left: g.left + '%', width: g.width + '%', background: _segFill(c), color: 'var(--text-primary)',
+                 borderLeft: '3px solid ' + c };
       }
       function mcSegTitle(g) {
         const parts = [g.name];
@@ -1584,19 +1369,17 @@
       function mcMxCellStyle(k, v) {
         const c = getTimelineStageColor(k) || 'var(--color-primary)';
         const p = Math.max(0.28, v / mcMaxMonths.value);
-        return { background: c, opacity: (0.45 + 0.55 * p).toFixed(2) };
+        // V6.11: 阶段矩阵同步走主题原生底 (原 opacity 叠色在暗色下与卡片底混浊、亮色下过淡)
+        const mix = Math.round(14 + 30 * p);
+        return { background: 'color-mix(in srgb, ' + c + ' ' + mix + '%, var(--surface-card))',
+                 color: 'var(--text-primary)' };
       }
 
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, todaySignals, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
-        timelineRows, tlChipStyle, tlPathFor, tlCycleYears, tlGanttStyle, tlTipYears, tlTipBrief, tlCurrentBrief,
-        tlHoverKey, setTlHover, clearTlHover,
-        collapsedCycles, isCycleCollapsed, toggleCycle, scrollToLatest, tlLegendStages,
         // V5.21: 周期演进板
         mcHistView, mcCurrentBand, mcHistoryBands, mcStageKeys, mcMatrix, mcTrailRuns,
         mcProgStyle, mcAvgMark, mcEndRange, mcSegStyle, mcSegTitle, mcMxCellStyle,
-        tlClickStage, tlClickVisible, closeTlClick,
-        tlClickPosStyle,
         merrillTimeline, timelineLoading, showTimelineStage,
         execHistory, execSummary, execLoading, execError,
         execDays, execTaskFilter, execStatusFilter, execTaskOptions, execSuccessClass,

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""V5.15 (PRD-v5.15 F3): 美林时钟历史周期时间轴美化。
+"""美林时钟周期板契约 (原 V5.15 时间轴美化 TC-5.15.21~.25)。
 
-覆盖 TC-5.15.21~.25:
-- 高度压缩: 轮间距/甘特条/行高收敛 (整块高度目标较基线压缩 ≥25%)
-- 层级精修: chip 字号 13px / 名称加粗 / 年份弱化
-- 当前阶段强化 + tooltip 阶段色条
-- 交互增强: 轮次折叠 / 阶段色图例 / 回到最新
-- 移动端适配 <768px
+V6.11 (需求轮2·批次3) 口径变更: 旧「历史周期时间轴」(.tl-* 蛇形连线 + 带外 chip 行) 已整体退役,
+改由「周期演进板」(.mc-*) 承载 —— 本文件保留原测试编号, 断言已改为新契约:
+- 带高: 本轮 32px / 历史 28px (文字收进色轴内)
+- 排版: 段内标签 12px 加粗 + 正文色; 月数弱化
+- 当前段强化 + 阶段色标识 (左侧色条) + 预测段斜纹 + 主题原生合成底
+- 响应式: 百分比宽度自适应 (旧 .tl-* 适配块已删除)
+- 交互 (V5.21 起的契约): 阶段块点击 → 阶段详情; 周期带/阶段矩阵切换; 评估轨迹; 实时进度
 """
 import os
 import re
@@ -33,34 +34,54 @@ def _css_block_exact(css, selector):
     return m.group(1) if m else None
 
 
-def test_timeline_height_compressed():
-    """TC-5.15.21: 轮间距 margin-bottom ≤24px (原 32px); 甘特条高度 ≤8px (原 10px)"""
+def test_timeline_band_heights():
+    """V6.11 (需求轮2·批次3) 契约: 本轮演进带 32px / 历史周期带 28px。
+
+    旧实现历史带仅 24px, 塞不下「名称 + 月数」带内文字 (文字被迫外移到 .mc-time-chip 行);
+    V6.11 起统一为「文字在色轴内」, 历史带抬到 28px。
+    """
     css = _read_f("css/layout.css")
-    b = _css_block(css, ".tl-cycle")
-    assert b and "margin-bottom: 32px" not in b, "轮间距应压缩 (不再 32px)"
-    assert b and "margin-bottom: 20px" in b, "轮间距应为 20px"
-    g = _css_block_exact(css, ".tl-gantt")
-    assert g and "height: 6px" in g, "甘特条基础规则高度应为 6px"
+    b = _css_block_exact(css, ".mc-band")
+    assert b and "height: 32px" in b, "本轮演进带应为 32px"
+    sm = _css_block_exact(css, ".mc-band-sm")
+    assert sm and "height: 28px" in sm, "历史周期带应为 28px (V6.11 由 24px 抬升)"
 
 
-def test_timeline_chip_type():
-    """TC-5.15.22: chip 字号 13px (原 12px); 名称加粗; 年份弱化"""
+def test_timeline_inband_label_typography():
+    """TC-5.15.22 (V6.11 口径): 段内标签 xs(12px) + semibold + 正文色; 月数弱化; 无带外 chip 行"""
     css = _read_f("css/layout.css")
-    b = _css_block(css, ".merrill-stage-chip")
-    assert b and "font-size: var(--qc-font-size-sm)" in b, "chip 字号应为 sm (13px)"
-    assert ".merrill-stage-chip-name { font-weight: var(--font-semibold" in css.replace("\n", ""), "chip 名称应加粗"
-    date_b = _css_block(css, ".merrill-stage-chip-date")
-    assert date_b and "opacity: 0.7" in date_b, "年份应弱化 (opacity 0.7)"
+    seg = _css_block_exact(css, ".mc-seg")
+    assert seg, ".mc-seg 规则应存在"
+    assert "font-size: var(--qc-font-size-xs)" in seg, "段内标签字号应为 xs (12px)"
+    assert "font-weight: var(--font-semibold)" in seg, "段内标签应加粗"
+    assert "color: var(--text-primary)" in seg, "段内文字应用正文色 (随明暗自适应, 原为固定深字令牌)"
+    months = _css_block(css, ".mc-seg-months")
+    assert months and "opacity" in months, "月数应弱化 (opacity)"
+    js = _read_f("js/components/strategies-page.js")
+    tpl = js.split("setup()")[0]          # 只看模板区 (注释中的历史说明不计)
+    assert 'class="mc-time-chip"' not in tpl, "带外阶段标签行应已移除 (文字收进色带)"
 
 
-def test_timeline_current_emphasis():
-    """TC-5.15.23: 当前 chip 徽标底纹 + tooltip 头部阶段色条"""
+def test_timeline_current_emphasis_and_stage_identity():
+    """TC-5.15.23 (V6.11 口径): 当前段 inset 强化 + 阶段色标识 (左侧 3px 色条) + 预测段斜纹 + 主题原生底"""
     css = _read_f("css/layout.css")
-    cur = _css_block(css, ".merrill-stage-chip-current")
-    assert cur, "当前徽标规则应存在"
-    assert "border-radius" in cur, "当前徽标应圆角底纹"
-    tip = _css_block(css, ".tl-tip-head")
-    assert tip and "border-bottom" in tip, "tooltip 头部应有阶段色条 (border-bottom)"
+    cur = _css_block(css, ".mc-seg.is-cur")
+    assert cur and "inset" in cur, "当前段应有 inset 强化"
+    js = _read_f("js/components/strategies-page.js")
+    assert "borderLeft: '3px solid '" in js, "阶段段应带左侧阶段色条 (保留阶段身份)"
+    assert "repeating-linear-gradient" in js, "预测段应保留斜纹样式"
+    assert "color-mix(in srgb, " in js, "阶段底应为主题原生合成色 (阶段色 22% + 卡片表面)"
+    assert "var(--text-primary)" in js, "段内文字应走正文色令牌"
+
+
+def test_timeline_responsive_fluid():
+    """TC-5.15.25 (V6.11 口径): 阶段带按百分比宽度自适应 → 旧时间轴的 768px 适配块应已删除"""
+    resp = _read_f("css/responsive.css")
+    assert ".tl-" not in resp, "旧时间轴 (.tl-*) 响应式规则应已删除"
+    assert "merrill-stage-chip" not in resp, "旧阶段 chip 响应式规则应已删除"
+    js = _read_f("js/components/strategies-page.js")
+    assert "left: g.left + '%', width: g.width + '%'" in js, \
+        "阶段带应按百分比宽度自适应 (无需移动端专用规则)"
 
 
 def test_timeline_interactions():
@@ -79,20 +100,3 @@ def test_timeline_interactions():
     assert "mcHistView" in src, "应支持 周期带 / 阶段矩阵 视图切换"
     assert "mcTrailRuns" in src, "应含评估轨迹 (随大模型评估与时间演进更新)"
     assert "mcProgStyle" in src and "mcCurrentBand" in src, "应含实时进度与本轮演进带"
-
-
-def test_timeline_responsive():
-    """TC-5.15.25: <768px 移动端适配"""
-    css = _read_f("css/responsive.css")
-    # 检查全部 768px 断点, 任一段含时间轴规则即通过
-    blocks = [m for m in re.finditer(r"@media \(max-width: 768px\)\s*\{", css)]
-    assert blocks, "应存在 768px 断点"
-    found = False
-    for i, m in enumerate(blocks):
-        start = m.end()
-        end = blocks[i + 1].start() if i + 1 < len(blocks) else len(css)
-        seg = css[start:end]
-        if "tl-" in seg or "merrill" in seg:
-            found = True
-            break
-    assert found, "768px 断点内应含时间轴适配规则"

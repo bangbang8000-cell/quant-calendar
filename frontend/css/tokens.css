@@ -230,8 +230,6 @@
   --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */
-  --glass-blur: 12px;
-  --glass-saturate: 150%;
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.35);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
