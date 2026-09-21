@@ -128,7 +128,8 @@
                 <el-button size="large" class="login-btn login-guest-btn" @click="handleGuestLogin" :loading="guestLogining">
                     {{ t('login.guest') }}
                 </el-button>
-                <div class="login-footer">{{ t('login.footer') }}</div>
+                <!-- 6.1.3 (C5): 登录页版本号 -->
+                <div class="login-footer">{{ t('login.footer') }}<span v-if="appVersion" class="login-version"> · v{{ appVersion }}</span></div>
             </div>
             </section>
           </div>
