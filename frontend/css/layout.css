@@ -228,23 +228,43 @@
 .w-full { width: 100%; }
 .custom-bt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--qc-space-4); margin-top: var(--qc-space-4); }
 .custom-bt-item { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-2); padding: var(--qc-space-3) var(--qc-space-4); display: flex; flex-direction: column; gap: var(--qc-space-1); }
+/* 6.2.2 (F12): 玻璃增强 — 浮层统一真玻璃 (blur+saturate), 明暗各一套 --glass-* token */
 .el-dialog,
-.el-message-box {
-  background: var(--glass-bg) ;
-  border: 1px solid var(--glass-border) ;
-  box-shadow: var(--glass-shadow) ;
-}
+.el-message-box,
 .el-dropdown-menu,
 .el-select-dropdown,
 .el-picker-panel,
 .el-date-picker,
 .el-date-range-picker {
-  background: var(--glass-bg) ;
-  border-color: var(--glass-border) ;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate);
+  backdrop-filter: var(--glass-blur) var(--glass-saturate);
 }
-/* el-message / el-notification 保留类型色(成功/警告/错误), 仅加模糊不覆盖背景 */
+/* el-message / el-notification 保留类型色(成功/警告/错误), 统一 blur 参数 */
 .el-message,
-.el-notification { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.el-notification {
+  -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate);
+  backdrop-filter: var(--glass-blur) var(--glass-saturate);
+}
+/* 6.2.2 (F12): 降级 — 不支持 backdrop-filter 或系统减动效时浮层回退半透明实底 (不 blur) */
+@supports not ((backdrop-filter: blur(0px)) or (-webkit-backdrop-filter: blur(0px))) {
+  .el-dialog, .el-message-box, .el-dropdown-menu, .el-select-dropdown,
+  .el-picker-panel, .el-date-picker, .el-date-range-picker,
+  .el-message, .el-notification {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .el-dialog, .el-message-box, .el-dropdown-menu, .el-select-dropdown,
+  .el-picker-panel, .el-date-picker, .el-date-range-picker,
+  .el-message, .el-notification {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 
 /* ─── V5.2.2 短线复盘页 UI 增强 ─── */
 /* 涨跌工具色: A股 涨=红/跌=绿 (与 themes.css market-review 同惯例) */

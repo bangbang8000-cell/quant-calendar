@@ -123,12 +123,13 @@
             --chart-bg: var(--surface-card) ;
             /* V4.0.2 毛玻璃深色浮层 */
             /* V6.6 (PRD-6.6 F4): 暗色浮层实底 — 0.72 半透明改不透明, 消除玻璃透底 */
-            /* V6.10: 浮层底 = --surface-raised (色相联动暖中性), 原 #101a2e 为海军蓝残留 */
-            --glass-bg: var(--surface-raised);
-            --glass-border: rgba(255, 255, 255, 0.10);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-            --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 46%);
-            --glass-edge: rgba(255, 255, 255, 0.10);
+            /* 6.2.2 (F12): 玻璃增强 — 暗色浮层改半透明暗玻璃 (0.82 保对比度) + blur 透出层次,
+               文字对比度由 --surface-raised 系底色 + blur 维持 (浮层文字仍 ≥4.6:1) */
+            --glass-bg: rgba(28, 27, 24, 0.82);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%);
+            --glass-edge: rgba(255, 255, 255, 0.14);
             --gradient-brand: linear-gradient(135deg, #64ffda 0%, #5e6ad2 100%);
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;

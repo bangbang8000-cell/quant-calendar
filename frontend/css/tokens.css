@@ -238,6 +238,8 @@
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
+  /* 6.2.2 (F7): 骨架屏 shimmer 档 (原 1.5s/1.6s 硬编码) */
+  --duration-skeleton: 1500ms;
   --easing-standard: ease;
   --easing-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-fast: var(--duration-fast) var(--easing-standard);
@@ -248,8 +250,12 @@
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.35);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+  /* 6.2.2 (F12): 玻璃增强 — 浮层统一 backdrop blur 参数 (仅浮层, 结构层禁 blur) */
+  --glass-blur: 12px;
+  --glass-saturate: saturate(140%);
   /* V5.12.2 (FR-5.12.2.4): 类玻璃 —— 顶部高光 + 浅渐变 (真 backdrop-filter 仅留给浮层) */
-  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 46%);
+  /* 6.2.2 (F12): 结构层 sheen 高光提升 (亮色 0.55→0.62, 玻璃层次更明显) */
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 46%);
   --glass-edge: rgba(255, 255, 255, 0.7);
 
   /* ─── Semantic Colors (global, not theme-dependent) ─── */

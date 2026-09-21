@@ -62,13 +62,14 @@
   min-width: 0;
   transition: box-shadow var(--duration-base), border-color var(--duration-base), transform var(--duration-base);
   /* P2-9: 卡片 stagger 入场 (backwards 保证动画结束后 transform 交还 hover 过渡) */
-  animation: qc-card-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  /* 6.2.2 (F7): 0.35s → --duration-base(250ms) 对齐动效标尺 */
+  animation: qc-card-enter var(--duration-base) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
-/* P2-10: hover 微悬浮 (克制, 仅 2px) */
+/* P2-10: hover 微悬浮 (克制) — 6.2.2 (F9): -2px → -1px 统一体感 */
 .qc-card:hover {
   box-shadow: var(--qc-shadow-sm);
   border-color: var(--qc-neutral-300);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 .qc-card + .qc-card { margin-top: var(--qc-space-4); }
 /* P2-9: 相邻卡片 stagger 延迟 (handover 10.1) */
@@ -372,7 +373,7 @@
   font-weight: var(--qc-font-weight-semibold);
   line-height: 1;
 }
-/* 语义 chip: 12px 圆角 full, 沿用 --badge-* 体系 */
+/* 语义 chip: 12px 圆角 full, 6.2.2 (F9): --badge-* 旧体系 → --state-* 语义槽位 */
 .qc-chip {
   display: inline-flex;
   align-items: center;
@@ -381,10 +382,10 @@
   font-size: var(--qc-font-size-sm);
   line-height: 1.4;
 }
-.qc-chip.is-success { background: var(--badge-success-bg); color: var(--badge-success-text); }
-.qc-chip.is-warning { background: var(--badge-warning-bg); color: var(--badge-warning-text); }
-.qc-chip.is-danger  { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
-.qc-chip.is-info    { background: var(--badge-info-bg); color: var(--badge-info-text); }
+.qc-chip.is-success { background: var(--state-success-tint); color: var(--state-success-text); }
+.qc-chip.is-warning { background: var(--state-warning-tint); color: var(--state-warning-text); }
+.qc-chip.is-danger  { background: var(--state-danger-tint); color: var(--state-danger-text); }
+.qc-chip.is-info    { background: var(--state-info-tint); color: var(--state-info-text); }
 .qc-chip.is-gold    { background: var(--qc-primary-100); color: var(--qc-primary-800); }
 
 /* ─── §2.8 空态 / 错误态 / 骨架 ───────────────────────── */
@@ -417,7 +418,7 @@
 .qc-skeleton {
   background: var(--qc-muted);
   border-radius: var(--qc-radius-medium);
-  animation: qc-pulse 1.6s ease-in-out infinite;
+  animation: qc-pulse var(--duration-skeleton) ease-in-out infinite;  /* 6.2.2 (F7): 1.6s → token */
 }
 @keyframes qc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 

@@ -46,7 +46,7 @@
     var(--border-light) 75%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  animation: skeleton-shimmer var(--duration-skeleton) ease-in-out infinite;
   border-radius: var(--qc-radius-small);
 }
 .skeleton-text {
