@@ -34,6 +34,9 @@ import '../js/session-restore-core.js'
 import '../js/install-prompt.js'
 // 6.1.4 (D3): 批量加入自选 (纯逻辑: import 文本构建 + 结果汇总)
 import '../js/batch-add-core.js'
+// 6.1.4 (D4): 右键菜单 (核心 + 全局组件)
+import '../js/context-menu-core.js'
+import '../js/components/context-menu.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'

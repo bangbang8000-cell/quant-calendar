@@ -713,3 +713,23 @@
   cursor: pointer;
   padding: 4px 6px;
 }
+
+/* ─── 6.1.4 (D4): 右键菜单 ── */
+.qc-ctx {
+  position: fixed;
+  z-index: 3200;
+  min-width: 150px;
+  background: var(--bg-card);
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  box-shadow: var(--qc-shadow-lg);
+  padding: 6px;
+}
+.qc-ctx-item {
+  padding: 6px 12px;
+  font-size: var(--qc-font-size-sm);
+  color: var(--qc-foreground);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.qc-ctx-item:hover { background: var(--qc-primary-50); color: var(--qc-primary-700); }
