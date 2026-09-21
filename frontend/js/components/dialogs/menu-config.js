@@ -9,7 +9,7 @@
   window.__quantComponents.MenuConfigDialog = {
     name: 'qc-menu-config-dialog',
     template: `
-        <el-dialog v-model="menuConfigDialog" :title="(allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
+        <el-dialog v-model="menuConfigDialog" :title="(allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="640px">
             <div class="p-15-0">
                 <el-form label-width="60px" size="small">
                     <el-form-item label="组名">
@@ -27,7 +27,7 @@
                             <span class="text-sm-600-nowrap">{{ menu.name }}</span>
                             <span class="text-10-tertiary-nowrap" v-if="!groupEditForm.visible_menus[menu.key]">子项已关</span>
                         </div>
-                        <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: '12px', flexShrink: 0}">▼</span>
+                        <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: 'var(--qc-font-size-xs)', flexShrink: 0}">▼</span>
                     </div>
                     <div class="menu-sub-row" v-if="subPageSectionExpanded[menu.key]" :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
                         <el-switch v-for="sp in menu.subPages" :key="sp"

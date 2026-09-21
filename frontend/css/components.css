@@ -150,7 +150,7 @@
 .qc-kpi { display: flex; flex-direction: column; gap: var(--qc-space-1); }
 .qc-kpi-label { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); font-weight: var(--qc-font-weight-medium); }
 .qc-kpi-value {
-  font-size: 32px; /* P2-11: KPI 数值 28→32px 强化数据层级 */
+  font-size: var(--qc-font-size-2xl); /* 6.2.1 (F2): 32px KPI 档 */
   font-weight: var(--qc-font-weight-bold);
   color: var(--qc-foreground);
   font-variant-numeric: tabular-nums;
@@ -338,7 +338,7 @@
 .w-100px { width: 100px; }
 .el-textarea__inner { box-shadow: 0 0 0 1px var(--border-control) inset; }
 .el-textarea__inner:focus { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
-.el-form-item__label { font-size: 13px; color: var(--qc-muted-foreground); }
+.el-form-item__label { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); }
 .el-switch.is-checked { --el-switch-on-color: var(--qc-primary); }
 .el-checkbox__input.is-checked .el-checkbox__inner { background: var(--qc-primary); border-color: var(--qc-primary); }
 .el-radio__input.is-checked .el-radio__inner { background: var(--qc-primary); border-color: var(--qc-primary); }
@@ -397,7 +397,7 @@
   text-align: center;
   color: var(--qc-muted-foreground);
 }
-.qc-empty-icon { font-size: 40px; line-height: 1; opacity: 0.6; }
+.qc-empty-icon { font-size: var(--qc-font-size-icon); line-height: 1; opacity: 0.6; }
 .qc-empty-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
 .qc-empty-desc { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); margin-top: var(--qc-space-1); }
 .qc-empty-action { margin-top: var(--qc-space-4); }
@@ -410,7 +410,7 @@
   padding: var(--qc-space-10) var(--qc-space-6);
   text-align: center;
 }
-.qc-error-icon { font-size: 40px; line-height: 1; opacity: 0.7; }
+.qc-error-icon { font-size: var(--qc-font-size-icon); line-height: 1; opacity: 0.7; }
 .qc-error-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
 .qc-error-action { margin-top: var(--qc-space-4); }
 
@@ -434,7 +434,7 @@
 }
 .dashboard-grid .stat-card:hover { box-shadow: var(--qc-shadow-md); border-color: var(--qc-neutral-300); }
 .dashboard-grid .stat-value {
-  font-size: 32px; /* P2-11: KPI 数值 28→32px 强化数据层级 */
+  font-size: var(--qc-font-size-2xl); /* 6.2.1 (F2): 32px KPI 档 */
   font-weight: var(--qc-font-weight-bold);
   color: var(--qc-foreground);
   font-variant-numeric: tabular-nums;
@@ -747,7 +747,7 @@
   border: none;
   background: transparent;
   color: var(--qc-muted-foreground);
-  font-size: 16px;
+  font-size: var(--qc-font-size-md);
   line-height: 1;
   cursor: pointer;
   padding: 4px 6px;

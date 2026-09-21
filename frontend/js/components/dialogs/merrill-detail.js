@@ -31,7 +31,7 @@
                 <!-- 阶段概览 -->
                 <div class="merrill-detail-header" :style="{backgroundColor: merrillDetailData.bg_color, borderLeftColor: merrillDetailData.color}">
                     <div>
-                        <h3 class="merrill-title">{{ merrillDetailData.name }}</h3>
+                        <h2 class="merrill-title">{{ merrillDetailData.name }}</h2>
                         <p class="text-base-secondary-m0">{{ merrillDetailData.description }}</p>
                     </div>
                     <div class="stage-badge" :style="{backgroundColor: merrillDetailData.color}">

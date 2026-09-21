@@ -230,14 +230,14 @@
 .qc-top-tabs-more-btn {
   width: auto;
   padding: 0 var(--qc-space-3);
-  font-size: 13px;
+  font-size: var(--qc-font-size-sm);
 }
 /* V6.3 (PRD-6.3 F4): toptab 形态 — 顶部二级横向标签 (复用 qc-header-tabs 容器, 不可关闭/无右键) */
 .qc-top-tabs-scroll .qc-top-tab {
   display: inline-flex;
   align-items: center;
   gap: var(--qc-space-2);
-  height: 36px;
+  height: var(--qc-nav-subitem-h);  /* 6.2.1 (F3): 顶部二级 36px 标尺 */
   padding: 0 var(--qc-space-4);
   border: 1px solid transparent;
   border-radius: var(--qc-radius-small);
@@ -590,7 +590,7 @@
   padding: 6px 16px;
   background: var(--qc-warning-50);
   color: var(--qc-warning-700);
-  font-size: 13px;
+  font-size: var(--qc-font-size-sm);
   border-bottom: 1px solid var(--qc-warning-100);
 }
 .non-trading-banner .non-trading-banner-close {
@@ -599,7 +599,7 @@
   border: none;
   cursor: pointer;
   color: inherit;
-  font-size: 16px;
+  font-size: var(--qc-font-size-md);
   line-height: 1;
   padding: 2px 6px;
 }

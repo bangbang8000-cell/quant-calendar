@@ -9,7 +9,7 @@
   window.__quantComponents.AddUserDialog = {
     name: 'qc-add-user-dialog',
     template: `
-        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="400px">
+        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="440px">
             <el-form class="p-15-0-25" label-width="80px">
                 <el-form-item label="用户名">
                     <el-input v-model="userForm.username" :disabled="!!editingUser" placeholder="输入用户名" />

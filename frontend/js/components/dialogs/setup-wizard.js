@@ -9,7 +9,7 @@
   window.__quantComponents.SetupWizardDialog = {
     name: 'qc-setup-wizard-dialog',
     template: `
-        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="500px" :close-on-click-modal="false" :show-close="false">
+        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="520px" :close-on-click-modal="false" :show-close="false">
             <div class="min-h-280">
                 <!-- 步骤 1: 修改密码 -->
                 <div v-if="setupStep === 1">

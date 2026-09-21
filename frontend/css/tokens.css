@@ -139,7 +139,13 @@
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
   --qc-font-size-lg: 18px;
+  /* 6.2.1 (F2): 补档 — 页面标题档 (原 .qc-page-title 硬编码 20px) */
+  --qc-font-size-lg2: 20px;
   --qc-font-size-xl: 22px;
+  /* 6.2.1 (F2): 补档 — KPI 数值档 (原 32px 硬编码, 介于 xl22 与 3xl36 之间) */
+  --qc-font-size-2xl: 32px;
+  /* 6.2.1 (F2): 补档 — 图标档 (空态/错误大图标, 原 40px 硬编码) */
+  --qc-font-size-icon: 40px;
   --qc-font-size-3xl: 36px;
 
   --qc-font-weight-normal: 400;
@@ -165,6 +171,16 @@
   --qc-mobile-nav-height: 60px;
   --qc-content-max-width: 1440px;
   --qc-subnav-width: 200px;
+
+  /* 6.2.1 (F3): 导航高度标尺 — 一级菜单/顶部页签 40px, 二级菜单/左子导航 36px (层级区分, 同类一致) */
+  --qc-nav-item-h: 40px;
+  --qc-nav-subitem-h: 36px;
+
+  /* 6.2.1 (F4): 弹窗宽度标尺 — 全部 el-dialog width 收敛至 sm/md/lg/xl 四档 */
+  --qc-dialog-width-sm: 440px;
+  --qc-dialog-width-md: 520px;
+  --qc-dialog-width-lg: 640px;
+  --qc-dialog-width-xl: 800px;
 
   /* ═══ Legacy Tokens (V6.0 渐进别名 → --qc-*, 值不一致者保留原值防回归) ═══ */
   /* ─── Spacing Scale ─── */

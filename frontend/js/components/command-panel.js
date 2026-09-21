@@ -10,7 +10,7 @@
   window.__quantComponents.CommandPanel = {
     name: 'qc-command-panel',
     template: `
-      <el-dialog v-model="visible" width="580px" top="12vh" class="command-palette"
+      <el-dialog v-model="visible" width="640px" top="12vh" class="command-palette"
                  :show-close="false" :close-on-click-modal="true" :append-to-body="true">
         <div class="command-palette-body">
           <el-input ref="inputEl" v-model="query" size="large" placeholder="搜索股票 / 菜单 / 指令…"

@@ -169,7 +169,7 @@
 
 
                 <!-- V5.3.14 (T-SP.P0.1): 多策略并集/交集对比弹窗 -->
-                <el-dialog v-model="compareVisible" :title="t('calendar.strategyCompare')" width="760px" top="8vh">
+                <el-dialog v-model="compareVisible" :title="t('calendar.strategyCompare')" width="800px" top="8vh">
                     <div v-if="compareLoading" style="padding:24px;text-align:center;">{{ t('common.loading') }}</div>
                     <div v-else-if="compareError" class="cal-compare-error">{{ compareError }}</div>
                     <div v-else-if="compareData && compareData.comparison">

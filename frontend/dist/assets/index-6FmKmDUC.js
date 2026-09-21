@@ -296,7 +296,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
 
 
                 <!-- V5.3.14 (T-SP.P0.1): 多策略并集/交集对比弹窗 -->
-                <el-dialog v-model="compareVisible" :title="t('calendar.strategyCompare')" width="760px" top="8vh">
+                <el-dialog v-model="compareVisible" :title="t('calendar.strategyCompare')" width="800px" top="8vh">
                     <div v-if="compareLoading" style="padding:24px;text-align:center;">{{ t('common.loading') }}</div>
                     <div v-else-if="compareError" class="cal-compare-error">{{ compareError }}</div>
                     <div v-else-if="compareData && compareData.comparison">
@@ -2548,7 +2548,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
                                     <div class="flex-between-mb8">
                                         <span class="text-md-semibold">{{ item.stock_code }}</span>
                                         <!-- V6.6: item.result.level_color 服务端返回实时色，保留内联 -->
-                                        <span :style="{color: levelColor(item.result.level),fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
+                                        <span :style="{color: levelColor(item.result.level),fontWeight:'var(--font-bold)',fontSize:'var(--qc-font-size-lg)'}">{{ fmtNum(item.result.total_score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb6">{{ item.stock_name }}</div>
                                     <div class="flex-between">
@@ -3301,7 +3301,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
                         </div>
 
                         <!-- 调仓弹窗 -->
-                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="420px">
+                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="440px">
                             <div class="portfolio-trade-form">
                                 <div class="portfolio-trade-row">
                                     <span class="portfolio-trade-label">股票</span>
@@ -4470,7 +4470,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
         <el-button v-else size="small" :loading="retrying">{{ t('common.retry') }}</el-button>
       </div>
     `,setup(){function a(e){try{const m=window.__quantModules&&window.__quantModules.i18n&&window.__quantModules.i18n.t;if(m)return m(e)||""}catch{}return e}return{t:a}}})})();(function(){const{ref:a,computed:e,watch:m,nextTick:t,inject:c,onMounted:d}=Vue,x=window.QuantCommandPanel;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.CommandPanel={name:"qc-command-panel",template:`
-      <el-dialog v-model="visible" width="580px" top="12vh" class="command-palette"
+      <el-dialog v-model="visible" width="640px" top="12vh" class="command-palette"
                  :show-close="false" :close-on-click-modal="true" :append-to-body="true">
         <div class="command-palette-body">
           <el-input ref="inputEl" v-model="query" size="large" placeholder="搜索股票 / 菜单 / 指令…"
@@ -4499,7 +4499,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
         </div>
       </el-dialog>
     `,setup(){const r=c("qcState");if(!r)return{};const n=a(""),p=e({get:()=>r.commandPaletteVisible.value,set:D=>{r.commandPaletteVisible.value=D}}),o=a(0),C=a([]),h=a(null),w=e(()=>{const D=(x.DEFAULT_COMMANDS||[]).map(function(b){return Object.assign({},b)});return Object.keys(r.themes.value||{}).forEach(function(b){const i=r.themes.value[b];D.push({key:"theme:"+b,label:"切换主题 · "+(i.name||b),icon:"palette",keywords:"theme 主题"})}),D});function k(D){return typeof D=="string"&&/^[a-z][a-z0-9-]*$/.test(D)}const S=e(()=>r.menus.value||[]);function I(){const D=window.__quantModules&&window.__quantModules.pinyin;if(!D)return[];const s=[];return(r.watchlist&&r.watchlist.value||[]).forEach(function(b){s.push({code:b.code,name:b.name})}),(r.aiHistory&&r.aiHistory.value||[]).forEach(function(b){b&&b.stock_code&&s.push({code:b.stock_code,name:b.stock_name||b.stock_code})}),s.push.apply(s,D.getExtraStocks()),D.buildStockIndex(s)}function T(D){const s=window.__quantModules&&window.__quantModules.pinyin;return s?s.searchStocksByQuery(D,I()).map(function(b){return{type:"stock",code:b.code,name:b.name,label:b.name,subLabel:b.code,icon:"trending-up"}}):[]}function v(){const D=[],s=window.__quantModules&&window.__quantModules.recent;s&&s.getRecentViewed().slice(0,5).forEach(function(i){D.push({type:"stock",code:i.code,name:i.name||i.code,label:i.name||i.code,subLabel:"最近查看 · "+i.code,icon:"trending-up"})});const b=(r.watchlist&&r.watchlist.value||[]).slice(0,8).map(function(i){return{type:"stock",code:i.code,name:i.name||i.code,label:i.name||i.code,subLabel:"我的自选 · "+i.code,icon:"trending-up"}});return D.concat(b)}const l=e(()=>{const D=n.value;if(!D)return x.mergeResults([],[],v());const s=x.searchMenus(D,S.value,r.subPageNames),b=x.searchCommands(D,w.value),i=C.value;return x.mergeResults(s,b,i)}),g=e(()=>l.value);function N(D){return g.value.flat[o.value]===D}function W(D){o.value=g.value.flat.indexOf(D)}function M(D){return(D.type||"")+":"+(D.code||D.menuKey||D.key||D.label)}let O=null;function K(){const D=n.value.trim();if(D.length<1){C.value=[];return}O&&clearTimeout(O),O=setTimeout(function(){const s=T(D);C.value=s,o.value=0,r.searchStocks(D,function(b){if(n.value.trim()!==D)return;const i=(b||[]).filter(function(z){return z&&z.code&&z.name}).map(function(z){return{type:"stock",code:z.code,name:z.name,label:z.name,subLabel:z.code,icon:"trending-up"}}),y={},X=[];s.forEach(function(z){y[z.code]||(y[z.code]=!0,X.push(z))}),i.forEach(function(z){y[z.code]||(y[z.code]=!0,X.push(z))}),C.value=X,o.value=0})},200)}function A(){o.value=x.moveIndex(o.value,g.value.flat.length,1)}function L(){o.value=x.moveIndex(o.value,g.value.flat.length,-1)}function H(){const D=g.value.flat[o.value];D&&$(D)}function $(D){r.commandPaletteVisible.value=!1,D.type==="menu"?r.navigateTo(D.menuKey,D.subPage):D.type==="stock"?r.showStockDetail(D.code,D.name):D.type==="command"&&ee(D.key)}function ee(D){if(D==="refresh"){const s=r.currentPage.value;s==="strategies"?r.loadDashboardData().catch(function(){}):s==="calendar"?r.refreshCalendarData().catch(function(){}):s==="ai"&&r.loadAiHistory().catch(function(){})}else D==="export"?r.exportCSV():D==="batch"?r.showBatchEvaluate.value=!0:D==="ai"?r.openAiFab():D==="sidebar"?r.toggleSidebar():D==="today"?r.navigateTo("strategies","overview"):D==="onboarding"?window.dispatchEvent(new CustomEvent("qc:onboarding-replay")):D==="add-portfolio"?(r.currentPage.value="ai",r.currentSubPage.value="portfolio"):D==="open-system"?r.navigateTo("system","status"):D==="open-shortterm"?r.navigateTo("shortterm","overview"):D==="open-research"?r.navigateTo("research","overview"):D==="open-calendar"?r.navigateTo("calendar",""):D==="refresh-data-source"?r.navigateTo("system","datasource"):D==="open-watchlist"?r.navigateTo("ai","watchlist"):D==="manage-groups"?window.dispatchEvent(new CustomEvent("qc:show-watch-groups")):D==="open-focus"?r.navigateTo("ai","focus"):D==="open-portfolio"?r.navigateTo("ai","portfolio"):D==="open-backtest"?r.navigateTo("research","backtest"):D==="open-market-review"?r.navigateTo("shortterm","market-review"):D==="open-shortterm-sectors"?r.navigateTo("shortterm","sector"):D==="open-shortterm-intraday"?r.navigateTo("shortterm","intraday"):D==="open-status"?r.navigateTo("ops","status"):D==="open-health"?r.navigateTo("ops","health"):D==="open-schedule"?r.navigateTo("ops","schedule"):D==="open-guard"?r.navigateTo("ops","guard"):D==="open-usage"?r.navigateTo("ops","usage"):D==="open-datadict"?r.navigateTo("ops","datadict"):D==="open-notification"?r.navigateTo("system","notification"):D==="open-users"?r.navigateTo("system","user"):D==="open-autoeval"?r.navigateTo("system","autoeval"):D==="open-feature"?r.navigateTo("system","feature"):D==="open-config"?r.navigateTo("system","config"):D==="open-glossary"?r.navigateTo("system","glossary"):D==="theme-dark"?r.changeTheme("dark-pro"):D==="theme-light"?r.changeTheme("gold"):D.indexOf("theme:")===0&&r.changeTheme(D.slice(6))}m(p,function(D){D&&(n.value="",C.value=[],o.value=0,t(function(){h.value&&h.value.focus&&h.value.focus()}))}),m(n,K);function le(D){D==="toggle-palette"?r.commandPaletteVisible.value=!r.commandPaletteVisible.value:D==="toggle-sidebar"?r.toggleSidebar():D==="open-ai"?r.openAiFab():D==="refresh"?ee("refresh"):D==="open-today"?ee("today"):D==="batch-eval"?ee("batch"):D==="add-portfolio"&&ee("add-portfolio")}function ae(D){if(!x.createDefaultShortcuts||!x.createShortcutRegistry)return;const b=x.createDefaultShortcuts().resolve({key:D.key,ctrlKey:D.ctrlKey,altKey:D.altKey,shiftKey:D.shiftKey,metaKey:D.metaKey});b&&(D.preventDefault(),le(b))}return d(function(){document.addEventListener("keydown",ae)}),{visible:p,query:n,results:g,inputEl:h,sanitizeHtml:r.sanitizeHtml,isIconName:k,onDown:A,onUp:L,onEnter:H,execute:$,isActive:N,setActive:W,itemKey:M,onGlobalKeydown:ae}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ChangePasswordDialog={name:"qc-change-password-dialog",template:`
-        <el-dialog v-model="showChangePassword" title="修改密码" width="420px" :close-on-click-modal="false">
+        <el-dialog v-model="showChangePassword" title="修改密码" width="440px" :close-on-click-modal="false">
             <el-form :model="changePasswordForm" label-width="80px">
                 <el-form-item label="当前密码">
                     <el-input v-model="changePasswordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password />
@@ -4517,7 +4517,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.ShortcutHelpDialog={name:"qc-shortcut-help-dialog",template:`
-        <el-dialog v-model="shortcutHelpVisible" title="⌨ 键盘快捷键" width="420px">
+        <el-dialog v-model="shortcutHelpVisible" title="⌨ 键盘快捷键" width="440px">
             <div class="shortcut-list">
                 <div class="shortcut-row" v-for="s in shortcutHelpItems" :key="s.keys">
                     <span class="shortcut-keys"><kbd>{{ s.keys }}</kbd></span>
@@ -4544,7 +4544,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.MenuConfigDialog={name:"qc-menu-config-dialog",template:`
-        <el-dialog v-model="menuConfigDialog" :title="(allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="600px">
+        <el-dialog v-model="menuConfigDialog" :title="(allGroups[editingGroup]?.name || '') + ' — 菜单访问授权'" width="640px">
             <div class="p-15-0">
                 <el-form label-width="60px" size="small">
                     <el-form-item label="组名">
@@ -4562,7 +4562,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
                             <span class="text-sm-600-nowrap">{{ menu.name }}</span>
                             <span class="text-10-tertiary-nowrap" v-if="!groupEditForm.visible_menus[menu.key]">子项已关</span>
                         </div>
-                        <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: '12px', flexShrink: 0}">▼</span>
+                        <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: 'var(--qc-font-size-xs)', flexShrink: 0}">▼</span>
                     </div>
                     <div class="menu-sub-row" v-if="subPageSectionExpanded[menu.key]" :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
                         <el-switch v-for="sp in menu.subPages" :key="sp"
@@ -4579,7 +4579,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.AddGroupDialog={name:"qc-add-group-dialog",template:`
-        <el-dialog v-model="showAddGroup" title="+ 新建分组" width="400px">
+        <el-dialog v-model="showAddGroup" title="+ 新建分组" width="440px">
             <el-form class="p-15-0-25" label-width="80px">
                 <el-form-item label="组ID">
                     <el-input v-model="addGroupForm.group_id" placeholder="英文标识，如：analyst" />
@@ -4597,7 +4597,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.AddUserDialog={name:"qc-add-user-dialog",template:`
-        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="400px">
+        <el-dialog v-model="showAddUser" :title="editingUser ? '编辑用户' : '添加用户'" width="440px">
             <el-form class="p-15-0-25" label-width="80px">
                 <el-form-item label="用户名">
                     <el-input v-model="userForm.username" :disabled="!!editingUser" placeholder="输入用户名" />
@@ -4628,7 +4628,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.BatchEvaluateDialog={name:"qc-batch-evaluate-dialog",template:`
-        <el-dialog class="max-w-520" v-model="showBatchEvaluate" title="批量AI评估" width="95%">
+        <el-dialog v-model="showBatchEvaluate" title="批量AI评估" width="520px">
             <div class="p-15-0-15">
                 <el-form label-width="100px" v-if="!batchRunning">
                     <el-form-item label="股票列表">
@@ -4719,7 +4719,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </template>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){if(typeof window>"u"||!window.Vue)return;const{ref:a,computed:e,onMounted:m}=Vue;window.__quantComponents=window.__quantComponents||{};const t=["#c49b2e","#2563eb","#dc2626","#16a34a","#7c3aed","#db2777","#64748b","#b45309"];window.__quantComponents.WatchGroupsDialog={name:"qc-watch-groups-dialog",template:`
-      <el-dialog class="max-w-520" :model-value="visible" title="自选分组管理" width="480px" @update:model-value="v => (visible = v)" @open="load">
+      <el-dialog :model-value="visible" title="自选分组管理" width="520px" @update:model-value="v => (visible = v)" @open="load">
         <div v-if="loading" class="qc-glossary-loading">加载中…</div>
         <div v-else class="qc-wg-list">
           <div v-if="groups.length === 0" class="qc-wg-empty">暂无分组，点击下方新建</div>
@@ -4838,7 +4838,7 @@ var Ad=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Ld,L
             </div>
         </el-dialog>
     `,setup(){const e=a("qcState");return e?{...e}:{}}}})();(function(){const{inject:a}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SetupWizardDialog={name:"qc-setup-wizard-dialog",template:`
-        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="500px" :close-on-click-modal="false" :show-close="false">
+        <el-dialog v-model="showSetupWizard" title="系统初始化设置" width="520px" :close-on-click-modal="false" :show-close="false">
             <div class="min-h-280">
                 <!-- 步骤 1: 修改密码 -->
                 <div v-if="setupStep === 1">

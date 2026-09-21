@@ -14,7 +14,7 @@
   window.__quantComponents.WatchGroupsDialog = {
     name: 'qc-watch-groups-dialog',
     template: `
-      <el-dialog class="max-w-520" :model-value="visible" title="自选分组管理" width="480px" @update:model-value="v => (visible = v)" @open="load">
+      <el-dialog :model-value="visible" title="自选分组管理" width="520px" @update:model-value="v => (visible = v)" @open="load">
         <div v-if="loading" class="qc-glossary-loading">加载中…</div>
         <div v-else class="qc-wg-list">
           <div v-if="groups.length === 0" class="qc-wg-empty">暂无分组，点击下方新建</div>

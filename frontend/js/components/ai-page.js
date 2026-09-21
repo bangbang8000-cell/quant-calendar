@@ -111,7 +111,7 @@
                                     <div class="flex-between-mb8">
                                         <span class="text-md-semibold">{{ item.stock_code }}</span>
                                         <!-- V6.6: item.result.level_color 服务端返回实时色，保留内联 -->
-                                        <span :style="{color: levelColor(item.result.level),fontWeight:'var(--font-bold)',fontSize:'18px'}">{{ fmtNum(item.result.total_score) }}</span>
+                                        <span :style="{color: levelColor(item.result.level),fontWeight:'var(--font-bold)',fontSize:'var(--qc-font-size-lg)'}">{{ fmtNum(item.result.total_score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb6">{{ item.stock_name }}</div>
                                     <div class="flex-between">
@@ -864,7 +864,7 @@
                         </div>
 
                         <!-- 调仓弹窗 -->
-                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="420px">
+                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="440px">
                             <div class="portfolio-trade-form">
                                 <div class="portfolio-trade-row">
                                     <span class="portfolio-trade-label">股票</span>
