@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from auth import get_current_active_user
@@ -17,6 +18,34 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watchlist", tags=["自选股"])
 
 BASE_USERS_DIR = os.path.join(DATA_DIR, "users")
+
+# 6.1.2 (B2): 批量导入 — 6 位代码(可带 .SH/.SZ/.BJ 后缀)
+_CODE_RE = re.compile(r'^(\d{6})(\.(SH|SZ|BJ))?$', re.IGNORECASE)
+
+
+def parse_stock_lines(text: str) -> list:
+    """解析批量导入文本 (每行一只, 兼容 4 格式):
+      600036 / 600036 招商银行 / 招商银行 600036 / 600036,招商银行
+    返回 [{code, name, ok, reason}]
+    """
+    out = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        tokens = [t for t in re.split(r'[\s,，;；]+', line) if t]
+        code = None
+        name_parts = []
+        for t in tokens:
+            if _CODE_RE.match(t):
+                code = t.upper()
+            else:
+                name_parts.append(t)
+        if not code:
+            out.append({"code": "", "name": line, "ok": False, "reason": "未识别 6 位股票代码"})
+            continue
+        out.append({"code": code, "name": " ".join(name_parts), "ok": True, "reason": ""})
+    return out
 
 
 def _get_watchlist_path(username: str) -> str:
@@ -52,7 +81,8 @@ def _load_watchlist(username: str) -> list:
 
 
 def _save_watchlist(username: str, stocks: list):
-    """保存自选股 (v3.17.13: SQLite 为主, JSON 不再双写; JSON 仅保留兼容读取)"""
+    """保存自选股 (v3.17.13: SQLite 为主; 6.1.2 B2: SQLite 不可用时回退 JSON, 防止数据静默丢失)"""
+    saved_db = False
     try:
         import db
         if db.schema_ok():
@@ -63,8 +93,17 @@ def _save_watchlist(username: str, stocks: list):
                 code = item.get('code') if isinstance(item, dict) else item
                 name = item.get('name', '') if isinstance(item, dict) else ''
                 db.watchlist_set(username, code, name or code)
+            saved_db = True
     except Exception:
         logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
+    if not saved_db:
+        try:
+            path = _get_watchlist_path(username)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump({"stocks": stocks}, f, ensure_ascii=False, indent=2)
+        except Exception:
+            logging.getLogger(__name__).warning("操作异常 (v3.4.0-T8)")
 
 
 @router.get("")
@@ -99,6 +138,33 @@ async def add_to_watchlist(req: dict, user: dict = Depends(get_current_active_us
     stocks.append({"code": code, "name": name, "added_at": datetime.now().isoformat()})
     _save_watchlist(user["username"], stocks)
     return {"success": True, "message": "已加入自选", "count": len(stocks)}
+
+
+@router.post("/import")
+async def import_watchlist(req: dict, user: dict = Depends(get_current_active_user)):
+    """6.1.2 (B2): 批量导入 — 粘贴代码列表 (dry_run 仅校验不写入)"""
+    text = (req.get("text") or "")
+    dry_run = bool(req.get("dry_run"))
+    parsed = parse_stock_lines(text)
+    valid = [p for p in parsed if p["ok"]]
+    invalid = [p for p in parsed if not p["ok"]]
+    added = existed = 0
+    if not dry_run:
+        for p in valid:
+            r = await add_to_watchlist({"code": p["code"], "name": p["name"]}, user)
+            if r.get("existed"):
+                existed += 1
+            else:
+                added += 1
+    return {
+        "success": True,
+        "total": len(parsed),
+        "valid": len(valid),
+        "invalid": len(invalid),
+        "added": added,
+        "existed": existed,
+        "invalid_items": invalid[:20],
+    }
 
 
 @router.delete("/{code}")

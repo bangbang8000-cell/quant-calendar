@@ -26,6 +26,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/data", tags=["数据导出导入"])
 
 
+def _content_disposition(filename: str) -> str:
+    """RFC 5987 编码 Content-Disposition — 中文文件名经 filename*=UTF-8'' 传递 (header 仅 latin-1)"""
+    from urllib.parse import quote
+    ascii_fallback = "quant_calendar_export.xlsx" if filename.endswith(".xlsx") else "quant_calendar_export.csv"
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"
+
+
 class ImportRequest(BaseModel):
     data: Dict[str, Any]
 
@@ -196,7 +203,7 @@ async def export_csv(
     return Response(
         content="\ufeff" + output.getvalue(),
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename=quant_{type}_{datetime.now().strftime('%Y%m%d')}.csv"}
+        headers={"Content-Disposition": _content_disposition(f"量化日历-{type}-{datetime.now().strftime('%Y%m%d')}.csv")}
     )
 
 
@@ -214,6 +221,18 @@ async def export_excel(
     try:
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            # Sheet 0: 口径说明 (6.1.1 B1: 导出元信息/来源/免责)
+            try:
+                from main_new import APP_VERSION
+            except Exception:
+                APP_VERSION = ""
+            pd.DataFrame([
+                {"项": "导出时间", "值": datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
+                {"项": "应用版本", "值": APP_VERSION},
+                {"项": "数据来源", "值": "sxsc-tushare / tushare / akshare 三源热备"},
+                {"项": "指标口径", "值": "涨跌幅为前复权口径; 评估评分 0-100; 术语见系统配置-术语表"},
+                {"项": "免责声明", "值": "本导出数据仅供学习研究，不构成任何投资建议"},
+            ]).to_excel(writer, sheet_name="口径说明", index=False)
             # Sheet 1: 策略持仓
             try:
                 from data_parser import parser as dp
@@ -267,7 +286,7 @@ async def export_excel(
         return Response(
             content=buffer.getvalue(),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename=quant_full_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+            headers={"Content-Disposition": _content_disposition(f"量化日历-全量导出-{datetime.now().strftime('%Y%m%d')}.xlsx")}
         )
     except Exception as e:
         # 回退
