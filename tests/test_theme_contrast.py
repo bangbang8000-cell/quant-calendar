@@ -136,6 +136,30 @@ def test_element_plus_bridge_connected():
         assert r.get("--el-message-bg-color"), "缺 --el-message-bg-color (消息语义桥)"
 
 
+def test_element_plus_dark_bridge_no_light_defaults():
+    """6.1.3 (C1): 暗色模式下 EP 组件变量不得停留在浅色默认值 (组件容器/文字/填充/边框)。"""
+    dark_forbidden = (
+        ("--el-bg-color", "#ffffff"),
+        ("--el-bg-color-overlay", "#ffffff"),
+        ("--el-fill-color-blank", "#ffffff"),
+        ("--el-fill-color", "#f0f2f5"),
+        ("--el-fill-color-light", "#f5f7fa"),
+        ("--el-fill-color-lighter", "#fafafa"),
+        ("--el-text-color-regular", "#606266"),
+        ("--el-text-color-secondary", "#909399"),
+        ("--el-text-color-placeholder", "#a8abb2"),
+        ("--el-border-color", "#dcdfe6"),
+        ("--el-border-color-light", "#e4e7ed"),
+        ("--el-border-color-lighter", "#ebeef5"),
+    )
+    for hue in g.HUES + (-1,):
+        r = g.resolved("dark", hue)
+        for token, forbidden in dark_forbidden:
+            val = r.get(token, "")
+            assert val and val.lower() != forbidden.lower(), \
+                "dark:%s: %s 仍是 EP 浅色默认值 %s" % (_fmt("dark", hue), token, forbidden)
+
+
 def test_neutral_brand_has_zero_saturation():
     """「中性无色相」档: 关键品牌令牌的 hsl 彩度必须为 0。"""
     for mode in g.MODES:
