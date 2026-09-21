@@ -294,15 +294,44 @@ Layer 3 组件 token --el-* 映射、--btn-primary-*、--qc-nav-*、--gradient*�
 
 ---
 
-## 5. 实施计划（**待批准后执行**）
+## 5. 实施计划
 
-> 前提：**本报告不含任何代码改动**。以下批次仅在获得批准后执行，每批次独立可回滚（`git tag` + 截图回归）。
+### 5.0 批准后的冻结决策（2026-09-21，按问卷答复）
+
+| 决策项 | 结论 |
+|---|---|
+| 实施范围 | **全部 A–E**（含自动化门禁与 ops 同步） |
+| 深色中性面 | **延续色相联动暖中性**，统一到该族（删除海军蓝残留面） |
+| EP 接通 | **在 `:root` / `[data-theme="dark-pro"]` 显式桥接全部 EP 变量**（不引入官方 dark css-vars、不加 `html.dark`） |
+| 语义色收敛 | **以 `--badge-*` 为基准**提升为 `--state-{k}-{text,tint,solid,on-solid,border}`，观感变化最小 |
+| 品牌色相 | 保留 6 档，**新增「中性无色相」档** |
+| 焦点环 | **按色相求解更深档，单色环 ≥3:1** |
+| 涨跌配色 | 保留红涨绿跌，**暗色填充提亮 + 增加符号/形状通道** |
+| 图表色板 | **改为跨色相定性色板**，与品牌色相解耦；画布底色对齐卡片 |
+| 门禁 | **修好现有测试 + 新增 12 套全断言并接入 CI** |
+| token 治理 | 清理影响渲染与一致的项，**硬编码色收敛到 ≤60** |
+| 视觉验收 | 对比度达标 + 语义一致 + 关键页面截图复核 |
+| 附带项 | 审计脚本固化进 `tests/e2e/`、PWA `theme-color` 动态化、`system` 模式加 `matchMedia` 监听、完成后同步 ops、更新 `HANDOVER.md`/`README.md` |
+
+### 5.1 实施进度
+
+| 批次 | 状态 | 提交 | 验证结果 |
+|---|---|---|---|
+| **A 深色独立化 + EP 接通** | ✅ 已完成 | `745ddec` | 浅色 ElMessage 四类 6.81/4.84/5.91/6.16（原 2.08/2.04/2.61/2.80）；暗色 11.88/9.22/5.65/7.90 且类型可区分；`.el-range-separator` 1.28:1 → 达标；暗色下拉/浮层/图表画布统一为暖中性族；12 套 × 6 页面 DOM 审计浅色 0 处低于 AA |
+| **B 语义收敛 + 可达性** | ⏳ 待执行（`--state-*` 槽位已在 A 中落地并被组件层采用） | — | 目标：§4.5 全表 12 套断言通过、焦点环 ≥3.0、控件边界 ≥3.0 |
+| **C 图表 + 阶段色 + 治理** | ⏳ 待执行 | — | 目标：分类色板目视复核、硬编码 ≤60、死 token = 0 |
+| **D 门禁 + 文档** | ⏳ 待执行 | — | 目标：`pytest` 全绿 + 负向验证（注入低对比度 token 必须失败） |
+| **E 同步 ops** | ⏳ 待执行 | — | 目标：ops :8000 复测同 A–C 断言 |
+
+### 5.2 批次与验收（原始计划）
+
+> 每批次独立提交、独立可回滚（`git revert` + 截图回归）。
 
 | 批次 | 范围 | 主要文件 | 验收标准 |
 |---|---|---|---|
 | **A（P0，深色独立化 + EP 接通）** | 删除海军蓝残留面并别名到 §4.2；EP 变量全量桥接 + 命名修正；修 `.el-range-separator` 类残留 | `frontend/css/themes.css`、`frontend/css/tokens.css`、`frontend/js/themes.js`、`frontend/css/components.css` | 暗色 6 色相下"同屏单一深色面族"断言通过；EP 探针断言（`--el-text-color-primary`、`--el-border-color`、`.el-range-separator`、`.el-message--*` 四类 ≥4.5）；DOM 审计暗色 0 处 <AA |
-| **B（P1，语义收敛 + 可达性）** | 语义四变体落地；`--qc-state-*` 别名化；`--text-link`/焦点环/控件边界走求解器；`.qc-stock-change` 改用文字档；渐变求解目标与实现对齐（`#101014`） | `components.css`、`themes.css`、`themes.js`、`nav.css`、`header.css` | §4.5 全表 12 套断言通过；焦点环 ≥3.0；控件边界 ≥3.0 |
-| **C（P1/P2，图表 + 阶段色 + 治理）** | 分类色板跨色相；`--chart-bg` 跟随卡片；K 线 fill 档；美林阶段色主题化；PWA `theme-color` 动态化；`system` 加 `matchMedia` 监听；死 token/双源/硬编码收敛 | `echarts-theme.js`、`charts.js`、`strategies-page.js`、`index.html`、`manifest.json`、`themes.js` | 图表配色目视复核 + 截图对比；硬编码色 ≤60；死 token = 0 |
+| **B（P1，语义收敛 + 可达性）** | 语义四变体落地；`--qc-state-*` 别名化；`--text-link`/焦点环/控件边界走求解器；渐变求解目标与实现对齐（`#101014`）；暗色涨跌填充提亮 + 符号通道 | `components.css`、`themes.css`、`themes.js`、`nav.css`、`header.css` | §4.5 全表 12 套断言通过；焦点环 ≥3.0；控件边界 ≥3.0 |
+| **C（P1/P2，图表 + 阶段色 + 治理）** | 分类色板跨色相；`--chart-bg` 跟随卡片；K 线 fill 档；美林阶段色主题化；新增「中性无色相」品牌档；PWA `theme-color` 动态化；`system` 加 `matchMedia` 监听；死 token/双源/硬编码收敛 | `echarts-theme.js`、`charts.js`、`strategies-page.js`、`index.html`、`manifest.json`、`themes.js` | 图表配色目视复核 + 截图对比；硬编码色 ≤60；死 token = 0 |
 | **D（门禁 + 文档）** | 重写/新增 3 个测试 + CI 接入 + 评估脚本固化 + 更新 `HANDOVER.md`/`README.md` 配色规范 | `tests/test_theme_contrast.py`、`tests/test_color_tokens.py`、`tests/e2e/test_color_render.py`、`.github/workflows/ci.yml`、`docs/` | `pytest` 全绿；故意注入一个低对比度 token 时门禁能失败（负向验证） |
 | **E（同步）** | dev 验证通过后按既有流程发布至 ops（`publish-dev-to-ops`），ops 复测 | — | ops :8000 复测同 A–C 断言 |
 
