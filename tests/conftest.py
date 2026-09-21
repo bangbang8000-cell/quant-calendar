@@ -85,6 +85,23 @@ def patch_data_dir():
 
 
 @pytest.fixture
+def isolated_watchlist_store(tmp_path, monkeypatch):
+    """自选池行数据隔离 (2026-09-21): SQLite 与 JSON 双路径都指向本用例的临时目录
+
+    背景: patch_data_dir 的 db.DB_FILE 是 **session 级**共享；一旦前序用例建过表，
+    db.schema_ok() 对后续用例也为真，_load_watchlist 便从共享 SQLite 读数据 ——
+    仅 monkeypatch BASE_USERS_DIR 的用例会看到上个用例写入的自选行
+    (实测: test_import_all_invalid_rejected 断言空池却拿到上个用例的 2 行;
+     单独跑该用例时 schema_ok() 为假走 JSON 回退, 因此表现为「顺序相关偶发红」)。
+    """
+    import db
+    monkeypatch.setattr(db, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(db, "DB_FILE", str(tmp_path / "app.db"))
+    db.init_db()
+    yield
+
+
+@pytest.fixture
 def mock_settings():
     """Mock config.settings"""
     from unittest.mock import patch

@@ -24,14 +24,18 @@ def _read_b(rel):
 
 
 def test_system_subpages_order():
-    """TC-6.9.3.01: 系统配置二级菜单序 — config→feature→autoeval→datasource→user→about→notification"""
+    """TC-6.9.3.01: 系统配置二级菜单序 — config→feature→autoeval→datasource→user→notification→about
+
+    2026-09-21 修正: 6.2.x 起「关于」恒置于最后 (群晖 5fbd8e9「about always last」)，
+    原期望把 about 排在 notification 之前 → 顺序已反转，属陈旧断言。
+    """
     src = _read_f("js/app-logic.js")
     m = re.search(r"subPages: (\[[^\]]*\]), guestSubPages", src)
     assert m, "system 菜单定义缺失"
     order = m.group(1)
     seq = [x.strip("'") for x in re.findall(r"'([^']+)'", order)]
-    assert seq == ['config', 'feature', 'autoeval', 'datasource', 'user', 'about', 'notification'], \
-        f"系统配置子页顺序应为 config→feature→autoeval→datasource→user→about→notification, 当前 {seq}"
+    assert seq == ['config', 'feature', 'autoeval', 'datasource', 'user', 'notification', 'about'], \
+        f"系统配置子页顺序应为 config→feature→autoeval→datasource→user→notification→about(恒置最后), 当前 {seq}"
 
 
 def test_ops_menu_before_system():
@@ -131,6 +135,12 @@ def test_sxsc_rebuild_on_test():
 
 
 def test_version_bumped():
-    """TC-6.9.3.28: 版本号提升 (随发布迭代: 6.9.3 → ... → 5.5.0 并入 5.X → 5.6.0 → 5.7.1 → 5.8.0 → 5.9.0 → V5.20: 5.10.0)"""
+    """TC-6.9.3.28: APP_VERSION 存在且为 x.y.z（动态读取，不绑定具体编号）
+
+    2026-09-21 修正: 原断言写死 "5.12.2"，与并入 6.X 演进线后的实际编号冲突，长期为红。
+    跨来源一致性 (APP_VERSION ↔ README ↔ HANDOVER ↔ bump 脚本) 由
+    tests/test_version_governance_610.py 专职守护，此处只校验常量本身合法可解析。
+    """
     main = _read_b("main_new.py")
-    assert 'APP_VERSION = "5.12.2"' in main, "APP_VERSION 应为 5.12.2"
+    m = re.search(r'^APP_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"', main, re.M)
+    assert m, 'backend/main_new.py 应定义 APP_VERSION = "x.y.z"'

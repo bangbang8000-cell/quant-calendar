@@ -48,9 +48,46 @@ def test_animations_reference_duration_tokens():
     assert "--duration-" in refs, "animations.css 应引用 --duration-* 令牌"
 
 
-def test_no_hardcoded_transition_duration_in_animations():
-    """animations.css 无硬编码 transition 时长 (如 0.25s/250ms 直写)"""
+def _drop_reduced_motion(css: str) -> str:
+    """剔除 @media (prefers-reduced-motion: reduce) 整块（按花括号配对，含嵌套规则）
+
+    该块内的 0.01ms 是 WCAG 2.3.3 / 无障碍降级规定的「近似归零」值，不是设计时长，
+    不应计入「禁止硬编码动效时长」门禁（门禁针对的是 0.25s/250ms 这类直写设计时长）。
+    豁免的前提由 test_reduced_motion_block_kept 守护。
+    """
+    pattern = re.compile(r"@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{")
+    out, pos = [], 0
+    while True:
+        m = pattern.search(css, pos)
+        if not m:
+            out.append(css[pos:])
+            return "".join(out)
+        out.append(css[pos:m.start()])
+        depth, i = 1, m.end()
+        while i < len(css) and depth:
+            if css[i] == "{":
+                depth += 1
+            elif css[i] == "}":
+                depth -= 1
+            i += 1
+        pos = i
+
+
+def test_reduced_motion_block_kept():
+    """豁免前提守护: reduced-motion 降级块必须真实存在且含 0.01ms 归零规则"""
     css = _css("animations.css")
+    assert re.search(r"@media\s*\(prefers-reduced-motion:\s*reduce\)", css), \
+        "animations.css 应保留 prefers-reduced-motion 降级块"
+    assert "animation-duration: 0.01ms" in css and "transition-duration: 0.01ms" in css, \
+        "reduced-motion 块应含 0.01ms 归零规则 (本次豁免的唯一对象)"
+
+
+def test_no_hardcoded_transition_duration_in_animations():
+    """animations.css 无硬编码 transition 时长 (如 0.25s/250ms 直写)
+
+    豁免 @media (prefers-reduced-motion: reduce) 内的 0.01ms（WCAG 降级值，非设计时长）。
+    """
+    css = _drop_reduced_motion(_css("animations.css"))
     hard = re.findall(r"transition(?:-[a-z]+)?:\s*[^;]*?\b(?:0\.\d+s|\d+ms)\b", css)
     hard += re.findall(r"(?<!var\(--)(?:0\.\d+s|\d+ms)\s*(?:ease|linear|cubic-bezier)", css)
     assert not hard, f"animations.css 硬编码动效时长: {hard[:5]}"

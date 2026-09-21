@@ -189,5 +189,9 @@ def test_select_no_legacy_width_classes():
 # ─── C1: 版本号 ──────────────────────────────────────────
 
 def test_version_bumped_694():
-    """T32: APP_VERSION 提升 (V5.15: 5.5.0 → 5.6.0 → ... → V5.19: 5.9.0 → V5.20: 5.10.0)"""
-    assert 'APP_VERSION = "5.12.2"' in _read_b("main_new.py"), "APP_VERSION 应为 5.12.2"
+    """T32: APP_VERSION 存在且为 x.y.z（动态读取，不绑定具体编号）
+
+    2026-09-21 修正: 原断言写死 "5.12.2"，并入 6.X 演进线后长期为红。
+    """
+    m = re.search(r'^APP_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"', _read_b("main_new.py"), re.M)
+    assert m, 'backend/main_new.py 应定义 APP_VERSION = "x.y.z"'

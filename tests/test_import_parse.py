@@ -9,7 +9,7 @@ from auth import get_current_active_user
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, isolated_watchlist_store):
     import api.v1.watchlist as wl_mod
     monkeypatch.setattr(wl_mod, "BASE_USERS_DIR", str(tmp_path / "users"))
     app = FastAPI()
