@@ -37,6 +37,11 @@ DEAD_TOKEN_WHITELIST = {
     "--sp-1", "--sp-2", "--sp-3", "--sp-4",
     "--r-sm", "--r-md", "--r-lg", "--r-xl", "--r-full",
     "--easing-exit",
+    # V6.11 (需求轮4): 主按钮改「浅底彩字」后, 实底档家族仅 EP 主色桥 (--primary-solid) 仍消费 -bg;
+    # 其余档位作为同一契约保留 (改回实底按钮时可整族复用), 不视为死代码。
+    "--btn-primary-border", "--btn-primary-color",
+    "--btn-primary-hover-bg", "--btn-primary-hover-border",
+    "--btn-primary-active-bg", "--btn-primary-active-border",
 }
 
 # 语义层前缀 —— 这些令牌在明暗两侧必须同时存在 (L1 原始色阶不在此列)
@@ -55,7 +60,8 @@ SEMANTIC_ASYMMETRY_WHITELIST = {
 
 # 双源白名单: CSS 兜底 + 运行期覆盖 (既定架构模式 —— 运行期权威, CSS 兜底)
 # 新增双源令牌必须在此登记, 避免出现「两个真相源」而不自知。
-DUAL_SOURCE_COUNT_LIMIT = 96
+# V6.11 (需求轮4): --brand-soft-text 走同一模式 (CSS 静态兜底 + themes.js 按 soft 底求解覆盖) → 96 -> 98。
+DUAL_SOURCE_COUNT_LIMIT = 98
 
 _SRC_OK = {"css/tokens.css", "css/themes.css", "js/themes.js"}
 _HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")

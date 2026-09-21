@@ -63,7 +63,6 @@
 白色画布上的文字色 (2.88:1) 与白字实底 (2.88:1), 二者都不可读。此处给静态兜底, 运行期由 themes.js 按色相求解。 */
   --primary-text: var(--qc-primary-700);        /* 浅底上的品牌文字色 */
   --primary-solid: var(--btn-primary-bg);       /* 承载白字的品牌实底色 */
-  --primary-on-solid: var(--btn-primary-color); /* 实底上的文字色 */
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
@@ -304,6 +303,24 @@
   --state-info-tint: var(--badge-info-bg);
   --state-info-solid: var(--badge-info-text);
   --state-info-on-solid: #ffffff;
+
+  /* ═══ V6.11 (需求轮2·批次4): 「浅底彩字」变体 ═══
+     亮色下「白字 + 品牌色/语义色实底」受 AA 约束必然压深 (实测主按钮 hsl(45,80%,32%)、
+     语义成功档亮度仅约 24%), 大面积使用观感过重。按用户决策: 主 CTA 与语义按钮(成功/警告/信息)
+     改浅底彩字, **仅危险操作保留深实底**; 头像与分段控件同步改浅。 */
+  --brand-soft-bg: var(--qc-primary-100);
+  --brand-soft-bg-hover: var(--qc-primary-200);
+  --brand-soft-border: var(--qc-primary-200);
+  --brand-soft-text: var(--qc-nav-item-active);          /* 对 hsl(h,85,92%) 求解过 (navL/navD) */
+  --state-success-soft-bg: var(--state-success-tint);
+  --state-success-soft-border: color-mix(in srgb, var(--state-success-solid) 32%, transparent);
+  --state-success-soft-text: var(--state-success-text);
+  --state-warning-soft-bg: var(--state-warning-tint);
+  --state-warning-soft-border: color-mix(in srgb, var(--state-warning-solid) 32%, transparent);
+  --state-warning-soft-text: var(--state-warning-text);
+  --state-info-soft-bg: var(--state-info-tint);
+  --state-info-soft-border: color-mix(in srgb, var(--state-info-solid) 32%, transparent);
+  --state-info-soft-text: var(--state-info-text);
 
   /* ═══ V6.10 (配色专项·A): Element Plus 变量桥 (Light) ═══
      本仓库 frontend/lib/element-plus.css 是「仅亮色」构建, 不含 EP 官方暗色变量集

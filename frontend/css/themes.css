@@ -469,20 +469,23 @@
             --el-color-primary-light-9: var(--qc-primary-50);
             --el-color-primary-dark-2: var(--qc-primary-700);
         }
+        /* V6.11 (需求轮2·批次4): 主按钮由「深实底 + 白字」改「浅底彩字」——
+           亮色下深实底受 AA 约束被压到 hsl(h,80%,32%) (深金褐) 观感过重; 浅底彩字实测 >=4.6:1。
+           浅底/描边/文字令牌见 tokens.css, 文字按 soft 底由 themes.js 求解。 */
         .el-button--primary {
-            background-color: var(--btn-primary-bg) !important;
-            border-color: var(--btn-primary-border) !important;
-            color: var(--btn-primary-color) !important;
+            background-color: var(--brand-soft-bg) !important;
+            border-color: var(--brand-soft-border) !important;
+            color: var(--brand-soft-text) !important;
         }
         .el-button--primary:hover {
-            background-color: var(--btn-primary-hover-bg) !important;
-            border-color: var(--btn-primary-hover-border) !important;
-            color: var(--btn-primary-color) !important;
+            background-color: var(--brand-soft-bg-hover) !important;
+            border-color: var(--qc-primary-300) !important;
+            color: var(--brand-soft-text) !important;
         }
         .el-button--primary:active {
-            background-color: var(--btn-primary-active-bg) !important;
-            border-color: var(--btn-primary-active-border) !important;
-            color: var(--btn-primary-color) !important;
+            background-color: var(--qc-primary-300) !important;
+            border-color: var(--qc-primary-300) !important;
+            color: var(--brand-soft-text) !important;
         }
         .el-button--primary.is-plain {
             background-color: var(--btn-primary-plain-bg) !important;
@@ -528,30 +531,9 @@
 
         /* ===== Element Plus 语义色按钮全局覆盖 ===== */
         /* v4.9.5: 排除 .is-text/.is-plain — 修复 text/plain 变体(如 🗑 行内删除) 橙字橙底不可见; 文字/朴素按钮保留 Element 默认高对比 */
-        .el-button--success:not(.is-text):not(.is-plain) {
-            background-color: var(--success-text) !important;
-            border-color: var(--success-text) !important;
-            color: var(--bg-page) !important;   /* V5.31: 实底文字随明暗取页面底 (浅色逆白 / 暗色逆深) */
-        }
-        .el-button--success:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
-        .el-button--warning:not(.is-text):not(.is-plain) {
-            background-color: var(--warning-text) !important;   /* V5.31: 原浅琥珀上白字仅 2.15:1 */
-            border-color: var(--warning-text) !important;
-            color: var(--bg-page) !important;
-        }
-        .el-button--warning:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
-        .el-button--danger:not(.is-text):not(.is-plain) {
-            background-color: var(--danger-text) !important;
-            border-color: var(--danger-text) !important;
-            color: var(--bg-page) !important;
-        }
-        .el-button--danger:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
-        .el-button--info:not(.is-text):not(.is-plain) {
-            background-color: var(--info-text) !important;
-            border-color: var(--info-text) !important;
-            color: var(--bg-page) !important;
-        }
-        .el-button--info:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
+        /* V6.11 (需求轮2·批次4): 原 4 条 !important 直写属性 (success/warning/danger/info 实底) 已删除 ——
+           按钮配色统一由 components.css 的 --el-button-* 变量驱动 (消除双源, 谁 !important 谁赢的问题)。
+           语义按钮现为浅底彩字; 仅 .el-button--danger 保留深实底 (破坏性操作需要分量)。 */
         /* el-tag 语义色覆盖 */
         /* V6.10 (配色专项·B): 品牌 tag (EP 默认 primary 类型, 如「在池」) —— 原文字取 --el-color-primary
            (= --btn-primary-bg 实底档) 压在 --qc-primary-50 淡底上仅 4.41:1 (暗色紫 4.05:1);
@@ -4828,14 +4810,6 @@ text {
 /* 空状态占位: 实心虚线卡 (用量统计页统一, v3.18.5) */
 .usage-ai-empty { border: 1px dashed var(--border-base); border-radius: var(--qc-radius-large); background: var(--bg-card); box-shadow: var(--qc-shadow-sm); padding: 16px 16px; text-align: center; font-size: var(--qc-font-size-sm); color: var(--text-tertiary); }
 /* ===== 全局语义色按钮令牌化 (v3.17 UI优化): 各主题下与 --el-* 语义色一致, 修复默认 Element 绿/橙与主题不搭 ===== */
-.el-button--success:not(.is-text):not(.is-plain) { background-color: var(--success-text) !important; border-color: var(--success-text) !important; color: var(--bg-page) !important; }
-.el-button--success:not(.is-text):not(.is-plain):hover, .el-button--success:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--warning:not(.is-text):not(.is-plain) { background-color: var(--warning-text) !important; border-color: var(--warning-text) !important; color: var(--bg-page) !important; }
-.el-button--warning:not(.is-text):not(.is-plain):hover, .el-button--warning:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--danger:not(.is-text):not(.is-plain) { background-color: var(--danger-text) !important; border-color: var(--danger-text) !important; color: var(--bg-page) !important; }
-.el-button--danger:not(.is-text):not(.is-plain):hover, .el-button--danger:not(.is-text):not(.is-plain):focus { opacity: .85; }
-.el-button--info:not(.is-text):not(.is-plain) { background-color: var(--info-text) !important; border-color: var(--info-text) !important; color: var(--bg-page) !important; }
-.el-button--info:not(.is-text):not(.is-plain):hover, .el-button--info:not(.is-text):not(.is-plain):focus { opacity: .85; }
 .stage-chip { padding: 4px 6px; border-radius: var(--qc-radius-small); font-size: var(--qc-font-size-xs); margin-right: 8px; background: var(--el-fill-color-light); }
 /* V5.12.0 (FR-5.12.3.1): 同上 — 统计卡变体一律去彩边 (保留可点击态) */
 .stat-card-gold, .stat-card-primary, .stat-card-success, .stat-card-warning { cursor: pointer; border-left: none; }

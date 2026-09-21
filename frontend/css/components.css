@@ -62,13 +62,16 @@
 .el-button { --el-button-disabled-text-color: var(--qc-muted-foreground); --el-button-disabled-bg-color: var(--qc-muted); --el-button-disabled-border-color: var(--qc-border); }
 .el-textarea__inner { --el-disabled-text-color: var(--qc-muted-foreground); }
 :root { --el-text-color-disabled: var(--qc-muted-foreground); --el-text-color-placeholder: var(--qc-muted-foreground); }
-/* V5.31: 单选按钮组选中态 — EP 用 --el-color-primary 作底 + 白字 (金色主题仅 2.88:1) */
-.el-radio-button { --el-radio-button-checked-bg-color: var(--primary-solid); --el-radio-button-checked-text-color: var(--primary-on-solid); --el-radio-button-checked-border-color: var(--primary-solid); }
+/* V6.11 (需求轮2·批次4): 分段控件选中态改「浅底彩字」——
+   原深实底 (--primary-solid) 在主按钮已转浅后显得格外重, 且实测深金 L32%。
+   例: 周期带/阶段矩阵切换、浅色/深色模式切换、内嵌双栏/弹窗切换。 */
+.el-radio-button { --el-radio-button-checked-bg-color: var(--brand-soft-bg); --el-radio-button-checked-text-color: var(--brand-soft-text); --el-radio-button-checked-border-color: var(--brand-soft-border); }
 .el-radio-button__original-radio:checked + .el-radio-button__inner {
-  background-color: var(--primary-solid);
-  border-color: var(--primary-solid);
-  box-shadow: -1px 0 0 0 var(--primary-solid);
-  color: var(--primary-on-solid);
+  background-color: var(--brand-soft-bg);
+  border-color: var(--brand-soft-border);
+  box-shadow: -1px 0 0 0 var(--brand-soft-border);
+  color: var(--brand-soft-text);
+  font-weight: var(--qc-font-weight-semibold);
 }
 
 /* V5.12.2 (FR-5.12.2.4, D4): 类玻璃表面 —— 实底 + 顶部高光 + 极浅渐变。
@@ -173,6 +176,23 @@
 .qc-merrill-recovery  { background: var(--qc-primary-100); color: var(--qc-primary-700); }
 
 /* ─── §2.3 按钮 (Element Plus 变量级覆盖) ────────────── */
+/* V6.11 (需求轮2·批次4): 主 CTA 与语义按钮(成功/警告/信息) 改「浅底彩字」——
+   亮色下深实底 (主按钮 L32% / 成功 L24%) 观感过重; 仅危险操作保留深实底。
+   浅底彩字的对比度由 tests/test_theme_contrast.py 的 soft 变体断言守护。 */
+.el-button--primary:not(.is-text):not(.is-link):not(.is-plain) {
+  --el-button-bg-color: var(--brand-soft-bg);
+  --el-button-border-color: var(--brand-soft-border);
+  --el-button-text-color: var(--brand-soft-text);
+  --el-button-hover-bg-color: var(--brand-soft-bg-hover);
+  --el-button-hover-border-color: var(--qc-primary-300);
+  --el-button-hover-text-color: var(--brand-soft-text);
+  --el-button-active-bg-color: var(--qc-primary-300);
+  --el-button-active-border-color: var(--qc-primary-300);
+  --el-button-active-text-color: var(--brand-soft-text);
+  --el-button-disabled-bg-color: var(--qc-primary-50);
+  --el-button-disabled-border-color: var(--qc-primary-100);
+  --el-button-disabled-text-color: var(--text-disabled);
+}
 /* 注: 主按钮/次按钮已由 themes.css --btn-primary-* 全量 token 化 (gold 主题对齐 §2.3),
    此处仅补充字重统一 + 语义变体对齐 --state-* 四变体 */
 .el-button { font-weight: var(--qc-font-weight-medium); }
@@ -192,9 +212,12 @@
   --el-button-disabled-text-color: var(--state-danger-on-solid);
 }
 .el-button--success {
-  --el-button-bg-color: var(--state-success-solid);
-  --el-button-border-color: var(--state-success-solid);
-  --el-button-text-color: var(--state-success-on-solid);
+  --el-button-bg-color: var(--state-success-soft-bg);
+  --el-button-border-color: var(--state-success-soft-border);
+  --el-button-text-color: var(--state-success-soft-text);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-success-tint) 84%, var(--state-success-solid));
+  --el-button-hover-border-color: var(--state-success-solid);
+  --el-button-hover-text-color: var(--state-success-soft-text);
   --el-button-hover-bg-color: color-mix(in srgb, var(--state-success-solid) 86%, var(--surface-card));
   --el-button-hover-border-color: color-mix(in srgb, var(--state-success-solid) 86%, var(--surface-card));
   --el-button-active-bg-color: color-mix(in srgb, var(--state-success-solid) 74%, var(--surface-card));
@@ -204,9 +227,13 @@
   --el-button-disabled-text-color: var(--state-success-on-solid);
 }
 .el-button--warning {
-  --el-button-bg-color: var(--state-warning-solid);
-  --el-button-border-color: var(--state-warning-solid);
-  --el-button-text-color: var(--state-warning-on-solid);
+  --el-button-bg-color: var(--state-warning-soft-bg);
+  --el-button-border-color: var(--state-warning-soft-border);
+  --el-button-text-color: var(--state-warning-soft-text);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-warning-tint) 84%, var(--state-warning-solid));
+  --el-button-hover-border-color: var(--state-warning-solid);
+  --el-button-hover-text-color: var(--state-warning-soft-text);
+  /* 原实底档保留为注释参考: solid + on-solid */
   --el-button-hover-bg-color: color-mix(in srgb, var(--state-warning-solid) 86%, var(--surface-card));
   --el-button-hover-border-color: color-mix(in srgb, var(--state-warning-solid) 86%, var(--surface-card));
   --el-button-active-bg-color: color-mix(in srgb, var(--state-warning-solid) 74%, var(--surface-card));
@@ -216,9 +243,12 @@
   --el-button-disabled-text-color: var(--state-warning-on-solid);
 }
 .el-button--info {
-  --el-button-bg-color: var(--state-info-solid);
-  --el-button-border-color: var(--state-info-solid);
-  --el-button-text-color: var(--state-info-on-solid);
+  --el-button-bg-color: var(--state-info-soft-bg);
+  --el-button-border-color: var(--state-info-soft-border);
+  --el-button-text-color: var(--state-info-soft-text);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--state-info-tint) 84%, var(--state-info-solid));
+  --el-button-hover-border-color: var(--state-info-solid);
+  --el-button-hover-text-color: var(--state-info-soft-text);
   --el-button-hover-bg-color: color-mix(in srgb, var(--state-info-solid) 86%, var(--surface-card));
   --el-button-hover-border-color: color-mix(in srgb, var(--state-info-solid) 86%, var(--surface-card));
   --el-button-active-bg-color: color-mix(in srgb, var(--state-info-solid) 74%, var(--surface-card));

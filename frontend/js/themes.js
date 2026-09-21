@@ -276,7 +276,7 @@
       // V5.29: 详情头卡专用浅色面板 (深色前景), 明度按色相自适应到 PANEL_TARGET
       '--primary-text': hsl(hue, 78, txtL),
       '--primary-solid': 'var(--btn-primary-bg)',
-      '--primary-on-solid': 'var(--btn-primary-color)',
+
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 62, Math.min(74, _panelL(hue, 45, 14, 58, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 58, _panelL(hue, 45, 14, 58, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 45, 14),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro/gold 块硬编码, 不随主题切换)
@@ -288,6 +288,8 @@
       // V6.10 (配色专项·B): 焦点环/控件边界按对比度求解 (原 --qc-ring hsl(h,70,58) 对页底仅 1.67:1;
       //   --qc-input hsl(h,12,72) 对卡片仅 ~2.0:1, 均低于 WCAG 1.4.11 的 3:1 组件边界要求)
       '--qc-ring': hsl(hue, 75, _gradL(hue, 75, _rgbTuple(hue, 18, 98), 25, 70, true, 3.2)),
+      // V6.11 (需求轮4): 浅底彩字按钮/头像/分段控件的文字 —— 对最浅的 soft 底 (--qc-primary-200) 求解
+      '--brand-soft-text': hsl(hue, 80, _gradL(hue, 80, _rgbTuple(hue, 80, 84), 10, 58, true, 4.6)),
       '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 18, 98), 30, 80, true, 3.2)),
     };
   }
@@ -358,7 +360,7 @@
       // V5.29: 详情头卡专用浅色面板 (暗色模式同样走面板令牌, 深浅观感一致)
       '--primary-text': hsl(hue, 85, txtD),
       '--primary-solid': 'var(--btn-primary-bg)',
-      '--primary-on-solid': 'var(--btn-primary-color)',
+
       '--gradient-panel': 'linear-gradient(135deg, ' + hsl(hue, 60, Math.min(76, _panelL(hue, 40, 12, 55, PANEL_TARGET) + 5)) + ' 0%, ' + hsl(hue, 55, _panelL(hue, 40, 12, 55, PANEL_TARGET)) + ' 100%)',
       '--panel-fg': hsl(hue, 40, 12),
       // V6.9.2: 导航高亮随 hue 联动 (原 dark-pro 块硬编码 #ffd166, 不随主题切换)
@@ -369,6 +371,8 @@
       '--qc-nav-badge-text': hsl(hue, 85, navD),   // V6.10 (B): 原固定 65% 在紫色相仅 3.88:1
       // V6.10 (B): 暗色控件边界 —— 对卡片底求解 >=3:1 的最「收敛」档 (WCAG 1.4.11)
       '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 11, 11), 25, 70, false, 3.2)),
+      // V6.11 (需求轮4): 浅底彩字文字 —— 暗色下 soft 底是 hsl(h,55%,22~26%), 需单独求解
+      '--brand-soft-text': hsl(hue, 85, _gradL(hue, 85, _rgbTuple(hue, 55, 26), 45, 96, false, 4.6)),
       '--qc-ring': hsl(hue, 85, 65),
     };
   }
@@ -450,6 +454,10 @@
     var navL = isDark ? _gradL(45, 0, navTint, 45, 96, false, 4.6) : _gradL(45, 0, navTint, 10, 58, true, 4.6);
     var ringL = isDark ? _gradL(45, 0, canvas, 45, 96, false, 3.2) : _gradL(45, 0, canvas, 25, 70, true, 3.2);
     var bcL = isDark ? _gradL(45, 0, card, 25, 70, false, 3.2) : _gradL(45, 0, canvas, 30, 80, true, 3.2);
+    // V6.11 (需求轮4): soft 变体的文字同样按灰阶重解 (去彩度会改变同明度下的感知亮度)
+    var softL = isDark ? _gradL(45, 0, _rgbTuple(45, 0, 26), 45, 96, false, 4.6)
+                       : _gradL(45, 0, _rgbTuple(45, 0, 84), 10, 58, true, 4.6);
+    out['--brand-soft-text'] = 'hsl(45, 0%, ' + softL + '%)';
     var txt = 'hsl(45, 0%, ' + txtL + '%)';
     out['--primary-text'] = txt;
     out['--text-link'] = txt;

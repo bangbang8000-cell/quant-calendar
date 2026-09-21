@@ -455,8 +455,9 @@
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: var(--primary-solid);      /* V5.31: 原 --qc-primary 实底 + 白字仅 2.88:1 */
-  color: var(--primary-on-solid);
+  /* V6.11 (需求轮2·批次4): 头像由深实底改浅底彩字 (与主按钮一致, 避免深色块反复出现) */
+  background: var(--brand-soft-bg);
+  color: var(--brand-soft-text);
   font-size: var(--qc-font-size-base);
   font-weight: var(--qc-font-weight-semibold);
   cursor: pointer;

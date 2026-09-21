@@ -59,6 +59,14 @@ CHECKS = [
     ("跌文字/卡片", "--market-down-text", "--surface-card", None, 4.5),
     ("涨填充/卡片 (3:1)", "--market-up-fill", "--surface-card", None, 3.0),
     ("跌填充/卡片 (3:1)", "--market-down-fill", "--surface-card", None, 3.0),
+    # V6.11 (需求轮2·批次4): 浅底彩字变体 (主 CTA / 语义按钮 / 头像 / 分段控件)
+    ("品牌 soft 文字/soft 底", "--brand-soft-text", "--brand-soft-bg", None, 4.5),
+    ("品牌 soft 文字/hover 底", "--brand-soft-text", "--brand-soft-bg-hover", None, 4.5),
+    ("成功 soft 文字/tint 底", "--state-success-soft-text", "--state-success-soft-bg", None, 4.5),
+    ("警告 soft 文字/tint 底", "--state-warning-soft-text", "--state-warning-soft-bg", None, 4.5),
+    ("信息 soft 文字/tint 底", "--state-info-soft-text", "--state-info-soft-bg", None, 4.5),
+    # 危险实底 (唯一保留的深实底) 仍需达标
+    ("危险实底文字/实底", "--state-danger-on-solid", "--state-danger-solid", None, 4.5),
     # 非文本: 焦点指示与组件边界 (WCAG 1.4.11)
     ("焦点环/页底", "--qc-ring", "--surface-canvas", None, 3.0),
     ("焦点环/卡片", "--qc-ring", "--surface-card", None, 3.0),
