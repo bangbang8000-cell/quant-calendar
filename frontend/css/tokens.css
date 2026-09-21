@@ -28,32 +28,39 @@
   --qc-neutral-900: #1f1d1a;
 
   /* ─── Semantic State Colors ─── */
-  --qc-state-success: #16a34a;
-  --qc-state-success-bg: #f0fdf4;
-  --qc-state-warning: #f59e0b;
-  --qc-state-warning-bg: #fffbeb;
-  --qc-state-error: #dc2626;
-  --qc-state-error-bg: #fef2f2;
-  --qc-state-info: #2563eb;
+  /* V6.10 (配色专项·B): 语义槽位收敛 —— --qc-state-* 由「独立字面量」降级为 --state-* 的别名。
+     原三套并行定义 (--qc-state-* / --success-text 系 / --badge-*) 取值互不相同且只有 --badge-* 按模式适配,
+     组件层用的恰是未适配的那套 (亮色警告 2.15:1 / 暗色错误 3.47:1、信息 3.24:1)。 */
+  --qc-state-success: var(--state-success-solid);
+  --qc-state-success-bg: var(--state-success-tint);
+  --qc-state-warning: var(--state-warning-solid);
+  --qc-state-warning-bg: var(--state-warning-tint);
+  --qc-state-error: var(--state-danger-solid);
+  --qc-state-error-bg: var(--state-danger-tint);
+  --qc-state-info: var(--state-info-solid);
 
   /* V6.9.4 (H6): 状态别名 — components.css fallback 引用 (--qc-success 系) 与 state 系对齐 */
-  --qc-success: var(--qc-state-success);
-  --qc-success-50: var(--qc-state-success-bg);
-  --qc-success-100: #dcfce7;
-  --qc-success-700: #15803d;
-  --qc-warning: var(--qc-state-warning);
-  --qc-warning-50: var(--qc-state-warning-bg);
-  --qc-warning-100: #fef3c7;
-  --qc-warning-700: #b45309;
-  --qc-error: var(--qc-state-error);
-  --qc-error-50: var(--qc-state-error-bg);
-  --qc-error-100: #fee2e2;
-  --qc-error-700: #b91c1c;
-  --qc-info: var(--qc-state-info);
+  --qc-success: var(--state-success-solid);
+  --qc-success-50: var(--state-success-tint);
+  --qc-success-100: color-mix(in srgb, var(--state-success-solid) 22%, var(--surface-card));
+  --qc-success-700: var(--state-success-text);
+  --qc-warning: var(--state-warning-solid);
+  --qc-warning-50: var(--state-warning-tint);
+  --qc-warning-100: color-mix(in srgb, var(--state-warning-solid) 22%, var(--surface-card));
+  --qc-warning-700: var(--state-warning-text);
+  --qc-error: var(--state-danger-solid);
+  --qc-error-50: var(--state-danger-tint);
+  --qc-error-100: color-mix(in srgb, var(--state-danger-solid) 22%, var(--surface-card));
+  --qc-error-700: var(--state-danger-text);
+  --qc-info: var(--state-info-solid);
 
-  /* ─── Market Semantics (fixed, not theme-dependent) ─── */
-  --qc-market-up: #e63946;
-  --qc-market-down: #2e7d32;
+  /* ─── Market Semantics (语义固定: 红涨绿跌, 不随品牌色相) ───
+     V6.10 (B): 拆成「填充档 / 文字档」—— 填充用于 K 线/色块 (需 >=3:1 于卡片), 文字档用于涨跌幅文本 (需 >=4.5:1)。
+     原 --color-up/--color-down 明暗同值, 暗色 K 线跌柱仅 3.27:1。 */
+  --market-up-fill: #e63946;
+  --market-down-fill: #2e7d32;
+  --qc-market-up: var(--market-up-fill);
+  --qc-market-down: var(--market-down-fill);
 
   /* ─── Semantic Aliases (required by head contract) ─── */
   --qc-background: var(--qc-neutral-50);
@@ -254,7 +261,9 @@
   --color-success: #4CAF50;  --color-warning: #FF9800;
   --color-danger:  #C62828;  --color-info:    #1976d2;
   --color-accent:  #F59E0B;
-  --color-up:      #E63946;  --color-down:    #2E7D32;
+  /* V6.10 (B): 涨跌「填充档」= --market-*-fill (明暗各一套, 见 :root 与 [data-theme=dark-pro]) */
+  --color-up:      var(--market-up-fill);
+  --color-down:    var(--market-down-fill);
   /* V5.31: rise/fall are used as TEXT (stat-value / num / pct)
      old #E63946/#2E7D32 gave 3.9-4.2:1 on cards and 3.1-3.4:1 in dark -> semantic text colors */
   --color-rise:    var(--market-up-text);
@@ -298,6 +307,9 @@
   --surface-sunken: hsl(45, 16%, 96%);
   --surface-input: #ffffff;
   --surface-hover: hsl(45, 26%, 94%);
+  /* V6.10 (配色专项·B): 控件边界 (输入/选择器可见边框) —— 运行期按色相求解 >=3:1 (WCAG 1.4.11),
+     静态兜底为近似值; 与装饰性分隔线 (--qc-border/--border-*) 分离, 后者保持轻量。 */
+  --border-control: hsl(45, 16%, 56%);
 
   /* ═══ V6.10 (配色专项·A/B): 语义槽位 (4 状态 + 2 市场) ═══
      取代 --qc-state-* / --success-text 系 / --badge-* 三套并行定义:
@@ -410,10 +422,10 @@
   /* 表单控件 */
   --el-input-bg-color: var(--surface-input);
   --el-input-text-color: var(--text-primary);
-  --el-input-border-color: var(--qc-input);
+  --el-input-border-color: var(--border-control);
   --el-input-hover-border-color: var(--qc-border);
   --el-input-focus-border-color: var(--qc-ring);
-  --el-input-border: 1px solid var(--qc-input);
+  --el-input-border: 1px solid var(--border-control);
   --el-input-hover-border: 1px solid var(--qc-border);
   --el-input-focus-border: 1px solid var(--qc-ring);
   --el-input-icon-color: var(--text-tertiary);
@@ -463,9 +475,13 @@
   --surface-input: hsl(45, 12%, 9%);
   --surface-hover: hsl(45, 12%, 15%);
   --border-strong: hsl(45, 16%, 42%);
+  --border-control: hsl(45, 16%, 42%);
   --scrollbar-thumb: rgba(138, 146, 176, 0.5);
   --bg-page-rgb: 20, 19, 16;
   --qc-overlay: rgba(0, 0, 0, 0.6);
+  /* V6.10 (B): 暗色涨跌「填充档」提亮 —— 原 #2E7D32 压暗色卡片仅 3.27:1 (同时两档感知亮度差过小, 色觉障碍难辨) */
+  --market-up-fill: #ff6b6b;
+  --market-down-fill: #4ade80;
   /* 语义实底上的文字: 暗色实底为浅色档 → 文字取页面底 (与 --btn-primary-color 同策略) */
   --state-success-on-solid: var(--surface-canvas);
   --state-warning-on-solid: var(--surface-canvas);

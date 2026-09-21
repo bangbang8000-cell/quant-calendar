@@ -280,7 +280,7 @@
         [data-theme="dark-pro"] .el-input__wrapper,
         [data-theme="dark-pro"] .el-select__wrapper {
             background-color: var(--surface-input) ;
-            box-shadow: 0 0 0 1px var(--border-heavy) inset ;
+            box-shadow: 0 0 0 1px var(--border-control) inset ;
         }
         [data-theme="dark-pro"] .el-input__wrapper.is-focus,
         [data-theme="dark-pro"] .el-select__wrapper.is-focused {
@@ -555,6 +555,10 @@
         }
         .el-button--info:not(.is-text):not(.is-plain):hover { opacity: 0.85; }
         /* el-tag 语义色覆盖 */
+        /* V6.10 (配色专项·B): 品牌 tag (EP 默认 primary 类型, 如「在池」) —— 原文字取 --el-color-primary
+           (= --btn-primary-bg 实底档) 压在 --qc-primary-50 淡底上仅 4.41:1 (暗色紫 4.05:1);
+           改用已按淡底求解的品牌文字档 --primary-text。 */
+        .el-tag--primary { background-color: var(--qc-primary-50) !important; color: var(--primary-text) !important; border-color: var(--qc-primary-200) !important; }
         .el-tag--success { background-color: var(--badge-success-bg) !important; color: var(--badge-success-text) !important; border-color: var(--badge-success-text) !important; }
         .el-tag--danger { background-color: var(--badge-danger-bg) !important; color: var(--badge-danger-text) !important; border-color: var(--badge-danger-text) !important; }
         .el-tag--warning { background-color: var(--badge-warning-bg) !important; color: var(--badge-warning-text) !important; border-color: var(--badge-warning-text) !important; }

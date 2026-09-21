@@ -143,6 +143,12 @@
 /* 状态点列: 8px 圆点 + 语义色 (借鉴 QuantDinger) */
 /* V6.10 (配色专项·B): 语义槽位收敛 — 组件层只允许引用 --state-* 四变体,
    不再直接引用模式未适配的 --qc-state-*(亮色警告 2.15:1 / 暗色错误 3.47:1、信息 3.24:1)。 */
+/* V6.10 (B): EP 内部把「实底档」--el-color-primary 当作激活态文字色使用,
+   在暗色紫/蓝/粉等色相下压在卡片上仅 4.44:1 —— 统一改用按淡底求解的品牌文字档。 */
+.el-switch__label.is-active,
+.el-tabs__item.is-active,
+.el-text--primary { color: var(--primary-text); }
+.el-text--primary { --el-text-color: var(--primary-text); }
 .qc-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .qc-status-dot.is-success { background: var(--state-success-solid); }
 .qc-status-dot.is-warning { background: var(--state-warning-solid); }
@@ -226,13 +232,13 @@
 
 /* ─── §2.4 表单 (Element Plus 变量级覆盖) ────────────── */
 .el-input__wrapper {
-  box-shadow: 0 0 0 1px var(--qc-input) inset;
+  box-shadow: 0 0 0 1px var(--border-control) inset;
   transition: box-shadow var(--duration-fast);
 }
 .el-input__wrapper.is-focus {
   box-shadow: 0 0 0 2px var(--qc-ring) inset !important;
 }
-.el-select .el-select__wrapper { box-shadow: 0 0 0 1px var(--qc-input) inset; }
+.el-select .el-select__wrapper { box-shadow: 0 0 0 1px var(--border-control) inset; }
 .el-select .el-select__wrapper.is-focused { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
 /* V6.9.3 (F2) + V6.9.4 (F2.2/F7): el-select 单行不换行 + 高度兜底 + 防 flex 拉伸 */
 .el-select__wrapper {
@@ -260,7 +266,7 @@
 .w-select-lg { width: 220px; }
 /* V6.9.4 (F7): 旧 w-100px 别名兼容 (美林时钟配置等) */
 .w-100px { width: 100px; }
-.el-textarea__inner { box-shadow: 0 0 0 1px var(--qc-input) inset; }
+.el-textarea__inner { box-shadow: 0 0 0 1px var(--border-control) inset; }
 .el-textarea__inner:focus { box-shadow: 0 0 0 2px var(--qc-ring) inset !important; }
 .el-form-item__label { font-size: 13px; color: var(--qc-muted-foreground); }
 .el-switch.is-checked { --el-switch-on-color: var(--qc-primary); }

@@ -202,7 +202,12 @@
   // 再据此外推其余档位, 使渐变保持层次而非退化成实色。
   const GRAD_TARGET = 4.6;
   var _gradFgWhite = [255, 255, 255];
-  var _gradFgDark = [11, 18, 32];   // = --bg-page (dark-pro #0b1220)
+  // V6.10 (配色专项·B): 暗色渐变文字的实际颜色是 --bg-page = hsl(hue,10%,8%) (随色相变化),
+  //   原常量 [11,18,32](#0b1220 旧海军蓝) 比它更深 → 求解器校验值虚高, 实测 4.48 < 4.5。
+  //   改为按色相取真实前景色, 求解值与渲染值一致。
+  function _gradFgDarkOf(hue) {
+    return hslToRgb(hue, 10, 8).split(',').map(function (x) { return parseInt(x, 10); });
+  }
   function _gradL(hue, sat, fg, lo, hi, wantMax, target) {
     var _t = target || GRAD_TARGET;
     var a = lo, b = hi;
@@ -213,6 +218,9 @@
       else { if (ok) { b = mid; } else { a = mid; } }
     }
     return Math.round((wantMax ? a : b) * 10) / 10;
+  }
+  function _rgbTuple(hue, sat, light) {
+    return hslToRgb(hue, sat, light).split(',').map(function (x) { return parseInt(x, 10); });
   }
 
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
@@ -253,7 +261,7 @@
       '--qc-primary-800': hsl(hue, 88, 28),
       '--qc-primary-900': hsl(hue, 90, 20),
       '--qc-primary-foreground': '#ffffff',
-      '--text-link': hsl(hue, 70, 40),
+      '--text-link': hsl(hue, 78, txtL),   // V6.10 (B): 原 hsl(h,70,40) 亮色金 3.27:1 / 绿 2.93:1, 与品牌文字同求解器
       '--secondary-color': hsl(hue, 70, 55),
       '--card-border': hsl(hue, 22, 80),
       '--bg-selected': 'rgba(' + rgb + ', 0.08)',
@@ -284,8 +292,11 @@
       '--qc-nav-item-active-bg': hsl(hue, 85, 92),
       '--qc-nav-item-active-border': hsl(hue, 75, 48),
       '--qc-nav-badge-bg': hsl(hue, 85, 92),
-      '--qc-nav-badge-text': hsl(hue, 80, 35),
-      '--qc-ring': hsl(hue, 70, 58),
+      '--qc-nav-badge-text': hsl(hue, 80, navL),   // V6.10 (B): 原固定 35% 压在激活底色上仅 3.08:1(绿)/3.49:1(金)
+      // V6.10 (配色专项·B): 焦点环/控件边界按对比度求解 (原 --qc-ring hsl(h,70,58) 对页底仅 1.67:1;
+      //   --qc-input hsl(h,12,72) 对卡片仅 ~2.0:1, 均低于 WCAG 1.4.11 的 3:1 组件边界要求)
+      '--qc-ring': hsl(hue, 75, _gradL(hue, 75, _rgbTuple(hue, 18, 98), 25, 70, true, 3.2)),
+      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 18, 98), 30, 80, true, 3.2)),
     };
   }
 
@@ -297,12 +308,26 @@
     const rgb = hslToRgb(hue, 85, pLd);
     // V5.12.1: 暗色中性面同样按色相做极低饱和倾斜
     // V5.30: 暗色渐变对深字 (--bg-page) 均 >= GRAD_TARGET (原暗端仅 1.72-4.47:1)
-    const dL = _gradL(hue, 80, _gradFgDark, 30, 92, false);
+    // V6.10 (配色专项·B): 渐变前景取该色相真实的 --bg-page (hsl(hue,10%,8%))
+    const dL = _gradL(hue, 80, _gradFgDarkOf(hue), 30, 92, false);
     const dL2 = Math.min(94, dL + 8);
     const dL3 = Math.min(96, dL + 16);
-    const _mutDark = [22, 35, 59];    // = --qc-muted (dark-pro) —— 暗色下文字实际落在卡片/浅层底上, 取最亮的参考底
-    const navD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
-    const txtD = _gradL(hue, 85, _mutDark, 45, 96, false, 4.6);
+    const _mutDark = [22, 35, 59];    // = 旧 --qc-muted (dark-pro) —— 导航激活面参考底
+    const _p100Dark = _rgbTuple(hue, 55, 22);
+    // V6.10 (B): 品牌文字档改为对「暗色下最亮的品牌淡底」(--qc-primary-100 hsl(h,55,22%)) 求解。
+    //   原参考底 [22,35,59] 比实际淡底更暗, 导致品牌 tag / 文字按钮在蓝红粉等色相仅 4.40:1。
+    // V6.10 (B): 导航激活/徽标底 = 品牌色 12% 叠在 --qc-nav-bg 上 (比 _mutDark 更亮),
+    //   原参考底偏差使蓝/粉等色相的徽标文字仅 4.41:1。改为对真实复合底求解。
+    const _navBgDark = _rgbTuple(hue, 10, 9);
+    const _rgbArr = rgb.split(',').map(function (x) { return parseInt(x, 10); });
+    const _navTintDark = [0, 1, 2].map(function (i) { return Math.round(_rgbArr[i] * 0.12 + _navBgDark[i] * 0.88); });
+    const navD = _gradL(hue, 85, _navTintDark, 45, 96, false, 4.6);
+    const txtD = _gradL(hue, 85, _p100Dark, 45, 96, false, 4.6);
+    // V6.10 (配色专项·B): 700/800 在暗色下作为「文字色」使用 (文字按钮/金色 chip/导航徽标),
+    //   实际落在 --qc-primary-100 (hsl(h,55,22%)) 这类浅色块上 —— 原固定 72%/80% 在紫色相仅 4.44:1。
+    //   改为对该背景求解, 保证 12 色相全部 >=4.6:1。
+    const p700d = Math.min(94, _gradL(hue, 92, _p100Dark, 45, 96, false, 4.6));
+    const p800d = Math.min(96, p700d + 6);
     return {
       ..._neutralRamp(hue, 'dark'),
       '--primary-color': hsl(hue, 85, pLd),
@@ -316,11 +341,11 @@
       '--qc-primary-400': hsl(hue, 65, 38),
       '--qc-primary-500': hsl(hue, 85, pLd5),
       '--qc-primary-600': hsl(hue, 90, pLd),
-      '--qc-primary-700': hsl(hue, 92, 72),
-      '--qc-primary-800': hsl(hue, 90, 80),
-      '--qc-primary-900': hsl(hue, 92, 88),
+      '--qc-primary-700': hsl(hue, 92, p700d),
+      '--qc-primary-800': hsl(hue, 90, p800d),
+      '--qc-primary-900': hsl(hue, 92, Math.min(98, p800d + 8)),
       '--qc-primary-foreground': '#101014',
-      '--text-link': hsl(hue, 85, 65),
+      '--text-link': hsl(hue, 85, txtD),   // V6.10 (B): 原固定 65% 在紫色相 4.43:1, 改用品牌文字求解档
       '--secondary-color': hsl(hue, 70, 60),
       '--card-border': hsl(hue, 30, 25),
       '--bg-selected': 'rgba(' + rgb + ', 0.10)',
@@ -333,10 +358,10 @@
       '--btn-primary-active-border': hsl(hue, 75, 80),
       '--btn-primary-plain-bg': 'rgba(' + rgb + ', 0.08)',
       '--btn-primary-plain-border': 'rgba(' + rgb + ', 0.25)',
-      '--btn-primary-plain-color': hsl(hue, 85, 65),
+      '--btn-primary-plain-color': hsl(hue, 85, txtD),   // V6.10 (B): 文字按钮落在卡片上, 原固定 65% 紫色仅 4.44:1
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 85, 65),
-      '--btn-primary-text-color': hsl(hue, 85, 65),
+      '--btn-primary-text-color': hsl(hue, 85, txtD),   // V6.10 (B): 文字按钮 (.el-button--primary.is-text) 对卡片 >=4.6:1
       '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, dL) + ' 0%, ' + hsl(hue, 85, dL2) + ' 50%, ' + hsl(hue, 85, dL3) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, dL3) + ' 0%, ' + hsl(hue, 80, dL) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (暗色模式同样走面板令牌, 深浅观感一致)
@@ -350,7 +375,9 @@
       '--qc-nav-item-active-bg': 'rgba(' + rgb + ', 0.10)',
       '--qc-nav-item-active-border': hsl(hue, 85, 65),
       '--qc-nav-badge-bg': 'rgba(' + rgb + ', 0.12)',
-      '--qc-nav-badge-text': hsl(hue, 85, 65),
+      '--qc-nav-badge-text': hsl(hue, 85, navD),   // V6.10 (B): 原固定 65% 在紫色相仅 3.88:1
+      // V6.10 (B): 暗色控件边界 —— 对卡片底求解 >=3:1 的最「收敛」档 (WCAG 1.4.11)
+      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 11, 11), 25, 70, false, 3.2)),
       '--qc-ring': hsl(hue, 85, 65),
     };
   }
