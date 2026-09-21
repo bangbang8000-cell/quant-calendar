@@ -323,8 +323,8 @@ Layer 3 组件 token --el-* 映射、--btn-primary-*、--qc-nav-*、--gradient*�
 | **A 深色独立化 + EP 接通** | ✅ 已完成 | `745ddec` | 浅色 ElMessage 四类 6.81/4.84/5.91/6.16（原 2.08/2.04/2.61/2.80）；暗色 11.88/9.22/5.65/7.90 且类型可区分；`.el-range-separator` 1.28:1 → 达标；暗色下拉/浮层/图表画布统一为暖中性族；12 套 × 6 页面 DOM 审计浅色 0 处低于 AA |
 | **B 语义收敛 + 可达性** | ✅ 已完成 | `f545805` | §4.5 契约 **24 项 × 12 套配置 全部通过**（焦点环 3.19/3.32、控件边界 3.19/3.32、链接 4.88–5.08、品牌 tag 4.54、文字按钮 4.99、主按钮 4.60、导航徽标 4.58、涨跌 fill 4.17/5.13）；渐变求解目标对齐后 `.status-tab.active/.kline-tab.active/.stat-icon/.count` 由 4.48 → 达标；DOM 审计补充页面 5 页 × 2 套 **0 处**低于 AA；主页面集暗色仅剩美林幽灵段 1.83:1（C 批次） |
 | **C 图表 + 阶段色 + 治理** | ✅ 已完成 | `9baa901` | 分类色板改跨色相定性板，对画布 **3.18:1（亮）/ 3.60–3.68:1（暗）**；新增「中性无色相」档并在去彩度后对文字/焦点/边界/渐变/面板**按灰阶重解**；美林阶段文字按底色亮度自适应 + 幽灵段改 `color-mix`；PWA `theme-color` 实测随主题变化；`system` 加 `prefers-color-scheme` 监听；**14 套配置 × 6 页面 DOM 审计全部 0 处低于 AA**；契约 24 项 × 14 套 失败 0；悬空引用 3→**0**、死 token 61→**4**、门禁口径硬编码 **0** |
-| **D 门禁 + 文档** | ⏳ 待执行 | — | 目标：`pytest` 全绿 + 负向验证（注入低对比度 token 必须失败） |
-| **E 同步 ops** | ⏳ 待执行 | — | 目标：ops :8000 复测同 A–C 断言 |
+| **D 门禁 + 文档** | ✅ 已完成 | `ab5ebf1`（+ `621d366` README） | 新增/重写 4 个运行期门禁（`color_probe.js` + `color_gate.py` + 14 套 × 36 项契约 + token 治理 5 项）与 `tests/e2e/color_audit.py`；CI 增加 `actions/setup-node`；门禁抓到并修复真实缺陷（亮色 `--text-disabled` 2.86:1、暗色阴影族错位）；**全量 pytest 3358 passed / 0 failed / 3 skipped**（改造前 20 failed）；`DESIGN-SYSTEM.md`/`HANDOVER.md`/`README.md` 同步 |
+| **E 同步 ops** | ✅ 已完成 | ops HEAD = `621d366`（`git fetch <dev> master` + `reset --hard`，保留 `.env`/`data/`） | ops 服务新产物 `assets/index-Dn1HU77H.js` 与全部 CSS 已生效（静态文件按请求读盘）；**ops :8000 复测 e2e DOM 审计 14 套 × 6 页面 0 处低于 AA**（521–522 文本节点/配置）；截图 `evidence-ops/`。注：本次为纯前端改动，后端未变，故无需重启（systemd 用户总线在本沙箱不可达，非代码问题） |
 
 ### 5.2 批次与验收（原始计划）
 
