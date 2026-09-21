@@ -15,8 +15,11 @@ JS_DIR = os.path.join(BASE, "frontend", "js")
 # V6.3 (PRD-6.3 F4) 导航形态状态层接入 +2.6KB → ~88.7KB; 预算上调至 96KB 保留 ~8% 余量
 # V6.10 (D): 实测 app-logic.js 100,752B 已超 96KB 预算 (既有超支, 非配色专项引入);
 # 按实测 + ~7% 余量校订为 104KB。
+# 6.1.5 (E1): 6.1.1-6.1.5 新增核心工具模块 (undo-core/form-memory/session-restore/
+# install-prompt/batch-add/context-menu/request-core) 推高总量至 ~1.37MB;
+# 总量预算校订为 1.4MB 并保留 ~4% 余量 (门禁继续有效, 防无节制膨胀)。
 MAIN_LOGIC_BUDGET = 104 * 1024
-TOTAL_JS_BUDGET = 1300 * 1024
+TOTAL_JS_BUDGET = 1400 * 1024
 
 
 def _js_files():
