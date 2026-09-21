@@ -255,6 +255,25 @@ def test_global_search_default_commands_schema():
     assert out['allHaveKeywords'] is True
 
 
+@NEEDS_NODE
+def test_6114_command_palette_expanded_over_40():
+    """6.1.4 (D1): 命令面板扩展 — 命令数 ≥40 + 覆盖全子页导航与主题切换"""
+    out = _run_js("""
+        const cmds = QCP.DEFAULT_COMMANDS;
+        return { count: cmds.length, keys: cmds.map(c => c.key) };
+    """)
+    assert out['count'] >= 40, f"命令数 {out['count']} < 40"
+    keys = out['keys']
+    required = [
+        'open-watchlist', 'open-focus', 'open-portfolio', 'open-backtest',
+        'open-market-review', 'open-usage', 'open-datadict', 'open-health',
+        'open-schedule', 'open-guard', 'open-notification', 'open-users',
+        'open-glossary', 'open-status', 'theme-gold', 'theme-dark', 'theme-light',
+    ]
+    for k in required:
+        assert k in keys, f"缺少命令: {k}"
+
+
 # ─── TC-11.3 键盘导航 ───────────────────────────────
 
 @NEEDS_NODE

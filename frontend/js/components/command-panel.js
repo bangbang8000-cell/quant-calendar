@@ -209,6 +209,48 @@
           state.navigateTo('calendar', '');
         } else if (key === 'refresh-data-source') {
           state.navigateTo('system', 'datasource');
+        } else if (key === 'open-watchlist') {
+          state.navigateTo('ai', 'watchlist');
+        } else if (key === 'open-focus') {
+          state.navigateTo('ai', 'focus');
+        } else if (key === 'open-portfolio') {
+          state.navigateTo('ai', 'portfolio');
+        } else if (key === 'open-backtest') {
+          state.navigateTo('research', 'backtest');
+        } else if (key === 'open-market-review') {
+          state.navigateTo('shortterm', 'market-review');
+        } else if (key === 'open-shortterm-sectors') {
+          state.navigateTo('shortterm', 'sector');
+        } else if (key === 'open-shortterm-intraday') {
+          state.navigateTo('shortterm', 'intraday');
+        } else if (key === 'open-status') {
+          state.navigateTo('ops', 'status');
+        } else if (key === 'open-health') {
+          state.navigateTo('ops', 'health');
+        } else if (key === 'open-schedule') {
+          state.navigateTo('ops', 'schedule');
+        } else if (key === 'open-guard') {
+          state.navigateTo('ops', 'guard');
+        } else if (key === 'open-usage') {
+          state.navigateTo('ops', 'usage');
+        } else if (key === 'open-datadict') {
+          state.navigateTo('ops', 'datadict');
+        } else if (key === 'open-notification') {
+          state.navigateTo('system', 'notification');
+        } else if (key === 'open-users') {
+          state.navigateTo('system', 'user');
+        } else if (key === 'open-autoeval') {
+          state.navigateTo('system', 'autoeval');
+        } else if (key === 'open-feature') {
+          state.navigateTo('system', 'feature');
+        } else if (key === 'open-config') {
+          state.navigateTo('system', 'config');
+        } else if (key === 'open-glossary') {
+          state.navigateTo('system', 'glossary');
+        } else if (key === 'theme-dark') {
+          state.changeTheme('dark-pro');
+        } else if (key === 'theme-light') {
+          state.changeTheme('gold');
         } else if (key.indexOf('theme:') === 0) {
           state.changeTheme(key.slice(6));
         }
