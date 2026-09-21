@@ -188,6 +188,7 @@
     { key: 'open-calendar', label: '打开量化日历', icon: 'calendar-days', keywords: 'calendar 日历 股票池' },
     // 6.1.4 (D1): 命令面板扩展 — 全部子页导航 + 主题切换 (共 40+ 条)
     { key: 'open-watchlist', label: '打开我的自选', icon: 'star', keywords: 'watchlist 自选 收藏' },
+    { key: 'manage-groups', label: '管理自选分组', icon: 'folder-open', keywords: 'groups 分组 自选 管理 归类' },
     { key: 'open-focus', label: '打开重点跟踪', icon: 'target', keywords: 'focus 重点 跟踪 盯盘' },
     { key: 'open-portfolio', label: '打开模拟组合', icon: 'wallet', keywords: 'portfolio 组合 持仓 净值' },
     { key: 'open-backtest', label: '打开回测工作台', icon: 'line-chart', keywords: 'backtest 回测 净值 收益' },

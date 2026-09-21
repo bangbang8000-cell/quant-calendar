@@ -95,6 +95,8 @@ import '../js/components/dialogs/add-group.js'
 import '../js/components/dialogs/add-user.js'
 import '../js/components/dialogs/batch-evaluate.js'
 import '../js/components/dialogs/auto-evaluate.js'
+// 6.1.2 (B3): 自选分组管理弹窗
+import '../js/components/dialogs/watch-groups.js'
 import '../js/components/dialogs/index-detail.js'
 import '../js/components/dialogs/setup-wizard.js'
 import '../js/components/dialogs/merrill-detail.js'

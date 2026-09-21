@@ -638,3 +638,22 @@
 .qc-glossary-item-def { font-size: var(--qc-font-size-sm); color: var(--qc-foreground); margin-bottom: 4px; }
 .qc-glossary-item-calc { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); display: flex; gap: 6px; }
 .qc-glossary-loading, .qc-glossary-empty { padding: 24px; text-align: center; color: var(--qc-muted-foreground); }
+
+/* ─── 6.1.2 (B3): 自选分组管理弹窗 ── */
+.qc-wg-list { display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; }
+.qc-wg-row {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-large);
+  padding: 6px 10px;
+}
+.qc-wg-color {
+  flex: 0 0 14px; width: 14px; height: 14px; border-radius: 50%;
+  cursor: pointer; border: 1px solid var(--qc-border);
+}
+.qc-wg-name { font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); flex: 1; }
+.qc-wg-count { font-size: var(--qc-font-size-xs); color: var(--qc-muted-foreground); }
+.qc-wg-ops { display: flex; gap: 2px; }
+.qc-wg-rename { display: flex; gap: 6px; flex: 1; }
+.qc-wg-add { display: flex; gap: 8px; margin-top: 8px; }
+.qc-wg-newinput { flex: 1; }

@@ -167,6 +167,110 @@ async def import_watchlist(req: dict, user: dict = Depends(get_current_active_us
     }
 
 
+# ─── 6.1.2 (B3): 自选分组管理 (JSON 配置: groups + mapping) ─────────────────
+def _groups_path(username: str) -> str:
+    return os.path.join(BASE_USERS_DIR, username, "watch_groups.json")
+
+
+def _load_groups_cfg(username: str):
+    """返回 (groups, mapping); 未配置时返回 (None, None)"""
+    try:
+        path = _groups_path(username)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            return d.get("groups") or [], d.get("mapping") or {}
+    except Exception:
+        logger.warning("watchlist:groups 读取异常")
+    return None, None
+
+
+def _save_groups_cfg(username: str, groups: list, mapping: dict):
+    path = _groups_path(username)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"groups": groups, "mapping": mapping}, f, ensure_ascii=False, indent=2)
+
+
+def _ensure_groups(username: str):
+    from watch_groups import default_groups, normalize_groups
+    groups, mapping = _load_groups_cfg(username)
+    if groups is None:
+        groups, mapping = default_groups(), {}
+    return normalize_groups(groups, mapping), mapping
+
+
+@router.get("/groups")
+async def get_watch_groups(user: dict = Depends(get_current_active_user)):
+    """读取自选分组配置 (groups + mapping)"""
+    groups, mapping = _ensure_groups(user["username"])
+    return {"success": True, "groups": groups, "mapping": mapping}
+
+
+@router.put("/groups")
+async def save_watch_groups(req: dict, user: dict = Depends(get_current_active_user)):
+    """全量保存自选分组 (归一化后落盘)"""
+    from watch_groups import normalize_groups
+    groups = normalize_groups(req.get("groups") or [], req.get("mapping") or {})
+    mapping = {str(k): str(v) for k, v in (req.get("mapping") or {}).items()}
+    _save_groups_cfg(user["username"], groups, mapping)
+    return {"success": True, "groups": groups, "mapping": mapping}
+
+
+@router.post("/groups/move")
+async def move_watch_group(req: dict, user: dict = Depends(get_current_active_user)):
+    """移动股票到分组 (分组不存在回默认)"""
+    from watch_groups import move_stock
+    code = (req.get("code") or "").strip()
+    group = (req.get("group") or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="股票代码不能为空")
+    groups, mapping = _ensure_groups(user["username"])
+    mapping = move_stock(mapping, code, group, groups)
+    _save_groups_cfg(user["username"], groups, mapping)
+    return {"success": True, "mapping": mapping}
+
+
+@router.post("/groups/rename")
+async def rename_watch_group(req: dict, user: dict = Depends(get_current_active_user)):
+    """重命名分组 (mapping 同步)"""
+    from watch_groups import rename_group
+    old = (req.get("old") or "").strip()
+    new = (req.get("new") or "").strip()
+    groups, mapping = _ensure_groups(user["username"])
+    groups, new_name, err = rename_group(groups, old, new)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    if old != new_name:
+        mapping = {k: (new_name if v == old else v) for k, v in mapping.items()}
+    _save_groups_cfg(user["username"], groups, mapping)
+    return {"success": True, "groups": groups, "mapping": mapping}
+
+
+@router.post("/groups/color")
+async def set_watch_group_color(req: dict, user: dict = Depends(get_current_active_user)):
+    """设置分组颜色 (8 色白名单)"""
+    from watch_groups import set_color
+    groups, mapping = _ensure_groups(user["username"])
+    groups, ok = set_color(groups, (req.get("name") or "").strip(), (req.get("color") or "").strip())
+    if not ok:
+        raise HTTPException(status_code=400, detail="颜色无效或分组不存在")
+    _save_groups_cfg(user["username"], groups, mapping)
+    return {"success": True, "groups": groups}
+
+
+@router.delete("/groups/{name}")
+async def delete_watch_group(name: str, user: dict = Depends(get_current_active_user)):
+    """删除分组 → 股票并入默认分组 (默认分组不可删)"""
+    from watch_groups import delete_group
+    groups, mapping = _ensure_groups(user["username"])
+    groups, mapping, ok = delete_group(groups, mapping, name.strip())
+    if not ok:
+        raise HTTPException(status_code=400, detail="默认分组不可删除或分组不存在")
+    _save_groups_cfg(user["username"], groups, mapping)
+    return {"success": True, "groups": groups, "mapping": mapping}
+
+
 @router.delete("/{code}")
 async def remove_from_watchlist(code: str, user: dict = Depends(get_current_active_user)):
     """移除自选股"""

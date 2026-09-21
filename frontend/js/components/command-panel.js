@@ -211,6 +211,9 @@
           state.navigateTo('system', 'datasource');
         } else if (key === 'open-watchlist') {
           state.navigateTo('ai', 'watchlist');
+        } else if (key === 'manage-groups') {
+          // 6.1.2 (B3): 打开自选分组管理弹窗
+          window.dispatchEvent(new CustomEvent('qc:show-watch-groups'));
         } else if (key === 'open-focus') {
           state.navigateTo('ai', 'focus');
         } else if (key === 'open-portfolio') {
