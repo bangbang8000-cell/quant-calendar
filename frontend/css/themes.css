@@ -4214,20 +4214,7 @@ text {
 }
 
 /* ===== v3.17.4 (FR-3.17.4): 回测工作台 ===== */
-.bt-entry-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 14px;
-    border-radius: var(--qc-radius-full);
-    background: var(--primary-solid);
-    color: var(--primary-on-solid);
-    font-size: var(--qc-font-size-sm);
-    font-weight: var(--font-semibold);
-    border: none;
-    cursor: pointer;
-    transition: opacity var(--transition-fast);
-}
-.bt-entry-btn:hover { opacity: 0.88; }
+/* V6.11 (用户需求1): .bt-entry-btn 随「回测工作台」入口行一并删除 (全仓已无引用) */
 
 .bt-back-btn {
     padding: 8px 12px;

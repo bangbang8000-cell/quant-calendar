@@ -123,7 +123,12 @@ export default {
     // V6.9.3 (F6): 主题按钮 → 主题面板 (模式 + 6 色板 + 自定义 slider)
     const openThemeMenu = ref(false)
     const themeHues = (state.themeHues) || [45, 220, 0, 140, 270, 320]
-    const themeHue = computed(() => (state.themeHue && state.themeHue.value) || 45)
+    // V6.11 (用户需求5): 色相 0(红) 与 -1(中性) 都是合法值但 falsy —— 原 `|| 45` 会把红色
+    // 显示成金色(勾选/滑杆/自定义度数全错)。改用 Number.isFinite 判定。
+    const themeHue = computed(() => {
+      const v = state.themeHue && state.themeHue.value
+      return Number.isFinite(v) ? v : 45
+    })
     const themeMode = computed(() => (state.themeMode && state.themeMode.value) || 'system')
     // V5.12.0 (FR-5.12.1.2): 信息密度三档 (面板已硬编码中文标签, 此处保持一致, 不新增 i18n key)
     const DENSITY_MODES = [

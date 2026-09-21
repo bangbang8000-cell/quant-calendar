@@ -1653,8 +1653,14 @@ def test_backtest_moved_to_research_menu():
     assert "'backtest'" in research, "策略研究应含 backtest"
     assert "'backtest-history'" in research, "策略研究应含 backtest-history"
     sp = _read("js/components/strategies-page.js")
-    assert "navigateTo('research', 'backtest')" in sp,         "策略总览「回测工作台」入口应跳研究页回测"
-    assert "currentSubPage = 'backtest'" not in sp.split("bt-entry-btn")[0],         "回测入口不应再直接切策略总览子页"
+    # V6.11 (用户需求1): 策略总览的「回测工作台」快捷按钮及所在整行已移除 ——
+    # 回测改由「策略研究」菜单进入 (subPages 已含 backtest), 页内保留返回策略总览按钮。
+    assert "bt-entry-btn" not in sp, "「回测工作台」入口按钮应已移除 (V6.11 需求1)"
+    assert "navigateTo('research', 'backtest')" not in sp, \
+        "策略总览不应再有回测快捷入口 (回测归属策略研究菜单)"
+    assert "currentSubPage = 'backtest'" not in sp.split("bt-back-btn")[0], \
+        "回测入口不应再直接切策略总览子页"
+    assert "bt-back-btn" in sp, "回测工作台内的「返回策略总览」按钮应保留"
 
 
 
