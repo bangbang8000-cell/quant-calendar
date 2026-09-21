@@ -5,20 +5,25 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
+  // V6.10 (配色专项·C): 分类色板改为「跨色相定性色板」。
+  //   原为 6 个同色相明度档 (--qc-primary-600/500/700/400 + 两个中性灰), 多序列图区分度差;
+  //   现按固定色相序列生成, 与品牌色相解耦; 明度按模式取值, 保证对图表画布 >=3:1 (图形对象)。
+  var CATEGORICAL_HUES = [210, 28, 165, 290, 348, 190, 52, 250];
+  function categoricalPalette() {
+    var isDark = false;
+    try { isDark = document.documentElement.getAttribute('data-theme-mode') === 'dark'; } catch (e) { /* 保守取亮色 */ }
+    var sat = isDark ? 62 : 58;
+    var lig = isDark ? 62 : 40;
+    return CATEGORICAL_HUES.map(function (h) { return 'hsl(' + h + ', ' + sat + '%, ' + lig + '%)'; });
+  }
+
   function getEChartsTheme() {
     return {
       textStyle: { color: getCSSVar('--text-primary') || '#1f2937' },
       // V5.0.5 (T-5.0.54): 画布背景令牌 (dark-pro 覆盖为暗色, 明/暗主题切换图表联动)
       backgroundColor: getCSSVar('--chart-bg') || 'transparent',
       // V6.0 (DS-6.0 §2.6): 主序列色板金化 — 金色系 + 辅助灰, 随主题 --qc-primary-* 联动
-      color: [
-        getCSSVar('--qc-primary-600') || '#b8922a',
-        getCSSVar('--qc-primary-500') || '#c49b2e',
-        getCSSVar('--qc-primary-700') || '#8f6f1f',
-        getCSSVar('--qc-primary-400') || '#d4b352',
-        getCSSVar('--qc-neutral-400') || '#b8ae9f',
-        getCSSVar('--qc-neutral-500') || '#8f8679',
-      ],
+      color: categoricalPalette(),
       legend: { textStyle: { color: getCSSVar('--text-secondary') || '#6b7280' } },
       categoryAxis: {
         axisLine: { lineStyle: { color: getCSSVar('--chart-axis') || '#cbd5e1' } },
@@ -54,6 +59,7 @@
   if (!window.__quantModules) window.__quantModules = {};
   window.__quantModules.echartsTheme = {
     getEChartsTheme,
+    categoricalPalette,
     registerChart,
     refreshAllCharts,
     init() { return { getEChartsTheme, registerChart, refreshAllCharts }; },

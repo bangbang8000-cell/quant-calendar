@@ -384,15 +384,107 @@
 
   // V5.12.1: 记录上一次由 applyTheme 写入的内联变量, 用于切换时清理残留
   var _appliedKeys = [];
+  // V6.10 (配色专项·C): 原始主题偏好 (保留 'system' 以支持系统主题实时跟随)
+  var _pref = { mode: 'light', hue: 45 };
+  var _mqBound = false;
+
+  // V6.10 (配色专项·C): PWA/浏览器 UI 色随主题更新 (原 index.html 硬编码 #667eea 靛蓝, 与品牌金/色相无关)
+  function _syncBrowserChrome(tokens, isDark) {
+    try {
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) return;
+      var c = isDark
+        ? (tokens['--surface-canvas'] || tokens['--qc-background'])
+        : (tokens['--btn-primary-bg'] || tokens['--qc-primary']);
+      if (c) meta.setAttribute('content', c);
+    } catch (e) { /* 无 meta 或受限环境忽略 */ }
+  }
+
+  // V6.10 (配色专项·C): 监听系统明暗变化 —— 原实现只在切换/启动时读取一次, 选「跟随系统」后不实时生效
+  function _watchSystemTheme() {
+    if (_mqBound || typeof window === 'undefined' || !window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var handler = function () {
+      if (_pref.mode === 'system') applyTheme('system', _pref.hue);
+    };
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else if (mq.addListener) mq.addListener(handler);
+    _mqBound = true;
+  }
 
   function prefersDark() {
     return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
+  // V6.10 (配色专项·C): 「中性无色相」品牌档 —— NEUTRAL_HUE(-1) 表示去彩度, 仅保留明度层次
+  var NEUTRAL_HUE = -1;
   function normalizeHue(h) {
     h = parseInt(h, 10);
     if (isNaN(h)) return 45;
+    if (h < 0) return NEUTRAL_HUE;
     return Math.max(0, Math.min(359, h));
+  }
+
+  // 把整套 token 的彩度归零 (hsl 的 S=0; rgba/三元组按感知亮度取灰)
+  function _neutralizeTokens(out) {
+    Object.keys(out).forEach(function (k) {
+      var v = out[k];
+      if (typeof v !== 'string') return;
+      if (v.indexOf('hsl(') >= 0) {
+        v = v.replace(/hsl\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)%/g, function (m, hh) { return 'hsl(' + hh + ', 0%'; });
+      }
+      var m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)(,\s*[\d.]+)?\)$/.exec(v);
+      if (m) {
+        var g = Math.round(0.2126 * (+m[1]) + 0.7152 * (+m[2]) + 0.0722 * (+m[3]));
+        v = 'rgba(' + g + ', ' + g + ', ' + g + (m[4] || '') + ')';
+      }
+      if (/^\d+,\s*\d+,\s*\d+$/.test(v)) {
+        var p = v.split(',').map(function (x) { return parseInt(x, 10); });
+        var g2 = Math.round(0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]);
+        v = g2 + ', ' + g2 + ', ' + g2;
+      }
+      out[k] = v;
+    });
+    return out;
+  }
+
+  // 去彩度会改变同一明度下的感知亮度, 关键文字/焦点/边界令牌需按灰阶重新求解 (契约不降级)
+  function _neutralResolve(out, isDark) {
+    var tint = _rgbTuple(45, 0, isDark ? 22 : 95);
+    var canvas = _rgbTuple(45, 0, isDark ? 8 : 98);
+    var card = _rgbTuple(45, 0, isDark ? 11 : 100);
+    var txtL = isDark ? _gradL(45, 0, tint, 45, 96, false, 4.6) : _gradL(45, 0, tint, 10, 58, true, 4.6);
+    // 导航激活/徽标文字落在 --qc-nav-item-active-bg (亮色 hsl(45,0,92%)) 上, 比通用淡底更暗 → 单独求解
+    var navTint = _rgbTuple(45, 0, isDark ? 22 : 92);
+    var navL = isDark ? _gradL(45, 0, navTint, 45, 96, false, 4.6) : _gradL(45, 0, navTint, 10, 58, true, 4.6);
+    var ringL = isDark ? _gradL(45, 0, canvas, 45, 96, false, 3.2) : _gradL(45, 0, canvas, 25, 70, true, 3.2);
+    var bcL = isDark ? _gradL(45, 0, card, 25, 70, false, 3.2) : _gradL(45, 0, canvas, 30, 80, true, 3.2);
+    var txt = 'hsl(45, 0%, ' + txtL + '%)';
+    out['--primary-text'] = txt;
+    out['--text-link'] = txt;
+    out['--btn-primary-text-color'] = txt;
+    out['--btn-primary-plain-color'] = txt;
+    out['--qc-nav-item-active'] = 'hsl(45, 0%, ' + navL + '%)';
+    out['--qc-nav-badge-text'] = 'hsl(45, 0%, ' + navL + '%)';
+    out['--qc-ring'] = 'hsl(45, 0%, ' + ringL + '%)';
+    out['--border-control'] = 'hsl(45, 0%, ' + bcL + '%)';
+    // 渐变族与详情头卡面板: 去彩度会显著改变同一明度下的感知亮度 (黄色系尤甚), 必须按灰阶重解,
+    //   否则暗色渐变文字 2.55:1、明暗两模式的面板文字 3.38–3.42:1。
+    if (isDark) {
+      var dL = _gradL(45, 0, _rgbTuple(45, 0, 8), 30, 92, false, 4.6);
+      var dL2 = Math.min(94, dL + 8), dL3 = Math.min(96, dL + 16);
+      out['--gradient'] = 'linear-gradient(135deg, hsl(45, 0%, ' + dL + '%) 0%, hsl(45, 0%, ' + dL2 + '%) 50%, hsl(45, 0%, ' + dL3 + '%) 100%)';
+      out['--gradient-brand'] = 'linear-gradient(135deg, hsl(45, 0%, ' + dL3 + '%) 0%, hsl(45, 0%, ' + dL + '%) 100%)';
+    } else {
+      var gL = _gradL(45, 0, _gradFgWhite, 14, 62, true, 4.6);
+      var gL2 = Math.max(12, gL - 5), gL1 = Math.max(10, gL - 11);
+      out['--gradient'] = 'linear-gradient(135deg, hsl(45, 0%, ' + gL1 + '%) 0%, hsl(45, 0%, ' + gL2 + '%) 50%, hsl(45, 0%, ' + gL + '%) 100%)';
+      out['--gradient-brand'] = 'linear-gradient(135deg, hsl(45, 0%, ' + gL2 + '%) 0%, hsl(45, 0%, ' + gL1 + '%) 100%)';
+    }
+    var panelL = _panelL(45, 0, 14, 0, PANEL_TARGET);
+    out['--gradient-panel'] = 'linear-gradient(135deg, hsl(45, 0%, ' + Math.min(74, panelL + 5) + '%) 0%, hsl(45, 0%, ' + panelL + '%) 100%)';
+    out['--panel-fg'] = 'hsl(45, 0%, 14%)';
+    return out;
   }
 
   // 唯一权威: 应用主题。modeOrLegacy = 'light'|'dark'|'system' 或旧主题名 (legacy 兼容)
@@ -410,10 +502,13 @@
     }
     const isDark = mode === 'dark';
     h = normalizeHue(h == null ? 45 : h);
+    const neutral = (h === NEUTRAL_HUE);
     const root = document.documentElement;
     root.setAttribute('data-theme', isDark ? 'dark-pro' : 'gold');
     root.setAttribute('data-theme-mode', isDark ? 'dark' : 'light');
-    const tokens = isDark ? generateDarkTokens(h) : generateLightTokens(h);
+    root.setAttribute('data-theme-neutral', neutral ? 'true' : 'false');
+    let tokens = isDark ? generateDarkTokens(neutral ? 45 : h) : generateLightTokens(neutral ? 45 : h);
+    if (neutral) tokens = _neutralResolve(_neutralizeTokens(tokens), isDark);
     // V5.12.1 (关键修复): 应用前先清掉「上一次写入但本次不再提供」的内联变量。
     // 否则明↔暗或不同色相切换时, 上一套的 inline 变量会残留 (实测: 亮色下卡片/头部变暗、
     // 暗色下侧栏文字变深色, 全站对比度崩塌)。
@@ -423,6 +518,9 @@
     }
     keys.forEach(function (k) { root.style.setProperty(k, tokens[k]); });
     _appliedKeys = keys;
+    _pref.mode = (typeof modeOrLegacy === 'string' && modeOrLegacy) ? modeOrLegacy : 'light';
+    _pref.hue = h;
+    _syncBrowserChrome(tokens, isDark);
     try {
       localStorage.setItem('quant_theme_mode', isDark ? 'dark' : 'light');
       localStorage.setItem('quant_theme_hue', String(h));
@@ -449,6 +547,7 @@
     const legacy = migrateLegacyTheme();
     if (hue == null && legacy) { mode = legacy.mode; hue = legacy.hue; }
     if (hue == null) hue = 45;
+    _watchSystemTheme();   // V6.10 (C): 「跟随系统」实时生效
     return applyTheme(mode, hue);
   }
 
@@ -457,6 +556,7 @@
     HUES: HUES,
     LEGACY_MAP: LEGACY_MAP,
     legacyThemes: legacyThemes,
+    NEUTRAL_HUE: NEUTRAL_HUE,
     generateLightTokens: generateLightTokens,
     generateDarkTokens: generateDarkTokens,
     migrateLegacyTheme: migrateLegacyTheme,

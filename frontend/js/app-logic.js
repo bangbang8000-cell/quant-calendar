@@ -563,12 +563,13 @@ const allMenuDefs = [
                 window.addEventListener('keydown', _onTabKeydown);
 
                 // ===== 主题 (V6.1 F5: 明/暗两套模式 + 色相) =====
-                const themes = ref({ light: { name: '浅色', color: '#f5f3ea' }, dark: { name: '深色', color: '#0f0f23' } });
+                // V6.10 (C): 模式预览色改走表面令牌 (原 #f5f3ea/#0f0f23 为字面量, 不随色相)
+                const themes = ref({ light: { name: '浅色', color: 'var(--surface-canvas)' }, dark: { name: '深色', color: 'hsl(45, 10%, 8%)' } });
                 const currentTheme = ref('light');  // 当前解析后模式: light|dark
                 // V6.9.3 (F6.2): 主题状态全局共享 — Header 主题面板与基础配置子页共用
-                // 色板: 金/蓝/红/绿/紫/粉 (与 themes.js HUES 一致)
-                const themeHues = [45, 220, 0, 140, 270, 320];
-                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色' };
+                // 色板: 金/蓝/红/绿/紫/粉 + 中性无色相 (与 themes.js HUES / NEUTRAL_HUE 一致)
+                const themeHues = [45, 220, 0, 140, 270, 320, -1];
+                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色', '-1': '中性' };
                 const themeHue = ref(45);
                 // V6.9.4 (F4/H2): themeMode 改响应式 ref — computed 依赖非响应式 getPreference 无法在切换后重算
                 const themeMode = ref((function () {
@@ -586,7 +587,8 @@ const allMenuDefs = [
                     const P = window.__quantModules && window.__quantModules.preferences;
                     if (P && P.applyDensity) density.value = P.applyDensity() || 'comfortable';
                 })();
-                function hueColor(h) { return 'hsl(' + h + ', 75%, 42%)'; }
+                // V6.10 (C): h < 0 为「中性无色相」档 —— 色板圆点用灰阶, 不能渲染成 hsl(-1, 75%, 42%)
+                function hueColor(h) { return h < 0 ? 'hsl(0, 0%, 46%)' : 'hsl(' + h + ', 75%, 42%)'; }
                 function hueName(h) { return themeHueNames[h] || ('自定义 ' + h); }
 
                 // ===== 数据 =====

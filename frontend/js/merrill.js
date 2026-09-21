@@ -47,7 +47,7 @@
       stage_name: '复苏期',
       name: '复苏期',
       icon: 'sprout',
-      color: '#27AE60',
+      color: 'var(--state-success-solid)',
       description: '2025年开启新一轮复苏周期，政策发力，经济触底回升',
       timing: {
         current_stage_start_date: '2025年初',
@@ -122,14 +122,15 @@
         const dim = scores[d.key] || {};
         const z = dim.score || 0;
         const barWidth = Math.min(100, Math.max(5, (z + 2) * 25));
-        const barColor = z >= 0.3 ? '#66BB6A' : z >= -0.3 ? '#FFB74D' : '#EF5350';
-        const scoreColor = z >= 0 ? '#66BB6A' : '#EF5350';
+        // V6.10 (C): 硬编码色改语义令牌 (原 #66BB6A/#FFB74D/#EF5350 不随主题, 暗色下与卡片对比不足)
+        const barColor = z >= 0.3 ? 'var(--state-success-solid)' : z >= -0.3 ? 'var(--state-warning-solid)' : 'var(--state-danger-solid)';
+        const scoreColor = z >= 0 ? 'var(--state-success-text)' : 'var(--state-danger-text)';
         return {
           key: d.key, label: d.label,
           scoreStr: z.toFixed(2),
           level: dim.level || '—',
           barWidth, barColor, scoreColor,
-          color: levelColors[dim.level] || '#888888'
+          color: levelColors[dim.level] || 'var(--text-tertiary)'
         };
       });
     };
@@ -185,9 +186,9 @@
 
     const merrillProgressStyle = computed(() => {
       const pct = Math.min(100, merrillData.value.timing?.progress_percent || 0);
-      const color = merrillData.value.color || '#4CAF50';
+      const color = merrillData.value.color || 'var(--state-success-solid)';
       const bg = pct > 100
-        ? 'linear-gradient(90deg, ' + color + ', #FF9800)'
+        ? 'linear-gradient(90deg, ' + color + ', var(--state-warning-solid))'
         : color;
       return { width: pct + '%', background: bg };
     });
@@ -225,7 +226,8 @@
     function getCharLabel(key) { return charLabels[key] || key; }
     function getAssetName(key) { return assetNames[key] || key; }
     function getRankColor(rank) {
-      const colors = ['#43a047', '#f57c00', '#1976d2', '#757575'];
+      // V6.10 (C): 排名色改语义/中性令牌, 不再用固定 Tailwind 字面量
+      const colors = ['var(--state-success-solid)', 'var(--state-warning-solid)', 'var(--state-info-solid)', 'var(--text-tertiary)'];
       return colors[rank - 1] || colors[3];
     }
 

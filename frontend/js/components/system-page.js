@@ -1330,13 +1330,13 @@
         if (sub === 'notification') loadNotificationData();
       });
       // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与基础配置子页一致)
-      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320];  // 金/蓝/红/绿/紫/粉
+      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, -1];  // 金/蓝/红/绿/紫/粉 + 中性无色相
       const themeHueNames = state.themeHueNames || {};
       const themeMode = state.themeMode || Vue.computed(() => 'light');
       const themeHue = state.themeHue || Vue.ref(45);
       function onThemeModeChange(mode) { if (state.changeThemeMode) state.changeThemeMode(mode); }
       function setThemeHue(h) { if (state.changeThemeHue) state.changeThemeHue(parseInt(h, 10)); }
-      function hueColor(h) { return state.hueColor ? state.hueColor(h) : 'hsl(' + h + ', 75%, 42%)'; }
+      function hueColor(h) { return state.hueColor ? state.hueColor(h) : (h < 0 ? 'hsl(0, 0%, 46%)' : 'hsl(' + h + ', 75%, 42%)'); }
       function hueName(h) { return state.hueName ? state.hueName(h) : (themeHueNames[h] || ('自定义 ' + h)); }
       // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态即时生效 (V6.4: 页签开关已移除; state.navMode/setNavMode 经 ...state 展开)
       function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }

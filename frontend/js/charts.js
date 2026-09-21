@@ -149,7 +149,7 @@
           snap: true,
           z: 100,
           link: [{ xAxisIndex: 'all' }],
-          label: { backgroundColor: colors.primary, color: '#ffffff', fontWeight: 600, fontSize: 11 },
+          label: { backgroundColor: colors.primary, color: '#ffffff', fontWeight: 600, fontSize: 11 },  /* qc-allow-hardcode: 令牌底色上的对比文字, 由对比度门禁覆盖 */
         },
         backgroundColor: tooltipBg,
         borderColor: gridColor,
@@ -426,7 +426,7 @@
   // nav 与 drawdown 数组等长; drawdown 以 % 计 (负值向下)。
   function buildNavDrawdownOption(nav, drawdown, dates, opts) {
     opts = opts || {};
-    const ddColor = opts.drawdownColor || '#C62828';
+    const ddColor = opts.drawdownColor || getCSSVar('--state-danger-solid');
     return {
       tooltip: { trigger: 'axis' },
       legend: { data: [opts.navLabel || '净值', opts.ddLabel || '回撤'] },
@@ -450,7 +450,7 @@
   // data: { dates, median[], q25[], q75[] }
   function buildIcBandOption(data, opts) {
     opts = opts || {};
-    const bandColor = opts.bandColor || '#1976d2';
+    const bandColor = opts.bandColor || getCSSVar('--state-info-solid');
     const dates = (data && data.dates) || [];
     const median = (data && data.median) || [];
     const q25 = (data && data.q25) || [];
@@ -479,7 +479,7 @@
   // data: { dates, value[], upper[], lower[] }
   function buildSentimentBandOption(data, opts) {
     opts = opts || {};
-    const color = opts.color || '#7c3aed';
+    const color = opts.color || getCSSVar('--color-ai');
     const dates = (data && data.dates) || [];
     const value = (data && data.value) || [];
     const upper = (data && data.upper) || [];

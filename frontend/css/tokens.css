@@ -27,32 +27,15 @@
   --qc-neutral-600: #6b6358;
   --qc-neutral-900: #1f1d1a;
 
-  /* ─── Semantic State Colors ─── */
-  /* V6.10 (配色专项·B): 语义槽位收敛 —— --qc-state-* 由「独立字面量」降级为 --state-* 的别名。
-     原三套并行定义 (--qc-state-* / --success-text 系 / --badge-*) 取值互不相同且只有 --badge-* 按模式适配,
-     组件层用的恰是未适配的那套 (亮色警告 2.15:1 / 暗色错误 3.47:1、信息 3.24:1)。 */
-  --qc-state-success: var(--state-success-solid);
-  --qc-state-success-bg: var(--state-success-tint);
-  --qc-state-warning: var(--state-warning-solid);
-  --qc-state-warning-bg: var(--state-warning-tint);
-  --qc-state-error: var(--state-danger-solid);
-  --qc-state-error-bg: var(--state-danger-tint);
-  --qc-state-info: var(--state-info-solid);
+  /* V6.10 (C·治理): 原 --qc-state-* / --qc-success|warning|error|info 两套并行定义已删除 ——
+     统一为下方 --state-{k}-{text,tint,solid,on-solid} 四个变体 (唯一语义槽位)。 */
+  --qc-market-up: var(--market-up-fill);
+  --qc-market-down: var(--market-down-fill);
 
-  /* V6.9.4 (H6): 状态别名 — components.css fallback 引用 (--qc-success 系) 与 state 系对齐 */
-  --qc-success: var(--state-success-solid);
-  --qc-success-50: var(--state-success-tint);
-  --qc-success-100: color-mix(in srgb, var(--state-success-solid) 22%, var(--surface-card));
-  --qc-success-700: var(--state-success-text);
-  --qc-warning: var(--state-warning-solid);
+  /* V6.10 (C·治理): 保留 header 非交易日横幅仍在使用的警告变体 (其余 --qc-success/error 家族已删) */
   --qc-warning-50: var(--state-warning-tint);
   --qc-warning-100: color-mix(in srgb, var(--state-warning-solid) 22%, var(--surface-card));
   --qc-warning-700: var(--state-warning-text);
-  --qc-error: var(--state-danger-solid);
-  --qc-error-50: var(--state-danger-tint);
-  --qc-error-100: color-mix(in srgb, var(--state-danger-solid) 22%, var(--surface-card));
-  --qc-error-700: var(--state-danger-text);
-  --qc-info: var(--state-info-solid);
 
   /* ─── Market Semantics (语义固定: 红涨绿跌, 不随品牌色相) ───
      V6.10 (B): 拆成「填充档 / 文字档」—— 填充用于 K 线/色块 (需 >=3:1 于卡片), 文字档用于涨跌幅文本 (需 >=4.5:1)。
@@ -74,7 +57,6 @@
   --qc-muted-foreground: #6e6a5f;
   /* V5.30 (P0-1): 页面底色改中性后卡片需可见分界线 — 200(#efe9df, 1.08:1) → 300(#ded5c6) */
   --qc-border: var(--qc-neutral-300);
-  --qc-input: var(--qc-neutral-200);
   --qc-ring: var(--qc-primary-400);
 
   /* V5.31 (语义色分层): 文字色 / 实底色 与「填充色」分离 —— 原 --primary-color(hsl 75,42%) 同时充当
@@ -187,9 +169,7 @@
 
   /* ═══ Legacy Tokens (V6.0 渐进别名 → --qc-*, 值不一致者保留原值防回归) ═══ */
   /* ─── Spacing Scale ─── */
-  --sp-1: var(--qc-space-1);   --sp-2: var(--qc-space-2);   --sp-3: var(--qc-space-3);  --sp-4: var(--qc-space-4);
   /* ─── Border Radius ─── */
-  --r-sm: var(--qc-radius-small);   --r-md: var(--qc-radius-medium);   --r-lg: var(--qc-radius-large);  --r-xl: 16px;  --r-full: var(--qc-radius-full);
 
   /* ─── Typography: Font Family ─── */
   --font-sans: var(--qc-font-sans);
@@ -199,8 +179,7 @@
   --font-xs: var(--qc-font-size-xs);
   --font-2xs: 9px;   --font-icon: 44px;   --font-hero: 64px;
   --font-sm: var(--qc-font-size-sm);   --font-base: var(--qc-font-size-base);  --font-md: var(--qc-font-size-md);
-  --font-lg: var(--qc-font-size-lg);   --font-xl: var(--qc-font-size-xl);   --font-2xl: 26px;   --font-3xl: var(--qc-font-size-3xl);
-
+  --font-2xl: 26px;
   /* ─── Typography: Font Weight ─── */
   --font-normal: var(--qc-font-weight-normal);    --font-medium: var(--qc-font-weight-medium);
   --font-semibold: var(--qc-font-weight-semibold);  --font-bold: var(--qc-font-weight-bold);
@@ -208,9 +187,6 @@
   /* ─── Typography: Line Height ─── */
 
   /* ─── Shadows (保留原值防回归) ─── */
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
 
   /* V4.1: 全局边框强调色与 chip 固定深字 */
   --border-strong: #d9dee8;
@@ -242,7 +218,6 @@
   --duration-slow: 400ms;
   --easing-standard: ease;
   --easing-enter: cubic-bezier(0.22, 1, 0.36, 1);
-  --easing-exit: cubic-bezier(0.36, 0, 0.66, -0.56);
   --transition-fast: var(--duration-fast) var(--easing-standard);
   --transition-base: var(--duration-base) var(--easing-standard);
   --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -269,14 +244,8 @@
   --color-rise:    var(--market-up-text);
   --color-fall:    var(--market-down-text);
   --color-neutral: #43a047;
-  --color-up-strong:    #C62828;
-  --color-up-weak:      #F5A0A6;
-  --color-down-strong:  #1B5E20;
-  --color-down-weak:    #81C784;
   --sem-opportunity: var(--color-up);
   --sem-risk:        var(--color-down);
-  --sem-neutral:     var(--color-neutral);
-  --sem-warning:     var(--color-warning);
   --color-ai:      #6366f1;
   --white:         #ffffff;
 
@@ -318,22 +287,18 @@
   --state-success-tint: var(--badge-success-bg);
   --state-success-solid: var(--badge-success-text);
   --state-success-on-solid: #ffffff;
-  --state-success-border: color-mix(in srgb, var(--badge-success-text) 32%, transparent);
   --state-warning-text: var(--badge-warning-text);
   --state-warning-tint: var(--badge-warning-bg);
   --state-warning-solid: var(--badge-warning-text);
   --state-warning-on-solid: #ffffff;
-  --state-warning-border: color-mix(in srgb, var(--badge-warning-text) 32%, transparent);
   --state-danger-text: var(--badge-danger-text);
   --state-danger-tint: var(--badge-danger-bg);
   --state-danger-solid: var(--badge-danger-text);
   --state-danger-on-solid: #ffffff;
-  --state-danger-border: color-mix(in srgb, var(--badge-danger-text) 32%, transparent);
   --state-info-text: var(--badge-info-text);
   --state-info-tint: var(--badge-info-bg);
   --state-info-solid: var(--badge-info-text);
   --state-info-on-solid: #ffffff;
-  --state-info-border: color-mix(in srgb, var(--badge-info-text) 32%, transparent);
 
   /* ═══ V6.10 (配色专项·A): Element Plus 变量桥 (Light) ═══
      本仓库 frontend/lib/element-plus.css 是「仅亮色」构建, 不含 EP 官方暗色变量集

@@ -33,7 +33,9 @@
             --logo-border: var(--primary-color);
             --logo-white: #ffffff;
             /* v3.22-timeline-fix: 历史周期时间轴 chip 文字色 — 阶段底色为浅色, 深字才清晰 */
+            /* V6.10 (配色专项·C): 阶段色来自后端配置(不随主题), 深/浅两个文字档由 JS 按底色亮度选用 */
             --merrill-chip-text: #1f2937;
+            --merrill-chip-text-invert: #ffffff;
             /* 主题色 */
             --primary-color: #2563eb;
             /* v3.18.2: 别名修复 — 历史代码大量引用 var(--color-primary) 但从未定义
@@ -67,8 +69,8 @@
             --primary-rgb: 100, 255, 218;
             /* V6.0: qc 暗色导航 token 覆盖 (V6.0.1: 原 .dark 死代码已删除, 暗色统一由本 data-theme 块驱动) */
             --qc-background: #0b1220; --qc-foreground: #e6f1ff;
-            --qc-card: #101a2e; --qc-card-foreground: #e6f1ff;
-            --qc-popover: #101a2e; --qc-popover-foreground: #e6f1ff;
+            --qc-card: #101a2e;
+            --qc-popover: #101a2e;
             --qc-primary: #ffd166;
             /* V6.0.1: 补全 dark-pro 金色 scale — 暗底适配 (50-300 深金底 / 400-900 亮金主色与文字) */
             --qc-primary-50: #2b2314; --qc-primary-100: #3d3422;
@@ -77,7 +79,7 @@
             --qc-primary-600: #ffd166; --qc-primary-700: #ffd166;
             --qc-primary-800: #e6cf86; --qc-primary-900: #f0e2b3;
             --qc-muted: #16233b; --qc-muted-foreground: #8892b0;
-            --qc-border: #23344f; --qc-input: #23344f; --qc-ring: #e6cf86;
+            --qc-border: #23344f; --qc-ring: #e6cf86;   /* V6.10 (C): --qc-input 已被 --border-control 取代 */
             --qc-nav-bg: #0d1526; --qc-nav-border: #23344f;
             --qc-nav-item-default: #8892b0; --qc-nav-item-hover: #e6f1ff;
             --qc-nav-item-hover-bg: #16233b;
@@ -108,10 +110,7 @@
                (原 #101a2e/#16233b/#0d1526/#3a4a6a 不在运行期覆盖列表内, 与 --qc-card 形成双面族) */
             --bg-input: var(--surface-input);
             --bg-code: var(--surface-sunken);
-            /* V4.8.2 (D3): 暗色阴影变体 — 亮色 6-12% 黑在暗底不可见, 加深并保持 sm<md<lg 层级 */
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35) ;
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45) ;
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55) ;
+            /* V6.10 (C·治理): 原 legacy --shadow-* 暗色变体已删除 (全树无引用, 阴影统一走 --qc-shadow-*) */
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
             --chart-split: #2c4060 ;  /* V5.17.1: dark 网格线对比度 1.59 (门禁≥1.5) */
             --chart-axis: #4f6b99 ;  /* V5.17.1: dark 轴线对比度 3.09 (门禁≥2.5) */
@@ -4497,7 +4496,7 @@ text {
 .cal-compare-section { margin-bottom: 12px; }
 .cal-compare-title { font-size: var(--qc-font-size-sm); font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
 .cal-compare-codes { font-size: var(--qc-font-size-xs); line-height: 1.6; color: var(--text-secondary); word-break: break-all; }
-.cal-compare-error { padding: 12px; color: var(--danger); }
+.cal-compare-error { padding: 12px; color: var(--state-danger-text); }   /* V6.10 (C): 原引用不存在的 --danger 令牌 (悬空) */
 .cal-subtitle-ellipsis { font-size:var(--qc-font-size-xs);color:var(--text-tertiary);margin-top: 4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
 .card-title-hint { font-weight: normal; color: var(--text-tertiary); font-size: var(--qc-font-size-sm); margin-left: 8px; }
 .chat-bubble-user { display:inline-block;background:var(--primary-color);color:var(--white);padding: 8px 12px;border-radius: var(--qc-radius-large) 12px 2px 12px;max-width:80%;font-size:var(--qc-font-size-sm);text-align:left; }

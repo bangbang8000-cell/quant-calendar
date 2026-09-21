@@ -149,9 +149,10 @@
             // V6.1 (PRD-6.1 F5): 主题收敛为明/暗两套 — 不再拉取后端 8 主题列表
             // (command-panel / 外观设置遍历 themes 用新模型两套)
             Promise.resolve().then(() => {
+              // V6.10 (C): 模式预览色改走表面令牌 (原为字面量, 不随色相/主题)
               themes.value = {
-                light: { name: '浅色', color: '#f5f3ea' },
-                dark: { name: '深色', color: '#0f0f23' },
+                light: { name: '浅色', color: 'var(--surface-canvas)' },
+                dark: { name: '深色', color: 'hsl(45, 10%, 8%)' },
               };
             }),
             withTimeout(fetchMarketData(), 3000, 'marketData'),

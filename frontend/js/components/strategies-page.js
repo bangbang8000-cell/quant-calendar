@@ -1560,13 +1560,25 @@
         if (lo && hi) return lo + ' ~ ' + hi;
         return pe.base || pe.mid || lo || hi || '';
       });
+      // V6.10 (配色专项·C·f2): 阶段色来自后端配置 (不随主题), 文字色必须按底色亮度自适应,
+      //   原固定 --merrill-chip-text(#1f2937) 只对浅色底有效; 且 `c + '44'` 拼 alpha 仅对 6 位 hex 成立。
+      function _chipFg(c) {
+        const m = /^#([0-9a-f]{6})$/i.exec(String(c || '').trim());
+        if (!m) return 'var(--merrill-chip-text)';
+        const n = parseInt(m[1], 16);
+        const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+        return L > 0.42 ? 'var(--merrill-chip-text)' : 'var(--merrill-chip-text-invert)';
+      }
       function mcSegStyle(g) {
         const c = getTimelineStageColor(g.stage) || 'var(--color-primary)';
         if (g.ghost) {
-          return { left: g.left + '%', width: g.width + '%', borderColor: c, color: 'var(--text-secondary)',
-                   background: 'repeating-linear-gradient(45deg, ' + c + '44, ' + c + '44 5px, transparent 5px, transparent 10px)' };
+          // 斜纹底为低透明度色块叠加在卡片上 → 文字用正文色 (对明暗两种卡片底均 >=4.5:1)
+          return { left: g.left + '%', width: g.width + '%', borderColor: c, color: 'var(--text-primary)',
+                   background: 'repeating-linear-gradient(45deg, color-mix(in srgb, ' + c + ' 27%, transparent) 0, '
+                     + 'color-mix(in srgb, ' + c + ' 27%, transparent) 5px, transparent 5px, transparent 10px)' };
         }
-        return { left: g.left + '%', width: g.width + '%', background: c };
+        return { left: g.left + '%', width: g.width + '%', background: c, color: _chipFg(c) };
       }
       function mcSegTitle(g) {
         const parts = [g.name];
