@@ -8,6 +8,7 @@
 
   window.__quantComponents = window.__quantComponents || {};
 
+  // qc-allow-hardcode: 8 色分组调色板 (与后端 watch_groups.COLORS 契约一致, 设计资产)
   const COLORS = ['#c49b2e', '#2563eb', '#dc2626', '#16a34a', '#7c3aed', '#db2777', '#64748b', '#b45309'];
 
   window.__quantComponents.WatchGroupsDialog = {
