@@ -119,11 +119,11 @@ def bump(version: str) -> int:
         rtext = rtext.replace(old_row, new_row + "\n" + downgraded, 1)
         README.write_text(rtext, encoding="utf-8")
 
-    # HANDOVER 顶部状态行
+    # HANDOVER 顶部状态行 (兼容 `**vX.Y.Z**` 与 `**vX.Y.Z (APP_VERSION X.Y.Z)**` 两种格式)
     htext = HANDOVER.read_text(encoding="utf-8")
     htext = re.sub(
-        r"^(> 当前状态: \*\*v)[0-9]+\.[0-9]+\.[0-9]+(\*\*)",
-        lambda m: m.group(1) + version + m.group(2),
+        r"^(> 当前状态: \*\*v)[0-9]+\.[0-9]+\.[0-9]+(\s*\(APP_VERSION )?([0-9]+\.[0-9]+\.[0-9]+\))?(\*\*)",
+        lambda m: m.group(1) + version + ((" (APP_VERSION " + version + ")") if m.group(2) else "") + m.group(4),
         htext, count=1, flags=re.MULTILINE,
     )
     HANDOVER.write_text(htext, encoding="utf-8")

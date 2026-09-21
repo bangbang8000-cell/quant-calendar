@@ -23,7 +23,7 @@ import time
 import uuid
 
 import paths
-from reliability.atomic import atomic_write_json
+from reliability.atomic import atomic_write_json, file_lock
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +61,12 @@ def _job_id():
 
 
 def _read():
+    # 6.1.7 (收尾): 读取端与写入端同源文件锁互斥 — 消除 Windows 下读句柄与 os.replace 竞争
+    # (历史偶发 WinError 5 拒绝访问: 读 open 未关闭时 replace 目标被占用, 任务状态丢失)
     try:
-        with open(JOBS_FILE, encoding='utf-8') as f:
-            data = json.load(f)
+        with file_lock(JOBS_FILE):
+            with open(JOBS_FILE, encoding='utf-8') as f:
+                data = json.load(f)
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}

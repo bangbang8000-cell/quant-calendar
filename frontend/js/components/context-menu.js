@@ -25,8 +25,13 @@
       <teleport to="body">
         <div v-if="visible" class="qc-ctx" :style="{ left: pos.left + 'px', top: pos.top + 'px' }"
              role="menu" @contextmenu.prevent>
-          <div v-for="a in actions" :key="a.key" class="qc-ctx-item" role="menuitem" @click="run(a)">
-            <span>{{ a.label }}</span>
+          <div v-if="actions.length === 0" class="qc-ctx-item qc-ctx-empty" role="menuitem" aria-disabled="true">
+            <span>无可用操作</span>
+          </div>
+          <div v-else>
+            <div v-for="a in actions" :key="a.key" class="qc-ctx-item" role="menuitem" @click="run(a)">
+              <span>{{ a.label }}</span>
+            </div>
           </div>
         </div>
       </teleport>
