@@ -96,7 +96,10 @@ def _next_seq():
         return _seq
 
 
-def create_task(task_type, payload=None, max_retries=0):
+def create_task(task_type, payload=None, max_retries=0, priority=0, dedupe_key=None):
+    # 6.1.7 (T-6.1.7.2): jobs 队列治理 — priority(数值越小越优先) + dedupe_key(幂等去重)
+    # - priority: worker 按 (priority, seq) 排序取任务; 兼容旧调用(位置/关键字均不受影响)
+    # - dedupe_key: 同 key 且任务未进入终态(pending/running)时复用现有 job_id, 不重复入队
     job = {
         'job_id': _job_id(),
         'seq': _next_seq(),
@@ -109,6 +112,8 @@ def create_task(task_type, payload=None, max_retries=0):
         'error': None,
         'retries': 0,
         'max_retries': max(0, int(max_retries)),
+        'priority': max(0, int(priority)),
+        'dedupe_key': dedupe_key,
         'cancelled': False,
         'created_at': _now_iso(),
         'started_at': None,
@@ -116,6 +121,10 @@ def create_task(task_type, payload=None, max_retries=0):
     }
     with _lock:
         jobs = _read()
+        if dedupe_key is not None:
+            for _j in jobs.values():
+                if _j.get('dedupe_key') == dedupe_key and _j['status'] in (STATUS_PENDING, STATUS_RUNNING):
+                    return _j['job_id']
         if len(jobs) >= MAX_JOBS:
             for k in sorted(jobs, key=lambda x: jobs[x].get('seq', 0))[: len(jobs) - MAX_JOBS + 1]:
                 jobs.pop(k, None)
@@ -263,10 +272,11 @@ def _worker_loop():
                 break
             jobs = _read()
             job = None
-            for j in jobs.values():
-                if j['status'] == STATUS_PENDING and not j.get('cancelled'):
-                    job = j
-                    break
+            # 6.1.7 (T-6.1.7.2): 按 (priority, seq) 取最早 pending — 优先级调度, 同优先按提交序
+            _pending = [j for j in jobs.values()
+                        if j['status'] == STATUS_PENDING and not j.get('cancelled')]
+            if _pending:
+                job = min(_pending, key=lambda j: (j.get('priority', 0), j.get('seq', 0)))
             if job is None:
                 _worker_cond.wait(timeout=POLL_INTERVAL)
                 continue

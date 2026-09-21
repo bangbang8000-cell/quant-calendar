@@ -1434,6 +1434,46 @@ const allMenuDefs = [
                     // v3.8.11: 触觉反馈
                     hapticFeedback,
                 };
+                // 6.1.7 (G5): 前端 state 域注册表 — theme/auth/prefs/ui/page 五域 (兼容入口: qcState 扁平结构不变)
+                // state 拆分不改变行为: 仅提供域化访问/快照对拍, 组件既有的 qcState.xxx 读取路径原样可用
+                let stateRegistry = null;
+                if (window.QuantStateRegistry && window.QuantStateRegistry.createStateRegistry) {
+                    stateRegistry = window.QuantStateRegistry.createStateRegistry();
+                    stateRegistry.defineDomain('theme', ['currentTheme', 'themeMode', 'themeHue', 'density', 'currentKlinePeriod']);
+                    stateRegistry.defineDomain('auth', ['currentUser', 'loginForm', 'logining', 'guestLogining', 'showSetupWizard']);
+                    stateRegistry.defineDomain('prefs', ['navMode', 'detailDisplayMode', 'splitWidth', 'sidebarCollapsed', 'klineShowMinutes']);
+                    stateRegistry.defineDomain('ui', ['currentPage', 'currentSubPage', 'currentView', 'showUserMenu', 'searchKeyword', 'shortcutHelpVisible', 'commandPaletteVisible']);
+                    stateRegistry.defineDomain('page', ['loading', 'dates', 'selectedDate', 'consensus', 'dashboardData', 'lastLoadTime']);
+                    stateRegistry.attach('theme', 'currentTheme', currentTheme);
+                    stateRegistry.attach('theme', 'themeMode', themeMode);
+                    stateRegistry.attach('theme', 'themeHue', themeHue);
+                    stateRegistry.attach('theme', 'density', density);
+                    stateRegistry.attach('theme', 'currentKlinePeriod', currentKlinePeriod);
+                    stateRegistry.attach('auth', 'currentUser', currentUser);
+                    stateRegistry.attach('auth', 'loginForm', loginForm);
+                    stateRegistry.attach('auth', 'logining', logining);
+                    stateRegistry.attach('auth', 'guestLogining', guestLogining);
+                    stateRegistry.attach('auth', 'showSetupWizard', showSetupWizard);
+                    stateRegistry.attach('prefs', 'navMode', navMode);
+                    stateRegistry.attach('prefs', 'detailDisplayMode', detailDisplayMode);
+                    stateRegistry.attach('prefs', 'splitWidth', splitWidth);
+                    stateRegistry.attach('prefs', 'sidebarCollapsed', sidebarCollapsed);
+                    stateRegistry.attach('prefs', 'klineShowMinutes', klineShowMinutes);
+                    stateRegistry.attach('ui', 'currentPage', currentPage);
+                    stateRegistry.attach('ui', 'currentSubPage', currentSubPage);
+                    stateRegistry.attach('ui', 'currentView', currentView);
+                    stateRegistry.attach('ui', 'showUserMenu', showUserMenu);
+                    stateRegistry.attach('ui', 'searchKeyword', searchKeyword);
+                    stateRegistry.attach('ui', 'shortcutHelpVisible', shortcutHelpVisible);
+                    stateRegistry.attach('ui', 'commandPaletteVisible', commandPaletteVisible);
+                    stateRegistry.attach('page', 'loading', loading);
+                    stateRegistry.attach('page', 'dates', dates);
+                    stateRegistry.attach('page', 'selectedDate', selectedDate);
+                    stateRegistry.attach('page', 'consensus', consensus);
+                    stateRegistry.attach('page', 'dashboardData', dashboardData);
+                    stateRegistry.attach('page', 'lastLoadTime', lastLoadTime);
+                    qcState.stateRegistry = stateRegistry;  // 兼容入口: 组件可按域读取, 也可继续扁平访问
+                }
     return qcState;
   };
 })();

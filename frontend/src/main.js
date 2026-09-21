@@ -39,6 +39,8 @@ import '../js/context-menu-core.js'
 import '../js/components/context-menu.js'
 // 6.1.5 (E5): 请求竞态治理 (stale guard / dedupe / abort)
 import '../js/request-core.js'
+// 6.1.7 (G5): 前端 state 域注册表 (theme/auth/prefs/ui/page 域化 + 快照对拍)
+import '../js/state-registry-core.js'
 import '../js/stock-pool.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
