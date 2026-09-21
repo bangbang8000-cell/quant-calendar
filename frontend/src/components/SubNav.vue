@@ -103,7 +103,7 @@ export default {
       },
       'system': {
         'config': 'save', 'feature': 'sliders-horizontal', 'autoeval': 'bot', 'datasource': 'database',
-        'user': 'users', 'about': 'info', 'notification': 'bell',
+        'user': 'users', 'glossary': 'book-open', 'notification': 'bell', 'about': 'info',
       },
     }
     const subIcon = (page, sp) => (SUB_ICONS[page] && SUB_ICONS[page][sp]) || 'circle-dot'

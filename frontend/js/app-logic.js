@@ -116,7 +116,7 @@ const allMenuDefs = [
                     { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.3: 市场复盘+异动扫描并入; V6.9.1-fix: 异动扫描删除
                     // V6.9.1-fix: 系统状态一级菜单 (自系统配置分离, 置于系统配置前) — 运行监控/数据/执行域
                     { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['status', 'health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] }, // V6.9.1-fix2: status(状态概览) 移入 ops 首位
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'feature', 'autoeval', 'datasource', 'user', 'about', 'glossary', 'notification'], guestSubPages: ['config', 'about'] } // V6.9.3: 菜单序重排 — 基础配置置后/通知中心移最后; 6.1.1 (A1): 新增 glossary 术语表
+                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'feature', 'autoeval', 'datasource', 'user', 'glossary', 'notification', 'about'], guestSubPages: ['config', 'about'] } // V6.9.3: 菜单序重排 — 基础配置置后/通知中心移最后; 6.1.1 (A1): 新增 glossary 术语表; 6.2.x: 关于恒置于最后
                 ];
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
