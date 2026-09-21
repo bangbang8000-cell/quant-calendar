@@ -581,7 +581,7 @@
   padding: 0 6px;
   border-radius: var(--qc-radius-full);
 }
-.qc-stock-status.is-new { background: var(--el-success); color: var(--qc-neutral-0); }
+.qc-stock-status.is-new { background: var(--state-success-soft-bg); color: var(--state-success-soft-text); }
 .qc-stock-status.is-out { background: var(--qc-muted); color: var(--qc-muted-foreground); }
 /* V6.2: 股票行内信号说明整行占位 (日历股票池) */
 .qc-stock-row .cal-subtitle-ellipsis { grid-column: 1 / -1; margin-top: 2px; }
@@ -789,3 +789,8 @@
   cursor: pointer;
 }
 .qc-ctx-item:hover { background: var(--qc-primary-50); color: var(--qc-primary-700); }
+
+/* ═══ V6.12 (需求轮3·item3): Element Plus 进度条跟随「条填充」柔和档 ═══ */
+.el-progress { --el-color-primary: var(--bar-fill);
+  --el-color-success: var(--bar-fill-ok);
+  --el-color-danger: var(--bar-fill-bad); }

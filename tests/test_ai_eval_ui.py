@@ -84,10 +84,14 @@ class TestResultUI:
         """评分环颜色按等级映射主题变量 (levelRingColor)"""
         assert 'levelRingColor' in STOCK_DETAIL
         assert ':stroke="levelRingColor"' in STOCK_DETAIL
-        # 映射使用主题变量而非硬编码 hex
-        assert 'var(--el-success)' in STOCK_DETAIL
-        assert 'var(--el-warning)' in STOCK_DETAIL
-        assert 'var(--el-danger)' in STOCK_DETAIL
+        # 映射使用主题变量而非硬编码 hex (评分环本体: 语义「文字色」令牌)
+        assert 'var(--success-text)' in STOCK_DETAIL
+        assert 'var(--warning-text)' in STOCK_DETAIL
+        assert 'var(--danger-text)' in STOCK_DETAIL
+        # V6.12 (需求轮3·item3): 九维度评分条改走 --bar-fill* 柔和档 (原 --el-* 实底过深)
+        assert 'var(--bar-fill-ok)' in STOCK_DETAIL
+        assert 'var(--bar-fill-warn)' in STOCK_DETAIL
+        assert 'var(--bar-fill-bad)' in STOCK_DETAIL
 
     def test_copy_and_reevaluate_buttons(self):
         """复制报告 / 重新评估按钮"""

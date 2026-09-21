@@ -382,11 +382,11 @@
 }
 .focus-action-seg { height: 100%; transition: opacity var(--transition-fast); }
 .focus-action-seg:hover { opacity: 0.75; }
-.focus-action-买入 { background: var(--el-success); }
-.focus-action-持有 { background: var(--el-warning); }
-.focus-action-观望 { background: var(--el-info); }
-.focus-action-减仓 { background: var(--el-danger); }
-.focus-action-卖出 { background: var(--el-danger); opacity: 0.85; }
+.focus-action-买入 { background: var(--bar-fill-ok); }
+.focus-action-持有 { background: var(--bar-fill-warn); }
+.focus-action-观望 { background: var(--bar-fill-info); }
+.focus-action-减仓 { background: var(--bar-fill-bad); }
+.focus-action-卖出 { background: var(--bar-fill-bad); }
 .focus-action-legend {
   display: flex;
   flex-wrap: wrap;
@@ -893,7 +893,7 @@ body.qc-split-resizing * {
 }
 .mc-now-head { display: flex; align-items: center; gap: var(--qc-space-2); flex-wrap: wrap; margin-bottom: var(--qc-space-2); }
 .mc-now-dot { width: 8px; height: 8px; border-radius: var(--qc-radius-full); flex-shrink: 0; }
-.mc-now-name { font-size: var(--qc-font-size-md); font-weight: var(--font-semibold); color: var(--text-primary); }
+.mc-now-name { font-size: var(--qc-font-size-md); font-weight: var(--font-medium); color: var(--text-primary); }
 .mc-now-badge {
   font-size: var(--qc-font-size-xs); font-weight: var(--font-semibold);
   color: var(--primary-text); background: var(--qc-muted);  /* V5.31: cool-gray bg gave 4.32:1 */

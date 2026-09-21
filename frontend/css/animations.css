@@ -92,7 +92,7 @@
   border-radius: var(--qc-radius-medium);
   font-size: var(--qc-font-size-base);
   font-weight: var(--font-medium);
-  color: var(--white);
+  color: var(--text-primary);
   box-shadow: var(--qc-shadow-md);
   display: flex;
   align-items: center;
@@ -104,10 +104,12 @@
 .toast.leaving {
   animation: toast-out var(--duration-fast) var(--easing-standard) forwards;
 }
-.toast-success { background: var(--color-success); }
-.toast-warning { background: var(--color-warning); }
-.toast-danger { background: var(--color-danger); }
-.toast-info { background: var(--color-info); }
+/* V6.12 (需求轮3·item4): 深实底 + 白字 -> 浅底彩字 (与 V6.11.4 徽标/按钮同一语言;
+   toast 的默认类型是 info, 原蓝色实底是界面里最重的一块) */
+.toast-success { background: var(--state-success-soft-bg); color: var(--state-success-soft-text); border: 1px solid var(--state-success-soft-border); }
+.toast-warning { background: var(--state-warning-soft-bg); color: var(--state-warning-soft-text); border: 1px solid var(--state-warning-soft-border); }
+.toast-danger { background: var(--badge-danger-bg); color: var(--danger-text); border: 1px solid color-mix(in srgb, var(--state-danger-solid) 32%, transparent); }
+.toast-info { background: var(--state-info-soft-bg); color: var(--state-info-soft-text); border: 1px solid var(--state-info-soft-border); }
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(40px); }
   to { opacity: 1; transform: translateX(0); }

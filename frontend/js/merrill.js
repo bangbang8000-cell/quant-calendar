@@ -123,7 +123,7 @@
         const z = dim.score || 0;
         const barWidth = Math.min(100, Math.max(5, (z + 2) * 25));
         // V6.10 (C): 硬编码色改语义令牌 (原 #66BB6A/#FFB74D/#EF5350 不随主题, 暗色下与卡片对比不足)
-        const barColor = z >= 0.3 ? 'var(--state-success-solid)' : z >= -0.3 ? 'var(--state-warning-solid)' : 'var(--state-danger-solid)';
+        const barColor = z >= 0.3 ? 'var(--bar-fill-ok)' : z >= -0.3 ? 'var(--bar-fill-warn)' : 'var(--bar-fill-bad)';
         const scoreColor = z >= 0 ? 'var(--state-success-text)' : 'var(--state-danger-text)';
         return {
           key: d.key, label: d.label,
@@ -228,7 +228,8 @@
     function getAssetName(key) { return assetNames[key] || key; }
     function getRankColor(rank) {
       // V6.10 (C): 排名色改语义/中性令牌, 不再用固定 Tailwind 字面量
-      const colors = ['var(--state-success-solid)', 'var(--state-warning-solid)', 'var(--state-info-solid)', 'var(--text-tertiary)'];
+      // V6.12 (需求轮3·item4): 深实底+白字 -> 浅底深字 (配套 .asset-rank color: --text-primary)
+      const colors = ['var(--state-success-tint)', 'var(--state-warning-tint)', 'var(--state-info-tint)', 'var(--qc-muted)'];
       return colors[rank - 1] || colors[3];
     }
 

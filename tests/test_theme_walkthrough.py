@@ -126,11 +126,13 @@ class TestHardcodedChartColors:
         assert "getCSSVar('--qc-market-up')" in WATCHLIST and "getCSSVar('--qc-market-down')" in WATCHLIST
 
     def test_score_distribution_uses_vars(self):
-        """评分分布色改用主题变量 (暗色可用) — V5.31: 文字色收敛到语义「文字色」令牌
-        (原 --color-success/#f59e0b/--el-danger 在浅底仅 2.0~3.9:1)"""
-        assert "color: 'var(--success-text)'" in WATCHLIST
-        assert 'var(--warning-text)' in WATCHLIST
-        assert "color: 'var(--danger-text)'" in WATCHLIST
+        """评分分布色改用主题变量 (暗色可用) — V6.12 (需求轮3·item3): 条填充收敛到
+        --bar-fill* 柔和档 (原「文字色」令牌当填充过深, 用户反馈「细长条颜色太深」);
+        中间档 (70-79) 用实底 <=62% 与卡片底混色, 全部随明暗主题自适应"""
+        assert "color: 'var(--bar-fill-ok)'" in WATCHLIST
+        assert "color: 'var(--bar-fill-warn)'" in WATCHLIST
+        assert "color: 'var(--bar-fill-bad)'" in WATCHLIST
+        assert 'color-mix(in srgb, var(--state-success-solid) 42%, var(--surface-card))' in WATCHLIST
 
 
 class TestThemesJsAligned:

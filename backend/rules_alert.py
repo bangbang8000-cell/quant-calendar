@@ -59,7 +59,8 @@ def validate_rule(rule_type, threshold):
             parts = [p.strip() for p in str(threshold).split(",")]
             if len(parts) != 2:
                 return f"区间规则需要 low,high 两个值: {threshold!r}"
-            float(parts[0]); float(parts[1])
+            float(parts[0])
+            float(parts[1])
         except (TypeError, ValueError):
             return f"区间阈值必须为数值: {threshold!r}"
         return None

@@ -888,11 +888,12 @@ const scoreDistribution = computed(() => {
     const total = aiHistory.value.length;
     if (total === 0) return [];
     const bins = [
-        { label: '90+', min: 90, max: 100, color: 'var(--success-text)' },
-        { label: '80-89', min: 80, max: 89, color: 'var(--success-text)' },
-        { label: '70-79', min: 70, max: 79, color: 'color-mix(in srgb, var(--success-text) 55%, var(--bg-card))' },
-        { label: '60-69', min: 60, max: 69, color: 'var(--warning-text)' },
-        { label: '<60', min: 0, max: 59, color: 'var(--danger-text)' },
+        // V6.12 (需求轮3·item3): 原用「文字色」当条填充 (过深) → 改柔和条填充档
+        { label: '90+', min: 90, max: 100, color: 'var(--bar-fill-ok)' },
+        { label: '80-89', min: 80, max: 89, color: 'var(--bar-fill-ok)' },
+        { label: '70-79', min: 70, max: 79, color: 'color-mix(in srgb, var(--state-success-solid) 42%, var(--surface-card))' },
+        { label: '60-69', min: 60, max: 69, color: 'var(--bar-fill-warn)' },
+        { label: '<60', min: 0, max: 59, color: 'var(--bar-fill-bad)' },
     ];
     return bins.map(b => {
         const count = aiHistory.value.filter(r => r.result.total_score >= b.min && r.result.total_score <= b.max).length;

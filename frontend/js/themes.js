@@ -271,7 +271,6 @@
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 80, 32),
       '--btn-primary-text-color': hsl(hue, 80, txtL),   // V5.31: 原 32% 在页面底仅 4.33:1
-      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, gL1) + ' 0%, ' + hsl(hue, 76, gL2) + ' 50%, ' + hsl(hue, 70, gL) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, gL2) + ' 0%, ' + hsl(hue, 85, gL1) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (深色前景), 明度按色相自适应到 PANEL_TARGET
       '--primary-text': hsl(hue, 78, txtL),
@@ -355,7 +354,6 @@
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 85, 65),
       '--btn-primary-text-color': hsl(hue, 85, txtD),   // V6.10 (B): 文字按钮 (.el-button--primary.is-text) 对卡片 >=4.6:1
-      '--gradient': 'linear-gradient(135deg, ' + hsl(hue, 80, dL) + ' 0%, ' + hsl(hue, 85, dL2) + ' 50%, ' + hsl(hue, 85, dL3) + ' 100%)',
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 85, dL3) + ' 0%, ' + hsl(hue, 80, dL) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (暗色模式同样走面板令牌, 深浅观感一致)
       '--primary-text': hsl(hue, 85, txtD),
@@ -472,12 +470,10 @@
     if (isDark) {
       var dL = _gradL(45, 0, _rgbTuple(45, 0, 8), 30, 92, false, 4.6);
       var dL2 = Math.min(94, dL + 8), dL3 = Math.min(96, dL + 16);
-      out['--gradient'] = 'linear-gradient(135deg, hsl(45, 0%, ' + dL + '%) 0%, hsl(45, 0%, ' + dL2 + '%) 50%, hsl(45, 0%, ' + dL3 + '%) 100%)';
       out['--gradient-brand'] = 'linear-gradient(135deg, hsl(45, 0%, ' + dL3 + '%) 0%, hsl(45, 0%, ' + dL + '%) 100%)';
     } else {
       var gL = _gradL(45, 0, _gradFgWhite, 14, 62, true, 4.6);
       var gL2 = Math.max(12, gL - 5), gL1 = Math.max(10, gL - 11);
-      out['--gradient'] = 'linear-gradient(135deg, hsl(45, 0%, ' + gL1 + '%) 0%, hsl(45, 0%, ' + gL2 + '%) 50%, hsl(45, 0%, ' + gL + '%) 100%)';
       out['--gradient-brand'] = 'linear-gradient(135deg, hsl(45, 0%, ' + gL2 + '%) 0%, hsl(45, 0%, ' + gL1 + '%) 100%)';
     }
     var panelL = _panelL(45, 0, 14, 0, PANEL_TARGET);

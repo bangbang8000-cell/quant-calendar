@@ -344,6 +344,18 @@
   --state-info-soft-border: color-mix(in srgb, var(--state-info-solid) 32%, transparent);
   --state-info-soft-text: var(--state-info-text);
 
+  /* ═══ V6.12 (需求轮3·item3): 细长条填充档 ═══
+     进度条/占比条在 3-18px 高度上用「饱和实底 / 品牌渐变」视觉分量过重 (用户反馈「颜色太深了」)。
+     统一按「语义实底 62% + 卡片底」混合: 明显更浅, 且随明暗主题自适应 (两个被引用的令牌本身
+     是主题作用域的, 故本条无需暗色覆盖)。仍与轨道保持可辨 —— 柔度与可见度由
+     tests/test_bar_fill_softness.py 守护。内联动态色 (阶段色/评分色) 复用 --bar-mix 保持同一柔度。 */
+  --bar-mix: 62%;
+  --bar-fill: color-mix(in srgb, var(--color-primary) var(--bar-mix), var(--surface-card));
+  --bar-fill-ok: color-mix(in srgb, var(--state-success-solid) var(--bar-mix), var(--surface-card));
+  --bar-fill-warn: color-mix(in srgb, var(--state-warning-solid) var(--bar-mix), var(--surface-card));
+  --bar-fill-info: color-mix(in srgb, var(--state-info-solid) var(--bar-mix), var(--surface-card));
+  --bar-fill-bad: color-mix(in srgb, var(--state-danger-solid) var(--bar-mix), var(--surface-card));
+
   /* ═══ V6.10 (配色专项·A): Element Plus 变量桥 (Light) ═══
      本仓库 frontend/lib/element-plus.css 是「仅亮色」构建, 不含 EP 官方暗色变量集
      (html.dark 作用域 0 处), 因此 EP 的语义色/表面色必须在此显式桥接。

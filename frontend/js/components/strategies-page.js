@@ -38,8 +38,8 @@
                             <!-- 美林时钟 -->
                             <div class="today-cell clickable" @click="currentSubPage = 'merrill'">
                                 <div class="today-cell-label">{{ t('strategies.merrillLabel') }}</div>
-                                <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
-                                <div class="today-merrill-badge" :style="{background: merrillData?.color || 'var(--color-success)'}">{{ merrillData?.name || t('strategies.computing') }}</div>
+                                <!-- V6.12 (需求轮3·item1): 阶段实色作底改为浅色阶段底 (merrillChipStyle) -->
+                                <div class="today-merrill-badge" :style="merrillChipStyle">{{ merrillData?.name || t('strategies.computing') }}</div>
                                 <div class="today-cell-sub" v-if="merrillNext">{{ merrillNext }}</div>
                                 <div class="today-cell-sub" v-else-if="merrillData?.timing?.duration_days != null">已 {{ merrillData.timing.duration_days }} 天 · 剩余 {{ merrillData.timing.days_remaining ?? '—' }} 天</div>
                             </div>
@@ -198,8 +198,8 @@
                             <div class="strategy-title-bar">
                                 <qc-icon name="clock" :size="14" /> 美林时钟 · 经济周期
                             </div>
-                            <!-- V6.6: merrillData.color 后端实时色，保留内联 -->
-                            <span class="strategy-tag-pill" :style="{background: merrillData.color || 'var(--color-success)'}">
+                            <!-- V6.12 (需求轮3·item1): 阶段实色作底改为浅色阶段底 (merrillChipStyle) -->
+                            <span class="strategy-tag-pill" :style="merrillChipStyle">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
                             <!-- V4.5 (FR-4.5.1): 配置就近 -->
@@ -404,16 +404,20 @@
                     <div class="card">
                         <div class="card-title"><qc-icon name="line-chart" :size="14" /> 今日市场行情</div>
                         <div class="market-status">
-                            <span>
+                            <span class="market-status-main">
                                 <span class="color-primary-semibold-600" v-if="marketData.is_trading_day">● 交易日</span>
                                 <span class="color-tertiary" v-else>○ 非交易日</span>
                                 <span class="ml-8-neutral-600" v-if="marketData.in_trading_hours"><qc-icon name="clock" :size="14" /> 交易中</span>
                                 <span class="ml-8-tertiary" v-if="!marketData.in_trading_hours && marketData.is_trading_day">已收盘</span>
+                                <!-- V6.12 (需求轮3·item2): 原独立「普涨行情」渐变横幅信息密度过低
+                                     → 判断文字 + 均值涨跌并入状态行 (无底色块, 仅细分隔线 + 语义色数值) -->
+                                <span class="market-mood" v-if="marketData.market_sentiment">
+                                    {{ marketData.market_sentiment.text }}
+                                    <b v-if="marketData.market_sentiment.avg_pct_chg != null"
+                                       :class="marketData.market_sentiment.avg_pct_chg >= 0 ? 'up' : 'down'">{{ marketData.market_sentiment.avg_pct_chg >= 0 ? '+' : '' }}{{ fmtNum(marketData.market_sentiment.avg_pct_chg) }}%</b>
+                                </span>
                             </span>
                             <span class="text-xs-tertiary">{{ marketData.date }}</span>
-                        </div>
-                        <div class="market-sentiment" v-if="marketData.market_sentiment">
-                            <div class="market-sentiment-text">{{ marketData.market_sentiment.text }}</div>
                         </div>
                         <!-- V5.16 (F4): 中栏指数列表 + 右栏指数详情工作区 (C4-A; 弹窗模式时仅列表全宽) -->
                         <qc-detail-split :enabled="detailSplitEnabled">
@@ -1316,7 +1320,10 @@
         const p = Number(_mcTiming().progress_percent) || 0;
         return {
           width: Math.max(0, Math.min(100, p / mcProgScale.value * 100)) + '%',
-          background: p > 100 ? 'linear-gradient(90deg, ' + _mcColor() + ', var(--color-warning))' : _mcColor()
+          // V6.12 (需求轮3·item3): 阶段色细条同步走柔和条填充档
+          background: p > 100
+            ? 'linear-gradient(90deg, color-mix(in srgb, ' + _mcColor() + ' var(--bar-mix), var(--surface-card)), var(--bar-fill-warn))'
+            : 'color-mix(in srgb, ' + _mcColor() + ' var(--bar-mix), var(--surface-card))'
         };
       });
       const mcAvgMark = Vue.computed(function () { return 100 / mcProgScale.value * 100; });
@@ -1375,8 +1382,22 @@
                  color: 'var(--text-primary)' };
       }
 
+      // V6.12 (需求轮3·item1): 当前阶段徽标 — 浅色阶段底 + 压深文字 + 中等字重
+      //  原实现直接用后端阶段实色 (Material 饱和色) 作底, 在细长徽标上色彩过浓 (用户反馈
+      //  「衰退期色彩太浓、粗体取消」)。改用与美林阶段卡 active 态同源的公式:
+      //  底 = 阶段色 14% 混卡片底; 字 = 阶段色 48% 混前景色 (随明暗主题自适应)。
+      const merrillChipStyle = Vue.computed(function () {
+        const md = (state.merrillData && state.merrillData.value) || state.merrillData || {};
+        const c = md.color || getTimelineStageColor(md.stage) || 'var(--color-primary)';
+        return {
+          background: 'color-mix(in srgb, ' + c + ' 14%, var(--surface-card))',
+          color: 'color-mix(in srgb, ' + c + ' 48%, var(--text-primary))',
+          borderColor: 'color-mix(in srgb, ' + c + ' 26%, transparent)',
+        };
+      });
+
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, todaySignals, merrillConfigOpen,
-        getTimelineStageColor, getTimelineStageName, getTimelineStageDesc,
+        getTimelineStageColor, getTimelineStageName, getTimelineStageDesc, merrillChipStyle,
         // V5.21: 周期演进板
         mcHistView, mcCurrentBand, mcHistoryBands, mcStageKeys, mcMatrix, mcTrailRuns,
         mcProgStyle, mcAvgMark, mcEndRange, mcSegStyle, mcSegTitle, mcMxCellStyle,
