@@ -317,6 +317,12 @@
         if (!v.first || v.n === 0) return;          // 列表为空
         const cur = state.stockDetail && state.stockDetail.value && state.stockDetail.value.stock;
         const inList = (state.stockPool.value || []).some(s => s.code === cur);
+        // 外部显式目标 (全局搜索直开个股): 目标未决时不自动开首条; 正展示外部目标时不回退首条
+        // (搜索股未必在当日股票池 — 否则会被首条覆盖, 如 000001 平安银行)
+        if (state.externalStockActive) {
+          if (!cur && state.externalStockActive(null)) return;
+          if (cur && state.externalStockActive(cur)) return;
+        }
         // 无当前股 或 当前股不在本列表(filter 切换) → 自动打开第一条
         if (!cur || !inList) {
           if (_autoOpened === v.first && cur && inList === false && v.n > 1) return;

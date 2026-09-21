@@ -918,11 +918,23 @@ const allMenuDefs = [
                     menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
                     navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
                     getLoadAiHistory, exportCSV, getShowBatchEvaluate,
-                    openAiFab, toggleSidebar, showStockDetail, getSelectedDate,
+                    openAiFab, toggleSidebar, showStockDetail, getSelectedDate, markExternalStock,
                 });
                 const { searchQuery, searchStocks, onSearchSelect,
                         shortcutHelpVisible, commandPaletteVisible,
                         handleGlobalKeydown } = __keys;
+
+                // ===== 外部显式股票目标 (全局搜索直开个股) =====
+                // 页面「双栏自动打开首条」watch 据此抑制覆盖: 搜索目标未决时不自动开首条,
+                // 正展示外部目标时不回退首条 (搜索股未必在当日股票池, 否则会被首条覆盖)
+                let _externalStock = null;  // { code, ts }
+                function markExternalStock(code) {
+                    _externalStock = { code: code, ts: Date.now() };
+                }
+                function externalStockActive(code) {
+                    return !!(_externalStock && (Date.now() - _externalStock.ts) < 4000
+                        && (code == null || _externalStock.code === code));
+                }
 
                 // ===== 详情弹窗（护栏片段保留: 先弹窗后拉数据, 加载态）=====
                 // V4.2 (FR-4.2.5): 连开竞态保护 — 请求序列号, 旧慢响应不覆盖新选中
@@ -1364,6 +1376,7 @@ const allMenuDefs = [
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
                     handleLogin, handleGuestLogin, switchView, navigateDate, navigateTo,
                     loadDashboardData, loadConsensusData, showStockDetail,
+                    externalStockActive,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
                     watchlist, watchlistCodes, watchlistSearch, watchlistResults, watchlistSearching,

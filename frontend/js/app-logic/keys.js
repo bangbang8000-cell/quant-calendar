@@ -10,7 +10,7 @@
       const { menus, subPageNames, navigateTo, currentPage, currentSubPage, currentView,
               navigateDate, switchView, getLoadDashboardData, refreshCalendarData,
               getLoadAiHistory, exportCSV, getShowBatchEvaluate,
-              openAiFab, toggleSidebar, showStockDetail, getSelectedDate } = ctx;
+              openAiFab, toggleSidebar, showStockDetail, getSelectedDate, markExternalStock } = ctx;
 
       // ===== v1.10 / v3.11(11.2): 全局搜索 =====
       // v3.11: 升级为三域检索——菜单跳页 / 指令动作 / 股票直达详情（复用 command-panel-core 纯逻辑）
@@ -87,6 +87,8 @@
           if (currentPage.value !== 'calendar' || currentSubPage.value !== 'calendar') {
             navigateTo('calendar', 'calendar');
           }
+          // 注册外部显式目标 — 抑制页面「双栏自动打开首条」覆盖
+          if (typeof markExternalStock === 'function') markExternalStock(d.code);
           _openStockFromSearch(d.code, d.name);
           return;
         }
