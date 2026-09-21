@@ -70,8 +70,8 @@ def _load_strategy_index() -> dict:
         return {}
 
 
-def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None) -> list:
-    """分组检索: 股票 / 板块 / 策略 / 菜单。
+def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None, user=None) -> list:
+    """分组检索: 股票 / 板块 / 策略 / 菜单 / 评估历史(需 user)。
 
     Returns:
         groups: [{key, label, items:[{type, code|id, name, subLabel?}]}]
@@ -117,6 +117,24 @@ def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None) -
                 menus.append({"type": "menu", "menuKey": m['key'], "name": m['name'], "subLabel": "页面"})
         if menus:
             groups.append({"key": "menu", "label": "菜单", "items": menus[:max_items]})
+
+    # 6.1.4 (D2): 评估历史实体 — 按用户隔离 (user 缺失时跳过)
+    if user and q_lower:
+        try:
+            from ai_evaluator import ai_evaluator
+            username = user.get("username", "") if isinstance(user, dict) else user
+            hist = ai_evaluator.get_history(username, limit=200) or []
+            eval_hits = []
+            for r in hist:
+                code = (r.get("stock_code") or "").lower()
+                name = r.get("stock_name") or ""
+                if q_lower in code or (name and q_lower in name.lower()):
+                    eval_hits.append({"type": "eval", "code": r.get("stock_code", ""),
+                                      "name": name or r.get("stock_code", ""), "subLabel": "评估历史"})
+            if eval_hits:
+                groups.append({"key": "eval", "label": "评估历史", "items": eval_hits[:max_items]})
+        except Exception:
+            pass
 
     return groups
 
