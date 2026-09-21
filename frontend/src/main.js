@@ -4,6 +4,11 @@
 //   (npm 依赖替代原 CDN script), 业务模块执行前全局就绪
 
 import './globals.js'
+// 6.2.0 (F1): 字体系统落地 — Inter 自托管 (latin 400/500/600/700, 中文回退系统字体), 随构建打包进 dist
+import '@fontsource/inter/latin-400.css'
+import '@fontsource/inter/latin-500.css'
+import '@fontsource/inter/latin-600.css'
+import '@fontsource/inter/latin-700.css'
 import '../js/themes.js'
 import '../js/i18n.js'
 import '../js/locales/zh-CN.js'

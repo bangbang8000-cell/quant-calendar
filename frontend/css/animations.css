@@ -166,5 +166,12 @@
 }
 
 /* v3.8.14: prefers-reduced-motion */
+/* 6.2.0 (S5): 修复截断 — 补全降级规则 (原文件在此块半途结束, 完整规则与 components.css 同源) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
