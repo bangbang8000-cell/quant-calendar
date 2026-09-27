@@ -4129,6 +4129,14 @@ text {
 
 /* ===== AI 每日市场复盘 (v3.17.2 / FR-3.17.2) ===== */
 .market-review-list { display: flex; flex-direction: column; gap: 8px; }
+/* ===== 6.3.1 (T-6.3.1.2): 复盘列表虚拟滚动 (行高常量 60px = 行 52px + 行距 8px) =====
+   卡片高度钉死后行定位不漂移; 虚拟列表内改用绝对定位行, 原 gap 由行高常量承担。 */
+.market-review-list-vlist { display: block; max-height: calc(100vh - 320px); min-height: 200px; }
+.market-review-list-vlist .market-review-row { height: 52px; overflow: hidden; }
+.market-review-list-vlist .market-review-row-main { flex-wrap: nowrap; overflow: hidden; }
+.market-review-list-vlist .market-review-date { line-height: 20px; }
+.market-review-list-vlist .market-review-badge,
+.market-review-list-vlist .market-review-src { line-height: 16px; }
 .market-review-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     padding: 12px 14px; border-radius: var(--qc-radius-medium);

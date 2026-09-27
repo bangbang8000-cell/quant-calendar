@@ -14,8 +14,10 @@ window.__quantModules.shorttermPage.part1 = `
                             </div>
                             <div v-if="dateListLoading" class="color-secondary shortterm-date-empty">加载中…</div>
                             <div v-else-if="dateList.length === 0" class="color-secondary shortterm-date-empty">暂无已抓取日期</div>
-                            <div v-else class="shortterm-date-items">
-                                <div v-for="d in dateList" :key="d.date" class="shortterm-date-item"
+                            <!-- 6.3.1 (T-6.3.1.2): 复盘日历逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 66px, 见 layout.css) -->
+                            <qc-virtual-list v-else class="shortterm-date-items" :items="dateList" :row-height="66">
+                                <template #default="{ item: d }">
+                                <div class="shortterm-date-item"
                                     :class="{ 'is-active': d.date === shortDate }" role="button" tabindex="0"
                                     @click="pickDate(d.date)"
                                     @keydown.enter.prevent="pickDate(d.date)"
@@ -27,7 +29,8 @@ window.__quantModules.shorttermPage.part1 = `
                                         <span>涨停 <b>{{ d.zt_count }}</b></span>
                                     </div>
                                 </div>
-                            </div>
+                                </template>
+                            </qc-virtual-list>
                         </div>
                         <div class="split-divider" data-split-resize></div>
                         <!-- 右看板 (原 overview 内容) -->

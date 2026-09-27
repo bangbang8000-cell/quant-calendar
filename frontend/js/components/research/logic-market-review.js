@@ -1,7 +1,7 @@
 // quant-calendar: 研究页逻辑域 — 市场复盘（AI 每日复盘列表/详情 + 涨跌语义/数据源标签）
 // 6.3.0 (T-6.3.0.6): 自 components/research-page.js 的 setup body 逐字符搬出（保留原缩进）
 // 经 window.__quantModules.researchPage.marketReview.create(ctx) 装配, 由 research-page.js 解构返回
-// ctx 依赖: ref / seq(共享请求序号持有者) / authHeaders(_authHeaders 函数声明, 提升可见)
+// ctx 依赖: ref / seq(共享请求序号持有者) / authHeaders(注册文件 _authHeaders 声明经 ctx 注入)
 (function () {
   window.__quantModules = window.__quantModules || {};
   window.__quantModules.researchPage = window.__quantModules.researchPage || {};
@@ -22,7 +22,7 @@
         marketReviewLoading.value = true;
         marketReviewError.value = false;
         try {
-          const res = await fetch('/api/market/reviews?limit=30', { headers: _authHeaders() }).then(r => r.json());
+          const res = await fetch('/api/market/reviews?limit=30', { headers: authHeaders() }).then(r => r.json());
         if (seq !== _seq.n) return;
           if (res && res.success) {
             marketReviews.value = Array.isArray(res.data) ? res.data : [];
@@ -76,7 +76,7 @@
           const url = date
             ? '/api/market/review?date=' + encodeURIComponent(date)
             : '/api/market/review';
-          const res = await fetch(url, { headers: _authHeaders() }).then(r => r.json());
+          const res = await fetch(url, { headers: authHeaders() }).then(r => r.json());
         if (seq !== _seq.n) return;
           if (res && res.success) {
             marketReviewDetail.value = res.data;

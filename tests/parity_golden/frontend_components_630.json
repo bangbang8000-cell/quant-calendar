@@ -1293,6 +1293,7 @@
       "market-review-index-grid",
       "market-review-index-name",
       "market-review-list",
+      "market-review-list-vlist",
       "market-review-row",
       "market-review-row-main",
       "market-review-section",
@@ -1545,8 +1546,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 63216,
-    "template_sha": "2d395b12058cf6f9"
+    "template_len": 63882,
+    "template_sha": "73003c4699680ce0"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1785,8 +1786,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 32221,
-    "template_sha": "c2c2e176083d913e"
+    "template_len": 32462,
+    "template_sha": "9ca2e06f7dffa103"
   },
   "Sidebar": {
     "classes": [

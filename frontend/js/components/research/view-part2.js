@@ -242,8 +242,10 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 </div>
                                 <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
                                 <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>
-                                <div v-else class="market-review-date-items">
-                                    <div v-for="item in marketReviews" :key="item.date" class="market-review-date-item"
+                                <!-- 6.3.1 (T-6.3.1.2): 复盘日期逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 66px, 见 layout.css) -->
+                                <qc-virtual-list v-else class="market-review-date-items" :items="marketReviews" :row-height="66">
+                                    <template #default="{ item }">
+                                    <div class="market-review-date-item"
                                          :class="{ 'is-active': item.date === selectedReviewDate }" role="button" tabindex="0"
                                          @click="toggleMarketReviewDate(item.date)"
                                          @keydown.enter.prevent="toggleMarketReviewDate(item.date)"
@@ -255,7 +257,8 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                             <span>涨停 <b>{{ item.summary && item.summary.zt_count != null ? item.summary.zt_count : '—' }}</b></span>
                                         </div>
                                     </div>
-                                </div>
+                                    </template>
+                                </qc-virtual-list>
                             </div>
                             <div class="split-divider" data-split-resize></div>
                             <!-- 右: 内容 (列表 / 详情) -->
@@ -267,25 +270,30 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                     desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
                                 <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
                                     desc="尚未生成任何市场复盘报告"></qc-state-panel>
-                                <div v-else class="market-review-list">
+                                <div v-else>
                                     <div class="flex-wrap mb-4">
                                         <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>
                                         <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
                                     </div>
-                                    <div v-for="item in marketReviews" :key="item.date" class="market-review-row"
-                                         tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
-                                         @click="openMarketReview(item.date)"
-                                         @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
-                                        <div class="market-review-row-main">
-                                            <span class="market-review-date">{{ item.date }}</span>
-                                            <span class="market-review-badge market-review-ai-badge">AI 解读</span>
-                                            <span v-for="(src, i) in marketReviewSrcEntries(item.data_sources)" :key="i"
-                                                  class="market-review-src" :class="{ 'is-unavailable': src.unavailable }">
-                                                {{ src.label }} {{ src.value }}
-                                            </span>
+                                    <!-- 6.3.1 (T-6.3.1.2): 复盘列表逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 60px, 见 themes.css) -->
+                                    <qc-virtual-list class="market-review-list market-review-list-vlist" :items="marketReviews" :row-height="60">
+                                        <template #default="{ item }">
+                                        <div class="market-review-row"
+                                             tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
+                                             @click="openMarketReview(item.date)"
+                                             @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
+                                            <div class="market-review-row-main">
+                                                <span class="market-review-date">{{ item.date }}</span>
+                                                <span class="market-review-badge market-review-ai-badge">AI 解读</span>
+                                                <span v-for="(src, i) in marketReviewSrcEntries(item.data_sources)" :key="i"
+                                                      class="market-review-src" :class="{ 'is-unavailable': src.unavailable }">
+                                                    {{ src.label }} {{ src.value }}
+                                                </span>
+                                            </div>
+                                            <span class="market-review-arrow">›</span>
                                         </div>
-                                        <span class="market-review-arrow">›</span>
-                                    </div>
+                                        </template>
+                                    </qc-virtual-list>
                                 </div>
                             </template>
 

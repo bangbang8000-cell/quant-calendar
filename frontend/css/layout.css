@@ -586,6 +586,18 @@
   color: var(--text-tertiary, var(--text-secondary));
 }
 .market-review-date-item-meta b { color: var(--text-secondary); font-weight: var(--font-medium, 500); }
+/* ===== 6.3.1 (T-6.3.1.2): 日期中栏虚拟滚动行高固定化 =====
+   两处日期中栏接入 qc-virtual-list 后, 行定位依赖固定行高 (:row-height=66);
+   行内两行文字的行高同时钉死, 保证不同字体/主题下实际高度恒等于常量。 */
+.shortterm-date-items .shortterm-date-item,
+.market-review-date-items .market-review-date-item {
+  height: 66px;
+  overflow: hidden;
+}
+.shortterm-date-items .shortterm-date-item-date,
+.market-review-date-items .market-review-date-item-date { line-height: 22px; }
+.shortterm-date-items .shortterm-date-item-meta,
+.market-review-date-items .market-review-date-item-meta { line-height: 18px; }
 .market-review-split-content { min-width: 0; }
 
 /* ===== V5.16 (F1/F4): 详情内嵌双栏工作区 ===== */

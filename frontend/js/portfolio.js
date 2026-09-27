@@ -166,7 +166,7 @@
         tradeSaving.value = true;
         try {
           const res = await fetch('/api/portfolio/trades', {
-            method: 'POST', headers: _authHeaders(),
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               stock_code: f.stock_code, stock_name: f.stock_name || '',
               action: f.action, price: price, quantity: qty,

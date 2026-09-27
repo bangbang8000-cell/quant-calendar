@@ -172,6 +172,51 @@ def _test_cases():
         yield fname, src
 
 
+# ─── 6.3.1 (T-6.3.1.2): 下划线本地助手不得跨文件裸调用 ─────────────
+# 6.3.0 分治把 setup body 逐字符搬进 components/<page>/ 片段后，片段里仍调用
+# 注册文件作用域的 `_authHeaders()`（片段实际拿到的是 ctx 注入的 authHeaders）
+# → 运行时 ReferenceError，页面取数全挂。上面的 `IDENT.xxx` 成员链审计看不见
+# 裸调用，故按「下划线前缀 = 文件本地助手」约定单独守卫。
+_LOCAL_CALL_RE = re.compile(r'(?<![\w.$])(_[A-Za-z]\w*)\s*\(')
+
+
+def _local_call_missing(src):
+    """本文件调用了但未在本文件声明的下划线助手名"""
+    names = set(_LOCAL_CALL_RE.findall(_strip_comments(_strip_strings(src))))
+    declared = set(re.findall(r'\bfunction\s+(_[A-Za-z]\w*)', src))
+    declared |= set(re.findall(r'\b(?:const|let|var)\s+(_[A-Za-z]\w*)\s*=', src))
+    return sorted(names - declared)
+
+
+def _iter_all_sources():
+    for root, dirs, files in os.walk(JS_DIR):
+        dirs[:] = [d for d in dirs if d not in ('node_modules', 'dist', 'lib', 'vendor')]
+        for f in sorted(files):
+            if f.endswith('.js'):
+                p = os.path.join(root, f)
+                yield (os.path.relpath(p, JS_DIR).replace('\\', '/'),
+                       open(p, encoding='utf-8').read())
+
+
+def test_local_helper_calls_declared_in_same_file():
+    """前端源码里 `_xxx(` 助手调用必须同文件有声明（否则跨文件裸调用 ReferenceError）"""
+    violations = {f: m for f, m in
+                  ((f, _local_call_missing(s)) for f, s in _iter_all_sources()) if m}
+    assert not violations, (
+        "以下文件调用了未在本文件声明的下划线助手（跨文件作用域不可见，片段须改用 ctx 注入名）:\n" +
+        '\n'.join("  %s: %s" % (f, ", ".join(m)) for f, m in sorted(violations.items()))
+    )
+
+
+def test_local_helper_gate_self_check():
+    """门禁自检：跨文件裸调用命中；本文件声明的助手与注释中的示例不误报"""
+    assert _local_call_missing("async function f() { return _authHeaders(); }") == ['_authHeaders']
+    assert _local_call_missing("function _authHeaders() { return {}; }\nf(_authHeaders());") == []
+    assert _local_call_missing("const _seq = { n: 0 };\n_seq.n++;") == []
+    assert _local_call_missing("// _authHeaders() 已迁走\n/* _saveState() */") == []
+    assert _local_call_missing("ElMessage.error('_maskSecret(');") == []
+
+
 def test_domain_modules_no_missing_deps():
     """每个 create(deps) 域模块: 所有 `IDENT.xxx` 引用均有声明 (零 ReferenceError 隐患)"""
     failures = []

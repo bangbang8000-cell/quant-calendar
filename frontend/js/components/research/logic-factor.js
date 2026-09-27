@@ -37,7 +37,7 @@
         sweepLoading.value = true; sweepResult.value = null; sweepMessage.value = '';
         try {
           const res = await fetch('/api/strategies/' + activeStrategyId.value + '/sweep', {
-            method: 'POST', headers: _authHeaders(), body: JSON.stringify({ param_grid: grid }),
+            method: 'POST', headers: authHeaders(), body: JSON.stringify({ param_grid: grid }),
           }).then(function (r) { return r.json(); });
           if (res && Array.isArray(res.results)) {
             sweepResult.value = res.results;
