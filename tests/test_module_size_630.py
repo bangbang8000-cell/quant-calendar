@@ -26,7 +26,6 @@ LIMIT = 700
 
 # 待拆分清单：路径 -> 承接该文件的拆分任务号（拆分完成后必须移除）
 PENDING_SPLIT = {
-    "frontend/js/watchlist.js": "T-6.3.0.8",
     "frontend/js/components/ai-page.js": "T-6.3.0.9",
     "frontend/js/components/shortterm-page.js": "T-6.3.0.9",
     "frontend/js/app-logic.js": "T-6.3.0.10",

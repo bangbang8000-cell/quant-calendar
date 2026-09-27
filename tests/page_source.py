@@ -45,6 +45,14 @@ _LOGIC_SIDECARS = {
         "frontend/js/components/research/logic-factor.js",
         "frontend/js/components/research/logic-history.js",
     ],
+    # 无模板的纯逻辑域模块（整份 setup body 分治）：片段顺序与装配顺序无关，
+    # 只要保证「同名前缀唯一」——历史用例以 wl.index(...) 取首个命中即可。
+    "frontend/js/watchlist.js": [
+        "frontend/js/watchlist/history.js",
+        "frontend/js/watchlist/list.js",
+        "frontend/js/watchlist/analytics.js",
+        "frontend/js/watchlist/realtime.js",
+    ],
 }
 
 _texts = None

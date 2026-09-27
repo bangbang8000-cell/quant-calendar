@@ -8,6 +8,10 @@ getCSSVar()||'#hex' 兜底并标注 qc-allow-hardcode。
 """
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,6 +19,10 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def _read(rel):
     p = os.path.join(BASE, rel)
     assert os.path.exists(p), f'missing {rel}'
+    # 6.3.0 结构分治: 页面/域模块下沉片段 — 可重建的走页源码重建
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(p, encoding='utf-8') as f:
         return f.read()
 

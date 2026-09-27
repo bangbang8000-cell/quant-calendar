@@ -47,6 +47,11 @@ import '../js/request-core.js'
 // 6.1.7 (G5): 前端 state 域注册表 (theme/auth/prefs/ui/page 域化 + 快照对拍)
 import '../js/state-registry-core.js'
 import '../js/stock-pool.js'
+// 6.3.0 (T-6.3.0.8): 自选/评估历史域分治片段 — 须先于 watchlist.js 加载（create(ctx) 装配）
+import '../js/watchlist/history.js'
+import '../js/watchlist/list.js'
+import '../js/watchlist/analytics.js'
+import '../js/watchlist/realtime.js'
 import '../js/watchlist.js'
 import '../js/portfolio.js'
 import '../js/backtest-core.js'

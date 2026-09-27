@@ -34,20 +34,29 @@ ALLOWED = {
     # CDN / 运行时全局
     '__quantModules', 'echarts', 'ElMessage', 'ElMessageBox', 'ElMessage', 'ElLoading',
     'ECharts', 'Vue', 'ElementPlus',
+    # 浏览器 Performance API (app-logic/market.js 的性能标记)
+    'performance',
 }
+
+# 6.3.0 (T-6.3.0.8): 结构分治后片段以 create(ctx) 工厂下沉到子目录
+# (watchlist/ research/ strategies/ system/ app-logic/)，审计必须递归覆盖，
+# 否则「缺 dep → ReferenceError 永久转圈」的门禁会因拆分而静默失效。
+_CREATE_RE = re.compile(r'create\s*\(\s*(?:deps|ctx)\s*\)')
 
 
 def _domain_module_files():
-    """含 __quantModules + create(deps) 工厂模式的域模块 (排除 app-logic 编排层/组件)"""
+    """含 __quantModules + create(deps|ctx) 工厂模式的域模块 (递归扫描 js/)"""
     out = []
-    for f in sorted(os.listdir(JS_DIR)):
-        if not f.endswith('.js'):
-            continue
-        p = os.path.join(JS_DIR, f)
-        src = open(p, encoding='utf-8').read()
-        if 'window.__quantModules' in src and 'create(deps)' in src:
-            out.append((f, src))
-    return out
+    for root, dirs, files in os.walk(JS_DIR):
+        dirs[:] = [d for d in dirs if d not in ('node_modules', 'dist', 'lib', 'vendor')]
+        for f in sorted(files):
+            if not f.endswith('.js'):
+                continue
+            p = os.path.join(root, f)
+            src = open(p, encoding='utf-8').read()
+            if 'window.__quantModules' in src and _CREATE_RE.search(src):
+                out.append((os.path.relpath(p, JS_DIR).replace('\\', '/'), src))
+    return sorted(out)
 
 
 def _add_params(declared, params):
