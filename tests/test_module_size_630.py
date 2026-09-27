@@ -26,10 +26,6 @@ LIMIT = 700
 
 # 待拆分清单：路径 -> 承接该文件的拆分任务号（拆分完成后必须移除）
 PENDING_SPLIT = {
-    "backend/ai_eval/_eval.py": "T-6.3.0.4",
-    "backend/scheduler/_core.py": "T-6.3.0.4",
-    "backend/data_sources/_manager.py": "T-6.3.0.4",
-    "backend/api/v1/strategy_research.py": "T-6.3.0.4",
     "frontend/js/components/system-page.js": "T-6.3.0.5",
     "frontend/js/components/research-page.js": "T-6.3.0.6",
     "frontend/js/components/strategies-page.js": "T-6.3.0.7",

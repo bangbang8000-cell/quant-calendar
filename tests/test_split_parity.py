@@ -110,11 +110,17 @@ def test_mixin_structure(mod, cls):
 
 
 def test_mixin_mro_order():
-    """MRO: History > Eval > Models > Base (方法互调可解析)"""
-    assert AIEvaluator.__mro__[1].__name__ == "AIHistoryMixin"
-    assert AIEvaluator.__mro__[2].__name__ == "AIEvalMixin"
-    assert AIEvaluator.__mro__[3].__name__ == "AIModelsMixin"
-    assert AIEvaluator.__mro__[4].__name__ == "AIEvalBase"
+    """MRO: History > Eval > Models > Base (方法互调可解析)
+
+    6.3.0 (T-6.3.0.4): _eval 二次拆分为 Core/Builtin/LLM/Fetch 子 Mixin,
+    子 Mixin 紧随 AIEvalMixin 之后、仍先于 AIModelsMixin, 分组次序不变。
+    """
+    names = [c.__name__ for c in AIEvaluator.__mro__]
+    assert names[1] == "AIHistoryMixin"
+    assert names[2] == "AIEvalMixin"
+    sub = ["AIEvalCoreMixin", "AIEvalBuiltinMixin", "AIEvalLLMMixin", "AIEvalFetchMixin"]
+    assert names[3:3 + len(sub)] == sub, names
+    assert names[3 + len(sub):] == ["AIModelsMixin", "AIEvalBase", "object"], names
 
 
 # ─── 3. import 兼容对拍 ──────────────────────────────────────
