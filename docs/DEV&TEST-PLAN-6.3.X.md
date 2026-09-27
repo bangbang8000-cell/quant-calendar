@@ -19,7 +19,7 @@
 | 后端规模 | 顶层模块 100 个；接口端点约 298 个，分布 40 个路由文件 |
 | 后端大文件 | `ai_eval/_eval.py` 1161 / `scheduler/_core.py` 922 / `data_sources/_manager.py` 867 |
 | 前端大文件 | `system-page.js` 1732 / `research-page.js` 1608 / `app-logic.js` 1444 / `strategies-page.js` 1355 / `watchlist.js` 1228 / `ai-page.js` 1029 / `shortterm-page.js` 1002 |
-| 静默异常 | 32 处 `except ...: pass`，19 个文件；`factor_engine.py` 5 处、`strategy_sdk/templates.py` 4 处 |
+| 静默异常 | 31 处 `except ...: pass`，20 个文件；`factor_engine.py` 5 处（口径：`tests/test_silent_except_630.py` 的 AST 扫描，except 分支体仅一个 `pass`） |
 | 原生弹窗 | 前端 `alert` / `confirm` / `prompt` 共 9 处，全部在 `research-page.js` |
 | 虚拟滚动 | `qc-virtual-list` 实际消费集中在 `ai-page.js`（7 处）与股票列表 |
 | i18n | 5 语（zh-CN / en / ja / ko / zh-TW） |
@@ -38,7 +38,7 @@
 | 任务 | 内容 | 涉及文件 |
 |---|---|---|
 | T-6.3.0.1 | 对拍基座：抽出通用对拍工具（纯函数快照 + Node 侧模块对拍），迁移并复用 617 的 17 项用例 | tests/behavior_parity.py、tests/test_behavior_parity_630.py |
-| T-6.3.0.2 | 静默异常分级治理：32 处逐条判定为「有意忽略 / 可降级 / 应暴露」，前两类补原因注释，第三类改显式处理并记录日志 | backend 下 19 个文件（重点 factor_engine.py、strategy_sdk/templates.py、data_sources/_manager.py） |
+| T-6.3.0.2 | 静默异常分级治理：31 处逐条判定为「有意忽略 / 可降级 / 应暴露」，前两类补原因注释，第三类改显式处理并记录日志 | backend 下 20 个文件（重点 factor_engine.py、data_sources/_manager.py、scheduler/） |
 | T-6.3.0.3 | 结构与异常门禁：单文件行数上限 + 新增静默异常为 0，白名单需带原因 | tests/test_module_size_630.py、tests/test_silent_except_630.py |
 | T-6.3.0.4 | 后端模块拆分：按职责切分子模块，原导入路径保留薄再导出 | backend/ai_eval/、backend/scheduler/、backend/data_sources/ |
 | T-6.3.0.5 | 前端拆分一：系统页 | frontend/js/components/system-page.js → frontend/js/components/system/ |

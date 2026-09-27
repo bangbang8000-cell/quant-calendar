@@ -19,7 +19,7 @@
 
 - 前端有 7 个源文件超过 1000 行，最大 `frontend/js/components/system-page.js` 1732 行，其后为 `research-page.js` 1608、`app-logic.js` 1444、`strategies-page.js` 1355、`watchlist.js` 1228、`ai-page.js` 1029、`shortterm-page.js` 1002。
 - 后端有 3 个模块超过 850 行：`backend/ai_eval/_eval.py` 1161、`backend/scheduler/_core.py` 922、`backend/data_sources/_manager.py` 867。
-- 后端存在 32 处 `except ...: pass`，分布在 19 个文件，其中 `factor_engine.py` 5 处、`strategy_sdk/templates.py` 4 处。
+- 后端存在 31 处 `except ...: pass`，分布在 20 个文件，其中 `factor_engine.py` 5 处（口径：`tests/test_silent_except_630.py` 的 AST 扫描，except 分支体仅一个 `pass`）。
 - 前端 `research-page.js` 仍有 9 处原生 `alert` / `confirm`。
 - 长列表虚拟滚动实际只落在 `ai-page.js`（7 处）与股票列表，研究与自选列表未覆盖。
 
@@ -33,7 +33,7 @@
 |---|---|---|
 | 系统架构 | 后端 100 个顶层模块；前后端各有若干超大文件同时承载视图、状态与取数职责 | 边界可辨识，但核心文件已长成单体 |
 | 软件设计 | 6.1.7 已引入域注册表（`frontend/js/state-registry-core.js`）与任务队列优先/去重；分层约定尚未落到全部页面 | 约定存在，执行不均 |
-| 程序实现 | 后端 32 处静默吞异常；`print(` 仅剩 4 处（脚本类）；前端原生弹窗 9 处 | 局部有盲区，整体卫生度好 |
+| 程序实现 | 后端 31 处静默吞异常；`print(` 仅剩 4 处（脚本类）；前端原生弹窗 9 处 | 局部有盲区，整体卫生度好 |
 | 测试体系 | 345 个测试文件；CI 门禁覆盖体积、版本治理、令牌、对比度、虚拟滚动、热点 P95 | 门禁密集，但缺少「结构类」门禁 |
 | UI/UX 设计 | 6.2.X 已收敛字体、字号、菜单、弹窗宽度、动效、玻璃与徽标 | 视觉一致性达标 |
 | 用户体验 | 5 语 i18n；快捷键帮助、命令面板、右键菜单、会话恢复已具备；部分长列表与状态反馈不齐 | 主流程顺畅，边角仍不齐 |
