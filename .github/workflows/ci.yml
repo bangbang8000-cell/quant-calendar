@@ -126,6 +126,8 @@ jobs:
           python -m pytest tests/test_scaffold.py --cov=scripts_scaffold --cov-report=term --cov-fail-under=80 -m "not e2e"
       - name: "6.3.1 拆分产物覆盖率门禁 (T-6.3.1.7: 结构分治产出的片段须有装配/注册/引用, 无孤儿文件)"
         run: python -m pytest tests/test_coverage_gate_631.py -q -m "not e2e"
+      - name: "6.3.2 效率与可靠性门禁 (T-6.3.2.1~.4: 日志口径/备份校验调度/告警联动/日志轮转)"
+        run: python -m pytest tests/test_logging_consistency_632.py tests/test_backup_schedule_632.py             tests/test_alert_linkage_632.py tests/test_log_rotation_632.py -q -m "not e2e"
 
   # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:

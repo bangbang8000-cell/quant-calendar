@@ -7,6 +7,7 @@
 import json
 import re
 import logging
+import time
 from typing import Dict
 from datetime import datetime
 from ai_models import ModelProvider
@@ -18,12 +19,29 @@ logger = logging.getLogger(__name__)
 
 class AIEvalLLMMixin:
     """AIEvaluator LLM 调用与提示词构造 Mixin(_eval) — 自 _eval.py 拆分"""
+    @staticmethod
+    def _emit_ai_event(stock_code, vendor, model_name, ok, latency_ms, note=''):
+        """6.3.2 (T-6.3.2.1): AI 调用路径结构化字段 — 单行 JSON 事件 (best-effort)
+
+        字段: stock_code/vendor/model/ok/latency_ms/note, 供调用次数/耗时/失败率统计。
+        """
+        try:
+            import logging as _lg
+            import structured_log
+            structured_log.log_event(
+                logging.getLogger(__name__), _lg.INFO, "ai_call",
+                stock_code=stock_code, vendor=vendor, model=model_name,
+                ok=bool(ok), latency_ms=round(latency_ms, 2), note=note)
+        except Exception as _e:
+            logging.getLogger(__name__).warning("AI 结构化事件写入失败 (忽略): %s", _e)
+
     def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
         """
         调用指定模型进行评估，返回 (parsed_result, raw_response_text)
 
         strategy: 'default' | 'trend' | 'value' | 'short_term'
         """
+        _t0 = time.monotonic()
         data_section = self._build_data_prompt(market_data)
 
         # 策略特定的权重调整提示
@@ -90,9 +108,15 @@ class AIEvalLLMMixin:
                     llm_result = json.loads(json_match.group())
                     if "provider" not in llm_result:
                         llm_result["provider"] = model.provider
+                    self._emit_ai_event(stock_code, getattr(model, "provider", ""),
+                                        getattr(model, "model", ""), True,
+                                        (time.monotonic() - _t0) * 1000, note="reasoning 兜底")
                     return llm_result, raw_response
                 except json.JSONDecodeError:
                     logger.warning('ai_evaluator:1013 静默异常 (json.JSONDecodeError)')
+            self._emit_ai_event(stock_code, getattr(model, "provider", ""),
+                                getattr(model, "model", ""), False,
+                                (time.monotonic() - _t0) * 1000, note="reasoning 无法解析")
             raise ValueError(f"LLM 返回无法解析为 JSON: {reasoning[:200]}")
 
         # 解析 JSON 响应
@@ -101,8 +125,14 @@ class AIEvalLLMMixin:
             llm_result = json.loads(json_match.group())
             if "provider" not in llm_result:
                 llm_result["provider"] = model.provider
+            self._emit_ai_event(stock_code, getattr(model, "provider", ""),
+                                getattr(model, "model", ""), True,
+                                (time.monotonic() - _t0) * 1000)
             return llm_result, raw_response
         else:
+            self._emit_ai_event(stock_code, getattr(model, "provider", ""),
+                                getattr(model, "model", ""), False,
+                                (time.monotonic() - _t0) * 1000, note="content 无法解析")
             raise ValueError(f"LLM 返回无法解析为 JSON: {content[:200]}")
     def _calibrate_decision(self, llm_result: Dict, market_data: Dict, stock_code: str, username: str = 'default') -> Dict:
         """对 LLM 评估结果进行后处理校准，防止单日涨跌导致的过度切换。

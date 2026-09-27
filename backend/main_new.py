@@ -50,6 +50,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# V5.0.9 T-5.0.96: 结构化日志 — 追加 JSON 文件 handler (app.json.log, 按日轮转保留 30 份)
+# 6.3.2 (T-6.3.2.4): 复核应用日志轮转 — basicConfig(app.log) + JSON handler(app.json.log)
+# 均按日轮转; 重复启动不重复安装 (handler 幂等去重见 structured_log.install_json_handler)
+try:
+    structured_log.install_json_handler(LOG_DIR)
+except Exception as e:
+    logger.warning("结构化日志 handler 安装失败 (忽略): %s", e)
+
 # ===== 应用生命周期管理 (v1.10: lifespan 替代 on_event) =====
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -129,7 +137,7 @@ async def lifespan(app: FastAPI):
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
 # V6.3 (PRD-6.3): 保留本地版本号 6.3.0 — 导航形态配置化(subnav/tree/toptab) + 顶部栏容器化 + 页签圆角矩形化 + 评估分析命名修复
-APP_VERSION = "6.3.1"  # 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
+APP_VERSION = "6.3.2"  # 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
 # V5.17.3: 全站文字/字体/字号/颜色优化 — 亮暗两套对比度达标 + 字号层级提升 + EP字体统一
 
 # 创建 FastAPI 应用

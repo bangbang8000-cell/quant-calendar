@@ -2,6 +2,7 @@
 # ruff: noqa: F405
 # -*- coding: utf-8 -*-
 """V5.0.9 (T-5.0.93): 数据源健康/路由/告警 (拆自 data_sources.py)"""
+import logging
 import time
 from datetime import datetime
 
@@ -56,6 +57,18 @@ def record_call(source, success, elapsed_ms, rate_limited=False):
         _resume_source(source)
     elif not rate_limited and s['consecutive_failures'] >= ROUTE_FAIL_THRESHOLD:
         _pause_source(source, f"连续 {s['consecutive_failures']} 次失败")
+    # 6.3.2 (T-6.3.2.1): 数据源路径结构化字段 — 每次调用输出单行 JSON 事件
+    try:
+        import logging as _lg
+        import structured_log
+        structured_log.log_event(
+            logging.getLogger(__name__), _lg.INFO, "data_source_call",
+            source=source, ok=bool(success), rate_limited=bool(rate_limited),
+            latency_ms=round(elapsed_ms, 2),
+            consecutive_failures=s['consecutive_failures'],
+        )
+    except Exception as _e:
+        logging.getLogger(__name__).warning("数据源结构化事件写入失败 (忽略): %s", _e)
     return s
 
 def _age_hours(iso_ts, now=None):

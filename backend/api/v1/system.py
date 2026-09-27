@@ -178,6 +178,13 @@ async def system_health_detail(user: dict = Depends(get_current_active_user)):
         logger.warning("备份状态读取失败 (降级)", exc_info=True)
         result["backup_last_success"] = None
         result["backup_count"] = 0
+    # 6.3.2 (T-6.3.2.2): 最近一次备份校验结果 (调度器备份后自动校验写入)
+    try:
+        from scheduler import scheduler
+        result["backup_verify"] = scheduler._backup_verify
+    except Exception:
+        logger.warning("备份校验状态读取失败 (降级)", exc_info=True)
+        result["backup_verify"] = None
     # 磁盘剩余空间
     result["disk"] = _get_disk()
     return result

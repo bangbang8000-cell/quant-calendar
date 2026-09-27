@@ -326,6 +326,7 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
     async def daily_backup_task(self):
         """v3.3.0-T7: 每日自动备份数据库 (凌晨 3:05)
         v3.17.12 (FR-3.17.12): 失败 → 飞书告警 + 任务状态/指标记录
+        6.3.2 (T-6.3.2.2): 备份产出后自动校验 (verify_sqlite_backup), 校验失败也告警
         """
         while self.running:
             now = datetime.now()
@@ -338,6 +339,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                         self._record_task_run("daily_backup", True, name)
                         self._record_freshness("backup", detail=name)
                         self._backup_failures = 0
+                        # 6.3.2 (T-6.3.2.2): 备份后自动校验 (首期只告警不阻断后续任务)
+                        self._verify_backup_after_backup(name)
                     else:
                         logger.warning("💾 每日自动备份失败")
                         self._record_task_run("daily_backup", False, "backup_db 返回空")
@@ -655,6 +658,7 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
         asyncio.create_task(self.file_watch_task())
         asyncio.create_task(self.daily_backup_task())
         asyncio.create_task(self.health_check_task())
+        asyncio.create_task(self.freshness_alert_task())  # 6.3.2 (T-6.3.2.3): 健康与新鲜度联动告警
         asyncio.create_task(self.error_alert_task())
         asyncio.create_task(self.daily_market_review_task())
         # V5.2.0 T-5.2.10: 每日 16:05 短线三池/龙虎榜抓取入库

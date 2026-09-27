@@ -31,6 +31,10 @@ class SchedulerRecordsMixin:
         self.task_status = {}
         self._disk_alert_date = None  # 磁盘告警每日节流
         self._backup_failures = 0  # 备份连续失败计数
+        self._backup_verify = None  # 6.3.2 (T-6.3.2.2): 最近一次备份校验结果 (供 health-detail)
+        # 6.3.2 (T-6.3.2.3): 健康与新鲜度联动告警每日节流 (asset_id/task -> date)
+        self._freshness_alert_date = {}
+        self._task_alert_date = {}
         # V4.9.2 (P1): 策略自动执行进度快照 (供 /api/strategies/execution/status)
         self.execution_progress = None
     def _record_task_run(self, task: str, success: bool, detail: str = ''):

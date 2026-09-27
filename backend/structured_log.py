@@ -58,13 +58,21 @@ class JsonFormatter(logging.Formatter):
 def install_json_handler(log_dir: str, level=logging.INFO,
                          logger: logging.Logger = None) -> logging.Handler:
     """追加 JSON 文件 handler → <log_dir>/app.json.log (按日轮转, 保留 30 份)。
-    返回 handler; 重复调用同文件会追加到同一 logger, 调用方负责去重。"""
+    返回 handler; 幂等 — 目标 logger 已挂同文件 handler 时不重复追加 (6.3.2 T-6.3.2.4)。"""
     os.makedirs(log_dir, exist_ok=True)
+    target = logger if logger is not None else logging.getLogger()
+    log_path = os.path.join(log_dir, "app.json.log")
+    # 幂等去重: 已挂指向同一日志文件的 handler 则不重复追加
+    for h in target.handlers:
+        try:
+            if getattr(h, "baseFilename", None) == os.path.abspath(log_path):
+                return h
+        except Exception:
+            continue
     handler = TimedRotatingFileHandler(
-        os.path.join(log_dir, "app.json.log"),
+        log_path,
         when="midnight", backupCount=30, encoding="utf-8")
     handler.setLevel(level)
     handler.setFormatter(JsonFormatter())
-    target = logger if logger is not None else logging.getLogger()
     target.addHandler(handler)
     return handler

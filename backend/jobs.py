@@ -197,6 +197,24 @@ def _update_store(job_id, mutator):
         return True
 
 
+def _log_job_event(job, status):
+    """6.3.2 (T-6.3.2.1): 任务队列路径结构化字段 — 每任务终态输出单行 JSON 事件
+
+    structured_log.log_event 输出 ts/level/logger/event 固定字段 + 业务字段
+    (job_id/task_type/status/retries), 供日志检索与用量统计消费。
+    """
+    try:
+        import logging as _lg
+        import structured_log
+        structured_log.log_event(logger, _lg.INFO, "job_run",
+                                 job_id=job.get("job_id"),
+                                 task_type=job.get("task_type"),
+                                 status=status,
+                                 retries=job.get("retries", 0))
+    except Exception as e:
+        logger.warning("任务结构化事件写入失败 (忽略): %s", e)
+
+
 def _run_one(job):
     task_type = job['task_type']
     fn = _registry.get(task_type)
@@ -291,6 +309,10 @@ def _worker_loop():
             _run_one(job)
         except Exception:
             logger.exception('worker 内部异常: %s', job.get('job_id'))
+        finally:
+            # 6.3.2 (T-6.3.2.1): 终态结构化事件 (成功/失败/取消/重试回 pending)
+            _st = (_read().get(job.get('job_id')) or {}).get('status', 'unknown')
+            _log_job_event(job, _st)
 
 
 def _wake_worker():
