@@ -6,12 +6,20 @@
 - 组合收益曲线已升级净值+回撤双轴 (T-5.3.2.3 复用)
 """
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, "frontend")
 
 
 def _read(rel):
+    # 6.3.0 结构分治: 页面模板/逻辑域可能下沉子目录 — 读取走页源码重建（重建结果与拆分前一致）
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND, rel), encoding="utf-8") as f:
         return f.read()
 

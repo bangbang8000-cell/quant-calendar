@@ -17,12 +17,17 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
+
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 FP = os.path.join(ROOT, 'frontend', 'js', 'components', 'research-page.js')
 
 
 def _src():
-    return open(FP, encoding='utf-8').read()
+    # 6.3.0 (T-6.3.0.6): 研究页结构分治 — 逻辑域下沉 components/research/, 读取走页源码重建
+    # (注册文件模板引用还原 + 域片段前置, 正则与固定缩进断言保持有效)
+    return page_source.read(FP)
 
 
 def _func_body(name):

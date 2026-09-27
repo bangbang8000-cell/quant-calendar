@@ -154,12 +154,17 @@ def test_strategies_api_warn():
 
 
 def test_research_seq_fixed():
-    """T23: 5 处 finally seq 引用均补声明"""
+    """T23: 5 处 finally seq 引用均补声明
+
+    6.3.0 (T-6.3.0.6): 研究页逻辑域下沉 components/research/ — 页面级请求序号由单个
+    ``let _reqSeq`` 改为持有者对象 ``const _seq = { n: 0 }``（各域共用同一对象，语义等价），
+    文本由 ``++_reqSeq`` 变为 ``++_seq.n``；本用例读取的是「注册文件 + 域片段」的页源码。
+    """
     src = _read_f("js/components/research-page.js")
     for fn in ("runFactorIc", "runFactorLayer", "runFactorDetail", "runResearchCompare", "exportResearchHistory"):
-        assert fn + "() {\n        const seq = ++_reqSeq" in src, f"{fn} 应补 const seq 声明"
+        assert fn + "() {\n        const seq = ++_seq.n" in src, f"{fn} 应补 const seq 声明"
     # 无裸引用 (seq 声明数 ≥ finally 引用数)
-    assert src.count("const seq = ++_reqSeq") >= src.count("if (seq === _reqSeq)"), "seq 声明数应不少于引用数"
+    assert src.count("const seq = ++_seq.n") >= src.count("seq === _seq.n"), "seq 声明数应不少于引用数"
 
 
 def test_research_warn_ui():

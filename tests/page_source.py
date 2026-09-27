@@ -33,6 +33,20 @@ JS_ROOT = os.path.join(FRONTEND, "js")
 # ``template:`` 后到行尾/逗号（拆分后为单行引用，故取到逗号即可）
 _TPL_HEAD_RE = re.compile(r"template:\s*([^,\n]+)")
 
+# 6.3.0 (T-6.3.0.6~.9): 页面注册文件的逻辑域片段（注册文件 setup body 的内聚域下沉）。
+# 历史用例把「页面源码」当作单文件来断言（标识符存在性 / 固定缩进函数体 / 结构约定），
+# 分治后这些断言的对象实际是「注册文件 + 域片段」。故按表中顺序把片段**前置**拼接：
+#   - 前置可保证注册文件的 ``setup()`` / ``return {`` 切片约定不受片段影响
+#     （见 test_frontend_consistency.test_page_components_template_calls_resolve）
+#   - 片段保留原缩进，故依赖固定缩进的正则（如 ``\n      }``）仍可命中
+_LOGIC_SIDECARS = {
+    "frontend/js/components/research-page.js": [
+        "frontend/js/components/research/logic-market-review.js",
+        "frontend/js/components/research/logic-factor.js",
+        "frontend/js/components/research/logic-history.js",
+    ],
+}
+
 _texts = None
 _resolver = None
 
@@ -71,6 +85,19 @@ def abspath(rel):
     return os.path.normpath(os.path.join(FRONTEND, p))
 
 
+def _rel_key(path):
+    """绝对路径 → 仓库根相对 posix 路径（用于查片段表）"""
+    return os.path.relpath(path, BASE).replace("\\", "/")
+
+
+def _sidecar_prefix(rel_key, texts):
+    """页面注册文件的逻辑域片段拼接（无片段时返回空串）"""
+    names = _LOGIC_SIDECARS.get(rel_key)
+    if not names:
+        return ""
+    return "".join(texts.get(abspath(n), "") for n in names)
+
+
 def bundle(rel):
     """返回重建后的源码；无需重建时返回 ``None``"""
     path = abspath(rel)
@@ -78,16 +105,17 @@ def bundle(rel):
     text = texts.get(path)
     if text is None:
         return None
+    prefix = _sidecar_prefix(_rel_key(path), texts)
     m = _TPL_HEAD_RE.search(text)
-    if m is None:
-        return None
-    expr = m.group(1).strip()
-    if expr.startswith("`"):
-        return None  # 模板仍为字面量，无需重建
-    tpl = resolver.resolve(expr, path)
+    tpl = None
+    if m is not None:
+        expr = m.group(1).strip()
+        if not expr.startswith("`"):
+            tpl = resolver.resolve(expr, path)
     if tpl is None:
-        return None
-    return text[:m.start()] + "template: `" + tpl + "`" + text[m.end():]
+        # 字面量模板 / 解析不到引用：仅在存在逻辑域片段时前置拼接，否则按原行为返回 None
+        return (prefix + text) if prefix else None
+    return prefix + text[:m.start()] + "template: `" + tpl + "`" + text[m.end():]
 
 
 def read(rel):
