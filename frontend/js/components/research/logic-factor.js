@@ -67,7 +67,7 @@
           factorIcReport.value = rep;
         } catch (e) {
           console.error('[research] 因子IC分析失败:', e);
-          alert('因子 IC 分析失败: ' + e.message);
+          ElementPlus.ElMessage.error('因子 IC 分析失败: ' + e.message);
         } finally {
         if (seq === _seq.n) factorIcLoading.value = false;
         }
@@ -89,11 +89,11 @@
           if (res && res.layers) {
             factorLayerResult.value = res;
           } else {
-            alert('分层回测: ' + (res.message || '无数据'));
+            ElementPlus.ElMessage.warning('分层回测: ' + (res.message || '无数据'));
           }
         } catch (e) {
           console.error('[research] 分层回测失败:', e);
-          alert('分层回测失败: ' + e.message);
+          ElementPlus.ElMessage.error('分层回测失败: ' + e.message);
         } finally {
         if (seq === _seq.n) factorLayerLoading.value = false;
         }
@@ -119,11 +119,11 @@
           if (res && res.detail) {
             factorDetail.value = res.detail;
           } else {
-            alert('因子详情: ' + (res.message || '无数据'));
+            ElementPlus.ElMessage.warning('因子详情: ' + (res.message || '无数据'));
           }
         } catch (e) {
           console.error('[research] 因子详情失败:', e);
-          alert('因子详情失败: ' + e.message);
+          ElementPlus.ElMessage.error('因子详情失败: ' + e.message);
         } finally {
         if (seq === _seq.n) factorDetailLoading.value = false;
         }
