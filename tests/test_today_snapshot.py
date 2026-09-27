@@ -90,7 +90,7 @@ def test_metrics_no_calls_returns_empty_sources(_isolated_business_modules):
 
 def test_today_snapshot_wiring_frontend():
     """今日一屏前端接线完整：策略总览含美林/情绪/池变动/重点/健康卡，且数据健康已消费"""
-    sp = open(os.path.join(BASE, 'frontend/js/components/strategies-page.js'), encoding='utf-8').read()
+    sp = page_source.read(os.path.join(BASE, 'frontend/js/components/strategies-page.js'))
     # 四个决策要素 + 健康卡 + 重点，均在"今日一屏"内
     assert 'today-hero' in sp
     for marker in ['美林时钟', '市场情绪', '池变动', '今日重点']:

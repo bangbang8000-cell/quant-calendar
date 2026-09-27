@@ -13,6 +13,10 @@ var(--color-primary)、var(--state-*-solid)、甚至把「文字色」令牌当�
 """
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS_DIR = os.path.join(BASE, "frontend", "css")
@@ -54,6 +58,10 @@ BAR_SELECTORS = {
 
 
 def _read(path):
+    # 6.3.0 结构分治: 页面模板下沉子目录 — 可重建的走页源码重建（非 js/ 路径原样读取）
+    _b = page_source.bundle(path)
+    if _b is not None:
+        return _b
     with open(path, encoding="utf-8") as f:
         return f.read()
 

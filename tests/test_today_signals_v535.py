@@ -6,11 +6,19 @@
 - 空/降级不冒充 (无数据不出信号)
 """
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _read(rel):
+    # 6.3.0 结构分治: 页面模板下沉子目录 — 可重建的走页源码重建
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(BASE, rel), encoding="utf-8") as f:
         return f.read()
 

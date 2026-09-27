@@ -6,12 +6,20 @@
 """
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, "frontend")
 
 
 def _read(rel):
+    # 6.3.0 结构分治: 页面模板下沉子目录 — 可重建的走页源码重建（模板引用还原为字面量）
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND, rel), encoding="utf-8") as f:
         return f.read()
 

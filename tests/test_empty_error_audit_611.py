@@ -9,7 +9,11 @@
 """
 import os
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 COMPONENTS = ROOT / "frontend" / "js" / "components"
@@ -47,7 +51,8 @@ EXPLICIT_SKIP = {
 def _iter_templates():
     for p in sorted(COMPONENTS.rglob("*.js")):
         rel = p.relative_to(ROOT).as_posix()
-        src = p.read_text(encoding="utf-8", errors="ignore")
+        # 6.3.0 结构分治: 页面模板下沉子目录 — 重建页源码（模板引用还原为字面量）
+        src = page_source.read(rel)
         if "template:" not in src or _VFOR.search(src) is None:
             continue
         # 提取 template: `...` 内容 (UMD 组件)

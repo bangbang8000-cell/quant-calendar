@@ -5,12 +5,17 @@ V4.8.2-fix (用户反馈): 时间轴点击弹窗位置 — 锚定被点击阶段
 """
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _strat():
-    return open(os.path.join(BASE, "frontend", "js", "components", "strategies-page.js"), encoding="utf-8").read()
+    # 6.3.0 结构分治: 策略页模板下沉 components/strategies/ — 读取走页源码重建
+    return page_source.read("frontend/js/components/strategies-page.js")
 
 
 def _layout():
