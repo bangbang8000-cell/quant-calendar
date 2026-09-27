@@ -18,7 +18,7 @@
       timeFormat: { type: String, default: 'time' },
     },
     template: `
-      <div class="ai-history-item border-bottom-light" :class="{'selected': isSelected}">
+      <div class="ai-history-item border-bottom-light" :data-ctx-code="item.stock_code" :data-ctx-name="item.stock_name" :data-ctx-context="type === 'history' ? 'history' : 'chat'" :class="{'selected': isSelected}">
         <div @click.stop="toggleSelect" class="history-checkbox">
           <div class="checkbox-inner" :class="{'checked': isSelected}">{{ isSelected ? '✓' : '' }}</div>
         </div>

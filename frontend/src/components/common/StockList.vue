@@ -21,6 +21,8 @@ export default {
     virtual: { type: Boolean, default: false },
     rowHeight: { type: Number, default: 78 },
     copyCode: { type: Boolean, default: false },
+    // 6.3.1 (T-6.3.1.6): 右键菜单上下文 (默认 stock — 通用列表, 露出「加入自选」, 隐藏「删除」)
+    ctxContext: { type: String, default: 'stock' },
   },
   emits: ['select'],
   setup(props, { emit, slots }) {
@@ -70,6 +72,7 @@ export default {
           <div
             class="qc-stock-row" :class="{ 'is-active': activeCode === item.code }"
             :data-copy-code="copyCode ? item.code : undefined"
+            :data-ctx-code="item.code" :data-ctx-name="item.name" :data-ctx-context="ctxContext"
             tabindex="0" role="button" :aria-label="'查看 ' + (item.name || '') + ' ' + (item.code || '')"
             @click="select(item)"
             @keydown.enter.prevent="select(item)"
@@ -115,6 +118,7 @@ export default {
           v-for="(item, i) in items" :key="item.code"
           class="qc-stock-row" :class="{ 'is-active': activeCode === item.code }"
           :data-copy-code="copyCode ? item.code : undefined"
+          :data-ctx-code="item.code" :data-ctx-name="item.name" :data-ctx-context="ctxContext"
           tabindex="0" role="button" :aria-label="'查看 ' + (item.name || '') + ' ' + (item.code || '')"
           @click="select(item)"
           @keydown.enter.prevent="select(item)"

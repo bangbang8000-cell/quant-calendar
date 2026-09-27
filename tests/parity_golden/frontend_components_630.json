@@ -262,6 +262,8 @@
       "v-show"
     ],
     "i18n_keys": [
+      "a11y.selectWatchStock",
+      "a11y.watchlistList",
       "ai.aiCalls",
       "ai.autoEval",
       "ai.batchEval",
@@ -297,7 +299,9 @@
       "ai.title",
       "ai.totalEval",
       "ai.viewAll",
-      "ai.watchlist"
+      "ai.watchlist",
+      "state.descEmptyFocus",
+      "state.emptyFocus"
     ],
     "icons": [
       "alert-triangle",
@@ -367,8 +371,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 75914,
-    "template_sha": "84b28c778492f569"
+    "template_len": 76154,
+    "template_sha": "2ce7ea1957f285dd"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -968,8 +972,8 @@
       "view",
       "watchState"
     ],
-    "template_len": 2526,
-    "template_sha": "939c8cf42223c1a6"
+    "template_len": 2652,
+    "template_sha": "34d0e1bc47c96666"
   },
   "IndexDetailDialog": {
     "classes": [
@@ -1394,9 +1398,24 @@
       "v-model"
     ],
     "i18n_keys": [
+      "a11y.dailyReviewList",
+      "a11y.reviewDateList",
+      "a11y.viewMarketReview",
       "research.backtest",
       "research.backtestHistory",
-      "research.quantResearch"
+      "research.quantResearch",
+      "state.backtestError",
+      "state.descBacktest",
+      "state.descEmptyStrategy",
+      "state.descEmptyStrategyManage",
+      "state.descEmptyStrategyResearch",
+      "state.descNetwork",
+      "state.descService",
+      "state.emptyStrategy",
+      "state.emptyStrategyManage",
+      "state.emptyStrategyResearch",
+      "state.strategiesError",
+      "state.strategiesManageError"
     ],
     "icons": [
       "alert-triangle",
@@ -1552,8 +1571,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 65595,
-    "template_sha": "f5786fb06f004f11"
+    "template_len": 65950,
+    "template_sha": "3564bb01da04238b"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1691,7 +1710,13 @@
       "v-if",
       "v-model"
     ],
-    "i18n_keys": [],
+    "i18n_keys": [
+      "a11y.shorttermDateList",
+      "state.descEmptyPool",
+      "state.descNetworkOrService",
+      "state.emptyPool",
+      "state.intradayError"
+    ],
     "icons": [
       "alert-triangle",
       "bar-chart-3",
@@ -1794,8 +1819,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 32891,
-    "template_sha": "3e556b055879e92a"
+    "template_len": 32966,
+    "template_sha": "162c9da7fa587cf0"
   },
   "Sidebar": {
     "classes": [
@@ -2449,6 +2474,15 @@
       "exec.traceTitle",
       "exec.union",
       "exec.visible",
+      "state.backtestError",
+      "state.consensusError",
+      "state.descEmptyMarket",
+      "state.descNetwork",
+      "state.descNetworkOrService",
+      "state.emptyMarket",
+      "state.marketError",
+      "state.merrillError",
+      "state.overviewError",
       "strategies.computing",
       "strategies.consensusTop5",
       "strategies.coveredStocks",
@@ -2548,8 +2582,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 59231,
-    "template_sha": "a536bf796e46336b"
+    "template_len": 59439,
+    "template_sha": "b5c31fe49be6ace6"
   },
   "SystemPage": {
     "classes": [
@@ -2892,6 +2926,20 @@
       "navMode.subnav",
       "navMode.toptab",
       "navMode.tree",
+      "state.descAiModels",
+      "state.descEmptyDictField",
+      "state.descEmptyFreshness",
+      "state.descRetryDict",
+      "state.descRetryHealth",
+      "state.descService",
+      "state.emptyDictField",
+      "state.emptyFreshness",
+      "state.factCheckError",
+      "state.featureConfigError",
+      "state.freshnessError",
+      "state.healthDetailError",
+      "state.notificationError",
+      "state.usageError",
       "strategies.noSourceCall",
       "system.aiService",
       "system.configManage",
@@ -3042,8 +3090,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 109735,
-    "template_sha": "55bf09f34c56ef05"
+    "template_len": 110031,
+    "template_sha": "a69625031bd7199a"
   },
   "TourDialog": {
     "classes": [

@@ -1,6 +1,7 @@
 """pytest configuration — fixtures and mocks"""
 import sys
 import os
+import re
 import tempfile
 import pytest
 
@@ -150,3 +151,124 @@ def sample_csv_content():
         "600036.SH,招商银行,38.50,1.20,90,78\n"
         "000858.SZ,五粮液,145.00,-0.50,65,55\n"
     )
+
+
+# ─── 6.3.1 (T-6.3.1.7): 拆分产物覆盖率统计 ─────────────────────────
+# 6.3.0 结构分治（T-6.3.0.5~.10）把大页面拆成同目录片段（view-partN.js / logic-*.js），
+# app-logic 亦按域下沉。拆分后文件变多，容易出现「拆出来的新文件没测到」——
+# 本清单把全部拆分产物纳入覆盖率统计：每个产物必须至少有一个消费方
+# （模板装配 / 逻辑片段注册 / 测试直接引用），否则视为孤儿产物（拆分后无人使用）。
+BASE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+SPLIT_PRODUCTS_630 = (
+    # app-logic 按域下沉（T-6.3.0.10）
+    'frontend/js/app-logic/shell.js',
+    'frontend/js/app-logic/workspace.js',
+    'frontend/js/app-logic/detail.js',
+    'frontend/js/app-logic/runtime.js',
+    # 页面模板片段 + 装配（T-6.3.0.5~.9）
+    'frontend/js/components/ai/view.js',
+    'frontend/js/components/ai/view-part1.js',
+    'frontend/js/components/ai/view-part2.js',
+    'frontend/js/components/research/view.js',
+    'frontend/js/components/research/view-part1.js',
+    'frontend/js/components/research/view-part2.js',
+    'frontend/js/components/shortterm/view.js',
+    'frontend/js/components/shortterm/view-part1.js',
+    'frontend/js/components/shortterm/view-part2.js',
+    'frontend/js/components/strategies/view.js',
+    'frontend/js/components/strategies/view-part1.js',
+    'frontend/js/components/strategies/view-part2.js',
+    'frontend/js/components/system/view.js',
+    'frontend/js/components/system/view-part1.js',
+    'frontend/js/components/system/view-part2.js',
+    # 页面逻辑域片段（T-6.3.0.6~.9）
+    'frontend/js/components/research/logic-market-review.js',
+    'frontend/js/components/research/logic-factor.js',
+    'frontend/js/components/research/logic-history.js',
+    'frontend/js/components/shortterm/logic-tour.js',
+    # 自选池逻辑域片段（T-6.3.0.8）
+    'frontend/js/watchlist/history.js',
+    'frontend/js/watchlist/list.js',
+    'frontend/js/watchlist/analytics.js',
+    'frontend/js/watchlist/realtime.js',
+)
+
+# 豁免: 产物 -> 理由（须成立；目前无豁免项）
+SPLIT_PRODUCT_EXEMPT = {}
+
+_test_sources_cache = None
+
+
+def _test_sources():
+    """tests/ 下全部 .py 源文件 (排除 golden/缓存) → [(相对路径, 源码)]"""
+    global _test_sources_cache
+    if _test_sources_cache is None:
+        tests_dir = os.path.dirname(os.path.abspath(__file__))
+        out = []
+        for dirpath, dirnames, filenames in os.walk(tests_dir):
+            dirnames[:] = [d for d in dirnames if d not in ('__pycache__', 'parity_golden')]
+            for fn in sorted(filenames):
+                if not fn.endswith('.py'):
+                    continue
+                p = os.path.join(dirpath, fn)
+                with open(p, encoding='utf-8', errors='ignore') as f:
+                    out.append((os.path.relpath(p, BASE_ROOT).replace('\\', '/'), f.read()))
+        _test_sources_cache = out
+    return _test_sources_cache
+
+
+def _registered_sidecars():
+    """page_source 登记的逻辑域片段清单（单一来源，避免两处清单漂移）"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import page_source
+    out = set()
+    for names in page_source._LOGIC_SIDECARS.values():
+        out.update(names)
+    return out
+
+
+def split_product_consumers(rel):
+    """拆分产物的消费方列表；空列表 = 孤儿产物（无装配/注册/引用）"""
+    full = os.path.join(BASE_ROOT, rel.replace('/', os.sep))
+    if not os.path.exists(full):
+        return ['缺失: 清单登记的文件不存在']
+    consumers = []
+    with open(full, encoding='utf-8', errors='ignore') as f:
+        src = f.read()
+
+    # 1) 逻辑片段注册: page_source 前置拼接回注册文件（历史单文件源码断言透明复用）
+    if rel in _registered_sidecars():
+        consumers.append('注册: page_source 逻辑片段')
+
+    # 2) 模板消费: 片段由同目录 view.js 装配; view.js 本身由注册文件 template 引用
+    d = os.path.dirname(full)
+    stem = os.path.basename(rel)[:-3]
+    if stem == 'view':
+        reg = os.path.join(os.path.dirname(d), os.path.basename(d) + '-page.js')
+        if os.path.exists(reg):
+            with open(reg, encoding='utf-8', errors='ignore') as f:
+                if re.search(r'\.view\b', f.read()):
+                    consumers.append('装配: %s' % os.path.relpath(reg, BASE_ROOT).replace('\\', '/'))
+    else:
+        sibling = os.path.join(d, 'view.js')
+        m = re.search(r'window\.__quantModules\.\w+\.(\w+)\s*=', src)
+        key = m.group(1) if m else stem.replace('-', '')
+        if os.path.exists(sibling):
+            with open(sibling, encoding='utf-8', errors='ignore') as f:
+                if re.search(r'\.%s\b' % re.escape(key), f.read()):
+                    consumers.append('装配: %s' % os.path.relpath(sibling, BASE_ROOT).replace('\\', '/'))
+
+    # 3) 测试直接引用: 至少一个测试文件在源码中引用该产物的路径
+    suffix = rel.replace('frontend/', '')
+    for tname, tsrc in _test_sources():
+        if rel in tsrc or suffix in tsrc:
+            consumers.append('引用: %s' % tname)
+            break
+    return consumers
+
+
+@pytest.fixture(scope='session')
+def split_product_coverage():
+    """{产物: [消费方]} — 供拆分产物覆盖率门禁断言无孤儿"""
+    return {rel: split_product_consumers(rel) for rel in SPLIT_PRODUCTS_630}

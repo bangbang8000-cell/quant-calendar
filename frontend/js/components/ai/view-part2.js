@@ -177,15 +177,15 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <!-- 自选列表 -->
                             <div v-else>
                                 <!-- v3.16 (16.7): 虚拟滚动，仅渲染可视区行（500+ 自选不卡顿） -->
-                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56" aria-label="自选股列表">
+                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56" :aria-label="t('a11y.watchlistList')">
                                     <template #default="{ item: stock }">
                                     <!-- v3.17.8 (FR-3.17.8): 移动端左滑露出删除操作（.swipe-reveal），长按复制代码 -->
-                                    <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" @click="detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(stock.code, stock.name)" :aria-current="(detailSplitEnabled && stockDetail && stockDetail.stock === stock.code) ? 'true' : null" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code), 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === stock.code}">
+                                    <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" :data-ctx-code="stock.code" :data-ctx-name="stock.name" data-ctx-context="watchlist" @click="detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(stock.code, stock.name)" :aria-current="(detailSplitEnabled && stockDetail && stockDetail.stock === stock.code) ? 'true' : null" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code), 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === stock.code}">
                                         <div class="swipe-reveal-main">
                                         <!-- 6.3.1 (T-6.3.1.4): 复选框补角色/选中态/键盘可操作（读屏可勾选自选股） -->
                                         <div class="watchlist-checkbox" role="checkbox" tabindex="0"
                                              :aria-checked="selectedWatchlistCodes.includes(stock.code) ? 'true' : 'false'"
-                                             :aria-label="'选择 ' + stock.code + ' ' + stock.name"
+                                             :aria-label="t('a11y.selectWatchStock', { code: stock.code, name: stock.name })"
                                              @click.stop="toggleSelectWatchlist(stock.code)"
                                              @keydown.enter.prevent="toggleSelectWatchlist(stock.code)"
                                              @keydown.space.prevent="toggleSelectWatchlist(stock.code)">
@@ -235,7 +235,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                     <!-- 6.3.1 (T-6.3.1.3): 空/错误态由 FocusView 上报, 页面侧统一面板承接 -->
                     <div v-else-if="currentSubPage === 'focus'">
                         <qc-state-panel v-if="focusState.error" type="error" @retry="reloadFocus"></qc-state-panel>
-                        <qc-state-panel v-else-if="focusState.empty" type="empty" icon="target" title="暂无重点跟踪数据" desc="当前日期/时段暂无评估结果，可切换日期或时段"></qc-state-panel>
+                        <qc-state-panel v-else-if="focusState.empty" type="empty" icon="target" :title="t('state.emptyFocus')" :desc="t('state.descEmptyFocus')"></qc-state-panel>
                         <qc-focus-view ref="focusViewRef" v-show="!focusState.error && !focusState.empty" @load-state="onFocusLoadState"></qc-focus-view>
                     </div>
 
@@ -332,7 +332,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="p in positions" :key="p.stock_code">
+                                            <tr v-for="p in positions" :key="p.stock_code" :data-ctx-code="p.stock_code" :data-ctx-name="p.stock_name" data-ctx-context="portfolio">
                                                 <td>
                                                     <div class="portfolio-stock">{{ p.stock_name }}</div>
                                                     <div class="portfolio-code">{{ p.stock_code }}</div>

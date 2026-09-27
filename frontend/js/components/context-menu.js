@@ -5,7 +5,7 @@
 // 键盘: Shift+F10 在焦点元素打开 (元素需带 data-ctx)
 (function () {
   if (typeof window === 'undefined' || !window.Vue) return;
-  const { ref, onMounted, onBeforeUnmount } = Vue;
+  const { ref, inject, onMounted, onBeforeUnmount } = Vue;
   const QCM = window.QuantContextMenu;
 
   window.__quantComponents = window.__quantComponents || {};
@@ -13,10 +13,19 @@
   function closestCtx(el) {
     let n = el;
     while (n && n !== document.body) {
-      if (n.hasAttribute && n.hasAttribute('data-ctx-code')) return n;
+      if (n.hasAttribute && (n.hasAttribute('data-ctx-code') || n.hasAttribute('data-copy-code'))) return n;
       n = n.parentElement;
     }
     return null;
+  }
+
+  // 6.3.1 (T-6.3.1.6): 读取行上下文 (data-ctx-*，未标注时回退 data-copy-code 行)
+  function readCtx(el) {
+    return {
+      code: el.getAttribute('data-ctx-code') || el.getAttribute('data-copy-code') || '',
+      name: el.getAttribute('data-ctx-name') || '',
+      context: el.getAttribute('data-ctx-context') || '',
+    };
   }
 
   window.__quantComponents.ContextMenu = {
@@ -37,6 +46,7 @@
       </teleport>
     `,
     setup() {
+      const state = inject('qcState');
       const visible = ref(false);
       const pos = ref({ left: 0, top: 0 });
       const actions = ref(QCM ? QCM.getActions() : []);
@@ -46,6 +56,10 @@
 
       function open(x, y, data) {
         payload.value = data || {};
+        // 6.3.1 (T-6.3.1.6): 动作按列表上下文裁剪 (自选可删除, 其他列表可加自选)
+        actions.value = (QCM && QCM.getActionsFor)
+          ? QCM.getActionsFor(payload.value.context)
+          : (QCM ? QCM.getActions() : []);
         if (QCM) {
           const vw = window.innerWidth || document.documentElement.clientWidth;
           const vh = window.innerHeight || document.documentElement.clientHeight;
@@ -65,16 +79,36 @@
         }));
       }
 
+      // 6.3.1 (T-6.3.1.6): 动作接线 — 此前只广播 qc:context-action, 无任何消费者
+      // (依赖 qcState 的自选/详情/导出能力), 导致右键菜单「点了没反应」
+      function onAction(e) {
+        const d = (e && e.detail) || {};
+        const p = d.payload || {};
+        const code = p.code;
+        if (!code || !state) return;
+        const msg = window.ElementPlus && window.ElementPlus.ElMessage;
+        if (d.action === 'detail') {
+          state.showStockDetail(code, p.name);
+        } else if (d.action === 'add-watch') {
+          state.addToWatchlist(code, p.name);
+        } else if (d.action === 'delete') {
+          state.removeFromWatchlist(code);
+        } else if (d.action === 'copy') {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code);
+            if (msg) msg.success('已复制 ' + code);
+          }
+        } else if (d.action === 'export') {
+          state.exportCSV();
+        }
+      }
+
       // 桌面: contextmenu 委托 (data-ctx-code 祖先)
       function onCtxMenu(e) {
         const el = closestCtx(e.target);
         if (!el) return;
         e.preventDefault();
-        open(e.clientX, e.clientY, {
-          code: el.getAttribute('data-ctx-code') || '',
-          name: el.getAttribute('data-ctx-name') || '',
-          context: el.getAttribute('data-ctx-context') || '',
-        });
+        open(e.clientX, e.clientY, readCtx(el));
       }
 
       // 移动端: 长按 500ms
@@ -88,11 +122,7 @@
           if (QCM && QCM.isLongPress(touchStart, Date.now(), 500)) {
             navigator.vibrate && navigator.vibrate(10);
             const t = e.touches && e.touches[0];
-            open(t ? t.clientX : 0, t ? t.clientY : 0, {
-              code: el.getAttribute('data-ctx-code') || '',
-              name: el.getAttribute('data-ctx-name') || '',
-              context: el.getAttribute('data-ctx-context') || '',
-            });
+            open(t ? t.clientX : 0, t ? t.clientY : 0, readCtx(el));
           }
         }, 520);
       }
@@ -108,11 +138,7 @@
           if (el) {
             e.preventDefault();
             const r = el.getBoundingClientRect();
-            open(r.left + r.width / 2, r.bottom, {
-              code: el.getAttribute('data-ctx-code') || '',
-              name: el.getAttribute('data-ctx-name') || '',
-              context: el.getAttribute('data-ctx-context') || '',
-            });
+            open(r.left + r.width / 2, r.bottom, readCtx(el));
           }
         }
       }
@@ -127,6 +153,8 @@
         document.addEventListener('touchend', onTouchEnd, true);
         document.addEventListener('keydown', onKey, true);
         document.addEventListener('mousedown', onClickOutside, true);
+        // 6.3.1 (T-6.3.1.6): 消费自身广播的动作事件
+        window.addEventListener('qc:context-action', onAction);
       });
       onBeforeUnmount(function () {
         document.removeEventListener('contextmenu', onCtxMenu, true);
@@ -134,6 +162,7 @@
         document.removeEventListener('touchend', onTouchEnd, true);
         document.removeEventListener('keydown', onKey, true);
         document.removeEventListener('mousedown', onClickOutside, true);
+        window.removeEventListener('qc:context-action', onAction);
       });
 
       return { visible, pos, actions, run };

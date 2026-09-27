@@ -18,8 +18,10 @@ JS_DIR = os.path.join(BASE, "frontend", "js")
 # 6.1.5 (E1): 6.1.1-6.1.5 新增核心工具模块 (undo-core/form-memory/session-restore/
 # install-prompt/batch-add/context-menu/request-core) 推高总量至 ~1.37MB;
 # 总量预算校订为 1.4MB 并保留 ~4% 余量 (门禁继续有效, 防无节制膨胀)。
+# 6.3.1 (T-6.3.1.5): i18n 收敛 — 51 个新文案键 × 5 语 (zh-CN/en/ja/ko/zh-TW)
+# 净增 ~19KB, 总量触及 1.4MB 上限; 按实测 1,439,122B + ~3% 余量校订为 1.45MB。
 MAIN_LOGIC_BUDGET = 104 * 1024
-TOTAL_JS_BUDGET = 1400 * 1024
+TOTAL_JS_BUDGET = 1450 * 1024
 
 
 def _js_files():

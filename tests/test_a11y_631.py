@@ -22,12 +22,12 @@ FRONTEND = os.path.join(BASE, "frontend")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import page_source  # noqa: E402
 
-# 长列表（虚拟滚动）→ 必须有可读名称
+# 长列表（虚拟滚动）→ 必须有可读名称（6.3.1.5 起经 t(key) 渲染，五语可播报）
 VLIST_NAMES = [
-    ("js/components/shortterm/view-part1.js", "shortterm-date-items", "复盘日历日期列表"),
-    ("js/components/research/view-part2.js", "market-review-date-items", "复盘日期列表"),
-    ("js/components/research/view-part2.js", "market-review-list-vlist", "每日复盘列表"),
-    ("js/components/ai/view-part2.js", "watchlist-vlist", "自选股列表"),
+    ("js/components/shortterm/view-part1.js", "shortterm-date-items", "a11y.shorttermDateList"),
+    ("js/components/research/view-part2.js", "market-review-date-items", "a11y.reviewDateList"),
+    ("js/components/research/view-part2.js", "market-review-list-vlist", "a11y.dailyReviewList"),
+    ("js/components/ai/view-part2.js", "watchlist-vlist", "a11y.watchlistList"),
 ]
 
 # 可选中列表的当前项 → aria-current 绑定表达式（须与被选状态同源）
@@ -78,12 +78,15 @@ def test_virtual_list_structural_roles():
 
 
 def test_virtualized_lists_have_accessible_name():
-    """四处长列表的虚拟滚动容器必须带 aria-label（读屏播报列表名）"""
-    for rel, cls, label in VLIST_NAMES:
+    """四处长列表的虚拟滚动容器必须带可读名（经 t(key) 绑定，键须在五语齐备）"""
+    import test_i18n_631 as i18n631
+    for rel, cls, key in VLIST_NAMES:
         tag = _tag_with_class(_read(rel), cls)
         assert tag is not None, "%s: 未找到 class 含 %s 的 qc-virtual-list" % (rel, cls)
-        assert 'aria-label="%s"' % label in tag, (
-            "%s: %s 缺可读名 aria-label=\"%s\"，实际: %s" % (rel, cls, label, tag.strip()))
+        expect = ":aria-label=\"t('%s')\"" % key
+        assert expect in tag, (
+            "%s: %s 缺可读名 %s，实际: %s" % (rel, cls, expect, tag.strip()))
+        i18n631.assert_key_all_locales(key)
 
 
 # ─── 选中语义 ──────────────────────────────────────────────────

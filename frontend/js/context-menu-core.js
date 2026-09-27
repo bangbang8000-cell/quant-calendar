@@ -34,6 +34,20 @@
     return ACTIONS.map(function (a) { return { key: a.key, label: a.label }; });
   }
 
+  // 6.3.1 (T-6.3.1.6): 按列表上下文裁剪动作
+  // watchlist: 已在自选中 → 去掉「加入自选」、露出「删除(移出自选)」
+  // 其余上下文(history/pool/consensus/...): 可用「加入自选」, 隐藏「删除」
+  // 不传 context 时保持 5 项默认清单 (向后兼容 getActions)
+  function getActionsFor(context) {
+    var ctx = context || '';
+    if (!ctx) return getActions();
+    return ACTIONS.filter(function (a) {
+      if (a.key === 'add-watch') return ctx !== 'watchlist';
+      if (a.key === 'delete') return ctx === 'watchlist';
+      return true;
+    }).map(function (a) { return { key: a.key, label: a.label }; });
+  }
+
   // 长按判定: 事件对 (down, up) → 是否长按 (默认 500ms)
   function isLongPress(downTime, upTime, thresholdMs) {
     var t = thresholdMs == null ? 500 : thresholdMs;
@@ -41,5 +55,5 @@
     return (upTime - downTime) >= t;
   }
 
-  return { positionMenu: positionMenu, getActions: getActions, isLongPress: isLongPress };
+  return { positionMenu: positionMenu, getActions: getActions, getActionsFor: getActionsFor, isLongPress: isLongPress };
 });

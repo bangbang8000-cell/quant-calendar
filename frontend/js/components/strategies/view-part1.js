@@ -6,7 +6,7 @@ window.__quantModules.strategiesPage.part1 = `
                 <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system/ops+execution 下也渲染 (V6.9.1-fix2: ops 菜单也含 execution) -->
                 <div v-if="currentPage === 'strategies' || ((currentPage === 'system' || currentPage === 'ops') && currentSubPage === 'execution')" key="strategies">
                     <div v-if="currentSubPage === 'overview'">
-                        <qc-state-panel v-if="overviewError" type="error" title="总览数据加载失败" desc="请检查网络或服务后重试" @retry="loadDashboardData"></qc-state-panel>
+                        <qc-state-panel v-if="overviewError" type="error" :title="t('state.overviewError')" :desc="t('state.descNetworkOrService')" @retry="loadDashboardData"></qc-state-panel>
                         <template v-else>
                         <!-- V6.11 (用户需求1): 移除「回测工作台」快捷按钮及所在整行 —— 入口保留在
                              策略研究 → 回测 (侧栏/顶部页签可达); 交易日信息由下方 today-hero 头部显示。 -->
@@ -187,7 +187,7 @@ window.__quantModules.strategiesPage.part1 = `
                     
                     <!-- 子页: 美林时钟 -->
                     <div v-else-if="currentSubPage === 'merrill'">
-                        <qc-state-panel v-if="merrillError" type="error" title="美林时钟数据加载失败" desc="请检查网络后重试" @retry="fetchMerrillClock"></qc-state-panel>
+                        <qc-state-panel v-if="merrillError" type="error" :title="t('state.merrillError')" :desc="t('state.descNetwork')" @retry="fetchMerrillClock"></qc-state-panel>
                         <template v-else>
 
 <!-- 美林时钟 -->
@@ -397,8 +397,8 @@ window.__quantModules.strategiesPage.part1 = `
                     
                     <!-- 子页: 市场行情 -->
                     <div v-else-if="currentSubPage === 'market'">
-                        <qc-state-panel v-if="marketError" type="error" title="行情数据加载失败" desc="请检查网络或服务后重试" @retry="fetchMarketData"></qc-state-panel>
-                        <qc-state-panel v-else-if="!(marketData.indices || []).length" type="empty" icon="line-chart" title="暂无行情数据" desc="当前无指数行情返回，可稍后重试"></qc-state-panel>
+                        <qc-state-panel v-if="marketError" type="error" :title="t('state.marketError')" :desc="t('state.descNetworkOrService')" @retry="fetchMarketData"></qc-state-panel>
+                        <qc-state-panel v-else-if="!(marketData.indices || []).length" type="empty" icon="line-chart" :title="t('state.emptyMarket')" :desc="t('state.descEmptyMarket')"></qc-state-panel>
                         <template v-else>
 
                     

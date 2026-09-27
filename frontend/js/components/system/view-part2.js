@@ -45,7 +45,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
 
                     <!-- feature 子页: 功能开关与配置 -->
                     <div v-else-if="currentSubPage === 'feature'">
-                        <qc-state-panel v-if="feishuConfigError" type="error" title="功能配置数据加载失败" desc="请检查服务后重试" @retry="loadFeishuConfig"></qc-state-panel>
+                        <qc-state-panel v-if="feishuConfigError" type="error" :title="t('state.featureConfigError')" :desc="t('state.descService')" @retry="loadFeishuConfig"></qc-state-panel>
                         <template v-else>
                         <div class="card">
                         <div class="card-title"><qc-icon name="sliders-horizontal" :size="14" /> 策略筛选</div>
@@ -287,8 +287,8 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                 </el-radio-group>
                                 <el-button size="small" :loading="dictLoading" @click="loadDataDict">刷新</el-button>
                             </div>
-                            <qc-state-panel v-if="dictError" type="error" :title="dictError" desc="点击重试重新加载数据字典" @retry="loadDataDict"></qc-state-panel>
-                            <qc-state-panel v-else-if="!dictLoading && dictData.fields.length === 0" type="empty" icon="book-open" title="暂无字段数据" desc="当前分类没有字典字段，可切换分类或点击刷新"></qc-state-panel>
+                            <qc-state-panel v-if="dictError" type="error" :title="dictError" :desc="t('state.descRetryDict')" @retry="loadDataDict"></qc-state-panel>
+                            <qc-state-panel v-else-if="!dictLoading && dictData.fields.length === 0" type="empty" icon="book-open" :title="t('state.emptyDictField')" :desc="t('state.descEmptyDictField')"></qc-state-panel>
                             <el-table v-else :data="dictData.fields" size="small" v-loading="dictLoading" style="width:100%" class="mt-8">
                                 <el-table-column prop="key" label="规范字段" width="150" />
                                 <el-table-column prop="label" label="名称" width="120" />
@@ -449,7 +449,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                     </div>
                     <!-- v3.17.5 (FR-3.17.5): 用量统计 — 资源监控/调度任务/备份磁盘/页面热度 (自系统状态移入) -->
                     <div v-else-if="currentSubPage === 'usage'">
-                        <qc-state-panel v-if="sysMonitorError" type="error" title="用量统计数据加载失败" desc="请检查服务后重试" @retry="loadSysMonitor"></qc-state-panel>
+                        <qc-state-panel v-if="sysMonitorError" type="error" :title="t('state.usageError')" :desc="t('state.descService')" @retry="loadSysMonitor"></qc-state-panel>
                         <template v-else>
                         <!-- V6.6.1 (PRD F-6.6.8 方案A): 运维健康摘要条 — 替代重复整块渲染, 点击跳转对应子页 -->
                         <div class="card mb-14">

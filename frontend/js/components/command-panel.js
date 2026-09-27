@@ -200,13 +200,15 @@
         } else if (key === 'add-portfolio') {
           state.currentPage.value = 'ai'; state.currentSubPage.value = 'portfolio';
         } else if (key === 'open-system') {
-          state.navigateTo('system', 'status');
+          // 6.3.1 (T-6.3.1.6): status 已迁至「系统状态」一级页, 系统设置落 config
+          state.navigateTo('system', 'config');
         } else if (key === 'open-shortterm') {
           state.navigateTo('shortterm', 'overview');
         } else if (key === 'open-research') {
-          state.navigateTo('research', 'overview');
+          // 6.3.1: research 子页无 overview, 落 research-overview
+          state.navigateTo('research', 'research-overview');
         } else if (key === 'open-calendar') {
-          state.navigateTo('calendar', '');
+          state.navigateTo('calendar', 'calendar');
         } else if (key === 'refresh-data-source') {
           state.navigateTo('system', 'datasource');
         } else if (key === 'open-watchlist') {
@@ -248,10 +250,56 @@
           state.navigateTo('system', 'feature');
         } else if (key === 'open-config') {
           state.navigateTo('system', 'config');
+          // 6.3.1 (T-6.3.1.6): 补齐子页直达 — 策略总览 / 量化日历 / 智能评估 / 策略研究 / 短线复盘 / 系统状态 / 系统配置
+        } else if (key === 'open-strategies-overview') {
+          state.navigateTo('strategies', 'overview');
+        } else if (key === 'open-merrill') {
+          state.navigateTo('strategies', 'merrill');
+        } else if (key === 'open-strategies-market') {
+          state.navigateTo('strategies', 'market');
+        } else if (key === 'open-consensus') {
+          state.navigateTo('strategies', 'consensus');
+        } else if (key === 'open-pool') {
+          state.navigateTo('calendar', 'pool');
+        } else if (key === 'open-ai-overview') {
+          state.navigateTo('ai', 'overview');
+        } else if (key === 'open-eval-analysis') {
+          state.navigateTo('ai', 'evaluation-analysis');
+        } else if (key === 'open-eval-history') {
+          state.navigateTo('ai', 'history');
+        } else if (key === 'open-chat-history') {
+          state.navigateTo('ai', 'chat_history');
+        } else if (key === 'open-quant-research') {
+          state.navigateTo('research', 'quant-research');
+        } else if (key === 'open-strategy-manage') {
+          state.navigateTo('research', 'strategy-manage');
+        } else if (key === 'open-backtest-history') {
+          state.navigateTo('research', 'backtest-history');
+        } else if (key === 'open-ztpool') {
+          state.navigateTo('shortterm', 'ztpool');
+        } else if (key === 'open-lhb') {
+          state.navigateTo('shortterm', 'lhb');
+        } else if (key === 'open-execution') {
+          state.navigateTo('ops', 'execution');
+        } else if (key === 'open-about') {
+          state.navigateTo('system', 'about');
         } else if (key === 'theme-dark') {
           state.changeTheme('dark-pro');
         } else if (key === 'theme-light') {
           state.changeTheme('gold');
+        } else if (key === 'theme-gold') {
+          // 6.3.1 (T-6.3.1.6): 6 条预设主题色此前已注册但无分支 (选中无反应) — 接线到色相切换
+          state.changeThemeHue(45);
+        } else if (key === 'theme-blue') {
+          state.changeThemeHue(220);
+        } else if (key === 'theme-red') {
+          state.changeThemeHue(0);
+        } else if (key === 'theme-green') {
+          state.changeThemeHue(140);
+        } else if (key === 'theme-purple') {
+          state.changeThemeHue(270);
+        } else if (key === 'theme-pink') {
+          state.changeThemeHue(320);
         } else if (key.indexOf('theme:') === 0) {
           state.changeTheme(key.slice(6));
         }
@@ -286,6 +334,12 @@
           runCommand('batch');
         } else if (action === 'add-portfolio') {
           runCommand('add-portfolio');
+        } else if (action === 'open-eval-history') {
+          // 6.3.1 (T-6.3.1.6): Ctrl+H 此前已注册但未接线 (按下无反应)
+          runCommand('open-eval-history');
+        } else if (action === 'open-shortterm') {
+          // 6.3.1 (T-6.3.1.6): Ctrl+Shift+S 此前已注册但未接线 (按下无反应)
+          runCommand('open-shortterm');
         }
       }
       function onGlobalKeydown(ev) {

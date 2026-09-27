@@ -262,11 +262,11 @@
           if (res && res.status === 'success') {
             loadRuns();
           } else {
-            ElementPlus.ElMessage.error('运行失败: ' + (res.detail || JSON.stringify(res)));
+            ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: res.detail || JSON.stringify(res) }));
           }
         } catch (e) {
           console.error('[research] 策略运行失败:', e);
-          ElementPlus.ElMessage.error('运行失败: ' + e.message);
+          ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: e.message }));
         } finally {
           strategyRunning.value = false;
         }
@@ -283,11 +283,11 @@
           if (res && res.code) {
             ptradeCode.value = res.code;
           } else {
-            ElementPlus.ElMessage.error('导出失败: ' + (res.detail || JSON.stringify(res)));
+            ElementPlus.ElMessage.error(state.t('msg.exportFailed', { msg: res.detail || JSON.stringify(res) }));
           }
         } catch (e) {
           console.error('[research] PTrade 导出失败:', e);
-          ElementPlus.ElMessage.error('导出失败: ' + e.message);
+          ElementPlus.ElMessage.error(state.t('msg.exportFailed', { msg: e.message }));
         }
       }
 

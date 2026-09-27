@@ -45,7 +45,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                     </div>
                     <!-- 子页: 策略共识榜 -->
                     <div v-else-if="currentSubPage === 'consensus'">
-                        <qc-state-panel v-if="consensusError" type="error" title="共识榜加载失败" desc="请检查网络或服务后重试" @retry="loadConsensusData"></qc-state-panel>
+                        <qc-state-panel v-if="consensusError" type="error" :title="t('state.consensusError')" :desc="t('state.descNetworkOrService')" @retry="loadConsensusData"></qc-state-panel>
                         <template v-else>
 
                     <!-- 策略共识度排行 -->
@@ -217,7 +217,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                         <!-- 未运行 / 加载 / 失败 -->
                         <div v-else class="card">
                             <qc-state-panel v-if="btRunning" type="loading"></qc-state-panel>
-                            <qc-state-panel v-else-if="btError" type="error" title="回测失败" :desc="btError" @retry="runBacktestWorkbench"></qc-state-panel>
+                            <qc-state-panel v-else-if="btError" type="error" :title="t('state.backtestError')" :desc="btError" @retry="runBacktestWorkbench"></qc-state-panel>
                             <qc-state-panel v-else type="empty" title="尚未运行回测" desc="选择策略与参数后点击「运行回测」查看结果"></qc-state-panel>
                         </div>
                     </div>
@@ -381,7 +381,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                 </div>
                             </div>
                             <qc-state-panel v-if="execLoading" type="loading"></qc-state-panel>
-                            <qc-state-panel v-else-if="execError" type="error" title="加载失败" desc="请检查网络后重试" @retry="loadExecutionData"></qc-state-panel>
+                            <qc-state-panel v-else-if="execError" type="error" title="加载失败" :desc="t('state.descNetwork')" @retry="loadExecutionData"></qc-state-panel>
                             <div v-else-if="!execHistory.length" class="empty-state">
                                 <div class="text-md-medium-primary">暂无执行记录</div>
                                 <div class="text-sm-tertiary-mt8">调度任务尚未运行，或所选时间段内无记录</div>

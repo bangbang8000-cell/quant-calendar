@@ -86,7 +86,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 {{ backtestResult.message || '' }}
                             </div>
                         </template>
-                        <qc-state-panel v-else-if="backtestError" type="error" title="回测失败" desc="请检查策略与日期范围后重试" @retry="runBacktest"></qc-state-panel>
+                        <qc-state-panel v-else-if="backtestError" type="error" :title="t('state.backtestError')" :desc="t('state.descBacktest')" @retry="runBacktest"></qc-state-panel>
                         <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」，结果将在此展示"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
@@ -102,7 +102,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             </div>
                         </div>
                         <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="btHistoryError" type="error" title="加载失败" desc="请检查网络后重试" @retry="loadBtHistory"></qc-state-panel>
+                        <qc-state-panel v-else-if="btHistoryError" type="error" title="加载失败" :desc="t('state.descNetwork')" @retry="loadBtHistory"></qc-state-panel>
                         <div v-else-if="!btHistory.length" class="empty-state">
                             <div class="text-md-medium-primary">暂无回测记录</div>
                             <div class="text-sm-tertiary-mt8">运行回测后，结果将自动记录在此</div>
@@ -144,7 +144,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
                         </div>
                         <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" desc="请检查网络后重试" @retry="loadResearchHistory"></qc-state-panel>
+                        <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" :desc="t('state.descNetwork')" @retry="loadResearchHistory"></qc-state-panel>
                         <div v-else-if="!researchHistory.length" class="empty-state">
                             <div class="text-md-medium-primary">暂无研究实验</div>
                             <div class="text-sm-tertiary-mt8">运行因子IC / 分层 / 参数扫描 / 回测后，结果将自动记录在此</div>
@@ -244,7 +244,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
                                 <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>
                                 <!-- 6.3.1 (T-6.3.1.2): 复盘日期逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 66px, 见 layout.css) -->
-                                <qc-virtual-list v-else class="market-review-date-items" :items="marketReviews" :row-height="66" aria-label="复盘日期列表">
+                                <qc-virtual-list v-else class="market-review-date-items" :items="marketReviews" :row-height="66" :aria-label="t('a11y.reviewDateList')">
                                     <template #default="{ item }">
                                     <div class="market-review-date-item"
                                          :class="{ 'is-active': item.date === selectedReviewDate }" role="button" tabindex="0"
@@ -269,7 +269,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             <template v-if="!selectedReviewDate">
                                 <qc-state-panel v-if="marketReviewLoading" type="loading"></qc-state-panel>
                                 <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
-                                    desc="请检查网络后重试" @retry="loadMarketReviews"></qc-state-panel>
+                                    :desc="t('state.descNetwork')" @retry="loadMarketReviews"></qc-state-panel>
                                 <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
                                     desc="尚未生成任何市场复盘报告"></qc-state-panel>
                                 <div v-else>
@@ -278,10 +278,10 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                         <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
                                     </div>
                                     <!-- 6.3.1 (T-6.3.1.2): 复盘列表逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 60px, 见 themes.css) -->
-                                    <qc-virtual-list class="market-review-list market-review-list-vlist" :items="marketReviews" :row-height="60" aria-label="每日复盘列表">
+                                    <qc-virtual-list class="market-review-list market-review-list-vlist" :items="marketReviews" :row-height="60" :aria-label="t('a11y.dailyReviewList')">
                                         <template #default="{ item }">
                                         <div class="market-review-row"
-                                             tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"
+                                             tabindex="0" role="button" :aria-label="t('a11y.viewMarketReview', { date: item.date })"
                                              @click="openMarketReview(item.date)"
                                              @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)">
                                             <div class="market-review-row-main">
@@ -307,7 +307,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             </div>
                             <qc-state-panel v-if="marketReviewDetailLoading" type="loading"></qc-state-panel>
                             <qc-state-panel v-else-if="marketReviewDetailError" type="error" title="复盘详情加载失败"
-                                desc="请检查网络后重试" @retry="loadMarketReviewDetail(selectedReviewDate)"></qc-state-panel>
+                                :desc="t('state.descNetwork')" @retry="loadMarketReviewDetail(selectedReviewDate)"></qc-state-panel>
                             <template v-else-if="marketReviewDetail">
                                 <!-- ① 三大指数表现 -->
                                 <div class="market-review-section">

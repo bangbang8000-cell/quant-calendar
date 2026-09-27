@@ -8,6 +8,9 @@
   window.__quantModules.researchPage.factor = {
     create: function (ctx) {
       const { ref, seq: _seq, withAuth, authHeaders, activeStrategyId, paramValues } = ctx;
+      // 6.3.1 (T-6.3.1.5): i18n 助手 — 本轮新增站内消息文案走翻译函数
+      const _i18n = (window.__quantModules && window.__quantModules.i18n) || {};
+      const t = (typeof _i18n.t === 'function') ? _i18n.t : (function (k) { return String(k); });
       // ===== 因子研究 (v3.20 P1-F8) =====
       const factorKey = ref('mom20');
       const factorIcLoading = ref(false);
@@ -67,7 +70,7 @@
           factorIcReport.value = rep;
         } catch (e) {
           console.error('[research] 因子IC分析失败:', e);
-          ElementPlus.ElMessage.error('因子 IC 分析失败: ' + e.message);
+          ElementPlus.ElMessage.error(t('msg.factorIcFailed', { msg: e.message }));
         } finally {
         if (seq === _seq.n) factorIcLoading.value = false;
         }
@@ -89,11 +92,11 @@
           if (res && res.layers) {
             factorLayerResult.value = res;
           } else {
-            ElementPlus.ElMessage.warning('分层回测: ' + (res.message || '无数据'));
+            ElementPlus.ElMessage.warning(t('msg.layerBacktest', { msg: res.message || t('msg.noData') }));
           }
         } catch (e) {
           console.error('[research] 分层回测失败:', e);
-          ElementPlus.ElMessage.error('分层回测失败: ' + e.message);
+          ElementPlus.ElMessage.error(t('msg.layerBacktestFailed', { msg: e.message }));
         } finally {
         if (seq === _seq.n) factorLayerLoading.value = false;
         }
@@ -119,11 +122,11 @@
           if (res && res.detail) {
             factorDetail.value = res.detail;
           } else {
-            ElementPlus.ElMessage.warning('因子详情: ' + (res.message || '无数据'));
+            ElementPlus.ElMessage.warning(t('msg.factorDetail', { msg: res.message || t('msg.noData') }));
           }
         } catch (e) {
           console.error('[research] 因子详情失败:', e);
-          ElementPlus.ElMessage.error('因子详情失败: ' + e.message);
+          ElementPlus.ElMessage.error(t('msg.factorDetailFailed', { msg: e.message }));
         } finally {
         if (seq === _seq.n) factorDetailLoading.value = false;
         }
