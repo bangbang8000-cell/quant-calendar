@@ -9,7 +9,11 @@ FRONTEND = os.path.join(BASE, "frontend")
 sys.path.insert(0, os.path.join(BASE, "backend"))
 
 
+import page_source
 def _read_f(rel):
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     p = os.path.join(FRONTEND, *rel.split("/"))
     with open(p, encoding="utf-8") as f:
         return f.read()

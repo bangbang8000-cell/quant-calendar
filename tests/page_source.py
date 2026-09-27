@@ -53,6 +53,11 @@ _LOGIC_SIDECARS = {
         "frontend/js/watchlist/analytics.js",
         "frontend/js/watchlist/realtime.js",
     ],
+    # 仅有模板分治的页面（ai-page）无需登记：模板引用由 _TPL_HEAD_RE 自动重建。
+    # 短线复盘页另含引导逻辑域下沉（T-6.3.0.9）。
+    "frontend/js/components/shortterm-page.js": [
+        "frontend/js/components/shortterm/logic-tour.js",
+    ],
 }
 
 _texts = None

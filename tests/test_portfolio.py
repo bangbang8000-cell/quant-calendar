@@ -362,7 +362,11 @@ class TestPortfolioApi:
 
 # ─── 前端一致性 ─────────────────────────────────────────────────
 
+import page_source
 def _read_frontend(rel: str) -> str:
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND_ROOT, rel.replace('/', os.sep)), encoding='utf-8') as f:
         return f.read()
 

@@ -13,7 +13,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(ROOT, "frontend")
 
 
+import page_source
 def _read(rel):
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
         return f.read()
 

@@ -111,3 +111,53 @@ def test_watchlist_domain_surface_parity():
              for k in golden["keys"] if golden["types"][k] != live["types"][k]}
     assert not drift, "自选域返回面类型漂移 (基线→现网): %s" % drift
     assert live["count"] == golden["count"]
+
+
+# ─── 6.3.0 (T-6.3.0.9): 短线复盘引导域 ─────────────────────────────────────
+# 常量即拆分前 shortterm-page.js setup 对该域的导出面（同名单一来源，无需另存基线文件）
+SHORTTERM_TOUR_FRAGMENT = "components/shortterm/logic-tour.js"
+SHORTTERM_TOUR_SURFACE = {
+    "maybeShowShorttermTour": "function",
+    "shorttermTourFinish": "function",
+    "shorttermTourIsLast": "computed",
+    "shorttermTourNext": "function",
+    "shorttermTourProg": "computed",
+    "shorttermTourSkip": "function",
+    "shorttermTourState": "ref",
+    "shorttermTourStep": "computed",
+    "shorttermTourVisible": "ref",
+}
+
+TOUR_PROBE = r"""
+eval(fs.readFileSync(process.argv[1], 'utf8'));
+const mod = global.window.__quantModules && global.window.__quantModules.shorttermPage
+  && global.window.__quantModules.shorttermPage.tour;
+if (!mod || typeof mod.create !== 'function') { console.error('FAIL: tour.create 未注册'); process.exit(3); }
+let out;
+try {
+  out = mod.create({ ref, computed, currentSubPage: ref('overview') });
+} catch (e) {
+  console.error('THROW: ' + (e && e.stack ? e.stack.split('\n').slice(0, 4).join(' | ') : e));
+  process.exit(2);
+}
+const types = {};
+for (const k of Object.keys(out).sort()) {
+  const v = out[k];
+  if (v && typeof v === 'object' && Object.getOwnPropertyDescriptor(v, 'value')) {
+    types[k] = Object.getOwnPropertyDescriptor(v, 'value').get ? 'computed' : 'ref';
+  } else { types[k] = typeof v; }
+}
+process.stdout.write(JSON.stringify(types));
+"""
+
+
+def test_shortterm_tour_domain_surface_parity():
+    """短线引导域返回面与拆分前一致（键集合 + 值类型 + 装配零异常）"""
+    if shutil.which("node") is None:
+        pytest.skip("node 不可用")
+    frag = os.path.join(FRONTEND, "js", *SHORTTERM_TOUR_FRAGMENT.split("/"))
+    proc = subprocess.run(["node", "-e", PRELUDE + TOUR_PROBE, frag],
+                          capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, "node 装配失败(疑似缺失 ctx 依赖): %s" % proc.stderr
+    live = json.loads(proc.stdout)
+    assert live == SHORTTERM_TOUR_SURFACE, "短线引导域返回面漂移: %s" % live

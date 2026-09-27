@@ -23,8 +23,9 @@ def test_virtual_list_spread_across_files():
     files = []
     for p in COMPONENTS.rglob("*.js"):
         if "qc-virtual-list" in p.read_text(encoding="utf-8", errors="ignore"):
-            files.append(p.name)
-    assert "ai-page.js" in files, "评估历史/自选应使用虚拟列表"
+            files.append(p.relative_to(COMPONENTS).as_posix())
+    # 6.3.0 (T-6.3.0.9): AI 页模板分治至 components/ai/view-part*.js —— 按目录归属判定
+    assert any(f == "ai-page.js" or f.startswith("ai/") for f in files), "评估历史/自选应使用虚拟列表"
     assert len(files) >= 2, f"虚拟列表应覆盖多个页面文件, 实际: {files}"
 
 
