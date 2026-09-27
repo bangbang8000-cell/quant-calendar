@@ -24,6 +24,7 @@ class AIEvalLLMMixin:
         """6.3.2 (T-6.3.2.1): AI 调用路径结构化字段 — 单行 JSON 事件 (best-effort)
 
         字段: stock_code/vendor/model/ok/latency_ms/note, 供调用次数/耗时/失败率统计。
+        6.3.3 (T-6.3.3.2): 同步写入 metrics 用量统计 (quant_ai_*).
         """
         try:
             import logging as _lg
@@ -34,6 +35,11 @@ class AIEvalLLMMixin:
                 ok=bool(ok), latency_ms=round(latency_ms, 2), note=note)
         except Exception as _e:
             logging.getLogger(__name__).warning("AI 结构化事件写入失败 (忽略): %s", _e)
+        try:
+            import metrics
+            metrics.record_ai_call(bool(ok), latency_ms)
+        except Exception as _e:
+            logging.getLogger(__name__).warning("AI 用量统计写入失败 (忽略): %s", _e)
 
     def _call_llm(self, model: ModelProvider, stock_code: str, stock_name: str, market_data: Dict, strategy: str = 'default'):
         """

@@ -44,13 +44,15 @@ def build_morning_brief(ctx, now=None):
 
 def build_evening_brief(ctx, now=None):
     """ctx: {review_summary, verify_items[], holdings_changed: int}
-    返回 (markdown 文本, ok)"""
+    返回 (markdown 文本, ok) — ok 与早报口径一致: 关键内容缺失 (复盘摘要) 时 False"""
     ctx = ctx or {}
     lines = ["## 盘后晚报 " + _date_str(now), ""]
     summary = str(ctx.get("review_summary") or "").strip()
+    ok = True
     if summary:
         lines.append("**复盘摘要**: " + summary)
     else:
+        ok = False  # 6.3.3 (T-6.3.3.1): 与早报口径统一 — 关键内容缺失标记降级
         lines.append("**复盘摘要**: 复盘数据暂不可用（生成失败已重试）")
     verify = ctx.get("verify_items") or []
     if verify:
@@ -62,4 +64,4 @@ def build_evening_brief(ctx, now=None):
         lines.append(f"**持仓变动**: 今日 {changed} 只持仓有变动")
     lines.append("")
     lines.append("> 晚报由系统自动生成，数据仅供参考，不构成投资建议。")
-    return "\n".join(lines), True
+    return "\n".join(lines), ok

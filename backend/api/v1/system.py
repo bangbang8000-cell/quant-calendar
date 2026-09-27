@@ -53,6 +53,19 @@ def get_metrics() -> dict:
         result["data_sources"] = get_health_metrics()
     except Exception:
         result["data_sources"] = []
+    # 6.3.3 (T-6.3.3.2): AI 用量统计 — 调用次数/耗时/失败率 + 比例偏高提示
+    try:
+        from metrics import ai_usage
+        usage = ai_usage()
+        result["ai_usage"] = usage
+        # 比例偏高 (有量级且失败率 > 20%) → 面板提示
+        result["ai_alert"] = (
+            usage["calls"] >= 10 and usage["failure_rate"] > 20.0
+        )
+    except Exception:
+        result["ai_usage"] = {"calls": 0, "failures": 0, "failure_rate": 0.0,
+                              "avg_ms": 0.0, "p95_ms": 0.0}
+        result["ai_alert"] = False
     return result
 
 

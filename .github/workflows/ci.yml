@@ -128,6 +128,8 @@ jobs:
         run: python -m pytest tests/test_coverage_gate_631.py -q -m "not e2e"
       - name: "6.3.2 效率与可靠性门禁 (T-6.3.2.1~.4: 日志口径/备份校验调度/告警联动/日志轮转)"
         run: python -m pytest tests/test_logging_consistency_632.py tests/test_backup_schedule_632.py             tests/test_alert_linkage_632.py tests/test_log_rotation_632.py -q -m "not e2e"
+      - name: "6.3.3 智能化收敛门禁 (T-6.3.3.1/.2: AI 降级口径统一 / AI 观测用量统计)"
+        run: python -m pytest tests/test_ai_fallback_633.py tests/test_ai_obs_633.py -q -m "not e2e"
 
   # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:

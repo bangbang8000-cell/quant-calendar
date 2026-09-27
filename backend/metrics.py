@@ -43,6 +43,9 @@ _request_times = deque(maxlen=_WINDOW)  # 最近 N 次请求延迟 (秒)
 _scheduler = {}         # task -> {last_run, last_success, success, failure}
 _backup = {"success": 0, "failure": 0, "last_success": None}
 
+# 6.3.3 (T-6.3.3.2): AI 调用观测 — 次数/失败率/耗时
+_ai = {"calls": 0, "failures": 0, "latencies": deque(maxlen=_WINDOW)}
+
 # 磁盘指标: 默认为 None, render 时尝试 os.statvfs 计算; set_disk 可注入 (Windows 无 statvfs)
 _disk_free_bytes = None
 _disk_total_bytes = None
@@ -63,6 +66,10 @@ def reset():
         _backup["success"] = 0
         _backup["failure"] = 0
         _backup["last_success"] = None
+        _ai.clear()
+        _ai["calls"] = 0
+        _ai["failures"] = 0
+        _ai["latencies"] = deque(maxlen=_WINDOW)
         _disk_free_bytes = None
         _disk_total_bytes = None
         _start_ts = None
@@ -150,6 +157,38 @@ def record_backup(success: bool) -> None:
             _backup["last_success"] = time.time()
         else:
             _backup["failure"] += 1
+
+
+def record_ai_call(ok: bool, latency_ms: float) -> None:
+    """6.3.3 (T-6.3.3.2): 记录一次 AI 调用 (次数/失败/耗时) — 供用量统计"""
+    with _lock:
+        _ai["calls"] += 1
+        if not ok:
+            _ai["failures"] += 1
+        _ai["latencies"].append(max(float(latency_ms or 0), 0.0))
+
+
+def ai_usage() -> dict:
+    """6.3.3 (T-6.3.3.2): AI 用量统计 — 调用次数/失败率/平均与 p95 耗时 (毫秒)
+
+    无调用时返回全 0; 供 /api/system/metrics 输出与面板提示。
+    """
+    with _lock:
+        calls = _ai["calls"]
+        failures = _ai["failures"]
+        latencies = list(_ai["latencies"])
+    if calls == 0:
+        return {"calls": 0, "failures": 0, "failure_rate": 0.0,
+                "avg_ms": 0.0, "p95_ms": 0.0}
+    avg = sum(latencies) / len(latencies) if latencies else 0.0
+    p95 = _p95(latencies) if latencies else 0.0
+    return {
+        "calls": calls,
+        "failures": failures,
+        "failure_rate": round(failures / calls * 100, 2),
+        "avg_ms": round(avg, 2),
+        "p95_ms": round(p95, 2),
+    }
 
 
 def set_disk(free_bytes=None, total_bytes=None) -> None:
@@ -305,6 +344,36 @@ def _backup_metrics() -> str:
     return "\n".join(lines)
 
 
+def _ai_metrics() -> str:
+    """6.3.3 (T-6.3.3.2): AI 调用用量指标"""
+    with _lock:
+        ai = {"calls": _ai["calls"], "failures": _ai["failures"],
+              "latencies": list(_ai["latencies"])}
+    lines = [
+        "# HELP quant_ai_calls_total AI 调用次数",
+        "# TYPE quant_ai_calls_total counter",
+        "# HELP quant_ai_failures_total AI 调用失败次数",
+        "# TYPE quant_ai_failures_total counter",
+        "# HELP quant_ai_failure_rate AI 调用失败率 (%)",
+        "# TYPE quant_ai_failure_rate gauge",
+        "# HELP quant_ai_latency_avg_seconds AI 调用平均耗时 (秒)",
+        "# TYPE quant_ai_latency_avg_seconds gauge",
+        "# HELP quant_ai_latency_p95_seconds AI 调用 p95 耗时 (秒)",
+        "# TYPE quant_ai_latency_p95_seconds gauge",
+    ]
+    lines.append(f"quant_ai_calls_total {ai['calls']}")
+    lines.append(f"quant_ai_failures_total {ai['failures']}")
+    if ai["calls"]:
+        failures = ai["failures"]
+        lat = ai["latencies"]
+        avg = sum(lat) / len(lat) if lat else 0.0
+        p95 = _p95(lat) if lat else 0.0
+        lines.append(f"quant_ai_failure_rate {_fmt(round(failures / ai['calls'] * 100, 2))}")
+        lines.append(f"quant_ai_latency_avg_seconds {_fmt(round(avg / 1000.0, 6))}")
+        lines.append(f"quant_ai_latency_p95_seconds {_fmt(round(p95 / 1000.0, 6))}")
+    return "\n".join(lines)
+
+
 def _disk_metrics() -> str:
     """磁盘指标: 优先 set_disk 注入, 否则 os.statvfs (仅 Linux 可用)"""
     global _disk_free_bytes, _disk_total_bytes
@@ -368,6 +437,7 @@ def render_metrics() -> str:
         _datasource_metrics(),
         _scheduler_metrics(),
         _backup_metrics(),
+        _ai_metrics(),
         _disk_metrics(),
         _slo_metrics(),
     ]

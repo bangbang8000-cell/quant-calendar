@@ -18,6 +18,23 @@ logger = logging.getLogger(__name__)
 
 class AIEvalCoreMixin:
     """AIEvaluator 评估主流程 Mixin(_eval) — 自 _eval.py 拆分"""
+    @staticmethod
+    def _build_data_gaps(market_data: Dict) -> list:
+        """6.3.3 (T-6.3.3.1): 无数据时说明缺什么 — 输出数据缺口清单 (供前端展示降级原因)
+
+        market_data 为真实数据时返回空表; 缺口逐项标注 (K线/基本面/最近交易日/阶段涨跌幅)。
+        """
+        md = market_data or {}
+        gaps = []
+        if not md.get("has_kline"):
+            gaps.append("K线数据")
+        if not md.get("has_fundamentals"):
+            gaps.append("基本面数据")
+        if not (md.get("latest") or {}):
+            gaps.append("最近交易日数据")
+        if md.get("pct_5d") is None and md.get("pct_20d") is None:
+            gaps.append("阶段涨跌幅")
+        return gaps
     def recommend_strategies(self, watchlist: list = None, username: str = 'default') -> Dict:
         """
         基于自选股风格推荐策略
@@ -258,6 +275,9 @@ class AIEvalCoreMixin:
             },
             # V5.3.0 (T-5.3.5.1 / FR-5.3.5.1): AI 评估归因 — 命中/未命中因子清单 + 模型一致性提示
             "attribution": self._build_attribution(market_data, result),
+            # 6.3.3 (T-6.3.3.1): 数据缺口说明 + 降级标记 (无数据时说明缺什么)
+            "data_gaps": self._build_data_gaps(market_data),
+            "degraded": result.get("level") in ("评估失败", "无可用模型"),
         }
         history = self._load_history_for(username)
         history.insert(0, record)

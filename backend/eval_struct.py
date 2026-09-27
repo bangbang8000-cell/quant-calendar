@@ -35,16 +35,20 @@ def extract_json_block(text: str):
 
 
 def parse_eval_structured(text: str):
-    """解析评估/问股输出 → 结构化骨架; 失败降级。
+    """解析评估/问股输出 → 结构化骨架; 失败降级并标注原因。
 
-    返回 {"structured": bool, conclusion, evidence[], risk, score, signal, text}
+    返回 {"structured": bool, fallback_reason, conclusion, evidence[], risk, score, signal, text}
+    - fallback_reason: 结构化失败时标注原因 (无输出文本 / 解析失败 / 骨架为空),
+      前端据此展示「原文 + 降级说明」; 成功时为 ""。
     """
     if not text:
-        return {"structured": False, "conclusion": "", "evidence": [],
+        return {"structured": False, "fallback_reason": "无输出文本",
+                "conclusion": "", "evidence": [],
                 "risk": "", "score": None, "signal": "", "text": text or ""}
     d = extract_json_block(text)
     if not d:
-        return {"structured": False, "conclusion": "", "evidence": [],
+        return {"structured": False, "fallback_reason": "未能解析出 JSON 骨架",
+                "conclusion": "", "evidence": [],
                 "risk": "", "score": None, "signal": "", "text": text}
     evidence = d.get("evidence") or []
     if isinstance(evidence, str):
@@ -56,6 +60,7 @@ def parse_eval_structured(text: str):
         signal = ""
     out = {
         "structured": True,
+        "fallback_reason": "",
         "conclusion": str(d.get("conclusion") or "").strip(),
         "evidence": [str(e).strip() for e in evidence if str(e).strip()],
         "risk": str(d.get("risk") or "").strip(),
@@ -63,7 +68,8 @@ def parse_eval_structured(text: str):
         "signal": signal,
         "text": text,
     }
-    # 骨架空(无结论且无评分) → 仍视为结构化失败, 走原文
+    # 骨架空(无结论且无评分) → 仍视为结构化失败, 走原文并标注
     if not out["conclusion"] and out["score"] is None:
         out["structured"] = False
+        out["fallback_reason"] = "骨架为空 (无结论且无评分)"
     return out
