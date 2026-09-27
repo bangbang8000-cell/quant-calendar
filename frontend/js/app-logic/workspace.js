@@ -19,6 +19,8 @@
                 const backtestCapital = ref(100000);
                 const backtestRunning = ref(false);
                 const backtestResult = ref(null);
+                // 6.3.1 (T-6.3.1.3): 回测取数失败标志 (runBacktest catch 真实置位, 供四态面板承接)
+                const backtestError = ref(false);
                 let backtestChart = null;
                 let _backtestCurve = null;  // v3.15 (15.4): 主题重绘缓存
                 async function runBacktest() {
@@ -33,6 +35,7 @@
                     }
                     backtestRunning.value = true;
                     backtestResult.value = null;
+                    backtestError.value = false;
                     try {
                         // V4.0 M1-4: 统一走策略 SDK 回测引擎(防前视/样本内外/过拟合), 旧 /api/backtest 退役
                         const res = await fetch('/api/strategies/' + backtestStrategy.value + '/backtest', {
@@ -62,6 +65,7 @@
                         renderBacktestChart(r.equity_curve);
                         ElementPlus.ElMessage.success('回测完成');
                     } catch (e) {
+                        backtestError.value = true;
                         ElementPlus.ElMessage.error(e.message || '回测失败');
                     } finally {
                         backtestRunning.value = false;
@@ -477,7 +481,7 @@
                 }
 return {
         backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
-        backtestRunning, backtestResult, runBacktest,
+        backtestRunning, backtestResult, backtestError, runBacktest,
         currentPageName, lazyTick, pageComp, showUserMenu,
         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,

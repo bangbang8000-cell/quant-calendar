@@ -28,6 +28,8 @@
       // v3.17.6 (FR-3.17.6): 评估命中率（决策复盘闭环）
       const trackData = ref(null);
       const trackLoading = ref(false);
+      // 6.3.1 (T-6.3.1.3): 四态统一 — 命中率取数失败错误标志 (catch 置 true)
+      const trackError = ref(false);
       const trackWindows = [
         { key: 'n5', label: '5 日' },
         { key: 'n10', label: '10 日' },
@@ -50,6 +52,7 @@
       }
       async function loadTrack() {
         trackLoading.value = true;
+        trackError.value = false;
         try {
           const res = await fetch('/api/ai/track');
           const data = await res.json();
@@ -57,6 +60,7 @@
         } catch (e) {
           console.warn('[eval-track] 评估命中率加载失败:', e);
           trackData.value = null;
+          trackError.value = true;
         } finally {
           trackLoading.value = false;
         }
@@ -154,9 +158,19 @@
         else _autoFocusLoading = false;
       }, { immediate: true });
 
+      // 6.3.1 (T-6.3.1.3): 重点跟踪子页四态 — FocusView 自管取数, 上报状态由页面侧统一面板承接
+      const focusState = ref({ error: false, empty: false });
+      const focusViewRef = ref(null);
+      function onFocusLoadState(s) { if (s) focusState.value = s; }
+      function reloadFocus() {
+        const r = focusViewRef.value;
+        if (r && typeof r.loadAll === 'function') r.loadAll();
+      }
+
       return {
-        ...state, trackData, trackLoading, trackWindows, fmtTrackRate, loadTrack,
+        ...state, trackData, trackLoading, trackError, trackWindows, fmtTrackRate, loadTrack,
         trackWindow, setTrackWindow, trackHitText,
+        focusState, focusViewRef, onFocusLoadState, reloadFocus,
         positions, summary, trades, loading, loadError,
         showAddForm, addForm, addSaving,
         tradeFormVisible, tradeForm, tradeSaving,

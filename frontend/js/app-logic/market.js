@@ -12,6 +12,8 @@
 
       // ===== 市场行情数据 =====
       const marketData = ref({ indices: [], market_sentiment: null });
+      // 6.3.1 (T-6.3.1.3): 行情取数失败标志 (fetchMarketData catch 置 true, 供四态面板承接)
+      const marketError = ref(false);
       let marketRefreshTimer = null;
 
       // ===== 指数详情 =====
@@ -46,13 +48,14 @@
 
       // ===== 市场行情API =====
       async function fetchMarketData() {
+        marketError.value = false;
         try {
           const res = await fetch('/api/market/overview');
           const data = await res.json();
           marketData.value = data;
           // 智能设置下次更新时间
           scheduleNextMarketRefresh(data);
-        } catch (e) { console.error('获取市场行情失败:', e); }
+        } catch (e) { marketError.value = true; console.error('获取市场行情失败:', e); }
       }
 
       // ===== 智能设置行情刷新 =====
@@ -247,7 +250,7 @@
       }
 
       return {
-        marketData, marketRefreshTimer, fetchMarketData,
+        marketData, marketRefreshTimer, marketError, fetchMarketData,
         indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
         showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
         disposeStockKline, isMobile, zoomKlineRange,

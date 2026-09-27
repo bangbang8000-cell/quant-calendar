@@ -17,7 +17,7 @@
       function goSystemSub(sp) { state.currentSubPage.value = sp; }
 
       // V6.6.1 (PRD F-6.6.8 方案A): 通知中心独立子页 — 进入即加载三 Tab 数据
-      function loadNotificationData() { loadAlertRules(); loadAlertHistory(); loadAlertChannels(); }
+      function loadNotificationData() { ncError.value = false; loadAlertRules(); loadAlertHistory(); loadAlertChannels(); }
 
       Vue.watch(() => state.currentSubPage && state.currentSubPage.value, (sub) => {
         if (sub === 'autoeval' && state.loadAiVendors) state.loadAiVendors();
@@ -48,13 +48,16 @@
       // 6.1.2 (B5): 数据新鲜度 (datasource 子页)
       const freshnessItems = Vue.ref([]);
       const freshnessLoading = Vue.ref(false);
+      const freshnessError = Vue.ref(false);   // 6.3.1 (T-6.3.1.3): 数据新鲜度取数失败 (真实置位)
       async function loadFreshness() {
         freshnessLoading.value = true;
+        freshnessError.value = false;
         try {
           const r = await fetch('/api/meta/freshness');
           const d = await r.json();
           if (d && d.success) freshnessItems.value = d.items || [];
-        } catch (e) { /* 忽略 */ }
+          else freshnessError.value = true;
+        } catch (e) { freshnessError.value = true; }
         freshnessLoading.value = false;
       }
       const openApiKeyName = Vue.ref('');
@@ -130,6 +133,10 @@
           return r.json();
         });
       };
+      // ─── 6.3.1 (T-6.3.1.3): 调度/护栏/用量/功能配置 四态 ───
+      // 错误标志 (healthDetailError/factCheckError/sysMonitorError/feishuConfigError) 均下沉到
+      // 真实取数 loader (app-logic/ops.js 与 system.js), 经 qcState 展开, 本页不造探针/包装。
+
       async function refreshHealth() {
         healthLoading.value = true;
         healthError.value = null;
@@ -197,33 +204,37 @@
       const ncSilence = Vue.ref(false);
       const ncSilenceMinutes = Vue.ref(60);
       const ncMsg = Vue.ref('');
+      const ncError = Vue.ref(false);   // 6.3.1 (T-6.3.1.3): 通知中心取数失败 (真实置位)
       function ncTypeLabel(t) {
         return { price_above: '价格突破', price_below: '价格跌破', pct_change: '涨跌幅超', volume_surge: '量比异动', new_pool: '入池' }[t] || t;
       }
       async function loadAlertRules() {
         ncLoading.value = true;
+        ncError.value = false;
         try {
           const r = await (await fetch('/api/alerts/rules')).json();
           ncRules.value = (r && r.rules) || [];
-        } catch (err) { ncMsg.value = '规则加载失败: ' + err; }
+        } catch (err) { ncMsg.value = '规则加载失败: ' + err; ncError.value = true; }
         finally { ncLoading.value = false; }
       }
       async function loadAlertHistory() {
         ncLoading.value = true;
+        ncError.value = false;
         try {
           const r = await (await fetch('/api/alerts/history?limit=50')).json();
           ncHistory.value = (r && r.history) || [];
-        } catch (err) { ncMsg.value = '历史加载失败: ' + err; }
+        } catch (err) { ncMsg.value = '历史加载失败: ' + err; ncError.value = true; }
         finally { ncLoading.value = false; }
       }
       async function loadAlertChannels() {
         ncLoading.value = true;
+        ncError.value = false;
         try {
           const c = await (await fetch('/api/alerts/channels')).json();
           const s = await (await fetch('/api/alerts/silence')).json();
           ncChannels.value = (c && c.channels) || [];
           ncSilence.value = !!(s && s.silenced);
-        } catch (err) { ncMsg.value = '通道状态加载失败: ' + err; }
+        } catch (err) { ncMsg.value = '通道状态加载失败: ' + err; ncError.value = true; }
         finally { ncLoading.value = false; }
       }
       function onNcTab(tab) {
@@ -451,7 +462,9 @@
         onNcTab, loadAlertRules, loadAlertHistory, loadAlertChannels,
         addAlertRule, toggleAlertRule, removeAlertRule, applySilence, clearSilence,
         // 6.1.2 (B5): 数据新鲜度
-        freshnessItems, freshnessLoading, loadFreshness,
+        freshnessItems, freshnessLoading, freshnessError, loadFreshness,
+        // 6.3.1 (T-6.3.1.3): 通知中心四态
+        ncError,
         goSystemSub,
       };
     },

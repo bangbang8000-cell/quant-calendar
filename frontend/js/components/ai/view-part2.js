@@ -226,8 +226,11 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                     </div>
 
                     <!-- v5.4.0 (FR-5.4.4): 重点跟踪视图 -->
+                    <!-- 6.3.1 (T-6.3.1.3): 空/错误态由 FocusView 上报, 页面侧统一面板承接 -->
                     <div v-else-if="currentSubPage === 'focus'">
-                        <qc-focus-view></qc-focus-view>
+                        <qc-state-panel v-if="focusState.error" type="error" @retry="reloadFocus"></qc-state-panel>
+                        <qc-state-panel v-else-if="focusState.empty" type="empty" icon="target" title="暂无重点跟踪数据" desc="当前日期/时段暂无评估结果，可切换日期或时段"></qc-state-panel>
+                        <qc-focus-view ref="focusViewRef" v-show="!focusState.error && !focusState.empty" @load-state="onFocusLoadState"></qc-focus-view>
                     </div>
 
                     <!-- v3.17.8 (FR-3.17.5): 组合/模拟持仓视图 代码起点 -->

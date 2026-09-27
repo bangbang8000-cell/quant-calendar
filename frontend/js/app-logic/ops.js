@@ -98,21 +98,27 @@
       const sysMonitor = ref({});
       const analyticsRank = ref([]);
       const analyticsDays = ref(7);
+      // 6.3.1 (T-6.3.1.3): 运维取数失败标志 (loader catch 真实置位, 供子页四态面板承接)
+      const sysMonitorError = ref(false);      // loadSysMonitor 失败
+      const healthDetailError = ref(false);    // loadHealthDetail 失败
+      const factCheckError = ref(false);       // loadFactCheck 失败
       async function loadSysMonitor() {
+        sysMonitorError.value = false;
         try {
           const res = await fetch('/api/system/monitor');
           const data = await res.json();
           if (data.success) sysMonitor.value = data;
-        } catch (e) { console.warn('loadSysMonitor failed:', e); }
+        } catch (e) { sysMonitorError.value = true; console.warn('loadSysMonitor failed:', e); }
       }
       // v3.17.12 (FR-3.17.12): 健康面板详情 — 调度任务/数据源延迟/备份最近成功/磁盘剩余
       const healthDetail = ref({});
       async function loadHealthDetail() {
+        healthDetailError.value = false;
         try {
           const res = await fetch('/api/system/health-detail');
           const data = await res.json();
           if (data.success) healthDetail.value = data;
-        } catch (e) { console.warn('loadHealthDetail failed:', e); }
+        } catch (e) { healthDetailError.value = true; console.warn('loadHealthDetail failed:', e); }
       }
       async function loadAnalytics() {
         try {
@@ -150,11 +156,12 @@
       const factCheck = ref(null);
       const factCheckRunning = ref(false);
       async function loadFactCheck() {
+        factCheckError.value = false;
         try {
           const res = await fetch('/api/ai/fact-check/latest');
           const data = await res.json();
           factCheck.value = data && data.success ? (data.data || null) : null;
-        } catch (e) { console.warn('loadFactCheck failed:', e); }
+        } catch (e) { factCheckError.value = true; console.warn('loadFactCheck failed:', e); }
       }
       async function triggerFactCheck() {
         if (factCheckRunning.value) return;
@@ -310,10 +317,10 @@
         testFeishuWebhook, saveFeishuConfig,
         aiFabHidden, openAiFab,
         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
-        sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
-        healthDetail, loadHealthDetail,
+        sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics, sysMonitorError,
+        healthDetail, loadHealthDetail, healthDetailError,
         reviewTriggering, triggerMarketReview,
-        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
+        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck, factCheckError,
         backups, backupCreating, loadBackups, createBackup, restoreBackup,
         reportExporting, reportExportMsg, exportReport,
         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,

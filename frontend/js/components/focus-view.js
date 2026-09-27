@@ -40,6 +40,8 @@
 
   window.__quantComponents.FocusView = {
     name: 'qc-focus-view',
+    // 6.3.1 (T-6.3.1.3): 向页面侧上报四态 (取数失败/无数据), 由统一状态面板承接
+    emits: ['load-state'],
     template: `
       <div>
         <!-- 今日概览卡 -->
@@ -85,7 +87,7 @@
           <div class="card-title"><qc-icon name="bar-chart-3" :size="14" /> 当日多时点结果
             <span class="card-title-hint">时段: {{ sessionLabel }} · 点击行查看右栏详情</span>
           </div>
-          <div v-if="loading" class="color-secondary">加载中…</div>
+          <qc-state-panel v-if="loading" type="loading"></qc-state-panel>
           <div v-else-if="results.rows.length === 0" class="color-secondary">
             该日期/时段暂无评估结果（多时点评估由调度执行, 盘前 09:00 / 盘后 20:00 必做）
           </div>
@@ -168,7 +170,7 @@
         <!-- 效果块 -->
         <div class="card">
           <div class="card-title"><qc-icon name="trending-up" :size="14" /> 评估效果 <span class="card-title-hint">历史命中率（决策复盘）</span></div>
-          <div v-if="trackLoading" class="color-secondary">加载中…</div>
+          <qc-state-panel v-if="trackLoading" type="loading"></qc-state-panel>
           <div v-else class="flex-gap-8">
             <el-tag v-for="w in TRACK_WINDOWS" :key="w.key" size="small" :type="rateTagType(w.key)">
               {{ w.label }}: {{ fmtRate(w.key) }}
@@ -177,7 +179,7 @@
           <div v-if="trackNote" class="color-secondary mt-8">{{ trackNote }}</div>
         </div>
       </div>`,
-    setup() {
+    setup(props, { emit }) {
       const state = inject('qcState');
       const curDate = ref(toLocalDate());
       const session = ref('after_close');
@@ -187,6 +189,9 @@
       const trackLoading = ref(false);
       const trackNote = ref('');
       const loading = ref(false);
+      // 6.3.1 (T-6.3.1.3): 取数失败 / 无数据 (真实判定, 上报页面侧统一面板)
+      const hasError = ref(false);
+      const isEmpty = ref(false);
       const expanded = ref([]);
       const stockCode = ref('');
       const stockHistory = ref(null);
@@ -223,6 +228,14 @@
         }
         return '评分范围: ' + d + ' 收盘池(前一交易日算好) + 自选';
       });
+
+      // 6.3.1 (T-6.3.1.3): 汇总四态并上报 (无数据 = 结果空且历史空且无错误)
+      function emitState() {
+        isEmpty.value = !hasError.value
+          && ((results.value.rows || []).length === 0)
+          && (Object.keys(history.value.sessions || {}).length === 0);
+        emit('load-state', { error: hasError.value, empty: isEmpty.value });
+      }
 
       function fmtScore(s) {
         if (s === null || s === undefined) return '—';
@@ -284,6 +297,7 @@
       }
       async function loadResults() {
         loading.value = true;
+        hasError.value = false;
         try {
           const res = await apiFetch('/api/focus/results?date=' + curDate.value + '&session=' + session.value);
           results.value = (res && res.success && res.data) || { rows: [], actions: {}, total: 0, groups: {} };
@@ -291,8 +305,10 @@
         } catch (e) {
           console.warn('[focus] 结果加载失败:', e);
           results.value = { rows: [], actions: {}, total: 0, groups: {} };
+          hasError.value = true;
         } finally {
           loading.value = false;
+          emitState();
         }
       }
       // V5.4.0 (FR-5.4.9): 批量加载自选/入池状态 (逐股 pool 端点, 缓存)
@@ -333,7 +349,9 @@
         } catch (e) {
           console.warn('[focus] 历史加载失败:', e);
           history.value = { sessions: {}, total: 0 };
+          hasError.value = true;
         }
+        emitState();
       }
       async function loadTrack() {
         trackLoading.value = true;
@@ -348,8 +366,10 @@
         } catch (e) {
           console.warn('[focus] 效果块加载失败:', e);
           track.value = null;
+          hasError.value = true;
         } finally {
           trackLoading.value = false;
+          emitState();
         }
       }
       async function loadStockHistory() {

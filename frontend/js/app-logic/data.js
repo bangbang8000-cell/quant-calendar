@@ -18,6 +18,8 @@
       const selectedDate = ref('');
       const lastLoadTime = ref('');  // 上次数据加载时间
       const consensus = ref([]);
+      // 6.3.1 (T-6.3.1.3): 共识/视图取数失败标志 (loadConsensusData 主备接口均失败时置 true)
+      const consensusError = ref(false);
       const viewNote = ref('');  // V4.9.4: 日视图对比基准/沿用持仓提示(来自 /api/view note 字段)
 
       // ===== v3.11 (FR-3.11.4): 数据缓存与静默刷新 =====
@@ -87,6 +89,7 @@
       }
 
       async function loadConsensusData() {
+        consensusError.value = false;
         if (!selectedDate.value) return;
         const cacheKey = `${currentView.value}_${selectedDate.value}`;
         // v3.11 (11.6): 同一 key 请求在途时跳过重复拉取（首次进入 page/sub 双触发去重）
@@ -141,6 +144,7 @@
               status: 'current'
             }));
           } catch (e2) {
+            consensusError.value = true;
             ElementPlus.ElMessage.error('数据加载失败');
           }
         } finally {
@@ -175,7 +179,7 @@
       }
 
       return {
-        loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote,
+        loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote, consensusError,
         loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached,
       };
     },

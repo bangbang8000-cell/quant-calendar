@@ -78,6 +78,7 @@
       const reviewRunning = ref(false);
       const intradaySnapshots = ref(null);
       const intradayLoading = ref(false);
+      const intradayError = ref(false);   // 6.3.1 (T-6.3.1.3): 盘中快照取数失败标志 (真实置位, 供四态面板承接)
       const intradayCollecting = ref(false);
       const chatQuestion = ref('');
       const chatAnswer = ref('');
@@ -193,6 +194,13 @@
         return rows.filter(function (r) { return r.boards === ztBoardFilter.value; });
       });
       function clearBoardFilter() { ztBoardFilter.value = null; }
+      // 6.3.1 (T-6.3.1.3): 三池皆空判定 — 真实数组/梯队规模, 供 ztpool 空态承接
+      const hasAnyPool = computed(function () {
+        const p = pools.value;
+        if (!p) return false;
+        const tiers = p.ladder && p.ladder.tiers ? Object.keys(p.ladder.tiers).length : 0;
+        return ((p.zt || []).length + (p.zb || []).length + (p.dt || []).length + tiers) > 0;
+      });
 
       // V5.2.1 复盘看板: 派生展示值(硬指标, 数据诚实性: 缺失显示—)
       const moneySource = computed(function () {
@@ -538,12 +546,16 @@
       async function loadIntraday(force) {
         const seq = ++_reqSeq;
         intradayLoading.value = true;
+        intradayError.value = false;
         try {
           const url = '/api/shortterm/intraday' + (shortDate.value ? '?date=' + shortDate.value : '');
           const res = await cachedGet(url, force);
           if (seq !== _reqSeq) return;
           if (res && res.success) intradaySnapshots.value = res.snapshots || [];
-        } catch (e) { /* 保持 */ } finally {
+          else intradayError.value = true;
+        } catch (e) {
+          if (seq === _reqSeq) intradayError.value = true;
+        } finally {
           if (seq === _reqSeq) intradayLoading.value = false;
         }
       }
@@ -631,14 +643,14 @@
 
       return {
         currentPage, currentSubPage,
-        shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter,
+        shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter, hasAnyPool,
         lhbRows, lhbLoading, lhbError, lhbReason, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
         dateList, dateListLoading, loadDateList, pickDate,
         sectorType, sectorIndicator, sectorKeyword, sectorRows, filteredSectorRows, sectorPageRows, sectorPage, sectorLoading, sectorError, sectorFlowSource,
         PAGE_SIZE, gotoSector,
         review, reviewRunning,
-        intradaySnapshots, intradayLoading, intradayCollecting,
+        intradaySnapshots, intradayLoading, intradayError, intradayCollecting,
         intradaySlots, intradayMsg, slotClass, intradayStatus,
         chatQuestion, chatAnswer, chatLoading,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,

@@ -30,6 +30,9 @@ const globalConfigDirty = ref(false);
 const lastSavedTime = ref(null);
 const feishuConfigOriginal = ref(null);
 const aiConfigOriginal = ref(null);
+// 6.3.1 (T-6.3.1.3): 四态错误标志 (取数 loader 内真实置位, 供子页统一面板承接)
+const overviewError = ref(false);        // loadDashboardData 失败
+const feishuConfigError = ref(false);    // loadFeishuConfig 失败 (feature 子页)
 const tushareConfigOriginal = ref(null);
 // v1.3.0: Tushare 配置
 const tushareConfig = ref({ token: '', endpoint: 'http://api.tushare.pro', timeout: 30 });
@@ -485,6 +488,7 @@ async function testDatasource(source) {
     }
 }
 async function loadFeishuConfig() {
+    feishuConfigError.value = false;
     try {
         const res = await fetch('/api/feishu/config');
         const data = await res.json();
@@ -492,7 +496,7 @@ async function loadFeishuConfig() {
             feishuConfig.value = { ...feishuConfig.value, ...data };
             feishuConfigOriginal.value = JSON.parse(JSON.stringify(feishuConfig.value));
         }
-    } catch (e) { console.warn('loadFeishuConfig failed:', e); }
+    } catch (e) { feishuConfigError.value = true; console.warn('loadFeishuConfig failed:', e); }
 }
 async function loadAiConfig() {
     try {
@@ -559,12 +563,14 @@ async function loadSystemStatus() {
     }
 }
 async function loadDashboardData() {
+    overviewError.value = false;
     try {
         const res = await fetch('/api/dashboard');
         const dashResp = await res.json();
         dashboardData.value = dashResp.success ? dashResp.data : dashResp;
         lastRefreshTime.value = Date.now();
     } catch (e) {
+        overviewError.value = true;
         console.error('加载总览数据失败', e);
     }
 }
@@ -580,6 +586,7 @@ async function loadDashboardData() {
         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
         toggleDatasourceEdit,
         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData,
+        overviewError, feishuConfigError,
       };
     }
   };

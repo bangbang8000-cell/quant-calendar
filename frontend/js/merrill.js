@@ -74,6 +74,8 @@
     const merrillReevalResult = ref('');
     const merrillReevalLoading = ref(false);
     const merrillPrevStage = ref('');
+    // 6.3.1 (T-6.3.1.3): 美林时钟取数失败标志 (fetchMerrillClock catch 置 true, 供四态面板承接)
+    const merrillError = ref(false);
 
     let merrillRefreshTimer = null;
     const clockPrevPos = { x: 0, y: 0 };
@@ -286,6 +288,7 @@
     }
 
     async function fetchMerrillClock() {
+      merrillError.value = false;
       try {
         const res = await fetch('/api/market/merrill-clock');
         const data = await res.json();
@@ -315,6 +318,7 @@
         merrillPrevStage.value = stage;
       } catch (e) {
         console.error('获取美林时钟失败:', e);
+        merrillError.value = true;
         const recoveryCfg = merrillStagesConfig.value.recovery || {};
         merrillData.value = {
           ...recoveryCfg,
@@ -470,6 +474,7 @@
       // API
       fetchMerrillStages,
       fetchMerrillClock,
+      merrillError,
       loadMerrillTimeline,
       showTimelineStage,
       showStageDetail,

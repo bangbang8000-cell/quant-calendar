@@ -10,6 +10,11 @@ window.__quantModules.researchPage.part1 = `
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
                         <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>
+                        <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 加载/错误/空态收敛到 qc-state-panel -->
+                        <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || '策略研究数据加载失败'" desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="flask-conical" title="暂无策略研究数据" desc="先去「量化研究」加载策略注册表，或创建自定义策略"></qc-state-panel>
+                        <template v-else>
                         <!-- 快速入口网格 -->
                         <div class="dashboard-grid">
                             <div class="stat-card clickable" @click="currentSubPage = 'quant-research'">
@@ -100,6 +105,7 @@ window.__quantModules.researchPage.part1 = `
                             </div>
                             <span class="market-review-arrow">›</span>
                         </div>
+                        </template>
                     </div>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">{{ t('research.quantResearch') }}</div>
@@ -109,6 +115,7 @@ window.__quantModules.researchPage.part1 = `
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || '策略加载失败'"
                             desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0" type="empty" icon="flask-conical" title="暂无策略" desc="策略注册表为空，请检查后端策略目录或创建自定义策略"></qc-state-panel>
                         <template v-else>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon info"><qc-icon name="flask-conical" :size="18" /></div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
@@ -307,6 +314,10 @@ window.__quantModules.researchPage.part1 = `
                             <el-button :type="strategyManageMode === 'template' ? 'primary' : ''" size="small" @click="strategyManageMode = 'template'"><qc-icon name="settings" :size="14" /> 模板编辑</el-button>
                             <el-button :type="strategyManageMode === 'custom' ? 'primary' : ''" size="small" @click="strategyManageMode = 'custom'"><qc-icon name="rocket" :size="14" /> 全新创建</el-button>
                         </div>
+                        <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 策略管理加载/错误/空态 -->
+                        <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || '策略加载失败'" desc="请检查服务后重试" @retry="loadStrategies"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="layers" title="暂无可管理的策略" desc="先复制母本创建微调策略，或用 AI 代写全新策略"></qc-state-panel>
                         <template v-if="strategyManageMode === 'template'">
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">

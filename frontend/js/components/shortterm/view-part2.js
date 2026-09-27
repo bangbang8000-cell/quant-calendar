@@ -6,6 +6,7 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
+                        <qc-state-panel v-else-if="pools && !hasAnyPool" type="empty" icon="inbox" title="暂无涨跌停池数据" desc="当前交易日三池为空，可切换交易日或刷新重试"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon gold"><qc-icon name="trending-up" :size="18" /></div><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
@@ -156,6 +157,7 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         <div class="text-xs-tertiary mb-4">{{ intradayStatus }}</div>
                         <div v-if="intradayMsg" class="mb-4 text-xs-tertiary">{{ intradayMsg }}</div>
                         <qc-state-panel v-if="intradayLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="intradayError" type="error" title="盘中快照加载失败" desc="请检查网络或服务后重试" @retry="loadIntraday"></qc-state-panel>
                         <div v-else-if="intradaySnapshots && intradaySnapshots.length">
                             <div class="table-container">
                                 <el-table :data="intradaySnapshots" size="small">

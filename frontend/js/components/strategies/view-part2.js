@@ -41,9 +41,12 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                         </template>
                         </qc-detail-split>
                     </div>
+                    </template>
                     </div>
                     <!-- 子页: 策略共识榜 -->
                     <div v-else-if="currentSubPage === 'consensus'">
+                        <qc-state-panel v-if="consensusError" type="error" title="共识榜加载失败" desc="请检查网络或服务后重试" @retry="loadConsensusData"></qc-state-panel>
+                        <template v-else>
 
                     <!-- 策略共识度排行 -->
                     <div class="card">
@@ -76,6 +79,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                         </template>
                         </qc-detail-split>
                     </div>
+                    </template>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码起点 -->
                     <div v-else-if="currentSubPage === 'backtest'" class="backtest-workbench">

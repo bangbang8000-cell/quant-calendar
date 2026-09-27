@@ -169,8 +169,10 @@ window.__quantModules.aiPage.part1 = `
                             </div>
                         </div>
 
+                        <!-- 6.3.1 (T-6.3.1.3): 概览取数失败错误态（可重试） -->
+                        <qc-state-panel v-if="aiHistoryError && aiHistory.length === 0" type="error" @retry="loadAiHistory"></qc-state-panel>
                         <!-- 空状态：无任何评估记录 -->
-                        <div v-if="aiHistory.length === 0" class="card text-center-pad40x20">
+                        <div v-else-if="aiHistory.length === 0" class="card text-center-pad40x20">
                             <div class="empty-state-icon-md"><qc-icon name="bot" :size="32" /></div>
                             <div class="text-lg-semibold-primary-mb8">{{ t('ai.title') }}</div>
                             <div class="text-md-secondary-mb20">{{ t('ai.subtitle') }}</div>
@@ -188,6 +190,7 @@ window.__quantModules.aiPage.part1 = `
                             <div class="card-title">{{ t('ai.evalHitRate') }} <span class="eval-track-title-hint">对照评估后 5/10/20 个交易日实际涨跌</span></div>
                             <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
                             <qc-state-panel v-if="trackLoading" type="loading"></qc-state-panel>
+                            <qc-state-panel v-else-if="trackError" type="error" @retry="loadTrack"></qc-state-panel>
                             <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="bar-chart-3" :title="t('ai.insufficientSamples')"></qc-state-panel>
                             <template v-else>
                                 <div class="eval-track-overall">

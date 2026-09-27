@@ -2,15 +2,19 @@
 """V6.3 (TEST-PLAN 6.3 TC-6.3.2.x): 顶部栏容器化 + 页签圆角 + 命名审计 — L2 门禁"""
 import os
 import re
+import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, "frontend")
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import page_source  # noqa: E402
+
 
 def _read(rel):
-    p = os.path.join(FRONTEND, *rel.split("/"))
-    with open(p, encoding="utf-8") as f:
-        return f.read()
+    # 6.3.0: app-logic.js 已按域下沉至 app-logic/*.js, 经 page_source 透明重建
+    # (此前直接读原文件, 菜单/subPageNames 断言因下沉后取不到而失败)
+    return page_source.read(rel)
 
 
 def test_tab_radius_rectangular():

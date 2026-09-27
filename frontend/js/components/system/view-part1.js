@@ -79,7 +79,8 @@ window.__quantModules.systemPage.part1 = `
                                 <span><qc-icon name="activity" :size="14" /> 健康与可靠性 <span class="text-xs-tertiary" v-if="healthUpdatedAt">· 更新于 {{ healthUpdatedAt }}</span></span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
-                            <div class="text-sm qc-text-error" v-if="healthError">{{ healthError }}</div>
+                            <qc-state-panel v-if="healthError" type="error" :title="healthError" desc="点击重试重新加载健康与可靠性数据" @retry="refreshHealth"></qc-state-panel>
+                            <template v-else>
 
                             <!-- 启动自检摘要 -->
                             <div class="flex-c-gap-8 mb-12" v-if="startupReport">
@@ -137,6 +138,7 @@ window.__quantModules.systemPage.part1 = `
                                 </div>
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无数据源健康数据</div>
+                            </template>
                         </div>
 
                         <!-- V6.6.1 (PRD F-6.6.8 方案A): 操作审计 — 自 about 归位至运行监控 (仅管理员可见) -->
@@ -201,7 +203,8 @@ window.__quantModules.systemPage.part1 = `
                                 <span><qc-icon name="bar-chart-3" :size="14" /> 数据源健康</span>
                                 <el-button size="small" :loading="healthLoading" @click="refreshHealth">刷新</el-button>
                             </div>
-                            <div class="text-sm qc-text-error" v-if="healthError">{{ healthError }}</div>
+                            <qc-state-panel v-if="healthError" type="error" :title="healthError" desc="点击重试重新加载健康与可靠性数据" @retry="refreshHealth"></qc-state-panel>
+                            <template v-else>
                             <div class="section-block-top">
                                 <div class="section-title-base"><qc-icon name="radio-tower" :size="14" /> 数据源可用性</div>
                                 <div class="flex-c-gap-12-wrap" v-if="sourceHealth.data_sources && sourceHealth.data_sources.length">
@@ -258,11 +261,14 @@ window.__quantModules.systemPage.part1 = `
                                     </div>
                                 </div>
                             </div>
+                            </template>
                         </div>
                     </div>
 
                     <!-- V6.0 (P1-3): schedule — 调度任务独立子页 -->
                     <div v-else-if="currentSubPage === 'schedule'">
+                        <qc-state-panel v-if="healthDetailError" type="error" title="调度任务数据加载失败" desc="请检查服务后重试" @retry="loadHealthDetail"></qc-state-panel>
+                        <template v-else>
                         <div class="card">
                             <div class="card-title flex-between">
                                 <span><qc-icon name="layers" :size="14" /> 调度任务</span>
@@ -320,10 +326,13 @@ window.__quantModules.systemPage.part1 = `
                             </div>
                             <div class="text-sm-tertiary" v-else>暂无队列任务（批量评估/回测等长任务会出现在这里）</div>
                         </div>
+                        </template>
                     </div>
 
                     <!-- V6.0 (P1-3): guard — AI 事实护栏独立子页 -->
                     <div v-else-if="currentSubPage === 'guard'">
+                        <qc-state-panel v-if="factCheckError" type="error" title="事实护栏数据加载失败" desc="请检查服务后重试" @retry="loadFactCheck"></qc-state-panel>
+                        <template v-else>
                         <div class="card">
                             <div class="card-title flex-between">
                                 <span><qc-icon name="search" :size="14" /> AI 事实护栏审计</span>
@@ -353,6 +362,7 @@ window.__quantModules.systemPage.part1 = `
                                 <span class="sys-health-meta">{{ factCheck.failures.length }} 条（最近 {{ factCheck.failures[0].number }} 等）</span>
                             </div>
                         </div>
+                        </template>
                     </div>
 
                     <!-- autoeval: 自动评估配置 (v1.8.0) -->
@@ -426,7 +436,7 @@ window.__quantModules.systemPage.part1 = `
                                 </template>
                             </el-dropdown>
                         </div>
-                        <div class="text-center-danger-pad16" v-if="aiModelsError"><qc-icon name="alert-triangle" :size="14" /> {{ aiModelsError }} <el-button size="small" @click="loadAiVendors">重试</el-button></div>
+                        <qc-state-panel v-if="aiModelsError" type="error" :title="aiModelsError" desc="厂商模型配置获取失败，可重试" @retry="loadAiVendors"></qc-state-panel>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
                         <div v-for="(v,vi) in aiVendors" :key="v.vendor_key" class="card mb-12">
@@ -483,6 +493,7 @@ window.__quantModules.systemPage.part1 = `
 
                     <!-- V6.6.1 (PRD F-6.6.8 方案A): notification — 通知中心独立子页 (自 autoeval 拆出, 逻辑不变) -->
                     <div v-else-if="currentSubPage === 'notification'">
+                        <qc-state-panel v-if="ncError" type="error" title="通知中心数据加载失败" desc="请检查服务后重试" @retry="loadNotificationData"></qc-state-panel>
                         <div class="card">
                             <div class="card-title flex-between">
                                 <span><qc-icon name="bell" :size="14" /> 通知中心 <span class="text-sm-tertiary">自定义预警规则 · 投递历史 · 通道与静默</span></span>
@@ -593,6 +604,8 @@ window.__quantModules.systemPage.part1 = `
                             <el-button size="small" text @click="loadFreshness"><qc-icon name="refresh" :size="12" /> 刷新</el-button>
                         </div>
                         <div v-if="freshnessLoading" class="qc-glossary-loading">加载中…</div>
+                        <qc-state-panel v-else-if="freshnessError" type="error" title="数据新鲜度加载失败" desc="请检查服务后重试" @retry="loadFreshness"></qc-state-panel>
+                        <qc-state-panel v-else-if="freshnessItems.length === 0" type="empty" icon="inbox" title="暂无数据新鲜度记录" desc="接口未返回任何数据表，可点击刷新重试"></qc-state-panel>
                         <el-table v-else :data="freshnessItems" size="small" max-height="320">
                             <el-table-column prop="label" label="数据表" width="120" />
                             <el-table-column prop="source" label="来源" width="110" />

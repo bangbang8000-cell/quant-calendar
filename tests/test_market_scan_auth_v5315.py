@@ -5,8 +5,12 @@
 根因: research-page.js 的 loadScan 用裸 fetch(无 Authorization 头)请求
 /api/market/scan(需登录) → 401 → 前端显示无数据; loadMarketReviews 同为裸
 fetch(防御); withAuth 用错 localStorage key 'token'(应为 'quant_token').
-守护: 源码级断言 — loadMarketReviews 的 fetch 必须带 _authHeaders(),
-withAuth 必须用 quant_token.
+守护: 源码级断言 — loadMarketReviews / loadMarketReviewDetail 的 fetch 必须带
+鉴权头, withAuth 必须用 quant_token.
+
+6.3.1 (T-6.3.1.2): 域片段不再跨文件裸调注册文件的私有助手 ``_authHeaders``,
+改由注册文件经 ctx 注入为 ``authHeaders`` (research-page.js: ``authHeaders: _authHeaders``),
+故片段内断言名同步为 ``authHeaders()``; 注册文件私有助手仍名为 ``_authHeaders``.
 
 V5.5.0 变更: 原 loadScan / loadEvents 两条守护已退役 —— 异动扫描前端与事件详情
 前端随功能下线已从 research-page.js 移除(两个函数在仓库中已不存在), 后端
@@ -39,10 +43,11 @@ def _func_body(name):
 
 class TestMarketScanAuth:
     def test_loadMarketReviews_uses_auth_headers(self):
-        """市场复盘 fetch 带 _authHeaders()(防御未来加鉴权)."""
+        """市场复盘 fetch 带鉴权头(防御未来加鉴权)."""
         body = _func_body('loadMarketReviews')
         assert "fetch('/api/market/reviews" in body
-        assert "_authHeaders()" in body, "loadMarketReviews 必须带 _authHeaders()"
+        # 6.3.1 (T-6.3.1.2): 片段经 ctx 注入取 authHeaders(注册文件 _authHeaders), 不再跨文件裸调
+        assert "authHeaders()" in body, "loadMarketReviews 必须带 authHeaders()"
 
     def test_withAuth_uses_quant_token_key(self):
         """withAuth 必须用 quant_token(登录实际存储 key)."""
@@ -63,6 +68,7 @@ class TestMarketScanAuth:
 
 class TestEventsDetailAuth:
     def test_loadMarketReviewDetail_uses_auth_headers(self):
-        """复盘详情 fetch 带 _authHeaders()(防御)."""
+        """复盘详情 fetch 带鉴权头(防御)."""
         body = _func_body('loadMarketReviewDetail')
-        assert "_authHeaders()" in body, "loadMarketReviewDetail 必须带 _authHeaders()"
+        # 6.3.1 (T-6.3.1.2): 同上, 取 ctx 注入的 authHeaders
+        assert "authHeaders()" in body, "loadMarketReviewDetail 必须带 authHeaders()"

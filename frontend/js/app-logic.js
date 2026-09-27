@@ -18,7 +18,7 @@
 
                 // v3.0: 美林时钟模块 - 从 merrill.js 加载
                 const merrill = useMerrillClock();
-                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, merrillError, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
                     // V5.21: 评估轨迹 (快照) — 周期演进板的"随大模型评估更新"数据源
                     merrillSnapshots, merrillSnapshotsTotal, fetchMerrillSnapshots } = merrill;
 
@@ -34,7 +34,7 @@
                   navigateTo, ensureVisiblePage, currentUser,
                 });
                 const { backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
-                        backtestRunning, backtestResult, runBacktest,
+                        backtestRunning, backtestResult, backtestError, runBacktest,
                         currentPageName, lazyTick, pageComp, showUserMenu,
                         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
                         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
@@ -96,13 +96,13 @@
                     getLoadDashboardData, getLastRefreshTime, getFetchPoolSignals,
                 });
                 const { loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote,
-                        loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached } = __data;
+                        loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached, consensusError } = __data;
                 // v3.17.11.1: 行情/指数详情/评分动画/触摸手势域 (js/app-logic/market.js)
                 const __market = window.__quantAppLogic.market.create({
                     currentKlinePeriod, loadIndexKline, rememberDialogTrigger, menus,
                     currentPage, currentSubPage, stockDetail, selectedDate,
                 });
-                const { marketData, indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
+                const { marketData, marketError, indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
                         fetchMarketData, showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
                         disposeStockKline, isMobile, zoomKlineRange,
                         scoreAnimating, scoreDelta, scorePulse,
@@ -115,10 +115,10 @@
                         testFeishuWebhook, saveFeishuConfig,
                         aiFabHidden, openAiFab,
                         strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
-                        sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
-                        healthDetail, loadHealthDetail,
+                        sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics, sysMonitorError,
+                        healthDetail, loadHealthDetail, healthDetailError,
                         reviewTriggering, triggerMarketReview,
-                        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
+                        factCheck, factCheckRunning, loadFactCheck, triggerFactCheck, factCheckError,
                         backups, backupCreating, loadBackups, createBackup, restoreBackup,
                         reportExporting, reportExportMsg, exportReport,
                         tourVisible, tourStep, tourSteps, maybeShowTour, skipTour, finishTour,
@@ -246,7 +246,8 @@
                         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
                         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
                         toggleDatasourceEdit,
-                        loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData } = __systemDomain;
+                        loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData,
+                        overviewError, feishuConfigError } = __systemDomain;
 
                 // ===== v3.17.11.1: 登录/登出/密码/初始化向导域 (js/app-logic/auth.js) =====
                 const __auth = window.__quantAppLogic.auth.create({
@@ -331,21 +332,21 @@
                     themeHues, themeHueNames, themeHue, themeMode, hueColor, hueName,
                     density, changeDensity,
 
-                    marketData, merrillData, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
+                    marketData, marketError, merrillData, merrillError, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
                     merrillSnapshots, merrillSnapshotsTotal, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
                     backups, backupCreating, loadBackups, createBackup, restoreBackup,
                     reportExporting, reportExportMsg, exportReport,
-                    sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics,
-                    healthDetail, loadHealthDetail,
+                    sysMonitor, analyticsRank, analyticsDays, loadSysMonitor, loadAnalytics, sysMonitorError,
+                    healthDetail, loadHealthDetail, healthDetailError,
                     reviewTriggering, triggerMarketReview,
-                    factCheck, factCheckRunning, loadFactCheck, triggerFactCheck,
+                    factCheck, factCheckRunning, loadFactCheck, triggerFactCheck, factCheckError,
                     strategyRecommendations, aiUsage, loadStrategyRecommendations, loadAiUsage,
                     aiFabHidden, openAiFab,
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
-                    backtestRunning, backtestResult, runBacktest,
+                    backtestRunning, backtestResult, backtestError, runBacktest,
                     // v3.17.4 (FR-3.17.4): 回测工作台
                     btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
                     btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
@@ -401,7 +402,7 @@
                     batchRemoveWatchlist, batchEvaluateSelected, batchReevaluateHistory, batchAddToWatchlist,
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
                     handleLogin, handleGuestLogin, switchView, navigateDate, navigateTo,
-                    loadDashboardData, loadConsensusData, showStockDetail,
+                    loadDashboardData, loadConsensusData, showStockDetail, consensusError, overviewError,
                     externalStockActive,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
@@ -426,7 +427,7 @@
                     stockCount, tradeDateCount, aiStatus, appVersion, showImportDialog,
                     rateLimitConfig, rateLimitDirty, rateLimitSaving, loadRateLimit, saveRateLimit,
                     saveAllConfig, resetAllConfig, testTushareConnection, syncStockData,
-                    loadTushareConfig, loadFeishuConfig, loadSystemStatus, loadAiConfig,
+                    loadTushareConfig, loadFeishuConfig, loadSystemStatus, loadAiConfig, feishuConfigError,
                     // AI 模型管理 (v3.14 厂商化)
                     aiVendors, aiCatalog, aiModelsError, testingAllModels, savingAiModels,
                     loadAiVendors, loadAiCatalog, saveAiVendors, saveAiModels: saveAiVendors,

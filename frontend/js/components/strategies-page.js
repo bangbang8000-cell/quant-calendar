@@ -601,6 +601,11 @@
         };
       });
 
+      // 6.3.1 (T-6.3.1.3): 总览/美林/行情/共识 四子页四态
+      // 错误标志 (overviewError/merrillError/marketError/consensusError) 均下沉到真实取数 loader
+      // (system.loadDashboardData / merrill.fetchMerrillClock / market.fetchMarketData /
+      //  data.loadConsensusData) 内真实置位, 经 qcState 展开, 本页直接引用, @retry 指向同一 loader。
+
       return { ...state, todayText, tradingStatus, merrillNext, todayFocus, todaySignals, merrillConfigOpen,
         getTimelineStageColor, getTimelineStageName, getTimelineStageDesc, merrillChipStyle,
         // V5.21: 周期演进板

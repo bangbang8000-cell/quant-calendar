@@ -584,6 +584,9 @@
         }
       }
 
+      // 6.3.1 (T-6.3.1.3): 回测子页四态 — backtestError 下沉至 app-logic workspace.runBacktest 真实置位,
+      // 经 qcState 展开, 本页直接引用; @click/@retry 指向同一 loader (runBacktest)
+
       return {
         ...state,
         strategyManageMode, openStrategyManage,

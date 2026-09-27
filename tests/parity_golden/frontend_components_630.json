@@ -258,7 +258,8 @@
       "v-else-if",
       "v-for",
       "v-if",
-      "v-model"
+      "v-model",
+      "v-show"
     ],
     "i18n_keys": [
       "ai.aiCalls",
@@ -329,6 +330,8 @@
       "fmtSigned",
       "fmtSignedPct",
       "fmtTrackRate",
+      "focusState",
+      "focusViewRef",
       "loadEquity",
       "loadError",
       "loadPortfolio",
@@ -336,9 +339,11 @@
       "loadTrack",
       "loadTrades",
       "loading",
+      "onFocusLoadState",
       "openTradeForm",
       "portfolioTab",
       "positions",
+      "reloadFocus",
       "removePosition",
       "riskData",
       "riskHasData",
@@ -352,6 +357,7 @@
       "submitTrade",
       "summary",
       "trackData",
+      "trackError",
       "trackHitText",
       "trackLoading",
       "trackWindow",
@@ -361,8 +367,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 74408,
-    "template_sha": "d824ccdc5894e04b"
+    "template_len": 75193,
+    "template_sha": "d2f3bc4f59aa401d"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -803,8 +809,8 @@
       "trackLoading",
       "trackNote"
     ],
-    "template_len": 7877,
-    "template_sha": "2e4e9f453ff15ecf"
+    "template_len": 7895,
+    "template_sha": "ed11b48ac73ceee2"
   },
   "GlobalHeader": {
     "classes": [
@@ -1546,8 +1552,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 63882,
-    "template_sha": "73003c4699680ce0"
+    "template_len": 65449,
+    "template_sha": "78f8b1aa29755e77"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1720,7 +1726,9 @@
       "fmtCond",
       "fmtPct",
       "gotoSector",
+      "hasAnyPool",
       "intradayCollecting",
+      "intradayError",
       "intradayLoading",
       "intradayMsg",
       "intradaySlots",
@@ -1786,8 +1794,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 32462,
-    "template_sha": "9ca2e06f7dffa103"
+    "template_len": 32780,
+    "template_sha": "4d71e0b51beb7226"
   },
   "Sidebar": {
     "classes": [
@@ -2540,8 +2548,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 58148,
-    "template_sha": "b9051b6b6730a0a9"
+    "template_len": 59231,
+    "template_sha": "a536bf796e46336b"
   },
   "SystemPage": {
     "classes": [
@@ -2761,7 +2769,6 @@
       "text-base-primary-nowrap",
       "text-base-secondary",
       "text-base-secondary-pad",
-      "text-center-danger-pad16",
       "text-center-pad40",
       "text-center-tertiary-pad20",
       "text-lg",
@@ -2979,6 +2986,7 @@
       "dictError",
       "fmtAge",
       "freshnessData",
+      "freshnessError",
       "freshnessLoading",
       "generateOpenApiKey",
       "goSystemSub",
@@ -3034,8 +3042,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 107862,
-    "template_sha": "2fc606a37ed7c9f1"
+    "template_len": 109735,
+    "template_sha": "55bf09f34c56ef05"
   },
   "TourDialog": {
     "classes": [

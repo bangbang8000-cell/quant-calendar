@@ -68,7 +68,7 @@ def test_qcstate_key_count_stable():
     disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
     realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 503, f"qcState 唯一键数异常: {len(set(keys))} (期望 503; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT)"
+    assert len(set(keys)) == 512, f"qcState 唯一键数异常: {len(set(keys))} (期望 512; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError)"
 
 
 def test_watch_currentpage_single():
