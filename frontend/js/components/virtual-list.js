@@ -23,12 +23,18 @@
       rowHeight: { type: Number, default: 56 },
       // 上下预渲染行缓冲（滚动时先行渲染，减少白屏）
       buffer: { type: Number, default: VL.DEFAULT_BUFFER || 8 },
+      // 6.3.1 (T-6.3.1.4): 列表可读名称（读屏播报用，如「自选股列表」）
+      ariaLabel: { type: String, default: '' },
     },
+    // 6.3.1 (T-6.3.1.4) 无障碍：虚拟列表只渲染可视区行，DOM 中行数与数据量不等，
+    // 故按 WAI-ARIA 虚拟化列表惯例 —— role=list/listitem + aria-setsize/aria-posinset
+    // 声明「总条数 / 当前行序号」，读屏可正确播报「第 37 条，共 320 条」。
     template: `
         <div ref="scrollEl" class="qc-virtual-list" :style="{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }" @scroll.passive="onScroll">
-            <div class="qc-vlist-spacer" :style="{ height: totalHeight + 'px', position: 'relative' }">
+            <div class="qc-vlist-spacer" role="list" :aria-label="ariaLabel || null" :style="{ height: totalHeight + 'px', position: 'relative' }">
                 <div v-for="(item, i) in visibleItems" :key="keyOf(item, startIndex + i)"
-                     class="qc-vrow"
+                     class="qc-vrow" role="listitem"
+                     :aria-setsize="items.length" :aria-posinset="startIndex + i + 1"
                      :style="{ position: 'absolute', top: '0', left: '0', right: '0', height: rowHeight + 'px', transform: 'translateY(' + ((startIndex + i) * rowHeight) + 'px)', overflow: 'hidden' }">
                     <slot :item="item" :index="startIndex + i"></slot>
                 </div>

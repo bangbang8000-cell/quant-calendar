@@ -15,10 +15,11 @@ window.__quantModules.shorttermPage.part1 = `
                             <div v-if="dateListLoading" class="color-secondary shortterm-date-empty">加载中…</div>
                             <div v-else-if="dateList.length === 0" class="color-secondary shortterm-date-empty">暂无已抓取日期</div>
                             <!-- 6.3.1 (T-6.3.1.2): 复盘日历逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 66px, 见 layout.css) -->
-                            <qc-virtual-list v-else class="shortterm-date-items" :items="dateList" :row-height="66">
+                            <qc-virtual-list v-else class="shortterm-date-items" :items="dateList" :row-height="66" aria-label="复盘日历日期列表">
                                 <template #default="{ item: d }">
                                 <div class="shortterm-date-item"
                                     :class="{ 'is-active': d.date === shortDate }" role="button" tabindex="0"
+                                    :aria-current="d.date === shortDate ? 'true' : null"
                                     @click="pickDate(d.date)"
                                     @keydown.enter.prevent="pickDate(d.date)"
                                     @keydown.space.prevent="pickDate(d.date)">

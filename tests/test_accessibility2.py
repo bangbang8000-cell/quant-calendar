@@ -156,24 +156,43 @@ def test_onboarding_actions_keyboard_reachable():
 _ICON_EMOJI = set("🔄⚙📊▶⏸⭐📋📈💎🎨🖥🚦📤📥💾🖼🗑✏🔍➕➖✖✔⏭⏮🔁🔃")
 
 
-def test_icon_only_buttons_have_aria_label():
-    """纯图标按钮 (emoji 且无可见文字) 必须带 aria-label — 屏幕阅读器可辨识。
-
-    T-5.3.1.4 收尾: 巡检全站 components + dialogs, 禁绝无标签图标按钮。
-    """
+def _component_files():
+    """6.3.1 (T-6.3.1.4): 递归 components/** —— 含 6.3.0 结构分治后落到
+    ``components/<域>/view-partN.js`` 的页面模板片段。
+    （原扫描面只有 components/*.js 与 components/dialogs/*.js，
+      拆分子目录的片段成为无障碍盲区。）"""
     import glob as _glob
-    files = (_glob.glob(os.path.join(FRONTEND, "js", "components", "*.js"))
-             + _glob.glob(os.path.join(FRONTEND, "js", "components", "dialogs", "*.js")))
+    return sorted(_glob.glob(
+        os.path.join(FRONTEND, "js", "components", "**", "*.js"), recursive=True))
+
+
+def _scan_icon_only_buttons():
+    """扫描全部组件模板，返回 (扫描文件数, 纯图标按钮缺 aria-label 清单)。
+
+    经 page_source.read 取「装配后源码」，与运行期注册的模板一致。
+    """
     bad = []
+    files = _component_files()
     for f in files:
-        src = open(f, encoding="utf-8").read()
-        rel = os.path.relpath(f, FRONTEND)
+        rel = os.path.relpath(f, FRONTEND).replace(os.sep, "/")
+        src = page_source.read(rel) or open(f, encoding="utf-8").read()
         for i, line in enumerate(src.splitlines(), 1):
             if "el-button" not in line or "aria-label" in line:
                 continue
             stripped = re.sub(r"<[^>]+>", "", line).strip()
             if stripped and all(c in _ICON_EMOJI or c.isspace() for c in stripped):
-                bad.append(f"{rel}:{i}: {line.strip()}")
+                bad.append("%s:%d: %s" % (rel, i, line.strip()))
+    return len(files), bad
+
+
+def test_icon_only_buttons_have_aria_label():
+    """纯图标按钮 (emoji 且无可见文字) 必须带 aria-label — 屏幕阅读器可辨识。
+
+    T-5.3.1.4 收尾: 巡检全站 components + dialogs, 禁绝无标签图标按钮。
+    T-6.3.1.4 收尾: 扫描面改递归 components/**, 补齐拆分子目录片段。
+    """
+    count, bad = _scan_icon_only_buttons()
+    assert count >= 40, "扫描面疑似漏掉拆分子目录（实际仅 %d 个组件文件）" % count
     assert not bad, "纯图标按钮缺 aria-label:\n" + "\n".join(bad)
 
 

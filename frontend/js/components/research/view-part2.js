@@ -244,10 +244,11 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 <div v-if="marketReviewLoading" class="color-secondary market-review-date-empty">加载中…</div>
                                 <div v-else-if="!marketReviews.length" class="color-secondary market-review-date-empty">暂无复盘日期</div>
                                 <!-- 6.3.1 (T-6.3.1.2): 复盘日期逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 66px, 见 layout.css) -->
-                                <qc-virtual-list v-else class="market-review-date-items" :items="marketReviews" :row-height="66">
+                                <qc-virtual-list v-else class="market-review-date-items" :items="marketReviews" :row-height="66" aria-label="复盘日期列表">
                                     <template #default="{ item }">
                                     <div class="market-review-date-item"
                                          :class="{ 'is-active': item.date === selectedReviewDate }" role="button" tabindex="0"
+                                         :aria-current="item.date === selectedReviewDate ? 'true' : null"
                                          @click="toggleMarketReviewDate(item.date)"
                                          @keydown.enter.prevent="toggleMarketReviewDate(item.date)"
                                          @keydown.space.prevent="toggleMarketReviewDate(item.date)">
@@ -277,7 +278,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                         <div class="stat-card"><div class="stat-icon success"><qc-icon name="calendar" :size="18" /></div><div class="stat-label">最新复盘</div><div class="stat-value stat-value-lg">{{ marketReviews[0] ? marketReviews[0].date : '—' }}</div></div>
                                     </div>
                                     <!-- 6.3.1 (T-6.3.1.2): 复盘列表逐交易日累积可超 200 行 → 虚拟滚动 (行高常量 60px, 见 themes.css) -->
-                                    <qc-virtual-list class="market-review-list market-review-list-vlist" :items="marketReviews" :row-height="60">
+                                    <qc-virtual-list class="market-review-list market-review-list-vlist" :items="marketReviews" :row-height="60" aria-label="每日复盘列表">
                                         <template #default="{ item }">
                                         <div class="market-review-row"
                                              tabindex="0" role="button" :aria-label="'查看 ' + item.date + ' 市场复盘'"

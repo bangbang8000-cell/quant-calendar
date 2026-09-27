@@ -367,8 +367,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 75193,
-    "template_sha": "d2f3bc4f59aa401d"
+    "template_len": 75914,
+    "template_sha": "84b28c778492f569"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -1552,8 +1552,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 65449,
-    "template_sha": "78f8b1aa29755e77"
+    "template_len": 65595,
+    "template_sha": "f5786fb06f004f11"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1794,8 +1794,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 32780,
-    "template_sha": "4d71e0b51beb7226"
+    "template_len": 32891,
+    "template_sha": "3e556b055879e92a"
   },
   "Sidebar": {
     "classes": [
@@ -3096,8 +3096,8 @@
       "totalHeight",
       "visibleItems"
     ],
-    "template_len": 711,
-    "template_sha": "3201fd2dbd7b51ec"
+    "template_len": 857,
+    "template_sha": "dbcdccec6bea7075"
   },
   "WatchGroupsDialog": {
     "classes": [

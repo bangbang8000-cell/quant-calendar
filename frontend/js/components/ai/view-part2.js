@@ -177,12 +177,18 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <!-- 自选列表 -->
                             <div v-else>
                                 <!-- v3.16 (16.7): 虚拟滚动，仅渲染可视区行（500+ 自选不卡顿） -->
-                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56">
+                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56" aria-label="自选股列表">
                                     <template #default="{ item: stock }">
                                     <!-- v3.17.8 (FR-3.17.8): 移动端左滑露出删除操作（.swipe-reveal），长按复制代码 -->
-                                    <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" @click="detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(stock.code, stock.name)" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code), 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === stock.code}">
+                                    <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" @click="detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(stock.code, stock.name)" :aria-current="(detailSplitEnabled && stockDetail && stockDetail.stock === stock.code) ? 'true' : null" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code), 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === stock.code}">
                                         <div class="swipe-reveal-main">
-                                        <div class="watchlist-checkbox" @click.stop="toggleSelectWatchlist(stock.code)">
+                                        <!-- 6.3.1 (T-6.3.1.4): 复选框补角色/选中态/键盘可操作（读屏可勾选自选股） -->
+                                        <div class="watchlist-checkbox" role="checkbox" tabindex="0"
+                                             :aria-checked="selectedWatchlistCodes.includes(stock.code) ? 'true' : 'false'"
+                                             :aria-label="'选择 ' + stock.code + ' ' + stock.name"
+                                             @click.stop="toggleSelectWatchlist(stock.code)"
+                                             @keydown.enter.prevent="toggleSelectWatchlist(stock.code)"
+                                             @keydown.space.prevent="toggleSelectWatchlist(stock.code)">
                                             <span v-if="selectedWatchlistCodes.includes(stock.code)" class="watchlist-checkbox-check">✓</span>
                                         </div>
                                         <div class="watchlist-info">
