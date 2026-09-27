@@ -151,6 +151,10 @@ import '../js/app-logic/keys.js'
 import '../js/app-logic/auth.js'
 import '../js/app-logic/watch.js'
 import '../js/app-logic/lifecycle.js'
+import '../js/app-logic/shell.js'
+import '../js/app-logic/workspace.js'
+import '../js/app-logic/detail.js'
+import '../js/app-logic/runtime.js'
 import '../js/app-logic.js'
 
 // V4.3-S3 (方案A): 页面组件懒加载 — V6.9.4 起改为顶部静态 import (与 calendar/strategies 一致, 消除注册时序空白)

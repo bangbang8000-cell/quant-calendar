@@ -11,7 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 JS = ROOT / "frontend" / "js"
 ECHARTS_THEME = (JS / "echarts-theme.js").read_text(encoding="utf-8")
-APP_LOGIC = (JS / "app-logic.js").read_text(encoding="utf-8")
+import page_source
+APP_LOGIC = page_source.read(str(JS / "app-logic.js"))
 BACKTEST = (JS / "backtest.js").read_text(encoding="utf-8")
 
 

@@ -58,6 +58,15 @@ _LOGIC_SIDECARS = {
     "frontend/js/components/shortterm-page.js": [
         "frontend/js/components/shortterm/logic-tour.js",
     ],
+    # 6.3.0 (T-6.3.0.10): App 逻辑编排层按域下沉（同目录 app-logic/），
+    # 历史用例把 app-logic.js 当单文件断言（i18n / 菜单 / 主题 / 页面切换等标识符存在性），
+    # 故按 shell → workspace → detail → runtime 顺序前置拼接回注册文件源码。
+    "frontend/js/app-logic.js": [
+        "frontend/js/app-logic/shell.js",
+        "frontend/js/app-logic/workspace.js",
+        "frontend/js/app-logic/detail.js",
+        "frontend/js/app-logic/runtime.js",
+    ],
 }
 
 _texts = None

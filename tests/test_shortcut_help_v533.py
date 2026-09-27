@@ -14,7 +14,11 @@ CMD_PANEL = os.path.join(BASE, "frontend", "js", "components", "command-panel.js
 CORE = os.path.join(BASE, "frontend", "js", "command-panel-core.js")
 
 
+import page_source
 def _read(p):
+    _b = page_source.bundle(p)
+    if _b is not None:
+        return _b
     return open(p, encoding="utf-8").read()
 
 

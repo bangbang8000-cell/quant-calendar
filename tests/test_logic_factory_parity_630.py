@@ -14,6 +14,7 @@
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 
@@ -161,3 +162,67 @@ def test_shortterm_tour_domain_surface_parity():
     assert proc.returncode == 0, "node 装配失败(疑似缺失 ctx 依赖): %s" % proc.stderr
     live = json.loads(proc.stdout)
     assert live == SHORTTERM_TOUR_SURFACE, "短线引导域返回面漂移: %s" % live
+
+
+# ─── 6.3.0 (T-6.3.0.10): App 逻辑编排层按域下沉后的装配契约 ─────────────────
+# app-logic.js 的 setup body 按域下沉到 js/app-logic/{shell,workspace,detail,runtime}.js，
+# 由 __quantAppLogic.<域>.create(ctx) 工厂装配。此处对拍两处「公开面」契约：
+#   1. 片段 ctx 解构键 ⊆ 装配处传入键  —— 漏传 → 运行期 undefined/TypeError（静默转圈同类）
+#   2. 片段 return 键 == 装配处解构键  —— 漏挂/多挂 → 域输出丢失或未登记
+# 不做 Node 执行（域体装配期含大量真实模块调用），改为确定性源码契约对拍。
+APP_LOGIC_DOMAINS = ["shell", "workspace", "detail", "runtime"]
+_REG_SRC = open(os.path.join(FRONTEND, "js", "app-logic.js"), encoding="utf-8").read()
+
+
+def _keys(block):
+    keys = []
+    for part in block.split(","):
+        part = part.strip()
+        if not part or part.startswith("//"):
+            continue
+        name = part.split(":")[0].strip()  # 别名/默认值取左侧名
+        if re.match(r"^[A-Za-z_$][\w$]*$", name):
+            keys.append(name)
+    return keys
+
+
+def _fragment_surface(domain):
+    path = os.path.join(FRONTEND, "js", "app-logic", domain + ".js")
+    src = open(path, encoding="utf-8").read()
+    m = re.search(r"const\s*\{([^}]*)\}\s*=\s*ctx;", src)
+    assert m, "%s.js 未见 ctx 解构" % domain
+    ctx_keys = _keys(m.group(1))
+    # 工厂 return 块位于片段末尾（锚定尾部，避免命中域体内的局部 return {...}）
+    r = re.search(r"return\s*\{([\s\S]*?)\}\s*;\s*\},\s*\};\s*\}\)\(\);\s*$", src)
+    ret_keys = _keys(r.group(1)) if r else []
+    return ctx_keys, ret_keys
+
+
+def _assembly_surface(domain):
+    m = re.search(r"window\.__quantAppLogic\.%s\.create\(\{([\s\S]*?)\}\);" % domain, _REG_SRC)
+    assert m, "app-logic.js 未见 %s 域装配调用" % domain
+    passed = _keys(m.group(1))
+    d = re.search(r"const\s*\{([^}]*)\}\s*=\s*__%s;" % domain, _REG_SRC)
+    consumed = _keys(d.group(1)) if d else []
+    return passed, consumed
+
+
+@pytest.mark.parametrize("domain", APP_LOGIC_DOMAINS)
+def test_app_logic_domain_ctx_contract(domain):
+    """片段 ctx 解构键必须由装配处传入（漏传 → 运行期 ReferenceError/undefined）"""
+    ctx_keys, _ = _fragment_surface(domain)
+    passed, _ = _assembly_surface(domain)
+    missing = sorted(set(ctx_keys) - set(passed))
+    assert not missing, "%s.js ctx 依赖未由 app-logic.js 装配传入: %s" % (domain, missing)
+
+
+@pytest.mark.parametrize("domain", APP_LOGIC_DOMAINS)
+def test_app_logic_domain_surface_contract(domain):
+    """片段 return 键与装配处解构键一一对应（漏挂/多挂 → 域输出丢失或未登记）"""
+    _, ret_keys = _fragment_surface(domain)
+    _, consumed = _assembly_surface(domain)
+    missing = sorted(set(ret_keys) - set(consumed))
+    extra = sorted(set(consumed) - set(ret_keys))
+    assert not missing, "%s.js 返回面成员未被 app-logic.js 解构: %s" % (domain, missing)
+    assert not extra, "%s.js 装配解构了未返回成员: %s" % (domain, extra)
+    assert len(ret_keys) == len(set(ret_keys)), "%s.js 返回面存在重复键" % domain

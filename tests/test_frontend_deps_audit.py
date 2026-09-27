@@ -41,11 +41,14 @@ ALLOWED = {
 # 6.3.0 (T-6.3.0.8): 结构分治后片段以 create(ctx) 工厂下沉到子目录
 # (watchlist/ research/ strategies/ system/ app-logic/)，审计必须递归覆盖，
 # 否则「缺 dep → ReferenceError 永久转圈」的门禁会因拆分而静默失效。
+# 6.3.0 (T-6.3.0.10): App 逻辑编排层同样按域下沉（window.__quantAppLogic.<域>.create(ctx)），
+# 一并纳入审计范围，防止域片段引用未解构的标识符。
 _CREATE_RE = re.compile(r'create\s*\(\s*(?:deps|ctx)\s*\)')
+_DOMAIN_NAMESPACES = ('window.__quantModules', 'window.__quantAppLogic')
 
 
 def _domain_module_files():
-    """含 __quantModules + create(deps|ctx) 工厂模式的域模块 (递归扫描 js/)"""
+    """含 __quantModules/__quantAppLogic + create(deps|ctx) 工厂模式的域模块 (递归扫描 js/)"""
     out = []
     for root, dirs, files in os.walk(JS_DIR):
         dirs[:] = [d for d in dirs if d not in ('node_modules', 'dist', 'lib', 'vendor')]
@@ -54,7 +57,7 @@ def _domain_module_files():
                 continue
             p = os.path.join(root, f)
             src = open(p, encoding='utf-8').read()
-            if 'window.__quantModules' in src and _CREATE_RE.search(src):
+            if any(ns in src for ns in _DOMAIN_NAMESPACES) and _CREATE_RE.search(src):
                 out.append((os.path.relpath(p, JS_DIR).replace('\\', '/'), src))
     return sorted(out)
 

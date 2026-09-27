@@ -18,7 +18,11 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MA_NAMES = ['MA5', 'MA10', 'MA20', 'MA60']
 
 
+import page_source
 def _read(rel):
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(BASE, rel), encoding='utf-8') as f:
         return f.read()
 
@@ -69,7 +73,10 @@ def test_toggle_wiring_app_logic():
         'charts.js renderKlineTo 应监听 legendselectchanged 同步图例→按钮'
     assert 'onLegend' in al, 'app-logic 应通过 onLegend 回调接线图例→按钮同步'
     # 按当前对话框定位图表实例，避免误切隐藏图
-    assert 'stockDetailVisible.value' in al and 'indexDetailVisible.value' in al, \
+    # 6.3.0 (T-6.3.0.10): indexDetailVisible 声明在 detail 域之后 → 域内经惰性访问器
+    # getIndexDetailVisible() 引用（仅拆分后引用形式变化，行为不变）。
+    _idx_vis = 'indexDetailVisible.value' in al or 'getIndexDetailVisible().value' in al
+    assert 'stockDetailVisible.value' in al and _idx_vis, \
         'toggleKlineMa 应按当前打开的对话框定位图表实例'
 
 

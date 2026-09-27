@@ -100,10 +100,10 @@ def test_today_snapshot_wiring_frontend():
     sysp = page_source.read(os.path.join(BASE, 'frontend/js/components/system-page.js'))
     assert '数据健康度' in sysp, '数据健康度应位于系统页'
     assert 'healthRows' in sysp, '数据健康度(healthRows)应位于系统页'
-    assert '/api/system/metrics' in open(os.path.join(BASE, 'frontend/js/app-logic.js'), encoding='utf-8').read() \
+    assert '/api/system/metrics' in page_source.read(os.path.join(BASE, 'frontend/js/app-logic.js')) \
         or '/api/system/metrics' in sp, 'app-logic 应消费 /api/system/metrics'
 
-    al = open(os.path.join(BASE, 'frontend/js/app-logic.js'), encoding='utf-8').read()
+    al = page_source.read(os.path.join(BASE, 'frontend/js/app-logic.js'))
     assert 'healthMetrics' in al, 'app-logic 应暴露 healthMetrics 状态'
     assert 'loadHealthMetrics' in al, 'app-logic 应实现 loadHealthMetrics'
     # 前端应按 degraded/success_rate 渲染健康状态 (位于系统页数据健康度)
