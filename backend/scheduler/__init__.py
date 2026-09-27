@@ -108,16 +108,18 @@ def scan_csv_files(dirs, recursive=False):
                         fpath = _os.path.join(root, fname)
                         try:
                             mtimes[fpath] = _os.path.getmtime(fpath)
-                        except OSError:
-                            pass
+                        except OSError as e:
+                            # 可降级: 单个 CSV 取 mtime 失败仅该文件不参与变动检测
+                            logger.warning("[scheduler] CSV mtime 读取失败, 跳过该文件: %s", e)
         else:
             for fname in _os.listdir(d):
                 if fname.endswith(".csv"):
                     fpath = _os.path.join(d, fname)
                     try:
                         mtimes[fpath] = _os.path.getmtime(fpath)
-                    except OSError:
-                        pass
+                    except OSError as e:
+                        # 可降级: 单个 CSV 取 mtime 失败仅该文件不参与变动检测
+                        logger.warning("[scheduler] CSV mtime 读取失败, 跳过该文件: %s", e)
     return mtimes
 
 def detect_csv_changes(prev_mtimes: dict, current_mtimes: dict):

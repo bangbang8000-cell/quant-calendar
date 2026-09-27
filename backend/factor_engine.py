@@ -8,6 +8,9 @@
 - 供：① 个股详情"多因子体检"面板展示 ② AI 评估 prompt 增强注入
 """
 from typing import List, Dict, Optional, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 分位语义边界
 LOW_QUANTILE = 0.3
@@ -176,8 +179,9 @@ def compute_technical_factors(closes: List[float]) -> List[Dict]:
         rsi = calc_rsi(list(closes))
         if rsi is not None:
             factors.append(_factor('技术', 'rsi', 'RSI(14)', rsi, ''))
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: RSI 计算失败仅少一个技术因子, 其余因子照常
+        logger.warning("[factor_engine] RSI 因子计算失败, 跳过: %s", e)
     if len(closes) >= 21:
         ma20 = sum(closes[-20:]) / 20
         if ma20 > 0:
@@ -213,18 +217,21 @@ def build_factor_panel(stock_code: str, data_source=None, stock_info=None,
                 basic = data_source.get_daily_basic(stock_code, limit=20)
                 if basic:
                     factors.extend(compute_valuation_factors([basic]))
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 估值面取数失败仅少该组因子
+            logger.warning("[factor_engine] 估值因子取数失败, 跳过该组: %s", e)
         try:
             fin = data_source.get_financial_data(stock_code)
             factors.extend(compute_fundamental_factors(fin))
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 基本面取数失败仅少该组因子
+            logger.warning("[factor_engine] 基本面因子取数失败, 跳过该组: %s", e)
         try:
             mf = data_source.get_moneyflow(stock_code, limit=20)
             factors.extend(compute_moneyflow_factors(mf or [], 5))
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 资金流取数失败仅少该组因子
+            logger.warning("[factor_engine] 资金流因子取数失败, 跳过该组: %s", e)
 
     if stock_info is not None:
         try:
@@ -233,8 +240,9 @@ def build_factor_panel(stock_code: str, data_source=None, stock_info=None,
             if hasattr(stock_info, 'get_close_series'):
                 closes = stock_info.get_close_series(stock_code, 60) or []
             factors.extend(compute_technical_factors([float(c) for c in closes if c is not None]))
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 技术面取数失败仅少该组因子
+            logger.warning("[factor_engine] 技术面因子取数失败, 跳过该组: %s", e)
 
     cats = sorted({f['category'] for f in factors})
     return {

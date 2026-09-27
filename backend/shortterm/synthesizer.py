@@ -47,6 +47,7 @@ def parse_verdict(text: str):
     try:
         candidates.append(json.loads(text))
     except Exception:  # noqa: BLE001
+        # 有意忽略: 整段解析失败是预期分支, 随后会尝试提取 {...} 片段
         pass
     if not candidates:
         m = re.search(r'\{.*\}', text, re.S)
@@ -54,6 +55,7 @@ def parse_verdict(text: str):
             try:
                 candidates.append(json.loads(m.group(0)))
             except Exception:  # noqa: BLE001
+                # 有意忽略: 片段提取同样失败 → 调用方按无结构化结论处理
                 pass
     for obj in candidates:
         if not isinstance(obj, dict):

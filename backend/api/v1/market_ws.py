@@ -125,6 +125,7 @@ async def ws_quotes(websocket: WebSocket):
                 await websocket.send_json(heartbeat_frame())
                 last_heartbeat = now
     except WebSocketDisconnect:
+        # 有意忽略: 客户端主动断开是正常生命周期事件, 无需告警
         pass
     except Exception as e:
         logger.warning('[ws/quotes] 连接处理异常（已清理）: %s', e)
@@ -133,5 +134,6 @@ async def ws_quotes(websocket: WebSocket):
         try:
             await websocket.close()
         except Exception:
+            # 有意忽略: 连接可能已由对端关闭, 此处 close 失败属预期, 记日志只增噪
             pass
         logger.info('[ws/quotes] 连接已关闭')

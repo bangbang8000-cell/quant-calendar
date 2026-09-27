@@ -91,8 +91,9 @@ async def lifespan(app: FastAPI):
             logger.warning("⚠️ 管理员密码仍为默认口令 (admin/admin123)! 请立即登录后在系统配置中修改密码。")
         if _um.is_default_password("guest"):
             logger.warning("⚠️ 访客账户仍为默认口令 (guest/guest)! 建议修改或保持禁用。")
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: 启动自检失败不阻断启动, 但需留痕
+        logger.warning("启动口令自检失败: %s", e)
     from scheduler import scheduler
     await scheduler.start()
     logger.info("⏰ 定时任务调度器已启动")
@@ -302,8 +303,9 @@ async def root(request: Request):
             with open(INDEX_HTML_FILE, "r", encoding="utf-8") as f:
                 _index_html_cache = f.read()
             _index_html_mtime = mtime
-    except OSError:
-        pass
+    except OSError as e:
+        # 可降级: 首页模板不可读时沿用上次缓存, 首次读取失败则为空页面
+        logger.warning("首页模板读取失败, 沿用缓存: %s", e)
     # v3.10 (FR-3.10.5): 注入 APP_VERSION（前端资源缓存号联动）+ per-request CSP nonce
     nonce = getattr(request.state, 'csp_nonce', None)
     html = _index_html_cache

@@ -131,8 +131,9 @@ def _strategy_run_ts(date: str):
         for rec in hist:
             if rec.get("task") == "strategy_run" and rec.get("ts", "")[:10] == date:
                 return rec.get("ts")
-    except (OSError, json.JSONDecodeError, TypeError):
-        pass
+    except (OSError, json.JSONDecodeError, TypeError) as e:
+        # 可降级: 调度历史不可读时该日 ts 视为未知, 新鲜度判定退化为无记录
+        logger.warning("[strategy_execution] 调度历史读取失败, 该日 ts 未知: %s", e)
     return None
 
 

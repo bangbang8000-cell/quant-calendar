@@ -5,11 +5,14 @@ V4.9.2 (P1): 每日策略执行监控 API — 计划/进展/结果/追溯/校验
 """
 from fastapi import APIRouter, Depends, Query
 from typing import Dict, Optional
+import logging
 
 from auth import get_admin_user, get_non_guest_user
 from strategy_execution import (
     get_plan, get_live_status, get_results, get_trace, force_verify_reload,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/strategies", tags=["策略执行"])
 
@@ -48,6 +51,7 @@ async def execution_verify(body: Optional[dict] = None, _: Dict = Depends(get_ad
     try:
         from audit_log import log
         log("execution_verify", username="admin", detail={"date": date, "result": result.get("detail", "")[:120]})
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: 审计留痕失败不阻断应急修复入口, 但缺口必须留痕可见
+        logger.error("[execution_verify] 审计日志写入失败, 本次操作未留痕: %s", e)
     return {"data": result}

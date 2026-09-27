@@ -153,8 +153,9 @@ class RealDataPortal:
                                 cached_rows[code] = dict(d)
                             try:
                                 set_market_daily(td, cached_rows)
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                # 可降级: 缓存写入失败仅使次日回源重取, 面板数据不受影响
+                                logger.warning("[data_portal] 行情缓存写入失败, 下次回源重取: %s", e)
                 if need_basic:
                     fetched_any = True
                     df = self.source.get_market_daily_basic_batch(td)

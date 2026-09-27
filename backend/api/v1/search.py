@@ -90,8 +90,9 @@ def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None, u
             if q_lower and (q_lower in code.lower() or q_lower in name.lower()
                             or (len(q_lower) >= 2 and q_lower in _pinyin_initials(name))):
                 stocks.append({"type": "stock", "code": code, "name": name, "subLabel": code})
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: 单域检索失败不影响其它域, 该域留空返回
+        logger.warning("[search] 股票域检索失败, 该域留空: %s", e)
     if stocks:
         groups.append({"key": "stock", "label": "股票", "items": stocks[:max_items]})
 
@@ -136,8 +137,9 @@ def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None, u
                                       "name": name or r.get("stock_code", ""), "subLabel": "评估历史"})
             if eval_hits:
                 groups.append({"key": "eval", "label": "评估历史", "items": eval_hits[:max_items]})
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 评估历史域检索失败不影响其它域
+            logger.warning("[search] 评估历史域检索失败, 该域留空: %s", e)
 
     return groups
 

@@ -46,8 +46,9 @@ def make_event(event_type, title, content, payload=None, dedup_key=None):
     try:
         from plugin_sdk import emit
         emit(event_type, event)
-    except Exception:
-        pass  # 钩子派发失败不影响事件构造
+    except Exception as e:
+        # 可降级: 插件钩子异常不影响事件本身构造与落库, 但需留痕以便排查插件
+        logger.warning("[events] 插件钩子派发失败: %s", e)
     return event
 
 

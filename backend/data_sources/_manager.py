@@ -6,6 +6,7 @@ import json
 import os
 import threading
 import time
+import logging
 import pandas as pd
 from datetime import datetime
 
@@ -15,6 +16,8 @@ from ._health import (record_call, _is_rate_limited, get_route_order)
 from ._mapping import *  # noqa: F401,F403
 from ._mapping import (_safe_float, _ts_code_to_akshare_index, _ts_code_to_akshare_stock,
               _ts_code_to_sina_symbol, _is_index_code, _map_akshare_columns)
+
+logger = logging.getLogger(__name__)
 
 # V5.4.0 (FR-5.4.8): 分钟级 K线周期白名单 — 打开股票弹窗按需加载(不预加载)
 MINUTE_PERIODS = ('15min', '30min', '60min')
@@ -891,8 +894,9 @@ class DataSourceManager:
                         out.append(s)
                 if out:
                     return out
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 用户配置源优先级不可用时回退内置顺序, 但需留痕
+            logger.warning("[data_sources] 读取源优先级配置失败, 回退内置顺序: %s", e)
         return list(SOURCE_ORDER)
 
     def _minute_interval(self):

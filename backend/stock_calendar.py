@@ -56,6 +56,7 @@ def _fetch_trade_calendar(year: int) -> set:
                     s.add(str(v)[:10].replace('-', ''))
                 return {d for d in s if d.startswith(str(year))}
         except Exception:
+            # 有意忽略: akshare 日历不可用由外层统一记录 debug, 此处不重复
             pass
     except Exception as e:
         logger.debug('stock_calendar: 数据源交易日历不可用: %s', e)

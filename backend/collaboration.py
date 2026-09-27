@@ -15,10 +15,13 @@
 """
 import os
 import threading
+import logging
 from datetime import datetime
 
 from paths import DATA_DIR
 from reliability.atomic import atomic_write_json
+
+logger = logging.getLogger(__name__)
 
 COLLAB_FILE = os.path.join(DATA_DIR, 'collab.json')
 
@@ -47,8 +50,9 @@ def _read():
             data.setdefault('notes', {})
             data.setdefault('portfolio_visibility', {})
             return data
-    except (OSError, ValueError, TypeError):
-        pass
+    except (OSError, ValueError, TypeError) as e:
+        # 可降级: 协作文件缺失或损坏时按空结构启动, 首次写入即重建
+        logger.warning("[collaboration] 协作数据读取失败, 按空结构返回: %s", e)
     return {'groups': {}, 'notes': {}, 'portfolio_visibility': {}}
 
 

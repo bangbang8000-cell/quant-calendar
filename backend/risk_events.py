@@ -86,8 +86,9 @@ def _evaluate_portfolio_rules(username, days=60):
         _, values, _ = _portfolio_values(days, username)
         if values and values[0]:
             equity = [v / values[0] for v in values]
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: 净值序列不可得时按基准 1.0 计算, 回撤类规则退化为按持仓权重判定
+        logger.warning("[risk_events] 净值序列获取失败, 回退基准净值: %s", e)
     state = {"weights": weights, "sector_weights": {}, "day_return": 0.0,
              "equity": equity, "losses": losses}
     rules = [

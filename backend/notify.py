@@ -134,6 +134,7 @@ class EmailChannel(Channel):
                 server.starttls()
                 server.login(self.username, self.password)
             except smtplib.SMTPException:
+                # 有意忽略: 部分 SMTP 服务器无需认证, 登录失败后仍按匿名投递
                 pass
             try:
                 server.sendmail(self.sender, [recipient], msg.as_string())

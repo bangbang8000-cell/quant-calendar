@@ -129,8 +129,9 @@ class RedisBackend(RateLimiterBackend):
                     self._client.delete(k)
             else:
                 self._client.delete(f"rl:{key}")
-        except Exception:
-            pass
+        except Exception as e:
+            # 可降级: 重置失败不抛出, 但需留痕 (可能残留旧计数)
+            logger.warning("[rate_limit] 计数重置失败: %s", e)
 
 
 def get_limiter_backend() -> RateLimiterBackend:
@@ -148,8 +149,9 @@ def get_limiter_backend() -> RateLimiterBackend:
         if configured in ("redis", "redis://"):
             backend_type = "redis"
         redis_url = getattr(settings, "REDIS_URL", "") or redis_url
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: 配置不可读时按单机内存后端启动
+        logger.warning("[rate_limit] 限流配置读取失败, 回退内存后端: %s", e)
     if backend_type == "redis":
         try:
             return RedisBackend(redis_url)

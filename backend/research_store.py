@@ -181,8 +181,10 @@ def activity_log(days: int = 30, include_experiments: bool = False) -> list:
             try:
                 if datetime.strptime(d, '%Y-%m-%d') < cutoff:
                     continue
-            except ValueError:
-                pass
+            except ValueError as e:
+                # 应暴露: 日期不可解析时 cutoff 过滤被跳过, 该记录会错误计入统计
+                # (只读统计路径, 就地记错误日志而不中断面板; 保持计数口径不变)
+                logger.error("[research_store] 活动日期不可解析, cutoff 过滤未生效: %s (%s)", d, e)
         day = by_date.setdefault(d, {'count': 0, 'by_type': {}})
         day['count'] += 1
         etype = e.get('type', '')

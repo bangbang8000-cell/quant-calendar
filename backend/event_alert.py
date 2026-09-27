@@ -37,8 +37,9 @@ def _pro_rows(df, limit: int = 3):
         import pandas as pd
         if isinstance(df, pd.DataFrame):
             return [dict(r) for _, r in df.head(limit).iterrows()]
-    except Exception:
-        pass
+    except Exception as e:
+        # 可降级: pandas 归一失败时按 list 取前 N 行
+        logger.warning("[event_alert] DataFrame 归一失败, 回退列表取值: %s", e)
     return list(df)[:limit]
 
 
