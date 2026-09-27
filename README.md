@@ -222,16 +222,16 @@ GitHub Actions 在推送版本标签时自动构建并推送镜像到 ghcr.io。
 
 | 项 | 链接 |
 |----|------|
-| 最新 Release tag | **v5.7.3**（UX 全量优化 · 文字体系对比度达标 · 版本编号并入 5.X） |
-| 当前开发版本 | **v6.1.0**（`APP_VERSION`，6.1.X 演进线，位于 `master`，尚未打 tag） |
+| 最新 Release tag | **v6.3.3**（智能化收敛与收尾 · 6.3.X 三轮收尾完成） |
+| 当前开发版本 | **v6.3.3**（`APP_VERSION`，6.3.X 演进线，位于 `master`） |
 | Releases 首页 | https://github.com/bangbang8000-cell/quant-calendar/releases |
-| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.7.3.zip |
-| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v5.7.3.tar.gz |
-| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:5.7.3 |
+| 源码 zip | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.3.3.zip |
+| 源码 tar.gz | https://github.com/bangbang8000-cell/quant-calendar/archive/refs/tags/v6.3.3.tar.gz |
+| Docker 镜像 | ghcr.io/bangbang8000-cell/quant-calendar:6.3.3 |
 
 > 完整版本历史见下文《版本历史》表。下载 zip/tar.gz 后解压即可获得完整源码（与 git clone 内容一致）。
 >
-> **注意**：Release tag 落后于开发版 —— 最后一次打 tag 为 **v5.7.3**，此后 v5.8.0 → v6.1.0 的改动仅存在于 `master`（详见下文《版本历史》）。需要最新代码请直接 clone / 取 master 源码。
+> **注意**：开发演进与 Release tag 同步 —— 自 **v6.1.0** 起进入 6.1.X 演进线（版本单一来源），6.3.X 三批次（结构分治 / 交互一致性 / 效率与可靠性 / 智能化收敛）已随 tag 发布。
 
 ### 源码安装
 
@@ -298,7 +298,7 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 ## 版本历史
 
-> **版本编号说明（2026-09 起）**：v6.0.0–v6.9.6 此前是一条独立演进的开发线（期间未打过 tag），曾**整体并回 5.X**；自 **6.1.0** 起进入全新 **6.1.X 演进线**（存量功能优化打磨），版本单一来源为 `APP_VERSION`（backend/main_new.py），提交前缀 / tag / README 版本历史 / HANDOVER 全部对齐 `6.1.N`。最新 Release tag 为 **v5.7.3**、当前开发版本为 **v6.1.0**。配套的 PRD / DEV-PLAN / TEST-PLAN / EVAL 文档按 **6.N → 5.(N+5)** 平移命名以保留旧线的里程碑顺序（例如 `docs/PRD-v5.14.4.md` 即原 PRD-v6.9.4）。
+> **版本编号说明（2026-09 起）**：v6.0.0–v6.9.6 此前是一条独立演进的开发线（期间未打过 tag），曾**整体并回 5.X**；自 **6.1.0** 起进入全新 **6.1.X 演进线**（存量功能优化打磨），版本单一来源为 `APP_VERSION`（backend/main_new.py），提交前缀 / tag / README 版本历史 / HANDOVER 全部对齐版本号。6.3.X 为结构分治与三轮收尾演进线（6.3.0 结构分治基座 → 6.3.1 交互与体验一致性 → 6.3.2 效率与可靠性 → 6.3.3 智能化收敛与收尾），当前开发版本 **v6.3.3**。配套的 PRD / DEV-PLAN / TEST-PLAN / EVAL 文档按 **6.N → 5.(N+5)** 平移命名以保留旧线的里程碑顺序（例如 `docs/PRD-v5.14.4.md` 即原 PRD-v6.9.4）；6.1.X / 6.3.X 规划见 `docs/PRD-6.1.X.md` / `docs/PRD-6.3.X.md` + `docs/DEV&TEST-PLAN-6.3.X.md`。
 
 | 版本 | 日期 | 变更 |
 |------|------|------|

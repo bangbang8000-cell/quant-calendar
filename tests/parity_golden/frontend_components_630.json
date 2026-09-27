@@ -3090,8 +3090,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 110031,
-    "template_sha": "a69625031bd7199a"
+    "template_len": 110046,
+    "template_sha": "30faadd2d8faea4e"
   },
   "TourDialog": {
     "classes": [

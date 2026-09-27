@@ -456,12 +456,41 @@ curl -sf http://127.0.0.1:8000/api/health   # 健康检查
 
 - 升级目标: 10 分钟内完成 (含备份/迁移/验证)
 - 回滚目标: 5 分钟内恢复到上一可用版本
-- 每次发布: git tag v5.3.N ↔ APP_VERSION 一致, CI 版本纪律门禁强制
+- 每次发布: git tag v6.3.N ↔ APP_VERSION 一致, CI 版本纪律门禁强制
+
+## 运维能力（6.3.X 新增）
+
+### 备份自动校验（T-6.3.2.2）
+
+每日自动备份（凌晨 3:05）产出后**自动校验**（`backup_verify.verify_sqlite_backup`：完整性检查 + 行数汇总），结果写入健康指标并在 `/api/system/health-detail` 展示（`backup_verify` 字段），校验失败触发飞书告警（首期只告警不阻断后续任务）。
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/system/health-detail
+# → backup_verify: {time, file, ok, errors, integrity, row_count}
+```
+
+### 健康与新鲜度联动告警（T-6.3.2.3）
+
+调度器新增 `freshness_alert_task`（每 10 分钟）：数据资产过期/缺失 + 调度任务连续失败（≥3 次）→ 告警入队列，经 `/api/system/alerts` 面板可见，同源每日节流防轰炸。
+
+### 日志轮转与磁盘守护（T-6.3.2.4）
+
+- 应用日志 `logs/app.log` + 结构化日志 `logs/app.json.log` 均按日轮转、保留 30 份（`TimedRotatingFileHandler`）
+- 审计日志 `data/audit.log` 按日轮转 + 超期归档清理（`AUDIT_RETENTION_DAYS`，默认 30）
+- 磁盘剩余 < 10% 触发飞书告警（每日一次）
+
+### AI 观测（T-6.3.3.2）
+
+AI 调用次数 / 失败率 / 平均与 p95 耗时进入用量统计（`/api/system/metrics` 的 `ai_usage` 字段 + `quant_ai_*` Prometheus 指标），失败率 > 20%（量级 ≥10 次）时面板提示 `ai_alert`。
 
 ## 版本历史
 
 | 版本 | 日期 | 关键变更 |
 |------|------|----------|
+| v6.3.3 | 2026-09 | 智能化收敛与收尾：AI 降级口径统一（结构化失败回退纯文本并标注 + 无数据说明缺什么）/ AI 观测（调用次数/耗时/失败率进用量统计 + 比例偏高面板提示）/ 文档交接 / 双端回归与发布演练 |
+| v6.3.2 | 2026-09 | 效率与可靠性：日志口径统一（三路径结构化字段）/ 备份校验接入调度 / 健康与新鲜度联动告警 / 日志轮转复核 / 热点 P95 扩展 + 慢查询索引复核 / 体积守门 |
+| v6.3.1 | 2026-09 | 交互与体验一致性：原生弹窗清零 / 长列表虚拟滚动 / 四态一致 / 无障碍 / i18n 五语 / 便捷性补齐（命令集/右键菜单/快捷键）/ 拆分产物覆盖率门禁 |
+| v6.3.0 | 2026-09 | 结构分治基座：前端大文件按页面/职责拆至 ≤700 行 + 按域片段化与装配契约对拍 + 单文件行数门禁 + 静默异常分级治理 |
 | v5.0.11 | 2026-09 | 执行看板空修复 / 策略回测移入策略研究 / sub.datadict 菜单中文 / 评估历史拆分(评估历史+评估分析, 命中率持久缓存) / 2260 测试全绿 / `APP_VERSION=5.9.0`(未 bump, 补丁级) |
 | v5.0.10 | 2026-09 | 修复日/周/月/年视图无股票列表(模板引用未定义 state + onboarding UMD 双写) + dist 重建 |
 | v5.0.9 | 2026-09 | 架构现代化：后端拆分子包(ai_eval/scheduler/data_sources/merrill_clock) / schema 迁移框架 backend/migrations(启动失败不启动+回滚) / 一键升级回滚脚本(scripts/) / 观测性 2.0(SLO+结构化日志) / 启动回归守卫 / 2251 测试全绿 / 双端 startup-report 7/1/0 healthy |

@@ -633,7 +633,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                     <li><strong class="about-item-name">AI 问股</strong> — 多轮上下文 + 多股对比 + 事实数据护栏</li>
                                     <li><strong class="about-item-name">移动端 & PWA</strong> — 375px 优化、离线可读、手势操作</li>
                                     <li><strong class="about-item-name">开放 API</strong> — API Key 接入只读行情/日历/评估，Webhook 事件订阅</li>
-                                    <li><strong class="about-item-name">国际化</strong> — 中/英双语切换</li>
+                                    <li><strong class="about-item-name">国际化</strong> — 中/英/日/韩/繁中 5 语切换，偏好持久化</li>
                                     <li><strong class="about-item-name">飞书推送</strong> — 定时推送每日选股报告</li>
                                     <li><strong class="about-item-name">数据源</strong> — Tushare Pro / sxsc / akshare 三源热备</li>
                                 </ul>
