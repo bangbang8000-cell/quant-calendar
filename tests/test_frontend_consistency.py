@@ -15,7 +15,11 @@ import pytest
 FRONTEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + os.sep + "frontend"
 
 
+import page_source
 def _read(rel: str) -> str:
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND_ROOT, rel.replace("/", os.sep)), encoding="utf-8") as f:
         return f.read()
 
@@ -821,16 +825,16 @@ def test_frontend_return_refs_defined():
 
 
 def test_static_inline_style_budget():
-    """v3.17.9: 前端静态内联 style="..." 总数 ≤279（≥60% 已收敛为类；排除 :style= 动态绑定）"""
-    roots = ("js", "js/components", "js/components/dialogs")
+    """v3.17.9: 前端静态内联 style="..." 总数 ≤279（≥60% 已收敛为类；排除 :style= 动态绑定）
+
+    6.3.0: 由「三个目录非递归 listdir」改为递归 js/** ——
+    页面模板分治后模板搬入子目录，非递归会漏计导致预算被静默放宽。
+    """
+    import glob
     total = 0
-    for rel in roots:
-        d = os.path.join(FRONTEND_ROOT, *rel.split("/"))
-        for fn in os.listdir(d):
-            if not fn.endswith(".js"):
-                continue
-            with open(os.path.join(d, fn), encoding="utf-8") as f:
-                total += len(re.findall(r'(?<!:)style="', f.read()))
+    for fn in glob.glob(os.path.join(FRONTEND_ROOT, "js", "**", "*.js"), recursive=True):
+        with open(fn, encoding="utf-8") as f:
+            total += len(re.findall(r'(?<!:)style="', f.read()))
     assert total <= 279, f"静态内联 style 计数 {total} 超过预算 279"
 
 
@@ -842,19 +846,14 @@ def test_migrated_utility_classes_defined():
         with open(fn, encoding="utf-8") as f:
             defined.update(re.findall(r"\.([A-Za-z_][\w-]*)\s*[,{]", f.read()))
     refs = {}
-    for rel in ("js", "js/components", "js/components/dialogs", "js/app-logic"):
-        d = os.path.join(FRONTEND_ROOT, *rel.split("/"))
-        if not os.path.isdir(d):
-            continue
-        for fn in os.listdir(d):
-            if not fn.endswith(".js"):
-                continue
-            with open(os.path.join(d, fn), encoding="utf-8") as f:
-                src = f.read()
-            for m in re.finditer(r'(?<!:)(?<![A-Za-z0-9_-])class="([^"]*)"', src):
-                for tok in m.group(1).split():
-                    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", tok):
-                        refs[tok] = refs.get(tok, 0) + 1
+    # 6.3.0: 改为递归 js/**（页面模板分治后模板搬入子目录，非递归 listdir 会漏计类引用）
+    for fn in _glob.glob(os.path.join(FRONTEND_ROOT, "js", "**", "*.js"), recursive=True):
+        with open(fn, encoding="utf-8") as f:
+            src = f.read()
+        for m in re.finditer(r'(?<!:)(?<![A-Za-z0-9_-])class="([^"]*)"', src):
+            for tok in m.group(1).split():
+                if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_-]*", tok):
+                    refs[tok] = refs.get(tok, 0) + 1
     # 基线 34 个已知未定义类（qc-* 组件名/审计正则漏检），不得新增
     baseline_undef = {
         "status-info", "date-group-card", "date-group-records", "market-review-sector-col",

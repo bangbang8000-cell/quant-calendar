@@ -12,6 +12,8 @@ import re
 
 import pytest
 
+import page_source
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 REQUIRED_HEALTH_FIELDS = [
@@ -95,7 +97,7 @@ def test_today_snapshot_wiring_frontend():
         assert marker in sp, f'今日一屏缺少聚合要素: {marker}'
     assert 'merrillNext' in sp and 'todayFocus' in sp
     # v3.17.5: 数据健康度/healthRows 已自策略总览移入系统页 (用量统计子页)
-    sysp = open(os.path.join(BASE, 'frontend/js/components/system-page.js'), encoding='utf-8').read()
+    sysp = page_source.read(os.path.join(BASE, 'frontend/js/components/system-page.js'))
     assert '数据健康度' in sysp, '数据健康度应位于系统页'
     assert 'healthRows' in sysp, '数据健康度(healthRows)应位于系统页'
     assert '/api/system/metrics' in open(os.path.join(BASE, 'frontend/js/app-logic.js'), encoding='utf-8').read() \

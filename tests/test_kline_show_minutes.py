@@ -26,7 +26,11 @@ def prefs_backend(tmp_path):
     uc.BASE_USERS_DIR = old
 
 
+import page_source
 def _read(rel):
+    _b = page_source.bundle(rel)
+    if _b is not None:
+        return _b
     with open(os.path.join(FRONTEND, rel), encoding="utf-8") as f:
         return f.read()
 

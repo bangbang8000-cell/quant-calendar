@@ -12,7 +12,11 @@ REQUIRED_KEYS = [
 ]
 
 
+import page_source
 def _read(path):
+    _b = page_source.bundle(path)
+    if _b is not None:
+        return _b
     with open(path, encoding="utf-8") as f:
         return f.read()
 

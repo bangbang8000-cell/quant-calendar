@@ -141,12 +141,41 @@ _SPREAD_RE = re.compile(r"\.\.\.\s*([A-Za-z_$][\w$]*)")
 
 # 模板值表达式（取 `template:` 后到行尾/逗号，兼容 ``template: ` `` 多行字面量）
 _TPL_EXPR_RE = re.compile(r"template:\s*([^,\n]+)")
-# 全局挂载点赋值: window.__quantModules.<域>.<名> = <表达式>;
-_GLOBAL_ASSIGN_RE = re.compile(
-    r"window\.__quantModules\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=(?!=)\s*([^;]+);")
+# 全局挂载点赋值头: window.__quantModules.<域>.<名> =（表达式由 _scan_expr 扫描）
+# 注: 不能用 `[^;]+;` 取表达式 —— 模板片段常量内含分号（内联 style / 箭头函数体），
+#     会在此截断导致解析失败，故改为「扫到顶层分号」。
+_GLOBAL_HEAD_RE = re.compile(
+    r"window\.__quantModules\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=(?!=)")
 # 同文件顶层常量: const/let/var <名> = <表达式>;
 _LOCAL_CONST_RE = re.compile(
     r"(?:^|[;{}\s])(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=(?!=)\s*([^;]+);", re.M)
+
+
+def _scan_expr(text, pos):
+    """从 pos 起扫到顶层 ``;``（跳过字符串/模板串与括号内部），返回表达式原文；扫不到返回 None"""
+    depth = 0
+    quote = None
+    esc = False
+    i = pos
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == quote:
+                quote = None
+        elif ch in "\"'`":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == ";" and depth == 0:
+            return text[pos:i]
+        i += 1
+    return None
 
 
 def _split_top_level_plus(expr):
@@ -195,8 +224,10 @@ class TemplateResolver:
         self.globals = {}
         self.locals = {}  # (path, name) -> 表达式
         for path, text in texts.items():
-            for m in _GLOBAL_ASSIGN_RE.finditer(text):
-                self.globals[m.group(1)] = m.group(2).strip()
+            for m in _GLOBAL_HEAD_RE.finditer(text):
+                expr = _scan_expr(text, m.end())
+                if expr is not None:
+                    self.globals[m.group(1)] = expr.strip()
             for m in _LOCAL_CONST_RE.finditer(text):
                 self.locals[(path, m.group(1))] = m.group(2).strip()
 

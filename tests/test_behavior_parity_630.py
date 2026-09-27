@@ -139,6 +139,13 @@ def test_template_resolver_joins_module_const_parts():
     assert fp["setup_keys"] == ["x"]
 
 
+def test_template_resolver_handles_semicolon_inside_fragment():
+    """片段常量内含分号（内联 style / 箭头函数体）时，表达式不得被截断"""
+    texts = {"a.js": ('window.__quantModules.d.part = `<div style="a:b">x; y;</div>`;\n')}
+    assert bp.TemplateResolver(texts).resolve(
+        "window.__quantModules.d.part", "a.js") == '<div style="a:b">x; y;</div>'
+
+
 def test_template_resolver_falls_back_when_reference_unresolved():
     """引用解析不到时退回原行为（无字面量 → 模板为空），不误判为已解析"""
     src = ("window.__quantComponents.Demo = {\n  name: 'qc-demo',\n"

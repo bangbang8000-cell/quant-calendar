@@ -83,6 +83,10 @@ import '../js/components/calendar-page.js'
 import '../js/components/strategies-page.js'
 // V6.9.4 (FIX): 页面组件静态预加载 — 与 calendar/strategies 一致, 消除懒加载注册时序导致
 // 刷新/启动停留在懒加载页时组件未注册 → <component :is> 渲染为自定义元素 → 工作区空白
+// 6.3.0 (T-6.3.0.5): 系统页模板分治 — 片段与装配须先于注册文件 (注册对象创建时即取 template 值)
+import '../js/components/system/view-part1.js'
+import '../js/components/system/view-part2.js'
+import '../js/components/system/view.js'
 import '../js/components/system-page.js'
 import '../js/components/ai-page.js'
 import '../js/components/research-page.js'
