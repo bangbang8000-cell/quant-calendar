@@ -139,6 +139,91 @@ _I18N_RE = re.compile(r"\bt\(\s*'([^']+)'")
 _DIRECTIVE_RE = re.compile(r"\s(v-if|v-else-if|v-else|v-for|v-show|v-model|v-bind|v-on|v-html|v-text|v-slot)(?=[\s=:>])")
 _SPREAD_RE = re.compile(r"\.\.\.\s*([A-Za-z_$][\w$]*)")
 
+# 模板值表达式（取 `template:` 后到行尾/逗号，兼容 ``template: ` `` 多行字面量）
+_TPL_EXPR_RE = re.compile(r"template:\s*([^,\n]+)")
+# 全局挂载点赋值: window.__quantModules.<域>.<名> = <表达式>;
+_GLOBAL_ASSIGN_RE = re.compile(
+    r"window\.__quantModules\.([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*=(?!=)\s*([^;]+);")
+# 同文件顶层常量: const/let/var <名> = <表达式>;
+_LOCAL_CONST_RE = re.compile(
+    r"(?:^|[;{}\s])(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=(?!=)\s*([^;]+);", re.M)
+
+
+def _split_top_level_plus(expr):
+    """按顶层 ``+`` 切分表达式（跳过字符串/模板串与括号内部）"""
+    parts = []
+    depth = 0
+    quote = None
+    esc = False
+    start = 0
+    for i, ch in enumerate(expr):
+        if quote:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == quote:
+                quote = None
+            continue
+        if ch in "\"'`":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "+" and depth == 0:
+            parts.append(expr[start:i])
+            start = i + 1
+    parts.append(expr[start:])
+    return [p for p in (x.strip() for x in parts) if p]
+
+
+class TemplateResolver:
+    """把 ``template:`` 的值表达式解析为模板字符串。
+
+    结构分治（6.3.0 T-6.3.0.5~.10）把大模板搬移到页面目录下的片段模块，
+    注册处改写成 ``template: window.__quantModules.<域>.<名>``（片段常量以
+    ``+`` 顺序拼接）。本解析器沿引用回溯并按 ``+`` 拼接，取回的字符串与拆分前
+    逐字符一致 —— 因此模板指纹（sha / 长度 / 类名 / 图标 / 插值键 / 指令）
+    仍逐项严格对拍，不因落点变化而放行。
+
+    解析不到时返回 ``None``，调用方退回「首个反引号字面量」的原行为。
+    """
+
+    def __init__(self, texts):
+        self.texts = texts
+        self.globals = {}
+        self.locals = {}  # (path, name) -> 表达式
+        for path, text in texts.items():
+            for m in _GLOBAL_ASSIGN_RE.finditer(text):
+                self.globals[m.group(1)] = m.group(2).strip()
+            for m in _LOCAL_CONST_RE.finditer(text):
+                self.locals[(path, m.group(1))] = m.group(2).strip()
+
+    def resolve(self, expr, path, depth=0):
+        expr = (expr or "").strip()
+        if not expr or depth > 8:
+            return None
+        parts = _split_top_level_plus(expr)
+        if len(parts) > 1:
+            out = []
+            for part in parts:
+                piece = self.resolve(part, path, depth + 1)
+                if piece is None:
+                    return None
+                out.append(piece)
+            return "".join(out)
+        if expr.startswith("`"):
+            return _template_literal(expr, 0)
+        if expr.startswith("window.__quantModules."):
+            target = self.globals.get(expr[len("window.__quantModules."):])
+            return self.resolve(target, path, depth + 1) if target is not None else None
+        if re.match(r"^[A-Za-z_$][\w$]*$", expr):
+            # 仅认同文件顶层常量，避免跨文件同名常量误解析
+            target = self.locals.get((path, expr))
+            return self.resolve(target, path, depth + 1) if target is not None else None
+        return None
+
 
 def _match_brace(text, start):
     """text[start] 为 '{' 时返回配对 '}' 的下标，否则 -1（跳过字符串与转义）"""
@@ -246,12 +331,21 @@ def _setup_return_keys(text, setup_pos):
     return _top_level_keys(body[obj_start + 1:obj_end])
 
 
-def js_component_fingerprint(text):
-    """单个组件源码 → 公开面指纹（不含行号，拆分搬移不影响）"""
+def js_component_fingerprint(text, resolver=None, path=None):
+    """单个组件源码 → 公开面指纹（不含行号，拆分搬移不影响）
+
+    ``template:`` 值可为字面量，也可为常量引用（拆分后指向片段模块）；
+    后者经 ``resolver`` 解析回原字符串后再算指纹。
+    """
     tpl = None
     tpl_pos = text.find("template:")
     if tpl_pos >= 0:
-        tpl = _template_literal(text, tpl_pos)
+        expr_m = _TPL_EXPR_RE.search(text, tpl_pos)
+        is_literal = (not expr_m) or expr_m.group(1).strip().startswith("`")
+        if not is_literal:
+            tpl = resolver.resolve(expr_m.group(1), path) if resolver is not None else None
+        if tpl is None:
+            tpl = _template_literal(text, tpl_pos)  # 字面量或引用解析不到时退回原行为
     name_m = re.search(r"\bname:\s*'([^']+)'", text)
     setup_pos = text.find("setup(")
     classes = set()
@@ -281,9 +375,13 @@ def js_component_fingerprint(text):
 
 
 def js_component_fingerprints(root=None):
-    """递归扫描前端源码，按注册名返回组件指纹（拆分后落点变化不影响键）"""
+    """递归扫描前端源码，按注册名返回组件指纹（拆分后落点变化不影响键）
+
+    两趟：先读入全部源码并建立模板常量符号表，再逐文件算指纹 ——
+    模板片段模块与注册处分离时，指纹仍按解析后的模板内容比对。
+    """
     root = root or FRONTEND
-    out = {}
+    texts = {}
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in ("node_modules", "dist", ".git")]
         for fn in filenames:
@@ -292,11 +390,15 @@ def js_component_fingerprints(root=None):
             path = os.path.join(dirpath, fn)
             try:
                 with io.open(path, encoding="utf-8") as f:
-                    text = f.read()
+                    texts[path] = f.read()
             except (OSError, UnicodeDecodeError):
                 continue
-            for m in _COMPONENT_RE.finditer(text):
-                out[m.group(1)] = js_component_fingerprint(text)
+    resolver = TemplateResolver(texts)
+    out = {}
+    for path in sorted(texts):
+        text = texts[path]
+        for m in _COMPONENT_RE.finditer(text):
+            out[m.group(1)] = js_component_fingerprint(text, resolver, path)
     return out
 
 

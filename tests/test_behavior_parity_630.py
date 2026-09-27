@@ -117,6 +117,45 @@ def test_diff_report_points_at_first_differing_item():
         bp.assert_parity("自测", expected, actual)
 
 
+# ─── 模板引用解析（结构分治后模板搬移到片段模块） ─────────────
+
+def test_template_resolver_joins_module_const_parts():
+    """片段常量按 + 顺序拼接，注册处的引用解析回原模板字符串"""
+    texts = {
+        "a.js": ("window.__quantModules.demo = window.__quantModules.demo || {};\n"
+                 "window.__quantModules.demo.head = `<div>`;\n"),
+        "b.js": ("window.__quantModules.demo = window.__quantModules.demo || {};\n"
+                 "window.__quantModules.demo.body = `<p>{{ x }}</p>`;\n"
+                 "window.__quantModules.demo.view = window.__quantModules.demo.head"
+                 " + window.__quantModules.demo.body;\n"),
+        "c.js": ("window.__quantComponents.Demo = {\n  name: 'qc-demo',\n"
+                 "  template: window.__quantModules.demo.view,\n"
+                 "  setup() { return { x: 1 }; }\n};\n"),
+    }
+    resolver = bp.TemplateResolver(texts)
+    assert resolver.resolve("window.__quantModules.demo.view", "c.js") == "<div><p>{{ x }}</p>"
+    fp = bp.js_component_fingerprint(texts["c.js"], resolver, "c.js")
+    assert fp["template_len"] == len("<div><p>{{ x }}</p>")
+    assert fp["setup_keys"] == ["x"]
+
+
+def test_template_resolver_falls_back_when_reference_unresolved():
+    """引用解析不到时退回原行为（无字面量 → 模板为空），不误判为已解析"""
+    src = ("window.__quantComponents.Demo = {\n  name: 'qc-demo',\n"
+           "  template: UNKNOWN_VIEW,\n  setup() { return {}; }\n};\n")
+    fp = bp.js_component_fingerprint(src, bp.TemplateResolver({}), "x.js")
+    assert fp["template_len"] == 0
+    assert fp["template_sha"] == ""
+
+
+def test_template_resolver_keeps_identifier_lookup_in_own_file():
+    """同名常量跨文件不误解析；同文件顶层常量可解析"""
+    texts = {"a.js": "const VIEW = `x`;\n",
+             "b.js": "window.__quantComponents.D = { template: VIEW };\n"}
+    assert bp.TemplateResolver(texts).resolve("VIEW", "b.js") is None
+    assert bp.TemplateResolver({"c.js": "const V = `y`;\n"}).resolve("V", "c.js") == "y"
+
+
 # ─── 前端组件公开面（拆分不改视图与公开面） ───────────────────
 
 def test_frontend_component_fingerprints_unchanged():
