@@ -6,14 +6,13 @@
 - 前端 state 域注册表 (state-registry-core.js): 域声明/attach/快照恢复对拍/键唯一性
 - 兼容入口静态门禁: app-logic.js 声明 theme/auth/prefs/ui/page 五域 + qcState.stateRegistry
 """
-import json
 import os
 import shutil
-import subprocess
 import sys
-import time
 
 import pytest
+
+from behavior_parity import node_run, parity_jobs as jobs, wait_terminal  # noqa: F401 — 6.3.0 起共用对拍基座
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, "backend"))
@@ -24,40 +23,11 @@ STATE_REGISTRY_JS = os.path.join(FRONTEND, "js", "state-registry-core.js")
 NEEDS_NODE = pytest.mark.skipif(shutil.which("node") is None, reason="node 不可用")
 
 
+def _wait(jobs_mod, job_id, timeout=5.0):
+    return wait_terminal(jobs_mod, job_id, timeout=timeout)
+
+
 # ─── 后端 jobs 治理 ───────────────────────────────────────────
-
-@pytest.fixture
-def jobs(tmp_path, monkeypatch):
-    import jobs
-    monkeypatch.setattr(jobs, "JOBS_FILE", str(tmp_path / "jobs.json"))
-    jobs.reset_jobs()
-    _saved_registry = dict(jobs._registry)
-    jobs._registry.clear()
-    _order = []
-
-    @jobs.register("test-order")
-    def _order_fn(payload, ctx):  # noqa: ARG001
-        tag = payload.get("tag", "?")
-        _order.append(tag)
-        time.sleep(0.01)
-        return {"tag": tag}
-
-    yield jobs, _order
-    jobs._registry.clear()
-    jobs._registry.update(_saved_registry)
-    jobs.reset_jobs()
-    jobs.shutdown()
-
-
-def _wait(jobs, job_id, timeout=5.0):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        j = jobs.get_task(job_id)
-        if j and j["status"] in ("success", "failed", "cancelled"):
-            return j
-        time.sleep(0.02)
-    return jobs.get_task(job_id)
-
 
 def test_create_task_default_priority_zero(jobs):
     j, _ = jobs
@@ -128,15 +98,8 @@ def test_priority_backward_compat_positional(jobs):
 # ─── 前端 state 域注册表 (Node 行为对拍) ───────────────────────
 
 def _run_js(script):
-    code = ("const SR = require(process.argv[1]);\n"
-            "(async () => {\n"
-            "  const out = await (async function(){\n" + script + "\n  })();\n"
-            "  process.stdout.write(JSON.stringify(out));\n"
-            "})();\n")
-    proc = subprocess.run(["node", "-e", code, STATE_REGISTRY_JS],
-                          capture_output=True, text=True, timeout=15)
-    assert proc.returncode == 0, f"node 执行失败: {proc.stderr}"
-    return json.loads(proc.stdout)
+    """state-registry 模块对拍 — 6.3.0 起走通用基座 node_run"""
+    return node_run(STATE_REGISTRY_JS, "const SR = M;\n" + script)
 
 
 @NEEDS_NODE

@@ -1,0 +1,19 @@
+{
+  "attach_undeclared_key_rejected": "key not declared in domain: theme.nope",
+  "attach_unknown_domain_rejected": "unknown domain: nope",
+  "cross_domain_duplicate_key_rejected": "duplicate key across domains: hue",
+  "define_attach_get": [
+    true,
+    "light",
+    [
+      "theme"
+    ],
+    2
+  ],
+  "duplicate_domain_rejected": "duplicate domain: theme",
+  "snapshot_restore_parity": [
+    false,
+    "2026-09-21",
+    false
+  ]
+}
