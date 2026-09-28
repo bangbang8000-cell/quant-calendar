@@ -151,10 +151,17 @@ async def get_ai_calibration(window: Optional[int] = None, user: Dict = Depends(
 
 @router.post("/fact-check/audit")
 async def run_fact_check_audit(user: Dict = Depends(get_non_guest_user)):
-    """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》"""
+    """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》
+
+    T-6.3.4: 修复前 run_daily_audit() 硬编码 "default" 用户名 → 永远 sampled=0。
+    现按触发者取数: 管理员系统级聚合所有用户, 普通用户仅抽查本人历史。
+    """
     from fact_check import run_daily_audit, save_audit_report
     try:
-        report = run_daily_audit()
+        u = user or {}
+        username = u.get("username")
+        audit_user = None if u.get("role") == "admin" else username
+        report = run_daily_audit(username=audit_user)
         save_audit_report(report)
         return {"success": True, "data": report}
     except Exception as e:

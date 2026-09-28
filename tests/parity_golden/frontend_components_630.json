@@ -28,10 +28,11 @@
     "icons": [],
     "name": "qc-add-user-dialog",
     "setup_keys": [
-      "...state"
+      "...state",
+      "themeOptions"
     ],
-    "template_len": 1772,
-    "template_sha": "b4616465051097a2"
+    "template_len": 2023,
+    "template_sha": "97ede852cadabe9b"
   },
   "AiPage": {
     "classes": [
@@ -1745,6 +1746,8 @@
       "cycleTrend",
       "dateList",
       "dateListLoading",
+      "emotionNotice",
+      "factsNotice",
       "filteredSectorRows",
       "filteredZt",
       "fmtAmount",

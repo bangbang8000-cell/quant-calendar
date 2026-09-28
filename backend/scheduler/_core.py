@@ -413,6 +413,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                 break
             try:
                 from fact_check import run_daily_audit, save_audit_report
+                # T-6.3.4: 系统级抽查 — username=None → 聚合 data/users/*/ 所有用户历史
+                # (修复前硬编码 "default" 用户名, 实际数据按用户分文件 → 永远 sampled=0)
                 report = run_daily_audit()
                 save_audit_report(report)
                 self._record_task_run("fact_check_audit", True,

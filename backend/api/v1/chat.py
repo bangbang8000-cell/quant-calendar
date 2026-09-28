@@ -421,20 +421,28 @@ async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
 
 @router.get("/history/{session_id}")
 async def get_history_detail(session_id: str, user: Optional[dict] = Depends(get_current_user)):
-    """获取单条对话详情 (v3.17.13: 按当前用户)"""
+    """获取单条对话详情 (v3.17.13: 按当前用户)
+
+    T-6.3.4: session_id 来自 URL path (str), 而 SQLite 主路径的 id 为 int 自增 —
+    统一 str(s["id"]) 比较, 兼容 int(SQLite) 与 str(JSON 存档), 否则详情永远未找到。
+    """
     sessions = _load_history(_resolve_username(user))
     for s in sessions:
-        if s["id"] == session_id:
+        if str(s["id"]) == session_id:
             return {"id": s["id"], "messages": s.get("messages", [])}
     return {"error": "未找到该对话"}
 
 
 @router.delete("/history/{session_id}")
 async def delete_history(session_id: str, user: Optional[dict] = Depends(get_current_user)):
-    """删除单条对话 (v3.17.13: 按当前用户)"""
+    """删除单条对话 (v3.17.13: 按当前用户)
+
+    T-6.3.4: 同上, str(s["id"]) != session_id 对 SQLite int id 恒真 →
+    修复前删除静默失效 (实际一个都删不掉); 统一字符串比较。
+    """
     username = _resolve_username(user)
     sessions = _load_history(username)
-    sessions = [s for s in sessions if s["id"] != session_id]
+    sessions = [s for s in sessions if str(s["id"]) != session_id]
     _save_history(sessions, username)
     return {"ok": True}
 

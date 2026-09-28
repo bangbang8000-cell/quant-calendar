@@ -171,7 +171,8 @@
 .audit-action { padding: 4px 8px; border-radius: var(--qc-radius-full); background: var(--badge-info-bg); color: var(--badge-info-text); font-size: var(--qc-font-size-xs); flex-shrink: 0; }
 .audit-detail { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .merrill-timeline-empty { color: var(--text-tertiary); font-size: var(--qc-font-size-sm); padding: 8px 0; text-align: center; }
-.key-reveal-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; }
+.key-reveal-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; padding: 6px 8px; margin: -6px -8px; border-radius: var(--qc-radius-small); transition: background-color 0.2s ease; }
+.key-reveal-toggle:hover { background: var(--surface-hover); }
 
 /* V4.0.5-E: 响应式 — 窄屏时间轴横向滚动 (不压缩阶段块) */
 @media (max-width: 768px) {

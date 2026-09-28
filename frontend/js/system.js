@@ -344,10 +344,13 @@ function _maskSecret(s) {
 }
 
 // V4.0 需求2: 查看完整密钥 — 密码框验证后经 /api/system/reveal-secret 取完整值
+// T-6.3.4: 提示语明确区分「查看密码」与登录密码 — 查看密码是 .env KEY_VIEW_PASSWORD
+// (默认 admin123), 与登录密码不同; 用户误输登录密码会看到「查看密码错误」而误判为功能故障
+const KEY_VIEW_PROMPT = '请输入密钥查看密码（与登录密码不同；默认 admin123，可在 .env 的 KEY_VIEW_PASSWORD 修改）';
 async function _revealSecret(target) {
     let password;
     try {
-        const r = await ElementPlus.ElMessageBox.prompt('请输入查看密码（默认密码见项目 README「密钥查看」说明）', '查看完整密钥', {
+        const r = await ElementPlus.ElMessageBox.prompt(KEY_VIEW_PROMPT, '查看完整密钥', {
             inputType: 'password',
             inputPattern: /^.+$/,
             inputErrorMessage: '密码不能为空',
@@ -366,7 +369,7 @@ async function _revealSecret(target) {
         });
         const data = await res.json();
         if (data.success) return data.secret;
-        ElementPlus.ElMessage.error(data.message || '查看失败');
+        ElementPlus.ElMessage.error((data.message || '查看失败') + '（查看密码见 .env KEY_VIEW_PASSWORD）');
     } catch (e) {
         ElementPlus.ElMessage.error('查看失败: ' + e.message);
     }

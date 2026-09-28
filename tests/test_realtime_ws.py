@@ -47,9 +47,14 @@ def _tushare_rows():
 
 
 def test_fetch_from_tushare_parses(monkeypatch):
+    """T-6.3.4: 真实 tushare 1.4.x 签名为 (symbols=None) — 调用须为位置/符号参数,
+    传 ts_code= 关键字会抛 TypeError 致回退永远失败 (回归守护: 记录实际调用参数)"""
     src = RealtimeQuoteSource()
-    fake_ts = types.SimpleNamespace(
-        get_realtime_quotes=lambda ts_code=None: _FakeDF(_tushare_rows()))
+    call_args = []
+    def _fake_quotes(symbols=None):
+        call_args.append(symbols)
+        return _FakeDF(_tushare_rows())
+    fake_ts = types.SimpleNamespace(get_realtime_quotes=_fake_quotes)
     monkeypatch.setitem(sys.modules, 'tushare', fake_ts)
     quotes, degraded = src._fetch_from_tushare(['600519.SH', '000001.SZ'])
     assert degraded is False
@@ -57,12 +62,14 @@ def test_fetch_from_tushare_parses(monkeypatch):
     assert quotes['600519.SH']['pre_close'] == 1480.0
     assert quotes['000001.SZ']['price'] == 12.0
     assert '999999' not in quotes
+    # 回归守护: 必须收到拼接后的 symbols 字符串 (而非 ts_code 关键字)
+    assert call_args == ['600519,000001'], f"tushare 调用参数异常: {call_args}"
 
 
 def test_fetch_from_tushare_empty_raises(monkeypatch):
     src = RealtimeQuoteSource()
     fake_ts = types.SimpleNamespace(
-        get_realtime_quotes=lambda ts_code=None: _FakeDF([]))
+        get_realtime_quotes=lambda symbols=None: _FakeDF([]))
     monkeypatch.setitem(sys.modules, 'tushare', fake_ts)
     with pytest.raises(RuntimeError):
         src._fetch_from_tushare(['600519.SH'])

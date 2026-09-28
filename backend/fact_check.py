@@ -133,23 +133,118 @@ def check_consistency(ai_text: str, data_card: Optional[Dict]) -> Dict:
 # ==================== 每日抽查 ====================
 
 def _extract_ai_text(record: Dict) -> str:
+    """提取 AI 回复文本（供数值抽取）。
+
+    T-6.3.4: 优先 detailed_report（人类可读正文）; analysis 可能是 dict
+    (新格式 strengths/weaknesses/suggestions) 或 HTML 字符串; ai_summary/content 兜底。
+    修复前 str(analysis_dict) 得到 Python repr, 抽不到任何数字 → checked=0。
+    """
     result = record.get("result") or {}
-    return str(result.get("ai_summary") or result.get("analysis") or result.get("content") or "")
+    analysis = result.get("analysis")
+    if isinstance(analysis, dict):
+        # 新格式: 拼接字符串字段, 不取 repr
+        parts = []
+        for k in ("strengths", "weaknesses", "suggestions"):
+            v = analysis.get(k)
+            if isinstance(v, list):
+                parts.extend(str(x) for x in v)
+            elif isinstance(v, str):
+                parts.append(v)
+        analysis_text = " ".join(parts)
+    else:
+        analysis_text = str(analysis or "")
+    text = (str(result.get("detailed_report") or "")
+            or analysis_text
+            or str(result.get("ai_summary") or "")
+            or str(result.get("content") or ""))
+    return text
 
 
-def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20) -> Dict:
+def _extract_data_card(record: Dict) -> Dict:
+    """从评估记录提取「数据卡」（模型在评估时看到的事实快照）。
+
+    T-6.3.4: 评估管线从不写 result.data_card 字段 —— 真实的事实源是
+    record.market_data_snapshot（K线 latest/技术指标等，模型据此生成回复）。
+    优先 result.data_card（未来管线若补齐仍兼容），回退 market_data_snapshot。
+    """
+    result = record.get("result") or {}
+    card = result.get("data_card")
+    if isinstance(card, dict) and card:
+        return card
+    snap = record.get("market_data_snapshot")
+    if isinstance(snap, dict) and snap:
+        return snap
+    return {}
+
+
+def _iter_user_history_files() -> List[List[Dict]]:
+    """扫描 data/users/*/ai_evaluation_history.json，返回「按用户分组」的历史列表。
+
+    系统级抽查（每日 17:30 调度 / 管理员手动触发）需要覆盖真实用户——
+    修复前 run_daily_audit 硬编码 "default" 用户名，而实际数据按用户分文件存放，
+    导致 sampled=0（AI 事实护栏永远"无数据"）。
+    返回分组而非扁平列表：抽样时按用户轮转交错，避免单一大用户占满样本。
+    """
+    base = os.path.join(paths.DATA_DIR, "users")
+    if not os.path.isdir(base):
+        return []
+    groups: List[List[Dict]] = []
+    try:
+        for name in sorted(os.listdir(base)):
+            p = os.path.join(base, name, "ai_evaluation_history.json")
+            if not os.path.isfile(p):
+                continue
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                recs = data if isinstance(data, list) else (
+                    data.get("records") or data.get("history") or [])
+                if recs:
+                    groups.append(recs)
+            except Exception as e:
+                logger.warning("事实护栏跳过不可读历史: %s (%s)", p, e)
+    except Exception as e:
+        logger.warning("事实护栏扫描用户目录失败: %s", e)
+    return groups
+
+
+def _interleave(groups: List[List[Dict]], limit: int) -> List[Dict]:
+    """跨用户轮转交错抽样：每个用户轮流贡献 1 条，直到 limit 或取尽。"""
+    out: List[Dict] = []
+    idx = 0
+    while len(out) < limit:
+        took = False
+        for g in groups:
+            if idx < len(g):
+                out.append(g[idx])
+                took = True
+                if len(out) >= limit:
+                    break
+        if not took:
+            break
+        idx += 1
+    return out
+
+
+def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20,
+                    username: Optional[str] = None) -> Dict:
     """抽查历史 AI 回复: 数值与本地数据卡一致性 → 审计报告 (FR-3.18.9)
 
-    - history 可注入 (测试用); 默认从 ai_evaluator 取最近评估记录
+    - history 可注入 (测试用); 默认自动取历史:
+      * username 指定 → 仅该用户的历史 (ai_evaluator.get_history)
+      * username=None (系统级) → 聚合 data/users/*/ 下所有用户 (每日调度/管理员触发)
     - 无数据卡的回复 → unverified (未验证, 不计入通过率)
     """
     if history is None:
-        try:
-            from ai_evaluator import ai_evaluator
-            history = ai_evaluator.get_history("default", limit=limit)
-        except Exception as e:
-            logger.warning("获取评估历史失败 (降级): %s", e)
-            history = []
+        if username:
+            try:
+                from ai_evaluator import ai_evaluator
+                history = ai_evaluator.get_history(username, limit=limit)
+            except Exception as e:
+                logger.warning("获取评估历史失败 (降级): %s", e)
+                history = []
+        else:
+            history = _interleave(_iter_user_history_files(), limit)
     history = list(history or [])[:limit]
     total_checked = 0
     total_passed = 0
@@ -157,7 +252,7 @@ def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20) -> Di
     failures: List[Dict] = []
     for rec in history:
         result = rec.get("result") or {}
-        data_card = result.get("data_card")
+        data_card = _extract_data_card(rec)
         ai_text = _extract_ai_text(rec)
         if not data_card or not ai_text:
             unverified += 1

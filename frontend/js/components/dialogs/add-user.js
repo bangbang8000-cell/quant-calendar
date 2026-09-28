@@ -30,7 +30,10 @@
                 </el-form-item>
                 <el-form-item label="默认主题">
                     <el-select class="w-select-sm" v-model="userForm.theme">
-                        <el-option v-for="(theme, key) in themes" :key="key" :label="theme.name" :value="key" />
+                        <!-- T-6.3.4: 用户关联主题下拉须用 legacyThemes(8 主题, 与后端 THEMES 一致) —
+                            修复前用 qcState.themes({light,dark}) 导致: ①选项只剩浅色/深色
+                            ②存量用户 legacy 主题值不在选项中无法回显 ③保存 light/dark 破坏用户列表主题点 -->
+                        <el-option v-for="(theme, key) in themeOptions" :key="key" :label="theme.name" :value="key" />
                     </el-select>
                 </el-form-item>
             </el-form>
@@ -43,7 +46,14 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      // T-6.3.4: 用户关联主题选项 = legacyThemes (8 主题, 与后端 user_manager.THEMES 键一致)。
+      // 兜底回退 qcState.themes, 避免模块未装配时下拉空白。
+      const legacyThemes = (window.__quantModules && window.__quantModules.themes
+        && window.__quantModules.themes.legacyThemes) || {};
+      const themeOptions = Object.keys(legacyThemes).length
+        ? legacyThemes
+        : (state.themes || { light: { name: '浅色' }, dark: { name: '深色' } });
+      return { ...state, themeOptions };
     },
   };
 })();

@@ -659,6 +659,9 @@
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass, sessionStatusText, sessionStatusClass,
+        // T-6.3.4: 6.3.0 拆分回归 — 模板 view-part1/2 引用 t()/emotionNotice/factsNotice
+        // 但 setup 未返回 → 概览页 Vue 渲染崩溃 (t is not a function) + 降级原因不显示
+        t: state.t, emotionNotice, factsNotice,
         // V5.3.0 (T-5.3.1.3): 短线复盘 3 步引导
         shorttermTourVisible, shorttermTourState, shorttermTourStep, shorttermTourProg, shorttermTourIsLast,
         shorttermTourNext, shorttermTourFinish, shorttermTourSkip,

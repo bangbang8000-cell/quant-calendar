@@ -264,7 +264,10 @@ class RealtimeQuoteSource:
         """tushare 实时快照回退源（无 token 亦可尝试；失败抛异常由上层降级）"""
         try:
             import tushare as ts
-            df = ts.get_realtime_quotes(ts_code=','.join(c.split('.')[0] for c in codes))
+            # T-6.3.4: tushare 1.4.x get_realtime_quotes 签名为 (symbols=None) —
+            # 传 ts_code= 关键字会抛 TypeError("unexpected keyword argument 'ts_code'"),
+            # 导致 tushare 回退永远失败 → 实时报价长期降级。改用位置参数 symbols。
+            df = ts.get_realtime_quotes(','.join(c.split('.')[0] for c in codes))
             if df is None or len(df) == 0:
                 raise RuntimeError('tushare 实时快照为空')
             wanted = set(codes)

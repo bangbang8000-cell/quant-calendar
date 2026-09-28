@@ -108,6 +108,100 @@ def test_daily_audit_unverified_without_card():
     assert audit["unverified"] == 1
 
 
+# ==================== T-6.3.4: 数据卡回退 + 用户名聚合 ====================
+
+
+def test_audit_uses_market_data_snapshot_as_card():
+    """T-6.3.4: 评估记录无 data_card 字段, 事实源应回退 market_data_snapshot
+    (修复前只读 result.data_card → 全部 unverified, 事实护栏永远 checked=0)"""
+    history = [{
+        "stock_code": "600519.SH", "stock_name": "贵州茅台",
+        "evaluate_time": "2026-09-19T10:30:00",
+        "market_data_snapshot": {
+            "has_kline": True, "has_fundamentals": True,
+            "latest": {"date": "20260910", "open": 18.89, "close": 18.97,
+                       "low": 18.8, "high": 19.03, "volume": 1335636,
+                       "ma5": 18.97, "ma10": 19.1, "ma20": 19.13, "pct_chg": 0.32},
+            "rsi": 44.33,
+        },
+        "result": {"analysis": "收盘价 18.97 元，RSI 44.33，涨跌幅 0.32%"},
+    }]
+    audit = fc.run_daily_audit(history)
+    assert audit["sampled"] == 1
+    assert audit["checked"] >= 3, f"应从 market_data_snapshot 检出数值: {audit}"
+    assert audit["unverified"] == 0
+    assert audit["failed"] == 0, f"引用快照数值应全部通过: {audit['failures']}"
+
+
+def test_audit_data_card_preferred_over_snapshot():
+    """result.data_card 存在时优先 (未来管线补齐 data_card 的兼容性)"""
+    history = [{
+        "market_data_snapshot": {"latest": {"close": 18.97}},
+        "result": {"data_card": {"indexes": [{"close": 3200.5}]},
+                   "analysis": "上证收于 3200.50 点"},
+    }]
+    audit = fc.run_daily_audit(history)
+    assert audit["checked"] == 1 and audit["passed"] == 1
+
+
+def test_audit_system_wide_aggregates_all_users(tmp_path, monkeypatch):
+    """T-6.3.4: username=None (系统级) 聚合 data/users/*/ 下所有用户历史
+    (修复前硬编码 "default" 用户名 → 真实用户数据永远读不到 → sampled=0)"""
+    users_dir = tmp_path / "users"
+    (users_dir / "alice").mkdir(parents=True)
+    (users_dir / "bob").mkdir()
+    with open(users_dir / "alice" / "ai_evaluation_history.json", "w", encoding="utf-8") as f:
+        json.dump([_history_reply({"indexes": [{"close": 3200.5}]}, "上证收于 3200.5 点")], f)
+    with open(users_dir / "bob" / "ai_evaluation_history.json", "w", encoding="utf-8") as f:
+        json.dump([_history_reply({"indexes": [{"close": 12.3}]}, "平安银行收于 12.3 元")], f)
+    monkeypatch.setattr(fc.paths, "DATA_DIR", str(tmp_path))
+    audit = fc.run_daily_audit(username=None, limit=20)
+    assert audit["sampled"] == 2, f"系统级抽查应聚合两用户: {audit}"
+    assert audit["checked"] == 2
+
+
+def test_audit_specific_username(monkeypatch):
+    """T-6.3.4: 指定 username 时仅抽查该用户历史 (ai_evaluator.get_history)"""
+    class _FakeEval:
+        def get_history(self, username, limit=50, offset=0):
+            assert username == "alice", "应传当前用户名而非 default"
+            return [_history_reply({"indexes": [{"close": 3200.5}]}, "上证收于 3200.5 点")]
+    import sys
+    class _FakeMod:
+        ai_evaluator = _FakeEval()
+    monkeypatch.setitem(sys.modules, "ai_evaluator", _FakeMod())
+    audit = fc.run_daily_audit(username="alice", limit=20)
+    assert audit["sampled"] == 1 and audit["checked"] == 1
+
+
+def test_extract_ai_text_handles_dict_analysis():
+    """T-6.3.4: analysis 为 dict 时拼接字符串字段而非 repr (修复前 str(dict) 抽不到数字)"""
+    rec = {"result": {"analysis": {"strengths": ["放量上涨 12.3%"],
+                                   "weaknesses": [], "suggestions": ["关注 3200 支撑"]}}}
+    text = fc._extract_ai_text(rec)
+    assert "12.3" in text and "3200" in text
+    assert "{'strengths'" not in text, "不应是 dict repr"
+
+
+def test_extract_ai_text_prefers_detailed_report():
+    """T-6.3.4: detailed_report 为人类可读正文, 优先于 analysis"""
+    rec = {"result": {"analysis": "旧格式文本 9.9 元", "detailed_report": "收盘 12.34 元"}}
+    assert fc._extract_ai_text(rec) == "收盘 12.34 元"
+
+
+def test_interleave_samples_across_users():
+    """T-6.3.4: 系统级抽样按用户轮转交错, 单一大用户不应占满样本"""
+    groups = [
+        [{"stock_code": "A%d" % i} for i in range(20)],   # 大用户
+        [{"stock_code": "B0"}],                            # 小用户
+        [{"stock_code": "C0"}],                            # 小用户
+    ]
+    out = fc._interleave(groups, 5)
+    codes = [r["stock_code"] for r in out]
+    assert codes[:3] == ["A0", "B0", "C0"], f"应先各取 1 条: {codes}"
+    assert codes[3] == "A1", f"第二轮取大用户下一条: {codes}"
+
+
 # ==================== 报告持久化 ====================
 
 
