@@ -23,21 +23,32 @@ def _normalize_score(raw, center, scale, invert=False):
     z = (raw - center) / scale
     return -z if invert else z
 
+def _call_with_timeout(fn, timeout=15):
+    """在独立线程中调用 fn，超时则返回 None
+
+    T-6.3.4: 修复超时挂起 — 原实现 `with ThreadPoolExecutor` 在退出时
+    shutdown(wait=True) 会等待挂起线程结束: future.result(timeout=15) 虽在
+    15s 超时返回 None, 但线程仍阻塞在 akshare 网络调用(无外网时 OS TCP 超时
+    可达 130s+), 9 个宏观指标串行叠加 → /merrill-clock 实测阻塞事件循环 163s。
+    改为超时后 shutdown(wait=False): 放弃等待挂起线程, 调用方立即返回。
+    """
+    import concurrent.futures
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(fn)
+    try:
+        return future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        executor.shutdown(wait=False)  # 不等待挂起线程, 立即返回 None
+        return None
+    except Exception:
+        executor.shutdown(wait=False)
+        return None
+
+
 class ClockIndicatorsMixin:
     """V5.0.9 (T-5.0.93): MerrillClock 拆分 Mixin (_indicators)"""
     def _fetch_real_macro_data(self):
         """v3.0: 从 AKShare 获取真实宏观数据，失败返回 None"""
-        import concurrent.futures
-
-        def _call_with_timeout(fn, timeout=15):
-            """在独立线程中调用，超时则返回 None"""
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fn)
-                try:
-                    return future.result(timeout=timeout)
-                except (concurrent.futures.TimeoutError, Exception):
-                    return None
-
         try:
             import akshare as ak
 

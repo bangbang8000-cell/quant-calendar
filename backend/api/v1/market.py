@@ -23,8 +23,14 @@ async def get_market_overview(date: Optional[str] = None):
 
 @router.get("/merrill-clock")
 async def get_merrill_clock():
-    """获取美林时钟 - 当前经济周期判断"""
-    return merrill_clock.determine_stage()
+    """获取美林时钟 - 当前经济周期判断
+
+    T-6.3.4: determine_stage 内部会拉取 AKShare 宏观数据（可能挂起/超时数十秒）——
+    同步调用会阻塞整个 uvicorn 事件循环（实测 /api/market/merrill-clock 阻塞 163s,
+    期间所有请求排队）。改用 asyncio.to_thread 放到工作线程, 事件循环保持响应。
+    """
+    import asyncio
+    return await asyncio.to_thread(merrill_clock.determine_stage)
 
 
 @router.get("/merrill-clock/stages")

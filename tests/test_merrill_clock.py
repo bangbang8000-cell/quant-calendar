@@ -629,3 +629,46 @@ def test_get_stage_detail_noncurrent_history(clock):
     assert h['end'] == '2023-01-01'
     assert h['note'] == '过热期→滞胀期'
     assert info['_lastPeriod'] == info['_history'][0]
+
+
+# ==================== T-6.3.4: 事件循环阻塞回归 ====================
+
+def test_call_with_timeout_returns_promptly_on_hang():
+    """T-6.3.4: _call_with_timeout 遇挂起调用须立即返回 None, 不得等待线程结束
+
+    修复前 `with ThreadPoolExecutor` 退出时 shutdown(wait=True) 等待挂起线程
+    (akshare 无外网时 OS TCP 超时可达 130s+), 9 个宏观指标串行叠加 → 阻塞 163s。
+    """
+    import time
+    from merrill_clock._indicators import _call_with_timeout
+
+    def _hang():
+        time.sleep(60)  # 模拟 akshare 挂起 (远超 timeout)
+
+    t0 = time.monotonic()
+    result = _call_with_timeout(_hang, timeout=0.5)
+    elapsed = time.monotonic() - t0
+    assert result is None
+    assert elapsed < 10, f"超时应立即返回, 实耗 {elapsed:.1f}s (修复前会等到线程结束)"
+
+
+def test_call_with_timeout_returns_value_on_success():
+    """T-6.3.4: 正常返回仍透传结果"""
+    from merrill_clock._indicators import _call_with_timeout
+    assert _call_with_timeout(lambda: 42, timeout=5) == 42
+
+
+def test_call_with_timeout_catches_exception():
+    """T-6.3.4: 异常(含 akshare 接口漂移 AttributeError)返回 None 不抛出"""
+    from merrill_clock._indicators import _call_with_timeout
+    def _boom():
+        raise AttributeError("module 'akshare' has no attribute 'macro_china_industrial_production'")
+    assert _call_with_timeout(_boom, timeout=5) is None
+
+
+def test_merrill_clock_endpoint_uses_to_thread():
+    """T-6.3.4: /api/market/merrill-clock 须用 asyncio.to_thread 避免阻塞事件循环"""
+    import api.v1.market as mkt
+    import inspect
+    src = inspect.getsource(mkt.get_merrill_clock)
+    assert "asyncio.to_thread" in src, "merrill-clock 端点应通过 asyncio.to_thread 调用 determine_stage"
