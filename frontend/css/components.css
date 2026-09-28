@@ -317,8 +317,11 @@
   min-height: var(--el-component-size, 32px);
   line-height: var(--el-component-size, 32px);
 }
-.el-select__selected-item,
-.el-select__selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.el-select__selected-item { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 修复: selection 不能 overflow:hidden — EP 2.14.5 把选中文字渲染在绝对定位的
+   .el-select__placeholder(z-index:-1) 内, selection 的 overflow:hidden 会裁剪它,
+   导致闭合状态选择框文字不可见(显示为空) */
+.el-select__selection { white-space: nowrap; }
 /* V6.9.6: 兜底 — 即便 EP 样式表版本错配/缓存陈旧, 下拉的倒三角也必须与文字同行不换行 */
 .el-select__wrapper { display: flex; align-items: center; }
 .el-select__suffix { flex: 0 0 auto; flex-shrink: 0; }
