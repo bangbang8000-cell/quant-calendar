@@ -2727,6 +2727,7 @@
       "inner-card",
       "is-stale",
       "j.status",
+      "key-field-row",
       "key-reveal-toggle",
       "m-0",
       "m-0-0-12",
@@ -3093,8 +3094,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 110046,
-    "template_sha": "30faadd2d8faea4e"
+    "template_len": 110123,
+    "template_sha": "48f483ccd652ad27"
   },
   "TourDialog": {
     "classes": [

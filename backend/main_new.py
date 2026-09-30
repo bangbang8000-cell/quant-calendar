@@ -137,7 +137,7 @@ async def lifespan(app: FastAPI):
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
 # V6.3 (PRD-6.3): 保留本地版本号 6.3.0 — 导航形态配置化(subnav/tree/toptab) + 顶部栏容器化 + 页签圆角矩形化 + 评估分析命名修复
-APP_VERSION = "6.3.4"  # 6.3.4: 修复所有 el-select 闭合状态选中文字不可见(selection overflow:hidden 裁剪 EP 绝对定位 placeholder); 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
+APP_VERSION = "6.3.5"  # 6.3.5: 密钥查看/编辑不可点击修复(解锁按钮/眼睛移出禁用输入框 #suffix + AI 密钥框取值补 _revealed); 6.3.4: 修复所有 el-select 闭合状态选中文字不可见(selection overflow:hidden 裁剪 EP 绝对定位 placeholder); 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
 # V5.17.3: 全站文字/字体/字号/颜色优化 — 亮暗两套对比度达标 + 字号层级提升 + EP字体统一
 
 # 创建 FastAPI 应用

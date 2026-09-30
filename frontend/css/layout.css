@@ -174,6 +174,15 @@
 .key-reveal-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; padding: 6px 8px; margin: -6px -8px; border-radius: var(--qc-radius-small); transition: background-color 0.2s ease; }
 .key-reveal-toggle:hover { background: var(--surface-hover); }
 
+/* 6.3.5 (BUG-FIX 密钥不可点击): 解锁按钮 / 查看眼睛必须放在输入框「之外」.
+   根因: Element Plus 2.14.5 样式表起 `.el-input.is-disabled .el-input__suffix-inner{pointer-events:none}`,
+   而密钥输入框默认 `:disabled="!v._editing"` —— 放在 #suffix 内的 el-button / .key-reveal-toggle
+   继承 pointer-events:none, 未解锁时「编辑密钥」与眼睛全部点不动 (本行布局即为退出 suffix 后的落位). */
+.key-field-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.key-field-row > .el-input { flex: 1 1 auto; min-width: 0; }
+.key-field-row > .el-button { flex: 0 0 auto; }
+.key-field-row > .key-reveal-toggle { flex: 0 0 auto; margin: 0; padding: 6px 6px; }
+
 /* V4.0.5-E: 响应式 — 窄屏时间轴横向滚动 (不压缩阶段块) */
 @media (max-width: 768px) {
   .merrill-timeline { overflow-x: auto; }
