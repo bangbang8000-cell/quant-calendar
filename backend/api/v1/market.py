@@ -297,12 +297,18 @@ async def get_datasource_status():
 # v1.3.0: Tushare 数据源配置 API
 @router.get('/tushare/config')
 async def get_tushare_config(_: Dict = Depends(get_admin_user)):
-    """获取 Tushare 配置"""
+    """获取 Tushare 配置
+
+    V6.3.6 (安全): token 改为掩码展示 —— 原先直接回传 settings.TUSHARE_TOKEN 明文,
+    既绕过 V4.0 需求2 的掩码口径 (前端 tushareConfig 实际从未渲染, 属无谓暴露),
+    又会被 PWA Service Worker / 浏览器缓存落盘。完整值仍经 /api/system/reveal-secret 验密获取。
+    """
     from config import settings
+    from secret_utils import mask_secret
     return {
         "success": True,
         "config": {
-            "token": settings.TUSHARE_TOKEN if settings.TUSHARE_TOKEN else "",
+            "token": mask_secret(settings.TUSHARE_TOKEN or ""),
             "endpoint": settings.TUSHARE_ENDPOINT,
             "timeout": settings.TUSHARE_TIMEOUT
         }
@@ -310,15 +316,24 @@ async def get_tushare_config(_: Dict = Depends(get_admin_user)):
 
 @router.post('/tushare/config')
 async def save_tushare_config(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
-    """保存 Tushare 配置"""
+    """保存 Tushare 配置
+
+    V6.3.6 (安全): 掩码/空 token 一律保留原值 —— GET 改掩码后, 前端「保存全部」会把掩码
+    回传, 旧判断 (endswith('***') + 前 8 位匹配) 对 mask_secret 形式永不成立, 会把掩码
+    当成真实 token 写入。现对齐 /datasource/config 的 is_masked_form 口径。
+    """
     from config import settings
+    from secret_utils import is_masked_form
 
     if 'token' in req:
-        # 如果提交的 token 以 *** 结尾，说明是掩码版本，保留原值
-        submitted = req['token']
-        if submitted.endswith('***') and settings.TUSHARE_TOKEN and submitted.startswith(settings.TUSHARE_TOKEN[:8]):
-            pass  # 保留原 token
-        elif submitted:
+        submitted = req['token'] or ''
+        stored = settings.TUSHARE_TOKEN or ''
+        if submitted == '' or is_masked_form(submitted, stored):
+            pass  # 未修改 → 保留原 token
+        elif '*' in submitted:
+            return {"success": False,
+                    "message": "Tushare Token 含掩码字符(*), 请点击 🔓 编辑解锁后输入完整 Token 再保存"}
+        else:
             settings.TUSHARE_TOKEN = submitted
     if 'endpoint' in req:
         settings.TUSHARE_ENDPOINT = req['endpoint']

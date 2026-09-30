@@ -302,7 +302,8 @@ Tushare Pro 数据源需要真实 Token 才能正常拉取行情。请在 **系�
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **v6.3.5** | 2026-09 | **当前开发版本** — 6.3.5 密钥查看/编辑修复（系统配置 → AI 服务 / 数据源：Element Plus 2.14.5 样式表起 `.el-input.is-disabled .el-input__suffix-inner{pointer-events:none}`，锁定态输入框 `#suffix` 内的「编辑密钥」按钮与查看眼睛全部继承 `none` 而点不动，形成「点不开解锁 → 永远禁用」死锁；解锁/查看控件移出 `#suffix` 至同一行的 `.key-field-row` 容器并补样式；新增回归门禁 `tests/test_key_reveal_clickable_635.py`；Playwright 真机复现 + 端到端复验） |
+| **v6.3.6** | 2026-09 | **当前开发版本** — 6.3.6 密钥与离线缓存安全加固（① 后端 `GET /api/market/tushare/config` 原样回传 `settings.TUSHARE_TOKEN` 明文 —— V4.0 需求2 掩码口径的漏网之鱼，且前端从未渲染该值、纯属无谓暴露；改 `mask_secret` 展示，POST 对齐 `is_masked_form` 口径以免掩码回传覆盖真 token，补 5 条门禁。② PWA Service Worker 原把全部 GET `/api/*` 写进单一缓存并在断网时无条件回放，而 Cache API 键只有 URL（不看 `Authorization`），实测「管理员点过编辑密钥 → 切访客会话 → 断网点编辑密钥」可越权拿到管理员完整 API Key；改为敏感端点不入缓存/不回放 + 其余 API 按 JWT `sub` 分区缓存 + 无命中回 503 + 回放打标 `X-QC-Cache` + 登出清理，业务只读数据（日历视图/仪表盘/K线）离线可读能力保持不变。③ `/api/*` 统一 `Cache-Control: no-store`。门禁 `tests/sw_api_cache_core.test.js` + `tests/test_sw_api_cache_guard_636.py`） |
+| **v6.3.5** | 2026-09 | 6.3.5 密钥查看/编辑修复（系统配置 → AI 服务 / 数据源：Element Plus 2.14.5 样式表起 `.el-input.is-disabled .el-input__suffix-inner{pointer-events:none}`，锁定态输入框 `#suffix` 内的「编辑密钥」按钮与查看眼睛全部继承 `none` 而点不动，形成「点不开解锁 → 永远禁用」死锁；解锁/查看控件移出 `#suffix` 至同一行的 `.key-field-row` 容器并补样式；新增回归门禁 `tests/test_key_reveal_clickable_635.py`；Playwright 真机复现 + 端到端复验） |
 | **v6.3.4** | 2026-09 | 6.3.4 用户问题回归修复（问答历史详情与删除 id 类型 / 短线复盘概览渲染崩溃 / AI 事实护栏无数据 / 用户主题下拉仅 2 项 / tushare 实时报价回退签名；美林时钟阻塞事件循环改 `asyncio.to_thread` + 超时线程放弃等待，实测 163s → 24ms；EP 样式表对齐 2.14.5 根治下拉异常） |
 | **v6.3.3** | 2026-09 | 6.3.3 智能化收敛与收尾（AI 降级口径统一：结构化失败回退纯文本并标注 + 无数据说明缺什么；AI 观测：调用次数/耗时/失败率进用量统计 + 比例偏高面板提示；文档交接；双端回归与发布演练；见 docs/PRD-6.3.X.md + docs/DEV&TEST-PLAN-6.3.X.md） |
 | **v6.3.2** | 2026-09 | 6.3.2 效率与可靠性（日志口径统一 + 数据源/任务队列/AI 三路径结构化字段；备份校验接入调度；健康与新鲜度联动告警；日志轮转复核；热点 P95 扩展 + 慢查询索引复核；体积守门；见 docs/DEV&TEST-PLAN-6.3.X.md §1.3） |

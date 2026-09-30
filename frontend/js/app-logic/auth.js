@@ -196,6 +196,17 @@
           try {
             if (window.__quantWs && window.__quantWs.close) window.__quantWs.close();
           } catch (e) {}
+          // V6.3.6 (安全): 清理 SW 按身份分区的 API 缓存 — 避免登出后业务数据/凭据响应残留在磁盘
+          // (Cache API 对页面同样可见; 失败不影响登出本身)
+          try {
+            const cacheStore = window.caches;
+            if (cacheStore && cacheStore.keys) {
+              cacheStore.keys().then(keys => Promise.all(
+                keys.filter(k => k.indexOf('quant-calendar-api-') === 0)
+                  .map(k => cacheStore.delete(k))
+              )).catch(() => {});
+            }
+          } catch (e) {}
         }).catch(() => {});
       }
 

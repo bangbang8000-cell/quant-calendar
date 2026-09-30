@@ -224,3 +224,56 @@ class TestRevealSecret:
     def _manager(self):
         from data_sources import data_source_manager
         return data_source_manager
+
+
+# ─── E. Tushare 配置 token 掩码 (GET/POST /market/tushare/config) ──
+# V6.3.6 (安全): 该端点原样回传 settings.TUSHARE_TOKEN 明文 —— 是 V4.0 需求2 掩码口径的
+# 漏网之鱼（前端 tushareConfig 实际从未渲染，属无谓暴露），且会被 PWA Service Worker /
+# 浏览器缓存落盘。此处守护 GET 掩码 + POST 掩码/空值保留真实 token。
+
+class TestTushareConfigMasking:
+    REAL = "tushare-real-token-1234567890abcdef"
+
+    def test_get_config_masks_token(self, monkeypatch):
+        from config import settings
+        monkeypatch.setattr(settings, "TUSHARE_TOKEN", self.REAL, raising=False)
+        r = asyncio.run(market_router.get_tushare_config({"role": "admin"}))
+        assert r["success"] is True
+        assert self.REAL not in r["config"]["token"], "GET 不得回传明文 token"
+        assert "*" in r["config"]["token"], "GET 应回传掩码形式"
+        assert r["config"]["endpoint"] and "timeout" in r["config"], "其余字段保持原样"
+
+    def test_save_masked_token_keeps_existing(self, monkeypatch):
+        """前端「保存全部」会把掩码回传 → 必须保留真实 token（旧 endswith('***') 判断永不成立）"""
+        from config import settings
+        from secret_utils import mask_secret
+        monkeypatch.setattr(settings, "TUSHARE_TOKEN", self.REAL, raising=False)
+        r = asyncio.run(market_router.save_tushare_config(
+            {"token": mask_secret(self.REAL), "endpoint": "http://api.tushare.pro", "timeout": 30},
+            {"role": "admin"}))
+        assert r["success"] is True, r
+        assert settings.TUSHARE_TOKEN == self.REAL, "掩码提交不得覆盖真实 token"
+
+    def test_save_empty_token_keeps_existing(self, monkeypatch):
+        from config import settings
+        monkeypatch.setattr(settings, "TUSHARE_TOKEN", self.REAL, raising=False)
+        r = asyncio.run(market_router.save_tushare_config({"token": "", "timeout": 30}, {"role": "admin"}))
+        assert r["success"] is True
+        assert settings.TUSHARE_TOKEN == self.REAL
+
+    def test_save_new_token_updates(self, monkeypatch):
+        from config import settings
+        monkeypatch.setattr(settings, "TUSHARE_TOKEN", "old-token-aaaaaaaaaaaaaaaa", raising=False)
+        r = asyncio.run(market_router.save_tushare_config(
+            {"token": "brand-new-token-bbbbbbbbbbbb", "timeout": 30}, {"role": "admin"}))
+        assert r["success"] is True, r
+        assert settings.TUSHARE_TOKEN == "brand-new-token-bbbbbbbbbbbb"
+
+    def test_save_edited_mask_rejected(self, monkeypatch):
+        """含 * 但不是存储值的掩码形式（用户改过掩码）→ 拒绝写入, 防残缺值覆盖真值"""
+        from config import settings
+        monkeypatch.setattr(settings, "TUSHARE_TOKEN", self.REAL, raising=False)
+        r = asyncio.run(market_router.save_tushare_config(
+            {"token": "tushare-****-edited-value", "timeout": 30}, {"role": "admin"}))
+        assert r["success"] is False
+        assert settings.TUSHARE_TOKEN == self.REAL
