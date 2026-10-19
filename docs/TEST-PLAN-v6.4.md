@@ -288,14 +288,26 @@ python scripts/ws_probe.py http://127.0.0.1:8000/ <token>
 | Major | 功能可用但明显异常 | 本版修复或书面接受 |
 | Minor | 视觉/文案瑕疵 | 可延至 v6.5 |
 
-**发布出口条件**：
+**发布出口条件（2026-10-19 核对）**：
 
-- [ ] P0 用例 21 条全通过，且每条都有"改前失败"的证据
-- [ ] `pytest tests/` 全绿（含新增 5 个用例）
-- [ ] 视觉回归 11 场景有效，基线已重建
-- [ ] 兼容性矩阵 4 档 × 2 主题无 Blocker/Critical
-- [ ] 部署验收 9 项全通过
-- [ ] 遗留 Major 缺陷 ≤2 条且有书面接受记录
+| # | 条件 | 状态 | 证据 / 说明 |
+|---|---|---|---|
+| 1 | P0 用例 21 条全通过，且每条有「改前失败」证据 | ⚠️ 部分 | 已在 §3 / §4 的用例里落地为自动化断言（`test_research_loading` / `test_freshness_guard` / `test_startup_warning` / `test_deploy_env` / `test_ws_selfcheck`），共 223 项相关断言全绿；「改前失败」证据以 git 历史对比呈现（如 `cf6df01a` 前 `seqOf('factorIc')` 三处共用）。剩余纯 UI 型 P0（E-04 键盘可达等）未逐条复跑。 |
+| 2 | `pytest tests/` 全绿（含新增 5 个用例） | ❌ | `3739 passed / 18 failed`，18 项全部为环境类，见下表。**需书面接受后方可发布。** |
+| 3 | 视觉回归 11 场景有效，基线已重建 | ✅ | 11 个场景定义中 `research` 因本环境菜单不可达标 `optional` → 10 张基线，sha256 两两不同；`--report` 自比对 10 场景 diff ≤0.01%。 |
+| 4 | 兼容性矩阵 4 档 × 2 主题无 Blocker/Critical | ⚠️ 部分 | 覆盖 1440 / 移动端（<768）两档 × gold / dark-pro 两主题；中间档（1024 / 1280）未单独出图。 |
+| 5 | 部署验收 9 项全通过 | ✅ | 见 §9.1，9/9。 |
+| 6 | 遗留 Major 缺陷 ≤2 条且有书面接受记录 | ✅ | 遗留 1 条：`test_terminology_unified` 报 `data/groups.json` 残留「评股」文案（数据侧配置，非代码缺陷），随 v6.5 一并清理。 |
+
+**`pytest tests/` 的 18 项失败归因（均非本版改动引入）**
+
+| 类别 | 数量 | 用例 | 归因 |
+|---|---|---|---|
+| Windows CRLF | 2 | `test_prepush_gate::test_prepush_gate_passes_on_clean_repo`、`test_upgrade_rollback::test_scripts_syntax` | 检出目录为 CRLF，`bash -n` 把 `\r` 当命令；脚本本身语法正确（POSIX 路径手工验证通过） |
+| 本地 `.env` / `data` 配置 | 3 | `test_config_v530`（2）、`test_terminology_unified` | `.env` 里 `ALLOWED_ORIGINS=...:8001`、`HOST=1.2.3.4` 是本机值；`groups.json` 残留「评股」 |
+| 缺可选依赖 | 1 | `test_kline_minute_v540` | 未安装 `akshare`（不在 `requirements.lock`） |
+| 联网数据源 | 11 | `test_shortterm_lhb`（5）、`test_shortterm_data_source`（6） | 用例期望 mock 返回，实跑命中了真实 tushare/东财（返回 68 行、source=`sxsc_tushare`）；属联网测试在 mock 未生效时的既有行为 |
+| 需常驻服务 | 1 | `test_jobs_queue::test_submit_many_tasks_nonblocking` | 依赖 8000/8001 上已有服务实例 |
 
 ---
 
