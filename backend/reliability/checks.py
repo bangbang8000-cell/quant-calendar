@@ -147,6 +147,155 @@ def _check_refresh_config():
         return _warn("data_refresh_config", f"加载失败(用默认): {e}")
 
 
+# v6.4 (FR-6.4.2): 盘中实时报价 WS 可用性 — 依赖 + 路由注册双条件。
+# 背景: requirements.lock 声明了 websockets/wsproto 但 ops 未安装,
+# uvicorn 静默降级 → 全站 /api/market/ws/quotes 返回 404, 而 health/自检全绿。
+# 因此必须把"依赖可导入"与"路由已注册"变成显式检查项。
+_WS_ROUTE_PATH = "/api/market/ws/quotes"
+
+
+def _ws_route_registered() -> bool:
+    """WS 路由是否已挂载到 v1 路由表 (不依赖 app 实例)。
+
+    兼容两种 FastAPI 结构：
+    - 旧版：include_router 后 route 被拍平，`route.path` 即完整路径；
+    - 新版：路由表里是 `_IncludedRouter` 惰性包装，需比对 `original_router` 身份。
+    """
+    ws_router = None
+    ws_endpoint_ok = False
+    try:
+        from api.v1.market_ws import router as ws_router
+        # 注意: 该 router 自带 prefix="/market"，故 route.path 已是 /market/ws/quotes
+        ws_endpoint_ok = any(
+            str(getattr(r, "path", "")).endswith("/ws/quotes")
+            for r in getattr(ws_router, "routes", [])
+        )
+    except Exception:
+        return False
+    if not ws_endpoint_ok:
+        return False
+
+    try:
+        from api.v1.router import api_router
+        for r in getattr(api_router, "routes", []):
+            if getattr(r, "path", None) == _WS_ROUTE_PATH:
+                return True
+            for attr in ("original_router", "router"):
+                if getattr(r, attr, None) is ws_router:
+                    return True
+    except Exception:
+        return False
+    return False
+
+
+def _check_ws_dependency():
+    """导入 websockets/wsproto + 路由注册；任一失败计 fail（功能承诺必须成立）。"""
+    problems = []
+    versions = []
+    for mod in ("websockets", "wsproto"):
+        try:
+            m = __import__(mod)
+            versions.append(f"{mod}={getattr(m, '__version__', '?')}")
+        except Exception as e:
+            problems.append(f"{mod} 导入失败({type(e).__name__})")
+    if not _ws_route_registered():
+        problems.append(f"WS 路由未注册({_WS_ROUTE_PATH})")
+    if problems:
+        hint = "修复: .venv/Scripts/python.exe -m pip install -r requirements.lock"
+        return _fail("ws_dependency", "; ".join(problems) + f" | {hint}")
+    return _ok("ws_dependency", " ".join(versions) + f" route={_WS_ROUTE_PATH}")
+
+
+# v6.4 (FR-6.4.7): 环境与 requirements.lock 漂移检查。
+# 只报 warn（漂移不必然致命），但必须列名 —— 让"装了但版本不对"这类静默差异可见。
+_HEAVY_LOCK_PKGS = ("websockets", "wsproto", "uvicorn", "fastapi", "pydantic")
+
+
+def _marker_applies(marker: str) -> bool:
+    """判断 PEP 508 环境标记在当前解释器上是否成立。
+
+    无法判定时返回 True (保守: 宁可多比一次, 也不静默跳过用户实际要装的包)。
+    """
+    marker = (marker or "").strip()
+    if not marker:
+        return True
+    try:
+        from packaging.markers import Marker
+        return bool(Marker(marker).evaluate())
+    except Exception:
+        return True
+
+
+def _read_lock_versions(path: str):
+    """解析 requirements.lock → {包名: 版本}，仅保留「当前环境实际生效」的条目。
+
+    v6.4 (FR-6.4.7) 修正: lock 行普遍带 PEP 508 环境标记，例如
+        colorama==0.4.6 ; sys_platform == 'win32'
+        numpy==2.4.6   ; python_full_version < '3.12'
+        numpy==2.5.3   ; python_full_version >= '3.12'
+        akracer==0.0.14 ; sys_platform == 'linux'
+    旧实现直接把 ';' 之后整段当成版本串，导致
+      ① 版本比对全部报「漂移」(0.4.6 != "0.4.6 ; sys_platform == 'win32'")
+      ② 同名多行互相覆盖 (numpy 取到最后一条)
+      ③ linux-only 包被判「缺失」(Windows 上 akracer / py-mini-racer)
+    现按标记求值后再收进结果:
+      · 标记成立 → 采用该行版本 (同名后行覆盖前行, 与 pip 依赖解析顺序一致)
+      · 标记不成立 → 跳过
+    """
+    out = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "==" not in line:
+                    continue
+                spec, _, marker = line.partition(";")
+                name, _, ver = spec.partition("==")
+                name = name.split("[")[0].strip().lower().replace("_", "-")
+                ver = ver.strip().split()[0] if ver.strip() else ""
+                if not name or not ver:
+                    continue
+                if not _marker_applies(marker):
+                    continue
+                out[name] = ver
+    except Exception:
+        return None
+    return out
+
+
+def _check_dep_lock():
+    import paths
+    lock_path = os.path.join(paths.BASE_DIR, "requirements.lock")
+    locked = _read_lock_versions(lock_path)
+    if not locked:
+        return _warn("dep_lock", f"未找到/无法解析 requirements.lock ({lock_path})")
+    try:
+        from importlib.metadata import version as _pkg_version
+    except Exception as e:  # pragma: no cover
+        return _warn("dep_lock", f"importlib.metadata 不可用: {e}")
+
+    missing, drift = [], []
+    for name, want in locked.items():
+        try:
+            got = _pkg_version(name)
+        except Exception:
+            missing.append(name)
+            continue
+        if got != want:
+            drift.append(f"{name} {got}!={want}")
+    if not missing and not drift:
+        return _ok("dep_lock", f"{len(locked)} 个包与 lock 一致")
+    parts = []
+    if missing:
+        parts.append(f"缺失 {len(missing)}: " + ", ".join(missing[:8]))
+    if drift:
+        parts.append(f"版本漂移 {len(drift)}: " + ", ".join(drift[:8]))
+    heavy = [p for p in _HEAVY_LOCK_PKGS if p in missing or any(d.startswith(p + " ") for d in drift)]
+    if heavy:
+        parts.append("关键包: " + ", ".join(heavy))
+    return _warn("dep_lock", "; ".join(parts))
+
+
 # ─── 持久化 ───
 
 def _report_file() -> str:
@@ -189,6 +338,8 @@ def run_checks(now: datetime = None, app_version: str = None) -> dict:
         _check_env(),
         _check_feishu(),
         _check_refresh_config(),
+        _check_ws_dependency(),
+        _check_dep_lock(),
     ]
     counts = {"ok": 0, "warn": 0, "fail": 0}
     for c in checks:

@@ -68,8 +68,15 @@ IC=$(curl --noproxy "*" -s -m 30 -o /dev/null -w "%{http_code}" "$BASE/api/marke
 if [ "$IC" = "200" ]; then ok "因子 IC (HTTP $IC)"; else bad "因子 IC HTTP $IC (数据不可达可降级为空)"; fi
 
 # ---------- 8. WebSocket 握手 (带 token + 订阅) ----------
-WS=$(PYTHONPATH=/home/evergreen/dsh-workspace/qc_ws_pkgs TOKEN="$TOKEN" /usr/bin/python3 "$(dirname "$0")/ws_probe.py" "$BASE" "$TOKEN" 2>&1)
-if echo "$WS" | grep -q "^OK"; then ok "WS 握手+订阅: $WS"; else bad "WS 失败: $WS"; fi
+# v6.4 (FR-6.4.7): 禁止用 PYTHONPATH 从外部注入 websockets —— 那会把"生产缺依赖"
+# 掩盖成"链上通过"。必须用被测环境自己的解释器（优先项目 venv）。
+WS_PY=""
+for cand in "${QC_PY:-}" "$(dirname "$0")/../.venv/bin/python" "$(dirname "$0")/../.venv/Scripts/python.exe"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then WS_PY="$cand"; break; fi
+done
+[ -z "$WS_PY" ] && WS_PY="$(command -v python3 || command -v python)"
+WS=$("$WS_PY" "$(dirname "$0")/ws_probe.py" "$BASE" "$TOKEN" 2>&1)
+if echo "$WS" | grep -q "^OK"; then ok "WS 握手+订阅: $WS"; else bad "WS 失败 ($WS_PY): $WS"; fi
 
 # ---------- 9. 敏感端点 401 门禁 (匿名) ----------
 S401=$(curl --noproxy "*" -s -m 10 -o /dev/null -w "%{http_code}" -X POST "$BASE/api/ai/models")
