@@ -42,12 +42,34 @@ const REALTIME_RETRY_BASE_MS = 5000;  // 重连退避基数
 
 const realtimeQuotes = ref({});        // code -> {price, change_pct, volume_ratio, rise_speed}
 const realtimeDegraded = ref(false);   // 数据源不可达 → 显示"数据不可达"占位
+// v6.4 (FR-6.4.2): 降级原因码 (upstream_unreachable | non_trading_hours)，由后端帧带回
+const realtimeDegradedReason = ref('');
 const realtimeWsState = ref('idle');   // idle|connecting|open|offline
+
+// v6.4 (FR-6.4.2): 把 WS 状态广播到全局，供顶栏降级细条消费（不侵入各业务页）
+function _emitRealtime() {
+  try {
+    window.dispatchEvent(new CustomEvent('qc:realtime', {
+      detail: {
+        state: realtimeWsState.value,
+        degraded: realtimeDegraded.value,
+        reason: realtimeDegradedReason.value,
+      },
+    }));
+  } catch (e) { /* 无 CustomEvent 环境静默 */ }
+}
 let realtimeWs = null;
 let realtimeRetryTimer = null;
 let realtimeRetryCount = 0;
 
 // 预警判定（纯函数，委托 core.checkQuoteWarning）
+// v6.4 (FR-6.4.2): 降级文案按原因区分，不再统一"数据不可达"
+function realtimeDegradedText() {
+  if (realtimeDegradedReason.value === 'non_trading_hours') return '非交易时段，暂不推送';
+  if (realtimeDegradedReason.value === 'upstream_unreachable') return '上游数据源不可达';
+  return REALTIME_DEGRADED_TEXT;
+}
+
 function checkQuoteWarning(quote) {
   return __coreRT.checkQuoteWarning ? __coreRT.checkQuoteWarning(quote) : null;
 }
@@ -88,6 +110,7 @@ function disconnectRealtimeQuotes() {
   }
   realtimeQuotes.value = {};
   realtimeDegraded.value = false;
+  realtimeDegradedReason.value = '';
   realtimeWsState.value = 'idle';
 }
 function connectRealtimeQuotes() {
@@ -97,7 +120,7 @@ function connectRealtimeQuotes() {
   let url;
   try {
     url = __coreRT.buildRealtimeWsUrl() + '?token=' + encodeURIComponent(token);
-  } catch (e) { realtimeWsState.value = 'offline'; realtimeDegraded.value = true; return; }
+  } catch (e) { realtimeWsState.value = 'offline'; realtimeDegraded.value = true; _emitRealtime(); return; }
   realtimeWsState.value = 'connecting';
   let ws = null;
   try {
@@ -106,12 +129,14 @@ function connectRealtimeQuotes() {
     // CSP/构造失败 → 优雅降级占位，不报错
     realtimeWsState.value = 'offline';
     realtimeDegraded.value = true;
+    _emitRealtime();
     return;
   }
   realtimeWs = ws;
   ws.onopen = function () {
     realtimeWsState.value = 'open';
     realtimeRetryCount = 0;
+    _emitRealtime();
     _realtimeSendSubscribe();
   };
   ws.onmessage = function (evt) {
@@ -119,6 +144,8 @@ function connectRealtimeQuotes() {
     try { msg = JSON.parse(evt.data || '{}'); } catch (e) { return; }
     if (!msg || msg.type !== 'quotes') return;
     realtimeDegraded.value = !!msg.degraded;
+    realtimeDegradedReason.value = msg.reason || (msg.degraded ? 'upstream_unreachable' : '');
+    _emitRealtime();
     if (msg.degraded || !Array.isArray(msg.data)) {
       realtimeQuotes.value = {};  // degraded → 空报价，占位"数据不可达"
       return;
@@ -132,9 +159,11 @@ function connectRealtimeQuotes() {
   ws.onerror = function () {
     realtimeWsState.value = 'offline';
     realtimeDegraded.value = true;
+    _emitRealtime();
   };
   ws.onclose = function () {
     realtimeWsState.value = 'offline';
+    _emitRealtime();
     if (realtimeRetryCount < REALTIME_RETRY_MAX) {
       realtimeRetryCount++;
       realtimeRetryTimer = setTimeout(function () {
@@ -154,7 +183,7 @@ if (_realtimeToken()) {
   setTimeout(connectRealtimeQuotes, 500);
 }
       return {
-        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeWsState, quoteWarningFor, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes,
+        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, quoteWarningFor, realtimeDegradedText, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes,
       };
     },
   };

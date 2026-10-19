@@ -221,8 +221,8 @@
                         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
                         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,
                         // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
-                        realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
-                        disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
+                        realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
+                        disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
                         realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
                         REALTIME_FALLBACK_TEXT } = __watchlistDomain;
                 // ===== v3.17.4 (FR-3.17.4): 回测工作台域 — 逻辑移至 js/backtest.js 模块 =====
@@ -413,8 +413,8 @@
                     searchStockForWatchlist, toggleWatchlist, batchEvaluateWatchlist, watchlistEvaluate, showStockKline,
                     preloadWatchlistKline, preloadingKline,
                     // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
-                    realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
-                    disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
+                    realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
+                    disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
                     realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
                     REALTIME_FALLBACK_TEXT,
                     toggleSelectHistory, clearSelection, deleteSingleHistory, deleteSelectedHistory, saveAutoEvaluateConfig,

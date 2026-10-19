@@ -139,7 +139,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <div v-if="watchlist.length > 0" class="rt-bar" :class="{'rt-degraded': realtimeDegraded || realtimeWsState === 'offline'}">
                                 <span class="rt-title">实时报价</span>
                                 <span v-if="realtimeDegraded || realtimeWsState === 'offline'" class="rt-degraded-text">
-                                    {{ realtimeDegraded ? REALTIME_DEGRADED_TEXT : REALTIME_FALLBACK_TEXT }}
+                                    {{ realtimeDegraded ? realtimeDegradedText() : REALTIME_FALLBACK_TEXT }}
                                 </span>
                                 <span v-else-if="realtimeWsState === 'open'" class="rt-live">实时</span>
                                 <span v-else class="rt-connecting">连接中...</span>

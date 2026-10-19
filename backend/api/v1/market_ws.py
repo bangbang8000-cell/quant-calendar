@@ -25,6 +25,7 @@ from auth import get_current_user
 from realtime_quotes import (
     RealtimeQuoteSource,
     build_quote_payload,
+    degrade_reason,
     parse_subscribe,
 )
 from ws_v2 import (
@@ -105,7 +106,9 @@ async def ws_quotes(websocket: WebSocket):
             codes = [s['code'] for s in subscribed]
             quotes_map, degraded = await asyncio.to_thread(
                 _quote_source.fetch_quotes, codes)
-            payload = build_quote_payload(subscribed, quotes_map, degraded)
+            # v6.4 (FR-6.4.2): 降级必须带原因，前端据此区分"上游不可达"与"非交易时段"
+            payload = build_quote_payload(subscribed, quotes_map, degraded,
+                                          reason=degrade_reason() if degraded else None)
             if prev_payload is None:
                 # WS 2.0: 全量快照 (兼容既有字段 type/degraded/data)
                 frame = dict(payload)
@@ -116,6 +119,8 @@ async def ws_quotes(websocket: WebSocket):
                 frame = build_frame("quotes", delta,
                                     delta=True)
                 frame["degraded"] = bool(payload.get("degraded", False))
+                if frame["degraded"]:
+                    frame["reason"] = payload.get("reason", "upstream_unreachable")
             prev_payload = payload
             await websocket.send_json(frame)
 

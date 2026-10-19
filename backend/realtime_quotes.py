@@ -131,7 +131,33 @@ def parse_subscribe(message, max_codes: int = MAX_SUBSCRIBE_CODES):
     return stocks, None
 
 
-def build_quote_payload(stocks: List[dict], quotes_map: Optional[Dict], degraded: bool = False) -> dict:
+def trading_session_state(now=None) -> str:
+    """v6.4 (FR-6.4.2): 当前是否处于 A 股常规交易时段。
+
+    仅用于给 degraded 帧标注原因，不做交易日历判定（节假日仍按"时段内"处理，
+    因为此时上游不可达与休市在界面上都要提示，措辞差异不影响用户判断）。
+    返回: 'open' | 'closed' | 'weekend'
+    """
+    from datetime import datetime as _dt
+    now = now or _dt.now()
+    if now.weekday() >= 5:
+        return "weekend"
+    hm = now.hour * 60 + now.minute
+    if (9 * 60 + 30) <= hm <= (11 * 60 + 30) or (13 * 60) <= hm <= (15 * 60):
+        return "open"
+    return "closed"
+
+
+def degrade_reason(state: str = None) -> str:
+    """v6.4 (FR-6.4.2): degraded 帧的原因码。"""
+    state = state or trading_session_state()
+    if state in ("closed", "weekend"):
+        return "non_trading_hours"
+    return "upstream_unreachable"
+
+
+def build_quote_payload(stocks: List[dict], quotes_map: Optional[Dict], degraded: bool = False,
+                        reason: str = None) -> dict:
     """聚合报价帧（纯函数，可单测）
 
     Args:
@@ -139,13 +165,16 @@ def build_quote_payload(stocks: List[dict], quotes_map: Optional[Dict], degraded
         quotes_map: {ts_code: {price, pre_close, prev_price, volume, avg_volume_5d,
                                change_pct?, volume_ratio?, rise_speed?}}
         degraded: 数据源不可达标记
+        reason: v6.4 (FR-6.4.2) 降级原因码；缺省 upstream_unreachable。
+                'upstream_unreachable' | 'non_trading_hours'
 
     Returns:
-        {"type": "quotes", "data": [{code,name,price,change_pct,volume_ratio,rise_speed}], "degraded": bool}
-        degraded=True 或 quotes_map 为空/无匹配 → {"type": "quotes", "data": [], "degraded": True}
+        {"type": "quotes", "data": [...], "degraded": bool, "reason"?: str}
+        degraded=True 或 quotes_map 为空/无匹配 → {"type": "quotes", "data": [], "degraded": True, "reason": ...}
     """
     if degraded or not quotes_map:
-        return {"type": "quotes", "data": [], "degraded": True}
+        return {"type": "quotes", "data": [], "degraded": True,
+                "reason": reason or "upstream_unreachable"}
     data = []
     for s in stocks:
         code = s.get('code')
