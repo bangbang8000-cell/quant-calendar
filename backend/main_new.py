@@ -93,12 +93,13 @@ async def lifespan(app: FastAPI):
     structured_log.log_event(logger, logging.INFO, "app_startup",
                              ok=db.schema_ok(), version=APP_VERSION)
     # V4.1 (FR-4.1.9): 启动自检 — 默认口令告警 (强烈建议立即轮换)
+    # v6.4 (FR-6.4.6): 文案只输出**实际命中**的口令，不再硬编码候选清单
     try:
         from user_manager import user_manager as _um
-        if _um.is_default_password("admin"):
-            logger.warning("⚠️ 管理员密码仍为默认口令 (admin/admin123)! 请立即登录后在系统配置中修改密码。")
-        if _um.is_default_password("guest"):
-            logger.warning("⚠️ 访客账户仍为默认口令 (guest/guest)! 建议修改或保持禁用。")
+        for _uname in ("admin", "guest"):
+            _msg = _um.default_password_warning(_uname)
+            if _msg:
+                logger.warning(_msg)
     except Exception as e:
         # 可降级: 启动自检失败不阻断启动, 但需留痕
         logger.warning("启动口令自检失败: %s", e)

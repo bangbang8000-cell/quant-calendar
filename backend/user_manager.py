@@ -181,12 +181,48 @@ class UserManager:
             users.append(user)
         return users
 
+    # v6.4 (FR-6.4.6): 默认/弱口令候选 —— 按账户区分。
+    # admin 的默认口令历史上出现过 admin / admin123 两种；guest 的默认口令是 guest
+    # （旧实现拿 admin 的候选去校验 guest，导致访客弱口令告警永远不会触发）。
+    # 仅供内部校验，不得回传未命中的候选，也不得把候选清单写进日志。
+    DEFAULT_PASSWORD_GUESSES = {
+        "admin": ("admin", "admin123"),
+        "guest": ("guest",),
+    }
+    DEFAULT_PASSWORD_FALLBACK = ("admin", "admin123")
+
+    def matched_default_password(self, username: str) -> Optional[str]:
+        """v6.4 (FR-6.4.6): 回传**实际命中**的默认口令，未命中返回 None。
+
+        与 is_default_password 的差别只在返回值：让调用方能输出真实值，
+        避免告警文案列举未经校验的候选口令。
+        """
+        if username not in self.users:
+            return None
+        guesses = self.DEFAULT_PASSWORD_GUESSES.get(username, self.DEFAULT_PASSWORD_FALLBACK)
+        for guess in guesses:
+            if self.verify_password(username, guess):
+                return guess
+        return None
+
     def is_default_password(self, username: str) -> bool:
         """V4.1: 是否仍为默认/弱口令 (admin / admin123), 用于强制改密"""
-        for guess in ("admin", "admin123"):
-            if self.verify_password(username, guess):
-                return True
-        return False
+        return self.matched_default_password(username) is not None
+
+    def default_password_warning(self, username: str) -> Optional[str]:
+        """v6.4 (FR-6.4.6): 生成启动告警文案，口令取**实际命中值**。
+
+        旧文案硬编码 "(admin/admin123)"，而生产实际口令是 "admin" ——
+        提示本身不可信，会误导运维。返回 None 表示无需告警。
+        """
+        matched = self.matched_default_password(username)
+        if not matched:
+            return None
+        if username == "admin":
+            return ("⚠️ 管理员密码仍为默认口令 (%s/%s)! 请立即登录后在系统配置中修改密码。"
+                    % (username, matched))
+        return ("⚠️ 访客账户仍为默认口令 (%s/%s)! 建议修改或保持禁用。"
+                % (username, matched))
 
     def add_user(self, username: str, password: str, role: str = "user", theme: str = "gold", group: str = None) -> bool:
         """添加用户"""
