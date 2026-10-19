@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 APP_RE = re.compile(r'^APP_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"')
-README_ROW_RE = re.compile(r"^\| \*\*v([0-9]+\.[0-9]+\.[0-9]+)\*\* \| 2026-09 \| \*\*当前开发版本\*\*")
+README_ROW_RE = re.compile(r"^\| \*\*v([0-9]+\.[0-9]+\.[0-9]+)\*\* \| 2026-[0-9]{2} \| \*\*当前开发版本\*\*")
 HANDOVER_STATE_RE = re.compile(r"^> 当前状态: \*\*v([0-9]+\.[0-9]+\.[0-9]+)")
 
 
@@ -41,7 +41,7 @@ def _app_version() -> str:
 def test_app_version_defined():
     v = _app_version()
     assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v)
-    assert v.startswith(("6.1.", "6.2.", "6.3.")), "演进线要求 APP_VERSION 为 6.1.N / 6.2.N / 6.3.N"
+    assert v.startswith(("6.1.", "6.2.", "6.3.", "6.4.")), "演进线要求 APP_VERSION 为 6.1.N / 6.2.N / 6.3.N / 6.4.N"
 
 
 def test_readme_first_row_matches_app_version():

@@ -60,6 +60,9 @@ quant-calendar-ops/versions/
 _shots/
 dogfood-output/
 
+# start-dev.ps1 的依赖安装标记（每次首次运行自动生成，属本地产物）
+.deps_installed
+
 # IDE auxiliary (planning docs, agent scratch)
 .trae/
 

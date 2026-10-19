@@ -194,6 +194,8 @@ export default {
 
 <template>
   <div class="qc-header-wrap">
+  <!-- v6.4 (FR-6.4.5): 数据陈旧横幅 + 实时降级细条（日期/天数来自 /api/reliability/freshness） -->
+  <qc-data-stale-banner></qc-data-stale-banner>
   <!-- v5.18 (F1): 非交易日全局提示条 -->
   <div v-if="marketData && marketData.is_trading_day === false && !bannerDismissed" class="non-trading-banner" role="status">
     <AppIcon name="alert-triangle" :size="14" />

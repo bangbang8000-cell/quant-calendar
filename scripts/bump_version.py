@@ -20,6 +20,7 @@
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +29,7 @@ README = ROOT / "README.md"
 HANDOVER = ROOT / "docs" / "HANDOVER.md"
 
 APP_RE = re.compile(r'^APP_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"')
-README_ROW_RE = re.compile(r"^\| \*\*v([0-9]+\.[0-9]+\.[0-9]+)\*\* \| 2026-09 \| \*\*当前开发版本\*\*")
+README_ROW_RE = re.compile(r"^\| \*\*v([0-9]+\.[0-9]+\.[0-9]+)\*\* \| 2026-[0-9]{2} \| \*\*当前开发版本\*\*")
 HANDOVER_STATE_RE = re.compile(r"^> 当前状态: \*\*v([0-9]+\.[0-9]+\.[0-9]+)")
 
 
@@ -114,7 +115,10 @@ def bump(version: str) -> int:
             old_row = line
             break
     if old_row:
-        new_row = f"| **v{version}** | 2026-09 | **当前开发版本** — 6.1.{version.split('.')[-1]} 迭代（见 docs/PRD-6.1.X.md） |"
+        # v6.4: 日期改为运行期年月, 行文案不再硬写 6.1.X 演进线 (bump 到任意演进线都成立)
+        ym = datetime.now().strftime('%Y-%m')
+        minor_line = '.'.join(version.split('.')[:2]) + '.X'
+        new_row = f"| **v{version}** | {ym} | **当前开发版本** — {minor_line} 迭代（见 docs/PRD-{minor_line}.md） |"
         downgraded = old_row.replace("**当前开发版本** — ", "").replace("**当前开发版本**", "")
         rtext = rtext.replace(old_row, new_row + "\n" + downgraded, 1)
         README.write_text(rtext, encoding="utf-8")
