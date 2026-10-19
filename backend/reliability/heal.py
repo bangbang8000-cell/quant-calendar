@@ -216,7 +216,10 @@ def run_cycle(now: datetime = None, calendar=None, dry_run: bool = False) -> dic
     from reliability import freshness
     now = now or datetime.now()
     findings = inspect(now=now, calendar=calendar)
-    healable = [f for f in findings if f.get("stale_policy") == "heal"]
+    # v6.4 (FR-6.4.5): unknown = 基准本身失效，无法判断该资产是否过期，
+    # 此时触发"自愈"只会做无意义的数据拉取，故排除。
+    healable = [f for f in findings
+                if f.get("stale_policy") == "heal" and f.get("status") != "unknown"]
     records = heal(findings, dry_run=dry_run, now=now)
 
     still = []

@@ -173,6 +173,15 @@ def expected_latest_date(now: datetime = None, calendar=None) -> date:
 
     返回 date 对象, 不抛异常 (故障场景返回回退工作日)。
     """
+    return expected_latest_with_source(now=now, calendar=calendar)[0]
+
+
+def expected_latest_with_source(now: datetime = None, calendar=None):
+    """v6.4 (FR-6.4.5): 同时回传基准来源，供"基准自身失效"判定使用。
+
+    返回 (date, source)，source ∈ {'calendar', 'weekday_fallback'}。
+    'weekday_fallback' 意味着没有可用交易日历 —— 此时基准不可信。
+    """
     now = now or datetime.now()
     today = now.date()
     if calendar:
@@ -180,8 +189,49 @@ def expected_latest_date(now: datetime = None, calendar=None) -> date:
     else:
         dates = _default_trade_dates(today)
     if dates:
-        return dates[-1]
-    return _weekday_backfill(today)
+        return dates[-1], "calendar"
+    return _weekday_backfill(today), "weekday_fallback"
+
+
+# v6.4 (FR-6.4.5): 基准可接受的滞后上限（交易日口径）。
+# 超过即认为"交易日历/数据基准自身过期"，此时任何 fresh 判定都不可信。
+CALENDAR_MAX_LAG_TRADING_DAYS = 5
+
+
+def _weekday_gap(start: date, end: date) -> int:
+    """[start, end] 之间（不含 start、含 end）的工作日天数。"""
+    if end <= start:
+        return 0
+    n = 0
+    d = start + timedelta(days=1)
+    while d <= end:
+        if d.weekday() < 5:
+            n += 1
+        d += timedelta(days=1)
+    return n
+
+
+def calendar_lag_days(now: datetime = None, calendar=None, expected: date = None) -> int:
+    """v6.4 (FR-6.4.5): 基准滞后多少个工作日（expected_latest → today）。"""
+    now = now or datetime.now()
+    exp = expected or expected_latest_date(now=now, calendar=calendar)
+    return _weekday_gap(exp, now.date())
+
+
+def is_calendar_stale(now: datetime = None, calendar=None, expected: date = None,
+                      source: str = None, max_lag: int = None) -> bool:
+    """v6.4 (FR-6.4.5): 基准是否失效。
+
+    两种失效形态：
+    1. 回退到工作日兜底（`weekday_fallback`）—— 没有真实交易日历可用；
+    2. 基准日期落后今日超过 max_lag 个工作日 —— 日历停更。
+    """
+    max_lag = CALENDAR_MAX_LAG_TRADING_DAYS if max_lag is None else max_lag
+    if source is None:
+        _, source = expected_latest_with_source(now=now, calendar=calendar)
+    if source == "weekday_fallback":
+        return True
+    return calendar_lag_days(now=now, calendar=calendar, expected=expected) > max_lag
 
 
 def _parse_date(value) -> date | None:
@@ -200,8 +250,16 @@ def _parse_date(value) -> date | None:
 
 # ─── 过期判定 ───
 
-def evaluate_asset(spec: AssetSpec, record: dict, expected_latest: date, now: datetime = None) -> str:
-    """单资产过期判定: 'fresh' | 'stale' | 'missing' (不抛异常)"""
+def evaluate_asset(spec: AssetSpec, record: dict, expected_latest: date, now: datetime = None,
+                   calendar_stale: bool = False) -> str:
+    """单资产过期判定: 'fresh' | 'stale' | 'missing' | 'unknown' (不抛异常)
+
+    v6.4 (FR-6.4.5): 增加 `calendar_stale` —— 期望日期自身失效时，
+    trading_day 资产不得输出 fresh。旧实现只算 `expected_latest - latest_d`
+    的单边差，差为负被 max(…,0) 吃掉，于是"基准停在 07-16、数据也停在 07-16"
+    被判成 fresh —— 体系自我通过。现在改为 unknown（而非 stale），
+    因为无法判断"到底该是哪天"，误报成 stale 会引发无意义自愈。
+    """
     now = now or datetime.now()
     if not record:
         return "missing"
@@ -210,6 +268,8 @@ def evaluate_asset(spec: AssetSpec, record: dict, expected_latest: date, now: da
         latest_d = _parse_date(latest)
         if latest_d is None:
             return "missing"
+        if calendar_stale:
+            return "unknown"
         diff = max((expected_latest - latest_d).days, 0)
         return "fresh" if diff <= spec.tolerance_days else "stale"
     # age 类型
@@ -230,18 +290,24 @@ def status_summary(now: datetime = None, calendar=None) -> dict:
     """全部资产新鲜度汇总。
 
     - healthy: 无 stale/missing
+    - calendar_stale: v6.4 —— 期望交易日基准自身是否失效（true 时 trading_day 资产判 unknown）
     - items: 每资产 {asset_id,name,freshness_type,stale_policy,status,expected_latest,last_update,latest_date,count,detail}
     - now/calendar 可注入 (测试确定性)
     """
     now = now or datetime.now()
-    expected = expected_latest_date(now=now, calendar=calendar)
+    expected, expected_source = expected_latest_with_source(now=now, calendar=calendar)
+    cal_stale = is_calendar_stale(now=now, calendar=calendar, expected=expected,
+                                  source=expected_source)
+    lag = calendar_lag_days(now=now, calendar=calendar, expected=expected)
+    if cal_stale:
+        _warn_calendar_stale_once(expected, lag, expected_source)
     store = _load()
     items = []
     for spec in ASSET_REGISTRY.values():
         if not spec.enabled:
             continue
         rec = store.get(spec.id)
-        status = evaluate_asset(spec, rec, expected, now=now)
+        status = evaluate_asset(spec, rec, expected, now=now, calendar_stale=cal_stale)
         item = {
             "asset_id": spec.id,
             "name": spec.name,
@@ -253,12 +319,39 @@ def status_summary(now: datetime = None, calendar=None) -> dict:
             "latest_date": (rec or {}).get("latest_date"),
             "count": (rec or {}).get("count"),
             "detail": (rec or {}).get("detail", ""),
+            # v6.4: 区分"从未成功"与"曾经成功但过期"，供面板照实呈现
+            "never_succeeded": not (rec or {}).get("last_update"),
         }
         items.append(item)
     stale = [i for i in items if i["status"] in ("stale", "missing")]
+    unknown = [i for i in items if i["status"] == "unknown"]
     return {
         "expected_latest": expected.isoformat(),
+        "expected_source": expected_source,
+        # v6.4 (FR-6.4.5): 前端横幅要显示"已 N 天未更新"，N 必须是日历天数且由后端给，
+        # 避免前端自行算导致时区/口径不一致。
+        "expected_age_days": max((now.date() - expected).days, 0),
+        "calendar_stale": cal_stale,
+        "calendar_lag_days": lag,
         "healthy": len(stale) == 0,
         "stale_count": len(stale),
+        "unknown_count": len(unknown),
         "items": items,
     }
+
+
+_CALENDAR_WARN_DATE = None
+
+
+def _warn_calendar_stale_once(expected: date, lag: int, source: str) -> None:
+    """基准失效告警按天节流，避免每次面板刷新都刷日志。"""
+    global _CALENDAR_WARN_DATE
+    today = date.today()
+    if _CALENDAR_WARN_DATE == today:
+        return
+    _CALENDAR_WARN_DATE = today
+    logger.warning(
+        "数据基准自身失效: expected_latest=%s (滞后 %d 个工作日, source=%s) — "
+        "trading_day 资产一律判 unknown，不再输出 fresh",
+        expected.isoformat(), lag, source,
+    )

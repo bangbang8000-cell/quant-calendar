@@ -71,6 +71,8 @@ import StockListV6 from './components/common/StockList.vue'
 import DetailSplitV6 from './components/common/DetailSplit.vue'
 // V6.3 (PRD-6.3 F4): toptab 形态 — Header 顶部二级横向标签
 import TopTabsV6 from './components/TopTabs.vue'
+// v6.4 (FR-6.4.5 / FR-6.4.2): 数据陈旧横幅 + 实时降级细条
+import DataStaleBannerV6 from './components/DataStaleBanner.vue'
 // V6.5 (PRD-6.5 F5): AppIcon 全局注册 — JS 模板(弹窗/页面组件)可直接用 <qc-icon>
 import AppIconV6 from './components/common/AppIcon.vue'
 AppIconV6.name = 'qc-icon'
@@ -82,6 +84,7 @@ window.__quantComponents.MobileNav = MobileNavV6
 window.__quantComponents.StockList = StockListV6
 window.__quantComponents.DetailSplit = DetailSplitV6
 window.__quantComponents.TopTabs = TopTabsV6
+window.__quantComponents.DataStaleBanner = DataStaleBannerV6
 window.__quantComponents.AppIcon = AppIconV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'

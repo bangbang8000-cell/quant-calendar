@@ -603,3 +603,77 @@
   line-height: 1;
   padding: 2px 6px;
 }
+
+/* v6.4 (FR-6.4.5 / FR-6.4.2): 数据陈旧横幅 + 实时降级细条
+   PRD 5.1: 顶栏下方 / 全宽 / 单行 36px / --badge-gold-bg 底 / 13px */
+.qc-stale-wrap { display: block; }
+.qc-stale-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qc-space-2);
+  min-height: 36px;
+  padding: 0 var(--qc-space-4);
+  background: var(--badge-gold-bg);
+  border-bottom: 1px solid var(--border-light, var(--qc-border));
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-sm);
+}
+.qc-stale-icon { flex: 0 0 auto; color: var(--qc-warning-700); }
+.qc-stale-main {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.qc-stale-text { font-variant-numeric: tabular-nums; }
+.qc-stale-cta {
+  flex: 0 0 auto;
+  color: var(--qc-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.qc-stale-cta:focus-visible,
+.qc-stale-main:focus-visible { outline: 2px solid var(--qc-ring); outline-offset: 2px; }
+.qc-stale-close {
+  flex: 0 0 auto;
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-md);
+  line-height: 1;
+  padding: 2px 6px;
+}
+.qc-stale-detail {
+  flex: 1 0 100%;
+  padding: 0 0 var(--qc-space-2);
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-xs, 12px);
+}
+/* 实时报价降级细条 — 与"数据陈旧"是两件事，用更轻的呈现 */
+.qc-rt-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  padding: 3px var(--qc-space-4);
+  background: var(--qc-muted);
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-xs, 12px);
+  border-bottom: 1px solid var(--border-light, var(--qc-border));
+}
+.qc-rt-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--qc-warning-700);
+  flex: 0 0 auto;
+}

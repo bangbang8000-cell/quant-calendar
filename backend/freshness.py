@@ -69,6 +69,8 @@ def build_freshness(health_metrics, now=None, rows_overrides=None):
             "label": t["label"],
             "source": t["primary_source"],
             "last_success": last,
+            # v6.4 (FR-6.4.5): 区分"从未成功采集"与"曾经成功但已过期"
+            "never_succeeded": last is None,
             "data_age_hours": age,
             "rows": _safe_rows(rows_fn),
             "expected_hours": t["expected_hours"],
