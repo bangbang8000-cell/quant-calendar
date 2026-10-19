@@ -14,8 +14,38 @@
       const savingProfile = Vue.ref(false);
       const variantSaving = Vue.ref(false);
       // V5.2.8 (T-5.2.53): 竞态防护推广 — 页面级请求序号
-      // 6.3.0 (T-6.3.0.6): 页面级请求序号持有者 — 逻辑域共用（语义同拆分前的单计数器）
-      const _seq = { n: 0 };
+      // v6.4 (FR-6.4.1): 序号改为**按加载器隔离**。旧实现全页共用一个 { n }：
+      //   任一加载器递增后，其它加载器的 `seq === _seq.n` 恒不成立 →
+      //   ① 加载态永不复位（研究概览永久骨架屏）；
+      //   ② 已返回的数据被丢弃（同页多数据源互相踩）。
+      // "最后一次请求胜出"只应作用于同一数据源，不能跨数据源。
+      const _seqPool = Object.create(null);
+      function seqOf(key) {
+        if (!_seqPool[key]) _seqPool[key] = { n: 0 };
+        return _seqPool[key];
+      }
+
+      // v6.4 (FR-6.4.1): 单次请求 15s 兜底 — 超时后强制退出加载态并给可操作提示，
+      // 不让"网络半死不活"表现为"页面永远在加载"。
+      const LOADER_TIMEOUT_MS = 15000;
+      async function fetchJsonWithTimeout(url, opts, timeoutMs) {
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var timer = null;
+        var o = Object.assign({}, opts || {});
+        if (ctrl) {
+          o.signal = ctrl.signal;
+          timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, timeoutMs || LOADER_TIMEOUT_MS);
+        }
+        try {
+          var r = await fetch(url, o);
+          return await r.json();
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      }
+      function isTimeoutError(e) {
+        return !!(e && (e.name === 'AbortError' || e.code === 20));
+      }
       if (!state) return {};
 
       // V6.6.1 (PRD F-6.6.7): 策略管理子页 — 模板编辑/全新创建两态 (原 strategy-write/custom-write 合并)
@@ -60,14 +90,17 @@
       }
 
       async function loadStrategies() {
-        const seq = ++_seq.n;
+        const _s = seqOf('strategies');
+        const seq = ++_s.n;
         strategiesLoading.value = true;
         strategiesError.value = false;
         strategiesErrorText.value = '';
         strategiesWarn.value = '';
         try {
-          const res = await withAuth('/api/strategies').then(function (r) { return r.json(); });
-          if (seq !== _seq.n) return;
+          const res = await fetchJsonWithTimeout('/api/strategies', { headers: _authHeaders() });
+
+          // v6.4: 数据写入仍受"本加载器最新请求"保护
+          if (seq !== _s.n) return;
           // V6.9.4 (F6.2): 兼容 { strategies, warn } 结构; 非数组/非策略列表响应视为错误并给出可诊断文案
           let list = null;
           if (Array.isArray(res)) {
@@ -87,11 +120,15 @@
             }
           }
         } catch (e) {
+          if (seq !== _s.n) return;
           console.error('[research] 策略列表加载失败:', e);
           strategiesError.value = true;
-          strategiesErrorText.value = '策略列表加载失败: ' + ((e && e.message) || '网络错误');
+          strategiesErrorText.value = isTimeoutError(e)
+            ? '策略列表请求超时（15s），请检查后端服务后重试'
+            : ('策略列表加载失败: ' + ((e && e.message) || '网络错误'));
         } finally {
-          if (seq === _seq.n) strategiesLoading.value = false;
+          // v6.4: 加载态复位**无条件**执行 —— 不能再挂在"序号仍最新"上
+          strategiesLoading.value = false;
         }
       }
 
@@ -238,14 +275,17 @@
       }
 
       async function loadRuns() {
-        const seq = ++_seq.n;
+        const _s = seqOf('runs');
+        const seq = ++_s.n;
         if (!activeStrategyId.value) return;
         try {
-          const res = await withAuth('/api/strategies/' + activeStrategyId.value + '/runs?limit=5')
-                    .then(function (r) { return r.json(); });
-        if (seq !== _seq.n) return;
+          const res = await fetchJsonWithTimeout('/api/strategies/' + activeStrategyId.value + '/runs?limit=5',
+            { headers: _authHeaders() });
+          if (seq !== _s.n) return;
           strategyRuns.value = Array.isArray(res) ? res : [];
         } catch (e) {
+          if (seq !== _s.n) return;
+          console.error('[research] 运行记录加载失败:', e);
           strategyRuns.value = [];
         }
       }
@@ -304,19 +344,19 @@
       // ===== 6.3.0 (T-6.3.0.6): 逻辑域装配 — 取数/状态下沉 components/research/ =====
       // 片段以 create(ctx) 工厂装配（片段须先于本文件加载，见 src/main.js）
       const __marketReview = window.__quantModules.researchPage.marketReview.create({
-        ref, seq: _seq, authHeaders: _authHeaders,
+        ref, seqOf: seqOf, authHeaders: _authHeaders,
       });
       const { marketReviews, marketReviewLoading, marketReviewError, selectedReviewDate, marketReviewDetail, marketReviewDetailLoading } = __marketReview;
       const { marketReviewDetailError, loadMarketReviews, openMarketReview, toggleMarketReviewDate, backToMarketReviewList, loadMarketReviewDetail } = __marketReview;
       const { marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries, fmtPct, fmtEmotion } = __marketReview;
       const __factor = window.__quantModules.researchPage.factor.create({
-        ref, seq: _seq, withAuth, authHeaders: _authHeaders, activeStrategyId, paramValues,
+        ref, seqOf: seqOf, withAuth, authHeaders: _authHeaders, activeStrategyId, paramValues,
       });
       const { factorKey, factorIcLoading, factorLayerLoading, factorIcReport, factorLayerResult, factorOptions } = __factor;
       const { runFactorIc, runFactorLayer, factorDetail, factorDetailLoading, runFactorDetail, sweepGrid } = __factor;
       const { sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep } = __factor;
       const __history = window.__quantModules.researchPage.history.create({
-        seq: _seq, state,
+        seqOf: seqOf, state,
       });
       const { researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType, researchHistorySelected, researchDetailId } = __history;
       const { researchCompareRows, researchCompareLoading, researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory } = __history;
@@ -368,12 +408,17 @@
       }
 
       async function loadVariants() {
-        const seq = ++_seq.n;
+        const _s = seqOf('variants');
+        const seq = ++_s.n;
         try {
-          const res = await fetch("/api/strategies/variants", { headers: _authHeaders() }).then(function (r) { return r.json(); });
-        if (seq !== _seq.n) return;
+          const res = await fetchJsonWithTimeout("/api/strategies/variants", { headers: _authHeaders() });
+          if (seq !== _s.n) return;
           variants.value = (res && res.data && res.data.variants) || [];
-        } catch (e) { console.error("[i3a] 加载 variants 失败:", e); }
+        } catch (e) {
+          if (seq !== _s.n) return;
+          console.error("[i3a] 加载 variants 失败:", e);
+          variants.value = [];
+        }
       }
 
       async function cloneNewStrategy() {
@@ -489,12 +534,17 @@
       }
 
       async function loadCustoms() {
-        const seq = ++_seq.n;
+        const _s = seqOf('customs');
+        const seq = ++_s.n;
         try {
-          const res = await fetch("/api/strategies/custom", { headers: _customAuthHeaders() }).then(function (r) { return r.json(); });
-        if (seq !== _seq.n) return;
+          const res = await fetchJsonWithTimeout("/api/strategies/custom", { headers: _customAuthHeaders() });
+          if (seq !== _s.n) return;
           customs.value = (res && res.data && res.data.customs) || [];
-        } catch (e) { console.error("[i3b] 加载自定义策略失败:", e); }
+        } catch (e) {
+          if (seq !== _s.n) return;
+          console.error("[i3b] 加载自定义策略失败:", e);
+          customs.value = [];
+        }
       }
 
       async function genCustomCode() {
@@ -567,20 +617,23 @@
       const btHistoryDays = Vue.ref(30);
 
       async function loadBtHistory() {
-        const seq = ++_seq.n;
+        const _s = seqOf('btHistory');
+        const seq = ++_s.n;
         btHistoryLoading.value = true;
         btHistoryError.value = false;
         try {
           const core = (window.__quantModules && window.__quantModules.core) || {};
           const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
-          const res = await fetch('/api/backtest/history?days=' + btHistoryDays.value, { headers }).then(function (r) { return r.json(); });
-        if (seq !== _seq.n) return;
+          const res = await fetchJsonWithTimeout('/api/backtest/history?days=' + btHistoryDays.value, { headers });
+          if (seq !== _s.n) return;
           btHistory.value = (res && res.data) || [];
         } catch (e) {
+          if (seq !== _s.n) return;
           console.error('[backtest] 回测历史加载失败:', e);
           btHistoryError.value = true;
         } finally {
-        if (seq === _seq.n) btHistoryLoading.value = false;
+          // v6.4: 无条件复位
+          btHistoryLoading.value = false;
         }
       }
 

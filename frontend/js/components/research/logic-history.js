@@ -7,7 +7,8 @@
   window.__quantModules.researchPage = window.__quantModules.researchPage || {};
   window.__quantModules.researchPage.history = {
     create: function (ctx) {
-      const { seq: _seq, state } = ctx;
+      // v6.4 (FR-6.4.1): 序号按加载器隔离
+      const { seqOf, state } = ctx;
       // ===== 5.1.0 (T-5.1.4): 研究历史 (实验持久化列表/对比) =====
       const researchHistory = Vue.ref([]);
       const researchHistoryLoading = Vue.ref(false);
@@ -37,7 +38,8 @@
         loadResearchHistory();
       }
       async function loadResearchHistory() {
-        const seq = ++_seq.n;
+        const _s = seqOf('researchHistory');
+        const seq = ++_s.n;
         researchHistoryLoading.value = true;
         researchHistoryError.value = false;
         try {
@@ -45,17 +47,18 @@
           const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
           const q = researchHistoryType.value ? '?type=' + encodeURIComponent(researchHistoryType.value) : '';
           const res = await fetch('/api/strategies/research-history' + q, { headers }).then(function (r) { return r.json(); });
-        if (seq !== _seq.n) return;
+          if (seq !== _s.n) return;  // v6.4: 过期响应不覆盖新数据
           researchHistory.value = (res && res.items) || [];
         } catch (e) {
           console.error('[research-history] 加载失败:', e);
           researchHistoryError.value = true;
         } finally {
-        if (seq === _seq.n) researchHistoryLoading.value = false;
+        researchHistoryLoading.value = false;  // v6.4: 无条件复位
         }
       }
       async function exportResearchHistory() {
-        const seq = ++_seq.n;  // V6.9.4 (H3): 补竞态序号
+        const _s = seqOf('researchExport');
+        const seq = ++_s.n;
         researchExportLoading.value = true;
         try {
           const core = (window.__quantModules && window.__quantModules.core) || {};
@@ -64,6 +67,7 @@
           const res = await fetch('/api/strategies/research-history/export' + q, { headers });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const blob = await res.blob();
+          if (seq !== _s.n) return;  // v6.4: 连点导出时, 旧响不再触发第二次下载
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -75,7 +79,7 @@
         } catch (e) {
           console.error('[research-history] 导出失败:', e);
         } finally {
-        if (seq === _seq.n) researchExportLoading.value = false;
+        researchExportLoading.value = false;  // v6.4: 无条件复位
         }
       }
       function toggleResearchSelect(id) {
@@ -87,7 +91,8 @@
         researchDetailId.value = (researchDetailId.value === id) ? '' : id;
       }
       async function runResearchCompare() {
-        const seq = ++_seq.n;  // V6.9.4 (H3): 补竞态序号
+        const _s = seqOf('researchCompare');
+        const seq = ++_s.n;
         const ids = researchHistorySelected.value;
         if (ids.length < 2) return;
         researchCompareLoading.value = true;
@@ -99,11 +104,12 @@
             headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
             body: JSON.stringify({ ids: ids }),
           }).then(function (r) { return r.json(); });
+          if (seq !== _s.n) return;  // v6.4: 过期响应不覆盖新数据
           researchCompareRows.value = (res && res.items) || [];
         } catch (e) {
           console.error('[research-history] 对比失败:', e);
         } finally {
-        if (seq === _seq.n) researchCompareLoading.value = false;
+        researchCompareLoading.value = false;  // v6.4: 无条件复位
         }
       }
       async function deleteResearchHistory(id) {

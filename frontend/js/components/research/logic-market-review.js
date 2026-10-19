@@ -7,7 +7,8 @@
   window.__quantModules.researchPage = window.__quantModules.researchPage || {};
   window.__quantModules.researchPage.marketReview = {
     create: function (ctx) {
-      const { ref, seq: _seq, authHeaders } = ctx;
+      // v6.4 (FR-6.4.1): 序号按加载器隔离
+      const { ref, seqOf, authHeaders } = ctx;
       // ===== v3.17.2 (FR-3.17.2): AI 每日市场复盘 — 列表 + 详情 =====
       const marketReviews = ref([]);
       const marketReviewLoading = ref(false);
@@ -18,12 +19,13 @@
       const marketReviewDetailError = ref(false);
 
       async function loadMarketReviews() {
-        const seq = ++_seq.n;
+        const _s = seqOf('marketReviews');
+        const seq = ++_s.n;
         marketReviewLoading.value = true;
         marketReviewError.value = false;
         try {
           const res = await fetch('/api/market/reviews?limit=30', { headers: authHeaders() }).then(r => r.json());
-        if (seq !== _seq.n) return;
+        if (seq !== _s.n) return;
           if (res && res.success) {
             marketReviews.value = Array.isArray(res.data) ? res.data : [];
           } else {
@@ -33,7 +35,7 @@
           console.error('[market-review] 复盘列表加载失败:', e);
           marketReviewError.value = true;
         } finally {
-        if (seq === _seq.n) marketReviewLoading.value = false;
+        marketReviewLoading.value = false;  // v6.4: 无条件复位
         }
       }
 
@@ -68,7 +70,8 @@
       }
 
       async function loadMarketReviewDetail(date) {
-        const seq = ++_seq.n;
+        const _s = seqOf('marketReviewDetail');
+        const seq = ++_s.n;
         marketReviewDetailLoading.value = true;
         marketReviewDetailError.value = false;
         marketReviewDetail.value = null;
@@ -77,7 +80,7 @@
             ? '/api/market/review?date=' + encodeURIComponent(date)
             : '/api/market/review';
           const res = await fetch(url, { headers: authHeaders() }).then(r => r.json());
-        if (seq !== _seq.n) return;
+        if (seq !== _s.n) return;
           if (res && res.success) {
             marketReviewDetail.value = res.data;
           } else {
@@ -87,7 +90,7 @@
           console.error('[market-review] 复盘详情加载失败:', e);
           marketReviewDetailError.value = true;
         } finally {
-        if (seq === _seq.n) marketReviewDetailLoading.value = false;
+        marketReviewDetailLoading.value = false;  // v6.4: 无条件复位
         }
       }
 

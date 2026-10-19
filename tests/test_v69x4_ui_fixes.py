@@ -154,17 +154,35 @@ def test_strategies_api_warn():
 
 
 def test_research_seq_fixed():
-    """T23: 5 处 finally seq 引用均补声明
+    """v6.4 (FR-6.4.1): 研究页请求序号必须**按加载器隔离**
 
-    6.3.0 (T-6.3.0.6): 研究页逻辑域下沉 components/research/ — 页面级请求序号由单个
-    ``let _reqSeq`` 改为持有者对象 ``const _seq = { n: 0 }``（各域共用同一对象，语义等价），
-    文本由 ``++_reqSeq`` 变为 ``++_seq.n``；本用例读取的是「注册文件 + 域片段」的页源码。
+    6.3.0 时代全页共用 ``const _seq = { n: 0 }``：任一加载器递增后，
+    其它加载器的 ``seq === _seq.n`` 恒不成立 →
+      ① 加载态永不复位（研究概览 25s 仍 9 个骨架屏）；
+      ② 已返回的数据被丢弃。
+    "最后一次请求胜出"只应作用于同一数据源。v6.4 改为 seqOf(key) 独立计数器，
+    且加载态复位无条件执行。
     """
-    src = _read_f("js/components/research-page.js")
-    for fn in ("runFactorIc", "runFactorLayer", "runFactorDetail", "runResearchCompare", "exportResearchHistory"):
-        assert fn + "() {\n        const seq = ++_seq.n" in src, f"{fn} 应补 const seq 声明"
-    # 无裸引用 (seq 声明数 ≥ finally 引用数)
-    assert src.count("const seq = ++_seq.n") >= src.count("seq === _seq.n"), "seq 声明数应不少于引用数"
+    page = _read_f("js/components/research-page.js")
+    assert "const _seq = { n: 0 }" not in page, "不得再共享单一请求序号计数器"
+    assert "function seqOf(" in page, "应提供 seqOf(key) 独立计数器工厂"
+    for key in ("strategies", "runs", "variants", "customs", "btHistory"):
+        assert "seqOf('%s')" % key in page, "加载器 %s 缺少独立序号" % key
+    # finally 中不得再用序号守卫加载态复位
+    for flag in ("strategiesLoading", "btHistoryLoading"):
+        assert "if (seq === _s.n) %s.value = false" % flag not in page, \
+            "%s 复位不得依赖序号" % flag
+
+    # 子域（因子/历史/市场复盘）同样隔离
+    for rel, keys in (
+        ("js/components/research/logic-factor.js", ("factorIc", "factorLayer", "factorDetail")),
+        ("js/components/research/logic-history.js", ("researchHistory", "researchExport", "researchCompare")),
+        ("js/components/research/logic-market-review.js", ("marketReviews", "marketReviewDetail")),
+    ):
+        src = _read_f(rel)
+        assert "_seq" not in src, "%s 不应再引用共享计数器" % rel
+        for key in keys:
+            assert "seqOf('%s')" % key in src, "%s 缺少独立序号 %s" % (rel, key)
 
 
 def test_research_warn_ui():

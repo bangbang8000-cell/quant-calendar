@@ -7,7 +7,8 @@
   window.__quantModules.researchPage = window.__quantModules.researchPage || {};
   window.__quantModules.researchPage.factor = {
     create: function (ctx) {
-      const { ref, seq: _seq, withAuth, authHeaders, activeStrategyId, paramValues } = ctx;
+      // v6.4 (FR-6.4.1): 序号按加载器隔离（seqOf(key) 返回该加载器专属计数器）
+      const { ref, seqOf, withAuth, authHeaders, activeStrategyId, paramValues } = ctx;
       // 6.3.1 (T-6.3.1.5): i18n 助手 — 本轮新增站内消息文案走翻译函数
       const _i18n = (window.__quantModules && window.__quantModules.i18n) || {};
       const t = (typeof _i18n.t === 'function') ? _i18n.t : (function (k) { return String(k); });
@@ -54,7 +55,8 @@
       }
 
       async function runFactorIc() {
-        const seq = ++_seq.n;  // V6.9.4 (H3): 补竞态序号 — 原 finally 引用未定义 seq 抛 ReferenceError
+        const _s = seqOf('factorIc');
+        const seq = ++_s.n;
         factorIcLoading.value = true;
         try {
           const res = await withAuth('/api/strategies/factors/ic', {
@@ -66,18 +68,20 @@
               params: paramValues.value || {},
             }),
           }).then(function (r) { return r.json(); });
+          if (seq !== _s.n) return;  // v6.4: 过期响应不覆盖新数据
           const rep = res && res.report ? (res.report.n1 || {}) : {};
           factorIcReport.value = rep;
         } catch (e) {
           console.error('[research] 因子IC分析失败:', e);
           ElementPlus.ElMessage.error(t('msg.factorIcFailed', { msg: e.message }));
         } finally {
-        if (seq === _seq.n) factorIcLoading.value = false;
+        factorIcLoading.value = false;  // v6.4: 无条件复位
         }
       }
 
       async function runFactorLayer() {
-        const seq = ++_seq.n;  // V6.9.4 (H3): 补竞态序号
+        const _s = seqOf('factorLayer');
+        const seq = ++_s.n;
         factorLayerLoading.value = true;
         try {
           const res = await withAuth('/api/strategies/factors/layer', {
@@ -89,6 +93,7 @@
               params: paramValues.value || {},
             }),
           }).then(function (r) { return r.json(); });
+          if (seq !== _s.n) return;  // v6.4: 过期响应不覆盖新数据
           if (res && res.layers) {
             factorLayerResult.value = res;
           } else {
@@ -98,7 +103,7 @@
           console.error('[research] 分层回测失败:', e);
           ElementPlus.ElMessage.error(t('msg.layerBacktestFailed', { msg: e.message }));
         } finally {
-        if (seq === _seq.n) factorLayerLoading.value = false;
+        factorLayerLoading.value = false;  // v6.4: 无条件复位
         }
       }
 
@@ -106,7 +111,8 @@
       const factorDetail = ref(null);
       const factorDetailLoading = ref(false);
       async function runFactorDetail() {
-        const seq = ++_seq.n;  // V6.9.4 (H3): 补竞态序号
+        const _s = seqOf('factorDetail');
+        const seq = ++_s.n;
         factorDetailLoading.value = true;
         factorDetail.value = null;
         try {
@@ -119,6 +125,7 @@
               params: paramValues.value || {},
             }),
           }).then(function (r) { return r.json(); });
+          if (seq !== _s.n) return;  // v6.4: 过期响应不覆盖新数据
           if (res && res.detail) {
             factorDetail.value = res.detail;
           } else {
@@ -128,7 +135,7 @@
           console.error('[research] 因子详情失败:', e);
           ElementPlus.ElMessage.error(t('msg.factorDetailFailed', { msg: e.message }));
         } finally {
-        if (seq === _seq.n) factorDetailLoading.value = false;
+        factorDetailLoading.value = false;  // v6.4: 无条件复位
         }
       }
 
