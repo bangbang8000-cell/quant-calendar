@@ -106,6 +106,9 @@ assets/screenshots/*.jpg
 
 reports/
 
+# 部署/演练产生的数据备份目录（含 app.db / audit.log / groups.json 等生产数据，绝不入库）
+data-backup-*/
+
 docs/audits/
 
 docs/superpowers/
