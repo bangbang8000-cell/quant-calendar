@@ -185,6 +185,12 @@
   mask-image: linear-gradient(to right, black 92%, transparent 100%);
 }
 .qc-header-tabs::-webkit-scrollbar { display: none; }
+/* v6.4 (FR-6.4.3): 渐隐只在真溢出时出现 —— 无溢出时 mask 会把最后一个页签的
+   右侧 8% 永远"吃掉"，看起来像被裁切但没有滚动按钮。 */
+.qc-header-tabs:not(.has-overflow) { mask-image: none; }
+.qc-header-tabs.has-overflow {
+  mask-image: linear-gradient(to right, black 88%, transparent 100%);
+}
 /* V5.15 (F6): toptab 溢出控制 — 左右滚动按钮 + 「更多」下拉 */
 .qc-top-tabs-bar {
   display: flex;

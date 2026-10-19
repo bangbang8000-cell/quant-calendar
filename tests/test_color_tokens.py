@@ -49,6 +49,10 @@ DEAD_TOKEN_WHITELIST = {
     "--btn-primary-border", "--btn-primary-color",
     "--btn-primary-hover-bg", "--btn-primary-hover-border",
     "--btn-primary-active-bg", "--btn-primary-active-border",
+    # v6.4 (FR-6.4.4): 「重色面板」原语 (渐变底 + 其上前景) —— 唯一消费点 .detail-header
+    # 已改为卡片底 + 描边, 这对令牌保留定义供暗色浮层/强调面板复用; 生产消费点归零属预期,
+    # 不删除是为了保持主题令牌面稳定 (删除会波及明/暗/中性三分支的定义与色相求解)。
+    "--gradient-panel", "--panel-fg",
 }
 
 # 语义层前缀 —— 这些令牌在明暗两侧必须同时存在 (L1 原始色阶不在此列)

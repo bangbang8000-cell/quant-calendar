@@ -974,10 +974,15 @@
         }
         /* 详情弹窗 */
         .detail-header {
-            /* V5.29: 仅个股/指数详情头卡改为"浅色面板 + 深色文字"(原深底白字最浅端仅 2.43~2.74:1);
-               其余 --gradient 使用点(状态标签/导航/进度条等)保持原样 */
-            background: var(--gradient-panel);
-            color: var(--panel-fg);
+            /* v6.4 (FR-6.4.4): 去大面积实心渐变。原先详情头用 gradient-panel 底 +
+               panel-fg 前景 —— 个股/指数详情头是全站唯一的整块重色块（金色主题下为深金渐变），
+               与"浅底彩字"体系冲突，并在同屏内抢走 K 线区注意力。
+               改为卡片底 + 1px 描边，涨跌语义只保留在数字与标签上。
+               注: gradient-panel / panel-fg 这对"重色面板"原语保留定义 (暗色浮层等场景可复用),
+               已登记于 DEAD_TOKEN_WHITELIST, 不再有生产消费点。 */
+            background: var(--qc-card);
+            border: 1px solid var(--border-light, var(--qc-border));
+            color: var(--qc-foreground);
             padding: 20px;
             display: flex;
             align-items: center;
@@ -994,8 +999,8 @@
             font-weight: var(--font-semibold);
         }
         .detail-subtitle {
-            /* V5.29: 头卡改浅底深字后 .85 会发灰, 提到 .9 */
-            opacity: 0.9;
+            /* v6.4: 浅底上用显式色值，opacity 会在浅/深主题下发灰 */
+            color: var(--qc-muted-foreground);
             font-size: var(--qc-font-size-base);
             margin-top: 4px;
         }
@@ -1003,8 +1008,13 @@
         .detail-header .dh-main { flex: 1 1 auto; min-width: 0; }
         .detail-header .dh-tags { flex: 0 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: var(--qc-space-1); }
         .detail-header .dh-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--qc-space-1) var(--qc-space-2); }
-        .detail-header .dh-meta .dh-item b { font-weight: var(--font-semibold); }
+        /* v6.4 (FR-6.4.4): 数值不得折行 —— 原 "最高 50.43" 会在窄容器断成两行 */
+        .detail-header .dh-meta .dh-item { white-space: nowrap; }
+        .detail-header .dh-meta .dh-item b { font-weight: var(--font-semibold); white-space: nowrap; }
         .detail-header .dh-meta .dh-sep { opacity: 0.65; }
+        /* v6.4 (FR-6.4.4): 统计格内的复合数值（最高/最低 → 50.43 / 50.43）不得折行。
+           注意详情弹窗行情区容器是 .grid-auto 而非 .stats-grid, 故不限定父级。 */
+        .stat-box .text-md-semibold { white-space: nowrap; }
         /* V5.23: 「选股评分」展示已按用户要求移除 (规则选股评分与大模型评估分口径不一致,
            单独成行亦无必要); 如后续需要恢复, 可复用 .score-num-wrap / .score-delta 与
            @keyframes scorePulse (v1.9.2 保留), 或直接放回表头卡片内。 */
