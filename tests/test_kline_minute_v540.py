@@ -36,8 +36,7 @@ def test_minute_periods_supported():
 def test_tushare_fetch_kline_minute_uses_pro_bar(monkeypatch):
     """tushare 分钟线走模块级 pro_bar(freq=period) — 不再落到 daily 兜底"""
     import tushare as ts
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {'tushare': object()}  # 客户端对象存在即可, 分钟线走 ts.pro_bar
     calls = []
     def fake_pro_bar(**kw):
@@ -52,8 +51,7 @@ def test_tushare_fetch_kline_minute_uses_pro_bar(monkeypatch):
 
 def test_sxsc_fetch_kline_minute_uses_stk_mins(monkeypatch):
     """sxsc(券商版) 分钟线走 stk_mins — 不再落到 daily 兜底"""
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {}
     calls = []
     class FakeSxsc:
@@ -71,8 +69,7 @@ def test_sxsc_fetch_kline_minute_uses_stk_mins(monkeypatch):
 def test_akshare_fetch_kline_minute_uses_min_em(monkeypatch):
     """akshare 分钟线走 stock_zh_a_hist_min_em(period='60'/'30'/'15')"""
     import akshare as ak
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {}
     calls = {}
     def fake_min_em(**kw):
@@ -86,8 +83,7 @@ def test_akshare_fetch_kline_minute_uses_min_em(monkeypatch):
 
 def test_daily_period_unaffected():
     """日线仍走原路径 (tushare pro.daily) — 不回归"""
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {}
     called = []
     class FakePro:
@@ -114,6 +110,25 @@ def _minute_df_trade_time():
     })
 
 
+def _isolated_manager():
+    """创建与模块级单例隔离的 DataSourceManager 实例。
+
+    生产路径走模块级单例 (`_instance`); 测试若用 `__new__` 直接构造会拿到
+    **同一个** `_instance`, 使 `_clients` / `config` / `_kline_cache` 跨用例共享。
+    全量跑时后置用例会命中前序用例写入的 K 线缓存 (两用例共用同一缓存 key
+    `('600519.SH','60min',5)`) 读到脏数据: 实测 success 用例先写缓存、degrade
+    用例随后跑 → 读到成功结果而误红 (V5.4.0 顺序相关)。此处显式重建全部可变
+    状态, 每个用例得到全新实例, 根除跨用例污染。
+    """
+    from data_sources import _manager as m
+    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr._clients = {}
+    mgr._errors = {}
+    mgr._kline_cache = {}
+    mgr.config = {}
+    return mgr
+
+
 def test_minute_priority_default_sxsc_first():
     """默认分钟数据源优先级 = 券商版 sxsc 优先 (用户 Q2 决策)"""
     from data_sources import _constants as c
@@ -124,7 +139,7 @@ def test_minute_priority_default_sxsc_first():
 def test_minute_priority_reads_config(monkeypatch):
     """分钟数据源优先级可从配置覆盖 (datasource_config.json minute.priority)"""
     from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr.config = {'minute': {'priority': ['akshare', 'tushare']}}
     assert mgr._minute_priority() == ['akshare', 'tushare']
     # 无配置时回退默认
@@ -135,7 +150,7 @@ def test_minute_priority_reads_config(monkeypatch):
 def test_minute_rate_limit_serializes(monkeypatch):
     """分钟接口限频: 同源 60s 内不重复拉取 — 冷却中的源被跳过/串行等待"""
     from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {'sxsc_tushare': object()}
     mgr.config = {}
     calls = {'n': 0}
@@ -161,8 +176,7 @@ def test_minute_rate_limit_serializes(monkeypatch):
 
 def test_minute_trade_time_normalized_to_trade_date():
     """分钟源返回 trade_time 列 → 归一化为 trade_date 再进 _build_kline_response"""
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     df = _minute_df_trade_time()
     norm = mgr._normalize_minute_df(df)
     assert 'trade_date' in norm.columns, '应产出 trade_date 列'
@@ -176,8 +190,7 @@ def test_minute_trade_time_normalized_to_trade_date():
 
 def test_minute_all_sources_fail_degrade_to_daily(monkeypatch):
     """分钟数据全源失败 → 降级日线并标记 degraded_from (前端展示'分钟暂不可用, 展示日线')"""
-    from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {}
     mgr.config = {'minute': {'priority': ['sxsc_tushare', 'tushare', 'akshare']}}
     # 三个源均不可达 (无客户端 → 全部跳过)
@@ -190,7 +203,7 @@ def test_minute_all_sources_fail_degrade_to_daily(monkeypatch):
 def test_minute_success_no_degrade():
     """分钟数据成功时不带 degraded 标记"""
     from data_sources import _manager as m
-    mgr = m.DataSourceManager.__new__(m.DataSourceManager)
+    mgr = _isolated_manager()
     mgr._clients = {}
     calls = []
     class FakeSxsc:
