@@ -99,6 +99,10 @@ class ViewsAggregator:
             from reliability.freshness import record_update
             record_update("calendar_views", latest_date=stats.get("latest_date"),
                           count=stats["dates_count"], detail="views_aggregator reload")
+            # 6.4.0 (fix): 行情日线资产在同一中央点记录 — reload 即日线数据已刷新,
+            # 此前 market_daily 仅依赖被停用的定时任务, 横幅恒报 missing (接线缺口)
+            record_update("market_daily", latest_date=stats.get("latest_date"),
+                          count=stats["stocks_count"], detail="views_aggregator reload")
         except Exception as e:
             logger.warning("日历视图新鲜度记录失败: %s", e)
         return stats

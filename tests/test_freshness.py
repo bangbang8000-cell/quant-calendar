@@ -25,11 +25,13 @@ def test_freshness_marks_stale_when_no_success():
 def test_freshness_marks_fresh_when_recent():
     now = datetime.now()
     recent = now - timedelta(hours=1)
-    metrics = [_health_metric("sxsc-tushare", recent.isoformat())]
+    # 6.4.0 (fix): 主源名与 data_sources 真实命名一致 (下划线 sxsc_tushare,
+    # 原 TABLES 误用连字符 sxsc-tushare 致查表 miss 恒报过期)
+    metrics = [_health_metric("sxsc_tushare", recent.isoformat())]
     items = build_freshness(metrics, now=now)
     zt = next(i for i in items if i["key"] == "zt_pool")
     assert zt["stale"] is False
-    assert zt["source"] == "sxsc-tushare"
+    assert zt["source"] == "sxsc_tushare"
     assert zt["data_age_hours"] == 1.0
 
 
@@ -64,3 +66,19 @@ def test_api_freshness_ok():
     data = r.json()
     assert data["success"] is True and data["count"] >= 15
     assert data["default_expected_hours"] == DEFAULT_EXPECTED_HOURS
+
+
+def test_tables_source_names_match_real_sources():
+    """6.4.0 (fix) 回归守护: TABLES 的 primary_source 必须与 data_sources 真实命名一致。
+
+    原 TABLES 误用连字符 sxsc-tushare, 而 data_sources 全链路 (SOURCE_ORDER/
+    record_call/health slot) 用下划线 sxsc_tushare → build_freshness 查表 miss,
+    6 项 sxsc 资产恒报过期 (数据实际新鲜)。此用例守护命名一致, 防止未来同步回归。
+    """
+    from data_sources._constants import SOURCE_ORDER
+    real_names = set(SOURCE_ORDER)
+    for t in TABLES:
+        assert t["primary_source"] in real_names, (
+            f"TABLES 主源 {t['primary_source']!r} 不在 data_sources.SOURCE_ORDER "
+            f"({sorted(real_names)}) 中 — 命名不一致会致该资产恒报过期"
+        )

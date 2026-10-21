@@ -19,8 +19,19 @@ def _read_f(rel):
         return f.read()
 
 
-def test_spot_pct_map_degrades_without_akshare():
+def test_spot_pct_map_degrades_without_akshare(monkeypatch):
     """TC-6.5.1.1: 无 akshare 环境 _spot_pct_map 返回空映射, 不抛 ModuleNotFoundError"""
+    # 6.4.0 (fix): 原用例假设"环境无 akshare", 但本机 akshare 已装且可达,
+    # _spot_pct_map 会拉真实全市场实时行情(59 次网络调用) → 用例随网络漂移
+    # (ops/dev 基线实测同红)。改为显式模拟缺依赖: sys.modules 注入 None 使
+    # 函数内 `import akshare` 抛 ImportError, 确定性验证降级为空映射。
+    import builtins
+    _orig_import = builtins.__import__
+    def _fake_import(name, *a, **kw):
+        if name == 'akshare' or name.startswith('akshare.'):
+            raise ImportError('模拟 akshare 未安装')
+        return _orig_import(name, *a, **kw)
+    monkeypatch.setattr(builtins, '__import__', _fake_import)
     from shortterm import emotion_metrics as em
     out = em._spot_pct_map()
     assert out == {}, "缺 akshare 时应返回空映射"

@@ -58,6 +58,13 @@ class StockInfoManager:
         with open(STOCK_INFO_FILE, 'w', encoding='utf-8') as f:
             json.dump(self.stock_map, f, ensure_ascii=False, indent=2)
         logger.info(f"✅ 已保存 {len(self.stock_map)} 只股票信息到本地")
+        # 6.4.0 (fix): 股票信息资产新鲜度接线 — 此前 _save_to_file 从不记录,
+        # 横幅恒报 missing (stock_info.json 实际已保存)
+        try:
+            from reliability.freshness import record_update
+            record_update("stock_info", count=len(self.stock_map), detail="stock_info saved")
+        except Exception as e:
+            logger.warning("股票信息新鲜度记录失败: %s", e)
 
     # v3.16 (16.10-fix): 行情/均线 TTL 缓存读写
     def _cache_get(self, key: str):

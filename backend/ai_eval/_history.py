@@ -42,6 +42,13 @@ class AIHistoryMixin:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
+        # 6.4.0 (fix): 评估历史资产新鲜度接线 — 此前无生产者调用 record_update,
+        # 横幅恒报 missing (数据实际存在, 仅未记录)
+        try:
+            from reliability.freshness import record_update
+            record_update("evaluation_history", detail=f"save user={username}")
+        except Exception:
+            logger.debug("评估历史新鲜度记录失败 (忽略)", exc_info=True)
     def _history_path(self, username: str) -> str:
         from paths import DATA_DIR
         return os.path.join(DATA_DIR, "users", username, "ai_evaluation_history.json")

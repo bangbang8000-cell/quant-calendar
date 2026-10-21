@@ -13,12 +13,12 @@ DEFAULT_EXPECTED_HOURS = 24
 # 核心数据表清单 (label / 主源 / 期望刷新间隔小时 / 行数获取函数)
 # rows_fn: 无参 callable → int | None; 由调用方注入 (避免模块级 import 副作用)
 TABLES = [
-    {"key": "strategy_holdings", "label": "策略持仓", "primary_source": "sxsc-tushare", "expected_hours": 24, "rows_fn": None},
-    {"key": "zt_pool", "label": "涨停池", "primary_source": "sxsc-tushare", "expected_hours": 24, "rows_fn": None},
-    {"key": "dt_pool", "label": "跌停池", "primary_source": "sxsc-tushare", "expected_hours": 24, "rows_fn": None},
-    {"key": "zha_ban", "label": "炸板池", "primary_source": "sxsc-tushare", "expected_hours": 24, "rows_fn": None},
-    {"key": "lhb", "label": "龙虎榜", "primary_source": "sxsc-tushare", "expected_hours": 24, "rows_fn": None},
-    {"key": "sector_flow", "label": "板块资金", "primary_source": "sxsc-tushare", "expected_hours": 8, "rows_fn": None},
+    {"key": "strategy_holdings", "label": "策略持仓", "primary_source": "sxsc_tushare", "expected_hours": 24, "rows_fn": None},
+    {"key": "zt_pool", "label": "涨停池", "primary_source": "sxsc_tushare", "expected_hours": 24, "rows_fn": None},
+    {"key": "dt_pool", "label": "跌停池", "primary_source": "sxsc_tushare", "expected_hours": 24, "rows_fn": None},
+    {"key": "zha_ban", "label": "炸板池", "primary_source": "sxsc_tushare", "expected_hours": 24, "rows_fn": None},
+    {"key": "lhb", "label": "龙虎榜", "primary_source": "sxsc_tushare", "expected_hours": 24, "rows_fn": None},
+    {"key": "sector_flow", "label": "板块资金", "primary_source": "sxsc_tushare", "expected_hours": 8, "rows_fn": None},
     {"key": "stock_info", "label": "股票信息", "primary_source": "tushare", "expected_hours": 168, "rows_fn": None},
     {"key": "kline", "label": "K线数据", "primary_source": "tushare", "expected_hours": 8, "rows_fn": None},
     {"key": "evaluation_history", "label": "评估历史", "primary_source": "tushare", "expected_hours": 24, "rows_fn": None},

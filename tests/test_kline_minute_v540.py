@@ -195,9 +195,24 @@ def test_minute_all_sources_fail_degrade_to_daily(monkeypatch):
     mgr.config = {'minute': {'priority': ['sxsc_tushare', 'tushare', 'akshare']}}
     # 三个源均不可达 (无客户端 → 全部跳过)
     mgr._clients = {}
+    # 6.4.0 (fix): 用例原依赖真实网络 — _source_client_ready('akshare') 恒 True
+    # (按需 import), _clients={} 挡不住 akshare 拉真实分钟数据 → 全源失败的前提不成立,
+    # 用例随 akshare 网络/行情状态红绿漂移 (ops 共享单例掩盖, dev 隔离后暴露)。
+    # 改为 mock _fetch_kline: 分钟 period 抛异常(模拟全源失败), 日线返回有效 df →
+    # 确定性验证降级路径, 不再触碰网络。
+    def fake_fetch(self, src_name, ts_code, period, limit):
+        if period in ('15min', '30min', '60min'):
+            raise RuntimeError(f'{src_name} 分钟接口模拟失败')
+        # 日线降级路径: 返回带 trade_date 的日线 df (与真实日线源列一致)
+        return pd.DataFrame({
+            'trade_date': ['2026-09-07', '2026-09-08'],
+            'open': [10.0, 10.2], 'high': [10.5, 10.4], 'low': [9.9, 10.0],
+            'close': [10.2, 10.3], 'vol': [100, 120], 'amount': [1000, 1200],
+        })
+    monkeypatch.setattr(mgr, '_fetch_kline', fake_fetch.__get__(mgr, type(mgr)))
     result = mgr.get_kline_data('600519.SH', period='60min', limit=5)
-    assert result is None or result.get('data') in (None, []) or result.get('degraded_from') == '60min', \
-        '全源失败应降级或明确标记, 实得 %r' % (result,)
+    assert result and result.get('data'), '全源失败应降级到日线并返回数据, 实得 %r' % (result,)
+    assert result.get('degraded_from') == '60min', '降级应标记 degraded_from=60min, 实得 %r' % (result,)
 
 
 def test_minute_success_no_degrade():

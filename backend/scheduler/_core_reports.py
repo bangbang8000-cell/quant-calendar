@@ -242,6 +242,14 @@ class SchedulerReportsMixin:
                 if result.get('success'):
                     logger.info(f"✅ 周报生成成功: {result.get('path', '')}")
                     self._record_task_run("weekly_report", True, result.get('path', ''))
+                    # 6.4.0 (fix): 周报资产新鲜度接线 — 此前只记任务状态不记 freshness,
+                    # 横幅恒报 missing (周报文件实际已生成)
+                    try:
+                        from reliability.freshness import record_update
+                        record_update("weekly_report", latest_date=datetime.now().strftime('%Y-%m-%d'),
+                                      detail="weekly_report")
+                    except Exception as fe:
+                        logger.warning("周报新鲜度记录失败: %s", fe)
                     # 飞书推送周报摘要
                     try:
                         content = result.get('content', '')
