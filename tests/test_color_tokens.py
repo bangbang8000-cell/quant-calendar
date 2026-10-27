@@ -105,12 +105,23 @@ def _tracked_frontend_files():
     return out
 
 
+_ROOT_BLOCK_RE = re.compile(r":root\s*\{([^}]*)\}", re.S)
+_ROOT_DEF_RE = re.compile(r"(--[a-zA-Z0-9-]+)\s*:")
+
+
 def _all_defined_tokens():
     css = g.css_defs()
     rt = g.runtime_tokens()
     defined = set(css["root"]) | set(css["gold"]) | set(css["dark"])
     for cfg in rt.values():
         defined |= set(cfg)
+    # 6.5.8 (fix): 独立静态页 (如 frontend/api-docs.html) 自带 :root 本地令牌 —
+    # 属文件内自洽设计, 不应被判定为悬空引用; 收集各跟踪文件自身 :root 块的定义。
+    for path in _tracked_frontend_files():
+        src = open(path, encoding="utf-8", errors="ignore").read()
+        for m in _ROOT_BLOCK_RE.finditer(src):
+            for dm in _ROOT_DEF_RE.finditer(m.group(1)):
+                defined.add(dm.group(1))
     return defined
 
 
