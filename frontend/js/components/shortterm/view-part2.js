@@ -6,7 +6,7 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
-                        <qc-state-panel v-else-if="pools && !hasAnyPool" type="empty" icon="inbox" :title="t('state.emptyPool')" :desc="t('state.descEmptyPool')"></qc-state-panel>
+                        <qc-state-panel v-else-if="pools && !hasAnyPool" type="empty" icon="inbox" :title="t('state.emptyPool')" :desc="t('state.descEmptyPool')" action-text="去配置数据池" action-key="go_datasource"></qc-state-panel>
                         <div v-else-if="pools">
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon gold"><qc-icon name="trending-up" :size="18" /></div><div class="stat-label">最高板</div><div class="stat-value">{{ pools.ladder && pools.ladder.highest != null ? pools.ladder.highest + ' 板' : '—' }}</div></div>
@@ -95,7 +95,7 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                 <el-pagination v-if="lhbRows && lhbRows.length > 200" small layout="prev, pager, next, total" :total="lhbRows.length" :page-size="PAGE_SIZE" v-model:current-page="lhbPage" class="mt-4"></el-pagination>
                             </div>
                         </div>
-                        <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" title="暂无数据" desc="该交易日暂无龙虎榜数据" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
 
                     <!-- 板块资金 (V5.2.1: 行业/概念资金流, 今日/5日/10日窗口) -->
@@ -135,7 +135,7 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                             </div>
                             <div class="text-xs-tertiary mt-4">数据源: {{ sectorSource }} · 实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
                         </div>
-                        <qc-state-panel v-else type="empty" title="暂无数据" desc="板块资金流暂不可用"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" title="暂无数据" desc="板块资金流暂不可用" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
 
                     <!-- 盘中核验 (V5.2.2: 6 时点快照) -->
@@ -170,6 +170,6 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                 </el-table>
                             </div>
                         </div>
-                        <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
                 </div>`;

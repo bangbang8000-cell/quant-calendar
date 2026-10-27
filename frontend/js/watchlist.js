@@ -123,8 +123,19 @@ const dataRefreshConfig = ref({
     pull_time: '22:30',
     pull_frequency: 'daily',
     pull_weekday: '0',
-    stock_pool: []
+    stock_pool: [],
+    // 6.4.1 (FR-641e): 首启限量与引导派生字段（后端 config_view 计算）
+    first_run_confirmed: false,
+    first_run_completed: false,
+    first_run_days: 5,
+    pool_empty: true,
+    first_run_pending: false,
+    effective_first_run_days: 5,
+    guide_code: '',
+    guide_message: ''
 });
+// 上次已落盘的配置快照 — 用于判断「是否由关变开」，避免关闭开关时误弹二次确认
+const dataRefreshSaved = ref({ scheduled_enabled: false, pull_enabled: false });
 const dataRefreshReloading = ref(false);
 const dataRefreshSaving = ref(false);
 // ===== 6.3.0 (T-6.3.0.8): 逻辑域装配 — 自选/评估历史下沉 js/watchlist/ =====
@@ -163,12 +174,14 @@ const __list = window.__quantModules.watchlist.list.create({
     aiHistoryLoading, aiHistoryError, sortedWatchlist, getWatchlistScore, getLatestScore,
     addSearchResult, evaluatedCodes, klineLoadedCodes, markKlineLoaded, watchlistSearch,
     watchlistResults, watchlistSearching, dataRefreshConfig, dataRefreshReloading,
-    dataRefreshSaving, levelVar, levelBgVar, undoStack, showUndoMessage, loadAiHistory
+    dataRefreshSaving, dataRefreshSaved, levelVar, levelBgVar, undoStack, showUndoMessage,
+    loadAiHistory
   });
 const { watchlistLoading, loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist,
   toggleWatchlist, showStockKline, preloadingKline, preloadWatchlistKline, watchlistEvaluate,
   batchEvaluateWatchlist, batchEvaluateSelected, searchStockForWatchlist, loadDataRefreshConfig,
-  saveDataRefreshConfig, triggerDataReload, dataPullRunning, triggerDataPull } = __list;
+  saveDataRefreshConfig, triggerDataReload, dataPullRunning, triggerDataPull,
+  loadExamplePool, removeExamplePool } = __list;
 _wlListRef.v = __list;
 const __analytics = window.__quantModules.watchlist.analytics.create({
     ref, computed, watch, currentUser, selectedDate, stockDetail, stockDetailTab,
@@ -211,7 +224,7 @@ const { REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtime
         quickEvalStock, evalStrategy, watchlistSort, watchlist, watchlistCodes, sortedWatchlist,
         getWatchlistScore, getLatestScore, addSearchResult, evaluatedCodes, klineLoadedCodes,
         markKlineLoaded, watchlistSearch, watchlistResults, watchlistSearching,
-        dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,
+        dataRefreshConfig, dataRefreshReloading, dataRefreshSaving, dataRefreshSaved,
         aiHistoryLoading, aiHistoryError,
         aiHistoryTotal, aiHistoryLoadingMore, hasMoreAiHistory, loadMoreAiHistory,
         watchlistLoading,
@@ -223,6 +236,8 @@ const { REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtime
         preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected,
         searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
         triggerDataPull, dataPullRunning,
+        // 6.4.2 (FR-644): 示例组合一键载入/删除
+        loadExamplePool, removeExamplePool,
         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,

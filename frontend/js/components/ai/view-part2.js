@@ -235,7 +235,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                     <!-- 6.3.1 (T-6.3.1.3): 空/错误态由 FocusView 上报, 页面侧统一面板承接 -->
                     <div v-else-if="currentSubPage === 'focus'">
                         <qc-state-panel v-if="focusState.error" type="error" @retry="reloadFocus"></qc-state-panel>
-                        <qc-state-panel v-else-if="focusState.empty" type="empty" icon="target" :title="t('state.emptyFocus')" :desc="t('state.descEmptyFocus')"></qc-state-panel>
+                        <qc-state-panel v-else-if="focusState.empty" type="empty" icon="target" :title="t('state.emptyFocus')" :desc="t('state.descEmptyFocus')" action-text="添加自选" action-key="go_watchlist"></qc-state-panel>
                         <qc-focus-view ref="focusViewRef" v-show="!focusState.error && !focusState.empty" @load-state="onFocusLoadState"></qc-focus-view>
                     </div>
 

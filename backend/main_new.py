@@ -138,7 +138,7 @@ async def lifespan(app: FastAPI):
 # 3.17.6: K线tab切换修复 + 用量统计增强(结构修复/AI用量可视化/30s自动刷新/热度top10+天数切换/任务失败详情/立即备份)
 # 3.17.7: K线tab切换彻底修复 — renderKlineTo 检测容器DOM变化重建实例(getDom) + loadStockKline 恢复先置loaded(容器v-if依赖)
 # V6.3 (PRD-6.3): 保留本地版本号 6.3.0 — 导航形态配置化(subnav/tree/toptab) + 顶部栏容器化 + 页签圆角矩形化 + 评估分析命名修复
-APP_VERSION = "6.4.0"  # 6.4.0: 可用性与信任收口 — 研究概览加载态(序号按加载器隔离)/二级页签溢出控件激活/详情头去实心渐变/数据新鲜度双向判定+基准自检/陈旧横幅与WS降级细条/弱口令告警回传真实值/lock 依赖门禁; 6.3.6: 密钥与离线缓存安全加固(tushare/config 明文 token 改掩码 + SW API 缓存按身份分区/敏感端点不入缓存 + /api/* no-store); 6.3.5: 密钥查看/编辑不可点击修复(解锁按钮/眼睛移出禁用输入框 #suffix + AI 密钥框取值补 _revealed); 6.3.4: 修复所有 el-select 闭合状态选中文字不可见(selection overflow:hidden 裁剪 EP 绝对定位 placeholder); 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
+APP_VERSION = "6.5.8"  # 6.5.8: 视觉原子层批次C — 字体栈固定中文回退序(Inter 自托管 + PingFang SC→Microsoft YaHei→Noto Sans SC, 移除 SF Pro Display/Hiragino)/字号阶梯收敛 6 档 12·14·16·18·22·28(旧名保留别名, 删 lg2, icon 改名 --qc-icon-size)/新增排版角色层 5 令牌/卡片标题 18px·500 用尺寸建层级; 6.5.7: 批次B — 主按钮单一 soft 体系(删 7 个死令牌, 实心组收敛 --primary-solid, themes.css 9 处 !important 双源删除)/按钮尺寸归一(height/字号/圆角)/暗色实底去高亮(h,85,65→h,45,39)/玻璃 0.82→0.90; 6.5.6: 视觉原子层批次A — 面层级阶梯(画布↔卡片 1.04→1.21, 凸起 1.10→1.20)/容器描边按色相求解(1.90→2.87 亮, 2.14→3.0 暗)/暗色海军蓝残留清理(4 令牌改运行期提供, 文字导航统一暖中性族)/品牌文字与焦点环按新画布重解; 6.4.0: 可用性与信任收口 — 研究概览加载态(序号按加载器隔离)/二级页签溢出控件激活/详情头去实心渐变/数据新鲜度双向判定+基准自检/陈旧横幅与WS降级细条/弱口令告警回传真实值/lock 依赖门禁; 6.3.6: 密钥与离线缓存安全加固(tushare/config 明文 token 改掩码 + SW API 缓存按身份分区/敏感端点不入缓存 + /api/* no-store); 6.3.5: 密钥查看/编辑不可点击修复(解锁按钮/眼睛移出禁用输入框 #suffix + AI 密钥框取值补 _revealed); 6.3.4: 修复所有 el-select 闭合状态选中文字不可见(selection overflow:hidden 裁剪 EP 绝对定位 placeholder); 6.3.1: 交互一致性批次(原生弹窗清零/长列表虚拟滚动覆盖/四态一致 加载-空-错误统一状态面板 + 模板编译门禁); 承 6.3.0 结构分治基座与 6.1.0 版本编号单一来源口径(APP_VERSION/tag/README/HANDOVER)
 # V5.17.3: 全站文字/字体/字号/颜色优化 — 亮暗两套对比度达标 + 字号层级提升 + EP字体统一
 
 # 创建 FastAPI 应用
@@ -331,12 +331,55 @@ async def root(request: Request):
 
 @app.get("/api/health")
 async def health_check():
-    """健康检查"""
-    return {
+    """健康检查 (6.4.1 FR-643b: version/uptime/新鲜度/上次刷新/自检摘要)
+
+    任一指标取不到时降级为 null, 保证健康检查永不 500。
+    """
+    payload = {
         "status": "ok",
         "version": APP_VERSION,
-        "message": "量化选股日历服务运行中"
+        "message": "量化选股日历服务运行中",
     }
+    try:
+        import metrics
+        payload["uptime_seconds"] = round(metrics.uptime_seconds(), 1)
+    except Exception:
+        payload["uptime_seconds"] = None
+    try:
+        import freshness
+        guard = freshness.stale_guard()
+        payload["data_freshness"] = {
+            "latest_date": guard["latest_date"],
+            "lag_trading_days": guard["lag_trading_days"],
+            "threshold": guard["threshold"],
+            "stale": guard["stale"],
+        }
+    except Exception:
+        payload["data_freshness"] = None
+    try:
+        from data_refresh_config import load_config
+        _cfg = load_config()
+        payload["last_refresh_status"] = {
+            "last_refresh": _cfg.get("last_refresh"),
+            "status": _cfg.get("last_refresh_status"),
+            "scheduled_enabled": _cfg.get("scheduled_enabled"),
+            "pull_enabled": _cfg.get("pull_enabled"),
+        }
+    except Exception:
+        payload["last_refresh_status"] = None
+    try:
+        from reliability import checks
+        _rep = checks.get_report() or {}
+        payload["self_check"] = {
+            "ts": _rep.get("ts"),
+            "healthy": _rep.get("healthy"),
+            "ok_count": _rep.get("ok_count"),
+            "warn_count": _rep.get("warn_count"),
+            "fail_count": _rep.get("fail_count"),
+        }
+    except Exception:
+        payload["self_check"] = None
+    return payload
 
 
 @app.get("/metrics")
@@ -349,4 +392,11 @@ async def prometheus_metrics(_: dict = Depends(get_admin_user)):
 
 if __name__ == "__main__":
     import uvicorn
+    # 6.4.1 (FR-643c): 绑定端口前做前置体检 — 端口占用/依赖缺失/目录不可写/库损坏
+    # 必须给出可处置原因并写入 data/startup_check.json，而不是抛裸栈退出。
+    import startup_guard
+    _pre = startup_guard.preflight(host=settings.HOST, port=settings.PORT)
+    startup_guard.log_report(_pre)
+    if not _pre.get("ok"):
+        sys.exit(startup_guard.EXIT_BLOCKED)
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)

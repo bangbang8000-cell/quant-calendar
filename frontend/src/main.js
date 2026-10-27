@@ -19,6 +19,15 @@ import '../js/locales/zh-TW.js'
 import '../js/pinyin.js'
 import '../js/preferences.js'
 import '../js/recent.js'
+// 6.4.2 (FR-644): 产品事件埋点 — 引导/搜索/错误/空态行动 (须早于 onboarding.js 与状态面板)
+import '../js/event-track.js'
+// 6.4.3 (FR-648): 前端长任务观测 — 依赖 QuantEvents / QuantPerf
+import '../js/perf-core.js'
+import '../js/perf-observer.js'
+// 6.4.4 (FR-650): AI 快捷问法与上下文带入 (供 ai-chat.js 使用)
+import '../js/ai-quick-asks.js'
+// 6.5.0 (FR-653): 导航 7→5 合并核心 — shell/lifecycle/runtime 漏斗依赖
+import '../js/nav-merge-core.js'
 import '../js/core.js'
 // V6.1 (PRD-6.1 F8): 动态页签状态机纯函数 (挂载 __quantModules.tabsCore)
 import '../js/tabs-core.js'
@@ -73,6 +82,8 @@ import DetailSplitV6 from './components/common/DetailSplit.vue'
 import TopTabsV6 from './components/TopTabs.vue'
 // v6.4 (FR-6.4.5 / FR-6.4.2): 数据陈旧横幅 + 实时降级细条
 import DataStaleBannerV6 from './components/DataStaleBanner.vue'
+// 6.4.1 (FR-642b): 结论页陈旧护栏 — 置灰条(--bar) / 卡片角标(--badge)
+import PageStaleBarV6 from './components/PageStaleBar.vue'
 // V6.5 (PRD-6.5 F5): AppIcon 全局注册 — JS 模板(弹窗/页面组件)可直接用 <qc-icon>
 import AppIconV6 from './components/common/AppIcon.vue'
 AppIconV6.name = 'qc-icon'
@@ -85,6 +96,7 @@ window.__quantComponents.StockList = StockListV6
 window.__quantComponents.DetailSplit = DetailSplitV6
 window.__quantComponents.TopTabs = TopTabsV6
 window.__quantComponents.DataStaleBanner = DataStaleBannerV6
+window.__quantComponents.PageStaleBar = PageStaleBarV6
 window.__quantComponents.AppIcon = AppIconV6
 import '../js/components/global-header.js'
 import '../js/components/calendar-page.js'
@@ -123,6 +135,8 @@ import '../js/virtual-list-core.js'
 import '../js/components/virtual-list.js'
 import '../js/mobile-gestures.js'
 import '../js/state-panel-core.js'
+// 6.4.2 (FR-646): 错误码人话映射 + 重试节流 (状态面板消费)
+import '../js/error-map.js'
 import '../js/components/state-panel.js'
 import '../js/command-panel-core.js'
 import '../js/onboarding-core.js'

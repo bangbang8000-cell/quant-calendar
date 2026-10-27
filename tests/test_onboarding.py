@@ -32,9 +32,10 @@ def _run_js(script):
 # ─── 状态机 ─────────────────────────────────────────────────────
 
 @NEEDS_NODE
-def test_step_count_is_five():
+def test_step_count_is_three():
+    """6.4.2 (FR-644): 首次登录引导收敛为 3 步"""
     out = _run_js("return OC.stepCount();")
-    assert out == 5
+    assert out == 3
 
 
 @NEEDS_NODE
@@ -48,7 +49,7 @@ def test_initial_state():
 @NEEDS_NODE
 def test_steps_have_keys_and_titles():
     out = _run_js("return OC.steps().map(s => s.key);")
-    assert len(out) == 5
+    assert len(out) == 3
     assert all(isinstance(k, str) and k for k in out)
 
 
@@ -78,21 +79,21 @@ def test_prev_at_start_clamps():
 @NEEDS_NODE
 def test_next_at_last_clamps():
     out = _run_js(
-        "const s = { ...OC.createOnboardingState(), stepIndex: 4 };"
+        "const s = { ...OC.createOnboardingState(), stepIndex: 2 };"
         "return OC.next(s).stepIndex;")
-    assert out == 4
+    assert out == 2
 
 
 @NEEDS_NODE
 def test_jump_to():
-    out = _run_js("return OC.jumpTo(OC.createOnboardingState(), 3).stepIndex;")
-    assert out == 3
+    out = _run_js("return OC.jumpTo(OC.createOnboardingState(), 2).stepIndex;")
+    assert out == 2
 
 
 @NEEDS_NODE
 def test_jump_to_out_of_range_clamps():
     out = _run_js("return OC.jumpTo(OC.createOnboardingState(), 99).stepIndex;")
-    assert out == 4
+    assert out == 2
 
 
 # ─── 完成/跳过 ─────────────────────────────────────────────────
@@ -122,7 +123,7 @@ def test_is_complete():
 @NEEDS_NODE
 def test_progress_shape():
     out = _run_js("return OC.progress(OC.createOnboardingState());")
-    assert out["done"] == 0 and out["total"] == 5
+    assert out["done"] == 0 and out["total"] == 3
     assert 0 <= out["pct"] <= 100
 
 
@@ -131,7 +132,7 @@ def test_progress_mid():
     out = _run_js(
         "const s = OC.jumpTo(OC.createOnboardingState(), 2);"
         "return OC.progress(s);")
-    assert out["done"] == 2 and out["pct"] == 40
+    assert out["done"] == 2 and out["pct"] == 67
 
 
 # ─── 持久化 ─────────────────────────────────────────────────────
@@ -139,11 +140,11 @@ def test_progress_mid():
 @NEEDS_NODE
 def test_persist_roundtrip():
     out = _run_js(
-        "const s = OC.jumpTo(OC.createOnboardingState(), 3);"
+        "const s = OC.jumpTo(OC.createOnboardingState(), 2);"
         "const json = OC.persistState(s);"
         "const s2 = OC.parseState(json);"
         "return [s2.stepIndex, s2.completed];")
-    assert out == [3, False]
+    assert out == [2, False]
 
 
 @NEEDS_NODE
@@ -269,14 +270,14 @@ def test_shortterm_tour_should_hide_when_dismissed():
     assert out is False
 
 
-# ═════════════════ 6.1.1 (A2): 引导二期 — 5 步操作导向 + 可回看 ═════════════════
+# ═════════════════ 6.4.2 (FR-644): 引导收敛为 3 步 + 可回看 ═════════════════
 
 @NEEDS_NODE
-def test_611_steps_are_action_oriented():
-    """引导二期: 5 步 key 固定为 today/calendar/evaluate/watchlist/config, 每步含 desc 与 target"""
+def test_644_steps_are_action_oriented():
+    """FR-644: 3 步 key 固定 today/stock_detail/ask_ai, 每步含 desc 与 target"""
     out = _run_js("return OC.steps();")
     keys = [s["key"] for s in out]
-    assert keys == ["today", "calendar", "evaluate", "watchlist", "config"]
+    assert keys == ["today", "stock_detail", "ask_ai"]
     for s in out:
         assert s.get("desc"), f"步骤 {s['key']} 缺 desc (操作指引)"
         assert s.get("target"), f"步骤 {s['key']} 缺 target (目标页面)"

@@ -38,11 +38,11 @@ def test_help_lists_new_shortcuts():
 
 
 def test_help_lists_existing_core_shortcuts():
-    """核心快捷键仍在帮助面板: Ctrl+K / Ctrl+/ / 1-5 / R / 方向键"""
+    """核心快捷键仍在帮助面板: Ctrl+K / Ctrl+/ / 1-7 / R / 方向键"""
     keys = _help_items()
     assert any("Ctrl+K" in k for k in keys)
     assert any("Ctrl+/" in k for k in keys)
-    assert any("1-5" in k for k in keys)
+    assert any("1-7" in k for k in keys), "一级摊平为 7 业务域后帮助面板应写 1-7"
 
 
 def test_default_shortcuts_match_help_coverage():

@@ -236,45 +236,80 @@ def _build_chat_prompts(message: str, stock_code: str, stock_name: str, username
 
 # ── LLM Call (async, non-blocking) ──
 
-def _call_llm_sync(system_prompt: str, user_prompt: str) -> str:
-    """同步 LLM 调用 — 在 thread pool 中执行"""
+def _call_llm_sync(system_prompt: str, user_prompt: str) -> dict:
+    """同步 LLM 调用 — 在 thread pool 中执行。
+
+    6.4.4 (FR-650 第 5 条): 主模型失败自动切备用模型 (按启用顺序遍历)，
+    返回 {reply, model_used, provider, degraded, fallback_from}。
+    """
     import requests
+    import time as _time
     from ai_evaluator import ai_evaluator
 
     models = ai_evaluator.get_enabled_models()
     if not models:
-        return "未配置 AI 模型"
+        return {"reply": "未配置 AI 模型", "model_used": None, "provider": "",
+                "degraded": False, "fallback_from": None}
 
-    model = models[0]
-    endpoint = f"{model.base_url}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {model.api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": model.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.3,
-        # V4.8.2-fix: 不硬截断 2048 — 推理模型(reasoning_content)会吃光预算致回复为空 (v4-flash 实测需 8192)
-        "max_tokens": model.max_tokens,
-    }
+    errors = []
+    first_model = None
+    for idx, model in enumerate(models):
+        endpoint = f"{model.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {model.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.3,
+            # V4.8.2-fix: 不硬截断 2048 — 推理模型(reasoning_content)会吃光预算致回复为空 (v4-flash 实测需 8192)
+            "max_tokens": model.max_tokens,
+        }
+        t0 = _time.time()
+        try:
+            resp = requests.post(endpoint, headers=headers, json=payload, timeout=120)
+            resp.raise_for_status()
+            data = resp.json()
+            reply = data["choices"][0]["message"]["content"]
+            latency = round((_time.time() - t0) * 1000)
+            try:
+                ai_evaluator.record_call_result(model.id, True, latency)
+            except Exception as exc:
+                logger.warning(f"用量统计记录失败 (可降级, 不影响应答): {exc}")
+            if idx == 0:
+                return {"reply": reply, "model_used": model.id, "provider": model.provider,
+                        "degraded": False, "fallback_from": None}
+            # 主模型失败后由备用模型接答 → 标注降级
+            return {"reply": reply, "model_used": model.id, "provider": model.provider,
+                    "degraded": True, "fallback_from": first_model}
+        except Exception as e:
+            latency = round((_time.time() - t0) * 1000)
+            try:
+                ai_evaluator.record_call_result(model.id, False, latency)
+            except Exception as exc:
+                logger.warning(f"用量统计记录失败 (可降级, 不影响应答): {exc}")
+            errors.append(f"{model.id}: {str(e)[:100]}")
+            if first_model is None:
+                first_model = model.id
+            logger.warning("chat LLM %s 调用失败: %s", model.id, str(e)[:120])
 
-    resp = requests.post(endpoint, headers=headers, json=payload, timeout=120)
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"]
+    return {"reply": "AI 分析暂时不可用: " + "; ".join(errors[:3]),
+            "model_used": None, "provider": "",
+            "degraded": True, "fallback_from": first_model}
 
 
-async def _call_llm(system_prompt: str, user_prompt: str) -> str:
+async def _call_llm(system_prompt: str, user_prompt: str) -> dict:
     """异步 LLM 调用 — 在线程池中执行，不阻塞事件循环"""
     try:
         return await asyncio.to_thread(_call_llm_sync, system_prompt, user_prompt)
     except Exception as e:
         logger.error(f"LLM call failed: {e}")
-        return f"AI 分析暂时不可用: {str(e)}"
+        return {"reply": f"AI 分析暂时不可用: {str(e)}", "model_used": None, "provider": "",
+                "degraded": True, "fallback_from": None}
 
 
 # ── API Endpoints ──
@@ -324,8 +359,21 @@ async def _run_chat(body: ChatRequest, username: str) -> dict:
     # 3. 构建 Prompt (FR-3.17.1: 数据卡事实护栏 + 多股对比 + 多轮上下文)
     system_prompt, user_prompt, tool_data = _build_chat_prompts(body.message, stock_code, stock_name, username=username)
 
-    # 4. LLM 调用
-    reply = await _call_llm(system_prompt, user_prompt)
+    # 4. LLM 调用 (6.4.4 FR-650: 返回 dict, 含降级标注; 兼容旧调用方/测试 mock 返回 str)
+    llm = await _call_llm(system_prompt, user_prompt)
+    if isinstance(llm, dict):
+        reply = llm.get("reply", "")
+        model_used = llm.get("model_used")
+        provider = llm.get("provider", "")
+        degraded = bool(llm.get("degraded"))
+        fallback_from = llm.get("fallback_from")
+    else:
+        reply, model_used, provider = str(llm), None, ""
+        degraded, fallback_from = False, None
+    degraded_note = None
+    if degraded and fallback_from:
+        degraded_note = "已降级（备用模型 %s）" % (model_used or "")
+        reply = reply + "\n\n> ⚠️ " + degraded_note
 
     # 5. 保存历史 (按用户)
     sessions = _load_history(username)
@@ -349,6 +397,11 @@ async def _run_chat(body: ChatRequest, username: str) -> dict:
         "session_id": session["id"],
         "intent": intent,
         "tool_data": tool_data,
+        # 6.4.4 (FR-650 第 3/5 条): 用了哪些数据 + 降级标注
+        "model_used": model_used,
+        "provider": provider,
+        "degraded": degraded,
+        "degraded_note": degraded_note,
     }
 
 
@@ -364,6 +417,24 @@ async def quick_chat(body: QuickChatRequest, user: dict = Depends(get_non_guest_
 
     req = ChatRequest(stock_code=body.stock_code, message=msg)
     return await _run_chat(req, _resolve_username(user))
+
+
+@router.get("/usage-board")
+async def chat_usage_board(user: dict = Depends(get_current_user)):
+    """6.4.4 (FR-650 第 4 条): AI 用量与成本看板 — 近 7/30 天调用数/成功率/平均耗时/成本估算。
+
+    数据源为 ai_evaluator 调用明细 (recent 环形 500 条, 全局共享)；
+    失败率 >20% 返回 alert 提示。
+    """
+    try:
+        import ai_usage_board
+        from ai_evaluator import ai_evaluator
+        stats = ai_evaluator.get_usage_stats()
+        board = ai_usage_board.summarize(stats.get("recent") or [])
+        return {"success": True, "data": board}
+    except Exception as e:
+        logger.error(f"AI 用量看板聚合失败: {e}")
+        return {"success": False, "message": str(e)}
 
 
 @router.get("/history")

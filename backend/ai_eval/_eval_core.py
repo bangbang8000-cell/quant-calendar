@@ -18,6 +18,31 @@ logger = logging.getLogger(__name__)
 
 class AIEvalCoreMixin:
     """AIEvaluator 评估主流程 Mixin(_eval) — 自 _eval.py 拆分"""
+
+    @staticmethod
+    def _stale_note() -> Dict:
+        """6.4.1 (FR-642d): 输入数据陈旧标注 — 与 backend/freshness.py 同源，不阻断评估。"""
+        try:
+            import freshness
+            g = freshness.stale_guard()
+            return {"latest_date": g.get("latest_date"), "stale": bool(g.get("stale")),
+                    "annotation": g.get("annotation") or ""}
+        except Exception:
+            logger.debug("陈旧标注获取失败(降级)", exc_info=True)
+            return {"latest_date": None, "stale": False, "annotation": ""}
+
+    @classmethod
+    def _attach_stale_note(cls, result: Dict) -> Dict:
+        """把陈旧标注写进结果 (不可折叠字段 data_stale_note + 报告尾部)。"""
+        info = cls._stale_note()
+        if not info["annotation"] or not isinstance(result, dict):
+            return result
+        result["data_stale_note"] = info["annotation"]
+        report = result.get("detailed_report") or ""
+        if info["annotation"] not in report:
+            result["detailed_report"] = report + ("\n\n注：" if report else "注：") + info["annotation"]
+        return result
+
     @staticmethod
     def _build_data_gaps(market_data: Dict) -> list:
         """6.3.3 (T-6.3.3.1): 无数据时说明缺什么 — 输出数据缺口清单 (供前端展示降级原因)
@@ -35,6 +60,32 @@ class AIEvalCoreMixin:
         if md.get("pct_5d") is None and md.get("pct_20d") is None:
             gaps.append("阶段涨跌幅")
         return gaps
+
+    @staticmethod
+    def _build_eval_meta(market_data: Dict, result: Dict,
+                         model_used, model_provider: str) -> Dict:
+        """6.4.4 (FR-649 第 1 条): 评估元数据 (委托 ai_rubric 纯函数, 失败降级为最小集)。"""
+        try:
+            import ai_rubric
+            return ai_rubric.build_meta(market_data, result,
+                                        model_used=model_used,
+                                        model_provider=model_provider)
+        except Exception:
+            logger.debug("评估元数据构建失败(降级)", exc_info=True)
+            return {"model": model_used or "unknown", "provider": model_provider or "",
+                    "rubric_version": "legacy", "data_date": "",
+                    "sample_size": 0, "confidence": 0, "confidence_note": "元数据构建失败"}
+
+    @staticmethod
+    def _build_fact_sources(market_data: Dict) -> list:
+        """6.4.4 (FR-649 第 4 条): 事实类结论来源字段 (委托 ai_rubric, 失败降级为空表)。"""
+        try:
+            import ai_rubric
+            return ai_rubric.build_fact_sources(market_data)
+        except Exception:
+            logger.debug("事实来源构建失败(降级)", exc_info=True)
+            return []
+
     def recommend_strategies(self, watchlist: list = None, username: str = 'default') -> Dict:
         """
         基于自选股风格推荐策略
@@ -177,6 +228,8 @@ class AIEvalCoreMixin:
         if cached:
             cached = dict(cached)
             cached["from_cache"] = True
+            # 6.4.1 (FR-642d): 缓存结果同样附陈旧标注（数据可能已过期）
+            cached = self._attach_stale_note(cached)
             return {
                 "id": hashlib.md5(f"{stock_code}{strategy}cached".encode()).hexdigest()[:12],
                 "stock_code": stock_code,
@@ -248,6 +301,8 @@ class AIEvalCoreMixin:
                 model_provider = "评估失败"
 
         # 3) 保存历史
+        # 6.4.1 (FR-642d): 陈旧输入 → 结果追加不可折叠标注
+        result = self._attach_stale_note(result)
         # v3.5.0-T6: 记录用量 + 写入缓存 (仅真实 LLM 调用, 非缓存命中)
         if model_used:
             try:
@@ -278,6 +333,14 @@ class AIEvalCoreMixin:
             # 6.3.3 (T-6.3.3.1): 数据缺口说明 + 降级标记 (无数据时说明缺什么)
             "data_gaps": self._build_data_gaps(market_data),
             "degraded": result.get("level") in ("评估失败", "无可用模型"),
+            # 6.4.1 (FR-642d): 数据新鲜度随结果落库，供历史回看与审计
+            "data_freshness": self._stale_note(),
+            # 6.4.4 (FR-649): 可信化元数据 — 模型/口径版本/数据日期/样本量/置信度
+            "meta": self._build_eval_meta(market_data, result, model_used, model_provider),
+            # 6.4.4 (FR-649 第 4 条): 事实类结论来源字段 (无来源不展示数值)
+            "fact_sources": self._build_fact_sources(market_data),
+            # 6.4.4 (FR-649 第 2 条): 评估策略随记录落库 (按策略分组命中率依赖此字段)
+            "strategy": strategy,
         }
         history = self._load_history_for(username)
         history.insert(0, record)

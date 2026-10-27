@@ -265,3 +265,39 @@ class SchedulerReportsMixin:
                 logger.error(f"每周报告任务异常: {e}")
                 self._record_task_run("weekly_report", False, str(e)[:120])
             await asyncio.sleep(60)  # 避开重复触发
+
+    async def _catchup_weekly_report(self):
+        """6.5.5 (fix): 周报仅在启动后遇到的下一个周六 10:00 生成 → 频繁重启的实例
+        可能长期没有周报, 新鲜度恒报 missing。启动时若记录缺失或超过 6 天则补跑一次。
+        """
+        await asyncio.sleep(5)  # 等调度器/数据层就绪
+        try:
+            from datetime import timedelta
+            from reliability.freshness import record_update
+
+            rec = {}
+            try:
+                from reliability import freshness as _freshness
+                rec = _freshness.get_record("weekly_report") or {}
+            except Exception:  # noqa: BLE001
+                rec = {}
+            last = rec.get("last_update")
+            if last:
+                try:
+                    if datetime.now() - datetime.fromisoformat(last) < timedelta(days=6):
+                        return
+                except ValueError as e:
+                    # 记录损坏/手工写入的非法时间 → 按「无有效记录」处理并补跑
+                    logger.warning("[周报错过补偿] last_update 非法 (%s): %s", last, e)
+            logger.info("[周报错过补偿] 无有效周报记录, 补跑一次")
+            result = generate_weekly_report()
+            if result.get('success'):
+                self._record_task_run("weekly_report", True, result.get('path', ''))
+                record_update("weekly_report", latest_date=datetime.now().strftime('%Y-%m-%d'),
+                              detail="weekly_report catchup")
+                logger.info("✅ 周报补跑成功: %s", result.get('path', ''))
+            else:
+                logger.warning("周报补跑失败: %s", result.get('message', ''))
+                self._record_task_run("weekly_report", False, result.get('message', '')[:120])
+        except Exception as e:  # noqa: BLE001
+            logger.error("周报错过补偿异常: %s", e)

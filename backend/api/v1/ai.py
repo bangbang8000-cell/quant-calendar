@@ -149,6 +149,33 @@ async def get_ai_calibration(window: Optional[int] = None, user: Dict = Depends(
         return {"success": False, "message": str(e)}
 
 
+@router.get("/rubric-groups")
+async def get_ai_rubric_groups(window: Optional[int] = None, by: Optional[str] = None,
+                               user: Dict = Depends(get_current_active_user)):
+    """6.4.4 (FR-649 第 2 条): 命中率分组看板 — 按策略/标的/时段分组。
+
+    样本 <30 的组不显示百分比 (show_rate=False + note="样本不足（N 条）")。
+    """
+    try:
+        from eval_track import get_track_summary
+        import ai_rubric
+        summary = get_track_summary(user["username"], window=window)
+        samples = [s for s in (summary.get("samples") or []) if s.get("available")]
+        win = ("n" + str(window)) if window in (5, 10, 20) else "n5"
+        if by in ("strategy", "stock", "period"):
+            groups = {by: ai_rubric.group_hit_rate(samples, by, win)}
+        else:
+            groups = ai_rubric.group_hit_rate_all(samples, win)
+        return {"success": True, "data": {
+            "window": win, "min_sample": ai_rubric.MIN_GROUP_SAMPLE,
+            "rubric_version": ai_rubric.current_version(),
+            "groups": groups,
+        }}
+    except Exception as e:
+        logger.error(f"命中率分组统计失败: {e}")
+        return {"success": False, "message": str(e)}
+
+
 @router.post("/fact-check/audit")
 async def run_fact_check_audit(user: Dict = Depends(get_non_guest_user)):
     """FR-3.18.9: 手动触发 AI 事实护栏抽查, 产出《事实护栏审计报告》

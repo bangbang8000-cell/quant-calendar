@@ -12,6 +12,18 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, "frontend")
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read_f(rel):
     p = os.path.join(FRONTEND, *rel.split("/"))
     with open(p, encoding="utf-8") as f:
@@ -20,7 +32,7 @@ def _read_f(rel):
 
 def test_kline_header_no_gradient():
     """TC-5.15.31: kline-dialog 头部去除渐变背景"""
-    themes = _read_f("css/themes.css")
+    themes = _themes_css()
     # 存在 kline-dialog 头部覆盖: background: transparent
     assert ".kline-dialog .el-dialog__header" in themes, "应存在 kline-dialog 头部覆盖规则"
     m = __import__("re").search(r"\.kline-dialog \.el-dialog__header\s*\{([^}]*)\}", themes)
@@ -31,7 +43,7 @@ def test_kline_header_no_gradient():
 
 def test_kline_headerbtn_position():
     """TC-5.15.32: X 按钮垂直居中 + 右侧留白"""
-    themes = _read_f("css/themes.css")
+    themes = _themes_css()
     m = __import__("re").search(r"\.kline-dialog \.el-dialog__headerbtn\s*\{([^}]*)\}", themes)
     assert m, "应存在 kline-dialog headerbtn 规则"
     block = m.group(1)
@@ -42,7 +54,7 @@ def test_kline_headerbtn_position():
 
 def test_kline_close_icon_size():
     """TC-5.15.33: 关闭图标 18px (V5.17.1: 令牌化 var(--qc-font-size-lg)=18px, 与 typography 门禁一致)"""
-    themes = _read_f("css/themes.css")
+    themes = _themes_css()
     m = __import__("re").search(r"\.kline-dialog \.el-dialog__close\s*\{([^}]*)\}", themes)
     assert m, "应存在 kline-dialog close 图标规则"
     block = m.group(1)
@@ -52,6 +64,6 @@ def test_kline_close_icon_size():
 
 def test_merrill_dialog_unchanged():
     """TC-5.15.34: merrill-detail-dialog 头部渐变保留 (不受影响)"""
-    themes = _read_f("css/themes.css")
+    themes = _themes_css()
     assert ".merrill-detail-dialog .el-dialog__header" in themes, "merrill 弹窗头部规则应保留"
     assert "linear-gradient" in themes.split(".merrill-detail-dialog .el-dialog__header")[1][:200] or True

@@ -47,15 +47,17 @@ def test_ai_page_wired():
 
 
 def test_focus_in_ai_menus_subpages():
-    """V5.4.0-fix: 重点跟踪必须是 AI 二级菜单(subPages 含 focus) + 5 语言包 sub.focus。
+    """V5.4.0-fix: 重点跟踪必须是 AI 二级菜单(NEW_NAV 成员含 focus) + 5 语言包 sub.focus。
 
     修复背景: focus 只挂在 AI 页 overview 顶部入口卡, 全局头部二级导航
-    (sub-nav-tab 遍历 menu.subPages) 无 focus → 用户找不到入口。
+    无 focus → 用户找不到入口。6.5.0 (FR-653): 菜单成员定义在 nav-merge-core.js。
     """
-    app = _read("js/app-logic.js")
-    ai = app.split("key: 'ai'")[1].split("},")[0]
-    assert "'focus'" in ai, "AI 菜单 subPages 应含 focus (二级菜单入口)"
-    assert "'focus': '重点跟踪'" in app, "subPageNames 应有 focus 中文兜底"
+    import re as _re
+    nav = _read("js/nav-merge-core.js")
+    subs = _re.findall(r"\{\s*key:\s*'[^']+'\s*,\s*page:\s*'ai'\s*,\s*sub:\s*'([^']+)'\s*\}", nav)
+    assert "focus" in subs, "AI 菜单成员应含 focus (二级菜单入口)"
+    ws = _read("js/app-logic/workspace.js")
+    assert "'focus': '重点跟踪'" in ws, "subPageNames 应有 focus 中文兜底"
     for f in ("zh-CN", "en", "zh-TW", "ja", "ko"):
         loc = _read("js/locales/%s.js" % f)
         assert "sub.focus" in loc, "%s 语言包缺 sub.focus (二级菜单显示英文 key)" % f

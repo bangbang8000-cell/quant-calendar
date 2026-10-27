@@ -24,6 +24,18 @@ def prefs_backend(tmp_path):
     uc.BASE_USERS_DIR = old
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel):
     with open(os.path.join(FRONTEND, rel), encoding="utf-8") as f:
         return f.read()
@@ -64,7 +76,7 @@ def test_frontend_applies_data_density():
 
 
 def test_css_has_compact_density_rules():
-    css = _read(os.path.join("css", "themes.css"))
+    css = _themes_css()
     assert '[data-density="compact"]' in css
 
 
@@ -91,5 +103,5 @@ def test_frontend_density_three_values():
 
 def test_css_has_spacious_density_rules():
     """CSS 含 [data-density=spacious] 规则 (宽松档生效)"""
-    css = _read(os.path.join("css", "themes.css"))
+    css = _themes_css()
     assert '[data-density="spacious"]' in css, "CSS 应含 spacious 密度规则"

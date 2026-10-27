@@ -137,7 +137,10 @@
      各约 460px, 搜索区远未达 640px 上限, 标签却已折叠成「更多▾」——空间分配不合理。
      改为固定基宽(可收缩、默认不增长) + 最小宽度兜底, 剩余宽度全部让给二级标签,
      「更多」只在标签真的放不下时才出现; 窄屏时搜索框仍可收缩到 180px。 */
-  flex: 0 1 360px;
+  /* 6.5.4 (FR-654.3): 一级摊平为 7 个业务域后, 二级最多 7 个 — 搜索基宽 360→240,
+     把省出的 120px 让给标签区(约 653px), 7 个标签一行放下, 不出现「更多」,
+     顶栏高度不变(内容区垂直占比不受影响)。 */
+  flex: 0 1 240px;
   display: flex;
   align-items: center;
   justify-content: flex-end; /* V6.9.3: 右对齐 — 搜索框贴近右侧铃铛 */
@@ -613,6 +616,21 @@
 /* v6.4 (FR-6.4.5 / FR-6.4.2): 数据陈旧横幅 + 实时降级细条
    PRD 5.1: 顶栏下方 / 全宽 / 单行 36px / --badge-gold-bg 底 / 13px */
 .qc-stale-wrap { display: block; }
+/* 6.5.5: 铃铛面板内的陈旧/降级提示 — 由顶栏横幅改为面板内区块 (去全宽边框) */
+.qc-bell-panel .qc-stale-wrap { padding: var(--qc-space-2) var(--qc-space-3); }
+.qc-bell-panel .qc-stale-banner {
+  min-height: 32px;
+  padding: 0 var(--qc-space-2);
+  border-bottom: none;
+  border-radius: var(--qc-radius-small);
+  flex-wrap: wrap;
+}
+.qc-bell-panel .qc-rt-strip {
+  margin-top: var(--qc-space-2);
+  padding: 3px var(--qc-space-2);
+  border-bottom: none;
+  border-radius: var(--qc-radius-small);
+}
 .qc-stale-banner {
   display: flex;
   align-items: center;

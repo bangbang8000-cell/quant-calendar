@@ -35,7 +35,7 @@
                 });
                 const { backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                         backtestRunning, backtestResult, backtestError, runBacktest,
-                        currentPageName, lazyTick, pageComp, showUserMenu,
+                        currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
                         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
                         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
                         detailDisplayMode, setDetailDisplayMode, isNarrow, detailSplitEnabled,
@@ -151,7 +151,8 @@
                         selectAllChatSessions, deleteSelectedChatSessions, viewChatSession,
                         loadChatHistory, deleteChatSession, renderMarkdown,
                         stockChatInput, stockChatMessages, stockChatLoading, stockChatError,
-                        askStockSend, askStockQuick } = __aiChatDomain;
+                        askStockSend, askStockQuick,
+                        stockChatContext, clearStockChatContext, stockChatQuickAsks, stockChatToolData } = __aiChatDomain;
                 // ===== v3.11(11.3): 用户/分组域 — 逻辑移至 js/users.js 模块 =====
                 const __usersDomain = (window.__quantModules && window.__quantModules.users)
                     ? window.__quantModules.users.create({ currentUser, applyTheme, allMenuDefs, loadGroupConfig })
@@ -217,6 +218,8 @@
                         preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected,
                         searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
                         triggerDataPull, dataPullRunning,
+                        // 6.4.2 (FR-644): 示例组合一键载入/删除
+                        loadExamplePool, removeExamplePool,
                         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
                         quickEvaluate, toggleDateExpand, toggleSelectDate, toggleSelectMonth, toggleStockExpand,
                         toggleSelectStock, registerTrendChart, viewAiResult, doBatchEvaluate,
@@ -324,7 +327,7 @@
                     currentUser, allMenuDefs,
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
                     t, locale, changeLanguage,
-                    currentPageName, subPageNames, searchQuery, searchStocks, onSearchSelect,
+                    currentPageName, currentSubName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV, viewNote,
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, changeThemeMode, changeThemeHue, handleLogout,
@@ -362,6 +365,8 @@
                     loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
                     // v3.12 (FR-3.12.1): 手动拉取
                     triggerDataPull, dataPullRunning,
+                    // 6.4.2 (FR-644): 示例组合一键载入/删除
+                    loadExamplePool, removeExamplePool,
                     indexDetailVisible, indexDetail, indexAiResult, indexAiLoading, loadCachedIndexEval,
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
@@ -470,6 +475,7 @@
                     selectAllChatSessions, deleteSelectedChatSessions, viewChatSession,
                     loadChatHistory, deleteChatSession, renderMarkdown,
                     stockChatInput, stockChatMessages, stockChatLoading, stockChatError, askStockSend, askStockQuick,
+                    stockChatContext, clearStockChatContext, stockChatQuickAsks, stockChatToolData,
                     // v2.5.2: 触摸手势
                     onTouchStart, onTouchEnd,
                     // v3.8.11: 触觉反馈

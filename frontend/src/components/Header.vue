@@ -19,10 +19,12 @@ export default {
     // V6.3 (PRD-6.3 F4): 导航形态 (动态页签 V6.4 已移除, 面包屑仅 tree 形态展示)
     const navMode = computed(() => (state.navMode && state.navMode.value) || 'subnav')
     // V6.7.1 (PRD F-6.7.9 / OBS-4): toptab 形态无子页时 Header 左区兜底显示当前页名
+    // 6.5.2 (FR-653): 一级合并后 currentPage 为内部旧键, 须按 activePages 反查 (与 TopTabs 一致)
     const hasToptabs = computed(() => {
       const page = state.currentPage && state.currentPage.value
-      const menu = (state.menus && state.menus.value || []).find((m) => m.key === page)
-      return !!(menu && menu.subPages && menu.subPages.length)
+      const menu = (state.menus && state.menus.value || []).find((m) =>
+        (m.activePages || [m.key]).indexOf(page) >= 0)
+      return !!(menu && menu.members && menu.members.length)
     })
     // V6.4 (PRD-6.4): 面包屑 — 树状一二级菜单形态展示「一级 / 二级」
     //   subnav/toptab 形态不展示 (中栏标题 / 顶部二级标签已承担位置指示)
@@ -194,8 +196,7 @@ export default {
 
 <template>
   <div class="qc-header-wrap">
-  <!-- v6.4 (FR-6.4.5): 数据陈旧横幅 + 实时降级细条（日期/天数来自 /api/reliability/freshness） -->
-  <qc-data-stale-banner></qc-data-stale-banner>
+  <!-- 6.5.5: 数据陈旧/实时降级提示已移入通知铃铛面板 (顶栏不再常驻占位) -->
   <!-- v5.18 (F1): 非交易日全局提示条 -->
   <div v-if="marketData && marketData.is_trading_day === false && !bannerDismissed" class="non-trading-banner" role="status">
     <AppIcon name="alert-triangle" :size="14" />
@@ -276,6 +277,8 @@ export default {
         </button>
         <div v-if="openBellMenu" class="qc-header-popover qc-bell-panel" role="dialog" aria-label="通知面板">
           <div class="qc-bell-header">通知</div>
+          <!-- 6.5.5: 数据陈旧横幅 + 实时报价降级细条 (日期/天数来自 /api/reliability/freshness) -->
+          <qc-data-stale-banner></qc-data-stale-banner>
           <div v-if="notifLoading" class="qc-bell-state">加载中...</div>
           <div v-else-if="notifError" class="qc-bell-state">加载失败</div>
           <div v-else-if="!notifItems.length" class="qc-bell-state">暂无通知</div>

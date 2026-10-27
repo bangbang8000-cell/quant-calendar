@@ -61,8 +61,32 @@
                 // v3.16 (16.7): 离线检测 — 全局在线状态（供各页统一展示 offline 错误态）
                 const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
                 if (typeof window !== 'undefined') {
-                    window.addEventListener('online', () => { isOnline.value = true; });
+                    // 6.4.2 (FR-646): 离线恢复后广播事件, 由 keys.js 自动重取当前页数据
+                    window.addEventListener('online', () => {
+                        const wasOffline = !isOnline.value;
+                        isOnline.value = true;
+                        if (wasOffline) {
+                            const EM = window.ElementPlus && window.ElementPlus.ElMessage;
+                            if (EM) EM.success('网络已恢复，正在刷新当前页');
+                            try { window.dispatchEvent(new CustomEvent('qc:online-recovered')); } catch (e) { console.warn('[shell] 离线恢复事件派发失败', e); }
+                        }
+                    });
                     window.addEventListener('offline', () => { isOnline.value = false; });
+                    // 6.4.2 (FR-646 第 4/5 条): 全局离线提示 + 未捕获异常上报 (不静默)
+                    window.addEventListener('unhandledrejection', (ev) => {
+                        const reason = ev && ev.reason;
+                        try {
+                            if (window.QuantEvents && typeof window.QuantEvents.report === 'function') {
+                                window.QuantEvents.report(reason, 'unhandledrejection');
+                            } else {
+                                console.warn('[qc] 未捕获的 Promise 异常', reason);
+                            }
+                            const EM = window.ElementPlus && window.ElementPlus.ElMessage;
+                            if (EM && isOnline.value === false) EM.warning('网络已断开，恢复后会自动刷新当前页');
+                        } catch (e) {
+                            console.warn('[shell] 异常上报失败', e);
+                        }
+                    });
                 }
 
                 // 窗口关闭前确认（防止未保存配置丢失）
@@ -92,39 +116,36 @@
 // v1.9.2: 用户组配置（菜单可见性由此驱动）
                 const groupsConfig = ref(null);
 
-const allMenuDefs = [
-                    // V6.0 (PRD-6.0 FR-6.0.1): 新增 group(一级分组) + iconName(Lucide 图标) 字段
-                    // V6.1 (PRD-6.1 F4): 移除 icon(emoji) 字段 — 图标仅经 iconName + AppIcon 渲染
-                    // 分组: research=量化投研 / platform=平台管理
-                    { key: 'strategies', name: '策略总览', iconName: 'layout-dashboard', group: 'research', subPages: ['overview', 'merrill', 'market', 'consensus'] }, // V5.2.3: 执行看板移入系统配置; V6.6.1: market 更名「大盘行情」
-                    { key: 'calendar', name: '量化日历', iconName: 'calendar', group: 'research', subPages: ['calendar', 'pool'] }, // V6.6.1: 日/周/月/年 4 视图合并为页内切换 (PRD F-6.6.7)
-                    { key: 'ai', name: '智能评估', iconName: 'bot', group: 'research', subPages: ['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', 'portfolio', 'chat_history'] }, // V5.0.11: 评估分析独立子页; V5.4.0: 重点跟踪子页; V6.6.1: 组合持仓入口 (PRD 结论一)
-                    { key: 'research', name: '策略研究', iconName: 'flask-conical', group: 'research', subPages: ['research-overview', 'quant-research', 'strategy-manage', 'backtest', 'backtest-history'] }, // V6.6.1: 策略编写+全新策略合并为「策略管理」 (PRD 结论五)
-                    { key: 'shortterm', name: '短线复盘', iconName: 'zap', group: 'research', subPages: ['overview', 'market-review', 'ztpool', 'lhb', 'sector', 'intraday'] }, // V5.2.3: 市场复盘+异动扫描并入; V6.9.1-fix: 异动扫描删除
-                    // V6.9.1-fix: 系统状态一级菜单 (自系统配置分离, 置于系统配置前) — 运行监控/数据/执行域
-                    { key: 'ops', name: '系统状态', iconName: 'activity', group: 'platform', subPages: ['status', 'health', 'schedule', 'usage', 'guard', 'datadict', 'execution'] }, // V6.9.1-fix2: status(状态概览) 移入 ops 首位
-                    { key: 'system', name: '系统配置', iconName: 'settings', group: 'platform', subPages: ['config', 'feature', 'autoeval', 'datasource', 'user', 'notification', 'about'], guestSubPages: ['config', 'about'] } // V6.9.3: 菜单序重排 — 基础配置置后/通知中心移最后; 6.2.x: 关于恒置于最后 (术语表已移除)
-                ];
+// 6.5.0 (FR-653): 一级导航 7→5 — 结构由 nav-merge-core 单一来源驱动
+                // member.page/member.sub 保持旧内部键: 懒加载/pageComp/子页 watch 零改动;
+                // activePages 供激活态判定 (workbench 收纳 strategies/calendar/shortterm 三个旧一级)
+                const _navMerge = (typeof window !== 'undefined' && window.QuantNavMerge) || null;
+                const allMenuDefs = (_navMerge ? _navMerge.nav() : []).map(function (p) {
+                    var pages = [];
+                    p.members.forEach(function (m) { if (pages.indexOf(m.page) < 0) pages.push(m.page); });
+                    p.activePages = pages;
+                    p.subPages = p.members.map(function (m) { return m.key; });
+                    return p;
+                });
                 const menus = computed(() => {
                     const role = currentUser.value?.role || 'guest';
                     const groupId = currentUser.value?.group || role;
                     const group = groupsConfig.value?.[groupId] || null;
                     let items = allMenuDefs.map(m => {
                         // group-based visibility (default: show if no group config)
-                        if (group && group.visible_menus && m.key in group.visible_menus) {
-                            if (!group.visible_menus[m.key]) return null;
-                        }
+                        // 6.5.0 (FR-653): 可见性读时迁移 — 新键值优先, 旧配置 key 仍生效
+                        if (group && !_navMerge.primaryVisible(group, m.key)) return null;
                         const item = { ...m, name: t('nav.' + m.key) || m.name };
-                        // Filter subPages by group config
-                        if (group?.visible_sub_pages) {
-                            item.subPages = m.subPages.filter(sp => {
-                                const fullKey = m.key + '.' + sp;
-                                return group.visible_sub_pages[fullKey] !== false;
-                            });
+                        // 6.5.0 (FR-653): 成员级过滤 (新键直查 + 旧键回查, 迁移前后可见性一致)
+                        if (group && (group.visible_sub_pages || group.visible_menus)) {
+                            item.members = m.members.filter(mm => _navMerge.memberVisible(group, m.key, mm));
+                            item.subPages = item.members.map(mm => mm.key);
+                            if (!item.members.length) return null;
                         }
                         // Guest: system limited subPages
                         if (m.key === 'system' && role === 'guest' && m.guestSubPages) {
-                            item.subPages = m.guestSubPages;
+                            item.members = item.members.filter(mm => m.guestSubPages.indexOf(mm.sub) >= 0);
+                            item.subPages = item.members.map(mm => mm.key);
                         }
                         return item;
                     }).filter(Boolean);
@@ -157,7 +178,7 @@ const allMenuDefs = [
                 const shortcutHelpItems = [
                     { keys: 'Ctrl+K', desc: '打开命令面板 (股票搜索/菜单/指令)' },
                     { keys: 'Ctrl+/', desc: '显示/隐藏快捷键帮助' },
-                    { keys: '1-5', desc: '切换导航页面 (非输入态)' },
+                    { keys: '1-7', desc: '切换导航页面 (非输入态)' },
                     { keys: 'R', desc: '刷新当前页 (策略/日历/AI, 非输入态)' },
                     // v3.16 (16.5): 帮助面板与 handleGlobalKeydown 实现同步（补齐方向键）
                     { keys: '← / →', desc: '日历页：上一 / 下一交易日' },
@@ -174,30 +195,71 @@ const allMenuDefs = [
                     { keys: 'Ctrl+J', desc: '打开 AI 问股' },
                 ];
                 // v3.8.2: 统一导航入口
+                // 6.5.0 (FR-653 第 2 条): 一级 7→5 漏斗 — navigateTo 是唯一收口。
+                // 调用方仍传旧键 (strategies/merrill 等), 在此归一为新键/旧内部坐标:
+                //   - 新键: navigateTo('workbench','strategies-merrill') → 内部 (strategies, merrill)
+                //   - 旧键: navigateTo('strategies','merrill') → 原样 (兼容全部既有调用点)
+                // hash/存储持久化经 nav-merge-core.toHash 写新格式。
                 function navigateTo(page, subPage = '') {
                     hapticFeedback('light');
+                    const C = (typeof window !== 'undefined') ? window.QuantNavMerge : null;
+                    if (C) {
+                        const internal = C.normalize(page, subPage || '');
+                        if (internal) {
+                            currentPage.value = internal.page;
+                            currentSubPage.value = internal.sub;
+                            try {
+                                localStorage.setItem('quant_last_subpage', internal.sub);
+                                localStorage.setItem('quant_last_page',
+                                    C.toHash(internal.page, internal.sub).slice(1));
+                            } catch (e) { /* 存储失败不影响导航 */ }
+                            return;
+                        }
+                        // 解析失败 (未知页) → 保持旧行为, 由 ensureVisiblePage 兜底
+                    }
                     currentPage.value = page;
                     currentSubPage.value = subPage;
                     localStorage.setItem('quant_last_subpage', subPage);
                 }
 
                 // V5.15 (F2): 页面可见性校验 — 用户组过滤后当前页被隐藏时重定向到首个可见菜单
+                // 6.5.0 (FR-653): 一级合并后 currentPage 可能是任一成员旧键 — 以 activePages 判定;
+                // 子页越界以「当前旧坐标所属成员」校验 (成员 key 与旧 sub 键解耦)。
                 function ensureVisiblePage() {
                     const items = menus.value;
                     if (!items || !items.length) return;
-                    const visible = items.some(function (m) { return m.key === currentPage.value; });
+                    const C = (typeof window !== 'undefined') ? window.QuantNavMerge : null;
+                    const visible = items.some(function (m) {
+                        return m.activePages ? m.activePages.indexOf(currentPage.value) >= 0
+                                             : m.key === currentPage.value;
+                    });
                     if (!visible) {
                         const first = items[0];
                         console.info('[nav] 当前页已被用户组隐藏, 跳转至', first.key);
-                        currentPage.value = first.key;
-                        currentSubPage.value = (first.subPages && first.subPages[0]) || '';
+                        const firstMember = first.members && first.members[0];
+                        if (C && firstMember) {
+                            currentPage.value = firstMember.page;
+                            currentSubPage.value = firstMember.sub;
+                        } else {
+                            currentPage.value = first.key;
+                            currentSubPage.value = (first.subPages && first.subPages[0]) || '';
+                        }
                         return;
                     }
-                    // 子页越界兜底: 当前子页不在可见子页列表时重置为默认子页
-                    const menu = items.find(function (m) { return m.key === currentPage.value; });
-                    if (menu && menu.subPages && menu.subPages.length
-                        && !menu.subPages.includes(currentSubPage.value)) {
-                        currentSubPage.value = menu.subPages[0];
+                    // 子页越界兜底: 归一后子页不在该一级可见成员集合 → 重置为首个可见成员
+                    const menu = items.find(function (m) {
+                        return m.activePages ? m.activePages.indexOf(currentPage.value) >= 0
+                                             : m.key === currentPage.value;
+                    });
+                    if (menu && menu.members && menu.members.length) {
+                        const cur = C ? C.normalize(currentPage.value, currentSubPage.value) : null;
+                        const inMenu = cur && menu.members.some(function (mm) {
+                            return mm.page === cur.page && mm.sub === cur.sub;
+                        });
+                        if (!inMenu) {
+                            currentPage.value = menu.members[0].page;
+                            currentSubPage.value = menu.members[0].sub;
+                        }
                     }
                 }
                 const currentSubPage = ref('overview');

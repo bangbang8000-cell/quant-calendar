@@ -146,7 +146,7 @@
   50% { opacity: 0.5; }
 }
 .pulse {
-  animation: pulse-opacity 2s ease-in-out infinite;
+  animation: pulse-opacity var(--duration-pulse) ease-in-out infinite;
 }
 
 /* ─── Spin ─── */
@@ -155,7 +155,7 @@
   to { transform: rotate(360deg); }
 }
 .spin {
-  animation: spin 1s linear infinite;
+  animation: spin var(--duration-spin) linear infinite;
 }
 
 /* ─── Slide Up ─── */

@@ -12,6 +12,18 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 import page_source
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(BASE, "frontend", rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel):
     _b = page_source.bundle(rel)
     if _b is not None:
@@ -46,7 +58,7 @@ def test_stale_banner_present():
 
 def test_stale_banner_css():
     """告警条样式在 themes.css (非内联)"""
-    css = _read("frontend/css/themes.css")
+    css = _themes_css()
     assert ".health-stale-banner" in css
 
 

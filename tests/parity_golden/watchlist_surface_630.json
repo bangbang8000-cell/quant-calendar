@@ -1,5 +1,5 @@
 {
-  "count": 84,
+  "count": 87,
   "keys": [
     "REALTIME_DEGRADED_TEXT",
     "REALTIME_FALLBACK_TEXT",
@@ -24,6 +24,7 @@
     "dataPullRunning",
     "dataRefreshConfig",
     "dataRefreshReloading",
+    "dataRefreshSaved",
     "dataRefreshSaving",
     "deleteSelectedHistory",
     "deleteSingleHistory",
@@ -41,6 +42,7 @@
     "loadAiHistory",
     "loadAutoEvaluateConfig",
     "loadDataRefreshConfig",
+    "loadExamplePool",
     "loadMoreAiHistory",
     "loadWatchlist",
     "markKlineLoaded",
@@ -57,6 +59,7 @@
     "realtimeRatioText",
     "realtimeWsState",
     "registerTrendChart",
+    "removeExamplePool",
     "removeFromWatchlist",
     "saveAutoEvaluateConfig",
     "saveDataRefreshConfig",
@@ -170,6 +173,9 @@
     "watchlistResults": "ref",
     "watchlistSearch": "ref",
     "watchlistSearching": "ref",
-    "watchlistSort": "ref"
+    "watchlistSort": "ref",
+    "dataRefreshSaved": "ref",
+    "loadExamplePool": "function",
+    "removeExamplePool": "function"
   }
 }

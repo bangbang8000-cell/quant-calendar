@@ -16,6 +16,18 @@ FRONTEND = os.path.join(ROOT, "frontend")
 BACKEND = os.path.join(ROOT, "backend")
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read_frontend(rel: str) -> str:
     with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
         return f.read()
@@ -200,7 +212,7 @@ def test_chat_history_pagination_boundary():
 
 def test_skeleton_css_classes_defined():
     """骨架屏 CSS 类齐备: 启动骨架屏 + 状态面板骨架 + v-cloak"""
-    themes = _read_frontend("css/themes.css")
+    themes = _themes_css()
     for cls in (".skeleton-loader", ".skeleton-header", ".skeleton-item",
                 ".qc-boot-skeleton", ".qc-boot-skeleton-card", ".qc-boot-skeleton-nav"):
         assert cls in themes, f"themes.css 应定义 {cls}"

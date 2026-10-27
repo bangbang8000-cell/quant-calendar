@@ -1,4 +1,4 @@
-// quant-calendar: 语言包 en（英文翻译，可读即可，不追求术语完美）
+﻿// quant-calendar: 语言包 en（英文翻译，可读即可，不追求术语完美）
 // 经 __quantModules.i18n.registerLocale('en', messages) 装配；Node require 返回语言包表（供 pytest）。
 // 零构建原生 JS 对象。key 与 zh-CN.js 严格一一对应（缺词守卫校验）。
 (function (root, factory) {
@@ -12,16 +12,16 @@
 
   const messages = {
     // 导航
-    'nav.strategies': 'Strategy Overview',
+    'nav.strategies': 'Strategy',
     'nav.calendar': 'Quant Calendar',
     'nav.ai': 'AI Evaluation',
     'nav.research': 'Strategy Research',
-    'nav.ops': 'System Status',
-    'nav.system': 'System Settings',
+    'nav.ops': 'Operations',
+    'nav.system': 'Platform Settings',
     'nav.shortterm': 'Short-term Review',
     // 二级导航
     'sub.overview': 'Overview',
-    'sub.strategies.overview': 'Strategy Overview', 'sub.ai.overview': 'Eval Overview', 'sub.research.research-overview': 'Research Overview',
+    'sub.strategies.overview': 'Overview', 'sub.ai.overview': 'Overview', 'sub.research.research-overview': 'Overview',
     'sub.execution': 'Execution Dashboard',
     'sub.merrill': 'Merrill Clock',
     'sub.market': 'Index Market',   // V6.6.1: rename
@@ -31,7 +31,7 @@
     'sub.monthly': 'Monthly',
     'sub.yearly': 'Yearly',
     'sub.pool': 'Stock Pool',
-    'sub.calendar': 'Calendar',   // V6.6.1: merged main view
+    'sub.calendar': 'Calendar View',   // V6.6.1: merged main view
     'sub.watchlist': 'My Watchlist',
     'sub.history': 'Eval History',
     'sub.evaluation-analysis': 'Evaluation Analysis',
@@ -50,7 +50,7 @@
     'sub.strategy-manage': 'Strategy Manager',   // V6.6.1: merged
     'sub.ztpool': 'Limit-up Review',
     'sub.lhb': 'Dragon-Tiger List',
-    'sub.shortterm.overview': 'Review Dashboard',
+    'sub.shortterm.overview': 'Overview',
     'sub.shortterm.sector': 'Sector Flow',
     'sub.sector': 'Sector Flow',
     'sub.shortterm.intraday': 'Intraday Check',
@@ -90,6 +90,7 @@
     'common.search': 'Search',
     'common.empty': 'No data',
     'common.retry': 'Retry',
+    'common.more': 'More', // 6.5.0 (FR-653.1): more dropdown for split sub-nav (global-header.js)
     // V5.0.6 T-5.0.62: standardized empty/error state copy
     'common.emptyTitle': 'No data',
     'common.emptyDesc': 'Nothing to show here yet',

@@ -1,4 +1,4 @@
-// quant-calendar: 语言包 zh-CN（默认，与原界面中文文案原样提取，保持一致性）
+﻿// quant-calendar: 语言包 zh-CN（默认，与原界面中文文案原样提取，保持一致性）
 // 经 __quantModules.i18n.registerLocale('zh-CN', messages) 装配；Node require 返回语言包表（供 pytest）。
 // 零构建原生 JS 对象。key 与 en.js 严格一一对应（缺词守卫校验）。
 (function (root, factory) {
@@ -12,16 +12,16 @@
 
   const messages = {
     // 导航
-    'nav.strategies': '策略总览',
+    'nav.strategies': '策略',
     'nav.calendar': '量化日历',
     'nav.ai': '智能评估',
     'nav.research': '策略研究',
-    'nav.ops': '系统状态',
-    'nav.system': '系统配置',
+    'nav.ops': '运行监控',   // 6.5.4 (FR-654): 一级摊平后恢复业务域名
+    'nav.system': '平台设置',
     'nav.shortterm': '短线复盘',
     // 二级导航（global-header 子页 tab；组件 subPageNames 保留作回退）
     'sub.overview': '概览',
-    'sub.strategies.overview': '策略概览', 'sub.ai.overview': '评估概览', 'sub.research.research-overview': '研究概览',
+    'sub.strategies.overview': '概览', 'sub.ai.overview': '概览', 'sub.research.research-overview': '概览',
     'sub.execution': '执行看板',
     'sub.merrill': '美林时钟',
     'sub.market': '大盘行情',   // V6.6.1: 更名消歧
@@ -31,7 +31,7 @@
     'sub.monthly': '月视图',
     'sub.yearly': '年视图',
     'sub.pool': '股票池',
-    'sub.calendar': '量化日历',   // V6.6.1: 4 视图合并后主视图
+    'sub.calendar': '日历视图',   // V6.6.1: 4 视图合并后主视图
     'sub.watchlist': '我的自选',
     'sub.history': '评估历史',
     'sub.evaluation-analysis': '评估分析',
@@ -51,7 +51,7 @@
     'sub.strategy-manage': '策略管理',   // V6.6.1: 策略编写+全新策略合并
     'sub.ztpool': '涨停复盘',
     'sub.lhb': '龙虎榜',
-    'sub.shortterm.overview': '复盘看板',
+    'sub.shortterm.overview': '概览',
     'sub.shortterm.sector': '板块资金',
     'sub.sector': '板块资金',
     'sub.shortterm.intraday': '盘中核验',
@@ -91,6 +91,7 @@
     'common.search': '搜索',
     'common.empty': '暂无数据',
     'common.retry': '重试',
+    'common.more': '更多', // 6.5.0 (FR-653.1): 二级 >6 拆分「更多」下拉 (global-header.js)
     // V5.0.6 T-5.0.62: 空态/错误态体系化标准文案
     'common.emptyTitle': '暂无数据',
     'common.emptyDesc': '当前没有可展示的内容',

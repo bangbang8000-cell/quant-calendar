@@ -25,9 +25,12 @@ def test_glass_blur_tokens_defined():
 
 
 def test_dark_glass_semi_transparent():
-    """暗色浮层应为半透明玻璃 (非 surface-raised 实底)"""
+    """暗色浮层应为半透明玻璃 (非 surface-raised 实底; 6.5.7 B4: 透明度 0.82→0.88 对齐 raised 档)"""
     themes = _read("css/themes.css")
-    assert "--glass-bg: rgba(28, 27, 24, 0.82)" in themes, "暗色浮层应半透明"
+    m = re.search(r"--glass-bg:\s*rgba\([^)]*,\s*([\d.]+)\)", themes)
+    assert m, "暗色浮层应定义 --glass-bg 且为半透明"
+    alpha = float(m.group(1))
+    assert 0.6 < alpha < 1.0, "暗色浮层应半透明且保持层次 (alpha=%s)" % alpha
 
 
 def test_overlay_backdrop_blur_enabled():
@@ -56,3 +59,19 @@ def test_glass_tokens_symmetry():
     tokens = _read("css/tokens.css")
     themes = _read("css/themes.css")
     assert "--glass-bg" in tokens and "--glass-bg" in themes, "明暗两侧均应定义 --glass-bg"
+
+
+def test_dark_glass_layer_separation():
+    """6.5.7 (B4): 暗色玻璃叠底后相对画布 >= 1.25:1 (层级可辨)"""
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import color_gate as g
+
+    glass = g.parse_color(g.css_defs()["dark"].get("--glass-bg"))
+    assert glass is not None, "暗色 --glass-bg 不可解析"
+    for hue in (45, 220):
+        canvas = g.color("dark", hue, "--surface-canvas")
+        assert canvas is not None, "暗色画布令牌缺失 (hue=%s)" % hue
+        comp = g.blend(glass, canvas[:3])
+        ratio = g.contrast(comp, canvas[:3])
+        assert ratio >= 1.25, "暗色玻璃/画布 %.2f < 1.25 (hue=%s)" % (ratio, hue)

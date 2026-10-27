@@ -129,7 +129,7 @@ def test_zh_matches_original():
     """zh-CN 语言包关键文案与原界面一致（不改变现有中文用户观感）"""
     zh = _locale_values(ZH_PATH)
     assert zh["nav.calendar"] == "量化日历", "zh nav.calendar 应为 量化日历"
-    assert zh["nav.system"] == "系统配置", "zh nav.system 应为 系统配置"
+    assert zh["nav.system"] == "平台设置", "zh nav.system 应为 平台设置 (6.5.4 FR-654 一级业务域命名)"
     assert zh["login.title"] == "量化日历"  # V5.2.11 品牌统一
     assert zh["calendar.poolTitle"] == "策略共识度股票池"
     assert zh["detail.factorTitle"] == "多因子体检"

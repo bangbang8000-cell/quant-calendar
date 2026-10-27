@@ -25,17 +25,16 @@ CORE_JS = "frontend/js/command-panel-core.js"
 SHELL_JS = "frontend/js/app-logic/shell.js"
 CTX_JS = "frontend/js/components/context-menu.js"
 INDEX_HTML = "frontend/index.html"
+# 6.5.0 (FR-653): 菜单定义移入 nav-merge-core.js NEW_NAV — 子页集合取成员旧坐标 (page, sub)
+NAV_CORE_JS = "frontend/js/nav-merge-core.js"
 
 
 def _menu_subpages():
-    """从 allMenuDefs 提取 {(menuKey, subPage)} 集合"""
-    src = _read(SHELL_JS)
+    """从 nav-merge-core.js NEW_NAV 提取 {(旧一级, 旧二级)} 集合 (成员 page/sub)"""
+    src = _read(NAV_CORE_JS)
     pairs = set()
-    pat = re.compile(r"\{\s*key:\s*'(\w+)'[^\n]*?subPages:\s*\[([^\]]*)\]")
-    for m in pat.finditer(src):
-        menu_key = m.group(1)
-        for sp in re.findall(r"'([^']+)'", m.group(2)):
-            pairs.add((menu_key, sp))
+    for m in re.finditer(r"\{\s*key:\s*'[^']+'\s*,\s*page:\s*'(\w+)'\s*,\s*sub:\s*'([^']+)'\s*\}", src):
+        pairs.add((m.group(1), m.group(2)))
     return pairs
 
 

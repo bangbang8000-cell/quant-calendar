@@ -200,6 +200,21 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                 <div class="text-sm-tertiary-mt6">
                                     拉取成功后自动刷新解析器/视图 (数据自动入库)
                                 </div>
+                                <!-- 6.4.1 (FR-641 第 6 条): 数据池为空必须明示引导，不得静默空跑 -->
+                                <div class="qc-stale-note" v-if="dataRefreshConfig.pool_empty">
+                                    <qc-icon name="alert-triangle" :size="13" />
+                                    {{ dataRefreshConfig.guide_message || '尚未配置数据池，自动刷新将无标的可拉取' }}
+                                </div>
+                                <!-- 6.4.2 (FR-644): 空态主行动 — 示例组合一键载入/删除 -->
+                                <div class="qc-example-pool-actions" v-if="dataRefreshConfig.pool_empty">
+                                    <el-button size="small" type="primary" @click="loadExamplePool">一键载入示例组合（6 只）</el-button>
+                                </div>
+                                <div class="qc-example-pool-actions" v-else>
+                                    <el-button size="small" text @click="removeExamplePool">移除示例组合</el-button>
+                                </div>
+                                <div class="text-sm-tertiary-mt6" v-if="dataRefreshConfig.first_run_pending">
+                                    首次开启仅拉取最近 {{ dataRefreshConfig.effective_first_run_days || 5 }} 个交易日（不做全量回补）
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -288,7 +303,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                 <el-button size="small" :loading="dictLoading" @click="loadDataDict">刷新</el-button>
                             </div>
                             <qc-state-panel v-if="dictError" type="error" :title="dictError" :desc="t('state.descRetryDict')" @retry="loadDataDict"></qc-state-panel>
-                            <qc-state-panel v-else-if="!dictLoading && dictData.fields.length === 0" type="empty" icon="book-open" :title="t('state.emptyDictField')" :desc="t('state.descEmptyDictField')"></qc-state-panel>
+                            <qc-state-panel v-else-if="!dictLoading && dictData.fields.length === 0" type="empty" icon="book-open" :title="t('state.emptyDictField')" :desc="t('state.descEmptyDictField')" action-text="去系统状态" action-key="go_status"></qc-state-panel>
                             <el-table v-else :data="dictData.fields" size="small" v-loading="dictLoading" style="width:100%" class="mt-8">
                                 <el-table-column prop="key" label="规范字段" width="150" />
                                 <el-table-column prop="label" label="名称" width="120" />

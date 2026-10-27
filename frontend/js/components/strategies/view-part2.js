@@ -155,7 +155,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                             <!-- 年度收益列表 -->
                             <div class="card">
                                 <div class="card-title">年度收益</div>
-                                <qc-state-panel v-if="btAnnualReturns.length === 0" type="empty" title="暂无年度收益数据"></qc-state-panel>
+                                <qc-state-panel v-if="btAnnualReturns.length === 0" type="empty" title="暂无年度收益数据" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                                 <div v-else class="table-container">
                                     <table class="bt-annual-table">
                                         <thead>
@@ -195,7 +195,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                             <!-- 交易明细 -->
                             <div class="card">
                                 <div class="card-title">交易明细 <span class="bt-trade-count">{{ btTrades.length }} 笔</span></div>
-                                <qc-state-panel v-if="btTrades.length === 0" type="empty" title="本期无调仓交易"></qc-state-panel>
+                                <qc-state-panel v-if="btTrades.length === 0" type="empty" title="本期无调仓交易" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                                 <div v-else class="table-container bt-trades-wrap">
                                     <table class="bt-trades-table">
                                         <thead>
@@ -218,7 +218,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                         <div v-else class="card">
                             <qc-state-panel v-if="btRunning" type="loading"></qc-state-panel>
                             <qc-state-panel v-else-if="btError" type="error" :title="t('state.backtestError')" :desc="btError" @retry="runBacktestWorkbench"></qc-state-panel>
-                            <qc-state-panel v-else type="empty" title="尚未运行回测" desc="选择策略与参数后点击「运行回测」查看结果"></qc-state-panel>
+                            <qc-state-panel v-else type="empty" title="尚未运行回测" desc="选择策略与参数后点击「运行回测」查看结果" action-text="去选择策略" action-key="go_strategy"></qc-state-panel>
                         </div>
                     </div>
                     <!-- v3.17.4 (FR-3.17.4): 回测工作台 代码终点 -->

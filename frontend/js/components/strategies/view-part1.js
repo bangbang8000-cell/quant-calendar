@@ -6,6 +6,8 @@ window.__quantModules.strategiesPage.part1 = `
                 <!-- V5.2.3: 执行看板移入系统配置 → 本组件在 system/ops+execution 下也渲染 (V6.9.1-fix2: ops 菜单也含 execution) -->
                 <div v-if="currentPage === 'strategies' || ((currentPage === 'system' || currentPage === 'ops') && currentSubPage === 'execution')" key="strategies">
                     <div v-if="currentSubPage === 'overview'">
+                        <!-- 6.4.1 (FR-642b): 结论页陈旧护栏 — 只在数据陈旧时出现，正常态零占位 -->
+                        <qc-page-stale-bar></qc-page-stale-bar>
                         <qc-state-panel v-if="overviewError" type="error" :title="t('state.overviewError')" :desc="t('state.descNetworkOrService')" @retry="loadDashboardData"></qc-state-panel>
                         <template v-else>
                         <!-- V6.11 (用户需求1): 移除「回测工作台」快捷按钮及所在整行 —— 入口保留在
@@ -14,7 +16,8 @@ window.__quantModules.strategiesPage.part1 = `
                     <!-- v3.11 (FR-3.11.7): 今日一屏 — 聚合当日决策要素（美林/情绪/池变动/健康/重点） -->
                     <div v-if="!(loading && loadingView === 'overview')" class="today-hero card">
                         <div class="today-hero-head">
-                            <div class="today-hero-title">{{ t('strategies.todayScreen') }}</div>
+                            <div class="today-hero-title">{{ t('strategies.todayScreen') }}<!-- 6.4.1 (FR-642b): 卡片角标 -->
+                                <qc-page-stale-bar variant="badge"></qc-page-stale-bar></div>
                             <div class="today-hero-date">
                                 <span>{{ todayText }}</span>
                                 <span class="today-hero-status">{{ tradingStatus }}</span>
@@ -398,7 +401,7 @@ window.__quantModules.strategiesPage.part1 = `
                     <!-- 子页: 市场行情 -->
                     <div v-else-if="currentSubPage === 'market'">
                         <qc-state-panel v-if="marketError" type="error" :title="t('state.marketError')" :desc="t('state.descNetworkOrService')" @retry="fetchMarketData"></qc-state-panel>
-                        <qc-state-panel v-else-if="!(marketData.indices || []).length" type="empty" icon="line-chart" :title="t('state.emptyMarket')" :desc="t('state.descEmptyMarket')"></qc-state-panel>
+                        <qc-state-panel v-else-if="!(marketData.indices || []).length" type="empty" icon="line-chart" :title="t('state.emptyMarket')" :desc="t('state.descEmptyMarket')" action-text="刷新行情" action-key="refresh" @retry="fetchMarketData"></qc-state-panel>
                         <template v-else>
 
                     

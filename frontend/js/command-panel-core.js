@@ -43,30 +43,43 @@
   }
 
   // ─── 菜单检索 (TC-11.2) ───────────────────────────
-  // menuDefs: [{ key, name, icon, subPages:[] }]
+  // menuDefs: [{ key, name, icon, subPages:[] }] 或 6.5.2 起含 members:[{key,page,sub}]
   // subPageNames: { subPageKey: '中文名' }
   // 匹配 name / key / 任一子页中文名；返回扁平化 menu 条目
+  // 6.5.2 (FR-653): members 优先 — menuKey/subPage 输出成员旧坐标 (page/sub),
+  // 与 pick 处 navigateTo(旧键, 旧sub) 对齐; 无 members 时退回旧 subPages 路径 (单测兼容)
   function searchMenus(query, menuDefs, subPageNames) {
     const q = normalize(query);
     if (!menuDefs || !menuDefs.length) return [];
+    const NC = (typeof window !== 'undefined' && window.QuantNavMerge) || null;
     const out = [];
     menuDefs.forEach(function (m) {
       const pageHit = matches(q, m.name) || matches(q, m.key);
-      const subs = (m.subPages || []).filter(function (sp) {
-        const label = (subPageNames && subPageNames[sp]) || sp;
-        return matches(q, label) || matches(q, sp);
+      const members = Array.isArray(m.members) && m.members.length ? m.members : null;
+      const subs = members
+        ? members.map(function (mm) {
+            return {
+              page: mm.page, sub: mm.sub,
+              label: (NC && NC.memberLabel) ? NC.memberLabel(mm) : ((subPageNames && subPageNames[mm.sub]) || mm.sub),
+            };
+          })
+        : (m.subPages || []).map(function (sp) {
+            return { page: m.key, sub: sp, label: (subPageNames && subPageNames[sp]) || sp };
+          });
+      const hitSubs = subs.filter(function (x) {
+        return matches(q, x.label) || matches(q, x.sub);
       });
       if (pageHit) {
+        const first = hitSubs[0] || subs[0];
         out.push({
-          type: 'menu', menuKey: m.key, subPage: m.subPages && m.subPages[0] || '',
+          type: 'menu', menuKey: first ? first.page : m.key, subPage: first ? first.sub : '',
           label: m.name, subLabel: '页面', icon: m.icon || 'file-text',
         });
       }
-      subs.forEach(function (sp) {
+      hitSubs.forEach(function (x) {
         out.push({
-          type: 'menu', menuKey: m.key, subPage: sp,
-          label: (subPageNames && subPageNames[sp]) || sp,
-          subLabel: m.name, icon: m.icon || 'file-text',
+          type: 'menu', menuKey: x.page, subPage: x.sub,
+          label: x.label, subLabel: m.name, icon: m.icon || 'file-text',
         });
       });
     });
@@ -126,6 +139,157 @@
     return { groups: groups, flat: flat };
   }
 
+  // ─── 6.4.2 (FR-645): 六类实体分组检索 ──────────────
+  // 固定分组顺序: 股票 → 板块 → 策略 → 页面 → 指令 → 记录(AI历史/数据字典)
+  var ENTITY_GROUPS = [
+    { key: 'stock', label: '股票' },
+    { key: 'sector', label: '板块' },
+    { key: 'strategy', label: '策略' },
+    { key: 'menu', label: '页面' },
+    { key: 'command', label: '指令' },
+    { key: 'record', label: '记录' },
+  ];
+
+  // 通用实体过滤: fields 为参与匹配的属性名; 空 query 返回空 (实体域必须有关键字)
+  function filterEntities(query, list, fields, type, opts) {
+    var q = normalize(query);
+    if (!q || !list || !list.length) return [];
+    opts = opts || {};
+    var max = opts.max || 8;
+    return list.filter(function (it) {
+      for (var i = 0; i < fields.length; i++) {
+        if (matches(q, it[fields[i]])) return true;
+      }
+      return false;
+    }).slice(0, max).map(function (it) {
+      return Object.assign({}, it, { type: type });
+    });
+  }
+
+  // 把各域结果按固定顺序组装为 groups/flat (丢弃空域; 记录域 label 可自定义)
+  function mergeEntityGroups(buckets) {
+    buckets = buckets || {};
+    var groups = [];
+    var flat = [];
+    ENTITY_GROUPS.forEach(function (g) {
+      var items = buckets[g.key];
+      if (!items || !items.length) return;
+      groups.push({
+        key: g.key,
+        label: buckets[g.key + '_label'] || g.label,
+        items: items.slice(),
+      });
+      flat.push.apply(flat, items);
+    });
+    return { groups: groups, flat: flat };
+  }
+
+  // 扁平索引 → 所属分组下标 / 组内下标
+  function locateIndex(groups, index) {
+    if (!groups || !groups.length) return { groupIndex: -1, itemIndex: -1 };
+    var offset = 0;
+    for (var i = 0; i < groups.length; i++) {
+      var n = (groups[i].items || []).length;
+      if (index < offset + n) return { groupIndex: i, itemIndex: index - offset };
+      offset += n;
+    }
+    return { groupIndex: -1, itemIndex: -1 };
+  }
+
+  function flatIndexOfGroup(groups, groupIndex) {
+    if (!groups || groupIndex < 0 || groupIndex >= groups.length) return 0;
+    var offset = 0;
+    for (var i = 0; i < groupIndex; i++) offset += (groups[i].items || []).length;
+    return offset;
+  }
+
+  // Tab / Shift+Tab 切组: 循环; 返回目标组的首个扁平下标
+  function groupIndexAfterKey(groups, currentFlatIndex, back) {
+    if (!groups || !groups.length) return 0;
+    var loc = locateIndex(groups, currentFlatIndex);
+    var gi = loc.groupIndex < 0 ? 0 : loc.groupIndex;
+    var n = groups.length;
+    gi = back ? (gi - 1 + n) % n : (gi + 1) % n;
+    return flatIndexOfGroup(groups, gi);
+  }
+
+  // ─── 6.4.2 (FR-645): 最近访问 (任意实体类型) ───────
+  var RECENT_LIMIT = 8;
+
+  function addRecentItem(list, item, max) {
+    var cap = max || RECENT_LIMIT;
+    if (!item) return (list || []).slice();
+    var out = (list || []).filter(function (x) {
+      return !(x && x.type === item.type && String(x.id || x.code || x.label) === String(item.id || item.code || item.label));
+    });
+    out.unshift(Object.assign({}, item, { recentAt: Date.now() }));
+    return out.slice(0, cap);
+  }
+
+  function parseRecent(json) {
+    if (!json || typeof json !== 'string') return [];
+    try {
+      var arr = JSON.parse(json);
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(function (x) { return x && x.type && (x.label || x.name); }).slice(0, RECENT_LIMIT);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function serializeRecent(list) {
+    try {
+      return JSON.stringify((list || []).slice(0, RECENT_LIMIT));
+    } catch (e) {
+      return '[]';
+    }
+  }
+
+  function buildRecentSuggestions(list) {
+    return (list || []).map(function (it) {
+      return Object.assign({}, it, { subLabel: (it.subLabel || '最近访问') });
+    });
+  }
+
+  // ─── 6.4.2 (FR-645): 无结果时的替代建议 ───────────
+  function _editDistance(a, b) {
+    a = String(a || ''); b = String(b || '');
+    var m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    var prev = [];
+    for (var j = 0; j <= n; j++) prev[j] = j;
+    for (var i = 1; i <= m; i++) {
+      var cur = [i];
+      for (var k = 1; k <= n; k++) {
+        cur[k] = Math.min(prev[k] + 1, cur[k - 1] + 1,
+          prev[k - 1] + (a.charAt(i - 1) === b.charAt(k - 1) ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[n];
+  }
+
+  // 拼写/输入偏差时给 3 条以内相近词, 阈值 = max(2, len/3)
+  function suggestAlternatives(query, labels, max) {
+    var q = normalize(query);
+    if (!q || !labels || !labels.length) return [];
+    var limit = max || 3;
+    return labels.map(function (l) {
+      return { label: l, dist: _editDistance(q, normalize(l)) };
+    }).filter(function (x) {
+      return x.dist <= Math.max(2, Math.ceil(q.length / 3));
+    }).sort(function (a, b) { return a.dist - b.dist; })
+      .slice(0, limit)
+      .map(function (x) { return x.label; });
+  }
+
+  // ─── 6.4.2 (FR-645): 输入法组合期保护 ─────────────
+  function isComposing(ev) {
+    if (!ev) return false;
+    return !!(ev.isComposing || ev.keyCode === 229);
+  }
+
   // ─── 键盘移动索引 (TC-11.3) ────────────────────────
   // dir: -1 上 / +1 下；循环到头尾；total<=0 返回 0
   function moveIndex(current, total, dir) {
@@ -164,6 +328,9 @@
     // V5.3.0 (T-5.3.3.3): 板块/策略域分派
     if (item.type === 'sector') return { action: 'sector', name: item.name };
     if (item.type === 'strategy') return { action: 'strategy', id: item.id, name: item.name };
+    // 6.4.2 (FR-645): 记录域 — 数据字典字段 / AI 评估历史
+    if (item.type === 'dict') return { action: 'dict', field: item.field, name: item.label || item.field };
+    if (item.type === 'eval') return { action: 'eval', code: item.code, name: item.name || item.label };
     if (item.type === 'stock' || (item.code && item.name)) return { action: 'stock', code: item.code, name: item.name };
     return null;
   }
@@ -355,6 +522,20 @@
     searchCommands: searchCommands,
     filterStocksLocal: filterStocksLocal,
     mergeResults: mergeResults,
+    // 6.4.2 (FR-645)
+    ENTITY_GROUPS: ENTITY_GROUPS,
+    filterEntities: filterEntities,
+    mergeEntityGroups: mergeEntityGroups,
+    locateIndex: locateIndex,
+    flatIndexOfGroup: flatIndexOfGroup,
+    groupIndexAfterKey: groupIndexAfterKey,
+    RECENT_LIMIT: RECENT_LIMIT,
+    addRecentItem: addRecentItem,
+    parseRecent: parseRecent,
+    serializeRecent: serializeRecent,
+    buildRecentSuggestions: buildRecentSuggestions,
+    suggestAlternatives: suggestAlternatives,
+    isComposing: isComposing,
     moveIndex: moveIndex,
     buildSearchSuggestions: buildSearchSuggestions,
     dispatchSearchSelection: dispatchSearchSelection,

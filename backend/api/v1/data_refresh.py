@@ -20,15 +20,61 @@ _pull_lock = asyncio.Lock()
 
 @router.get("/config")
 async def get_refresh_config(_: Dict = Depends(get_admin_user)):
-    """获取刷新配置"""
-    return get_config()
+    """获取刷新配置（含 pool_empty / first_run_pending 等引导派生字段，FR-641）"""
+    from refresh_service import config_view
+    return config_view()
 
 
 @router.post("/config")
 async def set_refresh_config(data: Dict[str, Any], _: Dict = Depends(get_admin_user)):
-    """更新刷新配置"""
-    config = save_config(data)
-    return {"success": True, "config": config}
+    """更新刷新配置（FR-641a：开启刷新需数据池非空 + 首启二次确认）"""
+    from data_refresh_config import save_config_checked
+    result = save_config_checked(data)
+    if not result["ok"]:
+        return {"success": False, "code": result["code"], "message": result["message"],
+                "config": result["config"]}
+    return {"success": True, "config": result["config"]}
+
+
+@router.get("/log")
+async def get_refresh_log(limit: int = 50, _: Dict = Depends(get_admin_user)):
+    """刷新结构化日志（新→旧，FR-641 第 5 条）"""
+    from refresh_service import get_recent_logs
+    return {"success": True, "logs": get_recent_logs(limit)}
+
+
+# ─── 6.4.2 (FR-644): 示例组合 — 一键载入 / 一键删除 ───
+
+@router.get("/example-pool")
+async def get_example_pool(_: Dict = Depends(get_admin_user)):
+    """示例组合清单 (code + 中文名)"""
+    from refresh_service import example_pool
+    return {"success": True, "stocks": example_pool()}
+
+
+@router.post("/example-pool/load")
+async def load_example_pool(_: Dict = Depends(get_admin_user)):
+    """把示例组合并入数据池 (去重, 不动已有标的)"""
+    from refresh_service import example_codes, merge_pool
+    from data_refresh_config import get_config, save_config
+    cfg = get_config()
+    codes = example_codes()
+    cfg["stock_pool"] = merge_pool(cfg.get("stock_pool"), codes)
+    saved = save_config(cfg)
+    return {"success": True, "config": saved, "added": codes}
+
+
+@router.delete("/example-pool")
+async def drop_example_pool(_: Dict = Depends(get_admin_user)):
+    """从数据池移除示例组合标的 (其余标的保留)"""
+    from refresh_service import example_codes, remove_from_pool
+    from data_refresh_config import get_config, save_config
+    cfg = get_config()
+    codes = example_codes()
+    cfg["stock_pool"] = remove_from_pool(cfg.get("stock_pool"), codes)
+    saved = save_config(cfg)
+    return {"success": True, "config": saved, "removed": codes}
+
 
 
 @router.post("/reload")

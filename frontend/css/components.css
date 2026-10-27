@@ -85,15 +85,95 @@
 .qc-card-hover { transition: box-shadow var(--duration-base), border-color var(--duration-base); }
 .qc-card-hover:hover { box-shadow: var(--qc-shadow-sm); border-color: var(--qc-neutral-300); }
 
+/* 6.4.2 (FR-644): 示例组合空态主行动 */
+.qc-example-pool-actions { display: flex; gap: var(--qc-space-2); margin-top: var(--qc-space-2); flex-wrap: wrap; }
+/* 6.5.1 (FR-656.2): KPI 指标卡统一栅格 — 三档密度 (舒适3/标准4/紧凑6), data-density 驱动 */
+.qc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--qc-kpi-density-standard), minmax(0, 1fr));
+  gap: var(--qc-space-3);
+}
+.qc-kpi-grid[data-density="comfortable"] { grid-template-columns: repeat(var(--qc-kpi-density-comfortable), minmax(0, 1fr)); }
+.qc-kpi-grid[data-density="compact"] { grid-template-columns: repeat(var(--qc-kpi-density-compact), minmax(0, 1fr)); }
+@media (max-width: 768px) {
+  .qc-kpi-grid, .qc-kpi-grid[data-density="comfortable"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qc-kpi-grid[data-density="compact"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* 6.4.4 (FR-650): 问股上下文带入条 + 工具调用摘要 (6.5.1: 间距归 4px 栅格 6/10 → 8/12) */
+.qc-chat-context { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 8px;
+  background: var(--qc-card); border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-small); box-shadow: var(--qc-shadow-sm); font-size: var(--qc-font-size-xs); }
+.qc-chat-context-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+.qc-chat-tools { margin-top: var(--qc-space-2); border-top: 1px dashed var(--qc-border); }
+.qc-chat-tools .el-collapse-item__header { font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
+.qc-chat-tool-row { display: flex; gap: 8px; font-size: var(--qc-font-size-xs); padding: 2px 0; }
+.qc-chat-tool-key { flex-shrink: 0; color: var(--text-tertiary); }
+.qc-chat-tool-val { color: var(--text-primary); word-break: break-all; }
+
+/* 6.4.1 (FR-642b/d): 结论页陈旧护栏 — 置灰条 / 卡片角标 / AI 结果标注
+   统一走令牌；置灰条与全站横幅区分层级（横幅在顶栏，本条在页面内）。 */
+.qc-page-stale-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qc-space-2);
+  margin-bottom: var(--qc-space-4);
+  padding: var(--qc-space-2) var(--qc-space-4);
+  background: var(--qc-muted);
+  border: 1px solid var(--qc-border);
+  border-left: 3px solid var(--qc-warning-700);
+  border-radius: var(--qc-radius-medium);
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-sm);
+}
+.qc-page-stale-bar-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--qc-warning-700);
+}
+.qc-page-stale-bar-text { font-variant-numeric: tabular-nums; }
+.qc-page-stale-bar-hint { color: var(--qc-muted-foreground); font-size: var(--qc-font-size-xs); }
+.qc-stale-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--qc-space-2);
+  padding: 1px 8px;
+  border-radius: var(--qc-radius-small);
+  border: 1px solid var(--qc-border);
+  background: var(--qc-muted);
+  color: var(--qc-muted-foreground);
+  font-size: var(--qc-font-size-xs);
+  font-weight: var(--font-normal);
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+.qc-stale-note {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-2);
+  margin-top: var(--qc-space-2);
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-radius: var(--qc-radius-small);
+  border: 1px solid var(--qc-border);
+  border-left: 3px solid var(--qc-warning-700);
+  background: var(--qc-muted);
+  color: var(--qc-foreground);
+  font-size: var(--qc-font-size-xs);
+}
+
 /* V5.30 (P0-5): 圆角标尺归一 — EP 自身变量 (标签 4px / 小号按钮 calc(base-1px)=5px) 与全站
    6/12/16px 标尺脱节。EP 把 --el-tag-border-radius 声明在 .el-tag 自身作用域, :root 覆盖不到,
    故此处按组件作用域对齐; 头部搜索等已用更高特异性覆盖为胶囊, 不受影响。 */
 .el-tag { --el-tag-border-radius: var(--qc-radius-small); }
+/* 6.5.7 (B2/B5): 按钮圆角与输入框统一到 --qc-radius-medium (原 small 6px 与输入框 8px 不一致) */
 .el-button,
 .el-button--small,
 .el-button--large,
 .el-button--primary,
-.el-button--default { border-radius: var(--qc-radius-small); }
+.el-button--default { border-radius: var(--qc-radius-medium); }
 .el-message, .el-message-box, .el-notification { border-radius: var(--qc-radius-medium); }
 .el-dialog { border-radius: var(--qc-radius-large); }
 /* V5.31: EP 遗留低对比文字 (空表占位色 3.08:1 / 禁用态) */
@@ -131,7 +211,7 @@
 /* V5.12.0 (FR-5.12.1.3/.4): 控件高度随密度三档 + 命中区下限
    作用范围按决策 D2 限定: 按钮 / 输入框 / 下拉 / 数字框 / 图标按钮 / role=button,
    表格标签与胶囊 (.el-tag/.qc-stock-tag) 不受影响。 */
-.el-button { height: var(--qc-ctrl-h); }
+.el-button { height: var(--qc-ctrl-h); font-size: var(--qc-font-size-base); }
 .el-button--small { height: var(--qc-ctrl-h-sm); }
 .el-button--large { height: var(--qc-ctrl-h-lg); }
 .el-button,
@@ -417,7 +497,7 @@
   text-align: center;
   color: var(--qc-muted-foreground);
 }
-.qc-empty-icon { font-size: var(--qc-font-size-icon); line-height: 1; opacity: 0.6; }
+.qc-empty-icon { font-size: var(--qc-icon-size); line-height: 1; opacity: 0.6; }
 .qc-empty-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
 .qc-empty-desc { font-size: var(--qc-font-size-sm); color: var(--qc-muted-foreground); margin-top: var(--qc-space-1); }
 .qc-empty-action { margin-top: var(--qc-space-4); }
@@ -430,7 +510,7 @@
   padding: var(--qc-space-10) var(--qc-space-6);
   text-align: center;
 }
-.qc-error-icon { font-size: var(--qc-font-size-icon); line-height: 1; opacity: 0.7; }
+.qc-error-icon { font-size: var(--qc-icon-size); line-height: 1; opacity: 0.7; }
 .qc-error-title { font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-medium); color: var(--qc-foreground); margin-top: var(--qc-space-3); }
 .qc-error-action { margin-top: var(--qc-space-4); }
 
@@ -718,7 +798,7 @@
 .qc-wg-newinput { flex: 1; }
 
 /* ─── 6.1.3 (C3): 页面内容进入过渡 (克制 8px) ── */
-.qc-work-area-content > * { animation: qc-page-enter 0.2s ease-out both; }
+.qc-work-area-content > * { animation: qc-page-enter var(--duration-page) ease-out both; }
 @keyframes qc-page-enter {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
@@ -751,7 +831,7 @@
   box-shadow: var(--qc-shadow-md);
   font-size: var(--qc-font-size-sm);
   color: var(--qc-foreground);
-  animation: qc-page-enter 0.25s ease-out both;
+  animation: qc-page-enter var(--duration-page) ease-out both;
 }
 .qc-install-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 .qc-install-btn {

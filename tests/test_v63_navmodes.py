@@ -92,7 +92,8 @@ def test_toptabs_registered_and_open_tab_driven():
     assert "__quantComponents.TopTabs" in main_src, "TopTabs 应注册到 __quantComponents"
     tabs_src = _norm(_read("src/components/TopTabs.vue"))
     assert "name: 'qc-top-tabs'" in tabs_src, "TopTabs 组件 name 应为 qc-top-tabs"
-    assert "state.openTab(currentPage.value, sp)" in tabs_src, \
+    # 6.5.0 (FR-653): tab 携带内部旧坐标 (tab.page/tab.sub), 点击仍统一走 openTab 漏斗
+    assert "state.openTab(" in tabs_src, \
         "TopTabs 点击应走 openTab (经 navigateTo 同步 hash)"
     assert "qc-top-tab-close" not in tabs_src, "TopTabs 不应含关闭按钮 (不可关闭)"
     assert "subPageNames" in tabs_src, "TopTabs label 应回退 subPageNames (中文显示)"

@@ -118,8 +118,11 @@ def test_watchlist_checkbox_is_accessible():
 
 def test_focus_visible_ring_global():
     """全局 :focus-visible 焦点环仍在（2px 主色 + offset），键盘导航可见焦点"""
-    themes = _read("css/themes.css")
-    m = re.search(r":focus-visible\s*\{([^}]*)\}", themes)
+    # 6.5.1 (FR-655.7): themes.css 拆域后 :focus-visible 在 themes-pages.css — 聚合 5 文件检查
+    css = "\n".join(_read("css/" + f) for f in (
+        "themes.css", "themes-market.css", "themes-features.css",
+        "themes-components.css", "themes-pages.css"))
+    m = re.search(r":focus-visible\s*\{([^}]*)\}", css)
     assert m, "全局 :focus-visible 规则缺失 —— 键盘用户看不到焦点"
     block = m.group(1)
     assert "outline:" in block and "var(--primary-color)" in block, "焦点环描边缺失"

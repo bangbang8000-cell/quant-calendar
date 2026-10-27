@@ -3,8 +3,8 @@
 
 覆盖:
 - _fetch_from_tushare: 死代码激活 — tushare 快照解析/代码规范化/未订阅忽略
-- 回退链: akshare 不可达 → tushare 回退成功; akshare 成功 → 不触发 tushare
-- 双源均不可达 → fetch_quotes 优雅降级 (degraded=True + 空数据, 不抛错)
+- 回退链 (6.5.5): 腾讯直连 → akshare → tushare; 前序源成功即不触发后续
+- 全源不可达 → fetch_quotes 优雅降级 (degraded=True + 空数据, 不抛错)
 - fetch_quotes 层回退 (无注入 fetcher 时走真实源链)
 """
 import sys
@@ -75,11 +75,15 @@ def test_fetch_from_tushare_empty_raises(monkeypatch):
         src._fetch_from_tushare(['600519.SH'])
 
 
-# ==================== 回退链: akshare → tushare ====================
+# ==================== 回退链: 腾讯 → akshare → tushare ====================
+# 6.5.5: 腾讯直连成为首选源 (批量拉取订阅代码, 不受 akshare 全市场快照断连影响),
+# 以下用例聚焦其后的 akshare → tushare 回退, 故先让腾讯源失败。
 
 
 def test_akshare_fails_then_tushare_fallback(monkeypatch):
     src = RealtimeQuoteSource()
+    monkeypatch.setattr(src, '_fetch_from_tencent',
+                        lambda codes: (_ for _ in ()).throw(RuntimeError('tx down')))
     monkeypatch.setattr(src, '_fetch_from_akshare',
                         lambda codes: (_ for _ in ()).throw(RuntimeError('ak down')))
     monkeypatch.setattr(src, '_fetch_from_tushare',
@@ -92,6 +96,8 @@ def test_akshare_fails_then_tushare_fallback(monkeypatch):
 def test_akshare_ok_skips_tushare(monkeypatch):
     src = RealtimeQuoteSource()
     called = []
+    monkeypatch.setattr(src, '_fetch_from_tencent',
+                        lambda codes: (_ for _ in ()).throw(RuntimeError('tx down')))
     monkeypatch.setattr(src, '_fetch_from_akshare',
                         lambda codes: ({'600519.SH': {'price': 1500.0}}, False))
     monkeypatch.setattr(src, '_fetch_from_tushare',
@@ -103,6 +109,8 @@ def test_akshare_ok_skips_tushare(monkeypatch):
 
 def test_both_fail_degraded(monkeypatch):
     src = RealtimeQuoteSource()
+    monkeypatch.setattr(src, '_fetch_from_tencent',
+                        lambda codes: (_ for _ in ()).throw(RuntimeError('tx')))
     monkeypatch.setattr(src, '_fetch_from_akshare',
                         lambda codes: (_ for _ in ()).throw(RuntimeError('ak')))
     monkeypatch.setattr(src, '_fetch_from_tushare',
@@ -117,6 +125,8 @@ def test_both_fail_degraded(monkeypatch):
 
 def test_fetch_quotes_fallback_to_tushare(monkeypatch):
     src = RealtimeQuoteSource()  # 无注入 fetcher → 走真实源链
+    monkeypatch.setattr(src, '_fetch_from_tencent',
+                        lambda codes: (_ for _ in ()).throw(RuntimeError('tx')))
     monkeypatch.setattr(src, '_fetch_from_akshare',
                         lambda codes: (_ for _ in ()).throw(RuntimeError('ak')))
     monkeypatch.setattr(src, '_fetch_from_tushare',

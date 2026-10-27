@@ -7,7 +7,11 @@ import re
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS_DIR = os.path.join(BASE, "frontend", "css")
-FILES = ["tokens.css", "themes.css", "layout.css", "animations.css", "responsive.css"]
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 拆分内容源自本就受扫的 themes.css,
+# 扫描面同步扩展, 避免分母塌缩虚高违例率 (拆分后 4 文件实测 0 违例)
+FILES = ["tokens.css", "themes.css", "themes-market.css", "themes-features.css",
+         "themes-components.css", "themes-pages.css", "layout.css", "animations.css",
+         "responsive.css"]
 SPACING_RE = re.compile(r"(padding|margin|gap)[-a-z]*:\s*([0-9.]+)px")
 
 

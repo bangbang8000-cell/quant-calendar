@@ -88,6 +88,12 @@ if (-not $DryRun) {
 Write-Step "步骤 1/5: 同步最新代码 (git fetch + reset --hard origin/master / robocopy)"
 
 $isGitRepo = $DryRun -or (Test-Path (Join-Path $RepoDir '.git'))
+# 6.4.1 (FR-643b): 记录升级前 commit — 健康检查失败时回滚到此版本，保证「不留下半启动状态」
+$prevCommit = ''
+if ($isGitRepo -and -not $DryRun) {
+    $prevCommit = (& git -C $RepoDir rev-parse HEAD 2>$null | Select-Object -First 1)
+    if ($prevCommit) { Write-Host "    [基线] 升级前 commit: $prevCommit" }
+}
 
 if ($isGitRepo) {
     $fetchCmd = "git -C `"$RepoDir`" fetch origin"
@@ -290,12 +296,14 @@ Write-Step "步骤 5/5: 健康检查 /api/health"
 $healthUrl = "http://127.0.0.1:$Port/api/health"
 
 if ($DryRun) {
-    Write-Planned "轮询健康检查: $healthUrl (总超时 ${HealthTimeoutSec} 秒)"
+    Write-Planned "轮询健康检查: $healthUrl (总超时 90 秒)"
     Write-Host ""
     Write-Host "[DryRun] 演练完成 — 未执行任何破坏性操作 (未 git reset / 未重启服务)" -ForegroundColor Yellow
     exit 0
 }
 
+# 6.4.1 (FR-643b): 健康等待最长 90s（与 PRD 一致）；失败即回滚到升级前 commit 并重启旧版本
+if ($HealthTimeoutSec -gt 90) { $HealthTimeoutSec = 90 }
 $deadline = (Get-Date).AddSeconds($HealthTimeoutSec)
 $healthOk = $false
 $version = ''
@@ -314,14 +322,55 @@ while ((Get-Date) -lt $deadline) {
     Start-Sleep -Seconds 3
 }
 
-Write-Host ""
 if ($healthOk) {
+    Write-Host ""
     Write-Host "[成功] 健康检查通过: $healthUrl (version=$version)" -ForegroundColor Green
     Write-Host "[完成] 一键升级完成, 浏览器访问 http://127.0.0.1:$Port 并 Ctrl+Shift+R 强制刷新" -ForegroundColor Green
     exit 0
 }
-else {
-    Write-Host "[失败] 健康检查超时 ($HealthTimeoutSec 秒), 服务未就绪" -ForegroundColor Red
-    Write-Host "       请查看服务日志: $logFile" -ForegroundColor Red
-    exit 1
+
+Write-Host ""
+Write-Host "[失败] 健康检查超时 ($HealthTimeoutSec 秒), 服务未就绪" -ForegroundColor Red
+Write-Host "       请查看服务日志: $logFile" -ForegroundColor Red
+
+if ($prevCommit) {
+    Write-Host "==> 回滚: 恢复到升级前 commit $prevCommit 并重启旧版本" -ForegroundColor Yellow
+    Push-Location $RepoDir
+    try {
+        git reset --hard $prevCommit
+        if ($LASTEXITCODE -ne 0) { Write-Fail "git reset --hard $prevCommit 失败" }
+    }
+    finally { Pop-Location }
+    # 停止当前（新版本）进程，改起旧版本
+    try {
+        Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty OwningProcess -Unique |
+            ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+    }
+    catch {
+        Write-Host "    [提示] 无法查询端口 $Port 监听进程，跳过停止" -ForegroundColor Yellow
+    }
+    Start-Sleep -Seconds 2
+    try {
+        Start-Process -FilePath $VenvPython -ArgumentList 'backend\main_new.py' `
+            -WorkingDirectory $RepoDir -WindowStyle Hidden `
+            -RedirectStandardOutput $logFile -RedirectStandardError $logFile | Out-Null
+    }
+    catch { Write-Fail "回滚后服务启动失败: $_" }
+    $rollbackHealth = $null
+    $rbDeadline = (Get-Date).AddSeconds(90)
+    while ((Get-Date) -lt $rbDeadline) {
+        try {
+            $rollbackHealth = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 5 -ErrorAction Stop
+            if ($rollbackHealth.status -eq 'ok') { break }
+        }
+        catch { }
+        Start-Sleep -Seconds 3
+    }
+    if ($rollbackHealth -and $rollbackHealth.status -eq 'ok') {
+        Write-Host "[回滚成功] 已恢复旧版本运行 (version=$($rollbackHealth.version))" -ForegroundColor Green
+        exit 1
+    }
+    Write-Host "[回滚失败] 旧版本同样未通过健康检查, 请人工介入 (logs\server_$Port.log / data\startup_check.json)" -ForegroundColor Red
 }
+exit 1

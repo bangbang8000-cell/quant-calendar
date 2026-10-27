@@ -180,17 +180,17 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                 if last_refresh_date != today:
                     last_refresh_date = today
                     logger.info(f"⏰ 定时刷新: {today}")
-                    try:
-                        parser.reload()
-                        _m.views_aggregator.reload()
-                        from data_refresh_config import update_refresh_status
-                        update_refresh_status(True, f"定时刷新成功 {today}")
+                    # 6.4.1 (FR-641b/d): 统一走 refresh_service — 重载 + 新鲜度 + 结构化日志
+                    from refresh_service import run_refresh_once
+                    result = await asyncio.to_thread(run_refresh_once, "scheduled", False)
+                    if result.get("success"):
                         logger.info("✅ 定时刷新完成")
                         self._record_task_run("data_refresh", True, f"刷新成功 {today}")
-                        self._record_freshness("market_daily", latest_date=today, detail="data_refresh")
-                    except Exception as e:
-                        logger.error(f" 定时刷新失败: {e}")
-                        self._record_task_run("data_refresh", False, str(e)[:120])
+                        self._record_freshness("market_daily", latest_date=result.get("latest_date"),
+                                               detail="data_refresh")
+                    else:
+                        logger.error(" 定时刷新失败: %s", result.get("message"))
+                        self._record_task_run("data_refresh", False, str(result.get("message"))[:120])
                 await asyncio.sleep(60)
             except Exception as e:
                 logger.info(f"定时刷新任务异常: {e}")
@@ -225,54 +225,64 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                 if last_pull_date != today and pull_should_run(config, datetime.now()):
                     last_pull_date = today
                     logger.info(f"📥 定时拉取启动: {today}")
-                    try:
-                        from data_pipeline import run_daily_pull
-                        # 阻塞式拉取放线程, 不阻塞事件循环
-                        result = await asyncio.to_thread(run_daily_pull)
-                        from data_refresh_config import update_refresh_status
-                        ok = result.get("failed", 1) == 0
-                        update_refresh_status(ok, (
-                            f"日线拉取 {result.get('pulled', 0)}/{result.get('total', 0)} 成功, "
-                            f"最新日期 {result.get('latest_date')}"
-                        ))
-                        # v3.12 (FR-3.12.3): 连续失败计数 → 达阈值告警入队
-                        if ok:
-                            consecutive_failures = 0
-                            # 拉取成功后刷新解析器/视图 (自动入库)
-                            parser.reload()
-                            _m.views_aggregator.reload()
-                            self._record_task_run("tushare_pull", True, f"拉取 {result.get('pulled', 0)}/{result.get('total', 0)}")
-                        else:
-                            consecutive_failures += 1
-                            from data_sources import record_batch_failure
-                            record_batch_failure(
-                                'data_pipeline', consecutive_failures,
-                                f"日线拉取 {result.get('pulled', 0)}/{result.get('total', 0)} 成功, "
-                                f"失败 {result.get('failed', 0)}"
-                            )
-                            self._record_task_run("tushare_pull", False, f"拉取 {result.get('pulled', 0)}/{result.get('total', 0)}")
-                            # v3.17.12 (FR-3.17.12): 连续失败达阈值 → 飞书告警
-                            if consecutive_failures >= PULL_ALERT_THRESHOLD:
-                                self._send_feishu_alert(
-                                    "数据拉取任务连续失败",
-                                    f"连续失败 {consecutive_failures} 次\n"
-                                    f"拉取 {result.get('pulled', 0)}/{result.get('total', 0)} 成功, 失败 {result.get('failed', 0)}"
-                                )
-                        logger.info(f"✅ 定时拉取完成: {result}")
-                    except Exception as e:
+                    # 6.4.1 (FR-641b/c/d/e): 统一走 refresh_service —
+                    # 首启限量 / 3 次指数退避重试 / 连续 2 次失败告警 / 结构化日志
+                    from refresh_service import run_refresh_once
+                    result = await asyncio.to_thread(
+                        run_refresh_once, "scheduled", True, list(config.get("stock_pool") or []))
+                    if result.get("success"):
+                        consecutive_failures = 0
+                        self._record_task_run("tushare_pull", True,
+                                              f"拉取 {result.get('rows', 0)} 行")
+                        self._record_freshness("market_daily", latest_date=result.get("latest_date"),
+                                               detail="tushare_pull")
+                    else:
                         consecutive_failures += 1
                         from data_sources import record_batch_failure
-                        record_batch_failure('data_pipeline', consecutive_failures, f"定时拉取异常: {e}")
-                        logger.error(f"定时拉取失败: {e}")
-                        from data_refresh_config import update_refresh_status
-                        update_refresh_status(False, f"定时拉取失败: {e}")
-                        self._record_task_run("tushare_pull", False, str(e)[:120])
-                        if consecutive_failures >= PULL_ALERT_THRESHOLD:
-                            self._send_feishu_alert("数据拉取任务连续失败", f"连续失败 {consecutive_failures} 次\n异常: {e}")
+                        record_batch_failure('data_pipeline', consecutive_failures,
+                                             str(result.get("message"))[:200])
+                        self._record_task_run("tushare_pull", False,
+                                              str(result.get("message"))[:120])
+                    logger.info(f"✅ 定时拉取完成: {result.get('code')} rows={result.get('rows')} "
+                                f"耗时={result.get('elapsed_ms')}ms")
                 await asyncio.sleep(60)
             except Exception as e:
                 logger.info(f"定时拉取任务异常: {e}")
                 await asyncio.sleep(60)
+    async def stock_info_refresh_task(self):
+        """6.5.5 (fix): 股票基础信息定时刷新。
+
+        数据资产 stock_info 阈值 72h, 但全系统没有任何定时生产者 — 只有手动 API
+        或脚本会写 stock_info.json, 于是新鲜度长期告警。每 6 小时检查一次,
+        记录缺失或超过 3 天则从 tushare 拉取一次 (失败只记日志, 下轮重试)。
+        """
+        while self.running:
+            try:
+                await asyncio.sleep(60)  # 启动后先检查一次, 之后每 6 小时
+                if not self.running:
+                    break
+                rec = {}
+                try:
+                    from reliability import freshness as _freshness
+                    rec = _freshness.get_record("stock_info") or {}
+                except Exception:  # noqa: BLE001
+                    rec = {}
+                need = True
+                last = rec.get("last_update")
+                if last:
+                    try:
+                        need = datetime.now() - datetime.fromisoformat(last) >= timedelta(days=3)
+                    except ValueError:
+                        need = True
+                if need:
+                    from stock_info import stock_manager
+                    ok = await asyncio.to_thread(stock_manager.fetch_from_tushare)
+                    logger.info("股票基础信息定时刷新: %s", "成功" if ok else "失败")
+                    self._record_task_run("stock_info_refresh", bool(ok), "tushare stock_basic")
+                await asyncio.sleep(6 * 3600)
+            except Exception as e:  # noqa: BLE001
+                logger.error("股票基础信息刷新异常: %s", e)
+                await asyncio.sleep(3600)
     async def file_watch_task(self):
         """文件变动监听任务（轮询 CSV 文件 mtime）"""
         import os
@@ -657,6 +667,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
         asyncio.create_task(self.strategy_run_task())
         asyncio.create_task(self.data_refresh_task())
         asyncio.create_task(self.tushare_pull_task())
+        # 6.5.5: 股票基础信息定时刷新 (此前无生产者 → stock_info 长期过期告警)
+        asyncio.create_task(self.stock_info_refresh_task())
         asyncio.create_task(self.file_watch_task())
         asyncio.create_task(self.daily_backup_task())
         asyncio.create_task(self.health_check_task())
@@ -674,6 +686,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
         asyncio.create_task(self._catchup_shortterm())
         # v3.18 (FR-3.18.1): 错过补偿 — 启动时若 16:00 已过且当日未产出则补跑
         asyncio.create_task(self._catchup_market_review())
+        # 6.5.5: 周报错过补偿 — 距上次周报超 6 天/无记录 → 启动后补跑一次
+        asyncio.create_task(self._catchup_weekly_report())
         # v3.18 (FR-3.18.2): 每日事件提醒扫描
         asyncio.create_task(self.event_alert_scan_task())
         # v3.18 (FR-3.18.9): 每日 AI 事实护栏抽查

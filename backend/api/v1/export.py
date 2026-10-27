@@ -33,6 +33,22 @@ def _content_disposition(filename: str) -> str:
     return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"
 
 
+def _stale_meta() -> Dict[str, Any]:
+    """6.4.1 (FR-642c): 导出留痕 — 数据日期 / 新鲜度状态 / 提示（与 fresh 判定同源）。"""
+    try:
+        import freshness
+        guard = freshness.stale_guard()
+        return {
+            "latest_date": guard.get("latest_date") or "未知",
+            "status": "陈旧" if guard.get("stale") else "正常",
+            "lag_trading_days": guard.get("lag_trading_days"),
+            "annotation": guard.get("annotation") or "",
+        }
+    except Exception as e:
+        logger.warning("导出新鲜度元信息获取失败(降级): %s", e)
+        return {"latest_date": "未知", "status": "未知", "lag_trading_days": None, "annotation": ""}
+
+
 class ImportRequest(BaseModel):
     data: Dict[str, Any]
 
@@ -149,6 +165,12 @@ async def export_csv(
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     writer.writerow(["# 量化选股日历 数据导出", f"导出时间: {now}"])
+    # 6.4.1 (FR-642c): 首行区写数据日期与新鲜度，保证导出文件自带留痕
+    _meta = _stale_meta()
+    writer.writerow(["# 数据截至", _meta["latest_date"], "# 新鲜度", _meta["status"],
+                     "# 滞后交易日", _meta["lag_trading_days"]])
+    if _meta["annotation"]:
+        writer.writerow(["# 注意", _meta["annotation"]])
 
     if type == "strategies":
         writer.writerow([])
@@ -226,13 +248,25 @@ async def export_excel(
                 from main_new import APP_VERSION
             except Exception:
                 APP_VERSION = ""
-            pd.DataFrame([
+            _meta_rows = [
                 {"项": "导出时间", "值": datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
                 {"项": "应用版本", "值": APP_VERSION},
+            ]
+            # 6.4.1 (FR-642c): 数据日期 / 新鲜度状态 / 提示
+            _meta = _stale_meta()
+            _meta_rows.extend([
+                {"项": "数据截至", "值": _meta["latest_date"]},
+                {"项": "新鲜度状态", "值": _meta["status"]},
+                {"项": "滞后交易日", "值": _meta["lag_trading_days"]},
+            ])
+            if _meta["annotation"]:
+                _meta_rows.append({"项": "数据提示", "值": _meta["annotation"]})
+            _meta_rows.extend([
                 {"项": "数据来源", "值": "sxsc-tushare / tushare / akshare 三源热备"},
                 {"项": "指标口径", "值": "涨跌幅为前复权口径; 评估评分 0-100; 术语见系统配置-术语表"},
                 {"项": "免责声明", "值": "本导出数据仅供学习研究，不构成任何投资建议"},
-            ]).to_excel(writer, sheet_name="口径说明", index=False)
+            ])
+            pd.DataFrame(_meta_rows).to_excel(writer, sheet_name="口径说明", index=False)
             # Sheet 1: 策略持仓
             try:
                 from data_parser import parser as dp

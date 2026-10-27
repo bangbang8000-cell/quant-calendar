@@ -243,8 +243,13 @@ def test_scripts_exist_and_executable():
 
 
 def test_scripts_syntax():
+    """6.4.5 (FR-651): bash 语法校验改为跨平台 — Windows 下 Git Bash 不识别
+    反斜杠路径且 CRLF 会误报 syntax error, 改为 skipif (Linux/CI 仍实跑)。"""
     import subprocess
+    import sys
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if sys.platform == "win32":
+        pytest.skip("Windows 下 bash -n 对 CRLF/路径处理不可靠, 语法校验由 Linux CI 承担")
     for name in ("upgrade.sh", "rollback.sh"):
         p = os.path.join(base, "scripts", name)
         r = subprocess.run(["bash", "-n", p], capture_output=True, text=True)

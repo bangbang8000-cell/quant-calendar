@@ -18,6 +18,8 @@
 
                     <!-- 日/周/月/年视图 -->
                     <template v-if="currentSubPage !== 'pool'">
+                        <!-- 6.4.1 (FR-642b): 结论页陈旧护栏 — 仅陈旧时渲染 -->
+                        <qc-page-stale-bar></qc-page-stale-bar>
                         <!-- V6.1 (PRD-6.1 F3): 日历操作区 — 工作区内容顶部工具栏 (原 SubNav 顶部 Tab 形态迁出) -->
                         <div class="qc-page-tools">
                             <!-- V6.9.3 (F7): 三段重排 — 视图切换器最左, 日期/刷新/导出居中, 上一/下一最右 -->
@@ -81,7 +83,14 @@
                             <!-- v3.11 (FR-3.11.5): 统一四态组件（加载/空态） -->
                             <qc-state-panel v-if="loading" type="loading"></qc-state-panel>
 
-                            <qc-state-panel v-else-if="stockPool.length === 0" type="empty" :title="t('common.empty')"></qc-state-panel>
+                            <qc-state-panel v-else-if="stockPool.length === 0" type="empty" :title="t('common.empty')">
+                                <template #action>
+                                    <div class="qc-example-pool-actions">
+                                        <el-button size="small" type="primary" @click="loadExamplePool">载入示例组合（6 只）</el-button>
+                                        <el-button size="small" @click="goDatasource">去配置数据池</el-button>
+                                    </div>
+                                </template>
+                            </qc-state-panel>
                             
                             <div v-else class="stock-list">
                                 <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + name-suffix 图标 + footer 信号行) -->
@@ -140,7 +149,7 @@
 
                         <div class="card mt-4">
                             <div class="card-title"><qc-icon name="file-text" :size="16" /> {{ t('calendar.strategyDist') }}</div>
-                            <qc-state-panel v-if="strategyDistribution.length === 0" type="empty" :title="t('common.empty')"></qc-state-panel>
+                            <qc-state-panel v-if="strategyDistribution.length === 0" type="empty" :title="t('common.empty')" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                             <div v-else>
                                 <div class="cal-note-box" v-for="item in strategyDistribution" :key="item.strategy">
                                     <div class="flex-c-gap-8-mb8">
@@ -330,8 +339,29 @@
           if (state.showStockDetail) state.showStockDetail(v.first);
         }
       }, { immediate: true });
+      // 6.4.2 (FR-644): 空态主行动 — 载入示例组合 / 去配置数据池
+      function loadExamplePool() {
+        return fetch('/api/data-refresh/example-pool/load', { method: 'POST' })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.success) {
+              ElementPlus.ElMessage.success('已载入示例组合（6 只），可立即刷新数据');
+              if (typeof state.loadStockPool === 'function') state.loadStockPool();
+              else if (typeof state.loadCalendarData === 'function') state.loadCalendarData();
+            } else {
+              ElementPlus.ElMessage.warning(data.message || '载入示例组合失败');
+            }
+          })
+          .catch(function (e) {
+            console.warn('[calendar] 载入示例组合失败', e);
+            ElementPlus.ElMessage.error('载入示例组合失败，请检查网络后重试');
+          });
+      }
+      function goDatasource() {
+        if (typeof window.__quantGoPage === 'function') window.__quantGoPage('system', 'datasource');
+      }
       return { ...state, calType, pullRefreshing, onCalTouchStart, onCalTouchEnd,
-               viewLabel, switchViewLocal,
+               viewLabel, switchViewLocal, loadExamplePool, goDatasource,
                compareVisible, compareLoading, compareError, compareData, comparePairs, openStrategyCompare };
     },
   };

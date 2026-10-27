@@ -13,7 +13,7 @@ window.__quantModules.researchPage.part1 = `
                         <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 加载/错误/空态收敛到 qc-state-panel -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || t('state.strategiesError')" :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
-                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="flask-conical" :title="t('state.emptyStrategyResearch')" :desc="t('state.descEmptyStrategyResearch')"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="flask-conical" :title="t('state.emptyStrategyResearch')" :desc="t('state.descEmptyStrategyResearch')" action-text="去策略管理" action-key="go_strategy"></qc-state-panel>
                         <template v-else>
                         <!-- 快速入口网格 -->
                         <div class="dashboard-grid">
@@ -115,7 +115,7 @@ window.__quantModules.researchPage.part1 = `
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || t('state.strategiesManageError')"
                             :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
-                        <qc-state-panel v-else-if="strategies.length === 0" type="empty" icon="flask-conical" :title="t('state.emptyStrategy')" :desc="t('state.descEmptyStrategy')"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0" type="empty" icon="flask-conical" :title="t('state.emptyStrategy')" :desc="t('state.descEmptyStrategy')" action-text="去创建策略" action-key="go_strategy"></qc-state-panel>
                         <template v-else>
                             <div class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon info"><qc-icon name="flask-conical" :size="18" /></div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
@@ -317,7 +317,7 @@ window.__quantModules.researchPage.part1 = `
                         <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 策略管理加载/错误/空态 -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || t('state.strategiesManageError')" :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
-                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="layers" :title="t('state.emptyStrategyManage')" :desc="t('state.descEmptyStrategyManage')"></qc-state-panel>
+                        <qc-state-panel v-else-if="strategies.length === 0 && variants.length === 0 && customs.length === 0" type="empty" icon="layers" :title="t('state.emptyStrategyManage')" :desc="t('state.descEmptyStrategyManage')" action-text="去创建策略" action-key="go_strategy"></qc-state-panel>
                         <template v-if="strategyManageMode === 'template'">
                         <!-- v3.22 (I3A): 第1步 选择母本 + 复制 -->
                         <div class="strategy-params flex-wrap-gap-12-mb16-c">

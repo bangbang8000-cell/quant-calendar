@@ -18,6 +18,16 @@ async def freshness_summary(user: dict = Depends(get_current_active_user)):
     return {"success": True, "data": freshness.status_summary()}
 
 
+@router.get("/stale-guard")
+async def stale_guard(user: dict = Depends(get_current_active_user)):
+    """6.4.1 (FR-642): 结论护栏载荷 — 最新数据日 / 滞后交易日 / 阈值 / 提示文案。
+
+    单一来源 backend/freshness.py；结论页、导出、AI 结果共同消费，不阻断浏览。
+    """
+    import freshness as table_freshness
+    return {"success": True, "data": table_freshness.stale_guard()}
+
+
 @router.get("/startup-report")
 async def startup_report(user: dict = Depends(get_current_active_user)):
     """最近一次启动自检报告; 若从未运行过则即时执行一次。"""

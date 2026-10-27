@@ -113,6 +113,28 @@ def build_grouped_results(q: str, max_items: int = 20, menu_defs: list = None, u
     if strategies:
         groups.append({"key": "strategy", "label": "策略", "items": strategies[:max_items]})
 
+    # 6.4.2 (FR-645): 数据字典字段域 — key/中文名/别名/口径说明 全字段匹配
+    dict_hits = []
+    if q_lower:
+        try:
+            from data_dict import list_fields
+            for f in list_fields():
+                key = f.get("key") or ""
+                label = f.get("label") or key
+                aliases = f.get("aliases") or []
+                if isinstance(aliases, str):
+                    aliases = [aliases]
+                hay = " ".join([key, str(label)] + [str(a) for a in aliases]
+                               + [str(f.get("description") or "")]).lower()
+                if q_lower in hay:
+                    dict_hits.append({"type": "dict", "field": key, "label": str(label),
+                                      "subLabel": f.get("category") or "数据字典"})
+        except Exception as e:
+            # 可降级: 字典域检索失败不影响其它域
+            logger.warning("[search] 数据字典域检索失败, 该域留空: %s", e)
+    if dict_hits:
+        groups.append({"key": "dict", "label": "数据字典", "items": dict_hits[:max_items]})
+
     # 菜单域 (前端 subPageNames 由调用方传入; 此处仅占位不产生结果)
     if menu_defs:
         menus = []

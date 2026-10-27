@@ -47,10 +47,24 @@ class StockInfoManager:
                 with open(STOCK_INFO_FILE, 'r', encoding='utf-8') as f:
                     self.stock_map = json.load(f)
                 logger.info(f"✅ 已加载 {len(self.stock_map)} 只股票信息")
+                # 6.5.5 (fix): 加载路径此前从不记录新鲜度 → 横幅恒报 missing。
+                # 以文件 mtime 作为 last_update (如实反映数据年龄, 不伪造为"刚刚更新")。
+                self._record_freshness_from_file()
             except Exception as e:
                 logger.warning(f"⚠️ 加载股票信息失败: {e}")
         else:
             logger.warning("⚠️ 股票信息文件不存在，将从Tushare获取")
+
+    def _record_freshness_from_file(self):
+        """记录 stock_info 资产新鲜度 (last_update = 文件 mtime)"""
+        try:
+            from datetime import datetime
+            from reliability.freshness import record_update
+            mtime = datetime.fromtimestamp(os.path.getmtime(STOCK_INFO_FILE))
+            record_update("stock_info", count=len(self.stock_map),
+                          detail="stock_info loaded", now=mtime)
+        except Exception as e:
+            logger.warning("股票信息新鲜度记录失败: %s", e)
 
     def _save_to_file(self):
         """保存股票信息到本地文件"""

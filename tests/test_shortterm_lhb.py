@@ -1,10 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2.0 (T-5.2.04): 龙虎榜数据抓取 + 资金性质归类测试"""
+"""V5.2.0 (T-5.2.04): 龙虎榜数据抓取 + 资金性质归类测试
+6.4.5 (FR-651): 测试封闭化 — 屏蔽需真实凭证的 sxsc 龙虎榜源, 本地 .env/网络不影响用例。"""
 import sys
+
 import pandas as pd
+import pytest
 
 from shortterm.lhb import normalize_lhb_df, classify_reading, fetch_lhb
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_no_sxsc(monkeypatch):
+    """V5.3.10 fetch_lhb 首选 sxsc(需真实 token); 测试一律让它抛错走 akshare mock 链。"""
+    from shortterm import lhb as lhb_mod
+
+    def _disabled(*_a, **_k):
+        raise RuntimeError('sxsc 已在测试中禁用 (FR-651 封闭化)')
+    monkeypatch.setattr(lhb_mod, '_fetch_sxsc_lhb', _disabled)
 
 
 # ---------- 解读归类 ----------

@@ -11,6 +11,8 @@
 import os
 import sys
 
+import pytest
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, 'backend'))
 
@@ -67,8 +69,9 @@ def test_sxsc_fetch_kline_minute_uses_stk_mins(monkeypatch):
 
 
 def test_akshare_fetch_kline_minute_uses_min_em(monkeypatch):
-    """akshare 分钟线走 stock_zh_a_hist_min_em(period='60'/'30'/'15')"""
-    import akshare as ak
+    """akshare 分钟线走 stock_zh_a_hist_min_em(period='60'/'30'/'15')
+    FR-651 第 5 条: 环境无 akshare → importorskip (CI 锁文件含 akshare, 实跑)"""
+    ak = pytest.importorskip("akshare")
     mgr = _isolated_manager()
     mgr._clients = {}
     calls = {}

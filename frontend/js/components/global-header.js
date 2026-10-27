@@ -17,18 +17,34 @@
         </div>
         <div class="global-header">
           <div class="sub-nav-wrapper">
+            <!-- 6.5.4 (FR-654.3): 一级摊平为 7 业务域, 单个业务域二级 ≤7 — 直接铺开, 「更多」仅兜底 -->
             <template v-for="menu in menus" :key="menu.key">
-              <template v-if="currentPage === menu.key">
-                <div v-for="sp in menu.subPages" :key="sp"
-                     class="sub-nav-tab" :class="{active: currentSubPage === sp}"
-                     @click="currentSubPage = sp" tabindex="0" role="tab"
-                     :aria-selected="currentSubPage === sp"
-                     @keydown.enter.prevent="currentSubPage = sp" @keydown.space.prevent="keyClick($event)">
+              <template v-if="menu.activePages ? menu.activePages.includes(currentPage) : currentPage === menu.key">
+                <div v-for="sp in menu.subPages.slice(0, 7)" :key="sp"
+                     class="sub-nav-tab" :class="{active: isMemberActive(menu, sp)}"
+                     @click="goMember(menu, sp)" tabindex="0" role="tab"
+                     :aria-selected="isMemberActive(menu, sp)"
+                     @keydown.enter.prevent="goMember(menu, sp)" @keydown.space.prevent="keyClick($event)">
                   {{ subTabLabel(menu, sp) }}
                 </div>
+                <el-dropdown v-if="menu.subPages.length > 7" trigger="click"
+                             @command="(sp) => goMember(menu, sp)">
+                  <span class="sub-nav-tab sub-nav-more" tabindex="0" role="button"
+                        @keydown.enter.prevent>{{ t('common.more') || '更多' }} ▾</span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item v-for="sp in menu.subPages.slice(7)" :key="sp" :command="sp"
+                                        :class="{active: isMemberActive(menu, sp)}">{{ subTabLabel(menu, sp) }}</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </template>
             </template>
           </div>
+
+          <button class="qc-header-search-fab" type="button" aria-label="搜索（Ctrl+K）" title="搜索（Ctrl+K）" @click="openPalette">
+            <qc-icon name="search" :size="16" />
+          </button>
 
           <div class="global-search-wrapper">
             <el-autocomplete class="w-200" v-model="searchQuery" :fetch-suggestions="searchStocks" :placeholder="t('common.searchPlaceholder')" :trigger-on-focus="false" clearable size="small" @select="onSearchSelect">
@@ -101,6 +117,8 @@
       const marketData = computed(() => (state.marketData && state.marketData.value) || {});
       // V4.5 (FR-4.5.1): 美林时钟全局快捷入口
       const goMerrill = () => { if (window.__quantGoPage) window.__quantGoPage('strategies', 'merrill'); };
+      // 6.4.2 (FR-645): 移动端可见搜索入口 → 命令面板
+      const openPalette = () => { window.dispatchEvent(new CustomEvent('qc:open-command-palette')); };
 
       return {
         menus: state.menus,
@@ -108,6 +126,7 @@
         bannerDismissed,
         dismissBanner,
         goMerrill,
+        openPalette,
         currentPage: state.currentPage,
         currentSubPage: state.currentSubPage,
         currentUser: state.currentUser,
@@ -132,13 +151,49 @@
         subPageNames: state.subPageNames,
         keyClick: state.keyClick,
         t: state.t,
+        // 6.5.0 (FR-653): 成员激活/跳转 — 成员 key 解析为内部旧坐标 (page/sub)
+        isMemberActive: function (menu, sp) {
+            const NC = window.QuantNavMerge;
+            const s = window.__quantAppState || {};
+            if (NC && Array.isArray(menu.members)) {
+                const member = menu.members.find(mm => mm.key === sp);
+                if (member && s.currentPage && s.currentSubPage) {
+                    return s.currentPage.value === member.page && s.currentSubPage.value === member.sub;
+                }
+            }
+            return s.currentSubPage ? s.currentSubPage.value === sp : false;
+        },
+        goMember: function (menu, sp) {
+            const NC = window.QuantNavMerge;
+            let page = menu.key, sub = sp;
+            if (NC && Array.isArray(menu.members)) {
+                const member = menu.members.find(mm => mm.key === sp);
+                if (member) { page = member.page; sub = member.sub; }
+            }
+            if (window.__quantGoPage) window.__quantGoPage(page, sub);
+            else if (window.__quantAppState) {
+                window.__quantAppState.currentPage.value = page;
+                if (window.__quantAppState.currentSubPage) window.__quantAppState.currentSubPage.value = sub;
+            }
+        },
         subTabLabel: function (menu, sp) {
             // V5.0.11-fix: t() 对缺失 key 返回 key 本身(truthy), 原 || 中文兜底失效,
             // 语言包漏配时 sub 菜单显示英文 key(如 sub.datadict)。现显式判 key 回退。
-            const qualified = 'sub.' + menu.key + '.' + sp;
+            // 6.5.0 (FR-653): 成员键先解析内部旧坐标, i18n 按 sub.<旧page>.<旧sub> 命中
+            const NC = window.QuantNavMerge;
+            let lookup = sp;
+            if (NC && Array.isArray(menu.members)) {
+                const member = menu.members.find(mm => mm.key === sp);
+                if (member) {
+                    const label = NC.memberLabel(member, state.t);
+                    if (label && label !== member.sub) return label;
+                    lookup = member.sub;
+                }
+            }
+            const qualified = 'sub.' + menu.key + '.' + lookup;
             const q = state.t(qualified);
             if (q !== qualified) return q;
-            const plain = 'sub.' + sp;
+            const plain = 'sub.' + lookup;
             const p = state.t(plain);
             return (p !== plain && p) ? p : (state.subPageNames[sp] || sp);
         },

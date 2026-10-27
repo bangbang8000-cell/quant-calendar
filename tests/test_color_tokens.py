@@ -44,15 +44,24 @@ DEAD_TOKEN_WHITELIST = {
     "--sp-1", "--sp-2", "--sp-3", "--sp-4",
     "--r-sm", "--r-md", "--r-lg", "--r-xl", "--r-full",
     "--easing-exit",
-    # V6.11 (需求轮4): 主按钮改「浅底彩字」后, 实底档家族仅 EP 主色桥 (--primary-solid) 仍消费 -bg;
-    # 其余档位作为同一契约保留 (改回实底按钮时可整族复用), 不视为死代码。
-    "--btn-primary-border", "--btn-primary-color",
-    "--btn-primary-hover-bg", "--btn-primary-hover-border",
-    "--btn-primary-active-bg", "--btn-primary-active-border",
+    # 6.5.8 (C3): 排版角色层 —— 定义给「页面层新代码」引用 (page-title/card-title 已消费),
+    # 老代码按渐进迁移策略不动, 故 data-value/label/caption 暂为无人消费的设计契约。
+    "--font-role-data-value", "--font-role-label", "--font-role-caption",
+    # V6.11 (需求轮4): 主按钮改「浅底彩字」后, 实心组已于 6.5.7 (B1) 收敛为单一 --primary-solid,
+    # 原 --btn-primary-border/color/hover-*/active-* 已删除; 仅 plain/text 两个变体族仍在使用。
     # v6.4 (FR-6.4.4): 「重色面板」原语 (渐变底 + 其上前景) —— 唯一消费点 .detail-header
     # 已改为卡片底 + 描边, 这对令牌保留定义供暗色浮层/强调面板复用; 生产消费点归零属预期,
     # 不删除是为了保持主题令牌面稳定 (删除会波及明/暗/中性三分支的定义与色相求解)。
     "--gradient-panel", "--panel-fg",
+    # 6.5.1 (FR-655.5): 动效令牌 qc 别名层 — PRD 口径命名契约, 实际档位经 --duration-*/--easing-* 消费
+    "--qc-duration-fast", "--qc-duration-base", "--qc-duration-slow",
+    "--qc-ease-standard", "--qc-ease-enter",
+    # 6.5.1 (FR-655.2): h2/h3 层级标尺 — h1 已由 .qc-page-h1 消费, h2/h3 供内容标题逐步迁移
+    "--qc-h2-size", "--qc-h2-line", "--qc-h2-weight",
+    "--qc-h3-size", "--qc-h3-line", "--qc-h3-weight",
+    # 6.5.1 (FR-656.1): 表面三档层级标尺 (canvas/card/raised) — 暗色档由 dark-pro 覆盖,
+    # 消费点为层级门禁与暗色浮层迁移; light 档经 --qc-background/--qc-card/--surface-raised 级联
+    "--qc-surface-canvas", "--qc-surface-card", "--qc-surface-raised",
 }
 
 # 语义层前缀 —— 这些令牌在明暗两侧必须同时存在 (L1 原始色阶不在此列)
@@ -82,17 +91,18 @@ _VARREF = re.compile(r"var\(\s*(--[a-zA-Z0-9-]+)"
 
 
 def _tracked_frontend_files():
-    out = subprocess.run(["git", "-C", BASE, "ls-files", "frontend"],
-                         capture_output=True, text=True, timeout=60).stdout
-    files = []
-    for line in out.splitlines():
-        if not line.endswith((".css", ".js", ".html", ".vue")):
+    """6.5.1: 改为文件系统遍历 (git ls-files 依赖暂存状态, 新增 css 拆分文件未 add 时会漏扫)。"""
+    out = []
+    for root_dir, dirs, names in os.walk(os.path.join(BASE, "frontend")):
+        rel_root = os.path.relpath(root_dir, BASE)
+        parts = rel_root.replace(os.sep, "/").split("/")
+        if any(p in ("node_modules", "dist", "lib", ".git") for p in parts):
+            dirs[:] = []
             continue
-        parts = line.split("/")
-        if any(p in ("node_modules", "dist", "lib") for p in parts):
-            continue
-        files.append(os.path.join(BASE, line))
-    return files
+        for name in names:
+            if name.endswith((".css", ".js", ".html", ".vue")):
+                out.append(os.path.join(root_dir, name))
+    return out
 
 
 def _all_defined_tokens():

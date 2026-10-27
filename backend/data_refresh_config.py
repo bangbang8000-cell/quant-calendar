@@ -22,6 +22,12 @@ DEFAULT_CONFIG = {
     "pull_frequency": "daily",  # daily 交易日每日 / weekly 每周
     "pull_weekday": "0",        # weekly 时 ISO 周几 (0=周一)
     "stock_pool": [],           # 空列表 = 全部覆盖股票
+    # 6.4.1 (FR-641e): 首次开启限量拉取 — 二次确认 + 首日仅最近 N 个交易日
+    "first_run_confirmed": False,
+    "first_run_completed": False,
+    "first_run_days": 5,
+    # 6.4.1 (FR-642a): 陈旧阈值（交易日），单一来源在 freshness.STALE_TRADING_DAYS
+    "stale_trading_days": 5,
 }
 
 
@@ -50,6 +56,22 @@ def save_config(config: dict) -> dict:
     from reliability.atomic import atomic_write_json
     atomic_write_json(CONFIG_FILE, current)
     return current
+
+
+def save_config_checked(config: dict) -> dict:
+    """带前置校验的保存（6.4.1 FR-641a）。
+
+    返回 {ok, code, message, config}；开启刷新但数据池为空 / 未二次确认时拒绝保存，
+    不修改磁盘配置。
+    """
+    from refresh_service import validate_config_update
+    current = load_config()
+    verdict = validate_config_update(current, config or {})
+    if not verdict["ok"]:
+        return {"ok": False, "code": verdict["code"], "message": verdict["message"],
+                "config": current}
+    saved = save_config(config or {})
+    return {"ok": True, "code": "OK", "message": "", "config": saved}
 
 
 def update_refresh_status(success: bool, message: str = ""):

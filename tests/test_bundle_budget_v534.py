@@ -20,8 +20,10 @@ JS_DIR = os.path.join(BASE, "frontend", "js")
 # 总量预算校订为 1.4MB 并保留 ~4% 余量 (门禁继续有效, 防无节制膨胀)。
 # 6.3.1 (T-6.3.1.5): i18n 收敛 — 51 个新文案键 × 5 语 (zh-CN/en/ja/ko/zh-TW)
 # 净增 ~19KB, 总量触及 1.4MB 上限; 按实测 1,439,122B + ~3% 余量校订为 1.45MB。
+# 6.4.2/6.4.3 (FR-644~648): 新增 event-track / error-map / perf-core / perf-observer
+# 四个核心模块 (~40KB), 实测 1,523,359B; 按实测 + ~4% 余量校订为 1.55MB。
 MAIN_LOGIC_BUDGET = 104 * 1024
-TOTAL_JS_BUDGET = 1450 * 1024
+TOTAL_JS_BUDGET = 1550 * 1024
 
 
 def _js_files():

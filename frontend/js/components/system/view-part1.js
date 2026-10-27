@@ -147,14 +147,18 @@ window.__quantModules.systemPage.part1 = `
                                 <span><qc-icon name="shield" :size="14" /> 操作审计 <span class="text-sm-tertiary">(管理员)</span></span>
                                 <el-button size="small" @click="loadAuditLogs" :loading="auditLoading">刷新</el-button>
                             </div>
-                            <div v-if="auditLogs.length" class="audit-list">
-                                <div v-for="l in auditLogs" :key="l.id" class="audit-row">
-                                    <span class="audit-action">{{ l.action }}</span>
-                                    <span class="text-sm">{{ l.username }}</span>
-                                    <span class="text-sm-tertiary">{{ l.ts }}</span>
-                                    <span class="text-sm-tertiary audit-detail">{{ l.detail }}</span>
-                                </div>
-                            </div>
+                            <!-- 6.4.3 (FR-648 第 2 条): 审计记录条数无上限, 改用虚拟滚动 -->
+                            <qc-virtual-list v-if="auditLogs.length" class="audit-list-vlist vlist-max-h-420"
+                                             :items="auditLogs" :row-height="38" aria-label="操作审计记录">
+                                <template #default="{ item: l }">
+                                    <div class="audit-row">
+                                        <span class="audit-action">{{ l.action }}</span>
+                                        <span class="text-sm">{{ l.username }}</span>
+                                        <span class="text-sm-tertiary">{{ l.ts }}</span>
+                                        <span class="text-sm-tertiary audit-detail">{{ l.detail }}</span>
+                                    </div>
+                                </template>
+                            </qc-virtual-list>
                             <div v-else class="text-sm-tertiary m-0-0-12">暂无审计记录</div>
                         </div>
 
@@ -606,7 +610,7 @@ window.__quantModules.systemPage.part1 = `
                         </div>
                         <div v-if="freshnessLoading" class="qc-glossary-loading">加载中…</div>
                         <qc-state-panel v-else-if="freshnessError" type="error" :title="t('state.freshnessError')" :desc="t('state.descService')" @retry="loadFreshness"></qc-state-panel>
-                        <qc-state-panel v-else-if="freshnessItems.length === 0" type="empty" icon="inbox" :title="t('state.emptyFreshness')" :desc="t('state.descEmptyFreshness')"></qc-state-panel>
+                        <qc-state-panel v-else-if="freshnessItems.length === 0" type="empty" icon="inbox" :title="t('state.emptyFreshness')" :desc="t('state.descEmptyFreshness')" action-text="去刷新数据" action-key="go_status"></qc-state-panel>
                         <el-table v-else :data="freshnessItems" size="small" max-height="320">
                             <el-table-column prop="label" label="数据表" width="120" />
                             <el-table-column prop="source" label="来源" width="110" />

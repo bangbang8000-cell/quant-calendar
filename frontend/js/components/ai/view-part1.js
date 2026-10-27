@@ -8,6 +8,8 @@ window.__quantModules.aiPage.part1 = `
 
                     <!-- overview: 概览统计 + 快捷操作 -->
                     <div v-if="currentSubPage === 'overview'">
+                        <!-- 6.4.1 (FR-642b): 结论页陈旧护栏 — 仅陈旧时渲染 -->
+                        <qc-page-stale-bar></qc-page-stale-bar>
                         <div class="flex-end-gap-8-mb16">
                             <el-button size="small" @click="showBatchEvaluate = true">
                                 {{ t('ai.batchEval') }}
@@ -191,7 +193,7 @@ window.__quantModules.aiPage.part1 = `
                             <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
                             <qc-state-panel v-if="trackLoading" type="loading"></qc-state-panel>
                             <qc-state-panel v-else-if="trackError" type="error" @retry="loadTrack"></qc-state-panel>
-                            <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="bar-chart-3" :title="t('ai.insufficientSamples')"></qc-state-panel>
+                            <qc-state-panel v-else-if="!trackData || !trackData.samples || trackData.samples.length === 0" type="empty" icon="bar-chart-3" :title="t('ai.insufficientSamples')" action-text="去看评估历史" action-key="go_eval_history"></qc-state-panel>
                             <template v-else>
                                 <div class="eval-track-overall">
                                     <div v-for="w in trackWindows" :key="w.key" class="eval-track-stat">
@@ -289,13 +291,7 @@ window.__quantModules.aiPage.part1 = `
                         <qc-state-panel v-if="aiHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadAiHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="aiHistoryError" type="error" @retry="loadAiHistory"></qc-state-panel>
-                        <div v-else-if="aiHistory.length === 0" class="empty-state">
-                            <div class="empty-state-icon"><qc-icon name="bot" :size="32" /></div>
-                            <div class="text-md-medium-primary">{{ t('ai.noEvalRecord') }}</div>
-                            <div class="text-sm-tertiary-mt8">
-                                {{ t('ai.evalHint') }}
-                            </div>
-                        </div>
+                        <qc-state-panel v-else-if="aiHistory.length === 0" type="empty" icon="bot" :title="t('ai.noEvalRecord')" :desc="t('ai.evalHint')" action-text="去量化日历选股" action-key="go_pool"></qc-state-panel>
 
                         <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
                         <qc-detail-split :enabled="detailSplitEnabled">
@@ -442,13 +438,7 @@ window.__quantModules.aiPage.part1 = `
                         <qc-state-panel v-if="chatHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadChatHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="chatHistoryError" type="error" @retry="loadChatHistory"></qc-state-panel>
-                        <div v-else-if="allChatSessionsFlat.length === 0" class="empty-state">
-                            <div class="empty-state-icon"><qc-icon name="message-circle" :size="32" /></div>
-                            <div class="text-md-medium-primary">暂无问股记录</div>
-                            <div class="text-sm-tertiary-mt8">
-                                在股票详情页点击「AI 问股」开始对话
-                            </div>
-                        </div>
+                        <qc-state-panel v-else-if="allChatSessionsFlat.length === 0" type="empty" icon="message-circle" title="暂无问股记录" desc="在股票详情页点击「AI 问股」开始对话" action-text="去量化日历选股" action-key="go_pool"></qc-state-panel>
 
                         <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
 `;

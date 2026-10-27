@@ -20,6 +20,9 @@ WARN_VOLUME_RATIO_THRESHOLD = 2.5  # 量比 > 2.5 → 放量预警
 # 单连接订阅上限
 MAX_SUBSCRIBE_CODES = 50
 
+# 6.5.5: 腾讯行情轻量直连源（一次请求批量返回订阅代码，不依赖 akshare 全市场快照）
+TENCENT_QUOTE_URL = 'https://qt.gtimg.cn/q=%s'
+
 
 def _safe_float(value, default=None):
     """安全转 float；None/NaN/非法返回 default"""
@@ -243,10 +246,16 @@ class RealtimeQuoteSource:
             return {}, True
 
     def _fetch_from_data_source(self, codes: List[str]) -> Tuple[Dict, bool]:
-        """真实源拉取: akshare 全市场快照 → tushare 实时快照回退 (FR-3.18.3)。
+        """真实源拉取: 腾讯直连 → akshare 全市场快照 → tushare 实时快照回退 (FR-3.18.3 / 6.5.5)。
 
-        两者皆失败抛最后一个异常, 由 fetch_quotes 捕获 → 优雅降级 degraded=True。
+        腾讯源只需一次批量请求即可覆盖订阅代码, 不受 akshare 全市场快照
+        (5000+ 行分页) 被上游断连的影响; 三者皆失败抛最后一个异常,
+        由 fetch_quotes 捕获 → 优雅降级 degraded=True。
         """
+        try:
+            return self._fetch_from_tencent(codes)
+        except Exception as e0:
+            logger.warning('腾讯行情源不可达, 尝试 akshare 回退: %s', e0)
         try:
             return self._fetch_from_akshare(codes)
         except Exception as e1:
@@ -256,6 +265,55 @@ class RealtimeQuoteSource:
             except Exception as e2:
                 logger.warning('tushare 实时快照也不可达: %s', e2)
                 raise
+
+    def _fetch_from_tencent(self, codes: List[str]) -> Tuple[Dict, bool]:
+        """腾讯行情直连 (qt.gtimg.cn) — 批量拉取订阅代码的现价/昨收/涨跌幅/量比。
+
+        字段位: 2=代码 3=现价 4=昨收 32=涨跌幅% 49=量比 (GBK 文本, 一次请求多代码)。
+        停牌/无成交时为 0 → 回退昨收价, 避免前端把 0.00 当成真实报价。
+        """
+        import requests
+        symbols = []
+        for code in codes:
+            ts_code, _, suffix = str(code).partition('.')
+            if not ts_code.isdigit() or suffix not in ('SH', 'SZ', 'BJ'):
+                continue
+            symbols.append(suffix.lower() + ts_code)
+        if not symbols:
+            raise RuntimeError('无合法腾讯行情代码')
+        resp = requests.get(TENCENT_QUOTE_URL % ','.join(symbols),
+                            headers={'User-Agent': 'Mozilla/5.0'},
+                            timeout=self._timeout)
+        resp.encoding = 'gbk'
+        wanted = set(codes)
+        quotes = {}
+        for line in resp.text.split(';'):
+            if '"' not in line:
+                continue
+            fields = line.split('"')[1].split('~')
+            if len(fields) < 50:
+                continue
+            norm = _normalize_code(fields[2])
+            if norm is None or norm not in wanted:
+                continue
+            price = _safe_float(fields[3])
+            pre_close = _safe_float(fields[4])
+            if not price or price <= 0:
+                price = pre_close
+            if not price or price <= 0:
+                continue
+            change_pct = _safe_float(fields[32])
+            volume_ratio = _safe_float(fields[49])
+            quotes[norm] = {
+                'price': price,
+                'pre_close': pre_close,
+                'change_pct': change_pct,
+                'volume_ratio': volume_ratio,
+                'rise_speed': None,
+            }
+        if not quotes:
+            raise RuntimeError('未匹配到订阅代码的腾讯实时报价')
+        return quotes, False
 
     def _fetch_from_akshare(self, codes: List[str]) -> Tuple[Dict, bool]:
         """akshare 全市场快照 (含量比/涨速字段), 失败抛异常由上层回退/降级。"""

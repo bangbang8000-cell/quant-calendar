@@ -1,4 +1,4 @@
-// quant-calendar: language pack ko
+﻿// quant-calendar: language pack ko
 // auto-generated from zh-CN (V4.7.4 i18n expansion); missing keys fall back to en
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -9,15 +9,15 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '전략 개요',
+    'nav.strategies': '전략',
     'nav.calendar': '퀀트 캘린더',
     'nav.ai': '스마트 평가',
     'nav.research': '전략 연구',
-    'nav.ops': '시스템 상태',
-    'nav.system': '시스템 설정',
+    'nav.ops': '운영 모니터링',
+    'nav.system': '플랫폼 설정',
     'nav.shortterm': '단기 리뷰',
     'sub.overview': '개요',
-    'sub.strategies.overview': '전략 개요', 'sub.ai.overview': '평가 개요', 'sub.research.research-overview': '연구 개요',
+    'sub.strategies.overview': '개요', 'sub.ai.overview': '개요', 'sub.research.research-overview': '개요',
     'sub.execution': '실행 대시보드',
     'sub.merrill': '메릴 클록',
     'sub.market': '지수 현황',   // V6.6.1: 명칭 변경
@@ -27,7 +27,7 @@
     'sub.monthly': '월별 보기',
     'sub.yearly': '연별 보기',
     'sub.pool': '종목 풀',
-    'sub.calendar': '캘린더',   // V6.6.1: 통합 후 메인 뷰
+    'sub.calendar': '캘린더 뷰',   // V6.6.1: 통합 후 메인 뷰
     'sub.watchlist': '내 관심목록',
     'sub.history': '평가 이력',
     'sub.evaluation-analysis': '평가 분석',
@@ -46,7 +46,7 @@
     'sub.strategy-manage': '전략 관리',   // V6.6.1: 통합
     'sub.ztpool': '상한가 리뷰',
     'sub.lhb': '용호방',
-    'sub.shortterm.overview': '복기 대시보드',
+    'sub.shortterm.overview': '개요',
     'sub.shortterm.sector': '섹터 자금흐름',
     'sub.sector': '섹터 자금흐름',
     'sub.shortterm.intraday': '장중 검증',
@@ -83,6 +83,7 @@
     'common.search': '검색',
     'common.empty': '데이터 없음',
     'common.retry': '재시도',
+    'common.more': '더보기', // 6.5.0 (FR-653.1): 2차 >6 분할 '더보기' 드롭다운 (global-header.js)
     'common.emptyTitle': '데이터 없음',
     'common.emptyDesc': '표시할 내용이 없습니다',
     'common.errorTitle': '로드 실패',

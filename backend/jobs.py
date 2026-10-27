@@ -15,6 +15,7 @@
 - 任务函数签名 fn(payload, ctx); ctx 提供 progress/message/check_cancelled/retries_done
 - 取消仅协作式: 不杀线程; 任务需自行检查
 """
+import copy
 import json
 import logging
 import os
@@ -42,6 +43,9 @@ _lock = threading.RLock()
 _worker = None
 _worker_stop = threading.Event()  # V5.3.0 (T-5.3.0.4): worker 停机事件 (测试隔离)
 _worker_cond = threading.Condition(_lock)
+# 6.5.1: 进度心跳去抖状态 (job_id -> monotonic); reset_jobs 清理
+_PROGRESS_FLUSH_INTERVAL = 0.5
+_progress_flushed = {}
 
 
 class JobNotFoundError(Exception):
@@ -60,24 +64,49 @@ def _job_id():
     return 'J' + time.strftime('%Y%m%d%H%M%S') + '-' + uuid.uuid4().hex[:8]
 
 
+# 6.5.1 (收尾): 表缓存 — 6.1.7 起 _read 逐次全文件读+解析, 在「提交 × 进度心跳」同锁竞争下
+# 成为 O(N) 热点 (50 提交对 ~350 次心跳全表重写, 本机实测提交 50 任务被放大到 1.4s+)。
+# 以 (路径, mtime_ns, size) 为签名缓存最近一次已解析表: 命中免开文件, 签名不符
+# (含跨进程改写/损坏回退) 即回源重读; _write 每次仍原子落盘, 持久化语义不变。
+# 约定: _read() 返回缓存内的活对象, 仅限 _lock 持有下读改写; 无锁消费方
+# (get_task/list_tasks) 经快照拷贝拿稳定视图 (与旧「每次解析新快照」语义一致)。
+_cache = None  # (path, sig, obj)
+
+
+def _stat_sig(path):
+    try:
+        st = os.stat(path)
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
 def _read():
     # 6.1.7 (收尾): 读取端与写入端同源文件锁互斥 — 消除 Windows 下读句柄与 os.replace 竞争
     # (历史偶发 WinError 5 拒绝访问: 读 open 未关闭时 replace 目标被占用, 任务状态丢失)
+    global _cache
+    sig = _stat_sig(JOBS_FILE)
+    if _cache is not None and _cache[0] == JOBS_FILE and _cache[1] == sig:
+        return _cache[2]
     try:
         with file_lock(JOBS_FILE):
             with open(JOBS_FILE, encoding='utf-8') as f:
                 data = json.load(f)
-        return data if isinstance(data, dict) else {}
+        data = data if isinstance(data, dict) else {}
     except Exception:
-        return {}
+        data = {}
+    _cache = (JOBS_FILE, sig, data)
+    return data
 
 
 def _write(obj):
+    global _cache
     try:
         dirn = os.path.dirname(JOBS_FILE)
         if dirn and not os.path.isdir(dirn):
             os.makedirs(dirn, exist_ok=True)
         atomic_write_json(JOBS_FILE, obj)
+        _cache = (JOBS_FILE, _stat_sig(JOBS_FILE), obj)
     except Exception as e:
         logger.warning('jobs 写入失败: %s', e)
 
@@ -138,16 +167,22 @@ def create_task(task_type, payload=None, max_retries=0, priority=0, dedupe_key=N
 
 
 def get_task(job_id):
-    return _read().get(job_id)
+    # 6.5.1: 快照拷贝 — 返回稳定视图, 避免无锁消费活对象与写方竞争 (与旧解析快照语义一致)
+    with _lock:
+        j = _read().get(job_id)
+        return copy.deepcopy(j) if j else None
 
 
 def list_tasks(limit=50):
-    jobs = _read()
-    ordered = sorted(jobs.values(), key=lambda j: j.get('seq', 0), reverse=True)
-    return ordered[:limit]
+    with _lock:
+        ordered = sorted(_read().values(), key=lambda j: j.get('seq', 0), reverse=True)
+        return [copy.deepcopy(j) for j in ordered[:limit]]
 
 
 def update_progress(job_id, progress, message=None):
+    # 6.5.1: 心跳去抖 — 进度为瞬态 UI 态, 同任务 0.5s 内重复心跳只更新内存表
+    # (随下一次落盘批量持久化), 终点值即时落盘; 状态迁移 (_update_store) 不受影响。
+    # 动因: 高频任务每 tick 全表重写, 与提交同锁竞争 (见 _read 处 6.5.1 注)。
     with _lock:
         jobs = _read()
         j = jobs.get(job_id)
@@ -156,7 +191,12 @@ def update_progress(job_id, progress, message=None):
         j['progress'] = max(0, min(100, int(progress)))
         if message is not None:
             j['message'] = message
-        _write(jobs)
+        now = time.monotonic()
+        if j['progress'] >= 100 or now - _progress_flushed.get(job_id, 0.0) >= _PROGRESS_FLUSH_INTERVAL:
+            _progress_flushed[job_id] = now
+            if len(_progress_flushed) > 2 * MAX_JOBS:
+                _progress_flushed.clear()
+            _write(jobs)
 
 
 def check_cancelled(job_id):
@@ -345,6 +385,7 @@ def _stop_worker(timeout: float = 2.0) -> None:
 
 def reset_jobs():
     with _lock:
+        _progress_flushed.clear()
         _write({})
 
 

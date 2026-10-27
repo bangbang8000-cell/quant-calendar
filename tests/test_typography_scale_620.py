@@ -49,7 +49,9 @@ def test_js_inline_font_size_cleared():
 
 
 def test_scale_tokens_available():
-    """tokens 应提供 20px(lg2) / 32px(2xl) 档"""
+    """tokens 应提供 6.5.8 收敛后的 22px(xl) / 28px(2xl) 档"""
     tokens = open(os.path.join(FRONTEND, "css", "tokens.css"), encoding="utf-8").read()
-    assert "--qc-font-size-lg2: 20px" in tokens, "应有 lg2=20px 标尺"
-    assert "--qc-font-size-2xl: 32px" in tokens, "应有 2xl=32px 标尺"
+    assert "--qc-font-size-xl: 22px" in tokens, "应有 xl=22px 标尺"
+    assert "--qc-font-size-2xl: 28px" in tokens, "应有 2xl=28px 标尺"
+    # 6.5.8 (C2): lg2(20px) 已并入 xl, 不得回退
+    assert "--qc-font-size-lg2" not in tokens, "lg2 补丁档已删除 (见 test_type_scale.py T2)"

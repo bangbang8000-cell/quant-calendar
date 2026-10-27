@@ -87,7 +87,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             </div>
                         </template>
                         <qc-state-panel v-else-if="backtestError" type="error" :title="t('state.backtestError')" :desc="t('state.descBacktest')" @retry="runBacktest"></qc-state-panel>
-                        <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」，结果将在此展示"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」" action-text="去选择策略" action-key="go_strategy"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
                         <div class="card-title flex-between">
@@ -103,10 +103,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="btHistoryError" type="error" title="加载失败" :desc="t('state.descNetwork')" @retry="loadBtHistory"></qc-state-panel>
-                        <div v-else-if="!btHistory.length" class="empty-state">
-                            <div class="text-md-medium-primary">暂无回测记录</div>
-                            <div class="text-sm-tertiary-mt8">运行回测后，结果将自动记录在此</div>
-                        </div>
+                        <qc-state-panel v-else-if="!btHistory.length" type="empty" icon="bar-chart-3" title="暂无回测记录" desc="运行回测后，结果将自动记录在此" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                         <div v-else>
                             <div v-for="r in btHistory" :key="r.ts + '-' + r.sid" class="card mb-12">
                                 <div class="flex-between-start-wrap">
@@ -145,10 +142,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="researchHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="researchHistoryError" type="error" title="研究历史加载失败" :desc="t('state.descNetwork')" @retry="loadResearchHistory"></qc-state-panel>
-                        <div v-else-if="!researchHistory.length" class="empty-state">
-                            <div class="text-md-medium-primary">暂无研究实验</div>
-                            <div class="text-sm-tertiary-mt8">运行因子IC / 分层 / 参数扫描 / 回测后，结果将自动记录在此</div>
-                        </div>
+                        <qc-state-panel v-else-if="!researchHistory.length" type="empty" icon="flask-conical" title="暂无研究实验" desc="运行因子IC / 分层 / 参数扫描 / 回测后，结果将自动记录在此" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                         <template v-else>
                             <!-- 对比按钮 -->
                             <div v-if="researchHistorySelected.length >= 2" class="flex-c-gap-8 mb-12">
@@ -271,7 +265,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 <qc-state-panel v-else-if="marketReviewError" type="error" title="复盘列表加载失败"
                                     :desc="t('state.descNetwork')" @retry="loadMarketReviews"></qc-state-panel>
                                 <qc-state-panel v-else-if="!marketReviews.length" type="empty" icon="file-text" title="暂无市场复盘"
-                                    desc="尚未生成任何市场复盘报告"></qc-state-panel>
+                                    desc="尚未生成任何市场复盘报告" action-text="刷新数据" action-key="refresh" @retry="loadMarketReviews"></qc-state-panel>
                                 <div v-else>
                                     <div class="flex-wrap mb-4">
                                         <div class="stat-card"><div class="stat-icon info"><qc-icon name="file-text" :size="18" /></div><div class="stat-label">复盘总数</div><div class="stat-value">{{ marketReviews.length }}</div></div>

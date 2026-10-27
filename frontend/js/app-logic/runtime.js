@@ -13,12 +13,20 @@
         loadFeishuConfig, loadTushareConfig, loadSystemStatus, loadAiConfig,
         loadRateLimit, checkTushareConnection } = ctx;
                 // ===== V4.3-S3: 全局切页 — 先懒加载目标页组件再切换 (sidebar/快捷键/内部跳转共用) =====
+                // 6.5.0 (FR-653 第 2 条): __quantGoPage 是第二个导航漏斗 — 接受新键 (workbench.strategies-merrill)
+                // 或旧键 (strategies.merrill), 先归一为内部旧坐标再懒加载/赋值, 页面组件零改动。
                 window.__quantGoPage = async (page, sub) => {
+                    const C = window.QuantNavMerge;
+                    let goPage = page, goSub = sub;
+                    if (C) {
+                        const internal = C.normalize(page, sub || '');
+                        if (internal) { goPage = internal.page; goSub = internal.sub; }
+                    }
                     try {
-                        const l = window.__lazyLoaders && window.__lazyLoaders[page];
+                        const l = window.__lazyLoaders && window.__lazyLoaders[goPage];
                         if (l) await l();
                     } catch (e) {
-                        console.warn('[lazy] 页面组件加载失败', page, e);
+                        console.warn('[lazy] 页面组件加载失败', goPage, e);
                     }
                     // V4.3-S3: 懒加载 chunk 仅写入 __quantComponents — 补注册到 Vue app
                     // (mount 时遍历一次未含懒加载组件, 不注册则主模板 resolveComponent 失败整页空白)
@@ -33,8 +41,8 @@
                     // V6.9.4 (FIX): 组件补注册后 tick 强制 pageComp 重算 —
                     // 启动恢复/hashchange 同页赋值不触发响应, 需依赖 lazyTick 让 <component :is> 重新解析到新注册组件
                     if (lazyTick) lazyTick.value++;
-                    currentPage.value = page;
-                    if (sub) currentSubPage.value = sub;
+                    currentPage.value = goPage;
+                    if (goSub) currentSubPage.value = goSub;
                 };
 
                 // ===== 监听页面切换（护栏: 页面切换 watch 全仓唯一）=====
@@ -44,12 +52,32 @@
                     hapticFeedback('light');
                     saveSessionState();
                     // V4.5 (FR-4.5.6): 页面 title 随切换更新(体验小项)
+                    // 6.5.0 (FR-653): 一级合并后按 activePages 反查所属一级, 子页命中时用成员名
                     try {
-                        const menu = allMenuDefs.find(function (m) { return m.key === page; });
-                        document.title = (menu ? menu.name + ' - ' : '') + '量化日历';
+                        const C = window.QuantNavMerge;
+                        let title = '';
+                        const primary = allMenuDefs.find(function (m) {
+                            return m.activePages ? m.activePages.indexOf(page) >= 0 : m.key === page;
+                        });
+                        if (primary) {
+                            title = primary.name;
+                            if (C && currentSubPage && currentSubPage.value) {
+                                const member = primary.members.find(function (mm) {
+                                    return mm.page === page && mm.sub === currentSubPage.value;
+                                });
+                                if (member) title = C.memberLabel(member);
+                            }
+                        }
+                        document.title = (title ? title + ' - ' : '') + '量化日历';
                     } catch (e) {}
-                    // v1.10
-                    localStorage.setItem('quant_last_page', page);
+                    // v1.10 — 6.5.0 (FR-653.3): 持久化新格式深链 (旧键可 100% 还原)
+                    try {
+                        const C = window.QuantNavMerge;
+                        localStorage.setItem('quant_last_page',
+                            C ? C.toHash(page, currentSubPage.value).slice(1) : page);
+                    } catch (e) {
+                        localStorage.setItem('quant_last_page', page);
+                    }
                     // v3.16 (16.8): 离开日历页时取消在途池信号请求
                     if (page !== 'calendar' && typeof cancelPoolSignals === 'function') cancelPoolSignals();
                     // v3.4.0-T7: 匿名页面热度上报

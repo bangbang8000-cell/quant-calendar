@@ -47,6 +47,12 @@
                   grouped.push({ value: it.name + ' · 策略', type: 'strategy', id: it.id, name: it.name, label: it.name, subLabel: '策略', icon: 'target', iconName: 'target' });
                 } else if (it.type === 'menu') {
                   grouped.push({ value: it.name, type: 'menu', menuKey: it.menuKey, name: it.name, label: it.name, subLabel: it.subLabel || '页面', icon: 'file-text', iconName: 'file-text' });
+                } else if (it.type === 'eval') {
+                  // 6.4.2 (FR-645): 记录域 — 评估历史
+                  grouped.push({ value: it.name + ' · 评估历史', type: 'eval', code: it.code, name: it.name, label: it.name, subLabel: '评估历史', icon: 'history', iconName: 'history' });
+                } else if (it.type === 'dict') {
+                  // 6.4.2 (FR-645): 记录域 — 数据字典字段
+                  grouped.push({ value: it.label + ' · 数据字典', type: 'dict', field: it.field, label: it.label, subLabel: '数据字典', icon: 'book-open', iconName: 'book-open' });
                 }
               });
             });
@@ -62,6 +68,9 @@
         if (item.type === 'command') return { action: 'command', key: item.key };
         if (item.type === 'sector') return { action: 'sector', name: item.name };
         if (item.type === 'strategy') return { action: 'strategy', id: item.id, name: item.name };
+        // 6.4.2 (FR-645): 记录域
+        if (item.type === 'dict') return { action: 'dict', field: item.field, name: item.label || item.field };
+        if (item.type === 'eval') return { action: 'eval', code: item.code, name: item.name || item.label };
         if (item.type === 'stock' || (item.code && item.name)) return { action: 'stock', code: item.code, name: item.name };
         return null;
       }
@@ -80,6 +89,23 @@
         }
         if (d.action === 'strategy') {
           navigateTo('research', 'overview');
+          return;
+        }
+        // 6.4.2 (FR-645): 记录域 — 数据字典字段跳字典页 / 评估历史跳该股详情
+        if (d.action === 'dict') {
+          navigateTo('ops', 'datadict');
+          return;
+        }
+        if (d.action === 'eval') {
+          if (d.code) {
+            if (currentPage.value !== 'calendar' || currentSubPage.value !== 'calendar') {
+              navigateTo('calendar', 'calendar');
+            }
+            if (typeof markExternalStock === 'function') markExternalStock(d.code);
+            _openStockFromSearch(d.code, d.name);
+          } else {
+            navigateTo('ai', 'history');
+          }
           return;
         }
         if (d.action === 'stock') {
@@ -144,10 +170,13 @@
         if (e.ctrlKey && k === 'h') { e.preventDefault(); navigateTo('ai', 'history'); return; }
         if (e.ctrlKey && e.shiftKey && k === 's') { e.preventDefault(); navigateTo('shortterm', 'overview'); return; }
         if (e.ctrlKey || e.metaKey || e.altKey) return;
-        if (k >= '1' && k <= '5') {
+        // 6.5.4 (FR-654): 一级摊平为 7 业务域 — 数字直达 1-7 (与侧栏顺序一致)
+        if (k >= '1' && k <= '7') {
           const idx = parseInt(k) - 1;
           const page = menus.value[idx];
-          if (page) navigateTo(page.key, page.subPages[0] || '');
+          // 6.5.2 (FR-653): 成员旧坐标直达 (subPages 已成员键化, 不可再当 sub 用)
+          const m0 = page && page.members && page.members[0];
+          if (page) navigateTo(m0 ? m0.page : page.key, m0 ? m0.sub : '');
           return;
         }
         if (k === 'r') { refreshCurrentPage(); }
@@ -172,6 +201,14 @@
         else if (page === 'calendar') refreshCalendarData().catch(() => {});
         else if (page === 'ai') getLoadAiHistory().catch(() => {});
       }
+      // 6.4.2 (FR-644): 空态主行动「刷新数据」全局接线 (状态面板派发 qc:empty-action)
+      window.addEventListener('qc:empty-action', function () {
+        refreshCurrentPage();
+      });
+      // 6.4.2 (FR-646): 离线恢复 → 自动重取当前页
+      window.addEventListener('qc:online-recovered', function () {
+        refreshCurrentPage();
+      });
 
       return {
         searchQuery, searchStocks, onSearchSelect, runGlobalCommand,

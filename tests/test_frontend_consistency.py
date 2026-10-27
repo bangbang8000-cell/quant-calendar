@@ -16,6 +16,18 @@ FRONTEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + os
 
 
 import page_source
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND_ROOT, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel: str) -> str:
     _b = page_source.bundle(rel)
     if _b is not None:
@@ -60,15 +72,17 @@ def test_qcstate_no_duplicate_keys():
 
 
 def test_qcstate_key_count_stable():
-    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一键数量应为当前基线 459（v3.17.14 i18n +3:
-    t/locale/changeLanguage；v3.17.12 健康面板 +2；v3.17.9 FR-3.17.9 历史懒加载/自选骨架屏 +5:
-    aiHistoryTotal/aiHistoryLoadingMore/hasMoreAiHistory/loadMoreAiHistory/watchlistLoading；
-    v3.17.7 实时化 FR-3.17.7 +12:
-    realtimeQuotes/realtimeDegraded/realtimeWsState/connectRealtimeQuotes/
-    disconnectRealtimeQuotes/quoteWarningFor/realtimeQuoteColor/realtimePriceText/
-    realtimePctText/realtimeRatioText/REALTIME_DEGRADED_TEXT/REALTIME_FALLBACK_TEXT）"""
+    """FR-3.16.2/3.16.4/3.16.5: qcState 唯一数量的表面登记基线（变更须在此登记理由）
+    6.5.0 (FR-654.1) +1: currentSubName (页面唯一 h1 / 面包屑二级显示名);
+    6.4.4 (FR-650) +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks
+    (问股上下文带入条、工具调用摘要与快捷问法);
+    6.4.2 (FR-644) +2: loadExamplePool/removeExamplePool (示例组合空态主行动);
+    历史登记: v6.4 FR-6.4.2 +2 realtimeDegradedReason/realtimeDegradedText;
+    2026-09-21 校正 6.1.0 -1 timeSinceRefresh 与 6.2.2 +1 externalStockActive 相抵 (基线 503);
+    V6.10 配色专项按实测校订; V6.9.3 主题共享 +6; F11.2 策略研究恒显 -2;
+    V5.16 详情双栏 +4; V5.17 中栏拖拽 +3; 6.3.1 四态错误标志 +9"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 514, f"qcState 唯一键数异常: {len(set(keys))} (期望 514; v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText (WS 降级原因回传, 供顶栏细条与自选实时条共用同一文案口径); 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError)"
+    assert len(set(keys)) == 521, f"qcState 唯一键数异常: {len(set(keys))} (期望 521; 6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError)"
 
 
 def test_watch_currentpage_single():
@@ -149,7 +163,7 @@ def test_quote_colors_no_el_success_danger():
 
 def test_light_theme_tertiary_contrast():
     """FR-3.16.3 (16.5): 浅色主题 --text-tertiary 不再使用低对比度色（#999/#94a3b8/#a0947c）"""
-    src = _read("css/themes.css")
+    src = _themes_css()
     # 仅暗色主题(dark-pro)可保留浅色弱对比；浅色主题的 tertiary 必须加深
     for bad in ["--text-tertiary: #999", "--text-tertiary: #94a3b8", "--text-tertiary: #a0947c"]:
         assert bad not in src, f"浅色主题 --text-tertiary 仍含低对比度值: {bad}"
@@ -239,7 +253,7 @@ def test_keyboard_reach_in_components():
 
 def test_focus_visible_global():
     """FR-3.16.4 (16.6): 全局键盘焦点可见性样式兜底"""
-    src = _read("css/themes.css")
+    src = _themes_css()
     assert ":focus-visible" in src, "themes.css 应提供 :focus-visible 全局 outline"
     assert "outline" in src[src.index(":focus-visible"):src.index(":focus-visible") + 120], \
         ":focus-visible 应含 outline"
@@ -337,7 +351,7 @@ def test_login_branded():
     assert "login-btn" in idx, "登录按钮应使用类而非 inline width"
     assert 'style="width: 100%"' not in idx.split("<!-- 登录页")[1].split("</div>")[0], \
         "登录页不应残留 inline width"
-    css = _read("css/themes.css")
+    css = _themes_css()
     # V5.12.0 (FR-5.12.2): 登录页改双栏 — .login-desc(整行说明) 由品牌区 .login-tagline 取代
     for cls in (".login-screen", ".login-brand", ".login-subtitle", ".login-tagline", ".login-footer",
                 ".login-brand-pane", ".login-form-pane", ".login-brand-bar"):
@@ -359,7 +373,7 @@ def test_history_record_dedup():
 
 def test_inline_style_governance():
     """FR-3.16.7 (16.9): 高频 inline style 收敛为类（date-group-header/count-badge-sm）"""
-    css = _read("css/themes.css")
+    css = _themes_css()
     assert ".date-group-header" in css, "应新增 .date-group-header 类"
     assert ".count-badge-sm" in css, "应新增 .count-badge-sm 类"
     src = _read("js/components/ai-page.js")
@@ -379,7 +393,7 @@ def test_theme_model_is_mode_x_hue():
     旧断言要求 CSS 里存在 8 个 data-theme 块 (classic-*/tech-blue/... 模型), 该模型早已下线,
     断言长期恒失败 —— V6.10 配色专项·D 按现行模型重写。
     """
-    css = _read("css/themes.css")
+    css = _themes_css()
     themes = sorted(set(re.findall(r'data-theme="([^"]+)"', css)))
     assert themes == ["dark-pro", "gold"], f"CSS 主题基底应为 gold/dark-pro, 当前 {themes}"
     themes_js = _read("js/themes.js")
@@ -702,7 +716,7 @@ def test_eval_track_no_inline_style():
     seg = seg[:seg.index("<!-- 批量操作工具栏 -->")]
     assert 'style="' not in seg, "评估命中率卡片不应含内联 style 属性"
     assert "style={" not in seg, "评估命中率卡片不应含绑定式内联 style"
-    css = _read("css/themes.css")
+    css = _themes_css()
     for cls in (".eval-track-card", ".eval-track-overall", ".eval-track-stat", ".eval-track-table", ".eval-track-note"):
         assert cls in css, f"themes.css 应定义 {cls}"
 
@@ -755,11 +769,11 @@ def test_scan_subpage_removed():
     assert "currentSubPage === 'scan'" not in src, "research-page 不应再含 scan 子页分支"
     assert "loadScan" not in src, "research-page 不应再含 loadScan 函数"
     assert "scanPool" not in src, "research-page 不应再含 scanPool 状态"
-    # shortterm 菜单 subPages 不应含 scan
-    app = _read("js/app-logic.js")
-    s = re.search(r"\{ key: 'shortterm'.*?\}", app)
-    assert s and "'scan'" not in s.group(0), "shortterm 菜单 subPages 不应含 'scan' (已删除)"
+    # shortterm 菜单 subPages 不应含 scan — 6.5.0 (FR-653) 起菜单结构单一来源在 nav-merge-core
+    core = _read("js/nav-merge-core.js")
+    assert "sub: 'scan'" not in core, "shortterm 菜单不应含 'scan' 成员 (已删除)"
     # subPageNames 不应再映射 scan
+    app = _read("js/app-logic.js")
     assert "'scan': '异动扫描'" not in app, "subPageNames 不应再映射 'scan' (已删除)"
 
 
@@ -770,7 +784,9 @@ def test_research_menu_enabled_by_default():
     app = _read("js/app-logic.js")
     assert "researchMenuEnabled.value" not in app, "V6.9.3: 研究菜单恒显, 不应再引用 researchMenuEnabled.value"
     assert "toggleResearchMenu" not in app, "V6.9.3: 不应存在 toggleResearchMenu"
-    assert "{ key: 'research'" in app, "策略研究菜单应始终在 allMenuDefs 中"
+    # 6.5.0 (FR-653): 菜单结构迁移 nav-merge-core NEW_NAV — 策略研究一级恒在
+    core = _read("js/nav-merge-core.js")
+    assert "key: 'research'" in core, "策略研究一级应始终在 NEW_NAV 中 (菜单单一来源)"
     # 页面组件不再有"功能未开启"占位
     page = _read("js/components/research-page.js")
     assert "!researchMenuEnabled" not in page, "research-page 不应引用研究开关占位"
@@ -865,6 +881,9 @@ def test_migrated_utility_classes_defined():
         "merrill-detail-dialog", "risk-section", "shortcut-keys", "tour-dialog",
         # V6.10 配色专项·D: 以下 6 个类在配色专项开始前 (b828e8d) 就已未定义, 属既有基线漂移, 此处补齐
         "dh-item", "label", "mc-hist-title", "mc-prog", "num", "watch-star",
+        # 6.5.1 (FR-657): sidebar.js 为 SFC (Sidebar.vue) 覆盖的死代码 (index.html 不加载),
+        # 其 .sidebar 系 CSS 已随旧类清零删除; 类引用仅存于死文件, 登记基线防回归噪音
+        "sidebar",
     }
     undef = {c for c in refs if c not in defined}
     new_undef = undef - baseline_undef
@@ -1076,7 +1095,7 @@ def test_index_boot_skeleton_and_vcloak():
     assert "bootEl.remove()" in idx, "挂载后应移除启动骨架屏"
     css = _read("css/tokens.css")
     assert "[v-cloak]" in css, "tokens.css 应定义 [v-cloak]{display:none}"
-    css2 = _read("css/themes.css")
+    css2 = _themes_css()
     for cls in (".qc-boot-skeleton", ".qc-boot-skeleton-sidebar", ".qc-boot-skeleton-card"):
         assert cls in css2, f"themes.css 应定义 {cls}"
 
@@ -1299,7 +1318,7 @@ def test_realtime_no_inline_style():
 
 def test_realtime_css_classes_defined():
     """FR-3.17.7 实时化: 实时报价区新增类已定义于 themes.css"""
-    css = _read("css/themes.css")
+    css = _themes_css()
     for cls in (".rt-bar", ".rt-title", ".rt-live", ".rt-connecting",
                 ".rt-degraded", ".rt-degraded-text", ".watchlist-quote",
                 ".quote-price", ".quote-pct", ".quote-meta", ".rt-warn-tag"):
@@ -1393,7 +1412,7 @@ def test_system_page_openapi_no_inline_style():
     seg = src[start:end]
     assert 'style="' not in seg, "开放 API 卡片不应含内联 style 属性"
     assert "style={" not in seg, "开放 API 卡片不应含绑定式内联 style"
-    css = _read("css/themes.css")
+    css = _themes_css()
     for cls in (".openapi-new-key", ".openapi-key-code", ".openapi-key-row", ".openapi-key-prefix"):
         assert cls in css, f"themes.css 应定义 {cls}"
 
@@ -1628,8 +1647,10 @@ def test_i18n_shortterm_keys_in_all_locales():
         assert "nav.shortterm" in loc, "%s 语言包缺 nav.shortterm (菜单显示英文 key)" % f
         assert "sub.ztpool" in loc, "%s 语言包缺 sub.ztpool" % f
         assert "sub.lhb" in loc, "%s 语言包缺 sub.lhb" % f
+    core = _read("js/nav-merge-core.js")
+    assert "sub: 'ztpool'" in core and "sub: 'lhb'" in core, \
+        "6.5.0 (FR-653) 起 shortterm 成员注册于 nav-merge-core (workbench)"
     app = _read("js/app-logic.js")
-    assert "key: 'shortterm'" in app, "菜单应注册 shortterm"
     assert "'ztpool': '涨停复盘'" in app and "'lhb': '龙虎榜'", \
         "subPageNames 应含裸键 ztpool/lhb (subTabLabel 兜底查询)"
     sp = _read("js/components/shortterm-page.js")
@@ -1646,12 +1667,13 @@ def test_backtest_moved_to_research_menu():
 
     策略总览 overview 的「回测工作台」入口按钮改跳 navigateTo(research, backtest)。
     """
-    app = _read("js/app-logic.js")
-    strat = app.split("key: 'strategies'")[1].split("},")[0]
-    assert "'backtest'" not in strat, "策略总览 subPages 不应再含 backtest (已移入策略研究)"
-    research = app.split("key: 'research'")[1].split("},")[0]
-    assert "'backtest'" in research, "策略研究应含 backtest"
-    assert "'backtest-history'" in research, "策略研究应含 backtest-history"
+    # 6.5.4 (FR-654): 菜单结构在 nav-merge-core — 策略总览不含 backtest, 策略研究含 backtest+历史
+    core = _read("js/nav-merge-core.js")
+    strat = core.split("key: 'strategies'")[1].split("key: 'calendar'")[0]
+    assert "sub: 'backtest'" not in strat, "策略总览 subPages 不应再含 backtest (已移入策略研究)"
+    research = core.split("key: 'research'")[1].split("key: 'ops'")[0]
+    assert "sub: 'backtest'" in research, "策略研究应含 backtest"
+    assert "sub: 'backtest-history'" in research, "策略研究应含 backtest-history"
     sp = _read("js/components/strategies-page.js")
     # V6.11 (用户需求1): 策略总览的「回测工作台」快捷按钮及所在整行已移除 ——
     # 回测改由「策略研究」菜单进入 (subPages 已含 backtest), 页内保留返回策略总览按钮。
@@ -1674,9 +1696,10 @@ def test_ai_history_split_evaluation_analysis():
     menus 增 evaluation-analysis; ai-page 新分支承接命中率卡; watch 触发条件随新子页;
     history 分支不再含命中率卡(eval-track); 5 语补 sub.evaluation-analysis。
     """
-    app = _read("js/app-logic.js")
-    ai = app.split("key: 'ai'")[1].split("},")[0]
-    assert "'evaluation-analysis'" in ai, "智能评估 menus 应含 evaluation-analysis"
+    # 6.5.0 (FR-653): 菜单结构在 nav-merge-core — ai 成员含 evaluation-analysis
+    core = _read("js/nav-merge-core.js")
+    ai = core.split("key: 'ai'")[1].split("key: 'research'")[0]
+    assert "sub: 'evaluation-analysis'" in ai, "智能评估成员应含 evaluation-analysis"
     page = _read("js/components/ai-page.js")
     assert "currentSubPage === 'evaluation-analysis'" in page, "应有评估分析分支"
     assert "eval-track-card" in page, "命中率卡应保留在页面中"
@@ -1753,9 +1776,10 @@ def test_mobile_375_responsive_guard():
     # 溢出守卫: 移动端禁止整体横向溢出 (v3.17.8 独立 768 媒体块)
     assert "overflow-x: hidden" in resp, "移动端应有 overflow-x hidden 溢出守卫"
     assert "max-width: 100vw" in resp, "body 应禁横向溢出"
-    # 底部导航 + 侧边栏隐藏
-    assert ".mobile-nav" in resp, "移动端应有底部导航 mobile-nav"
-    assert "display: none" in resp.rsplit(".sidebar {", 1)[1].split("}")[0], "移动端应隐藏侧边栏"
+    # 底部导航 + 侧边栏隐藏 (6.5.1 FR-657: 旧类 .sidebar/.mobile-nav 退役, qc-* 承接并迁至 nav.css)
+    nav_css = _read("css/nav.css")
+    assert ".qc-mobile-nav" in nav_css, "移动端应有底部导航 qc-mobile-nav"
+    assert "display: none" in nav_css.rsplit(".qc-sidebar {", 1)[1].split("}")[0], "移动端应隐藏侧边栏"
     # 子导航横向滚动 (7 个短线复盘子页 375px 装不下)
     assert ".sub-nav-wrapper" in resp and "overflow-x: auto" in resp, "子导航应允许横向滚动"
     # 表格容器横向滚动
@@ -1810,7 +1834,7 @@ def test_brand_quant_calendar_unified():
     en = _read("js/locales/en.js")
     assert "'login.title': 'Quant Calendar'" in en, "en 品牌应同步缩短"
     # 收起态 sidebar-logo 不再有 ::after emoji 伪元素 (logo 与 emoji 双图标问题)
-    css = _read("css/themes.css")
+    css = _themes_css()
     assert "sidebar-logo::after" not in css, "收起态不应有 emoji 伪元素"
 
 

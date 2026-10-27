@@ -27,18 +27,27 @@ def _read_locale(name):
 
 
 def test_menu_defs_restructured():
-    """TC-6.6.1.x: allMenuDefs 反映 6.6.1 重构 (日历合并/组合持仓/策略管理/通知中心)"""
-    src = _read_f("js/app-logic.js")
-    # 日历: 4 视图合并为 ['calendar','pool']
-    assert "subPages: ['calendar', 'pool']" in src, "calendar 应合并为 ['calendar','pool']"
-    # 智能评估: 含 portfolio 入口
-    m = re.search(r"subPages: \['overview', 'focus', 'watchlist', 'history', 'evaluation-analysis', '([^']+)', 'chat_history'\]", src)
-    assert m and m.group(1) == "portfolio", "ai.subPages 应含 portfolio (组合持仓入口)"
+    """TC-6.6.1.x (6.5.4 重订): 菜单结构契约读 nav-merge-core 的按业务域段 —
+    日历视图合并 / 组合持仓入口 / 策略管理合并 / 评估历史拆分等历史重构结果在成员表中保持"""
+    core = _read_f("js/nav-merge-core.js")
+    # 段起点用一级声明签名 (成员键 'calendar' 会先命中 split, 不能只用 key: 'calendar')
+    cal = core.split("key: 'calendar', name: '量化日历'")[1].split("key: 'shortterm', name:")[0]
+    # 日历: 4 视图合并为 calendar+pool 两成员
+    assert "page: 'calendar', sub: 'calendar'" in cal, "日历应合并为 calendar 成员"
+    assert "page: 'calendar', sub: 'pool'" in cal, "日历应含 pool 成员"
+    assert "sub: 'week'" not in cal and "sub: 'month'" not in cal and "sub: 'year'" not in cal, \
+        "日历 4 视图合并不应还原"
+    # 智能评估: 含 portfolio 成员 (组合持仓入口), 位于 chat_history 前
+    m = re.search(r"key: '[a-z-]+', page: 'ai', sub: 'portfolio'\s*\},\s*\{\s*key: 'chat_history'", core)
+    assert m, "ai 成员 chat_history 前应为 portfolio (组合持仓入口)"
     # 策略研究: strategy-write/custom-write 合并为 strategy-manage
-    assert "subPages: ['research-overview', 'quant-research', 'strategy-manage', 'backtest', 'backtest-history']" in src, \
-        "research.subPages 应含 strategy-manage"
-    # 系统配置: 含 notification
-    assert "'notification'" in src.split("'system'")[1].split("guestSubPages")[0], "system.subPages 应含 notification"
+    research = core.split("key: 'research'")[1].split("key: 'ops'")[0]
+    assert "sub: 'strategy-manage'" in research, "research 成员应含 strategy-manage"
+    assert "sub: 'strategy-write'" not in research and "sub: 'custom-write'" not in research, \
+        "旧 strategy-write/custom-write 拆分子页不应还原"
+    # 系统配置: 含 notification 成员
+    system = core.split("key: 'system'")[1]
+    assert "sub: 'notification'" in system, "system 成员应含 notification"
 
 
 def test_sub_page_names_covered():
@@ -65,23 +74,18 @@ def test_subnav_and_toptab_icons_sync():
 
 
 def test_system_groups_consistent():
-    """TC-6.6.2.8: SYSTEM_GROUPS 覆盖全部 system.subPages key, 且分组符合方案A"""
-    subnav = _read_f("src/components/SubNav.vue")
-    groups = subnav.split("const SYSTEM_GROUPS =")[1].split("export default")[0]
-    for key in ("status", "health", "schedule", "guard", "execution",   # 运行监控
-                "autoeval", "usage",                                     # 智能服务
-                "datasource", "feature", "datadict", "notification",     # 平台设置
-                "user", "about"):                                        # 组织管理
-        assert "'" + key + "'" in groups, f"SYSTEM_GROUPS 缺 {key}"
-    # 方案A: execution 与 guard 归位运行监控; 组织管理不再含 execution
-    # 运行监控组内顺序: status/health/schedule/guard/execution
-    run_group = groups.split("运行监控")[1].split("}]}")[0]
-    assert run_group.index("guard") < run_group.index("execution"), "运行监控组 guard 应在 execution 前"
-    org_group = groups.split("组织管理")[1].split("}]}")[0]
-    assert "execution" not in org_group, "组织管理组不应再含 execution"
-    # 平台设置组含 notification
-    plat_group = groups.split("平台设置")[1].split("}]}")[0]
-    assert "notification" in plat_group, "平台设置组应含 notification"
+    """TC-6.6.2.8 (6.5.0 重订): FR-653 后 ops/system 为独立一级 (方案A 跨页分组随 IA 退役) —
+    契约改为成员全量覆盖 + 方案A 顺序遗产: 运行监控 guard 在 execution 前, 组织管理不含 execution"""
+    core = _read_f("js/nav-merge-core.js")
+    ops = re.findall(r"\{ key: '[a-z-]+', page: 'ops', sub: '([a-z-]+)' \}", core)
+    sysm = re.findall(r"\{ key: '[a-z-]+', page: 'system', sub: '([a-z-]+)' \}", core)
+    for key in ("status", "health", "schedule", "usage", "guard", "datadict", "execution"):
+        assert key in ops, f"ops 成员缺 {key}"
+    for key in ("config", "feature", "autoeval", "datasource", "user", "notification", "about"):
+        assert key in sysm, f"system 成员缺 {key}"
+    # 方案A 顺序遗产: 运行监控组内 guard 在 execution 前; 组织管理 (system) 不含 execution
+    assert ops.index("guard") < ops.index("execution"), "运行监控 guard 应在 execution 前"
+    assert "execution" not in sysm, "组织管理 (system) 不应再含 execution"
 
 
 def test_i18n_keys_parity_all_locales():

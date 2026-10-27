@@ -363,6 +363,18 @@ class TestPortfolioApi:
 # ─── 前端一致性 ─────────────────────────────────────────────────
 
 import page_source
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND_ROOT, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read_frontend(rel: str) -> str:
     _b = page_source.bundle(rel)
     if _b is not None:
@@ -409,7 +421,7 @@ def test_frontend_portfolio_loaded_in_html():
 
 def test_frontend_portfolio_css_classes():
     """FR-3.17.5: themes.css 应定义 portfolio-* 类"""
-    css = _read_frontend('css/themes.css')
+    css = _themes_css()
     for cls in ('.portfolio-summary-row', '.portfolio-summary-item', '.portfolio-table',
                 '.portfolio-equity-chart', '.portfolio-trade-item', '.portfolio-empty'):
         assert cls in css, f"themes.css 应定义 {cls}"

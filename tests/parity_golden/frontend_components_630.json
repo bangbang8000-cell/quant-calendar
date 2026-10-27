@@ -70,8 +70,6 @@
       "date-group-header",
       "date-group-records",
       "detailSplitEnabled",
-      "empty-state",
-      "empty-state-icon",
       "empty-state-icon-md",
       "eval-track-card",
       "eval-track-grid",
@@ -211,7 +209,6 @@
       "text-center-tertiary-pad20x0",
       "text-lg-semibold-primary-mb8",
       "text-md",
-      "text-md-medium-primary",
       "text-md-secondary-mb20",
       "text-md-semibold",
       "text-semibold",
@@ -220,7 +217,6 @@
       "text-sm-secondary-mb4",
       "text-sm-secondary-mb6",
       "text-sm-secondary-mb8",
-      "text-sm-tertiary-mt8",
       "text-sm-tertiary-normal",
       "text-xs",
       "text-xs-tertiary",
@@ -372,8 +368,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 76154,
-    "template_sha": "d875f6883f31da65"
+    "template_len": 75892,
+    "template_sha": "b097e2ccd2607710"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -470,6 +466,7 @@
       "mt-4",
       "pull-refresh-indicator",
       "pull-refresh-spinner",
+      "qc-example-pool-actions",
       "qc-page-tools",
       "qc-subnav-lastload",
       "search-box",
@@ -569,6 +566,8 @@
       "compareLoading",
       "comparePairs",
       "compareVisible",
+      "goDatasource",
+      "loadExamplePool",
       "onCalTouchEnd",
       "onCalTouchStart",
       "openStrategyCompare",
@@ -576,8 +575,8 @@
       "switchViewLocal",
       "viewLabel"
     ],
-    "template_len": 16962,
-    "template_sha": "3032165a7a026ac1"
+    "template_len": 17607,
+    "template_sha": "4617048425133d76"
   },
   "ChangePasswordDialog": {
     "classes": [],
@@ -605,7 +604,10 @@
       "command-item-sub",
       "command-palette",
       "command-palette-body",
-      "opacity-6"
+      "opacity-6",
+      "qc-recent-clear",
+      "qc-search-alt",
+      "qc-search-alts"
     ],
     "directives": [
       "v-else",
@@ -617,12 +619,15 @@
     ],
     "i18n_keys": [],
     "icons": [
-      "item.icon",
+      "iconOf(item)",
       "search"
     ],
     "name": "qc-command-panel",
     "setup_keys": [
+      "alternatives",
+      "clearRecent",
       "execute",
+      "iconOf",
       "inputEl",
       "isActive",
       "isIconName",
@@ -630,15 +635,18 @@
       "onDown",
       "onEnter",
       "onGlobalKeydown",
+      "onKeydown",
+      "onTab",
       "onUp",
       "query",
+      "recentEntities",
       "results",
       "sanitizeHtml",
       "setActive",
       "visible"
     ],
-    "template_len": 1679,
-    "template_sha": "c7654d087c83566d"
+    "template_len": 2226,
+    "template_sha": "8b29462d1c5c59b1"
   },
   "ContextMenu": {
     "classes": [
@@ -820,7 +828,6 @@
   "GlobalHeader": {
     "classes": [
       "===",
-      "currentSubPage",
       "currentTheme",
       "danger",
       "global-header",
@@ -828,10 +835,13 @@
       "global-search-wrapper",
       "header-date-area",
       "info-chip-xs",
+      "isMemberActive(menu,",
       "ml-4px",
       "ml-8px",
       "non-trading-banner",
       "non-trading-banner-close",
+      "qc-header-search-fab",
+      "sub-nav-more",
       "sub-nav-tab",
       "sub-nav-wrapper",
       "text-sm-secondary-ml8",
@@ -863,6 +873,7 @@
       "calendar.selectWeek",
       "calendar.selectYear",
       "common.export",
+      "common.more",
       "common.refresh",
       "common.searchPlaceholder"
     ],
@@ -873,6 +884,7 @@
       "log-out",
       "palette",
       "refresh",
+      "search",
       "settings",
       "slotProps?.item?.iconName"
     ],
@@ -888,6 +900,7 @@
       "disabledDate",
       "dismissBanner",
       "exportCSV",
+      "goMember",
       "goMerrill",
       "handleLogout",
       "keyClick",
@@ -897,6 +910,7 @@
       "menus",
       "onDateChange",
       "onSearchSelect",
+      "openPalette",
       "refreshCalendarData",
       "resetSetupWizard",
       "searchQuery",
@@ -909,8 +923,8 @@
       "t",
       "themes"
     ],
-    "template_len": 6303,
-    "template_sha": "5773ae817195cd5a"
+    "template_len": 7381,
+    "template_sha": "cf1bb1096d35e3f8"
   },
   "HistoryRecord": {
     "classes": [
@@ -1058,10 +1072,11 @@
     ],
     "name": "qc-menu-config-dialog",
     "setup_keys": [
-      "...state"
+      "...state",
+      "memberLabel"
     ],
-    "template_len": 2548,
-    "template_sha": "ba6db844d95ee9ad"
+    "template_len": 2669,
+    "template_sha": "4625cfac748bbc90"
   },
   "MerrillDetailDialog": {
     "classes": [
@@ -1165,8 +1180,8 @@
     "setup_keys": [
       "...state"
     ],
-    "template_len": 15509,
-    "template_sha": "ec1d4a8fa56bfed7"
+    "template_len": 15549,
+    "template_sha": "cc2be96da4a47f1b"
   },
   "Onboarding": {
     "classes": [
@@ -1198,10 +1213,11 @@
       "st",
       "step",
       "stepKey",
+      "totalSteps",
       "visible"
     ],
-    "template_len": 1095,
-    "template_sha": "d42e2a0ec3bc9ae1"
+    "template_len": 1110,
+    "template_sha": "58f3b80e03296ad7"
   },
   "ResearchPage": {
     "classes": [
@@ -1257,7 +1273,6 @@
       "dashboard-grid",
       "down",
       "down:",
-      "empty-state",
       "factor-detail-panel",
       "factor-ic-report",
       "factor-layer-result",
@@ -1368,7 +1383,6 @@
       "table-container",
       "text-danger-semibold",
       "text-lg",
-      "text-md-medium-primary",
       "text-sm",
       "text-sm-primary",
       "text-sm-secondary",
@@ -1572,8 +1586,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 65950,
-    "template_sha": "3564bb01da04238b"
+    "template_len": 66043,
+    "template_sha": "cd7a125e59de187e"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1822,8 +1836,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 32966,
-    "template_sha": "162c9da7fa587cf0"
+    "template_len": 33134,
+    "template_sha": "34f297923b90d1a0"
   },
   "Sidebar": {
     "classes": [
@@ -1890,14 +1904,18 @@
     ],
     "name": "qc-state-panel",
     "setup_keys": [
+      "actionLabel",
       "desc",
       "icon",
       "isIconName",
+      "onAction",
+      "retryBlocked",
       "retryable",
+      "showAction",
       "title"
     ],
-    "template_len": 1064,
-    "template_sha": "500e72161974ec02"
+    "template_len": 1107,
+    "template_sha": "f6d41848560a4b75"
   },
   "StockDetailDialog": {
     "classes": [
@@ -2034,6 +2052,13 @@
       "panel-title-mb8",
       "perf-block",
       "perf-block-title",
+      "qc-chat-context",
+      "qc-chat-context-text",
+      "qc-chat-tool-key",
+      "qc-chat-tool-row",
+      "qc-chat-tool-val",
+      "qc-chat-tools",
+      "qc-stale-note",
       "ring-box",
       "ring-center-text",
       "ring-value",
@@ -2137,6 +2162,7 @@
       "c.icon",
       "clipboard-list",
       "clock",
+      "crosshair",
       "flag",
       "lightbulb",
       "loader",
@@ -2176,8 +2202,8 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 36146,
-    "template_sha": "95fb036c76c1c5df"
+    "template_len": 38164,
+    "template_sha": "26d2eb4992a864d1"
   },
   "StrategiesPage": {
     "classes": [
@@ -2585,8 +2611,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 59439,
-    "template_sha": "b5c31fe49be6ace6"
+    "template_len": 59888,
+    "template_sha": "b8930714d61b7819"
   },
   "SystemPage": {
     "classes": [
@@ -2656,7 +2682,7 @@
       "aiDayTrend.length",
       "audit-action",
       "audit-detail",
-      "audit-list",
+      "audit-list-vlist",
       "audit-row",
       "backup-row",
       "border-left-warning",
@@ -2762,7 +2788,9 @@
       "openapi-key-prefix",
       "openapi-key-row",
       "openapi-new-key",
+      "qc-example-pool-actions",
       "qc-glossary-loading",
+      "qc-stale-note",
       "qc-text-error",
       "qc-text-success",
       "qc-text-warning",
@@ -2894,6 +2922,7 @@
       "user.role",
       "user.theme",
       "version-badge",
+      "vlist-max-h-420",
       "w-100",
       "w-100-max420",
       "w-100px",
@@ -3094,8 +3123,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 110123,
-    "template_sha": "48f483ccd652ad27"
+    "template_len": 111766,
+    "template_sha": "2cb095075e47a21a"
   },
   "TourDialog": {
     "classes": [

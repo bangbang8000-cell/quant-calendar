@@ -16,7 +16,7 @@
       <div v-if="visible" class="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         <div class="onboarding-card">
           <div class="onboarding-head">
-            <div class="onboarding-step-badge">{{ st.stepIndex + 1 }} / 5</div>
+            <div class="onboarding-step-badge">{{ st.stepIndex + 1 }} / {{ totalSteps }}</div>
             <div class="onboarding-progress-track" aria-hidden="true">
               <div class="onboarding-progress-fill" :style="{ width: prog.pct + '%' }"></div>
             </div>
@@ -35,10 +35,29 @@
     setup() {
       const visible = ref(false);
       const st = ref(OC.createOnboardingState());
+      const totalSteps = OC.stepCount();
+      let startedAt = 0;
       const step = computed(function () { return OC.steps()[st.value.stepIndex]; });
       const prog = computed(function () { return OC.progress(st.value); });
       const isLast = computed(function () { return st.value.stepIndex >= OC.stepCount() - 1; });
       const stepKey = computed(function () { return 'onboarding.step.' + step.value.key; });
+
+      // 6.4.2 (FR-644) 埋点: 开始/完成/跳过 (elapsed 秒)
+      function track(event, extra) {
+        try {
+          if (window.QuantEvents && typeof window.QuantEvents.track === 'function') {
+            window.QuantEvents.track(event, Object.assign({
+              step: st.value.stepIndex,
+              elapsed: startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0,
+            }, extra || {}));
+          }
+        } catch (e) {
+          console.warn('[onboarding] 埋点失败', e);
+        }
+      }
+      function markStart() {
+        if (!startedAt) startedAt = Date.now();
+      }
 
       function persist() {
         const payload = OC.persistState(st.value);
@@ -71,13 +90,16 @@
         const t = OC.steps()[st.value.stepIndex];
         if (t && t.target) goto(t.target);
       }
-      function finish() { st.value = OC.complete(st.value); persist(); visible.value = false; }
-      function skip() { st.value = OC.dismiss(st.value); persist(); visible.value = false; }
+      function finish() { st.value = OC.complete(st.value); track('onboarding_complete'); persist(); visible.value = false; }
+      function skip() { track('onboarding_skip'); st.value = OC.dismiss(st.value); persist(); visible.value = false; }
       // 6.1.1 (A2): 可回看 — 命令面板/帮助菜单触发 qc:onboarding-replay 事件重开引导
       function replay() {
         st.value = OC.createOnboardingState();
         persist();
         visible.value = true;
+        startedAt = 0;
+        markStart();
+        track('onboarding_start', { replay: true });
       }
 
       function init() {
@@ -96,13 +118,17 @@
                 if (local) st.value = OC.parseState(local);
               } catch (e) { /* 忽略 */ }
             }
-            if (!OC.isComplete(st.value) && !st.value.dismissed) visible.value = true;
+            if (!OC.isComplete(st.value) && !st.value.dismissed) {
+              visible.value = true;
+              markStart();
+              track('onboarding_start', { replay: false });
+            }
           });
         window.addEventListener('qc:onboarding-replay', replay);
       }
 
       onMounted(init);
-      return { visible, st, step, prog, isLast, stepKey, next, prev, finish, skip, replay };
+      return { visible, st, step, prog, isLast, stepKey, totalSteps, next, prev, finish, skip, replay };
     },
   };
 })();

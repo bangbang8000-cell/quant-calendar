@@ -15,6 +15,19 @@ import pytest
 import page_source
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(BASE, "frontend", rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
+
 
 REQUIRED_HEALTH_FIELDS = [
     'name', 'calls', 'successes', 'failures',
@@ -112,7 +125,7 @@ def test_today_snapshot_wiring_frontend():
 
 def test_today_snapshot_css_uses_tokens():
     """今日一屏新增 CSS 不得引入硬编码色值（TC-11.9 白名单约束延续）"""
-    css = open(os.path.join(BASE, 'frontend/css/themes.css'), encoding='utf-8').read()
+    css = _themes_css()
     # 定位今日一屏区块
     m = re.search(r'/\* =+ v3\.11 \(FR-3\.11\.7\) 今日一屏.*?\*/', css)
     assert m, 'themes.css 应含今日一屏区块'

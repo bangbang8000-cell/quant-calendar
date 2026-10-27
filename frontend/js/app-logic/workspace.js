@@ -125,8 +125,23 @@
                 })();
                 Vue.watch(currentSubPage, function () { saveSessionState(); });
                 const currentPageName = computed(() => {
-                    const menu = allMenuDefs.find(m => m.key === currentPage.value);
+                    // 6.5.0 (FR-653): 一级合并 — 旧内部键经 activePages 反查所属一级
+                    const NC = window.QuantNavMerge;
+                    let menu = allMenuDefs.find(m => m.key === currentPage.value);
+                    if (!menu) menu = allMenuDefs.find(m => (m.activePages || []).indexOf(currentPage.value) >= 0);
                     return menu ? menu.name : currentPage.value;
+                });
+                // 6.5.0 (FR-654.1): 页面唯一 h1 — 当前成员显示名 (经 core 兜底, 不露 raw key)
+                const currentSubName = computed(() => {
+                    const NC = window.QuantNavMerge;
+                    const menu = allMenuDefs.find(m => (m.activePages || []).indexOf(currentPage.value) >= 0)
+                        || allMenuDefs.find(m => m.key === currentPage.value);
+                    if (!menu || !Array.isArray(menu.members)) return '';
+                    const member = menu.members.find(mm =>
+                        mm.page === currentPage.value && mm.sub === currentSubPage.value);
+                    if (!member) return '';
+                    return NC ? NC.memberLabel(member)
+                              : ((subPageNames[member.sub]) || member.sub);
                 });
                 // V4.3-S3: 动态页面组件名映射 — currentPage -> qc-xxx-page
                 // <component :is> 每次渲染重新解析组件名, 懒加载 chunk 注册后即可命中
@@ -262,15 +277,26 @@
                 // ===== V6.1 (PRD-6.1 F8): 动态页签状态 =====
                 // tabGroups: { [page]: [{ subPage, title }] } — 会话级内存态
                 const tabGroups = ref({});
+                // 6.5.0 (FR-653): 合并组成员中文名并入 subPageNames (command-panel/页签标题共用)
+                const subPageNamesMerged = Object.assign(subPageNames,
+                    (window.QuantNavMerge && window.QuantNavMerge.MEMBER_LABELS) || {});
+                // 一级合并后按内部旧键反查所属一级 (activePages 收纳 strategies/calendar/shortterm)
+                function _findMenuForPage(page) {
+                    return allMenuDefs.find(m => m.key === page)
+                        || allMenuDefs.find(m => (m.activePages || []).indexOf(page) >= 0);
+                }
                 function _tabTitle(page, subPage) {
-                    return (subPageNames[subPage]) || subPage;
+                    return (subPageNamesMerged[subPage]) || subPage;
                 }
                 function _ensureDefaultTab(page) {
-                    const menu = allMenuDefs.find(m => m.key === page);
+                    const menu = _findMenuForPage(page);
                     if (!menu || !menu.subPages || !menu.subPages.length) return;
                     const g = tabGroups.value[page] || [];
                     if (!g.length) {
-                        const def = menu.subPages[0];
+                        // 6.5.0: 成员页默认页签用首个成员的旧 sub (页签仍按旧坐标存取)
+                        // 6.5.2 (FR-653): 只取该内部页首成员 (菜单首成员可能属合并组其他旧页)
+                        const pageMember = menu.members && menu.members.find(mm => mm.page === page);
+                        const def = pageMember ? pageMember.sub : '';
                         tabGroups.value = Object.assign({}, tabGroups.value, { [page]: [{ subPage: def, title: _tabTitle(page, def) }] });
                     }
                 }
@@ -304,9 +330,10 @@
                     const g = tabGroups.value[page] || [];
                     if (!g.length) {
                         _ensureDefaultTab(page);
-                        const menu = allMenuDefs.find(m => m.key === page);
-                        const def = menu && menu.subPages && menu.subPages[0];
-                        if (def) navigateTo(page, def);
+                        const menu = _findMenuForPage(page);
+                        // 6.5.2 (FR-653): 只取该内部页首成员旧 sub (菜单首成员可能属合并组其他旧页)
+                        const pageMember = menu && menu.members && menu.members.find(mm => mm.page === page);
+                        if (pageMember) navigateTo(page, pageMember.sub);
                         return;
                     }
                     const nextActive = res ? res.nextActive : null;
@@ -482,7 +509,7 @@
 return {
         backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
         backtestRunning, backtestResult, backtestError, runBacktest,
-        currentPageName, lazyTick, pageComp, showUserMenu,
+        currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
         detailDisplayMode, setDetailDisplayMode, isNarrow, detailSplitEnabled,

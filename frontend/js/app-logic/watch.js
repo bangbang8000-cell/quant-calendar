@@ -50,10 +50,12 @@
         // 保存当前子页
         if (sub) localStorage.setItem('quant_last_subpage', sub);
         // 自动设置子页默认值（首次进入时 sub 可能为空）
-        if (!sub && menus.value.find(m => m.key === page)) {
-          const menu = menus.value.find(m => m.key === page);
-          if (menu && menu.subPages.length > 0) {
-            currentSubPage.value = menu.subPages[0];
+        // 6.5.2 (FR-653): 一级键经 activePages 反查, 默认子页取该内部页的首个成员旧 sub
+        if (!sub) {
+          const menu = menus.value.find(m => (m.activePages || [m.key]).indexOf(page) >= 0);
+          if (menu && menu.members && menu.members.length) {
+            const mm = menu.members.find(x => x.page === page) || menu.members[0];
+            currentSubPage.value = mm.sub;
           }
         }
         // V5.2.12 (FIX-2): 短线复盘的 market-review 渲染 qc-research-page —

@@ -192,6 +192,26 @@ const stockChatInput = ref('');
 const stockChatMessages = ref([]);
 const stockChatLoading = ref(false);
 const stockChatError = ref('');
+// 6.4.4 (FR-650 第 1 条): 标的上下文带入 — 默认随详情页带入, 可一键清除
+const stockChatContextCleared = ref(false);
+// 6.4.4 (FR-650 第 3 条): "用了哪些数据" 工具调用摘要 (最近一次回答)
+const stockChatToolData = ref(null);
+
+const QA = window.QuantQuickAsks || {};
+const stockChatContext = computed(() => {
+    if (stockChatContextCleared.value) return '';
+    const d = stockDetail.value || {};
+    const snap = d.detail || d;
+    return QA.buildContextPrompt
+        ? QA.buildContextPrompt(
+            { code: d.stock || '', name: d.name || snap.name || '' },
+            { close: snap.close, pct_chg: snap.pct_chg, rsi: snap.rsi,
+              ma_alignment: snap.ma_alignment, data_date: snap.latest_date || snap.date })
+        : '';
+});
+function clearStockChatContext() { stockChatContextCleared.value = true; }
+// 6.4.4 (FR-650 第 2 条): 8 条快捷问法 — 详情页套组
+const stockChatQuickAsks = QA.forPage ? QA.forPage('detail') : [];
 
 async function askStockSend() {
     const msg = stockChatInput.value.trim();
@@ -243,17 +263,30 @@ async function askStockSend() {
 async function askStockQuick(mode) {
     stockChatError.value = '';
     stockChatLoading.value = true;
-    const msgs = { trend: '帮我做一下技术趋势分析', fundamental: '帮我看看基本面情况', comprehensive: '帮我做个综合分析' };
-    stockChatMessages.value.push({ role: 'user', content: msgs[mode] || msgs.comprehensive });
+    // 6.4.4 (FR-650 第 2 条): 快捷问法传整句文本走主对话端点; 旧三模式沿用 quick 端点
+    const isCustom = typeof mode === 'string' && QA.SETS && !/^(trend|fundamental|comprehensive)$/.test(mode);
+    let question = isCustom ? mode : null;
+    if (!question) {
+        const msgs = { trend: '帮我做一下技术趋势分析', fundamental: '帮我看看基本面情况', comprehensive: '帮我做个综合分析' };
+        question = msgs[mode] || msgs.comprehensive;
+    }
+    question = QA.withContext ? QA.withContext(stockChatContext.value, question) : question;
+    stockChatMessages.value.push({ role: 'user', content: question });
     try {
         const headers = { 'Content-Type': 'application/json' };
-        const res = await fetch('/api/ai/chat/quick', {
+        const url = isCustom ? '/api/ai/chat' : '/api/ai/chat/quick';
+        const body = isCustom
+            ? { stock_code: stockDetail.value?.stock || '', message: question }
+            : { stock_code: stockDetail.value?.stock || '', mode: mode };
+        const res = await fetch(url, {
             method: 'POST', headers,
-            body: JSON.stringify({ stock_code: stockDetail.value?.stock || '', mode })
+            body: JSON.stringify(body)
         });
         if (res.ok) {
             const data = await res.json();
             stockChatMessages.value.push({ role: 'assistant', content: data.reply || '无回复' });
+            // 6.4.4 (FR-650 第 3 条): 记录"用了哪些数据"摘要; 降级标注已在 reply 尾部
+            stockChatToolData.value = data.tool_data || null;
         }
     } catch (e) {
         stockChatError.value = '网络错误: ' + e.message;
@@ -365,6 +398,8 @@ function renderMarkdown(md) {
         loadChatHistory, deleteChatSession, renderMarkdown,
         stockChatInput, stockChatMessages, stockChatLoading, stockChatError,
         askStockSend, askStockQuick,
+        // 6.4.4 (FR-650): 上下文带入/快捷问法/工具摘要
+        stockChatContext, clearStockChatContext, stockChatQuickAsks, stockChatToolData,
       };
     }
   };

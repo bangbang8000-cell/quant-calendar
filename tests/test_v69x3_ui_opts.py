@@ -32,21 +32,20 @@ def test_system_subpages_order():
 
     2026-09-21 修正: 6.2.x 起「关于」恒置于最后 (群晖 5fbd8e9「about always last」)，
     原期望把 about 排在 notification 之前 → 顺序已反转，属陈旧断言。
+    6.5.0 (FR-653): 菜单定义移入 nav-merge-core.js NEW_NAV — 顺序取 system 成员 sub 序。
     """
-    src = _read_f("js/app-logic.js")
-    m = re.search(r"subPages: (\[[^\]]*\]), guestSubPages", src)
-    assert m, "system 菜单定义缺失"
-    order = m.group(1)
-    seq = [x.strip("'") for x in re.findall(r"'([^']+)'", order)]
+    src = _read_f("js/nav-merge-core.js")
+    seq = re.findall(r"\{\s*key:\s*'[^']+'\s*,\s*page:\s*'system'\s*,\s*sub:\s*'([^']+)'\s*\}", src)
+    assert seq, "system 菜单定义缺失"
     assert seq == ['config', 'feature', 'autoeval', 'datasource', 'user', 'notification', 'about'], \
         f"系统配置子页顺序应为 config→feature→autoeval→datasource→user→notification→about(恒置最后), 当前 {seq}"
 
 
 def test_ops_menu_before_system():
-    """TC-6.9.3.02: 系统状态(ops) 一级菜单位于系统配置(system) 之前"""
-    src = _read_f("js/app-logic.js")
-    i_ops = src.index("{ key: 'ops'")
-    i_sys = src.index("{ key: 'system'")
+    """TC-6.9.3.02: 系统状态(ops) 一级菜单位于系统配置(system) 之前 (6.5.0 起读 NEW_NAV)"""
+    src = _read_f("js/nav-merge-core.js")
+    i_ops = src.index("key: 'ops'")
+    i_sys = src.index("key: 'system'")
     assert i_ops < i_sys, "ops 菜单应位于 system 之前"
 
 

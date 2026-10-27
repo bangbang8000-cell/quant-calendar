@@ -16,13 +16,14 @@
   --qc-primary-700: #8f6f1f;
   --qc-primary-800: #6d5218;
 
-  /* ─── Neutral Scale (Warm Slate) ─── */
+  /* ─── Neutral Scale (Warm Slate) ───
+     6.5.6 (A1/A2): 50/100 下拉使面层级可辨 (画布↔卡片 1.04→1.20:1); 300 加深使容器描边 2.87:1 */
   --qc-neutral-0: #ffffff;
-  --qc-neutral-50: #fcfaf7;
-  --qc-neutral-100: #f7f4ee;
+  --qc-neutral-50: #eceae4;
+  --qc-neutral-100: #eae8e1;
   --qc-neutral-200: #efe9df;
-  --qc-neutral-300: #ded5c6;
-  --qc-neutral-400: #b8ae9f;
+  --qc-neutral-300: #a09883;
+  --qc-neutral-400: #978e7e;
   --qc-neutral-500: #8f8679;
   --qc-neutral-600: #6b6358;
   --qc-neutral-900: #1f1d1a;
@@ -62,7 +63,7 @@
   /* V5.31 (语义色分层): 文字色 / 实底色 与「填充色」分离 —— 原 --primary-color(hsl 75,42%) 同时充当
 白色画布上的文字色 (2.88:1) 与白字实底 (2.88:1), 二者都不可读。此处给静态兜底, 运行期由 themes.js 按色相求解。 */
   --primary-text: var(--qc-primary-700);        /* 浅底上的品牌文字色 */
-  --primary-solid: var(--btn-primary-bg);       /* 承载白字的品牌实底色 */
+  --primary-solid: var(--qc-primary-700);       /* 页面级实底 CTA / EP 主色桥 (运行期由 themes.js 按色相求解) */
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
@@ -126,27 +127,30 @@
   --qc-transition-none: none;
 
   /* ─── Typography ─── */
-  /* V5.7.2 (UX-13): 字体栈 — Inter 承载西文/数字, 中文回退优选中文字体 */
-  --qc-font-sans: 'Inter', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  /* V5.7.2 (UX-13): 字体栈 — Inter 承载西文/数字 (自托管 @fontsource, latin 400/500/600/700)
+     6.5.8 (C1-a): 中文回退序固定为 PingFang SC(macOS) → Microsoft YaHei(Windows) → Noto Sans SC(Linux);
+     设计稿以雅黑为准; 移除只在特定 macOS 版本存在的 SF Pro Display / Hiragino Sans GB
+     (Windows/Linux 上静默落到下一档, 造成跨机字宽与换行差异)。 */
+  --qc-font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   --qc-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
   /* V5.7.2 (UX-T1): EP 组件字体统一 — 覆盖 EP 默认 Helvetica/Arial, 与全站字体栈一致 */
   --el-font-family: var(--qc-font-sans);
   /* V5.7.2 (UX-12): 金融数据等宽数字 — 数字对齐稳定 (继承至全站, 仅影响数字字形) */
   font-variant-numeric: tabular-nums;
 
+  /* 6.5.8 (C2): 字号阶梯收敛为 6 档 12/14/16/18/22/28 —
+     原 12/13/14 相邻不可辨、20 为补丁档、32/36/40 命名与数值不同向;
+     旧名保留为别名 (sm/base 同档 14), 业务侧 616 处引用无需批量改动。 */
   --qc-font-size-xs: 12px;
-  --qc-font-size-sm: 13px;
+  --qc-font-size-sm: 14px;      /* 别名 → base (原 13px 与 12/14 不可辨) */
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
   --qc-font-size-lg: 18px;
-  /* 6.2.1 (F2): 补档 — 页面标题档 (原 .qc-page-title 硬编码 20px) */
-  --qc-font-size-lg2: 20px;
-  --qc-font-size-xl: 22px;
-  /* 6.2.1 (F2): 补档 — KPI 数值档 (原 32px 硬编码, 介于 xl22 与 3xl36 之间) */
-  --qc-font-size-2xl: 32px;
-  /* 6.2.1 (F2): 补档 — 图标档 (空态/错误大图标, 原 40px 硬编码) */
-  --qc-font-size-icon: 40px;
-  --qc-font-size-3xl: 36px;
+  --qc-font-size-xl: 22px;      /* 页面标题档 (原 lg2 20px 并入此档) */
+  --qc-font-size-2xl: 28px;     /* 页面级关键数值档 (原 32px) */
+  --qc-font-size-3xl: 28px;     /* 别名 → 2xl (原 36px, 与 2xl 差 4px 视为同档) */
+  /* 6.5.8 (C3): 图标尺寸与字号解耦 (原 --qc-font-size-icon 40px 混在字号阶梯里) */
+  --qc-icon-size: 40px;
 
   --qc-font-weight-normal: 400;
   --qc-font-weight-medium: 500;
@@ -240,11 +244,50 @@
   --duration-slow: 400ms;
   /* 6.2.2 (F7): 骨架屏 shimmer 档 (原 1.5s/1.6s 硬编码) */
   --duration-skeleton: 1500ms;
+  /* 6.5.1 (FR-655.5): 动效令牌补全 — 语义档, animation-duration 禁硬编码 (门禁豁免 reduced-motion) */
+  --duration-pulse: 2s;
+  /* 6.5.1: 1.5s 常驻氛围循环 (脉冲/流光) — 与骨架屏同频但语义独立 */
+  --duration-ambient: 1500ms;
+  --duration-spin: 1s;
+  --duration-page: 200ms;
+  --duration-fade: 500ms;
   --easing-standard: ease;
   --easing-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-fast: var(--duration-fast) var(--easing-standard);
   --transition-base: var(--duration-base) var(--easing-standard);
   --theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  /* ─── 6.5.1 (FR-655.5): 动效令牌 qc 别名 (PRD 口径 --qc-duration-*/--qc-ease-*) ─── */
+  --qc-duration-fast: var(--duration-fast);
+  --qc-duration-base: var(--duration-base);
+  --qc-duration-slow: var(--duration-slow);
+  --qc-ease-standard: var(--easing-standard);
+  --qc-ease-enter: var(--easing-enter);
+
+  /* ─── 6.5.1 (FR-655.2): 标题层级令牌 — h1/h2/h3 字号/行高/字重 ─── */
+  /* 6.5.8 (C1-a): display 栈与正文栈同源, 中文回退序一致 */
+  --qc-font-display: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --qc-h1-size: 18px;  --qc-h1-line: 1.4;  --qc-h1-weight: 600;
+  --qc-h2-size: 16px;  --qc-h2-line: 1.45; --qc-h2-weight: 600;
+  --qc-h3-size: 14px;  --qc-h3-line: 1.5;  --qc-h3-weight: 600;
+
+  /* ─── 6.5.8 (C3): 排版角色层 — 页面层新代码只引用角色层, 老代码渐进迁移 ─── */
+  --font-role-page-title: var(--qc-font-size-xl);    /* 22 */
+  --font-role-card-title: var(--qc-font-size-lg);    /* 18 */
+  --font-role-data-value: 22px;                      /* 数据主值 (与 page-title 同档, 语义独立) */
+  --font-role-label: var(--qc-font-size-sm);         /* 14 */
+  --font-role-caption: var(--qc-font-size-xs);       /* 12 */
+
+  /* ─── 6.5.1 (FR-656.1): 暗色表面三档层级 — canvas < card < raised, 相邻可辨 ─── */
+  /* 亮色基底 (暗色档在 themes.css [data-theme=dark-pro] 覆盖) */
+  --qc-surface-canvas: var(--qc-background, #f7f4ee);
+  --qc-surface-card: var(--qc-card, #ffffff);
+  --qc-surface-raised: var(--surface-raised, #ffffff);
+
+  /* ─── 6.5.1 (FR-656.2): KPI 指标卡三档密度 (栅格列数) ─── */
+  --qc-kpi-density-comfortable: 3;
+  --qc-kpi-density-standard: 4;
+  --qc-kpi-density-compact: 6;
 
   /* ─── V4.0.2 毛玻璃 Glassmorphism (浮层类) ─── */
   --glass-bg: rgba(255, 255, 255, 0.72);
@@ -362,14 +405,14 @@
      桥接后 EP 的组件级变量 (table / datepicker / message / tag / select …) 自动继承,
      不再需要逐组件打补丁 —— 修复 .el-range-separator 1.28:1、ElMessage 2.04–2.80:1 一类残留。 */
   /* 品牌 */
-  --el-color-primary: var(--btn-primary-bg);
+  --el-color-primary: var(--primary-solid);
   --el-color-primary-rgb: var(--primary-rgb);
   --el-color-primary-dark-2: var(--qc-primary-700);
-  --el-color-primary-light-3: color-mix(in srgb, var(--btn-primary-bg) 70%, var(--surface-card));
-  --el-color-primary-light-5: color-mix(in srgb, var(--btn-primary-bg) 50%, var(--surface-card));
-  --el-color-primary-light-7: color-mix(in srgb, var(--btn-primary-bg) 30%, var(--surface-card));
-  --el-color-primary-light-8: color-mix(in srgb, var(--btn-primary-bg) 20%, var(--surface-card));
-  --el-color-primary-light-9: color-mix(in srgb, var(--btn-primary-bg) 12%, var(--surface-card));
+  --el-color-primary-light-3: color-mix(in srgb, var(--primary-solid) 70%, var(--surface-card));
+  --el-color-primary-light-5: color-mix(in srgb, var(--primary-solid) 50%, var(--surface-card));
+  --el-color-primary-light-7: color-mix(in srgb, var(--primary-solid) 30%, var(--surface-card));
+  --el-color-primary-light-8: color-mix(in srgb, var(--primary-solid) 20%, var(--surface-card));
+  --el-color-primary-light-9: color-mix(in srgb, var(--primary-solid) 12%, var(--surface-card));
   /* 语义 (EP 的 danger 与 error 同源) */
   --el-color-success: var(--state-success-solid);
   --el-color-success-light-3: color-mix(in srgb, var(--state-success-solid) 70%, var(--surface-card));
@@ -503,7 +546,7 @@
   /* V6.10 (B): 暗色涨跌「填充档」提亮 —— 原 #2E7D32 压暗色卡片仅 3.27:1 (同时两档感知亮度差过小, 色觉障碍难辨) */
   --market-up-fill: #ff6b6b;
   --market-down-fill: #4ade80;
-  /* 语义实底上的文字: 暗色实底为浅色档 → 文字取页面底 (与 --btn-primary-color 同策略) */
+  /* 语义实底上的文字: 暗色实底为浅色档 → 文字取页面底 (与 --primary-solid 同策略) */
   --state-success-on-solid: var(--surface-canvas);
   --state-warning-on-solid: var(--surface-canvas);
   --state-danger-on-solid: var(--surface-canvas);

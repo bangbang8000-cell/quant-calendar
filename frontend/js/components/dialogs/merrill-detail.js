@@ -124,7 +124,7 @@
                 <!-- 无历史记录 -->
                 <div v-else-if="!merrillDetailData._isCurrent && !merrillDetailData._lastPeriod" class="detail-section mt-1">
                     <div class="section-title"><qc-icon name="calendar-days" :size="14" /> 历史轮次</div>
-                    <qc-state-panel type="empty" icon="calendar-days" title="暂无历史记录"></qc-state-panel>
+                    <qc-state-panel type="empty" icon="calendar-days" title="暂无历史记录" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                 </div>
 
                 <!-- 经济特征 -->

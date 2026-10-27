@@ -1,4 +1,4 @@
-// quant-calendar: language pack zh-TW
+﻿// quant-calendar: language pack zh-TW
 // auto-generated from zh-CN (V4.7.4 i18n expansion); missing keys fall back to en
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -9,15 +9,15 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '策略總覽',
+    'nav.strategies': '策略',
     'nav.calendar': '量化日歷',
     'nav.ai': '智能評估',
     'nav.research': '策略研究',
-    'nav.ops': '系統狀態',
-    'nav.system': '系統配置',
+    'nav.ops': '運行監控',
+    'nav.system': '平台設定',
     'nav.shortterm': '短線復盤',
     'sub.overview': '概览',
-    'sub.strategies.overview': '策略概览', 'sub.ai.overview': '評估概覽', 'sub.research.research-overview': '研究概覽',
+    'sub.strategies.overview': '概覽', 'sub.ai.overview': '概覽', 'sub.research.research-overview': '概覽',
     'sub.execution': '執行看板',
     'sub.merrill': '美林時钟',
     'sub.market': '大盤行情',   // V6.6.1: 更名消歧
@@ -27,7 +27,7 @@
     'sub.monthly': '月視圖',
     'sub.yearly': '年視圖',
     'sub.pool': '股票池',
-    'sub.calendar': '量化日曆',   // V6.6.1: 合併後主視圖
+    'sub.calendar': '日曆視圖',   // V6.6.1: 合併後主視圖
     'sub.watchlist': '我的自選',
     'sub.history': '評估歷史',
     'sub.evaluation-analysis': '評估分析',
@@ -46,7 +46,7 @@
     'sub.strategy-manage': '策略管理',   // V6.6.1: 合併
     'sub.ztpool': '漲停復盤',
     'sub.lhb': '龍虎榜',
-    'sub.shortterm.overview': '復盤看板',
+    'sub.shortterm.overview': '概覽',
     'sub.shortterm.sector': '板塊資金',
     'sub.sector': '板塊資金',
     'sub.shortterm.intraday': '盤中核驗',
@@ -83,6 +83,7 @@
     'common.search': '搜索',
     'common.empty': '暂無數据',
     'common.retry': '重試',
+    'common.more': '更多', // 6.5.0 (FR-653.1): 二級 >6 拆分「更多」下拉 (global-header.js)
     'common.emptyTitle': '暂無數据',
     'common.emptyDesc': '目前沒有可顯示的內容',
     'common.errorTitle': '載入失敗',

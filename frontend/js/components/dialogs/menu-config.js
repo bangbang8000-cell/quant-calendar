@@ -30,9 +30,10 @@
                         <span :style="{transform: subPageSectionExpanded[menu.key] ? 'rotate(180deg)' : '', transition: 'transform 0.2s', fontSize: 'var(--qc-font-size-xs)', flexShrink: 0}">▼</span>
                     </div>
                     <div class="menu-sub-row" v-if="subPageSectionExpanded[menu.key]" :style="{opacity: groupEditForm.visible_menus[menu.key] ? 1 : 0.4}">
-                        <el-switch v-for="sp in menu.subPages" :key="sp"
-                            v-model="groupEditForm.visible_sub_pages[menu.key + '.' + sp]"
-                            :active-text="subPageNames[sp] || sp"
+                        <!-- 6.5.2 (FR-653): subPages 已成员键化, 遍历 members; 键保持 一级.成员key (与 memberVisible 新键一致) -->
+                        <el-switch v-for="mm in (menu.members || [])" :key="mm.key"
+                            v-model="groupEditForm.visible_sub_pages[menu.key + '.' + mm.key]"
+                            :active-text="memberLabel(mm)"
                             :disabled="!groupEditForm.visible_menus[menu.key]"
                             size="small" />
                     </div>
@@ -47,7 +48,13 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      return { ...state };
+      // 6.5.2 (FR-653): 成员显示名经 nav-merge-core (i18n 兜底 subPageNames[旧sub])
+      const memberLabel = (mm) => {
+        const NC = window.QuantNavMerge;
+        if (NC && NC.memberLabel) return NC.memberLabel(mm, state.t);
+        return (state.subPageNames && state.subPageNames[mm.sub]) || mm.sub;
+      };
+      return { ...state, memberLabel };
     },
   };
 })();

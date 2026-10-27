@@ -239,6 +239,10 @@
                                 <div class="flex-1-min180">
                                     <div class="text-xl-bold-primary-mb8">{{ aiResult.result.level }}</div>
                                     <div class="text-md-secondary-lh">{{ aiResult.result.detailed_report || '' }}</div>
+                                    <!-- 6.4.1 (FR-642d): 输入数据陈旧标注 — 后端随结果返回，不可折叠隐藏 -->
+                                    <div class="qc-stale-note" v-if="aiResult.result.data_stale_note">
+                                        <qc-icon name="alert-triangle" :size="13" /> {{ aiResult.result.data_stale_note }}
+                                    </div>
                                     <!-- 评估历史对比 -->
                                     <div class="inline-chip" v-if="evalHistoryComparison">
                                         <qc-icon name="trending-up" :size="13" /> 上次{{ fmtNum(evalHistoryComparison.prevScore, 1) }}分 → 本次{{ fmtNum(evalHistoryComparison.currScore, 1) }}分
@@ -338,11 +342,19 @@
                     <div v-if="stockDetailTab === 'chat'">
                         <div class="card mb-12">
                             <div class="card-title m-0-0-12"><qc-icon name="message-circle" :size="14" /> AI 智能问股</div>
+                            <!-- 6.4.4 (FR-650 第 1 条): 上下文带入 — 默认带标的与当日关键数据, 可一键清除 -->
+                            <div class="qc-chat-context" v-if="stockChatContext">
+                                <qc-icon name="crosshair" :size="12" />
+                                <span class="qc-chat-context-text">{{ stockChatContext }}</span>
+                                <el-button link size="small" @click="clearStockChatContext" title="清除上下文">清除</el-button>
+                            </div>
                             <!-- Quick prompts -->
                             <div class="flex-wrap-gap-6-mb12">
                                 <el-button size="small" @click="askStockQuick('trend')"><qc-icon name="trending-up" :size="13" /> 趋势分析</el-button>
                                 <el-button size="small" @click="askStockQuick('fundamental')"><qc-icon name="bar-chart-3" :size="13" /> 基本面</el-button>
                                 <el-button size="small" @click="askStockQuick('comprehensive')"><qc-icon name="search-check" :size="13" /> 综合分析</el-button>
+                                <!-- 6.4.4 (FR-650 第 2 条): 详情页 8 条快捷问法一键发出 -->
+                                <el-button v-for="qa in stockChatQuickAsks" :key="qa.label" size="small" @click="askStockQuick(qa.text)">{{ qa.label }}</el-button>
                             </div>
                             <!-- Chat messages -->
                             <!-- v3.16 (16.8): 历史消息惰性加载提示 -->
@@ -364,6 +376,15 @@
                                 <el-button type="primary" size="small" @click="askStockSend" :loading="stockChatLoading">发送</el-button>
                             </div>
                             <div class="text-xs-danger-mt6" v-if="stockChatError">{{ stockChatError }}</div>
+                            <!-- 6.4.4 (FR-650 第 3 条): 用了哪些数据 — 工具调用摘要可展开 -->
+                            <el-collapse v-if="stockChatToolData" class="qc-chat-tools mt-8">
+                                <el-collapse-item title="本次回答用了哪些数据" name="tools">
+                                    <div class="qc-chat-tool-row" v-for="(v, k) in stockChatToolData" :key="k">
+                                        <span class="qc-chat-tool-key">{{ k }}</span>
+                                        <span class="qc-chat-tool-val">{{ typeof v === 'boolean' ? (v ? '可用' : '不可用') : (Array.isArray(v) ? v.join('、') : v) }}</span>
+                                    </div>
+                                </el-collapse-item>
+                            </el-collapse>
                         </div>
                     </div>  <!-- close chat tab -->
 
@@ -371,7 +392,7 @@
                     <div v-if="stockDetailTab === 'factor'">
                         <!-- V5.3.0 (T-5.3.1.2): 收敛为统一状态面板 -->
                         <qc-state-panel v-if="factorLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="factorError || !factorGroups.length" type="empty" icon="dna" :title="t('detail.factorEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else-if="factorError || !factorGroups.length" type="empty" icon="dna" :title="t('detail.factorEmpty')" action-text="重试" action-key="refresh" @retry="loadFactorPanel"></qc-state-panel>
                         <div v-else>
                             <div v-if="factorSummary && factorSummary.available" class="factor-summary">
                                 <span class="factor-summary-count">{{ t('detail.factorCount', { count: factorSummary.available }) }}</span>
@@ -404,7 +425,7 @@
                     <div v-if="stockDetailTab === 'performance'">
                         <!-- V5.3.10: 业绩预告/快报 (sxsc forecast/express) -->
                         <qc-state-panel v-if="perfLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="perfError" type="empty" icon="bar-chart" :title="t('detail.perfEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else-if="perfError" type="empty" icon="bar-chart" :title="t('detail.perfEmpty')" action-text="重试" action-key="refresh" @retry="loadPerformance"></qc-state-panel>
                         <div v-else-if="perfForecast.length || perfExpress.length">
                             <div v-if="perfForecast.length" class="perf-block">
                                 <div class="perf-block-title">{{ t('detail.perfForecast') }}</div>
@@ -440,7 +461,7 @@
                                 </el-table>
                             </div>
                         </div>
-                        <qc-state-panel v-else type="empty" icon="bar-chart" :title="t('detail.perfEmpty')"></qc-state-panel>
+                        <qc-state-panel v-else type="empty" icon="bar-chart" :title="t('detail.perfEmpty')" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
                 </div>
             </div>

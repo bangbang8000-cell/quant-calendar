@@ -17,6 +17,18 @@ KEYS = ["common.emptyTitle", "common.emptyDesc",
         "common.errorTitle", "common.errorDesc", "common.retry"]
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(FRONTEND, rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel):
     with open(os.path.join(FRONTEND, rel), encoding="utf-8") as f:
         return f.read()
@@ -110,7 +122,7 @@ def test_empty_error_tag_in_index():
 # ─── CSS 类门禁 (静态类已定义) ─────────────────────────────────
 
 def test_component_classes_defined_in_css():
-    css = _read(os.path.join("css", "themes.css"))
+    css = _themes_css()
     for cls in ("qc-empty-state", "qc-empty-icon", "qc-empty-title",
                 "qc-empty-desc", "qc-error-state", "qc-error-icon",
                 "qc-error-title", "qc-error-desc"):
@@ -167,7 +179,7 @@ def test_error_desc_translated():
 
 def test_empty_error_css_uses_tokens():
     """组件 CSS 类选择器存在且区块使用 var() 令牌 (不硬编码颜色)"""
-    css = _read(os.path.join("css", "themes.css"))
+    css = _themes_css()
     for cls in ("qc-empty-state", "qc-error-state"):
         idx = css.find("." + cls)
         assert idx != -1, f"CSS 缺类 {cls}"

@@ -22,18 +22,20 @@
         // v3.2.0-T11: 注册全局快捷键 + 并行加载优化 (v3.17.9: 主界面先行 + 全后台并行)
         runOnMounted: async () => {
           window.addEventListener('keydown', handleGlobalKeydown);
+          // 6.5.0 (FR-653): 导航合并核心 — 旧深链 100% 兼容, 新 hash 统一经 core 解析
+          const NC = (typeof window !== 'undefined') ? window.QuantNavMerge : null;
 
           // V6.6.1 (PRD F-6.6.7): 旧深链重定向 — 合并/更名子页的旧 hash 映射到新 key
           // 日历视图子页 → 主视图 key=calendar 并同步 currentView; 策略编写/全新策略 → strategy-manage 并记录模式
           function applyRedirect(hp, hs) {
             const calViewMap = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' };
-            if (hp === 'calendar' && calViewMap[hs]) {
+            if ((hp === 'calendar' || hp === 'workbench') && calViewMap[hs]) {
               currentPage.value = 'calendar';
               currentSubPage.value = 'calendar';
               if (calViewMap[hs]) currentView.value = calViewMap[hs];
               return true;
             }
-            if (hp === 'research' && (hs === 'strategy-write' || hs === 'custom-write')) {
+            if ((hp === 'research') && (hs === 'strategy-write' || hs === 'custom-write')) {
               currentPage.value = 'research';
               currentSubPage.value = 'strategy-manage';
               try { localStorage.setItem('quant_strategy_mode', hs === 'custom-write' ? 'custom' : 'template'); } catch (e) {}
@@ -42,23 +44,38 @@
             return false;
           }
 
+          // hash → 内部坐标 (FR-653.3): 新格式 (#workbench/strategies-merrill) 与旧格式
+          // (#strategies/merrill) 都能解析; 未知坐标返回 null (调用方保持原状, 不静默改写)
+          function resolveHash(hp, hs) {
+            if (NC) {
+              const internal = NC.fromHash(hp, hs || '');
+              if (internal) return internal;
+              return null;
+            }
+            // 无 core (理论不发生): 旧逻辑直查
+            const menu = menus.value.find(function (m) { return m.key === hp; });
+            if (!menu) return null;
+            if (!hs) return { page: hp, sub: (menu.members ? menu.members[0].sub : menu.subPages[0]) || '' };
+            const hasMember = menu.members
+              ? menu.members.some(function (mm) { return mm.key === hs || mm.sub === hs; })
+              : menu.subPages.indexOf(hs) >= 0;
+            return hasMember ? { page: hp, sub: hs } : null;
+          }
+
           // V6.0 (P1-3): 浏览器前进/后退 — hash 路由回写当前页/子页
           window.addEventListener('hashchange', function () {
             const h = window.location.hash || '';
             if (!h || h === '#') return;
             const parts = h.replace(/^#\/?/, '').split('/');
             const hp = parts[0], hs = parts[1] || '';
-            const menu = menus.value.find(function (m) { return m.key === hp; });
-            if (!menu) return;
             if (applyRedirect(hp, hs)) return;
-            if (!hs) { currentPage.value = hp; currentSubPage.value = menu.subPages[0] || ''; }
-            else if (menu.subPages.indexOf(hs) >= 0) {
-              currentPage.value = hp;
-              currentSubPage.value = hs;
-            } else { return; }
+            const internal = resolveHash(hp, hs);
+            if (!internal) return;
+            currentPage.value = internal.page;
+            currentSubPage.value = internal.sub;
             // V6.9.4 (FIX): hash 前进/后退到懒加载页时补加载组件, 防空白
-            if (window.__lazyLoaders && window.__lazyLoaders[hp] && window.__quantGoPage) {
-              window.__quantGoPage(hp, currentSubPage.value).catch(function () {});
+            if (window.__lazyLoaders && window.__lazyLoaders[internal.page] && window.__quantGoPage) {
+              window.__quantGoPage(internal.page, internal.sub).catch(function () {});
             }
           });
 
@@ -94,32 +111,43 @@
 
           // v1.10: 恢复用户最后选择（无本地最后页面时回落偏好 default_view）
           // V6.0 (P1-3): URL hash 优先恢复 — 刷新定位到具体子页
+          // 6.5.0 (FR-653.3): hash 兼容新/旧格式 (经 core 解析); 持久化的
+          // quant_last_page 已是新格式深链 — 解析失败按未存处理
           (function() {
             var h = window.location.hash || '';
             var fromHash = false;
             if (h && h !== '#') {
               var parts = h.replace(/^#\/?/, '').split('/');
               var hp = parts[0], hs = parts[1] || '';
-              var menu = menus.value.find(function(m) { return m.key === hp; });
-              if (menu) {
-                if (applyRedirect(hp, hs)) { fromHash = true; }
-                else {
-                  currentPage.value = hp;
-                  if (hs && menu.subPages.indexOf(hs) >= 0) currentSubPage.value = hs;
-                  else if (!hs) currentSubPage.value = menu.subPages[0] || '';
+              if (applyRedirect(hp, hs)) { fromHash = true; }
+              else {
+                var internal = resolveHash(hp, hs);
+                if (internal) {
+                  currentPage.value = internal.page;
+                  currentSubPage.value = internal.sub;
                   fromHash = true;
                 }
               }
             }
             if (!fromHash) {
               var p = localStorage.getItem('quant_last_page');
-              if (p && menus.value.some(function(m) { return m.key === p; })) {
-                currentPage.value = p;
-              } else if (__prefs.default_view && menus.value.some(function(m) { return m.key === __prefs.default_view; })) {
-                currentPage.value = __prefs.default_view;
+              var restored = null;
+              if (p) {
+                var pp = p.split('/');
+                restored = resolveHash(pp[0], pp[1] || '');
+              }
+              if (restored) {
+                currentPage.value = restored.page;
+                currentSubPage.value = restored.sub;
+              } else if (__prefs.default_view) {
+                var dv = resolveHash(__prefs.default_view, '');
+                if (dv) {
+                  currentPage.value = dv.page;
+                  if (!currentSubPage.value) currentSubPage.value = dv.sub;
+                }
               }
               var s = localStorage.getItem('quant_last_subpage');
-              if (s) currentSubPage.value = s;
+              if (s && !restored) currentSubPage.value = s;
             }
             var d = localStorage.getItem('quant_last_date');
             if (d) selectedDate.value = d;

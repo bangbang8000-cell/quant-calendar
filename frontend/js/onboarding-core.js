@@ -1,5 +1,5 @@
 // quant-calendar: Onboarding core logic (V5.0.6 / T-5.0.61)
-// 新手引导 5 步任务流: 纯逻辑状态机 + 进度持久化 (序列化/反序列化)。
+// 新手引导 3 步任务流 (6.4.2 / FR-644): 纯逻辑状态机 + 进度持久化 (序列化/反序列化)。
 // UMD 导出: 浏览器 window.QuantOnboarding / Node require(...) (供 pytest 跑 node 单测)。
 // 不含 DOM/Vue 依赖; Vue 组件做薄壳渲染。
 // V5.0.10-fix: UMD 双写 — Node require 走 module.exports; 浏览器无条件挂全局.
@@ -15,25 +15,21 @@
 })((typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : this))), function () {
   'use strict';
 
-  // ─── 5 步引导任务定义 ─────────────────────────────────
+  // ─── 3 步引导任务定义 (6.4.2 / FR-644) ─────────────────
   // target: 步骤指向的页面/动作 (由组件用于跳转或高亮)
-  // 6.1.1 (A2): 引导二期 — 5 步操作导向 (看懂今日一屏 → 日历 → 评估 → 自选 → 配置)
+  // FR-644: 首次登录 3 步 — ① 看「今日一屏」→ ② 打开一只标的详情 → ③ 用一句话问 AI
   // 每步含 target(目标页面) 与 desc(操作指引); selector 预留目标元素高亮
   var ONBOARDING_STEPS = [
-    { key: 'today', title: '看懂今日一屏', target: 'strategies', selector: '.today-hero',
+    { key: 'today', title: '看今日一屏', target: 'strategies', selector: '.today-hero',
       desc: '先看美林时钟阶段与今日一屏：宏观周期、策略共识、股票池一目了然' },
-    { key: 'calendar', title: '量化日历与策略池', target: 'calendar', selector: '.stock-pool-body',
-      desc: '日/周/月/年切换视图，按全部/新入池/当前持仓/已出池筛选股票' },
-    { key: 'evaluate', title: '智能评估一只股票', target: 'ai', selector: '.qc-work-area',
-      desc: '点击任意股票查看详情：多模型 AI 评估、五维体检、历史趋势' },
-    { key: 'watchlist', title: '我的自选与重点跟踪', target: 'ai', selector: '',
-      desc: '在智能评估页把心仪股票加入自选，重点跟踪持续盯盘' },
-    { key: 'config', title: '系统配置要点', target: 'system', selector: '.system-page-root',
-      desc: '数据源、AI Key、通知与主题都在系统配置，按需设置' },
+    { key: 'stock_detail', title: '打开一只标的详情', target: 'calendar', selector: '.stock-pool-body',
+      desc: '在量化日历点击任意股票，查看行情、五维体检与多模型 AI 评估' },
+    { key: 'ask_ai', title: '用一句话问 AI', target: 'ai', selector: '.qc-work-area',
+      desc: '在智能评估输入一句话问题，AI 会结合个股数据给出结论与风险提示' },
   ];
   var STEP_COUNT = ONBOARDING_STEPS.length;
 
-  // V5.3.0 (T-5.3.1.3): 短线复盘工作流 3 步引导 (独立于全局 5 步)
+  // V5.3.0 (T-5.3.1.3): 短线复盘工作流 3 步引导 (独立于全局引导)
   // 首次进入短线复盘 overview 时触发: 看硬指标 → 读 AI 研判 → 核验验证条件
   var SHORTTERM_TOUR_STEPS = [
     { key: 'hard_metric', title: '看硬指标', target: 'overview-metrics',
@@ -150,7 +146,7 @@
     return !!(state && state.completed);
   }
 
-  // 进度: 已完成步数 = stepIndex (0-based), 总 5 步
+  // 进度: 已完成步数 = stepIndex (0-based), 总 3 步 (FR-644)
   function progress(state) {
     var done = Math.min((state && state.stepIndex) || 0, STEP_COUNT);
     return { done: done, total: STEP_COUNT, pct: Math.round(done / STEP_COUNT * 100) };

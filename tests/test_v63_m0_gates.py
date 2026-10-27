@@ -49,16 +49,16 @@ def test_header_rounded_and_gap():
 
 
 def test_subpage_names_complete():
-    """TC-6.3.2.4: subPageNames 完整性 — allMenuDefs 全量 subPages 零遗漏"""
-    src = _read("js/app-logic.js")
-    # 收集 allMenuDefs 中全部 subPages / guestSubPages 裸 key
+    """TC-6.3.2.4: subPageNames 完整性 — 导航全量成员 sub 零遗漏 (6.5.0 起读 nav-merge-core)"""
+    nav = _read("js/nav-merge-core.js")
+    # 收集 NEW_NAV 全部成员的旧二级键 (sub)
     sub_pages = set()
-    for m in re.finditer(r"(?:subPages|guestSubPages):\s*\[([^\]]*)\]", src):
-        for k in re.findall(r"'([^']+)'", m.group(1)):
-            sub_pages.add(k)
-    assert sub_pages, "应能提取 allMenuDefs 的 subPages"
-    # 提取 subPageNames 对象块
-    m = re.search(r"const subPageNames = \{(.*?)\};", src, re.S)
+    for m in re.finditer(r"\{\s*key:\s*'[^']+'\s*,\s*page:\s*'(\w+)'\s*,\s*sub:\s*'([^']+)'\s*\}", nav):
+        sub_pages.add(m.group(2))
+    assert sub_pages, "应能提取 NEW_NAV 的成员 sub 集合"
+    # subPageNames 对象位于 app-logic/workspace.js (6.3.0 分治; Merged 另并入 MEMBER_LABELS)
+    ws = _read("js/app-logic/workspace.js")
+    m = re.search(r"const subPageNames = \{(.*?)\};", ws, re.S)
     assert m, "subPageNames 对象缺失"
     names_block = m.group(1)
     named_keys = set(re.findall(r"'([^']+)':", names_block))

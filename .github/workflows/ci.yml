@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 # V4.0 精简: CI 只在里程碑版本(tag v*)或手动触发(workflow_dispatch)时运行, 不再随每次 push 触发
 on:
@@ -15,15 +15,15 @@ on:
   workflow_dispatch:  # 手动触发: 我单独要求时在 Actions 页 Run workflow
 
 jobs:
-  lint-and-test:
+  # ── 6.4.5 (FR-652 第 1 条): 门禁三层独立可见 ──
+  # 第①层 lint/类型/契约: ruff + 依赖锁 + 版本治理 (失败定位到本层)
+  layer1-lint-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      # V6.10 (配色专项·D): 配色门禁需要 Node —— tests/color_probe.js 用 Node 执行
-      # frontend/js/themes.js (运行期唯一权威) 导出 14 套主题令牌, 再做对比度断言。
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -31,13 +31,47 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: '0.11.7'
-      - name: 校验依赖锁文件未漂移 (FR-3.10.2)
+      - name: 校验依赖锁文件未漂移 (FR-3.10.2) — 失败修复命令见输出
         run: |
           # 跳过文件头 3 行: 头部注释含 -o 输出路径, 与编译目标路径不同, 直接 diff 会恒红
           uv pip compile --universal --python-version 3.11 requirements.in -o /tmp/check-runtime.lock
           diff -u <(tail -n +4 requirements.lock) <(tail -n +4 /tmp/check-runtime.lock)
           uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/check-dev.lock
           diff -u <(tail -n +4 requirements-dev.lock) <(tail -n +4 /tmp/check-dev.lock)
+      - name: Lint — 失败修复命令: ruff check backend/ --select=E,F,W --ignore=E501 --fix
+        run: ruff check backend/ --select=E,F,W --ignore=E501
+      - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5; workflow_dispatch 仅校验存在)
+        run: |
+          V=$(grep -oP 'APP_VERSION = "\K[0-9.]+' backend/main_new.py || true)
+          if [ -z "$V" ]; then echo "未找到 APP_VERSION"; exit 1; fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG=${GITHUB_REF_NAME#v}
+            if [ "$TAG" != "$V" ]; then echo "tag=$TAG 与 APP_VERSION=$V 不一致"; exit 1; fi
+            echo "版本一致: $V"
+          else
+            echo "workflow_dispatch/分支触发: 仅校验 APP_VERSION 存在 ($V)"
+          fi
+      - name: 6.1.X 版本治理门禁 (T-6.1.0.1) — 失败修复命令: python scripts/bump_version.py <版本号>
+        run: python scripts/bump_version.py --check
+
+  # 第②层 单测 + 接口覆盖率: 全量 pytest + 总/模块覆盖率 + 变更覆盖率
+  layer2-unit-tests:
+    runs-on: ubuntu-latest
+    needs: layer1-lint-contract
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 安装 uv (锁定版本, 避免解析器漂移)
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: '0.11.7'
       - name: 按锁文件安装依赖
         run: uv pip install --system -r requirements.lock -r requirements-dev.lock
       - name: 生成测试股票名映射 (data/stock_info.json, 供 _resolve_stock_name 等测试)
@@ -59,24 +93,16 @@ jobs:
               json.dump(stock_map, f, ensure_ascii=False)
           print(f"stock_info.json written: {len(stock_map)} entries")
           EOF
-      - name: Lint
-        run: ruff check backend/ --select=E,F,W --ignore=E501
-      - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5; workflow_dispatch 仅校验存在)
+      - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e/network 场景单独跑, FR-651)
+        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-report=json:coverage.json --cov-fail-under=40 -m "not e2e and not network"
+      - name: 变更覆盖率门禁 (FR-652 第 2 条: 变更行 ≥60% / 核心模块 ≥70%) — 失败修复命令见输出
         run: |
-          V=$(grep -oP 'APP_VERSION = "\K[0-9.]+' backend/main_new.py || true)
-          if [ -z "$V" ]; then echo "未找到 APP_VERSION"; exit 1; fi
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            TAG=${GITHUB_REF_NAME#v}
-            if [ "$TAG" != "$V" ]; then echo "tag=$TAG 与 APP_VERSION=$V 不一致"; exit 1; fi
-            echo "版本一致: $V"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch origin "$GITHUB_BASE_REF" --depth=1 || true
+            python scripts/check_diff_coverage.py --base "origin/$GITHUB_BASE_REF" --gate
           else
-            echo "workflow_dispatch/分支触发: 仅校验 APP_VERSION 存在 ($V)"
+            python scripts/check_diff_coverage.py --gate || echo "[diff-cov] 非 PR 触发无变更行, 跳过"
           fi
-      - name: 6.1.X 版本治理门禁 (T-6.1.0.1: APP_VERSION/README/HANDOVER 单一来源)
-        run: python scripts/bump_version.py --check
-
-      - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e 场景单独 job 跑)
-        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-fail-under=40 -m "not e2e"
       - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
         run: |
           python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
@@ -134,7 +160,7 @@ jobs:
   # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: layer2-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -150,7 +176,7 @@ jobs:
   # V5.0.8 T-5.0.81 (TEST-PLAN 9.3): RBAC 权限矩阵独立 job — deny-by-default 守护延续, fail 即红
   rbac-matrix-gate:
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: layer2-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -164,7 +190,7 @@ jobs:
   # V5.0.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
   pit-gate:
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: layer2-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -177,7 +203,7 @@ jobs:
 
   performance-gate:
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: layer2-unit-tests
     # V5.3.0 (T-5.3.4.5 / FR-5.3.4.5): 性能基准入 CI 门禁 — 必跑, 退化即红
     steps:
       - uses: actions/checkout@v4
@@ -192,7 +218,40 @@ jobs:
         run: python -m pytest tests/test_bundle_budget_v534.py -v --tb=short
       - name: "虚拟滚动覆盖守护 (T-5.3.4.2: 长表虚拟滚动/分页)"
         run: python -m pytest tests/test_virtual_scope_v534.py -v --tb=short
+      - name: "6.4.3 运行效率门禁 (FR-647/648: 体积阈值 / Top10 P95 / 降采样 / 长任务)"
+        run: python -m pytest tests/test_release_643_perf.py -q -m "not e2e"
 
+
+  # 6.4.3 (FR-647 第 4 条): 构建体积门禁 — 真实构建后按 raw+gzip 度量并输出超限 chunk。
+  # 现状: 首屏业务 JS 974KB / vendor-ep 928KB 均超预算 (分包与 EP 按需为 6.5.x 专项),
+  # 故本 job 先以 continue-on-error 作为"可见的告警门", 达标后去掉该开关即转为阻塞门。
+  bundle-size-gate:
+    runs-on: ubuntu-latest
+    needs: layer2-unit-tests
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: 前端依赖 (锁 package-lock)
+        run: npm --prefix frontend ci
+      - name: 构建
+        run: npm --prefix frontend run build
+      - name: 体积报告 + 阈值门禁 (总量 ≤1800KB / 首屏业务 JS ≤400KB / Element Plus ≤600KB)
+        run: |
+          mkdir -p data
+          python scripts/report_bundle_size.py --gate --json data/bundle_size.json
+      - name: 上传体积报告工件
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-size-report
+          path: data/bundle_size.json
+          if-no-files-found: ignore
 
   e2e-visual:
     runs-on: ubuntu-latest

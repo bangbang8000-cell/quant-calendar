@@ -47,9 +47,13 @@ def test_subpage_names_map():
 
 
 def test_subnav_label():
-    """TC-5.15.43: SubNav label = 基础配置"""
+    """TC-5.15.43: SubNav 二级标签 = 基础配置 — 6.5.0 (FR-653) 起标签单一来源迁移:
+    SubNav 经 memberLabel (i18n sub.<page>.<sub> → sub.<sub> → core 兜底) 解析,
+    术语契约落在 i18n: zh-CN sub.feature 必须仍为「基础配置」(不回退「功能配置」)。"""
     src = _read_f("src/components/SubNav.vue")
-    assert "label: '基础配置'" in src, "SubNav 二级菜单标签应为基础配置"
+    assert "memberLabel" in src, "SubNav 二级标签应经 memberLabel 链路解析 (i18n 单一来源)"
+    locale = _read_f("js/locales/zh-CN.js")
+    assert "'sub.feature': '基础配置'" in locale, "zh-CN sub.feature 应为 基础配置"
 
 
 def test_no_feature_config_leftover():

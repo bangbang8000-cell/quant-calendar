@@ -1,4 +1,4 @@
-// quant-calendar: language pack ja
+﻿// quant-calendar: language pack ja
 // auto-generated from zh-CN (V4.7.4 i18n expansion); missing keys fall back to en
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -9,15 +9,15 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '戦略総覧',
+    'nav.strategies': '戦略',
     'nav.calendar': '量化カレンダー',
     'nav.ai': 'スマート評価',
     'nav.research': '戦略リサーチ',
-    'nav.ops': 'システム状態',
-    'nav.system': 'システム設定',
+    'nav.ops': '運用監視',
+    'nav.system': 'プラットフォーム設定',
     'nav.shortterm': '短期振り返り',
     'sub.overview': '概要',
-    'sub.strategies.overview': '戦略概要', 'sub.ai.overview': '評価概要', 'sub.research.research-overview': '研究概要',
+    'sub.strategies.overview': '概要', 'sub.ai.overview': '概要', 'sub.research.research-overview': '概要',
     'sub.execution': '実行ダッシュボード',
     'sub.merrill': 'メリルクロック',
     'sub.market': '市場概況',   // V6.6.1: 名称変更
@@ -27,7 +27,7 @@
     'sub.monthly': '月ビュー',
     'sub.yearly': '年ビュー',
     'sub.pool': '株プール',
-    'sub.calendar': 'カレンダー',   // V6.6.1: 統合後メインビュー
+    'sub.calendar': 'カレンダービュー',   // V6.6.1: 統合後メインビュー
     'sub.watchlist': 'マイ自選',
     'sub.history': '評価履歴',
     'sub.evaluation-analysis': '評価分析',
@@ -46,7 +46,7 @@
     'sub.strategy-manage': '戦略管理',   // V6.6.1: 統合
     'sub.ztpool': 'ストップ高レビュー',
     'sub.lhb': '竜虎榜',
-    'sub.shortterm.overview': '振り返りダッシュボード',
+    'sub.shortterm.overview': '概要',
     'sub.shortterm.sector': 'セクター資金流',
     'sub.sector': 'セクター資金流',
     'sub.shortterm.intraday': '日中検証',
@@ -83,6 +83,7 @@
     'common.search': '検索',
     'common.empty': 'データなし',
     'common.retry': '再試行',
+    'common.more': 'もっと見る', // 6.5.0 (FR-653.1): 二級 >6 拆分「更多」下拉 (global-header.js)
     'common.emptyTitle': 'データなし',
     'common.emptyDesc': '表示できる内容がありません',
     'common.errorTitle': '読み込み失敗',

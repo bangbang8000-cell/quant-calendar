@@ -17,7 +17,7 @@
       aiHistoryLoading, aiHistoryError, sortedWatchlist, getWatchlistScore, getLatestScore,
       addSearchResult, evaluatedCodes, klineLoadedCodes, markKlineLoaded, watchlistSearch,
       watchlistResults, watchlistSearching, dataRefreshConfig, dataRefreshReloading,
-      dataRefreshSaving, levelVar, levelBgVar, undoStack, showUndoMessage, loadAiHistory
+      dataRefreshSaving, dataRefreshSaved, levelVar, levelBgVar, undoStack, showUndoMessage, loadAiHistory
       } = ctx;
 
 // v1.8.0: 自选股 CRUD
@@ -219,30 +219,97 @@ async function loadDataRefreshConfig() {
         const res = await fetch('/api/data-refresh/config');
         const data = await res.json();
         dataRefreshConfig.value = data;
+        dataRefreshSaved.value = {
+            scheduled_enabled: !!data.scheduled_enabled,
+            pull_enabled: !!data.pull_enabled,
+        };
     } catch (e) {
         console.error('加载数据刷新配置失败:', e);
     }
 }
 
 // v1.8.0: 保存数据刷新配置
+// 6.4.1 (FR-641a/e, D2): 开启自动刷新 → 二次确认 + 首日限量提示；被拒绝时回滚开关并显示引导
 async function saveDataRefreshConfig() {
+    const cfg = dataRefreshConfig.value;
+    // 只在「由关变开」时二次确认；关闭开关或常规修改不打扰用户
+    const prev = dataRefreshSaved.value || {};
+    const turningOn = (cfg.scheduled_enabled && !prev.scheduled_enabled)
+        || (cfg.pull_enabled && !prev.pull_enabled);
+    if (turningOn && !cfg.first_run_confirmed) {
+        const days = cfg.first_run_days || 5;
+        try {
+            await ElementPlus.ElMessageBox.confirm(
+                `开启后将在设定时间自动刷新；首日仅拉取最近 ${days} 个交易日（不执行全量回补）。确定开启？`,
+                '确认开启自动刷新',
+                { type: 'warning', confirmButtonText: '开启', cancelButtonText: '取消' });
+        } catch (e) {
+            await loadDataRefreshConfig();  // 取消 → 回滚开关
+            return;
+        }
+        cfg.first_run_confirmed = true;
+    }
     dataRefreshSaving.value = true;
     try {
         const res = await fetch('/api/data-refresh/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataRefreshConfig.value)
+            body: JSON.stringify(cfg)
         });
         const data = await res.json();
         if (data.success) {
             ElementPlus.ElMessage.success('数据刷新配置已保存');
+            if (data.config) dataRefreshConfig.value = data.config;
+            dataRefreshSaved.value = {
+                scheduled_enabled: !!dataRefreshConfig.value.scheduled_enabled,
+                pull_enabled: !!dataRefreshConfig.value.pull_enabled,
+            };
         } else {
-            ElementPlus.ElMessage.error('保存失败');
+            // POOL_EMPTY / FIRST_RUN_CONFIRM_REQUIRED → 明确引导，不静默失败
+            ElementPlus.ElMessage.warning(data.message || '保存失败');
+            await loadDataRefreshConfig();
         }
     } catch (e) {
-        ElementPlus.ElMessage.error('保存失败');
+        ElementPlus.ElMessage.error('保存失败，请检查网络后重试');
     } finally {
         dataRefreshSaving.value = false;
+    }
+}
+
+// 6.4.2 (FR-644): 示例组合 — 一键载入 / 一键删除 (空态主行动)
+async function loadExamplePool() {
+    try {
+        const res = await fetch('/api/data-refresh/example-pool/load', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            ElementPlus.ElMessage.success('已载入示例组合（6 只），可立即手动拉取');
+            await loadDataRefreshConfig();
+        } else {
+            ElementPlus.ElMessage.warning(data.message || '载入示例组合失败');
+        }
+    } catch (e) {
+        ElementPlus.ElMessage.error('载入示例组合失败，请检查网络后重试');
+    }
+}
+
+async function removeExamplePool() {
+    try {
+        await ElementPlus.ElMessageBox.confirm('将从数据池移除示例组合中的 6 只标的，其余标的保留。', '移除示例组合',
+            { type: 'warning', confirmButtonText: '移除', cancelButtonText: '取消' });
+    } catch (e) {
+        return; // 取消
+    }
+    try {
+        const res = await fetch('/api/data-refresh/example-pool', { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            ElementPlus.ElMessage.success('已移除示例组合');
+            await loadDataRefreshConfig();
+        } else {
+            ElementPlus.ElMessage.warning(data.message || '移除示例组合失败');
+        }
+    } catch (e) {
+        ElementPlus.ElMessage.error('移除示例组合失败，请检查网络后重试');
     }
 }
 
@@ -296,7 +363,7 @@ async function triggerDataPull() {
     }
 }
       return {
-        watchlistLoading, loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, toggleWatchlist, showStockKline, preloadingKline, preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected, searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload, dataPullRunning, triggerDataPull,
+        watchlistLoading, loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, toggleWatchlist, showStockKline, preloadingKline, preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected, searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload, dataPullRunning, triggerDataPull, loadExamplePool, removeExamplePool,
       };
     },
   };

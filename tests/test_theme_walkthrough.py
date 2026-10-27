@@ -16,6 +16,18 @@ import page_source  # noqa: E402
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(BASE, "frontend", rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel):
     p = os.path.join(BASE, rel)
     assert os.path.exists(p), f'missing {rel}'
@@ -27,7 +39,7 @@ def _read(rel):
         return f.read()
 
 
-THEMES_CSS = _read('frontend/css/themes.css')
+THEMES_CSS = _themes_css()
 ECHARTS_THEME = _read('frontend/js/echarts-theme.js')
 APP_LOGIC = _read('frontend/js/app-logic.js')
 CHARTS = _read('frontend/js/charts.js')

@@ -14,6 +14,18 @@ import page_source  # noqa: E402
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# 6.5.1 (FR-657): themes.css 拆域 5 文件 — 聚合读取保持原单文件断言语义
+_THEME_FILES = ("css/themes.css", "css/themes-market.css", "css/themes-features.css",
+                "css/themes-components.css", "css/themes-pages.css")
+
+
+def _themes_css():
+    parts = []
+    for rel in _THEME_FILES:
+        with open(os.path.join(BASE, "frontend", rel.replace("/", os.sep)), encoding="utf-8") as f:
+            parts.append(f.read())
+    return "".join(parts)
+
 def _read(rel):
     # 6.3.0 结构分治: 页面模板下沉子目录 — 可重建的走页源码重建
     _b = page_source.bundle(rel)
@@ -51,7 +63,7 @@ def test_signal_sources_covered():
 
 def test_signal_css_defined():
     """信号角标样式类存在 (themes.css, 非内联)"""
-    css = _read("frontend/css/themes.css")
+    css = _themes_css()
     assert ".today-signal-chip" in css
     assert ".sig-opp" in css and ".sig-risk" in css
 

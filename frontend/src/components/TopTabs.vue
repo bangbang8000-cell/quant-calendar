@@ -50,15 +50,26 @@ export default {
     const currentPage = computed(() => (state.currentPage && state.currentPage.value) || '')
     const currentSubPage = computed(() => (state.currentSubPage && state.currentSubPage.value) || '')
     const menus = computed(() => (state.menus && state.menus.value) || [])
-    const subPages = computed(() => {
-      const m = menus.value.find((x) => x.key === currentPage.value)
-      return (m && m.subPages) || []
-    })
-    const tabs = computed(() => subPages.value.map((sp) => ({
-      key: sp,
-      label: (state.subPageNames && state.subPageNames[sp]) || sp,
-      icon: (SUB_ICONS[currentPage.value] && SUB_ICONS[currentPage.value][sp]) || 'circle-dot',
+    // 6.5.0 (FR-653): 一级合并后按 activePages 反查当前一级; 二级遍历成员 (member.sub 旧坐标)
+    const currentMenu = computed(() => menus.value.find((x) =>
+      (x.activePages || [x.key]).indexOf(currentPage.value) >= 0) || null)
+    const members = computed(() => (currentMenu.value && currentMenu.value.members) || [])
+    const subPages = computed(() => (currentMenu.value && currentMenu.value.subPages) || [])
+    const tabs = computed(() => members.value.map((mm) => ({
+      key: mm.key,
+      sub: mm.sub,
+      page: mm.page,
+      label: labelOf(mm),
+      icon: (SUB_ICONS[mm.page] && SUB_ICONS[mm.page][mm.sub]) || 'circle-dot',
     })))
+    // 成员显示名: i18n (sub.<page>.<sub>) → core 中文兜底 → 旧 subPageNames
+    function labelOf(mm) {
+      const NC = window.QuantNavMerge
+      if (NC) return NC.memberLabel(mm, state.t)
+      return (state.subPageNames && state.subPageNames[mm.sub]) || mm.sub
+    }
+    // 激活态按内部旧坐标比较 (成员 key 与旧 sub 解耦)
+    const isActiveTab = (tab) => currentPage.value === tab.page && currentSubPage.value === tab.sub
 
     // V5.15 (F6): 溢出检测与滚动
     const scrollRef = ref(null)
@@ -120,13 +131,17 @@ export default {
       if (!el) return
       el.scrollBy({ left: dir * STEP, behavior: 'smooth' })
     }
-    function go(sp) {
-      if (state.openTab) state.openTab(currentPage.value, sp)
-      else if (state.currentSubPage) state.currentSubPage.value = sp
+    function go(tab) {
+      // 6.5.0 (FR-653.2): tab 携带内部旧坐标 (成员 key → page/sub); 经 openTab 漏斗
+      const page = tab.page || currentPage.value
+      const sub = tab.sub || tab.key
+      if (state.openTab) state.openTab(page, sub)
+      else if (state.currentSubPage) state.currentSubPage.value = sub
     }
     // 「更多」下拉选择后: 导航 + 滚动到可见
     function scrollToTab(key) {
-      go(key)
+      const tab = tabs.value.find((t) => t.key === key)
+      if (tab) go(tab)
       nextTick(() => {
         const el = scrollRef.value
         if (!el) return
@@ -144,17 +159,23 @@ export default {
       const visibleKeys = new Set()
       el.querySelectorAll('.qc-top-tab').forEach((node) => {
         const r = node.getBoundingClientRect()
-        if (r.left >= rect.left - 2 && r.left < rect.right - 24) visibleKeys.add(node.getAttribute('data-tab-key'))
+        // 6.5.4 (FR-654.3): 整块可见才计数 — 右缘被裁一半的标签算隐藏,
+        // 否则「更多」会重复列出用户已经看得到的项
+        if (r.left >= rect.left - 2 && r.right <= rect.right - 20) visibleKeys.add(node.getAttribute('data-tab-key'))
       })
       return tabs.value.filter((t) => !visibleKeys.has(t.key))
     })
+    // 6.5.4 (FR-654.3): 二级阈值统一走 nav-merge-core (上限 7, 兜底回退同值)
+    const MAX_VISIBLE = (window.QuantNavMerge && window.QuantNavMerge.MAX_VISIBLE_SUBS) || 7
+    const primaryTabs = computed(() => tabs.value.slice(0, MAX_VISIBLE))
+    const moreTabs = computed(() => tabs.value.slice(MAX_VISIBLE))
     // 键盘 ←/→ 滚动标签条
     function onTabKeydown(e, tab) {
       if (e.key === 'ArrowLeft') { e.preventDefault(); scrollByStep(-1) }
       else if (e.key === 'ArrowRight') { e.preventDefault(); scrollByStep(1) }
       else if (e.key === 'Home') { e.preventDefault(); scrollByStep(-999) }
       else if (e.key === 'End') { e.preventDefault(); scrollByStep(999) }
-      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(tab.key) }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(tab) }
     }
 
     // v6.4 (FR-6.4.3): 页签集合或激活项变化即重算（不再依赖手动 resize）。
@@ -176,7 +197,7 @@ export default {
     })
 
     return {
-      state, tabs, currentSubPage, go,
+      state, tabs, primaryTabs, moreTabs, currentSubPage, go, isActiveTab,
       scrollRef, hasOverflow, canScrollLeft, canScrollRight,
       scrollByStep, scrollToTab, hiddenTabs, onTabKeydown, updateScrollState,
     }
@@ -190,12 +211,12 @@ export default {
       aria-label="向左滚动" @click="scrollByStep(-1)">‹</button>
     <div ref="scrollRef" class="qc-header-tabs qc-top-tabs-scroll" :class="{ 'has-overflow': hasOverflow }" @scroll.passive="updateScrollState">
       <div
-        v-for="tab in tabs" :key="tab.key" :data-tab-key="tab.key"
-        class="qc-top-tab" :class="{ 'is-active': currentSubPage === tab.key }"
+        v-for="tab in primaryTabs" :key="tab.key" :data-tab-key="tab.key"
+        class="qc-top-tab" :class="{ 'is-active': isActiveTab(tab) }"
         role="tab" tabindex="0"
-        :aria-selected="currentSubPage === tab.key ? 'true' : 'false'"
+        :aria-selected="isActiveTab(tab) ? 'true' : 'false'"
         :title="tab.label"
-        @click="go(tab.key)"
+        @click="go(tab)"
         @keydown="onTabKeydown($event, tab)"
       >
         <AppIcon :name="tab.icon" :size="14" />
@@ -204,13 +225,14 @@ export default {
     </div>
     <button v-if="hasOverflow" class="qc-top-tabs-btn" :disabled="!canScrollRight"
       aria-label="向右滚动" @click="scrollByStep(1)">›</button>
-    <el-dropdown v-if="hasOverflow && hiddenTabs.length" class="qc-top-tabs-more"
+    <!-- 6.5.4 (FR-654.3): 二级上限 7 (单业务域不再超限); DOM 溢出时 hiddenTabs 兜底 -->
+    <el-dropdown v-if="moreTabs.length || (hasOverflow && hiddenTabs.length)" class="qc-top-tabs-more"
       trigger="click" @command="scrollToTab">
       <button class="qc-top-tabs-btn qc-top-tabs-more-btn" aria-label="更多页面">更多 ▾</button>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item v-for="t in hiddenTabs" :key="t.key" :command="t.key"
-            :class="{ 'is-active': currentSubPage === t.key }">
+          <el-dropdown-item v-for="t in (moreTabs.length ? moreTabs : hiddenTabs)" :key="t.key" :command="t.key"
+            :class="{ 'is-active': isActiveTab(t) }">
             <AppIcon :name="t.icon" :size="14" /> {{ t.label }}
           </el-dropdown-item>
         </el-dropdown-menu>

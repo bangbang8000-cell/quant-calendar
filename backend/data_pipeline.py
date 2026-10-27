@@ -148,7 +148,7 @@ def resolve_stock_pool(pool: list = None, as_of: str = None) -> list:
     return base
 
 
-def run_daily_pull(pool: list = None, date: str = None) -> dict:
+def run_daily_pull(pool: list = None, date: str = None, recent_days: int = None) -> dict:
     """
     定时拉取日线快照 (FR-3.12.1):
     1. 解析股票池 (配置 > 全量)
@@ -156,12 +156,20 @@ def run_daily_pull(pool: list = None, date: str = None) -> dict:
     3. 快照落盘 data/daily_snapshot.json (供新鲜度看板)
     4. 返回统计 (成功/失败/最新日期)
 
+    recent_days (6.4.1 FR-641e): 每只标的取最近 N 根日线（首次开启限量拉取用），
+    默认 None 保持历史行为（2 根，仅够取最新一根 + 前收）。
+
     失败重试: 依赖 data_sources 的逐源 fallback + record_call 连续失败阈值
     (FR-3.12.3 由 record_call 消费)。
     """
     pool = resolve_stock_pool(pool)
+    try:
+        per_stock_bars = max(2, int(recent_days)) if recent_days else 2
+    except (TypeError, ValueError):
+        per_stock_bars = 2
     stats = {"total": len(pool), "pulled": 0, "failed": 0, "errors": [],
-             "latest_date": None, "date": date or datetime.now().strftime('%Y-%m-%d')}
+             "latest_date": None, "date": date or datetime.now().strftime('%Y-%m-%d'),
+             "bars_per_stock": per_stock_bars}
     if not pool:
         stats["message"] = "股票池为空"
         try:
@@ -177,7 +185,7 @@ def run_daily_pull(pool: list = None, date: str = None) -> dict:
         try:
             # v3.12 (FR-3.12.3): 逐源 fallback 之上再做指数退避重试 (最多 3 次)
             kline, pull_err = retry_with_backoff(
-                lambda c=ts_code: data_source_manager.get_kline_data(c, period='daily', limit=2),
+                lambda c=ts_code: data_source_manager.get_kline_data(c, period='daily', limit=per_stock_bars),
                 ok_check=lambda k: bool(k and k.get('data')),
                 sleep_fn=PULL_RETRY_SLEEP,
             )

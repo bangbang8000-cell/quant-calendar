@@ -37,9 +37,8 @@ CHECKS = [
     ("品牌文字/页底", "--primary-text", "--surface-canvas", None, 4.5),
     ("文字链接/卡片", "--text-link", "--surface-card", None, 4.5),
     ("文字按钮/卡片", "--btn-primary-text-color", "--surface-card", None, 4.5),
-    ("主按钮文字/实底", "--btn-primary-color", "--btn-primary-bg", None, 4.5),
-    ("主按钮文字/hover", "--btn-primary-color", "--btn-primary-hover-bg", None, 4.5),
-    ("主按钮文字/active", "--btn-primary-color", "--btn-primary-active-bg", None, 4.5),
+    # 6.5.7 (B1): 主按钮已统一为 soft 浅底彩字, 实心组 7 令牌收敛为单一 --primary-solid;
+    #   实底档不再承载文字 → 文字对比断言移到 test_button_tokens.py (B6/B7)。
     # 导航
     ("导航默认项/导航底", "--qc-nav-item-default", "--qc-nav-bg", None, 4.5),
     ("导航激活项/激活底", "--qc-nav-item-active", "--qc-nav-item-active-bg", "--qc-nav-bg", 4.5),
@@ -164,7 +163,7 @@ def test_neutral_brand_has_zero_saturation():
     """「中性无色相」档: 关键品牌令牌的 hsl 彩度必须为 0。"""
     for mode in g.MODES:
         r = g.resolved(mode, -1)
-        for token in ("--primary-text", "--btn-primary-bg", "--qc-ring", "--text-link", "--border-control"):
+        for token in ("--primary-text", "--primary-solid", "--qc-ring", "--text-link", "--border-control"):
             val = r.get(token, "")
             m = re.match(r"hsl\(([\d.]+),\s*([\d.]+)%,", val or "")
             assert m, "%s: %s 不是 hsl 值 (%s)" % (mode, token, val)

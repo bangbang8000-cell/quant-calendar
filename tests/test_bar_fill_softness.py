@@ -30,10 +30,19 @@ DEEP_FILL = re.compile(
 )
 
 # 条/计类选择器 -> 期望的条填充令牌 (背景声明必须命中)
+# 6.5.1 (FR-655.7): themes.css 拆域 — 选择器按落点文件登记 (5 文件均挂 themes link 链)
 BAR_SELECTORS = {
     "themes.css": {
+        ".login-brand-bar": "--bar-fill",
+    },
+    "themes-market.css": {
         ".time-bar-fill": "--bar-fill",
         ".progress-bar": "--bar-fill",
+    },
+    "themes-features.css": {
+        ".ai-stage-line.done": "--bar-fill-ok",
+    },
+    "themes-pages.css": {
         ".progress-bar.status-ok": "--bar-fill-ok",
         ".progress-bar.status-warn": "--bar-fill-warn",
         ".progress-bar.status-bad": "--bar-fill-bad",
@@ -44,8 +53,6 @@ BAR_SELECTORS = {
         ".usage-ai-bar": "--bar-fill",
         ".usage-ai-bar-today": "--bar-fill",
         ".onboarding-progress-fill": "--bar-fill",
-        ".ai-stage-line.done": "--bar-fill-ok",
-        ".login-brand-bar": "--bar-fill",
     },
     "layout.css": {
         ".focus-action-买入": "--bar-fill-ok",

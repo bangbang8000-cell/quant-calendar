@@ -241,7 +241,7 @@
 }
 .qc-page-title {
   margin: 0;
-  font-size: var(--qc-font-size-lg2);  /* 6.2.1 (F2): 20px 标尺档 */
+  font-size: var(--font-role-page-title);  /* 6.5.8 (C3): 角色层 22px (原 lg2 20px 已删) */
   font-weight: var(--qc-font-weight-semibold);
   color: var(--qc-foreground);
   line-height: 1.3;
@@ -346,6 +346,12 @@
 .qc-subnav-item:hover {
   background: var(--qc-nav-item-hover-bg);
   color: var(--qc-nav-item-hover);
+}
+/* 6.5.0 (FR-653.1): workbench 合并组分隔线 — 内部旧页变化处 */
+.qc-subnav-divider {
+  height: 1px;
+  margin: var(--qc-space-2) var(--qc-space-3);
+  background: var(--qc-border);
 }
 .qc-subnav-item.is-active {
   background: var(--qc-nav-item-active-bg);

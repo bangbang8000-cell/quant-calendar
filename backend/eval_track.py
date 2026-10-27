@@ -308,6 +308,8 @@ def track_evaluations(username: str = 'default', kline_getter: Optional[Callable
             "evaluate_date": baseline,
             "level": level,
             "provider": str(result.get("provider") or rec.get("model_provider") or ""),
+            # 6.4.4 (FR-649): 策略字段随记录透传 (按策略分组命中率)
+            "strategy": str(rec.get("strategy") or ""),
             "direction": parse_level_direction(level),
             "available": False,
             "unavailable_reason": "",

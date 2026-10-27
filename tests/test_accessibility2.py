@@ -59,9 +59,12 @@ def test_command_panel_input_aria():
 
 
 def test_command_panel_keyboard_nav():
-    """命令面板键盘导航: up/down/enter 处理"""
+    """命令面板键盘导航: 6.5.0 起输入框统一 @keydown="onKeydown" 分发,
+    ArrowUp/ArrowDown/Enter/Esc 在 onKeydown 内处理 (等价旧 @keydown.up/.down/.enter 逐键绑定)"""
     src = _read(os.path.join("js", "components", "command-panel.js"))
-    assert "@keydown.up" in src and "@keydown.down" in src and "@keydown.enter" in src
+    assert '@keydown="onKeydown"' in src, "输入框应绑定统一键盘分发"
+    assert "ArrowUp" in src and "ArrowDown" in src and "Enter" in src, \
+        "onKeydown 应处理上/下/确认键"
 
 
 # ─── ARIA 语义 ─────────────────────────────────────────────────
@@ -103,7 +106,10 @@ def test_shortcut_help_dialog_present():
 
 def test_focus_visible_defined():
     """可见焦点: CSS 定义 :focus-visible (键盘导航可见环)"""
-    css = _read(os.path.join("css", "themes.css"))
+    # 6.5.1 (FR-655.7): themes.css 拆域后聚合 5 文件检查
+    css = "\n".join(_read(os.path.join("css", f)) for f in (
+        "themes.css", "themes-market.css", "themes-features.css",
+        "themes-components.css", "themes-pages.css"))
     assert ":focus-visible" in css or ":focus" in css
 
 

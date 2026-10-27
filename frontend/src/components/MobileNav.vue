@@ -5,13 +5,15 @@
 import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
 import AppIcon from './common/AppIcon.vue'
 
-// 桌面一级 → 移动 Tab 映射 (PRD 1.2.1 / FR-6.0.4)
-// V6.0 (P1-4): 末位 Tab 语义修正 — 「我的」→「设置」, 图标 user → settings
+// 桌面一级 → 移动 Tab 映射
+// 6.5.4 (FR-654): 一级摊平为 7 个业务域 — 底栏 7 项 (flex 均分, 375px 下每项 53px, 短标签可容纳)
 const TABS = [
-  { key: 'strategies', label: '首页', icon: 'home' },
+  { key: 'strategies', label: '策略', icon: 'pie-chart' },
   { key: 'calendar', label: '日历', icon: 'calendar' },
-  { key: 'ai', label: 'AI', icon: 'bot' },
+  { key: 'shortterm', label: '复盘', icon: 'trending-up' },
+  { key: 'ai', label: '评估', icon: 'bot' },
   { key: 'research', label: '研究', icon: 'flask-conical' },
+  { key: 'ops', label: '监控', icon: 'activity' },
   { key: 'system', label: '设置', icon: 'settings' },
 ]
 
@@ -31,35 +33,45 @@ export default {
     const GROUP_LABELS = { research: '量化投研', platform: '平台管理' }
     const GROUPS = ['research', 'platform']
 
-    // V6.1: 二级可达 — 一级项展开/收起二级子页
-    function hasSub(menu) { return Array.isArray(menu.subPages) && menu.subPages.length > 0 }
+    // V6.1: 二级可达 — 一级项展开/收起二级子页 (6.5.0: 二级 = members 成员)
+    function hasSub(menu) { return Array.isArray(menu.members) && menu.members.length > 0 }
     function toggleDrawerMenu(menu) {
       if (!hasSub(menu)) return
       drawerExpanded.value[menu.key] = !drawerExpanded.value[menu.key]
     }
-    function isDrawerSubActive(menu, sp) {
-      return currentPage.value === menu.key && state.currentSubPage && state.currentSubPage.value === sp
+    // 6.5.0 (FR-653): 成员激活按内部旧坐标比较; 显示名经 core 兜底
+    function isDrawerMemberActive(member) {
+      return currentPage.value === member.page && state.currentSubPage && state.currentSubPage.value === member.sub
+    }
+    function memberLabel(member) {
+      const NC = window.QuantNavMerge
+      if (NC) return NC.memberLabel(member, state.t)
+      return (state.subPageNames && state.subPageNames[member.sub]) || member.sub
     }
     function subLabel(sp) { return (state.subPageNames && state.subPageNames[sp]) || sp }
 
     async function goTab(tab) {
       const menu = menus.value.find((m) => m.key === tab.key)
-      const sp = (menu && menu.subPages && menu.subPages[0]) || ''
-      if (window.__quantGoPage) await window.__quantGoPage(tab.key, sp)
-      else { state.currentPage.value = tab.key; if (state.currentSubPage) state.currentSubPage.value = sp }
-      if (state.navigateTo) state.navigateTo(tab.key, sp)
+      // 6.5.2 (FR-653): 首成员旧坐标直达 (subPages 已成员键化, 不可再当 sub 用)
+      const m0 = menu && menu.members && menu.members[0]
+      const sp = m0 ? m0.sub : ((menu && menu.subPages && menu.subPages[0]) || '')
+      const targetPage = m0 ? m0.page : tab.key
+      if (window.__quantGoPage) await window.__quantGoPage(targetPage, sp)
+      else { state.currentPage.value = targetPage; if (state.currentSubPage) state.currentSubPage.value = sp }
+      if (state.navigateTo) state.navigateTo(targetPage, sp)
     }
     function goMenu(menu, sp) {
       drawerOpen.value = false
-      const s = sp || (menu.subPages && menu.subPages[0]) || ''
-      if (window.__quantGoPage) window.__quantGoPage(menu.key, s)
-      else { state.currentPage.value = menu.key; if (state.currentSubPage) state.currentSubPage.value = s }
-      if (state.navigateTo) state.navigateTo(menu.key, s)
+      const m = (menu.members || []).find((mm) => mm.key === sp || mm.sub === sp)
+      const target = m ? { page: m.page, sub: m.sub } : { page: menu.key, sub: sp }
+      if (window.__quantGoPage) window.__quantGoPage(target.page, target.sub)
+      else { state.currentPage.value = target.page; if (state.currentSubPage) state.currentSubPage.value = target.sub }
+      if (state.navigateTo) state.navigateTo(target.page, target.sub)
     }
     function openDrawer() {
       drawerOpen.value = true
-      // V6.7.1 (PRD F-6.7.7): 短线复盘抽屉内默认展开二级 (移动端高频可达)
-      if (drawerExpanded.value['shortterm'] === undefined) drawerExpanded.value['shortterm'] = true
+      // 6.5.4: 抽屉内默认展开首个业务域 (策略总览)
+      if (drawerExpanded.value['strategies'] === undefined) drawerExpanded.value['strategies'] = true
     }
     function closeDrawer() {
       drawerOpen.value = false
@@ -84,7 +96,7 @@ export default {
     return {
       state, TABS, menus, currentPage, drawerOpen, drawerFocusRef, drawerExpanded,
       GROUP_LABELS, GROUPS,
-      hasSub, toggleDrawerMenu, isDrawerSubActive, subLabel,
+      hasSub, toggleDrawerMenu, isDrawerMemberActive, subLabel, memberLabel,
       goTab, goMenu, openDrawer, closeDrawer,
     }
   },
@@ -156,15 +168,15 @@ export default {
                   <AppIcon name="chevron-down" :size="14" />
                 </button>
               </div>
-              <!-- V6.1: 抽屉内二级子页 -->
+              <!-- 6.5.0 (FR-653): 抽屉内二级 = members 成员 (href 新格式 #primary/memberKey) -->
               <div v-if="drawerExpanded[menu.key]" class="qc-drawer-children">
                 <a
-                  v-for="sp in menu.subPages" :key="sp"
-                  class="qc-subnav-item" :class="{ 'is-active': isDrawerSubActive(menu, sp) }"
-                  :href="'#' + menu.key + '/' + sp"
-                  @click.prevent="goMenu(menu, sp)"
+                  v-for="member in menu.members" :key="member.key"
+                  class="qc-subnav-item" :class="{ 'is-active': isDrawerMemberActive(member) }"
+                  :href="'#' + menu.key + '/' + member.key"
+                  @click.prevent="goMenu(menu, member.key)"
                 >
-                  <span>{{ subLabel(sp) }}</span>
+                  <span>{{ memberLabel(member) }}</span>
                 </a>
               </div>
             </div>

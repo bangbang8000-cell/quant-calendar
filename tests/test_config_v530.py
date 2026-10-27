@@ -26,6 +26,33 @@ def _fresh_import():
     return caught
 
 
+@pytest.fixture
+def _restore_settings():
+    """reload 会替换全局 config.settings — 用例结束后恢复, 避免污染其他测试"""
+    saved = config.settings
+    yield
+    config.settings = saved
+
+
+@pytest.fixture
+def _tmp_env_dir(monkeypatch, tmp_path):
+    """FR-651 第 3 条: 依赖本地 .env 的用例改用 tmp_path 临时环境 —
+    chdir 到空临时目录并写入最小 .env; 屏蔽 config 导入期的 load_dotenv(绝对路径指向
+    仓库根 .env, 会把本机配置注入进程环境); 本机 .env 不再影响断言。
+    6.5.1: 除已知键外, 遍历 Settings.model_fields 全量 delenv — 防本机 .env
+    新增字段 (如 CORS_ORIGINS/PORT) 泄入进程环境覆盖默认值。"""
+    (tmp_path / ".env").write_text("", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: False)
+    # 清掉进程环境里可能覆盖默认值的变量 (含本机 .env 已注入的)
+    keys = set(config.Settings.model_fields) | {
+        "CORS_ORIGINS", "HOST", "PORT", "DEBUG",
+        "ALGORITHM", "RATE_LIMIT_LIMIT", "RATE_LIMIT_BACKEND", "OPENAPI_ENABLED"}
+    for key in keys:
+        monkeypatch.delenv(key, raising=False)
+    return tmp_path
+
+
 class TestNoPydanticDeprecation:
     def test_no_pydantic_deprecated_warning(self):
         """class-based Config 迁移到 SettingsConfigDict 后不应再有弃用告警"""
@@ -47,8 +74,11 @@ class TestNoPydanticDeprecation:
 
 
 class TestBehaviorEquivalent:
-    def test_default_values_unchanged(self):
-        """迁移后默认值不变（仅断言不随 .env 覆盖的字段，端口由 .env 控制）"""
+    def test_default_values_unchanged(self, _tmp_env_dir, _restore_settings):
+        """迁移后默认值不变（仅断言不随 .env 覆盖的字段，端口由 .env 控制）
+        FR-651: 在 tmp_path 空 .env 环境下取默认值, 本机 .env 不影响断言
+        6.5.1: 夹具只清环境 — 需 reload 重建 settings 才反映净化后的环境"""
+        _fresh_import()
         assert config.settings.HOST == "0.0.0.0"
         assert config.settings.DEBUG is True
         assert config.settings.ALGORITHM == "HS256"
@@ -64,7 +94,11 @@ class TestBehaviorEquivalent:
         assert config.settings.PORT == 8123
 
     def test_case_sensitive_preserved(self, monkeypatch):
-        """case_sensitive=True 保持：小写变量名不覆盖大写字段"""
+        """case_sensitive=True 保持：小写变量名不覆盖大写字段
+        FR-651 第 2 条: Windows 进程环境变量大小写不敏感(setenv('host') 即 HOST),
+        本用例语义只在 POSIX 环境成立 → skipif; 由 Linux CI 承担。"""
+        if sys.platform == "win32":
+            pytest.skip("Windows 进程环境变量大小写不敏感, case_sensitive 语义仅在 POSIX 可验")
         monkeypatch.setenv('host', '1.2.3.4')
         caught = _fresh_import()
         assert config.settings.HOST == "0.0.0.0"

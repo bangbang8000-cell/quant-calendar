@@ -112,12 +112,29 @@ class AIEvalBase:
         self._usage.setdefault("by_day", {})
         self._usage["by_day"][today] = self._usage["by_day"].get(today, 0) + 1
         self._save_usage()
+    def record_call_result(self, model_id: str, success: bool, latency_ms: int = 0):
+        """6.4.4 (FR-650 第 4 条): 记录一次调用的结果明细 (成功/耗时), 供用量看板。
+
+        recent 环形保留最近 500 条, 失败不抛错 (看板数据, 不影响主流程)。
+        """
+        try:
+            entry = {"ts": datetime.now().isoformat(timespec="seconds"),
+                     "model": str(model_id or "unknown"),
+                     "success": bool(success),
+                     "latency_ms": int(latency_ms or 0)}
+            self._usage["recent"] = self._usage.get("recent") or []
+            self._usage["recent"] = [entry] + self._usage["recent"][:499]
+            self._save_usage()
+        except Exception:
+            logger.warning('ai_evaluator record_call_result 落库失败 (降级, 不阻断)')
     def get_usage_stats(self) -> Dict:
         """用量统计 (前端展示)"""
         return {
             "total_calls": self._usage.get("total_calls", 0),
             "by_model": self._usage.get("by_model", {}),
             "by_day": dict(sorted(self._usage.get("by_day", {}).items())[-30:]),
+            # 6.4.4 (FR-650): 调用明细 (成功/耗时), 供近 7/30 天看板聚合
+            "recent": (self._usage.get("recent") or [])[-500:],
         }
     def _load_index_eval_cache(self) -> Dict:
         """加载指数评估缓存，清理超过30天的条目"""

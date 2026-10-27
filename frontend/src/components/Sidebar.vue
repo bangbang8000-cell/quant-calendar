@@ -25,12 +25,30 @@ export default {
     const GROUP_LABELS = { research: '量化投研', platform: '平台管理' }
     const GROUPS = ['research', 'platform']
 
-    const isActive = (menu) => currentPage.value === menu.key
+    // 6.5.0 (FR-653): 一级合并后激活态以 activePages 判定; 子项遍历成员 (member.sub 为内部旧键)
+    const isActive = (menu) =>
+      (menu.activePages || [menu.key]).indexOf(currentPage.value) >= 0
     const isChildActive = (menu, sp) =>
-      currentPage.value === menu.key && state.currentSubPage && state.currentSubPage.value === sp
+      isActive(menu) && state.currentSubPage && state.currentSubPage.value === sp
     const hasChildren = (menu) => Array.isArray(menu.subPages) && menu.subPages.length > 1
-    const subLabel = (menu, sp) =>
-      (state.subPageNames && state.subPageNames[sp]) || sp
+    // 成员显示名: member 键 → core 兜底 (不露 raw key); 兼容旧字符串子页
+    const subLabel = (menu, sp) => {
+      const NC = window.QuantNavMerge
+      if (NC && Array.isArray(menu.members)) {
+        const member = menu.members.find(mm => mm.key === sp)
+        if (member) return NC.memberLabel(member, state.t)
+      }
+      return (state.subPageNames && state.subPageNames[sp]) || sp
+    }
+    // 成员跳转: 树状二级点击 → 内部旧坐标 (经 __quantGoPage 漏斗)
+    const memberTarget = (menu, sp) => {
+      const NC = window.QuantNavMerge
+      if (NC && Array.isArray(menu.members)) {
+        const member = menu.members.find(mm => mm.key === sp)
+        if (member) return { page: member.page, sub: member.sub }
+      }
+      return { page: menu.key, sub: sp }
+    }
 
     function toggleSubmenu(menu) {
       if (!hasChildren(menu) || sidebarCollapsed.value) return
@@ -42,14 +60,22 @@ export default {
       })
     }
     async function navigate(menu, subPage) {
-      const sp = subPage || (menu.subPages && menu.subPages[0]) || ''
-      if (window.__quantGoPage) {
-        await window.__quantGoPage(menu.key, sp)
+      // 6.5.0 (FR-653.2): 成员点击 → 内部旧坐标; 未指定子页 → 首个可见成员
+      let target
+      if (subPage) {
+        target = memberTarget(menu, subPage)
+      } else if (Array.isArray(menu.members) && menu.members.length) {
+        target = { page: menu.members[0].page, sub: menu.members[0].sub }
       } else {
-        state.currentPage.value = menu.key
-        if (state.currentSubPage) state.currentSubPage.value = sp
+        target = { page: menu.key, sub: (menu.subPages && menu.subPages[0]) || '' }
       }
-      if (state.navigateTo) state.navigateTo(menu.key, sp)
+      if (window.__quantGoPage) {
+        await window.__quantGoPage(target.page, target.sub)
+      } else {
+        state.currentPage.value = target.page
+        if (state.currentSubPage) state.currentSubPage.value = target.sub
+      }
+      if (state.navigateTo) state.navigateTo(target.page, target.sub)
     }
     function toggleCollapse() {
       sidebarCollapsed.value = !sidebarCollapsed.value
@@ -159,7 +185,7 @@ export default {
                 :key="sp"
                 class="qc-sidebar-item qc-sidebar-child"
                 :class="{ 'is-active': isChildActive(menu, sp) }"
-                :href="'#' + menu.key + '-' + sp"
+                :href="'#' + menu.key + '/' + sp"
                 :aria-current="isChildActive(menu, sp) ? 'page' : null"
                 @click.prevent="navigate(menu, sp)"
               >

@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V5.2.0 (T-5.2.01): 短线三池(涨停/炸板/跌停)数据抓取与标准化测试
-数据诚实性: 取数失败 available=False(绝不返回 0 家); 空池是合法结果(available=True, rows=[])。"""
+数据诚实性: 取数失败 available=False(绝不返回 0 家); 空池是合法结果(available=True, rows=[])。
+6.4.5 (FR-651): 测试封闭化 — 源链剔除需真实凭证的 sxsc_tushare, 本地 .env/网络不影响用例。"""
 import sys
+
 import pandas as pd
+import pytest
 
 from shortterm import fetchers
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_source_chains(monkeypatch):
+    """V5.3.10 在源链头部加了 sxsc_tushare(需真实 token); 测试一律剔除,
+    防止本机已配置 SXSC_TUSHARE_TOKEN 时用例打真实网络导致顺序/结果漂移。"""
+    chains = {k: [s for s in v if s != 'sxsc_tushare']
+              for k, v in fetchers._SOURCE_CHAINS.items()}
+    monkeypatch.setattr(fetchers, '_SOURCE_CHAINS', chains)
 
 
 # ---------- 纯函数: 时间/数值/代码归一 ----------
