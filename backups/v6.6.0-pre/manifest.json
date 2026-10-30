@@ -1,0 +1,22 @@
+{
+ "created_at": "2026-10-30T16:46:05.515573",
+ "version_before": "6.5.8",
+ "files": {
+  "data/merrill_cache.json": {
+   "sha256": "3acfe529c4cb2833b16c5b538a04447454fca61fb3a42bbc20d729f80d91bcb6",
+   "size": 18356
+  },
+  "data/merrill_history.json": {
+   "sha256": "e39cb8f9cb7a8314cf9a4d88298e018c282bf7b87748fd07cad9a5dd9d624315",
+   "size": 6409
+  },
+  "data/merrill_snapshots.json": {
+   "sha256": "7908be4d126470b6f2da5d9a969d07bb240fba496297c562e1c6d4d15ecfe4dc",
+   "size": 234015
+  },
+  "data/app.db": {
+   "sha256": "aef8577f75b605b7eab126d93a393da5ecf9e9a1cced1df9602779cc172b55dc",
+   "size": 3375104
+  }
+ }
+}

@@ -6,6 +6,8 @@
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
 import logging
+import os
+import json
 from auth import get_admin_user, get_current_active_user, get_current_user
 from market_data import market_data, get_kline_data
 from merrill_clock import merrill_clock
@@ -138,6 +140,61 @@ async def reevaluate_merrill(_: Dict = Depends(get_admin_user)):
     except Exception as e:
         logger.error(f"美林时钟重评估失败: {e}")
         return {"success": False, "message": f"重评估失败: {str(e)}"}
+
+
+@router.get("/merrill-clock/correction")
+async def get_merrill_correction():
+    """6.6 (T-6.6.19, PRD FR-6.6.4): 数据订正元信息。
+
+    返回 {as_of, reason, affected, label, history} —— 前端据此显示
+    「数据订正于 YYYY-MM-DD」角标, 让用户知道阶段结论为何变化（D8）。
+    无订正记录时返回 {success: true, data: null}（前端隐藏角标）。
+    """
+    from merrill_clock._correction import read_correction_meta
+    import paths
+    try:
+        meta = read_correction_meta(getattr(paths, 'MERRILL_CORRECTION_FILE', None))
+        return {"success": True, "data": meta}
+    except Exception as exc:
+        logger.error("读取美林订正元信息失败: %s", exc)
+        return {"success": False, "message": str(exc), "data": None}
+
+
+@router.post("/merrill-clock/correction")
+async def apply_merrill_correction(_: Dict = Depends(get_admin_user)):
+    """6.6 (T-6.6.18, 决策 D4/D5): 执行数据订正归档 —— **仅 admin, 零删除**。
+
+    把本次订正之前的历史快照标记为 archived/legacy 并记录订正元信息。
+    不删除任何记录; 重复调用幂等（保留首次订正时间）。
+    """
+    import datetime as _dt
+    import paths
+    from merrill_clock._correction import archive_snapshots, write_correction_meta
+    try:
+        snap_path = getattr(paths, 'MERRILL_SNAPSHOT_FILE', None)
+        snaps = []
+        if snap_path and os.path.isfile(snap_path):
+            with open(snap_path, encoding='utf-8') as f:
+                snaps = json.load(f) or []
+        at = _dt.datetime.now().strftime('%Y-%m-%d')
+        reason = '宏观指标抓取修复(列名漂移/降序取错/写0覆盖)'
+        archived = archive_snapshots(snaps, reason=reason, at=at, before=at)
+        affected = sum(1 for x in archived if isinstance(x, dict) and x.get('archived'))
+        if snap_path:
+            tmp = snap_path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(archived, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, snap_path)
+        meta = write_correction_meta(
+            getattr(paths, 'MERRILL_CORRECTION_FILE', None),
+            reason=reason, at=at, affected=affected,
+        )
+        logger.info("美林时钟数据订正完成: 归档 %d 条快照 (零删除)", affected)
+        return {"success": True, "message": f"订正完成, 归档 {affected} 条历史快照（零删除）",
+                "data": meta, "total": len(archived)}
+    except Exception as exc:
+        logger.error("美林时钟数据订正失败: %s", exc)
+        return {"success": False, "message": f"订正失败: {exc}"}
 
 
 @router.get("/performance/{ts_code}")

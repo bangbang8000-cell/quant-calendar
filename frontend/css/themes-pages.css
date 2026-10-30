@@ -977,6 +977,18 @@
 .qc-vlist-plain { display: block; }
 .qc-vrow-plain { position: static; height: auto; overflow: visible; }
 /* 6.6 (T-6.6.2, PRD FR-6.6.1): 渲染守卫降级面板 —— 全部走令牌, 无硬编码色值 */
+/* 6.6 (T-6.6.20, PRD FR-6.6.4): 美林时钟数据订正角标 —— 令牌化, 无硬编码色值 */
+.merrill-correction-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; margin-left: 8px;
+  font-size: var(--qc-font-size-xs);
+  color: var(--state-warning-text);
+  background: var(--state-warning-soft-bg);
+  border: 1px solid color-mix(in srgb, var(--state-warning-solid) 30%, transparent);
+  border-radius: var(--qc-radius-large);
+  cursor: help; white-space: nowrap;
+}
+.text-xs-leading { font-size: var(--qc-font-size-xs); line-height: 1.6; }
 .watchlist-render-guard {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; margin-bottom: 12px;

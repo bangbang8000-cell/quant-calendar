@@ -18,7 +18,7 @@
 
                 // v3.0: 美林时钟模块 - 从 merrill.js 加载
                 const merrill = useMerrillClock();
-                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, merrillError, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, merrillError, merrillCorrection, fetchMerrillCorrection, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
                     // V5.21: 评估轨迹 (快照) — 周期演进板的"随大模型评估更新"数据源
                     merrillSnapshots, merrillSnapshotsTotal, fetchMerrillSnapshots } = merrill;
 
@@ -362,6 +362,8 @@
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
                     // v2.0: 美林时钟配置
                     merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading,
+                    // 6.6 (T-6.6.19/20): 数据订正角标
+                    merrillCorrection, fetchMerrillCorrection,
                     saveMerrillClockConfig, doMerrillReevaluate,
                     // v1.8.0: 数据刷新配置
                     dataRefreshConfig, dataRefreshReloading, dataRefreshSaving,

@@ -76,6 +76,20 @@
     const merrillPrevStage = ref('');
     // 6.3.1 (T-6.3.1.3): 美林时钟取数失败标志 (fetchMerrillClock catch 置 true, 供四态面板承接)
     const merrillError = ref(false);
+    // 6.6 (T-6.6.19, PRD FR-6.6.4 / 决策 D8): 数据订正元信息。
+    // 宏观指标抓取修复后阶段结论必然变化(衰退→复苏), 必须向用户说明「为什么变了」。
+    // null = 无订正记录 → 前端不显示角标。
+    const merrillCorrection = ref(null);
+
+    async function fetchMerrillCorrection() {
+      try {
+        const res = await fetch('/api/market/merrill-clock/correction');
+        const data = await res.json();
+        merrillCorrection.value = (data && data.success && data.data) ? data.data : null;
+      } catch (e) {
+        merrillCorrection.value = null;  // 订正信息不可用不影响主流程
+      }
+    }
 
     let merrillRefreshTimer = null;
     const clockPrevPos = { x: 0, y: 0 };
@@ -316,6 +330,8 @@
           });
         }
         merrillPrevStage.value = stage;
+        // 6.6 (T-6.6.19): 顺带拉取订正元信息（失败静默，不影响主数据）
+        fetchMerrillCorrection();
       } catch (e) {
         console.error('获取美林时钟失败:', e);
         merrillError.value = true;
@@ -449,6 +465,9 @@
       timelineLoading,
       merrillClockConfig,
       merrillClockLastUpdated,
+      // 6.6 (T-6.6.19): 数据订正角标
+      merrillCorrection,
+      fetchMerrillCorrection,
       merrillReevalResult,
       merrillReevalLoading,
       // Computed

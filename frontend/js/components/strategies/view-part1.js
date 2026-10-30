@@ -203,6 +203,21 @@ window.__quantModules.strategiesPage.part1 = `
                             <span class="strategy-tag-pill" :style="merrillChipStyle">
                                 {{ merrillData.name || '计算中...' }}
                             </span>
+                            <!-- 6.6 (T-6.6.20, PRD FR-6.6.4 / D8): 数据订正角标。
+                                 宏观指标抓取修复后阶段结论由「衰退」更正为「复苏」——
+                                 不解释就等于「结论自己变了」，必须给出订正日期与原因。 -->
+                            <el-tooltip v-if="merrillCorrection" placement="bottom">
+                                <template #content>
+                                    <div class="text-xs-leading">
+                                        <div><strong>{{ merrillCorrection.label }}</strong></div>
+                                        <div>原因：{{ merrillCorrection.reason }}</div>
+                                        <div>已归档 {{ merrillCorrection.affected }} 条历史快照（零删除）</div>
+                                    </div>
+                                </template>
+                                <span class="merrill-correction-badge">
+                                    <qc-icon name="info" :size="12" /> {{ merrillCorrection.label }}
+                                </span>
+                            </el-tooltip>
                             <!-- V4.5 (FR-4.5.1): 配置就近 -->
                             <el-button size="small" type="primary" plain @click="merrillConfigOpen = !merrillConfigOpen">
                                 <qc-icon name="settings" :size="14" /> {{ merrillConfigOpen ? '收起配置' : '配置' }}

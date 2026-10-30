@@ -1,0 +1,226 @@
+{
+  "current_stage_start": "2026-08-11T03:34:43.880419",
+  "current_stage": "recession",
+  "transitions": [
+    {
+      "from_stage": "recovery",
+      "to_stage": "recession",
+      "from_name": "复苏期",
+      "to_name": "衰退期",
+      "trigger": "boundary",
+      "reason": "边界/数据驱动切换",
+      "transition_time": "2026-08-11T03:34:43.880419",
+      "transition_date": "2026-08-11",
+      "duration_days": 686,
+      "duration_months": 22.9
+    },
+    {
+      "from_stage": "recession",
+      "to_stage": "recovery",
+      "transition_date": "2024-09-24",
+      "from_name": "衰退期",
+      "to_name": "复苏期",
+      "duration_days": 612,
+      "duration_months": 20.4,
+      "cycle_label": "第4轮",
+      "trigger": "央行降准降息组合拳 + 房地产救市政策 + 财政加力",
+      "key_indicators": {
+        "gdp_growth": 4.7,
+        "cpi": 0.3,
+        "pmi": 49.1
+      }
+    },
+    {
+      "from_stage": "stagflation",
+      "to_stage": "recession",
+      "transition_date": "2023-01-15",
+      "from_name": "滞胀期",
+      "to_name": "衰退期",
+      "duration_days": 306,
+      "duration_months": 10.2,
+      "cycle_label": "第3轮",
+      "trigger": "疫情封控解除后需求恢复不及预期 + 地产销售持续下滑",
+      "key_indicators": {
+        "gdp_growth": 3.0,
+        "cpi": 1.8,
+        "pmi": 48.0
+      }
+    },
+    {
+      "from_stage": "overheat",
+      "to_stage": "stagflation",
+      "transition_date": "2022-03-15",
+      "from_name": "过热期",
+      "to_name": "滞胀期",
+      "duration_days": 226,
+      "duration_months": 7.5,
+      "cycle_label": "第3轮",
+      "trigger": "俄乌战争爆发 + 上海疫情封控 + 美联储加息周期",
+      "key_indicators": {
+        "gdp_growth": 4.8,
+        "cpi": 1.5,
+        "ppi": 8.8
+      }
+    },
+    {
+      "from_stage": "recovery",
+      "to_stage": "overheat",
+      "transition_date": "2021-07-15",
+      "from_name": "复苏期",
+      "to_name": "过热期",
+      "duration_days": 474,
+      "duration_months": 15.8,
+      "cycle_label": "第3轮",
+      "trigger": "全球大放水滞后效应 + PPI飙升至13.5% + 大宗商品超级周期",
+      "key_indicators": {
+        "gdp_growth": 7.9,
+        "cpi": 1.1,
+        "ppi": 9.0
+      }
+    },
+    {
+      "from_stage": "recession",
+      "to_stage": "recovery",
+      "transition_date": "2020-03-15",
+      "from_name": "衰退期",
+      "to_name": "复苏期",
+      "duration_days": 48,
+      "duration_months": 1.6,
+      "cycle_label": "第3轮",
+      "trigger": "新冠疫情冲击（GDP单季-6.8%）→ 央行紧急降息+特别国债",
+      "key_indicators": {
+        "gdp_growth": -6.8,
+        "cpi": 4.3,
+        "pmi": 35.7
+      }
+    },
+    {
+      "from_stage": "recession",
+      "to_stage": "recovery",
+      "transition_date": "2019-06-15",
+      "from_name": "衰退期",
+      "to_name": "复苏期",
+      "duration_days": 488,
+      "duration_months": 16.3,
+      "cycle_label": "第2轮",
+      "trigger": "中美贸易战缓和 + LPR改革降息 + 逆周期调节加码",
+      "key_indicators": {
+        "gdp_growth": 6.2,
+        "cpi": 2.7,
+        "pmi": 49.4
+      }
+    },
+    {
+      "from_stage": "overheat",
+      "to_stage": "recession",
+      "transition_date": "2018-02-15",
+      "from_name": "过热期",
+      "to_name": "衰退期",
+      "duration_days": 180,
+      "duration_months": 6.0,
+      "cycle_label": "第2轮",
+      "trigger": "金融去杠杆 + 中美贸易战开打 + 民企违约潮",
+      "key_indicators": {
+        "gdp_growth": 6.8,
+        "cpi": 1.5,
+        "ppi": 6.9
+      }
+    },
+    {
+      "from_stage": "recovery",
+      "to_stage": "overheat",
+      "transition_date": "2016-08-15",
+      "from_name": "复苏期",
+      "to_name": "过热期",
+      "duration_days": 1330,
+      "duration_months": 44.3,
+      "cycle_label": "第2轮",
+      "trigger": "供给侧改革 + 房地产去库存 + PPI由负转正加速上行",
+      "key_indicators": {
+        "gdp_growth": 6.7,
+        "cpi": 1.3,
+        "ppi": -0.8
+      }
+    },
+    {
+      "from_stage": "recession",
+      "to_stage": "recovery",
+      "transition_date": "2013-01-15",
+      "from_name": "衰退期",
+      "to_name": "复苏期",
+      "duration_days": 164,
+      "duration_months": 5.5,
+      "cycle_label": "第2轮",
+      "trigger": "十八大后稳增长政策 + 降息降准 + 棚改货币化启动",
+      "key_indicators": {
+        "gdp_growth": 7.7,
+        "cpi": 2.0,
+        "pmi": 50.4
+      }
+    },
+    {
+      "from_stage": "stagflation",
+      "to_stage": "recession",
+      "transition_date": "2012-08-15",
+      "from_name": "滞胀期",
+      "to_name": "衰退期",
+      "duration_days": 377,
+      "duration_months": 12.6,
+      "cycle_label": "第1轮",
+      "trigger": "欧债危机深化 + 国内产能过剩 + 出口大幅下滑",
+      "key_indicators": {
+        "gdp_growth": 7.6,
+        "cpi": 1.8,
+        "pmi": 49.2
+      }
+    },
+    {
+      "from_stage": "overheat",
+      "to_stage": "stagflation",
+      "transition_date": "2011-07-15",
+      "from_name": "过热期",
+      "to_name": "滞胀期",
+      "duration_days": 167,
+      "duration_months": 5.6,
+      "cycle_label": "第1轮",
+      "trigger": "四万亿后遗症显现 + CPI破6.5% + 央行密集加息",
+      "key_indicators": {
+        "gdp_growth": 9.5,
+        "cpi": 6.5,
+        "pmi": 50.7
+      }
+    },
+    {
+      "from_stage": "recovery",
+      "to_stage": "overheat",
+      "transition_date": "2010-02-15",
+      "from_name": "复苏期",
+      "to_name": "过热期",
+      "duration_days": 379,
+      "duration_months": 12.6,
+      "cycle_label": "第1轮",
+      "trigger": "四万亿全面生效 + GDP反弹至10.6% + 通胀快速攀升",
+      "key_indicators": {
+        "gdp_growth": 10.6,
+        "cpi": 1.5,
+        "pmi": 55.8
+      }
+    },
+    {
+      "from_stage": "recession",
+      "to_stage": "recovery",
+      "transition_date": "2009-01-15",
+      "from_name": "衰退期",
+      "to_name": "复苏期",
+      "duration_days": 107,
+      "duration_months": 3.6,
+      "cycle_label": "第1轮",
+      "trigger": "全球金融危机冲击（GDP跌至6.4%）→ 四万亿刺激 + 十大产业振兴",
+      "key_indicators": {
+        "gdp_growth": 6.4,
+        "cpi": 1.0,
+        "pmi": 45.3
+      }
+    }
+  ]
+}

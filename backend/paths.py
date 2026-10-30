@@ -29,6 +29,8 @@ STOCK_INFO_FILE = os.path.join(DATA_DIR, "stock_info.json")
 MERRILL_CACHE_FILE = os.path.join(DATA_DIR, "merrill_cache.json")
 MERRILL_HISTORY_FILE = os.path.join(DATA_DIR, "merrill_history.json")
 MERRILL_SNAPSHOT_FILE = os.path.join(DATA_DIR, "merrill_snapshots.json")  # v1.8
+# 6.6 (T-6.6.19): 数据订正元信息 —— 前端据此显示「数据订正于 YYYY-MM-DD」角标
+MERRILL_CORRECTION_FILE = os.path.join(DATA_DIR, "merrill_correction.json")
 MARKET_CACHE_FILE = os.path.join(DATA_DIR, "market_cache.json")
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 CONSENSUS_DATA_FILE = os.path.join(DATA_DIR, "consensus_data.json")
