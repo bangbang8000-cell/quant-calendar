@@ -144,7 +144,9 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.turnover') }}</div>
-                            <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
+                            <!-- 6.6 (T-6.6.44, AC-18): 无数据时只显示「—」, 不输出「--%」——
+                                 孤立的百分号让人以为数值是 0。保留 stat-box 以稳定栅格。 -->
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate != null ? stockDetail.daily_data.turnover_rate.toFixed(2) + '%' : '—' }}</div>
                         </div>
                         <!-- 6.6 (T-6.6.26, PRD FR-6.6.5): 总市值 —— 过亿按亿为单位(≤2 位小数)。
                              tushare total_mv 单位万元, 换算集中在后端 quote-summary。 -->
@@ -154,7 +156,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.amplitude') }}</div>
-                            <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) + '%' : '—' }}</div>
                         </div>
                         <!-- 6.6 (T-6.6.27, PRD FR-6.6.5): 多周期涨跌幅（日/周/月/季/年, ≤2 位小数） -->
                         <template v-if="stockQuoteSummary && stockQuoteSummary.changes"

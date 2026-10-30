@@ -1401,7 +1401,7 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                                         </div>
                                         <div class="usage-src-row">
                                             <span class="usage-src-row-label">成功率</span>
-                                            <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
+                                            <span class="usage-src-row-value">{{ ds.success_rate != null ? ds.success_rate + '%' : '—' }}</span>
                                         </div>
                                         <div class="usage-src-row">
                                             <span class="usage-src-row-label">平均延迟</span>
@@ -1523,7 +1523,7 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                                 </div>
                                 <div class="sys-health-card">
                                     <div class="sys-health-card-title">通过率</div>
-                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
+                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '—' }}</div>
                                 </div>
                                 <div class="sys-health-card">
                                     <div class="sys-health-card-title">未验证</div>
@@ -2327,7 +2327,7 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                                 </span>
                                 <el-button size="small" text @click="goSystemSub('schedule')">调度任务详情</el-button>
                                 <span class="health-badge" :class="factCheck && factCheck.pass_rate != null && factCheck.pass_rate < 90 ? 'qc-text-warning' : 'qc-text-success'">
-                                    <qc-icon name="shield" :size="13" /> AI 护栏通过率 {{ factCheck && factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}
+                                    <qc-icon name="shield" :size="13" /> AI 护栏通过率 {{ factCheck && factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '—' }}
                                 </span>
                                 <el-button size="small" text @click="goSystemSub('guard')">事实护栏详情</el-button>
                                 <span class="health-badge"><qc-icon name="hard-drive" :size="13" /> 最近备份 {{ healthDetail.backup_last_success || '暂无' }}</span>
@@ -2346,17 +2346,17 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                                 <div class="usage-ai-summary">
                                     <div class="usage-ai-stat usage-ai-stat-meter">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="cpu" :size="14" /></span><span class="usage-ai-stat-label">CPU</span></div>
-                                        <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent ?? '--' }}%</div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.cpu_percent != null ? sysMonitor.cpu_percent + '%' : '—' }}</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.cpu_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat usage-ai-stat-meter">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="brain" :size="14" /></span><span class="usage-ai-stat-label">内存</span></div>
-                                        <div class="usage-ai-stat-num">{{ sysMonitor.mem_percent ?? '--' }}%</div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.mem_percent != null ? sysMonitor.mem_percent + '%' : '—' }}</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.mem_percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat usage-ai-stat-meter">
                                         <div class="usage-ai-stat-head"><span class="usage-ai-card-icon"><qc-icon name="hard-drive" :size="14" /></span><span class="usage-ai-stat-label">磁盘</span></div>
-                                        <div class="usage-ai-stat-num">{{ sysMonitor.percent ?? '--' }}%</div>
+                                        <div class="usage-ai-stat-num">{{ sysMonitor.percent != null ? sysMonitor.percent + '%' : '—' }}</div>
                                         <div class="meter-bar"><div class="meter-fill" :style="{width: Math.min(sysMonitor.percent ?? 0, 100) + '%'}"></div></div>
                                     </div>
                                     <div class="usage-ai-stat">
@@ -5468,7 +5468,9 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.turnover') }}</div>
-                            <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
+                            <!-- 6.6 (T-6.6.44, AC-18): 无数据时只显示「—」, 不输出「--%」——
+                                 孤立的百分号让人以为数值是 0。保留 stat-box 以稳定栅格。 -->
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate != null ? stockDetail.daily_data.turnover_rate.toFixed(2) + '%' : '—' }}</div>
                         </div>
                         <!-- 6.6 (T-6.6.26, PRD FR-6.6.5): 总市值 —— 过亿按亿为单位(≤2 位小数)。
                              tushare total_mv 单位万元, 换算集中在后端 quote-summary。 -->
@@ -5478,7 +5480,7 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.amplitude') }}</div>
-                            <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) + '%' : '—' }}</div>
                         </div>
                         <!-- 6.6 (T-6.6.27, PRD FR-6.6.5): 多周期涨跌幅（日/周/月/季/年, ≤2 位小数） -->
                         <template v-if="stockQuoteSummary && stockQuoteSummary.changes"

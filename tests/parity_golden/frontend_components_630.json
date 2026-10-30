@@ -374,8 +374,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 77469,
-    "template_sha": "f7312602527fdab0"
+    "template_len": 78125,
+    "template_sha": "fd287863e769c889"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -2222,8 +2222,8 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 39495,
-    "template_sha": "a6710b22f059e389"
+    "template_len": 39699,
+    "template_sha": "a159ed0031dc782e"
   },
   "StrategiesPage": {
     "classes": [
@@ -3146,8 +3146,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 111766,
-    "template_sha": "4a098cf680a3902b"
+    "template_len": 111897,
+    "template_sha": "9fb2735e3d574d1a"
   },
   "TourDialog": {
     "classes": [

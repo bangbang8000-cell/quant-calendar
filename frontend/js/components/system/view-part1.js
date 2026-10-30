@@ -231,7 +231,7 @@ window.__quantModules.systemPage.part1 = `
                                         </div>
                                         <div class="usage-src-row">
                                             <span class="usage-src-row-label">成功率</span>
-                                            <span class="usage-src-row-value">{{ ds.success_rate ?? '--' }}%</span>
+                                            <span class="usage-src-row-value">{{ ds.success_rate != null ? ds.success_rate + '%' : '—' }}</span>
                                         </div>
                                         <div class="usage-src-row">
                                             <span class="usage-src-row-label">平均延迟</span>
@@ -353,7 +353,7 @@ window.__quantModules.systemPage.part1 = `
                                 </div>
                                 <div class="sys-health-card">
                                     <div class="sys-health-card-title">通过率</div>
-                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '--' }}</div>
+                                    <div class="sys-health-big" :class="(factCheck.pass_rate ?? 100) >= 90 ? 'color-primary' : ''">{{ factCheck.pass_rate != null ? factCheck.pass_rate + '%' : '—' }}</div>
                                 </div>
                                 <div class="sys-health-card">
                                     <div class="sys-health-card-title">未验证</div>

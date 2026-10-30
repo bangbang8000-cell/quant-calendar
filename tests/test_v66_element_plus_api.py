@@ -95,3 +95,22 @@ def test_ratio_fields_hidden_when_empty():
         assert line, f"未找到 {field} 的渲染行"
         assert "v-if" in line[0], (
             f"{field} 渲染行缺少 v-if 守卫（无数据会输出孤立 %）: {line[0].strip()[:100]}")
+
+
+# ── T-6.6.44: 全站不得出现「--%」孤立百分号 (AC-18) ──
+def test_no_orphan_percent_placeholder():
+    """无数据时不得渲染出「--%」/「—%」这类孤立百分号。
+
+    用户看到孤立的 % 会以为数值是 0 或渲染出错; 正确形态是无数据时整项隐藏,
+    或只显示不带单位的占位符（—）。
+    """
+    import glob
+    bad = []
+    for path in glob.glob(os.path.join(BASE, "frontend", "js", "components", "**", "*.js"),
+                          recursive=True) + glob.glob(os.path.join(BASE, "frontend", "js", "*.js")):
+        src = open(path, encoding="utf-8").read()
+        for i, line in enumerate(src.splitlines(), 1):
+            # 「'--' }}%」或「?? '--' }}%」形态
+            if re.search(r"'\s*--\s*'\s*\}\}\s*%", line):
+                bad.append((os.path.relpath(path, BASE), i, line.strip()[:90]))
+    assert not bad, "发现孤立百分号占位:\n" + "\n".join(f"  {p}:{i} {s}" for p, i, s in bad[:6])
