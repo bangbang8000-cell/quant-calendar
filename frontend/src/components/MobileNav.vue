@@ -8,7 +8,7 @@ import AppIcon from './common/AppIcon.vue'
 // 桌面一级 → 移动 Tab 映射
 // 6.5.4 (FR-654): 一级摊平为 7 个业务域 — 底栏 7 项 (flex 均分, 375px 下每项 53px, 短标签可容纳)
 const TABS = [
-  { key: 'strategies', label: '策略', icon: 'pie-chart' },
+  { key: 'strategies', label: '策略概览', icon: 'pie-chart' },
   { key: 'calendar', label: '日历', icon: 'calendar' },
   { key: 'shortterm', label: '复盘', icon: 'trending-up' },
   { key: 'ai', label: '评估', icon: 'bot' },

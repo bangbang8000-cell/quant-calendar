@@ -9,7 +9,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '策略',
+    'nav.strategies': '策略概覽',
     'nav.calendar': '量化日歷',
     'nav.ai': '智能評估',
     'nav.research': '策略研究',

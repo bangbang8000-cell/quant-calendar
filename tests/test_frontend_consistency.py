@@ -82,7 +82,7 @@ def test_qcstate_key_count_stable():
     V6.10 配色专项按实测校订; V6.9.3 主题共享 +6; F11.2 策略研究恒显 -2;
     V5.16 详情双栏 +4; V5.17 中栏拖拽 +3; 6.3.1 四态错误标志 +9"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 521, f"qcState 唯一键数异常: {len(set(keys))} (期望 521; 6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError)"
+    assert len(set(keys)) == 533, f"qcState 唯一键数异常: {len(set(keys))} (期望 533; 6.6 +12: M1 自选列表 P0-1a/1b realtimeWsStateText/watchlistRenderGuard/auditWatchlistRender/dismissWatchlistRenderGuard/exportPageDiagnostics/reloadPage +6, M2 美林订正 merrillCorrection/fetchMerrillCorrection +2, M3 市值与多周期 indexQuoteSummary/loadIndexQuoteSummary/stockQuoteSummary/loadStockQuoteSummary +4;  6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError)"
 
 
 def test_watch_currentpage_single():
@@ -1300,8 +1300,14 @@ def test_realtime_fallback_path_exists():
     assert "'不刷新'" in wl or "REALTIME_FALLBACK_TEXT" in wl, "回退路径应存在"
     assert "REALTIME_RETRY_MAX" in wl, "应限制连续重连次数（防抖）"
     assert "realtimeDegraded.value = true" in wl, "onerror/onclose 应置降级标记"
-    page = _read("js/components/ai-page.js")
-    assert "REALTIME_FALLBACK_TEXT" in page, "自选页模板应消费回退文案"
+    # 6.6 修正: 自选页模板自 v3.6.0-T7 已拆到 ai/view-part2.js（ai-page.js 只剩 setup）,
+    # 旧断言读 ai-page.js 恒为假 —— 这是长期失效的护栏, 不是产品缺陷。
+    # 模板改为经 realtimeWsStateText() 消费回退文案（比直接用常量更进一步:
+    # 四态文案集中一处, 避免硬编码「连接中...」与实际状态不符）。
+    page = _read("js/components/ai/view-part2.js")
+    assert ("REALTIME_FALLBACK_TEXT" in page or "realtimeWsStateText()" in page), \
+        "自选页模板应消费回退文案"
+    assert "REALTIME_FALLBACK_TEXT" in wl, "watchlist.js 应定义回退文案常量"
     assert "realtimeQuotes" in wl, "watchlist.js 应维护行内报价状态"
 
 

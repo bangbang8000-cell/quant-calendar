@@ -3,7 +3,7 @@
 // UMD: 浏览器 window.QuantNavMerge / Node require(...) (pytest 可单测)
 //
 // 设计要点 (6.5.4 FR-654 定稿):
-// - 一级 7: 策略 / 量化日历 / 短线复盘 / 智能评估 / 策略研究 / 运行监控 / 平台设置
+// - 一级 7: 策略概览 / 量化日历 / 短线复盘 / 智能评估 / 策略研究 / 运行监控 / 平台设置
 //   (6.5.4 按业务域摊平; 6.5.5 一级收敛为业务域名词, 首成员统一「概览」, 不再与一级重复)
 // - 一级键 = 渲染内部页键, 二级键 = 内部子页键 —— 懒加载 chunk / pageComp / 子页 watch
 //   与 hash 深链零改动
@@ -22,7 +22,7 @@
   // 因此 '#strategies/overview' 这类历史深链天然有效, 无需重定向表。
   var NEW_NAV = [
     {
-      key: 'strategies', name: '策略', iconName: 'pie-chart', group: 'research',
+      key: 'strategies', name: '策略概览', iconName: 'pie-chart', group: 'research',
       members: [
         { key: 'overview', page: 'strategies', sub: 'overview' },
         { key: 'merrill', page: 'strategies', sub: 'merrill' },

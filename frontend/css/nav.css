@@ -399,6 +399,14 @@
   transition: color var(--duration-fast);
 }
 .qc-mobile-tab:hover { color: var(--qc-nav-item-hover); }
+/* 6.6 (T-6.6.31): 一级菜单更名「策略概览」后底部 tab 变 4 字, 禁止折行并允许压缩字号,
+   避免窄屏(320-375px)下 7 个 tab 换行破版 */
+.qc-mobile-tab > span {
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .qc-mobile-tab.is-active { color: var(--qc-nav-item-active); }
 .qc-mobile-tab:focus-visible {
   outline: 2px solid var(--qc-ring);

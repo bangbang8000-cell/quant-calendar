@@ -12,7 +12,7 @@
 
   const messages = {
     // 导航
-    'nav.strategies': 'Strategy',
+    'nav.strategies': 'Strategy Overview',
     'nav.calendar': 'Quant Calendar',
     'nav.ai': 'AI Evaluation',
     'nav.research': 'Strategy Research',

@@ -9,7 +9,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const messages = {
-    'nav.strategies': '전략',
+    'nav.strategies': '전략 개요',
     'nav.calendar': '퀀트 캘린더',
     'nav.ai': '스마트 평가',
     'nav.research': '전략 연구',

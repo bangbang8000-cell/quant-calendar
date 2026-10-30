@@ -12,7 +12,7 @@
 
   const messages = {
     // 导航
-    'nav.strategies': '策略',
+    'nav.strategies': '策略概览',
     'nav.calendar': '量化日历',
     'nav.ai': '智能评估',
     'nav.research': '策略研究',
