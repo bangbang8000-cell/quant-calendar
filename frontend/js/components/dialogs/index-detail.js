@@ -45,11 +45,31 @@
                     </div>
                     <div class="stat-box" v-if="indexDetail.vol">
                         <div class="stat-label">成交量</div>
-                        <div class="stat-value">{{ Math.round(indexDetail.vol / 10000).toLocaleString() }}万</div>
+                        <div class="stat-value">{{ Math.round(indexDetail.vol / 10000).toLocaleString() }}万手</div>
                     </div>
                     <div class="stat-box" v-if="indexDetail.amount">
                         <div class="stat-label">成交额</div>
-                        <div class="stat-value">{{ Math.round(indexDetail.amount / 10000).toLocaleString() }}亿</div>
+                        <!-- 6.6 (T-6.6.21, PRD FR-6.6.5): tushare amount 单位**千元**,
+                             千元→亿元须 /1e5。旧代码 /1e4 导致成交额 10 倍虚高(71,562亿 vs 真实 7,156亿)。 -->
+                        <div class="stat-value">{{ (indexDetail.amount / 100000).toFixed(2) }}亿</div>
+                    </div>
+                    <div class="stat-box" v-if="indexQuoteSummary">
+                        <div class="stat-label">总市值</div>
+                        <!-- 6.6 (T-6.6.26, 决策 D2): 指数无总市值概念 → 显示「指数不适用」 -->
+                        <div class="stat-value">{{ indexQuoteSummary.total_mv_text }}</div>
+                    </div>
+                </div>
+
+                <!-- 6.6 (T-6.6.27, PRD FR-6.6.5): 多周期涨跌幅（日/周/月/季/年, ≤2 位小数）。
+                     用户需求: 「当日（周 月 季 年）涨跌幅度，鼠标悬浮后信息也要展示」。 -->
+                <div class="stats-grid mt-4" v-if="indexQuoteSummary && indexQuoteSummary.changes">
+                    <div class="stat-box" v-for="p in [['day','当日'],['week','近一周'],['month','近一月'],['quarter','近一季'],['year','近一年']]"
+                         :key="p[0]" :title="p[1] + '涨跌幅 ' + (indexQuoteSummary.changes_text[p[0]] || '—')">
+                        <div class="stat-label">{{ p[1] }}</div>
+                        <div class="stat-value"
+                             :class="indexQuoteSummary.changes[p[0]] >= 0 ? 'color-rise' : 'color-fall'">
+                            {{ indexQuoteSummary.changes_text[p[0]] || '—' }}
+                        </div>
                     </div>
                 </div>
 

@@ -197,6 +197,51 @@ async def apply_merrill_correction(_: Dict = Depends(get_admin_user)):
         return {"success": False, "message": f"订正失败: {exc}"}
 
 
+@router.get("/quote-summary/{code}")
+async def get_quote_summary(code: str):
+    """6.6 (T-6.6.26, PRD FR-6.6.5): 指数/个股行情摘要 —— 总市值 + 多周期涨跌幅。
+
+    用户需求: 蜡烛图界面显示「总市值过亿的按亿为单位」与「当日/周/月/季/年涨跌幅」,
+    悬浮提示同样展示, 小数位 ≤2。指数无总市值概念 → 返回「指数不适用」(决策 D2)。
+
+    单位口径（易错点, 见 EVAL §3.1.3）:
+      tushare amount     单位 **千元** → 亿元须 /1e5（旧代码 /1e4 导致 10 倍虚高）
+      tushare total_mv   单位 **万元** → 亿元须 /1e4
+    """
+    import asyncio
+    from market_quote_summary import build_quote_summary
+
+    def _build():
+        db = {}
+        rows = []
+        name = None
+        try:
+            from data_sources import data_source_manager
+            db = data_source_manager.get_daily_basic(code) or {}
+        except Exception as exc:  # 市值不可得不应拖垮整张卡
+            logger.warning("quote-summary daily_basic 失败 %s: %s", code, exc)
+        try:
+            from market_data import get_kline_data
+            kl = get_kline_data(code, period="daily", limit=420)
+            if isinstance(kl, dict):
+                rows = kl.get("data") or kl.get("klines") or []
+            elif isinstance(kl, list):
+                rows = kl
+        except Exception as exc:
+            logger.warning("quote-summary kline 失败 %s: %s", code, exc)
+        try:
+            name = db.get("name") or db.get("ts_name")
+        except Exception:
+            name = None
+        return build_quote_summary(code, name=name, daily_basic=db, kline_rows=rows)
+
+    try:
+        return await asyncio.to_thread(_build)
+    except Exception as exc:
+        logger.error("quote-summary 失败 %s: %s", code, exc)
+        return {"success": False, "code": code, "message": str(exc)}
+
+
 @router.get("/performance/{ts_code}")
 async def get_performance(ts_code: str, user: dict = Depends(get_current_active_user)):
     """V5.3.10: 个股业绩预告/快报 (sxsc 优先: forecast/express)

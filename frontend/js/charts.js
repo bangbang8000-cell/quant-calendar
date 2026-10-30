@@ -108,7 +108,9 @@
     };
   }
 
-  function renderKlineChart(chart, data, period, isIndex = false, isMobile = false) {
+  // 6.6 (T-6.6.28, PRD FR-6.6.5): 第 6 参 summary = 行情摘要(总市值/多周期涨跌幅),
+  // 由图表 tooltip 展示 —— 用户要求「鼠标悬浮后信息也要展示」。可空, 空了不影响原行为。
+  function renderKlineChart(chart, data, period, isIndex = false, isMobile = false, summary = null) {
     if (!data || data.length === 0) return;
 
     // v3.17.9 (FR-3.17.9): 大样本降采样 — 超过阈值先做桶式 min/max, 保证 5000 点渲染不卡顿
@@ -181,6 +183,15 @@
           if (d[8] != null && showMA('MA20')) lines.push('MA20: ' + fmt(d[8]));
           if (d[9] != null && showMA('MA60')) lines.push('MA60: ' + fmt(d[9]));
           if (d[10] != null) lines.push('VOL_MA5: ' + fmtVol(d[10]));
+          // 6.6 (T-6.6.28): 悬浮补充总市值与日/周/月/季/年涨跌幅（≤2 位小数）
+          if (summary) {
+            if (summary.total_mv_text) lines.push('总市值: ' + summary.total_mv_text);
+            const chg = summary.changes_text || {};
+            const parts = [];
+            [['day', '当日'], ['week', '周'], ['month', '月'], ['quarter', '季'], ['year', '年']]
+              .forEach(function (p) { if (chg[p[0]] && chg[p[0]] !== '—') parts.push(p[1] + ' ' + chg[p[0]]); });
+            if (parts.length) lines.push('涨跌幅: ' + parts.join('　'));
+          }
           return lines.join('<br/>');
         },
       },
@@ -268,8 +279,8 @@
         rec.chart.on('legendselectchanged', (p) => { if (p && p.selected) onLegend(p.selected); });
       }
     }
-    renderKlineChart(rec.chart, data, period, isIndex, !!opts.isMobile);
-    rec.cache = { data, period, isIndex, isMobile: !!opts.isMobile };
+    renderKlineChart(rec.chart, data, period, isIndex, !!opts.isMobile, opts.summary || null);
+    rec.cache = { data, period, isIndex, isMobile: !!opts.isMobile, summary: opts.summary || null };
     return rec.chart;
   }
 
@@ -302,7 +313,7 @@
     const rec = _klineRegistry.get(containerId);
     if (!rec || !rec.chart || !rec.cache || rec.chart.isDisposed()) return;
     const prevSel = rec.chart.getOption()?.legend?.[0]?.selected || null;
-    renderKlineChart(rec.chart, rec.cache.data, rec.cache.period, rec.cache.isIndex, rec.cache.isMobile);
+    renderKlineChart(rec.chart, rec.cache.data, rec.cache.period, rec.cache.isIndex, rec.cache.isMobile, rec.cache.summary || null);
     if (prevSel) rec.chart.setOption({ legend: { selected: prevSel } });
   }
 

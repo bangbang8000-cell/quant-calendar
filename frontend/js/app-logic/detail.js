@@ -7,8 +7,23 @@
     create: function (ctx) {
       const { ref, computed, nextTick, stockDetail, stockDetailTab, stockDetailVisible,
         stockDetailLoading, rememberDialogTrigger, getIsMobile, getIndexDetail, getIndexDetailVisible,
-        getMarkKlineLoaded, getAiResult, getLoadLastEvaluation, getSelectedDateRef,
+        getMarkKlineLoaded, getAiResult, getLoadLastEvaluation, getSelectedDateRef, getIndexQuoteSummary,
         getRefreshStockScore, getAnimateScoreEntrance } = ctx;
+                // 6.6 (T-6.6.26, PRD FR-6.6.5): 个股行情摘要（总市值 + 日/周/月/季/年涨跌幅）。
+                // 复用 /api/market/quote-summary/{code}，与指数详情同一口径（单位换算集中后端）。
+                const stockQuoteSummary = ref(null);
+
+                async function loadStockQuoteSummary(code) {
+                    if (!code) { stockQuoteSummary.value = null; return; }
+                    try {
+                        const res = await fetch('/api/market/quote-summary/' + encodeURIComponent(code));
+                        const data = await res.json();
+                        stockQuoteSummary.value = (data && data.success) ? data : null;
+                    } catch (e) {
+                        stockQuoteSummary.value = null;  // 失败静默, 不影响 K 线主流程
+                    }
+                }
+
                 // ===== v3.16 (16.4): K线渲染状态与编排（护栏片段保留: onLegend 回调接线）=====
                 // V5.4.1 (用户要求): 分钟级K线默认隐藏 — kline_show_minutes 偏好控制
                 // (hide/show), 系统设置可开启; 后端分钟能力保留 (MINUTE_PERIODS/stk_mins 可用)。
@@ -92,6 +107,8 @@
                         // v3.16 (16.4): 实例生命周期/图例联动/主题重绘缓存下沉 charts.js
                         window.__quantModules.charts.renderKlineTo('stockKlineChart', data.data, period, false, {
                             isMobile: getIsMobile().value,
+                            // 6.6 (T-6.6.28): tooltip 展示总市值与多周期涨跌幅
+                            summary: stockQuoteSummary.value,
                             onLegend: (sel) => {
                                 Object.keys(klineMaVisible.value).forEach((k) => { if (k in sel) klineMaVisible.value[k] = !!sel[k]; });
                             },
@@ -125,6 +142,8 @@
                         // v3.16 (16.4): 实例生命周期/图例联动/主题重绘缓存下沉 charts.js
                         window.__quantModules.charts.renderKlineTo('indexKlineChart', data.data, period, true, {
                             isMobile: getIsMobile().value,
+                            // 6.6 (T-6.6.28): tooltip 展示总市值(指数为「指数不适用」)与多周期涨跌幅
+                            summary: getIndexQuoteSummary().value,
                             onLegend: (sel) => {
                                 Object.keys(klineMaVisible.value).forEach((k) => { if (k in sel) klineMaVisible.value[k] = !!sel[k]; });
                             },
@@ -200,6 +219,9 @@
                     stockDetailTab.value = 'kline';
                     stockDetail.value = null;
                     stockDetailLoading.value = true;
+                    // 6.6 (T-6.6.26): 并行取市值/多周期（不阻塞主弹窗）
+                    stockQuoteSummary.value = null;
+                    loadStockQuoteSummary(stockCode);
                     // 先销毁旧图表（实例生命周期下沉 charts.js）
                     window.__quantModules.charts.disposeKline('stockKlineChart');
                     stockDetailVisible.value = true;
@@ -256,6 +278,8 @@ return {
         toggleKlineMa, resetKlineMaVisible, loadIndexKlineWithPeriod,
         loadHealthMetrics, markExternalStock, externalStockActive,
         showStockDetail, levelColor, levelBg,
+        // 6.6 (T-6.6.26): 个股行情摘要（总市值 + 多周期涨跌幅）
+        stockQuoteSummary, loadStockQuoteSummary,
       };
     },
   };

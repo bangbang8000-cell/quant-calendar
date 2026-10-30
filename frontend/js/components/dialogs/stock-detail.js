@@ -146,10 +146,28 @@
                             <div class="stat-label">{{ t('detail.turnover') }}</div>
                             <div class="stat-value text-md">{{ stockDetail.daily_data?.turnover_rate?.toFixed(2) || '--' }}%</div>
                         </div>
+                        <!-- 6.6 (T-6.6.26, PRD FR-6.6.5): 总市值 —— 过亿按亿为单位(≤2 位小数)。
+                             tushare total_mv 单位万元, 换算集中在后端 quote-summary。 -->
+                        <div class="stat-box" v-if="stockQuoteSummary">
+                            <div class="stat-label">总市值</div>
+                            <div class="stat-value text-md">{{ stockQuoteSummary.total_mv_text }}</div>
+                        </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.amplitude') }}</div>
                             <div class="stat-value text-md">{{ stockDetail.daily_data?.pre_close ? ((stockDetail.daily_data.high - stockDetail.daily_data.low) / stockDetail.daily_data.pre_close * 100).toFixed(2) : '--' }}%</div>
                         </div>
+                        <!-- 6.6 (T-6.6.27, PRD FR-6.6.5): 多周期涨跌幅（日/周/月/季/年, ≤2 位小数） -->
+                        <template v-if="stockQuoteSummary && stockQuoteSummary.changes"
+                                  v-for="p in [['day','当日'],['week','近一周'],['month','近一月'],['quarter','近一季'],['year','近一年']]"
+                                  :key="'chg-' + p[0]">
+                        <div class="stat-box" :title="p[1] + '涨跌幅 ' + (stockQuoteSummary.changes_text[p[0]] || '—')">
+                            <div class="stat-label">{{ p[1] }}</div>
+                            <div class="stat-value text-md"
+                                 :class="stockQuoteSummary.changes[p[0]] >= 0 ? 'color-rise' : 'color-fall'">
+                                {{ stockQuoteSummary.changes_text[p[0]] || '—' }}
+                            </div>
+                        </div>
+                        </template>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.ma20Dev') }}</div>
                             <div class="stat-value" :style="{fontSize:'var(--font-md)',color:(stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close > stockDetail.ma_data.ma20) ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ (stockDetail.ma_data?.ma20 && stockDetail.daily_data?.close) ? ((stockDetail.daily_data.close - stockDetail.ma_data.ma20) / stockDetail.ma_data.ma20 * 100).toFixed(2) + '%' : '--' }}</div>

@@ -19,6 +19,20 @@
       // ===== 指数详情 =====
       const indexDetailVisible = ref(false);
       const indexDetail = ref(null);
+      // 6.6 (T-6.6.26, PRD FR-6.6.5): 行情摘要（总市值 + 日/周/月/季/年涨跌幅）。
+      // 指数无总市值概念 → 后端返回「指数不适用」(决策 D2); 取数失败静默, 不影响 K 线。
+      const indexQuoteSummary = ref(null);
+
+      async function loadIndexQuoteSummary(code) {
+        if (!code) { indexQuoteSummary.value = null; return; }
+        try {
+          const res = await fetch('/api/market/quote-summary/' + encodeURIComponent(code));
+          const data = await res.json();
+          indexQuoteSummary.value = (data && data.success) ? data : null;
+        } catch (e) {
+          indexQuoteSummary.value = null;
+        }
+      }
       const indexAiResult = ref(null);
       const indexAiLoading = ref(false);
 
@@ -72,6 +86,9 @@
         rememberDialogTrigger(); // v3.16 (16.6): 记录打开前焦点，关闭后归还
         indexDetail.value = indexData;
         indexAiResult.value = null;
+        // 6.6 (T-6.6.26): 并行取市值与多周期涨跌幅（失败不影响主弹窗）
+        indexQuoteSummary.value = null;
+        loadIndexQuoteSummary(indexData.code);
         currentKlinePeriod.value = 'daily';
         // 自动加载今日缓存评估
         loadCachedIndexEval(indexData.code);
@@ -252,6 +269,8 @@
       return {
         marketData, marketRefreshTimer, marketError, fetchMarketData,
         indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
+        // 6.6 (T-6.6.26): 行情摘要（总市值 + 多周期涨跌幅）
+        indexQuoteSummary, loadIndexQuoteSummary,
         showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
         disposeStockKline, isMobile, zoomKlineRange,
         scoreAnimating, scoreDelta, scorePulse,

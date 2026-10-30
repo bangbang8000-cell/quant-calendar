@@ -65,6 +65,8 @@
                   rememberDialogTrigger,
                   getIsMobile: () => isMobile,
                   getIndexDetail: () => indexDetail,
+                  // 6.6 (T-6.6.28): 指数行情摘要 getter（detail 域渲染 K 线 tooltip 需要）
+                  getIndexQuoteSummary: () => indexQuoteSummary,
                   getIndexDetailVisible: () => indexDetailVisible,
                   getMarkKlineLoaded: () => markKlineLoaded,
                   getAiResult: () => aiResult,
@@ -79,7 +81,7 @@
                         loadStockKline, loadIndexKline, switchKlinePeriod, switchIndexKlinePeriod,
                         toggleKlineMa, resetKlineMaVisible, loadIndexKlineWithPeriod,
                         loadHealthMetrics, markExternalStock, externalStockActive,
-                        showStockDetail, levelColor, levelBg } = __detail;
+                        showStockDetail, levelColor, levelBg, stockQuoteSummary, loadStockQuoteSummary } = __detail;
 
                 // ===== 惰性访问器：供拆分域在装配完成前引用后置域输出（仅运行时调用, TDZ 安全）=====
                 const getLoadDashboardData = () => loadDashboardData;
@@ -102,7 +104,7 @@
                     currentKlinePeriod, loadIndexKline, rememberDialogTrigger, menus,
                     currentPage, currentSubPage, stockDetail, selectedDate,
                 });
-                const { marketData, marketError, indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
+                const { marketData, marketError, indexDetailVisible, indexDetail, indexQuoteSummary, loadIndexQuoteSummary, indexAiResult, indexAiLoading,
                         fetchMarketData, showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
                         disposeStockKline, isMobile, zoomKlineRange,
                         scoreAnimating, scoreDelta, scorePulse,
@@ -373,6 +375,8 @@
                     // 6.4.2 (FR-644): 示例组合一键载入/删除
                     loadExamplePool, removeExamplePool,
                     indexDetailVisible, indexDetail, indexAiResult, indexAiLoading, loadCachedIndexEval,
+                    // 6.6 (T-6.6.26): 行情摘要（总市值 + 多周期涨跌幅）
+                    indexQuoteSummary, loadIndexQuoteSummary,
                     showIndexDetail, doIndexAiEvaluate,
                     klinePeriods, currentKlinePeriod, klineLoading, indexKlineLoading, stockKlineLoaded, indexKlineLoaded,
                     klineDegradeNote,
@@ -413,6 +417,8 @@
                     viewUnit, datePickerType, dateFormat, canNavPrev, canNavNext,
                     handleLogin, handleGuestLogin, switchView, navigateDate, navigateTo,
                     loadDashboardData, loadConsensusData, showStockDetail, consensusError, overviewError,
+                    // 6.6 (T-6.6.26): 个股行情摘要（总市值 + 多周期涨跌幅）
+                    stockQuoteSummary, loadStockQuoteSummary,
                     externalStockActive,
                     doAiEvaluate, doBatchEvaluate, loadAiHistory, loadLastEvaluation, lastEvalTime, viewAiResult, saveAiConfig, testAiApi, exportConfig, importConfig, configSaving, configChanged,
                     // v1.8.0: 自选股
