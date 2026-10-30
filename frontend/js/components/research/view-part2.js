@@ -131,11 +131,11 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         <!-- 类型过滤 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">
-                                <el-radio-button label="">全部</el-radio-button>
-                                <el-radio-button label="factor_ic">因子IC</el-radio-button>
-                                <el-radio-button label="layer">分层</el-radio-button>
-                                <el-radio-button label="sweep">扫描</el-radio-button>
-                                <el-radio-button label="backtest">回测</el-radio-button>
+                                <el-radio-button value="">全部</el-radio-button>
+                                <el-radio-button value="factor_ic">因子IC</el-radio-button>
+                                <el-radio-button value="layer">分层</el-radio-button>
+                                <el-radio-button value="sweep">扫描</el-radio-button>
+                                <el-radio-button value="backtest">回测</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
                             <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>

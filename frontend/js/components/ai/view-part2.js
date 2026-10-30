@@ -160,10 +160,10 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <div v-if="watchlist.length > 1" class="watchlist-sort-bar">
                                 <span class="watchlist-sort-label">排序:</span>
                                 <el-radio-group v-model="watchlistSort" size="small">
-                                    <el-radio-button label="default">默认</el-radio-button>
-                                    <el-radio-button label="name">名称</el-radio-button>
-                                    <el-radio-button label="added">加入时间</el-radio-button>
-                                    <el-radio-button label="score">评分</el-radio-button>
+                                    <el-radio-button value="default">默认</el-radio-button>
+                                    <el-radio-button value="name">名称</el-radio-button>
+                                    <el-radio-button value="added">加入时间</el-radio-button>
+                                    <el-radio-button value="score">评分</el-radio-button>
                                 </el-radio-group>
                             </div>
                             <!-- v3.17.9 (FR-3.17.9): 自选加载骨架屏（数据到达前展示, 到达后替换） -->

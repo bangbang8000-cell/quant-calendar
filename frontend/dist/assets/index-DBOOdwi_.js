@@ -1560,8 +1560,8 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                                     </el-form-item>
                                     <el-form-item label="评估范围">
                                         <el-radio-group v-model="autoEvaluateScope" @change="saveAutoEvaluateConfig">
-                                            <el-radio label="watchlist">我的自选</el-radio>
-                                            <el-radio label="new_entries">最新交易日新入池</el-radio>
+                                            <el-radio value="watchlist">我的自选</el-radio>
+                                            <el-radio value="new_entries">最新交易日新入池</el-radio>
                                         </el-radio-group>
                                     </el-form-item>
                                     <el-form-item label="结果推送">
@@ -1907,8 +1907,8 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                         <div class="flex-c-gap-12-wrap-mb12">
                             <span class="text-base-secondary">过滤方式：</span>
                             <el-radio-group v-model="strategyFilter.mode" @change="saveStrategyFilter">
-                                <el-radio label="union">并集（任一匹配）</el-radio>
-                                <el-radio label="intersection">交集（全部匹配）</el-radio>
+                                <el-radio value="union">并集（任一匹配）</el-radio>
+                                <el-radio value="intersection">交集（全部匹配）</el-radio>
                             </el-radio-group>
                         </div>
                         <div class="info-banner-plain">
@@ -2141,12 +2141,12 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                             <div class="usage-card-title"><qc-icon name="book-open" :size="14" /> 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.0.1 T-5.0.14)</span></div>
                             <div class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                                 <el-radio-group v-model="dictCategory" size="small" @change="loadDataDict">
-                                    <el-radio label="">全部</el-radio>
-                                    <el-radio label="kline">K线行情</el-radio>
-                                    <el-radio label="daily_basic">每日基本面</el-radio>
-                                    <el-radio label="financial">财务报表</el-radio>
-                                    <el-radio label="calendar">交易日历</el-radio>
-                                    <el-radio label="quality">数据质量</el-radio>
+                                    <el-radio value="">全部</el-radio>
+                                    <el-radio value="kline">K线行情</el-radio>
+                                    <el-radio value="daily_basic">每日基本面</el-radio>
+                                    <el-radio value="financial">财务报表</el-radio>
+                                    <el-radio value="calendar">交易日历</el-radio>
+                                    <el-radio value="quality">数据质量</el-radio>
                                 </el-radio-group>
                                 <el-button size="small" :loading="dictLoading" @click="loadDataDict">刷新</el-button>
                             </div>
@@ -3138,10 +3138,10 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                             <div v-if="watchlist.length > 1" class="watchlist-sort-bar">
                                 <span class="watchlist-sort-label">排序:</span>
                                 <el-radio-group v-model="watchlistSort" size="small">
-                                    <el-radio-button label="default">默认</el-radio-button>
-                                    <el-radio-button label="name">名称</el-radio-button>
-                                    <el-radio-button label="added">加入时间</el-radio-button>
-                                    <el-radio-button label="score">评分</el-radio-button>
+                                    <el-radio-button value="default">默认</el-radio-button>
+                                    <el-radio-button value="name">名称</el-radio-button>
+                                    <el-radio-button value="added">加入时间</el-radio-button>
+                                    <el-radio-button value="score">评分</el-radio-button>
                                 </el-radio-group>
                             </div>
                             <!-- v3.17.9 (FR-3.17.9): 自选加载骨架屏（数据到达前展示, 到达后替换） -->
@@ -3962,11 +3962,11 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                         <!-- 类型过滤 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">
-                                <el-radio-button label="">全部</el-radio-button>
-                                <el-radio-button label="factor_ic">因子IC</el-radio-button>
-                                <el-radio-button label="layer">分层</el-radio-button>
-                                <el-radio-button label="sweep">扫描</el-radio-button>
-                                <el-radio-button label="backtest">回测</el-radio-button>
+                                <el-radio-button value="">全部</el-radio-button>
+                                <el-radio-button value="factor_ic">因子IC</el-radio-button>
+                                <el-radio-button value="layer">分层</el-radio-button>
+                                <el-radio-button value="sweep">扫描</el-radio-button>
+                                <el-radio-button value="backtest">回测</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
                             <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
@@ -4861,8 +4861,8 @@ var Gd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Qd,L
                         </el-form-item>
                         <el-form-item label="评估范围">
                             <el-radio-group v-model="autoEvaluateScope">
-                                <el-radio label="watchlist">我的自选</el-radio>
-                                <el-radio label="new_entries">最新交易日新入池</el-radio>
+                                <el-radio value="watchlist">我的自选</el-radio>
+                                <el-radio value="new_entries">最新交易日新入池</el-radio>
                             </el-radio-group>
                         </el-form-item>
                         <el-form-item label="结果推送">

@@ -59,8 +59,8 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                         <div class="flex-c-gap-12-wrap-mb12">
                             <span class="text-base-secondary">过滤方式：</span>
                             <el-radio-group v-model="strategyFilter.mode" @change="saveStrategyFilter">
-                                <el-radio label="union">并集（任一匹配）</el-radio>
-                                <el-radio label="intersection">交集（全部匹配）</el-radio>
+                                <el-radio value="union">并集（任一匹配）</el-radio>
+                                <el-radio value="intersection">交集（全部匹配）</el-radio>
                             </el-radio-group>
                         </div>
                         <div class="info-banner-plain">
@@ -293,12 +293,12 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                             <div class="usage-card-title"><qc-icon name="book-open" :size="14" /> 数据字典<span class="usage-card-title-sub">字段口径单一事实源 (V5.0.1 T-5.0.14)</span></div>
                             <div class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                                 <el-radio-group v-model="dictCategory" size="small" @change="loadDataDict">
-                                    <el-radio label="">全部</el-radio>
-                                    <el-radio label="kline">K线行情</el-radio>
-                                    <el-radio label="daily_basic">每日基本面</el-radio>
-                                    <el-radio label="financial">财务报表</el-radio>
-                                    <el-radio label="calendar">交易日历</el-radio>
-                                    <el-radio label="quality">数据质量</el-radio>
+                                    <el-radio value="">全部</el-radio>
+                                    <el-radio value="kline">K线行情</el-radio>
+                                    <el-radio value="daily_basic">每日基本面</el-radio>
+                                    <el-radio value="financial">财务报表</el-radio>
+                                    <el-radio value="calendar">交易日历</el-radio>
+                                    <el-radio value="quality">数据质量</el-radio>
                                 </el-radio-group>
                                 <el-button size="small" :loading="dictLoading" @click="loadDataDict">刷新</el-button>
                             </div>

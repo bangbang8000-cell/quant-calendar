@@ -390,8 +390,8 @@ window.__quantModules.systemPage.part1 = `
                                     </el-form-item>
                                     <el-form-item label="评估范围">
                                         <el-radio-group v-model="autoEvaluateScope" @change="saveAutoEvaluateConfig">
-                                            <el-radio label="watchlist">我的自选</el-radio>
-                                            <el-radio label="new_entries">最新交易日新入池</el-radio>
+                                            <el-radio value="watchlist">我的自选</el-radio>
+                                            <el-radio value="new_entries">最新交易日新入池</el-radio>
                                         </el-radio-group>
                                     </el-form-item>
                                     <el-form-item label="结果推送">
