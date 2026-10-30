@@ -10,6 +10,10 @@ from ._constants import *  # noqa: F401,F403
 
 logger = logging.getLogger(__name__)
 
+# 6.6: 抓取失败(降级到默认值)时的缓存有效期。默认值只用于兜底展示,
+# 短 TTL 保证一次网络抖动不会污染整天, 下一次调用即重试真实数据。
+DEGRADED_CACHE_TTL = 600
+
 
 def _normalize_score(raw, center, scale, invert=False):
     """将原始指标归一化到约[-2, 2]范围的Z-score
@@ -130,9 +134,18 @@ def _merge_macro(defaults, real, track_missing=False):
             merged[key] = float(val)
             real_keys.append(key)
     if track_missing:
+        # date/update_time 等是**元字段**而非宏观指标, 不得计入 missing ——
+        # 它们从不参与 AKShare 抓取, 列进 missing 会让「缺失指标」清单虚高,
+        # 掩盖真正的缺失项(如 surveyed_unemployment 上游返回非法 JSON)。
+        _meta_keys = {"date", "update_time", "data_source", "data_note"}
         merged["_quality"] = {
             "real": sorted(real_keys),
-            "missing": sorted([k for k in merged if not str(k).startswith("_") and k not in real_keys]),
+            "missing": sorted([
+                k for k in merged
+                if not str(k).startswith("_")
+                and k not in real_keys
+                and k not in _meta_keys
+            ]),
         }
     return merged
 
@@ -268,9 +281,18 @@ class ClockIndicatorsMixin:
 
         cache_key = f"indicators_{today.strftime('%Y%m%d')}"
         if cache_key in self.cache:
-            cache_time = datetime.fromisoformat(self.cache[cache_key]['fetch_time'])
-            if (today - cache_time).total_seconds() < 86400:
-                return self.cache[cache_key]['data']
+            entry = self.cache[cache_key]
+            cache_time = datetime.fromisoformat(entry['fetch_time'])
+            # 6.6 (T-6.6.41): **降级结果不得整天有效**。
+            # 真实抓取成功 → 86400s（一天一次足够, 宏观数据是月频）。
+            # 抓取失败退回默认值 → 10 分钟, 让下一次调用重试。
+            # 旧实现两者同用 86400s: 启动时一次 akshare 抖动就会把「默认值+漂移」
+            # 当作真实数据缓存一整天, 前端看到的是 PMI 51.31/LPR 3.1 这类
+            # 与真实值无关的数字（用户反馈的问题3 同源）, 且必须重启才自愈。
+            degraded = bool((entry.get('data') or {}).get('_degraded'))
+            ttl = DEGRADED_CACHE_TTL if degraded else 86400
+            if (today - cache_time).total_seconds() < ttl:
+                return entry['data']
 
         indicators = {
             'date': today.strftime('%Y-%m-%d'),
@@ -328,7 +350,14 @@ class ClockIndicatorsMixin:
         else:
             # === v2.1: 应用指标时间漂移（模拟真实经济数据缓慢变化） ===
             indicators = self._apply_indicator_drift(indicators)
-            logger.info("美林时钟: 使用默认数据+时间漂移")
+            # 6.6 (T-6.6.41): 显式标记本次为**降级结果**（非真实数据）。
+            # ① 读缓存时据此使用 DEGRADED_CACHE_TTL 短 TTL, 下次调用自动重试;
+            # ② 前端/接口可据此提示「数据暂不可用」, 而不是把默认值当真值展示。
+            indicators['_degraded'] = True
+            indicators['_quality'] = {'real': [], 'missing': [], 'degraded': True}
+            logger.warning(
+                "美林时钟: AKShare 真实数据不可用, 本次降级为默认值+漂移 "
+                "(TTL %ds 后自动重试)", DEGRADED_CACHE_TTL)
 
         self.cache[cache_key] = {'fetch_time': today.isoformat(), 'data': indicators}
         self._save_cache()

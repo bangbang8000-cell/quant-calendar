@@ -176,3 +176,49 @@ def test_defaults_survive_when_no_real_data(monkeypatch):
     for key in ("pmi", "cpi", "ppi", "gdp_growth", "m2_growth", "lpr_1y", "lpr_5y"):
         assert key in data, f"缺少指标 {key}"
         assert data[key] > 0, f"{key} 退化为 0（会污染阶段判定）"
+
+
+# ── T-6.6.41: 降级结果不得整天有效（一次网络抖动不能污染全天数据）──
+def test_degraded_result_uses_short_ttl_not_one_day():
+    """抓取失败退回默认值时, 缓存 TTL 必须远短于真实数据的 86400s。
+
+    现场根因: 启动时 akshare 抖动一次, 「默认值+漂移」被当作真实数据缓存 86400s,
+    前端整天看到 PMI 51.31 / LPR 3.1 这类与真实值无关的数字, 必须重启才自愈。
+    """
+    from merrill_clock import MerrillClock
+    import merrill_clock._indicators as ind_mod
+    assert hasattr(ind_mod, "DEGRADED_CACHE_TTL"), "缺少 DEGRADED_CACHE_TTL 常量"
+    assert ind_mod.DEGRADED_CACHE_TTL < 86400, "降级 TTL 必须远短于一天"
+    assert ind_mod.DEGRADED_CACHE_TTL <= 3600, \
+        f"降级 TTL {ind_mod.DEGRADED_CACHE_TTL}s 过长, 自愈太慢（建议 ≤1h）"
+
+    inst = MerrillClock()
+    inst.cache = {}
+    monkeypatch_target = inst
+    # 强制走降级分支
+    inst._fetch_real_macro_data = lambda: None
+    data = inst.get_economic_indicators()
+    assert data.get("_degraded") is True, "降级结果必须显式标记 _degraded"
+    assert (data.get("_quality") or {}).get("degraded") is True
+    assert monkeypatch_target is inst
+
+
+# ── T-6.6.42: missing 清单不得混入元字段 ──
+def test_missing_excludes_meta_fields():
+    """date/update_time 等元字段不是宏观指标, 不得计入 missing。
+
+    否则「缺失指标」清单虚高(实测多出 3 项), 掩盖真正的缺失项。
+    """
+    ind = _load_helpers()
+    out = ind._merge_macro(
+        {"date": "2026-10-30", "update_time": "x", "data_source": "y",
+         "pmi": 50.8, "cpi": 0.5, "ppi": -1.0},
+        {"pmi": 50.1},
+        track_missing=True,
+    )
+    missing = out["_quality"]["missing"]
+    assert out["_quality"]["real"] == ["pmi"]
+    assert "date" not in missing, "date 是元字段, 不应计入 missing"
+    assert "update_time" not in missing
+    assert "data_source" not in missing
+    assert set(missing) == {"cpi", "ppi"}, f"真实缺失项应为 cpi/ppi, 实际 {missing}"
