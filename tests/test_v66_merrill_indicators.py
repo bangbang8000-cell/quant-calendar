@@ -154,22 +154,25 @@ def test_fetch_returns_none_when_akshare_unavailable(monkeypatch):
         return real_import(name, *a, **kw)
 
     monkeypatch.setattr(builtins, "__import__", _deny)
-    inst = ind.MacroIndicators() if hasattr(ind, "MacroIndicators") else None
-    if inst is None:
-        pytest.skip("指标类名不一致，跳过实例级校验")
-    assert inst._fetch_real_macro_data() is None
+    # 真实类名是 ClockIndicatorsMixin（此前按 MacroIndicators/MerrillIndicators 查找,
+    # 找不到就 skip —— 等于该护栏长期空转。改为直接实例化真实类。
+    inst = ind.ClockIndicatorsMixin()
+    assert inst._fetch_real_macro_data() is None, "akshare 不可用时应返回 None 而非抛错/返回脏数据"
 
 
 # ── 现有 AR/阶段判定不得因缺失数据崩溃 ──
 def test_defaults_survive_when_no_real_data(monkeypatch):
     """无真实数据时，指标必须仍是合理量级（不能是 0）"""
-    ind = _load_helpers()
-    cls = getattr(ind, "MacroIndicators", None) or getattr(ind, "MerrillIndicators", None)
-    if cls is None:
-        pytest.skip("指标类名不一致")
-    inst = cls()
+    # 用**组装完整**的 MerrillClock（ClockIndicatorsMixin 只是其中之一,
+    # 单实例化会缺 _apply_indicator_drift/_save_cache）
+    from merrill_clock import MerrillClock
+    inst = MerrillClock()
+    # 真实方法名是 get_economic_indicators（此前按 get_indicators/get_current_indicators 查找）
     monkeypatch.setattr(inst, "_fetch_real_macro_data", lambda: None, raising=False)
-    data = inst.get_indicators() if hasattr(inst, "get_indicators") else inst.get_current_indicators()
-    for key in ("pmi", "cpi", "ppi", "gdp_growth", "m2_growth"):
-        if key in data:
-            assert data[key] > 0, f"{key} 退化为 0（会污染阶段判定）"
+    # 避开磁盘缓存（否则读到别的用例写入的历史缓存, 测不到「无真实数据」路径）
+    monkeypatch.setattr(type(inst), "cache", {}, raising=False)
+    inst.cache = {}
+    data = inst.get_economic_indicators()
+    for key in ("pmi", "cpi", "ppi", "gdp_growth", "m2_growth", "lpr_1y", "lpr_5y"):
+        assert key in data, f"缺少指标 {key}"
+        assert data[key] > 0, f"{key} 退化为 0（会污染阶段判定）"

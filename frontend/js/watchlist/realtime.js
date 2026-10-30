@@ -250,7 +250,10 @@ function _onAuthChanged() {
     disconnectRealtimeQuotes();
   }
 }
-if (typeof window !== 'undefined') {
+// 能力探测而非仅判存在: 6.6 域契约测试在 Node 下用假 window 装载本模块,
+// 假对象没有 addEventListener —— 只用 typeof window 判断会直接抛错。
+// 真实浏览器恒有此方法, 探测失败时静默跳过监听（登出仍由 handleLogout 主动 disconnect 兜底）。
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('qc:auth-changed', function () { setTimeout(_onAuthChanged, 0); });
   window.addEventListener('storage', function (e) {
     if (e && (e.key === 'quant_token' || e.key === null)) _onAuthChanged();

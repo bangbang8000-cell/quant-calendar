@@ -62,7 +62,13 @@ def test_stale_banner_inside_bell_panel():
 # ── TC-655-03: 一级命名收敛 — 一级为业务域名词, 首成员不再与一级同名 ──
 def test_primary_names_are_domain_nouns():
     core = _read_fe("js/nav-merge-core.js")
-    assert "name: '策略', iconName: 'pie-chart'" in core, "一级应为「策略」而非「策略总览」"
+    # 6.6 (PRD FR-6.6.6 / 决策 D1): 用户明确要求一级菜单「策略」更名「策略概览」,
+    # 因其与二级「策略研究」、三级「策略管理/回测」语义重叠, 无法区分栏目与动作。
+    # 本用例原意是守住「一级用域名词、不用『XX 总览』这类冗余后缀」——
+    # 该纪律对其它一级项仍成立（见下方断言）, 此处按新决策把策略项改为「策略概览」,
+    # 并保留对旧式「策略总览」的否决（概览 ≠ 总览）。
+    assert "name: '策略概览', iconName: 'pie-chart'" in core, "一级应为「策略概览」(6.6 D1)"
+    assert "name: '策略总览'" not in core, "不得使用「策略总览」这种冗余后缀"
     assert "'strategies.overview': '概览'" in core
     assert "'shortterm.overview': '概览'" in core
     assert "'ai.overview': '概览'" in core

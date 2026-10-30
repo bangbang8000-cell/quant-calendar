@@ -122,16 +122,31 @@ def test_repeated_archive_idempotent():
 
 
 # ── API 接线护栏 ──
+def _market_api_source():
+    """聚合 api/v1 下所有行情相关路由源码。
+
+    6.6 拆分了 market.py（新增端点独立为 market_extras.py 以满足 ≤700 行),
+    因此按**包**搜索而不是钉死单个文件 —— 否则一次合理拆分会误判端点丢失。
+    """
+    d = os.path.join(BASE, "backend", "api", "v1")
+    out = []
+    for fn in ("market.py", "market_extras.py", "market_ws.py", "router.py"):
+        path = os.path.join(d, fn)
+        if os.path.isfile(path):
+            out.append(open(path, encoding="utf-8").read())
+    return "\n".join(out)
+
+
 def test_correction_endpoints_registered():
     """API 必须提供读/写订正元信息端点（前端角标与 runbook 依赖它）"""
-    src = open(os.path.join(BASE, "backend", "api", "v1", "market.py"), encoding="utf-8").read()
+    src = _market_api_source()
     assert '"/merrill-clock/correction"' in src, "缺少订正元信息 GET 端点"
     assert "apply_merrill_correction" in src, "缺少订正执行端点"
 
 
 def test_correction_endpoint_admin_only():
     """D5: 订正执行必须仅限 admin（写历史是高危操作）"""
-    src = open(os.path.join(BASE, "backend", "api", "v1", "market.py"), encoding="utf-8").read()
+    src = _market_api_source()
     # 取函数定义到下一个顶层装饰器/结束
     body = src.split("async def apply_merrill_correction", 1)[1]
     sig = body.split("\n", 2)[0] + body.split("\n", 2)[1]

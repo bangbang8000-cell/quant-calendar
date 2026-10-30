@@ -157,7 +157,9 @@ def test_period_change_pct_sorts_input():
 
 # ── D. 后端接口契约 ──
 def test_quote_summary_endpoint_registered():
-    src = open(os.path.join(BASE, "backend", "api", "v1", "market.py"), encoding="utf-8").read()
+    d = os.path.join(BASE, "backend", "api", "v1")
+    src = "\n".join(open(os.path.join(d, fn), encoding="utf-8").read()
+                     for fn in ("market.py", "market_extras.py") if os.path.isfile(os.path.join(d, fn)))
     assert "/quote-summary/" in src, "缺少 GET /api/market/quote-summary/{code} 端点"
     assert "quote_summary" in src, "缺少 quote_summary 实现引用"
 

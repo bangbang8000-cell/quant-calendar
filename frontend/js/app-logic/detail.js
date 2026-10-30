@@ -270,6 +270,7 @@
                 function levelColor(level) { return LEVEL_COLOR_MAP[level] || 'var(--text-tertiary)'; }
                 function levelBg(level) { return LEVEL_BG_MAP[level] || 'var(--bg-hover)'; }
 
+// 6.6 (T-6.6.26): 本域新增 stockQuoteSummary / loadStockQuoteSummary (个股行情摘要)
 return {
         klineShowMinutes, toggleKlineShowMinutes, klinePeriods, currentKlinePeriod,
         klineLoading, klineDegradeNote, indexKlineLoading, stockKlineLoaded,
@@ -278,7 +279,6 @@ return {
         toggleKlineMa, resetKlineMaVisible, loadIndexKlineWithPeriod,
         loadHealthMetrics, markExternalStock, externalStockActive,
         showStockDetail, levelColor, levelBg,
-        // 6.6 (T-6.6.26): 个股行情摘要（总市值 + 多周期涨跌幅）
         stockQuoteSummary, loadStockQuoteSummary,
       };
     },

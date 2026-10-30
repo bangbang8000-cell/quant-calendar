@@ -59,13 +59,13 @@
 
 
                 // ===== 6.3.0 (T-6.3.0.10): 详情/K线域 — 后置域经惰性访问器引用 (TDZ 安全) =====
+                // 6.6 (T-6.6.28): detail 域新增 ctx 依赖 getIndexQuoteSummary (K线 tooltip 用指数行情摘要)
                 const __detail = window.__quantAppLogic.detail.create({
                   ref, computed, nextTick,
                   stockDetail, stockDetailTab, stockDetailVisible, stockDetailLoading,
                   rememberDialogTrigger,
                   getIsMobile: () => isMobile,
                   getIndexDetail: () => indexDetail,
-                  // 6.6 (T-6.6.28): 指数行情摘要 getter（detail 域渲染 K 线 tooltip 需要）
                   getIndexQuoteSummary: () => indexQuoteSummary,
                   getIndexDetailVisible: () => indexDetailVisible,
                   getMarkKlineLoaded: () => markKlineLoaded,
@@ -104,7 +104,9 @@
                     currentKlinePeriod, loadIndexKline, rememberDialogTrigger, menus,
                     currentPage, currentSubPage, stockDetail, selectedDate,
                 });
-                const { marketData, marketError, indexDetailVisible, indexDetail, indexQuoteSummary, loadIndexQuoteSummary, indexAiResult, indexAiLoading,
+                // 6.6: 补齐 5 个既有缺口(域返回但装配未解构 → 依赖方拿到 undefined):
+// marketRefreshTimer/touchStartX/touchStartY/triggerScorePulse/animateScoreChange
+const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, triggerScorePulse, animateScoreChange, indexDetailVisible, indexDetail, indexQuoteSummary, loadIndexQuoteSummary, indexAiResult, indexAiLoading,
                         fetchMarketData, showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
                         disposeStockKline, isMobile, zoomKlineRange,
                         scoreAnimating, scoreDelta, scorePulse,

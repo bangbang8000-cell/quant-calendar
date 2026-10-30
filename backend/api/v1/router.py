@@ -7,6 +7,8 @@ from fastapi import APIRouter
 
 from .market import router as market_router
 from .market_ws import router as market_ws_router
+# 6.6: 行情扩展（美林订正 + 行情摘要）从 market.py 拆出, 保持单文件 ≤700 行
+from .market_extras import router as market_extras_router
 from .auth import router as auth_router
 from .calendar import router as calendar_router
 from .views import router as views_router
@@ -51,6 +53,7 @@ api_router = APIRouter(prefix="/api")
 # 注册各模块路由
 api_router.include_router(market_router)
 api_router.include_router(market_ws_router)
+api_router.include_router(market_extras_router)
 api_router.include_router(auth_router)
 api_router.include_router(calendar_router)
 api_router.include_router(views_router)

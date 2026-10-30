@@ -52,7 +52,14 @@ def collect_oversized():
 
 
 def _fmt(items):
-    return "\n  ".join("%s (%d 行)" % (k, v) for k, v in sorted(items))
+    """格式化超出清单。
+
+    6.6 修正: 调用方传的是 dict, 但 sorted(dict) 只迭代**键**, 会解包失败
+    (ValueError: too many values to unpack) —— 该护栏此前一有超限文件就崩在报错里,
+    而不是给出可读的文件清单。这里统一按 dict 处理。
+    """
+    pairs = sorted(items.items()) if hasattr(items, "items") else sorted(items)
+    return "\n  ".join("%s (%d 行)" % (k, v) for k, v in pairs)
 
 
 def test_no_unregistered_oversized_file():

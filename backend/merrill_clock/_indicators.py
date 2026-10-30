@@ -73,10 +73,8 @@ def _latest_numeric(df, candidates):
       3. **0 不算有效数据**: 0 会把「通胀偏低」误判成「通缩」, 一律视为缺失。
     解析失败/无可用列/空帧 → None。
     """
-    try:
-        import pandas as _pd
-    except Exception:
-        return None
+    # 不显式 import pandas: 只需 duck-typing 判定（有 columns 且可索引）,
+    # 避免未使用导入, 也让本函数在无 pandas 环境下安全返回 None。
     if df is None or not hasattr(df, "columns") or len(df) == 0:
         return None
     col = _pick_column(df.columns, candidates)

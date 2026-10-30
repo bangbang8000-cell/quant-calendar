@@ -266,10 +266,10 @@
         }
       }
 
+      // 6.6 (T-6.6.26): 本域新增 indexQuoteSummary / loadIndexQuoteSummary (指数行情摘要)
       return {
         marketData, marketRefreshTimer, marketError, fetchMarketData,
         indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
-        // 6.6 (T-6.6.26): 行情摘要（总市值 + 多周期涨跌幅）
         indexQuoteSummary, loadIndexQuoteSummary,
         showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
         disposeStockKline, isMobile, zoomKlineRange,

@@ -240,6 +240,7 @@
       "watchlist-item",
       "watchlist-name",
       "watchlist-quote",
+      "watchlist-render-guard",
       "watchlist-score-badge",
       "watchlist-search-item",
       "watchlist-search-results",
@@ -248,6 +249,11 @@
       "watchlist-status",
       "watchlist-vlist",
       "wl-btn-label",
+      "wl-guard-actions",
+      "wl-guard-body",
+      "wl-guard-desc",
+      "wl-guard-icon",
+      "wl-guard-title",
       "||"
     ],
     "directives": [
@@ -368,8 +374,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 75892,
-    "template_sha": "b097e2ccd2607710"
+    "template_len": 77469,
+    "template_sha": "f7312602527fdab0"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -391,7 +397,7 @@
       "...state"
     ],
     "template_len": 2323,
-    "template_sha": "0d29841ca2bf05ea"
+    "template_sha": "c7d229386d819b20"
   },
   "BatchEvaluateDialog": {
     "classes": [
@@ -993,8 +999,14 @@
   "IndexDetailDialog": {
     "classes": [
       "!==",
+      "'color-fall'",
+      "'color-rise'",
       "'qc-embedded-dialog':",
+      "0",
+      ":",
       "===",
+      ">=",
+      "?",
       "['kline-tab',",
       "['ma-toggle-btn',",
       "active:",
@@ -1006,6 +1018,7 @@
       "detail-subtitle",
       "embedded",
       "false",
+      "indexQuoteSummary.changes[p[0]]",
       "kline-chart",
       "kline-container",
       "kline-dialog",
@@ -1047,8 +1060,8 @@
     "setup_keys": [
       "...state"
     ],
-    "template_len": 5073,
-    "template_sha": "56232c4cb0ff829e"
+    "template_len": 6417,
+    "template_sha": "e70efd5c15ad6b5b"
   },
   "MenuConfigDialog": {
     "classes": [
@@ -1587,7 +1600,7 @@
       "variants"
     ],
     "template_len": 66043,
-    "template_sha": "cd7a125e59de187e"
+    "template_sha": "8d1af5cdedaa3565"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -1922,11 +1935,17 @@
       "!==",
       "'analyzing'",
       "'calculating'",
+      "'color-fall'",
+      "'color-rise'",
       "'done'",
       "'done',",
       "'fetching'",
       "'qc-embedded-dialog':",
+      "0",
+      ":",
       "===",
+      ">=",
+      "?",
       "['kline-tab',",
       "['ma-toggle-btn',",
       "active:",
@@ -2068,6 +2087,7 @@
       "stat-box",
       "stat-label",
       "stat-value",
+      "stockQuoteSummary.changes[p[0]]",
       "text-3xl-mb12",
       "text-base-tertiary",
       "text-center-tertiary-pad12",
@@ -2202,8 +2222,8 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 38164,
-    "template_sha": "26d2eb4992a864d1"
+    "template_len": 39495,
+    "template_sha": "a6710b22f059e389"
   },
   "StrategiesPage": {
     "classes": [
@@ -2372,6 +2392,7 @@
       "mc-trail-note",
       "mc-trail-run",
       "mcTrailRuns.length",
+      "merrill-correction-badge",
       "merrill-stage-card",
       "merrill-stage-desc",
       "merrill-stage-icon",
@@ -2445,6 +2466,7 @@
       "text-tertiary",
       "text-warning-semibold",
       "text-xs",
+      "text-xs-leading",
       "text-xs-tertiary",
       "text-xs-tertiary-ml4",
       "time-bar-fill",
@@ -2544,6 +2566,7 @@
       "f.icon",
       "file-text",
       "history",
+      "info",
       "lightbulb",
       "line-chart",
       "package",
@@ -2611,8 +2634,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 59888,
-    "template_sha": "b8930714d61b7819"
+    "template_len": 60917,
+    "template_sha": "bfdd0de03564d3a7"
   },
   "SystemPage": {
     "classes": [
@@ -3124,7 +3147,7 @@
       "viewIcon"
     ],
     "template_len": 111766,
-    "template_sha": "2cb095075e47a21a"
+    "template_sha": "4a098cf680a3902b"
   },
   "TourDialog": {
     "classes": [
@@ -3159,11 +3182,15 @@
   "VirtualList": {
     "classes": [
       "qc-virtual-list",
+      "qc-vlist-plain",
       "qc-vlist-spacer",
-      "qc-vrow"
+      "qc-vrow",
+      "qc-vrow-plain"
     ],
     "directives": [
-      "v-for"
+      "v-else",
+      "v-for",
+      "v-if"
     ],
     "i18n_keys": [],
     "icons": [],
@@ -3172,13 +3199,14 @@
       "endIndex",
       "keyOf",
       "onScroll",
+      "plainMode",
       "scrollEl",
       "startIndex",
       "totalHeight",
       "visibleItems"
     ],
-    "template_len": 857,
-    "template_sha": "dbcdccec6bea7075"
+    "template_len": 1348,
+    "template_sha": "b2d4a8b1849c2c73"
   },
   "WatchGroupsDialog": {
     "classes": [
