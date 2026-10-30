@@ -233,7 +233,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                         // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
                         realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
                         disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
-                        realtimePriceText, realtimePctText, realtimeRatioText, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
+                        realtimePriceText, realtimePctText, realtimeRatioText, realtimeRatioAvailable, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
                         REALTIME_FALLBACK_TEXT } = __watchlistDomain;
                 // ===== v3.17.4 (FR-3.17.4): 回测工作台域 — 逻辑移至 js/backtest.js 模块 =====
                 const __backtestDomain = (window.__quantModules && window.__quantModules.backtest)
@@ -436,7 +436,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
                     realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
                     disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
-                    realtimePriceText, realtimePctText, realtimeRatioText, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
+                    realtimePriceText, realtimePctText, realtimeRatioText, realtimeRatioAvailable, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
                     REALTIME_FALLBACK_TEXT,
                     toggleSelectHistory, clearSelection, deleteSingleHistory, deleteSelectedHistory, saveAutoEvaluateConfig,
                     editUser, saveUser, deleteUser, loadUsers,

@@ -1,5 +1,5 @@
 {
- "count": 93,
+ "count": 94,
  "keys": [
   "REALTIME_DEGRADED_TEXT",
   "REALTIME_FALLBACK_TEXT",
@@ -59,6 +59,7 @@
   "realtimePriceText",
   "realtimeQuoteColor",
   "realtimeQuotes",
+  "realtimeRatioAvailable",
   "realtimeRatioText",
   "realtimeWsState",
   "realtimeWsStateText",
@@ -188,7 +189,8 @@
   "exportPageDiagnostics": "function",
   "realtimeWsStateText": "function",
   "reloadPage": "function",
-  "watchlistRenderGuard": "ref"
+  "watchlistRenderGuard": "ref",
+  "realtimeRatioAvailable": "function"
  },
  "_note_6_6": "6.6 M1 自选列表 P0-1a/1b: +6 成员 (realtimeWsStateText/watchlistRenderGuard/auditWatchlistRender/dismissWatchlistRenderGuard/exportPageDiagnostics/reloadPage)"
 }

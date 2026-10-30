@@ -78,3 +78,20 @@ def test_radio_label_text_preserved_as_slot():
     src = open(os.path.join(JS_DIR, "components", "system", "view-part2.js"), encoding="utf-8").read()
     assert 'value="union">并集（任一匹配）</el-radio>' in src, "迁移后显示文本丢失"
     assert 'value="kline">K线行情</el-radio>' in src, "迁移后显示文本丢失"
+
+
+# ── T-6.6.43: 无数据时量比/涨速整项隐藏, 不输出孤立 % (AC-18 / 决策 D9) ──
+def test_ratio_fields_hidden_when_empty():
+    """「涨速 {{...}}%」必须带 v-if 守卫。
+
+    旧实现无条件渲染, 上游不返回 rise_speed 时输出「涨速 %」—— 一个残缺的百分号。
+    AC-18 明确要求「无数据时无涨速与 --%」。
+    """
+    p = os.path.join(BASE, "frontend", "js", "components", "ai", "view-part2.js")
+    src = open(p, encoding="utf-8").read()
+    import re
+    for field in ("volume_ratio", "rise_speed"):
+        line = [l for l in src.splitlines() if f"'{field}'" in l and "realtimeRatioText" in l and "class=" in l]
+        assert line, f"未找到 {field} 的渲染行"
+        assert "v-if" in line[0], (
+            f"{field} 渲染行缺少 v-if 守卫（无数据会输出孤立 %）: {line[0].strip()[:100]}")

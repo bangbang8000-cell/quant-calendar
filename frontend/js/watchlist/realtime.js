@@ -148,6 +148,14 @@ function realtimePctText(code) {
 function realtimeRatioText(code, field) {
   return quoteFmt.num(realtimeQuotes.value[code] && realtimeQuotes.value[code][field]);
 }
+// 6.6 (T-6.6.43, PRD FR-6.6.9 / 决策 D9): 「该项是否有可展示数值」。
+// quoteFmt.num 无数据返回 '--', 直接用于 v-if 会渲染「涨速 --%」;
+// 模板改用本函数, 无数据时整项隐藏（AC-18 禁止 --% 与空项）。
+function realtimeRatioAvailable(code, field) {
+  const q = realtimeQuotes.value[code];
+  if (!q) return false;
+  return quoteFmt.num(q[field]) !== '--';
+}
 function _realtimeToken() {
   try { return localStorage.getItem('quant_token') || ''; } catch (e) { return ''; }
 }
@@ -264,7 +272,7 @@ if (_realtimeToken()) {
   setTimeout(connectRealtimeQuotes, 500);
 }
       return {
-        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, quoteWarningFor, realtimeDegradedText, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes, realtimeWsStateText,
+        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, quoteWarningFor, realtimeDegradedText, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, realtimeRatioAvailable, disconnectRealtimeQuotes, connectRealtimeQuotes, realtimeWsStateText,
       };
     },
   };

@@ -320,7 +320,7 @@ const __realtime = window.__quantModules.watchlist.realtime.create({
   });
 const { REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded,
   realtimeWsState, quoteWarningFor, realtimeQuoteColor, realtimePriceText, realtimePctText,
-  realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes,
+  realtimeRatioText, realtimeRatioAvailable, disconnectRealtimeQuotes, connectRealtimeQuotes,
   // 6.6 (T-6.6.6): 四态文案 —— 此白名单漏接会导致模板 TypeError 并整块不渲染
   realtimeWsStateText } = __realtime;
 
@@ -352,7 +352,7 @@ const { REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtime
         // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
         realtimeQuotes, realtimeDegraded, realtimeWsState, connectRealtimeQuotes,
         disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor,
-        realtimePriceText, realtimePctText, realtimeRatioText, realtimeWsStateText,
+        realtimePriceText, realtimePctText, realtimeRatioText, realtimeRatioAvailable, realtimeWsStateText,
         REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT,
       };
   };

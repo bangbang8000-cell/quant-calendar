@@ -231,8 +231,14 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                             <!-- V6.6: realtimeQuoteColor() 实时涨跌计算色，保留内联 -->
                                             <span class="quote-price" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePriceText(stock.code) }}</span>
                                             <span class="quote-pct" :style="{color: realtimeQuoteColor(stock.code)}">{{ realtimePctText(stock.code) }}</span>
-                                            <span class="quote-meta">量比 {{ realtimeRatioText(stock.code, 'volume_ratio') }}</span>
-                                            <span class="quote-meta">涨速 {{ realtimeRatioText(stock.code, 'rise_speed') }}%</span>
+                                            <!-- 6.6 (T-6.6.43, PRD FR-6.6.9 / 决策 D9): 无数据时**整项隐藏**。
+                                                 旧实现无条件输出「涨速 {{...}}%」, 上游不返回 rise_speed 时
+                                                 就会渲染成孤立的「涨速 %」—— 用户看到的是一个残缺的百分号
+                                                 (AC-18 明确禁止 --% 与空项)。量比同理。 -->
+                                            <!-- 判定必须同时排除 '' 与 '--': quoteFmt.num 对无数据返回 '--',
+                                                 只判 !== '' 会渲染出「涨速 --%」—— 正是 AC-18 禁止的形态。 -->
+                                            <span v-if="realtimeRatioAvailable(stock.code, 'volume_ratio')" class="quote-meta">量比 {{ realtimeRatioText(stock.code, 'volume_ratio') }}</span>
+                                            <span v-if="realtimeRatioAvailable(stock.code, 'rise_speed')" class="quote-meta">涨速 {{ realtimeRatioText(stock.code, 'rise_speed') }}%</span>
                                             <span v-if="quoteWarningFor(stock.code)" class="rt-warn-tag">{{ quoteWarningFor(stock.code) }}</span>
                                         </div>
                                         </div>
