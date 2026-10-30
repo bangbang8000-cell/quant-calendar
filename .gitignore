@@ -125,3 +125,6 @@ frontend/static/test.html
 
 frontend/api-docs.html
 .shot-collapsed.png
+
+# 6.6: 数据订正前的本地备份（含 app.db 等运行时数据, 不入库）
+backups/
