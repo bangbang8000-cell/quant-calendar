@@ -972,6 +972,23 @@
 .trend-chart-box { width:100%;height:200px;margin-bottom:8px;border:1px solid var(--border-light);border-radius: var(--qc-radius-medium); }
 .version-badge { font-size: var(--qc-font-size-lg); font-weight: var(--font-semibold); background: var(--brand-soft-bg); color: var(--brand-soft-text); padding: 4px 16px; border-radius: var(--qc-radius-large); }
 .vlist-h-calc { height: calc(100vh - 320px); min-height: 200px; }
+/* 6.6 (T-6.6.1): 小数据量普通渲染分支 —— 行参与文档流(height auto), 不再绝对定位/裁切。
+   .qc-vrow 的绝对定位与固定行高只来自虚拟分支的内联 style, 故此处只需还原流式布局。 */
+.qc-vlist-plain { display: block; }
+.qc-vrow-plain { position: static; height: auto; overflow: visible; }
+/* 6.6 (T-6.6.2, PRD FR-6.6.1): 渲染守卫降级面板 —— 全部走令牌, 无硬编码色值 */
+.watchlist-render-guard {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; margin-bottom: 12px;
+  background: var(--state-warning-soft-bg);
+  border: 1px solid color-mix(in srgb, var(--state-warning-solid) 35%, transparent);
+  border-radius: var(--qc-radius-medium);
+}
+.wl-guard-icon { color: var(--state-warning-text); display: flex; align-items: center; }
+.wl-guard-body { flex: 1; min-width: 0; }
+.wl-guard-title { font-weight: var(--font-semibold); color: var(--state-warning-text); font-size: var(--qc-font-size-sm); }
+.wl-guard-desc { color: var(--text-secondary); font-size: var(--qc-font-size-xs); margin-top: 4px; line-height: 1.5; }
+.wl-guard-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .vlist-max-h-420 { max-height: 420px; }
 .w-100 { width: 100%; }
 .w-100-h320 { width: 100%; height: 320px; }

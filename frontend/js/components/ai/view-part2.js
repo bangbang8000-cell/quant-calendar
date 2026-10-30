@@ -138,11 +138,13 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <!-- v3.17.7 实时化 (FR-3.17.7): 自选实时报价区（WS；数据不可达降级占位，不阻塞其它功能） -->
                             <div v-if="watchlist.length > 0" class="rt-bar" :class="{'rt-degraded': realtimeDegraded || realtimeWsState === 'offline'}">
                                 <span class="rt-title">实时报价</span>
+                                <!-- 6.6 (T-6.6.6, PRD FR-6.6.2): 四态统一文案。
+                                     此前未连接/连接中/离线都显示「连接中...」，用户无法判断是否真连上。 -->
                                 <span v-if="realtimeDegraded || realtimeWsState === 'offline'" class="rt-degraded-text">
-                                    {{ realtimeDegraded ? realtimeDegradedText() : REALTIME_FALLBACK_TEXT }}
+                                    {{ realtimeWsStateText() }}
                                 </span>
-                                <span v-else-if="realtimeWsState === 'open'" class="rt-live">实时</span>
-                                <span v-else class="rt-connecting">连接中...</span>
+                                <span v-else-if="realtimeWsState === 'open'" class="rt-live">{{ realtimeWsStateText() }}</span>
+                                <span v-else class="rt-connecting">{{ realtimeWsStateText() }}</span>
                             </div>
                             <!-- 搜索添加 -->
                             <div class="flex-gap-8-mb12">
@@ -176,8 +178,26 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             </div>
                             <!-- 自选列表 -->
                             <div v-else>
-                                <!-- v3.16 (16.7): 虚拟滚动，仅渲染可视区行（500+ 自选不卡顿） -->
-                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56" :aria-label="t('a11y.watchlistList')">
+                                <!-- 6.6 (T-6.6.2, PRD FR-6.6.1/AC-15): 渲染守卫降级面板。
+                                     仅在「有计数却零行」时出现, 把静默空白变成可解释故障态。 -->
+                                <div v-if="watchlistRenderGuard" class="watchlist-render-guard" role="alert">
+                                    <div class="wl-guard-icon"><qc-icon name="alert-triangle" :size="18" /></div>
+                                    <div class="wl-guard-body">
+                                        <div class="wl-guard-title">自选列表未能渲染</div>
+                                        <div class="wl-guard-desc">
+                                            已加载 {{ watchlistRenderGuard.expected }} 只，但未生成任何列表行。
+                                            可能原因：前端包体版本不一致 / 组件加载失败。
+                                        </div>
+                                    </div>
+                                    <div class="wl-guard-actions">
+                                        <el-button size="small" @click="exportPageDiagnostics()">导出诊断信息</el-button>
+                                        <el-button size="small" type="primary" @click="reloadPage()">重新加载页面</el-button>
+                                    </div>
+                                </div>
+                                <!-- 6.6 (T-6.6.1, PRD FR-6.6.1): 并列显式声明行高与退化阈值。
+                                     ≤50 只走普通渲染(真实 DOM 行, 可计数/可 Ctrl+F), >50 只仍走虚拟滚动。
+                                     现场「共 13 只但零行」属虚拟化在 slot 内空渲染, 退化后从根上不成立。 -->
+                                <qc-virtual-list class="vlist-h-calc watchlist-vlist" :items="sortedWatchlist" :row-height="detailSplitEnabled ? 76 : 56" :plain-threshold="50" :aria-label="t('a11y.watchlistList')">
                                     <template #default="{ item: stock }">
                                     <!-- v3.17.8 (FR-3.17.8): 移动端左滑露出删除操作（.swipe-reveal），长按复制代码 -->
                                     <div class="watchlist-item swipe-reveal" :data-copy-code="stock.code" :data-ctx-code="stock.code" :data-ctx-name="stock.name" data-ctx-context="watchlist" @click="detailSplitEnabled ? showStockDetail(stock.code) : showStockKline(stock.code, stock.name)" :aria-current="(detailSplitEnabled && stockDetail && stockDetail.stock === stock.code) ? 'true' : null" :class="{'watchlist-item-selected': selectedWatchlistCodes.includes(stock.code), 'is-active': detailSplitEnabled && stockDetail && stockDetail.stock === stock.code}">

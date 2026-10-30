@@ -132,6 +132,10 @@ import '../js/components/shortterm/view-part2.js'
 import '../js/components/shortterm/view.js'
 import '../js/components/shortterm-page.js'
 import '../js/virtual-list-core.js'
+// 6.6 (T-6.6.1): 自选列表渲染策略纯函数（退化渲染/渲染守卫/组件门禁/诊断导出）
+import '../js/watchlist-render-core.js'
+// 6.6 (T-6.6.5/T-6.6.6/T-6.6.7): 实时行情 WS 生命周期纯函数（四态文案/退避/看门狗）
+import '../js/realtime-lifecycle-core.js'
 import '../js/components/virtual-list.js'
 import '../js/mobile-gestures.js'
 import '../js/state-panel-core.js'

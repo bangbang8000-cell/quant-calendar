@@ -37,8 +37,20 @@ const quoteFmt = __coreRT.quoteFmt || {
   num: v => (v == null ? '--' : Number(v).toFixed(2)),
   color: q => '',
 };
-const REALTIME_RETRY_MAX = 3;         // 连续重连上限（超限保持降级占位，不打扰）
+const REALTIME_RETRY_MAX = (__coreRT.REALTIME_RETRY_MAX != null) ? __coreRT.REALTIME_RETRY_MAX : 3;
 const REALTIME_RETRY_BASE_MS = 5000;  // 重连退避基数
+// 6.6 (T-6.6.6/T-6.6.7): 状态文案/退避/看门狗判定统一收口到 realtime-lifecycle-core.js
+const __coreLC = (window.__quantModules && window.__quantModules.realtimeLifecycleCore) || {};
+const _lcStateText = __coreLC.stateText || function (s) {
+  return s === 'open' ? '实时已连接' : s === 'connecting' ? '连接中…'
+    : s === 'offline' ? '连接已断开，正在重连…' : '未连接';
+};
+const _lcNextBackoff = __coreLC.nextBackoff || function (n) { return REALTIME_RETRY_BASE_MS * n; };
+const _lcShouldReconnect = __coreLC.shouldReconnect || function (n, max) { return n < (max == null ? 3 : max); };
+const _lcWatchdogExpired = __coreLC.watchdogExpired || function (s, t, limit) {
+  return s > 0 && (t - s) >= (limit || 8000);
+};
+const REALTIME_WATCHDOG_MS = __coreLC.DEFAULT_WATCHDOG_MS || 8000;
 
 const realtimeQuotes = ref({});        // code -> {price, change_pct, volume_ratio, rise_speed}
 const realtimeDegraded = ref(false);   // 数据源不可达 → 显示"数据不可达"占位
@@ -61,6 +73,53 @@ function _emitRealtime() {
 let realtimeWs = null;
 let realtimeRetryTimer = null;
 let realtimeRetryCount = 0;
+let realtimeWatchdogTimer = null;
+let realtimeConnectStartedAt = 0;
+
+// 6.6 (T-6.6.6): 四态可读文案 —— 用户必须能看出「没连上」而不是只看到一排 --。
+// 供模板直接渲染（PRD FR-6.6.2「WS 四态文案」）。
+function realtimeWsStateText() {
+  return _lcStateText(realtimeWsState.value, {
+    degraded: realtimeDegraded.value,
+    reason: realtimeDegradedReason.value,
+  });
+}
+
+// 6.6 (T-6.6.6): 看门狗 —— 发起连接后 8s 仍未 open 就判定卡死，落到 offline 并允许重试，
+// 避免「连接中…」无限挂起（现场表现就是价格永远是 --，且没有任何提示）。
+function _realtimeClearWatchdog() {
+  if (realtimeWatchdogTimer) { clearTimeout(realtimeWatchdogTimer); realtimeWatchdogTimer = null; }
+}
+function _realtimeArmWatchdog() {
+  _realtimeClearWatchdog();
+  realtimeConnectStartedAt = Date.now();
+  realtimeWatchdogTimer = setTimeout(function () {
+    realtimeWatchdogTimer = null;
+    if (realtimeWsState.value !== 'open'
+        && _lcWatchdogExpired(realtimeConnectStartedAt, Date.now(), REALTIME_WATCHDOG_MS)) {
+      realtimeWsState.value = 'offline';
+      realtimeDegraded.value = true;
+      _emitRealtime();
+      _realtimeScheduleRetry();
+    }
+  }, REALTIME_WATCHDOG_MS);
+}
+
+// 6.6 (T-6.6.7): 指数退避重连（5s → 10s → 20s，封顶 30s），超上限保持降级占位
+function _realtimeScheduleRetry() {
+  if (realtimeRetryTimer) { clearTimeout(realtimeRetryTimer); realtimeRetryTimer = null; }
+  if (!_lcShouldReconnect(realtimeRetryCount, REALTIME_RETRY_MAX)) {
+    realtimeDegraded.value = true;  // 达上限 → 保持降级占位，不再打扰
+    _emitRealtime();
+    return;
+  }
+  realtimeRetryCount++;
+  const delay = _lcNextBackoff(realtimeRetryCount, REALTIME_RETRY_BASE_MS, 30000);
+  realtimeRetryTimer = setTimeout(function () {
+    realtimeRetryTimer = null;
+    if (realtimeWsState.value !== 'open') connectRealtimeQuotes();
+  }, delay);
+}
 
 // 预警判定（纯函数，委托 core.checkQuoteWarning）
 // v6.4 (FR-6.4.2): 降级文案按原因区分，不再统一"数据不可达"
@@ -100,6 +159,9 @@ function _realtimeSendSubscribe() {
 }
 function disconnectRealtimeQuotes() {
   if (realtimeRetryTimer) { clearTimeout(realtimeRetryTimer); realtimeRetryTimer = null; }
+  _realtimeClearWatchdog();
+  realtimeConnectStartedAt = 0;
+  realtimeRetryCount = 0;
   if (realtimeWs) {
     try {
       realtimeWs.onopen = null; realtimeWs.onmessage = null;
@@ -122,6 +184,8 @@ function connectRealtimeQuotes() {
     url = __coreRT.buildRealtimeWsUrl() + '?token=' + encodeURIComponent(token);
   } catch (e) { realtimeWsState.value = 'offline'; realtimeDegraded.value = true; _emitRealtime(); return; }
   realtimeWsState.value = 'connecting';
+  _emitRealtime();
+  _realtimeArmWatchdog();
   let ws = null;
   try {
     ws = new WebSocket(url);  // 原生 WebSocket API，零构建
@@ -136,6 +200,7 @@ function connectRealtimeQuotes() {
   ws.onopen = function () {
     realtimeWsState.value = 'open';
     realtimeRetryCount = 0;
+    _realtimeClearWatchdog();
     _emitRealtime();
     _realtimeSendSubscribe();
   };
@@ -163,27 +228,40 @@ function connectRealtimeQuotes() {
   };
   ws.onclose = function () {
     realtimeWsState.value = 'offline';
+    _realtimeClearWatchdog();
     _emitRealtime();
-    if (realtimeRetryCount < REALTIME_RETRY_MAX) {
-      realtimeRetryCount++;
-      realtimeRetryTimer = setTimeout(function () {
-        if (realtimeWsState.value !== 'open') connectRealtimeQuotes();
-      }, REALTIME_RETRY_BASE_MS * realtimeRetryCount);
-    } else {
-      realtimeDegraded.value = true;  // 重连上限 → 保持降级占位，不阻塞其它功能
-    }
+    _realtimeScheduleRetry();  // 6.6 (T-6.6.7): 指数退避，超上限保持降级占位
   };
 }
 // 自选变化 → 重发订阅（打开连接后有效）
 watch(watchlist, function () {
   if (realtimeWsState.value === 'open') _realtimeSendSubscribe();
 });
+// 6.6 (T-6.6.5, PRD FR-6.6.2): 认证态驱动连接/断开。
+// 现场根因 = 连接只在「应用启动」时尝试一次，而表单登录/访客登录发生在启动之后，
+// 整页不刷新就永远连不上（价格一直 --）。改为监听认证态变化 + 存储跨标签同步，
+// 覆盖所有登录路径（含未来新增），不再依赖「启动瞬间是否已登录」。
+function _onAuthChanged() {
+  // token 由登录成功先落盘、再派发事件，故此刻读到的就是最新态
+  if (_realtimeToken()) {
+    realtimeRetryCount = 0;
+    connectRealtimeQuotes();
+  } else {
+    disconnectRealtimeQuotes();
+  }
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('qc:auth-changed', function () { setTimeout(_onAuthChanged, 0); });
+  window.addEventListener('storage', function (e) {
+    if (e && (e.key === 'quant_token' || e.key === null)) _onAuthChanged();
+  });
+}
 // 创建即尝试连接（已登录时）：WS 不可用/数据不可达均自动降级
 if (_realtimeToken()) {
   setTimeout(connectRealtimeQuotes, 500);
 }
       return {
-        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, quoteWarningFor, realtimeDegradedText, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes,
+        REALTIME_DEGRADED_TEXT, REALTIME_FALLBACK_TEXT, realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, quoteWarningFor, realtimeDegradedText, realtimeQuoteColor, realtimePriceText, realtimePctText, realtimeRatioText, disconnectRealtimeQuotes, connectRealtimeQuotes, realtimeWsStateText,
       };
     },
   };

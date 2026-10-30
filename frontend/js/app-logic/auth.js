@@ -90,6 +90,17 @@
         }
       }
 
+      // 6.6 (T-6.6.5, PRD FR-6.6.2): 认证态广播 —— 实时行情等订阅方据此连接/断开。
+      // 单一事实源：任何登录路径（表单/访客/未来新增）只要调用本函数即可，
+      // 订阅方无需逐处接线（现场 bug 正是「只在启动时连一次」造成的漏连）。
+      function _notifyAuthChanged(loggedIn, username) {
+        try {
+          window.dispatchEvent(new CustomEvent('qc:auth-changed', {
+            detail: { loggedIn: !!loggedIn, username: username || null },
+          }));
+        } catch (e) { /* 无 CustomEvent 环境静默降级 */ }
+      }
+
       // ===== 登录登出 =====
       async function handleLogin() {
         if (!loginForm.value.username || !loginForm.value.password) {
@@ -108,6 +119,8 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
+            // 6.6 (T-6.6.5): 登录成功后立即广播 —— 实时行情据此连接（此前整页不刷新则永不连接）
+            _notifyAuthChanged(true, data.user && data.user.username);
             // V6.11 (R2-11): 用户记录的 theme 是旧主题名 (如 gold) —— 必须走 applyLegacyTheme,
             // 否则会把已持久化的色相覆盖成该主题的默认色相 (刷新后主题色回退金色)。
             _applyLegacyTheme(data.user.theme || 'gold');
@@ -161,6 +174,8 @@
             currentUser.value = data.user;
             localStorage.setItem('quant_user', JSON.stringify(data.user));
             localStorage.setItem('quant_token', data.data.access_token);
+            // 6.6 (T-6.6.5): 访客登录同样广播（与 handleLogin 一致）
+            _notifyAuthChanged(true, data.user && data.user.username);
             _applyLegacyTheme(data.user.theme || 'gold');
             // V5.21-fix: 访客登录后同样重载组配置 (与 handleLogin 一致)
             if (typeof loadGroupConfig === 'function') await loadGroupConfig().catch(function () {});
@@ -191,6 +206,8 @@
           // V4.2 (FR-4.2.7): 登出双清凭证 + 断开 WS
           localStorage.removeItem('quant_user');
           localStorage.removeItem('quant_token');
+          // 6.6 (T-6.6.5): 登出广播 —— 订阅方统一断开并清空报价/状态
+          _notifyAuthChanged(false, null);
           // V5.21-fix: 清空组配置 — 避免下一个登录用户沿用上一个用户的菜单可见性
           try { if (groupsConfig) groupsConfig.value = {}; } catch (e) {}
           try {

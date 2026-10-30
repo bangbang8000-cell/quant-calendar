@@ -30,7 +30,13 @@ async function loadWatchlist() {
         const data = await res.json();
         if (data.success) watchlist.value = data.stocks || [];
     } catch (e) { console.warn('loadWatchlist failed:', e); }
-    finally { watchlistLoading.value = false; }
+    finally {
+        watchlistLoading.value = false;
+        // 6.6 (T-6.6.2): 渲染完成后自检 —— 有计数无行必须显式降级, 不允许静默空白
+        if (typeof auditWatchlistRender === 'function') {
+            setTimeout(() => { try { auditWatchlistRender(); } catch (e) { /* 守卫不抛错 */ } }, 0);
+        }
+    }
 }
 async function addToWatchlist(code, name) {
     try {

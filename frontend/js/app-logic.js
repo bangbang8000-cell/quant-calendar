@@ -218,6 +218,9 @@
                         preloadWatchlistKline, watchlistEvaluate, batchEvaluateWatchlist, batchEvaluateSelected,
                         searchStockForWatchlist, loadDataRefreshConfig, saveDataRefreshConfig, triggerDataReload,
                         triggerDataPull, dataPullRunning,
+                        // 6.6 (T-6.6.2/T-6.6.3, PRD FR-6.6.1): 自选渲染守卫 + 诊断导出
+                        watchlistRenderGuard, auditWatchlistRender, dismissWatchlistRenderGuard,
+                        exportPageDiagnostics, reloadPage,
                         // 6.4.2 (FR-644): 示例组合一键载入/删除
                         loadExamplePool, removeExamplePool,
                         groupedByDate, aiHistoryByStock, groupedByMonth, aiHistoryStockCount, scoreDistribution,
@@ -226,7 +229,7 @@
                         // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
                         realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
                         disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
-                        realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
+                        realtimePriceText, realtimePctText, realtimeRatioText, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
                         REALTIME_FALLBACK_TEXT } = __watchlistDomain;
                 // ===== v3.17.4 (FR-3.17.4): 回测工作台域 — 逻辑移至 js/backtest.js 模块 =====
                 const __backtestDomain = (window.__quantModules && window.__quantModules.backtest)
@@ -413,6 +416,9 @@
                     // v1.8.0: 自选股
                     watchlist, watchlistCodes, watchlistSearch, watchlistResults, watchlistSearching,
                     watchlistSort, sortedWatchlist, getWatchlistScore, addSearchResult,
+                    // 6.6 (T-6.6.2/T-6.6.3, PRD FR-6.6.1): 自选渲染守卫 + 诊断导出（AC-15/AC-16）
+                    watchlistRenderGuard, auditWatchlistRender, dismissWatchlistRenderGuard,
+                    exportPageDiagnostics, reloadPage,
                     evaluatedCodes, klineLoadedCodes, markKlineLoaded,
                     loadWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist,
                     searchStockForWatchlist, toggleWatchlist, batchEvaluateWatchlist, watchlistEvaluate, showStockKline,
@@ -420,7 +426,7 @@
                     // v3.17.7 实时化 (FR-3.17.7): 自选实时报价
                     realtimeQuotes, realtimeDegraded, realtimeDegradedReason, realtimeWsState, connectRealtimeQuotes,
                     disconnectRealtimeQuotes, quoteWarningFor, realtimeQuoteColor, realtimeDegradedText,
-                    realtimePriceText, realtimePctText, realtimeRatioText, REALTIME_DEGRADED_TEXT,
+                    realtimePriceText, realtimePctText, realtimeRatioText, realtimeWsStateText, REALTIME_DEGRADED_TEXT,
                     REALTIME_FALLBACK_TEXT,
                     toggleSelectHistory, clearSelection, deleteSingleHistory, deleteSelectedHistory, saveAutoEvaluateConfig,
                     editUser, saveUser, deleteUser, loadUsers,

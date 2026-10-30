@@ -25,13 +25,26 @@
       buffer: { type: Number, default: VL.DEFAULT_BUFFER || 8 },
       // 6.3.1 (T-6.3.1.4): 列表可读名称（读屏播报用，如「自选股列表」）
       ariaLabel: { type: String, default: '' },
+      // 6.6 (T-6.6.1, PRD FR-6.6.1): 数据量 ≤ 该阈值时退化为普通渲染（真实 DOM 行参与文档流）。
+      // 0 = 禁用退化（永远虚拟化 = 历史行为，其它页面不受影响）。
+      // 自选页传 50：13 只必须渲染 13 个真实 DOM 行，可计数/可 Ctrl+F/可整页滚动，
+      // 从根上消除「虚拟列表在 slot 内空渲染」这一类故障。
+      plainThreshold: { type: Number, default: 0 },
     },
     // 6.3.1 (T-6.3.1.4) 无障碍：虚拟列表只渲染可视区行，DOM 中行数与数据量不等，
     // 故按 WAI-ARIA 虚拟化列表惯例 —— role=list/listitem + aria-setsize/aria-posinset
     // 声明「总条数 / 当前行序号」，读屏可正确播报「第 37 条，共 320 条」。
     template: `
         <div ref="scrollEl" class="qc-virtual-list" :style="{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }" @scroll.passive="onScroll">
-            <div class="qc-vlist-spacer" role="list" :aria-label="ariaLabel || null" :style="{ height: totalHeight + 'px', position: 'relative' }">
+            <!-- 6.6 (T-6.6.1): 小数据量普通渲染 —— 行参与文档流, DOM 行数 == 数据条数 -->
+            <div v-if="plainMode" class="qc-vlist-plain" role="list" :aria-label="ariaLabel || null">
+                <div v-for="(item, i) in items" :key="keyOf(item, i)"
+                     class="qc-vrow qc-vrow-plain" role="listitem"
+                     :aria-setsize="items.length" :aria-posinset="i + 1">
+                    <slot :item="item" :index="i"></slot>
+                </div>
+            </div>
+            <div v-else class="qc-vlist-spacer" role="list" :aria-label="ariaLabel || null" :style="{ height: totalHeight + 'px', position: 'relative' }">
                 <div v-for="(item, i) in visibleItems" :key="keyOf(item, startIndex + i)"
                      class="qc-vrow" role="listitem"
                      :aria-setsize="items.length" :aria-posinset="startIndex + i + 1"
@@ -61,6 +74,22 @@
       const endIndex = computed(() => range.value.endIndex);
       const visibleItems = computed(() => props.items.slice(startIndex.value, endIndex.value));
 
+      // 6.6 (T-6.6.1): 是否退化为普通渲染（阈值 0/负数 = 永远虚拟化）
+      // 判定委托 watchlist-render-core.js 纯函数，Node 可单测（TC-6.6.1.3）
+      const plainMode = computed(() => {
+        const th = props.plainThreshold;
+        if (!(th > 0)) return false;
+        const core = (typeof window !== 'undefined')
+          ? ((window.__quantModules && window.__quantModules.watchlistRenderCore)
+             || window.QuantWatchlistRenderCore || null)
+          : null;
+        if (core && typeof core.shouldRenderPlain === 'function') {
+          return core.shouldRenderPlain(props.items.length, th);
+        }
+        const n = props.items.length;
+        return n > 0 && n <= th;
+      });
+
       function onScroll() {
         if (scrollEl.value) scrollTop.value = scrollEl.value.scrollTop;
       }
@@ -83,7 +112,7 @@
         if (ro) ro.disconnect();
       });
 
-      return { scrollEl, totalHeight, startIndex, endIndex, visibleItems, onScroll, keyOf };
+      return { scrollEl, totalHeight, startIndex, endIndex, visibleItems, onScroll, keyOf, plainMode };
     },
   };
 })();
