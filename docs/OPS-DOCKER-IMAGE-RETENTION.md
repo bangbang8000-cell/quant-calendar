@@ -76,6 +76,41 @@ gh workflow run "Docker Build & Publish" --ref v6.7.1 -f mode=build
 > 防呆：若在**分支**上 dispatch build，构建会在 "校验构建来源必须是 tag" 步直接失败并给出上面的命令
 > —— 因为 semver 标签只能从 tag ref 推导，分支构建只会产出一个空的标签集。
 
+### 2.2 `latest` 只由「push tag」推进（第二个坑）
+
+`docker/metadata-action` 原本用 `type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}` 决定是否打 `latest`。
+**这个判断在 `workflow_dispatch --ref <旧tag>` 时同样成立**（dispatch 到 tag ref，`ref_type` 也是 `tag`），于是：
+
+| 时间（2026-11-03） | 动作 | `latest` 指向 |
+|---|---|---|
+| 10:45 | 重建 v6.6.0 | 6.6.0 ✅ |
+| 10:48 | 重建 v6.4.0 | 6.4.0 ❌ |
+| 10:48 | 重建 v5.7.1 | 5.7.1 ❌ |
+| 10:49 | 重建 v5.6.1 | **5.6.1** ❌（拉 latest 会装到旧代码） |
+
+修复：把条件改成 `event_name == 'push' && ref_type == 'tag'` —— 只有正常发版（tag push）推进 `latest`，
+手动补镜像/重建历史版本**不再影响** `latest`。
+
+> 排查口诀：**看到 `latest` 的 digest 与当前版本不一致，先查最近有没有跑过历史版本的重建。**
+
+### 2.3 校验 `latest` 是否指向当前版本
+
+```bash
+GT=$(gh auth token)
+T=$(curl -s -u "bangbang8000-cell:$GT" \
+  "https://ghcr.io/token?scope=repository:bangbang8000-cell/quant-calendar:pull&service=ghcr.io" \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["token"])')
+for t in latest 6.6.0 6.6 v6.6.0; do
+  echo -n "$t -> "
+  curl -s -o /dev/null -D - -H "Authorization: Bearer $T" \
+    -H "Accept: application/vnd.oci.image.index.v1+json" \
+    "https://ghcr.io/v2/bangbang8000-cell/quant-calendar/manifests/$t" \
+    | grep -i docker-content-digest | tr -d '\r' | awk '{print $2}'
+done
+```
+
+四个标签 digest **必须完全一致**；不一致即说明 `latest` 被别的构建推进过。
+
 ---
 
 ## 3. 手动清理 Runbook
