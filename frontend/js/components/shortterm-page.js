@@ -391,12 +391,12 @@
         const sel = ztBoardFilter.value;
         const chart = charts.renderSimpleChartTo('shorttermLadderChart', function () {
           const boards = Object.keys(tiers).sort(function (a, b) { return Number(a) - Number(b); });
-          // v6.9.0 (B3.5): 盘中情绪与事件流逻辑域（拆分以保持单文件 ≤700 行）
+          // v6.9.0: 盘中情绪/事件流/行业强度/脉冲逻辑域（拆分以保持 ≤700 行）
       const _sentiment = window.__quantModules.shorttermPage.sentiment.create({
-        ref, cachedGet,
+        ref, computed, cachedGet, fmtAmount, fmtPct,
       });
       const {
-        pulse, pulseLoading, pulseError, pulseReason, loadPulse,
+        pulse, pulseLoading, pulseError, pulseReason, pulseGroups, loadPulse,
         industry, industryLoading, industryError, industryReason, industryStale,
         loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,

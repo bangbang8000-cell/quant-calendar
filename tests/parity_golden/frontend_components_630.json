@@ -1688,6 +1688,7 @@
       "intraday-slot",
       "intraday-timeline",
       "is-institution",
+      "it.cls",
       "mb-2",
       "mb-4",
       "mr-4",
@@ -1705,6 +1706,12 @@
       "onboarding-progress-track",
       "onboarding-step-badge",
       "onboarding-title",
+      "pulse-card",
+      "pulse-col",
+      "pulse-col-title",
+      "pulse-grid",
+      "pulse-kv",
+      "pulse-token",
       "qc-page-tools",
       "riseFall((s.row.rel",
       "riseFall(b.auction_pct)",
@@ -1885,8 +1892,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 42115,
-    "template_sha": "80c249e8360cd400"
+    "template_len": 43747,
+    "template_sha": "0c2f7bf436a0e5e3"
   },
   "Sidebar": {
     "classes": [

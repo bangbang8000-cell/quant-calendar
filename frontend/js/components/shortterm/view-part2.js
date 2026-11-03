@@ -173,51 +173,28 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
 
-                    <!-- v7.2.0: 情绪脉冲屏（早封率/封单留存/原因分布 + 资金拓扑 + 热榜共振） -->
+                    <!-- v7.2.0: 情绪脉冲屏（四组指标由 pulseGroups 计算, 模板保持精简） -->
                     <div v-if="currentSubPage === 'overview'" class="card pulse-card">
                         <div class="qc-page-tools">
                             <div class="flex-c-gap-12">
                                 <span class="card-title">情绪脉冲</span>
-                                <span class="text-xs-tertiary" v-if="pulse && pulse.sentiment">{{ pulse.sentiment.date }}<template v-if="pulse.sentiment.include_st !== undefined"> · 口径 {{ pulse.sentiment.include_st ? '含 ST' : '不含 ST' }}</template></span>
+                                <span class="text-xs-tertiary" v-if="pulse && pulse.sentiment">{{ pulse.sentiment.date }} · 口径 {{ (pulse.sentiment.include_st ? '含 ST' : '不含 ST') }}</span>
                             </div>
                             <div class="flex-c-gap-12">
                                 <el-button size="small" aria-label="刷新情绪脉冲" @click="loadPulse(true)"><qc-icon name="refresh" :size="14" /></el-button>
                             </div>
                         </div>
                         <qc-state-panel v-if="pulseLoading" type="loading"></qc-state-panel>
-                        <qc-state-panel v-else-if="pulseError" type="empty"
-                            title="该数据未启用" :desc="pulseReason"
-                            action-text="重试" @action="loadPulse(true)"></qc-state-panel>
+                        <qc-state-panel v-else-if="pulseError" type="empty" title="该数据未启用"
+                            :desc="pulseReason" action-text="重试" @action="loadPulse(true)"></qc-state-panel>
                         <div v-else class="pulse-grid">
-                            <div class="pulse-col">
-                                <div class="pulse-col-title">涨停结构</div>
-                                <div class="pulse-kv"><span>涨停 / 连板</span><b class="num-tabular">{{ (pulse.sentiment && pulse.sentiment.counts && pulse.sentiment.counts.limit_up_count) || '—' }} / {{ (pulse.sentiment && pulse.sentiment.counts && pulse.sentiment.counts.consec_count) || '—' }}</b></div>
-                                <div class="pulse-kv"><span>最高板</span><b class="num-tabular">{{ (pulse.sentiment && pulse.sentiment.counts && pulse.sentiment.counts.max_boards) || '—' }}</b></div>
-                                <div class="pulse-kv"><span>早封率</span><b class="num-tabular">{{ fmtPct(pulse.sentiment && pulse.sentiment.early_seal_rate != null ? pulse.sentiment.early_seal_rate * 100 : null) }}</b></div>
-                                <div class="pulse-kv"><span>封单留存</span><b class="num-tabular">{{ pulse.sentiment && pulse.sentiment.seal_retention != null ? pulse.sentiment.seal_retention : '—' }}</b></div>
-                            </div>
-                            <div class="pulse-col">
-                                <div class="pulse-col-title">涨停原因 Top5</div>
-                                <div v-if="!pulse.sentiment || !(pulse.sentiment.reasons || []).length" class="text-xs-tertiary">暂无原因数据</div>
-                                <div v-for="r in ((pulse.sentiment && pulse.sentiment.reasons) || []).slice(0, 5)" :key="r.token" class="pulse-kv">
-                                    <span class="pulse-token">{{ r.token }}</span><b class="num-tabular">{{ r.count }}</b>
+                            <div v-for="g in pulseGroups" :key="g.title" class="pulse-col">
+                                <div class="pulse-col-title">{{ g.title }}</div>
+                                <div v-for="it in g.items" :key="it.k" class="pulse-kv">
+                                    <span class="pulse-token">{{ it.k }}</span>
+                                    <b class="num-tabular" :class="it.cls">{{ it.v }}</b>
                                 </div>
-                            </div>
-                            <div class="pulse-col">
-                                <div class="pulse-col-title">龙虎榜概念（近3日累计）</div>
-                                <div v-if="!pulse.topology || !(pulse.topology.concepts || []).length" class="text-xs-tertiary">暂无拓扑数据</div>
-                                <div v-for="c in ((pulse.topology && pulse.topology.concepts) || []).slice(0, 5)" :key="c.concept" class="pulse-kv">
-                                    <span class="pulse-token">{{ c.concept }}</span>
-                                    <b class="num-tabular" :class="riseFall(c.cum_net)">{{ fmtAmount(c.cum_net) }}</b>
-                                </div>
-                                <div class="text-xs-tertiary" v-if="pulse.topology">守恒校验：{{ pulse.topology.conservation_ok ? '通过' : '未通过' }}</div>
-                            </div>
-                            <div class="pulse-col">
-                                <div class="pulse-col-title">热榜共振（5日）</div>
-                                <div class="pulse-kv"><span>秩相关</span><b class="num-tabular">{{ pulse.resonance && pulse.resonance.spearman != null ? pulse.resonance.spearman : '—' }}</b></div>
-                                <div class="pulse-kv"><span>判定</span><b>{{ (pulse.resonance && pulse.resonance.verdict_text) || '—' }}</b></div>
-                                <div class="pulse-kv"><span>上涨占比</span><b class="num-tabular">{{ fmtPct(pulse.resonance && pulse.resonance.up_ratio != null ? pulse.resonance.up_ratio * 100 : null) }}</b></div>
-                                <div class="text-xs-tertiary">同期同向不代表因果，不能当预测信号</div>
+                                <div class="text-xs-tertiary" v-if="g.hint">{{ g.hint }}</div>
                             </div>
                         </div>
                     </div>
@@ -241,15 +218,9 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         <div v-else class="table-container">
                             <el-table :data="(industry && industry.rows) || []" size="small" max-height="360">
                                 <el-table-column prop="name" label="行业" min-width="120"></el-table-column>
-                                <el-table-column label="相对强度(20日)" width="140" align="right">
-                                    <template #default="s"><span class="num-tabular" :class="riseFall((s.row.rel || {}).rel_20)">{{ fmtPct((s.row.rel || {}).rel_20) }}</span></template>
-                                </el-table-column>
-                                <el-table-column label="加速度" width="110" align="right">
-                                    <template #default="s">{{ fmtPct(s.row.acceleration) }}</template>
-                                </el-table-column>
-                                <el-table-column label="成交额脉冲" width="110" align="right">
-                                    <template #default="s">{{ s.row.volume_pulse == null ? '—' : s.row.volume_pulse }}</template>
-                                </el-table-column>
+                                <el-table-column label="相对强度(20日)" width="140" align="right"><template #default="s"><span class="num-tabular" :class="riseFall((s.row.rel || {}).rel_20)">{{ fmtPct((s.row.rel || {}).rel_20) }}</span></template></el-table-column>
+                                <el-table-column label="加速度" width="110" align="right"><template #default="s">{{ fmtPct(s.row.acceleration) }}</template></el-table-column>
+                                <el-table-column label="成交额脉冲" width="110" align="right"><template #default="s">{{ s.row.volume_pulse == null ? '—' : s.row.volume_pulse }}</template></el-table-column>
                                 <el-table-column label="排名" width="80" align="right"><template #default="s">{{ s.row.rank_20 == null ? '—' : s.row.rank_20 }}</template></el-table-column>
                                 <el-table-column label="排名变化" width="100" align="right"><template #default="s">{{ s.row.rank_change == null ? '—' : s.row.rank_change }}</template></el-table-column>
                             </el-table>
