@@ -187,3 +187,23 @@ def test_missing_key_marks_not_configured():
     client = FuyaoClient(api_key='', transport=lambda *a, **k: (200, _envelope(0, 'success', {})))
     r = client.get('prices.snapshot', '/api/x')
     assert r['ok'] is False and r['reason'] == 'not_configured'
+
+
+def test_settings_declares_both_env_names():
+    """D25: pydantic-settings 默认 extra=forbid，.env 新增的 Fuyao Key 必须在 Settings 里声明，
+    否则整个应用启动即失败（本轮实测踩到）。"""
+    from config import Settings
+
+    fields = Settings.model_fields
+    assert 'FUYAO_API_KEY' in fields
+    assert 'HITHINK_FINANCE_API_KEY' in fields
+    s = Settings(FUYAO_API_KEY='k1')
+    assert s.FUYAO_API_KEY == 'k1'
+
+
+def test_resolve_api_key_prefers_ours(monkeypatch):
+    from data_sources._fuyao import resolve_api_key
+
+    assert resolve_api_key({'FUYAO_API_KEY': 'a', 'HITHINK_FINANCE_API_KEY': 'b'}) == 'a'
+    assert resolve_api_key({'HITHINK_FINANCE_API_KEY': 'b'}) == 'b'
+    assert resolve_api_key({}) == ''

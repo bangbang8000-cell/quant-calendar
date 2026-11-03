@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     SXSC_TUSHARE_ENABLED: bool = True
     AKSHARE_ENABLED: bool = True
 
+    # 同花顺 Fuyao 数据源（v6.7.0 / B1.2；D25：兼容官方名）
+    # 注意：pydantic-settings 默认 extra=forbid，.env 里出现未声明变量会直接启动失败，
+    # 故此处显式声明；解析顺序见 data_sources/_fuyao.py::resolve_api_key
+    FUYAO_API_KEY: str = ""
+    HITHINK_FINANCE_API_KEY: str = ""
+
     # Redis 配置
     REDIS_URL: str = "redis://localhost:6379/0"
 
