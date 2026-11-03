@@ -966,3 +966,15 @@
   text-decoration: none;
 }
 .industry-export-link:hover { text-decoration: underline; }
+
+/* ==================== v7.2.0 (B6.5): 情绪脉冲屏 ==================== */
+.pulse-card { margin-top: var(--sp-4); }
+.pulse-card .card-title { font-size: var(--font-md); font-weight: var(--font-medium); }
+.pulse-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-4); }
+.pulse-col { min-width: 0; padding: var(--sp-3); border: 1px solid var(--border-color); border-radius: var(--r-md); background: var(--surface); }
+.pulse-col-title { font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--sp-2); }
+.pulse-kv { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-1) 0; font-size: var(--font-sm); border-bottom: 1px solid var(--border-color); }
+.pulse-kv:last-child { border-bottom: none; }
+.pulse-token { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1100px) { .pulse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .pulse-grid { grid-template-columns: 1fr; } }

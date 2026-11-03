@@ -396,6 +396,7 @@
         ref, cachedGet,
       });
       const {
+        pulse, pulseLoading, pulseError, pulseReason, loadPulse,
         industry, industryLoading, industryError, industryReason, industryStale,
         loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
@@ -611,7 +612,7 @@
         const sp = currentSubPage.value;
         if (sp === 'ztpool') loadPools();
         else if (sp === 'lhb') loadLhb();
-        else if (sp === 'overview') { loadOverview(); loadReview(); loadSentiment(); loadEventsFlash(); loadIndustryStrength(); }
+        else if (sp === 'overview') { loadOverview(); loadReview(); loadSentiment(); loadEventsFlash(); loadIndustryStrength(); loadPulse(); }
         else if (sp === 'sector') loadSectorFlow();
         else if (sp === 'intraday') loadIntraday();
       }
@@ -634,7 +635,7 @@
         const sp = currentSubPage.value;
         if (sp === 'ztpool') loadPools(true);
         else if (sp === 'lhb') loadLhb(true);
-        else if (sp === 'overview') { loadOverview(true); loadReview(true); loadSentiment(true); loadEventsFlash(true); loadIndustryStrength(true); }
+        else if (sp === 'overview') { loadOverview(true); loadReview(true); loadSentiment(true); loadEventsFlash(true); loadIndustryStrength(true); loadPulse(true); }
         else if (sp === 'sector') loadSectorFlow(true);
         else if (sp === 'intraday') loadIntraday(true);
       }

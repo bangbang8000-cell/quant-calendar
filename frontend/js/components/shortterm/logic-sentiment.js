@@ -24,6 +24,11 @@
       const industryError = ref(false);
       const industryReason = ref('');
       const industryStale = ref(false);
+      // v7.2.0 (B6.5): 情绪脉冲屏（早封率/封单留存/原因分布 + 资金拓扑 + 热榜共振）
+      const pulse = ref(null);
+      const pulseLoading = ref(false);
+      const pulseError = ref(false);
+      const pulseReason = ref('');
 
       // 盘中情绪聚合（竞价基准 + 热榜 + 异动解读）
       async function loadSentiment(force) {
@@ -50,6 +55,33 @@
           sentimentReason.value = '数据加载失败，请检查服务后重试';
         } finally {
           sentimentLoading.value = false;
+        }
+      }
+
+      // 情绪脉冲屏（三个端点并行；任一失败不拖垮整卡）
+      async function loadPulse(force) {
+        pulseLoading.value = true;
+        pulseError.value = false;
+        try {
+          const [sp, tp, ar] = await Promise.all([
+            cachedGet('/api/research/sentiment-pulse', force).catch(function () { return null; }),
+            cachedGet('/api/research/lhb-topology?days=3', force).catch(function () { return null; }),
+            cachedGet('/api/research/attention-resonance?window=5', force).catch(function () { return null; }),
+          ]);
+          const anyOk = (sp && sp.available) || (tp && tp.available) || (ar && ar.available);
+          if (!anyOk) {
+            pulse.value = null;
+            pulseError.value = true;
+            pulseReason.value = (sp && sp.reason) || (tp && tp.reason) || (ar && ar.reason) || '该数据未启用';
+          } else {
+            pulse.value = { sentiment: sp, topology: tp, resonance: ar };
+          }
+        } catch (e) {
+          pulse.value = null;
+          pulseError.value = true;
+          pulseReason.value = '加载失败，请检查服务后重试';
+        } finally {
+          pulseLoading.value = false;
         }
       }
 
@@ -101,6 +133,7 @@
       }
 
       return {
+        pulse, pulseLoading, pulseError, pulseReason, loadPulse,
         industry, industryLoading, industryError, industryReason, industryStale,
         loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
