@@ -10,6 +10,7 @@ import logging
 from datetime import datetime  # noqa: F401  # 原模块公开名(取数段已移出), 保持兼容
 
 import data_sources as _ds_mod  # 调用期读包级 _ds_mod.DATASOURCE_CONFIG_FILE
+import data_tier  # v6.7.0 (B1.2/B1.7): T1 核心链路禁止 fuyao
 from ._constants import *  # noqa: F401,F403
 from ._health import (record_call, _is_rate_limited, get_route_order)
 from ._mapping import *  # noqa: F401,F403
@@ -111,7 +112,9 @@ class DataSourceManager(DataSourceFetchMixin):
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"加载数据源配置失败: {e}")
-        return DEFAULT_CONFIG
+        # v6.7.0 (B1.2): 必须深拷贝——此前直接返回模块级 DEFAULT_CONFIG，
+        # 任何对 self.config 的运行时修改（如三级开关热改）都会污染全局默认值。
+        return json.loads(json.dumps(DEFAULT_CONFIG))
 
     def _save_config(self):
         os.makedirs(os.path.dirname(_ds_mod.DATASOURCE_CONFIG_FILE), exist_ok=True)
@@ -172,6 +175,25 @@ class DataSourceManager(DataSourceFetchMixin):
             self._clients['akshare'] = True  # 占位，使用时 import
             logger.info("✅ akshare 就绪（按需导入）")
 
+        # fuyao / 同花顺（v6.7.0 B1.2）：Key 只从环境变量读（D25 兼容两种名字），不落 config.json
+        fy = sources.get('fuyao', {})
+        if fy.get('enabled', True):
+            try:
+                from ._fuyao import FuyaoClient, resolve_api_key
+                key = resolve_api_key()
+                if key:
+                    self._clients['fuyao'] = FuyaoClient(
+                        api_key=key,
+                        timeout=(5, int(fy.get('timeout', 5) or 5)),
+                    )
+                    logger.info("✅ fuyao 初始化成功（T2 周边优先，T1 核心禁入）")
+                else:
+                    # 未配 Key 不报错、不告警：等同"未启用"（PRD FR-6.7.7 空 Key 语义）
+                    logger.info("ℹ️ fuyao 未配置 API Key，按未启用处理")
+            except Exception as e:
+                logger.warning(f"⚠️ fuyao 初始化失败: {e}")
+                self._errors['fuyao'] = str(e)
+
     def _get_source_config(self, source_name):
         return self.config.get('sources', {}).get(source_name, {})
     def _source_client_ready(self, source_name):
@@ -181,9 +203,39 @@ class DataSourceManager(DataSourceFetchMixin):
         (如 dev 未配置 SXSC_TUSHARE_TOKEN) → False, 遍历跳过且不记失败,
         避免假失败触发冷却 + 污染健康统计。akshare 按需 import → True。
         """
-        if source_name in ('sxsc_tushare', 'tushare'):
+        if source_name in ('sxsc_tushare', 'tushare', 'fuyao'):
             return source_name in self._clients and self._clients.get(source_name) is not None
         return True
+
+    # ==================== v6.7.0 (B1.2/B1.7): Fuyao 开关与 T1 过滤 ====================
+
+    def fuyao_client(self):
+        """返回 FuyaoClient 或 None（未配置 Key / 已禁用）。"""
+        return self._clients.get('fuyao')
+
+    def fuyao_capability_enabled(self, capability):
+        """三级开关 L2：能力域是否启用（热读配置，无需重启）。"""
+        if not self._source_client_ready('fuyao'):
+            return False
+        cfg = self._get_source_config('fuyao')
+        if not cfg.get('enabled', True):
+            return False
+        caps = cfg.get('capabilities') or {}
+        return bool(caps.get(capability, True))
+
+    def fuyao_capabilities_snapshot(self):
+        """供 /api/market/datasource/status 暴露的能力开关矩阵。"""
+        cfg = self._get_source_config('fuyao')
+        caps = cfg.get('capabilities') or {}
+        ready = self._source_client_ready('fuyao')
+        return {
+            name: bool(caps.get(name, True)) and ready and bool(cfg.get('enabled', True))
+            for name in ('prices', 'valuation', 'special', 'news', 'concept', 'dwh')
+        }
+
+    def t1_route(self, route=None):
+        """T1 核心路由：剔除 data_tier.T1_FORBIDDEN（如 fuyao）。"""
+        return data_tier.filter_t1_sources(list(route) if route is not None else SOURCE_ORDER)
 
     def get_config(self):
         """获取数据源配置（不含 token）"""
@@ -266,7 +318,7 @@ class DataSourceManager(DataSourceFetchMixin):
 
     def get_index_daily(self, ts_code, trade_date=None):
         """获取指数日线数据（带 fallback）"""
-        for src_name in SOURCE_ORDER:
+        for src_name in self.t1_route():  # v6.7.0 (B1.7): 核心链路剔除 fuyao
             if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
                 continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)
@@ -318,9 +370,13 @@ class DataSourceManager(DataSourceFetchMixin):
             # v3.22: preferred 优先 — 高并发场景(异动扫描)先走 tushare 绕开 sxsc 20次/秒限流
             # V5.4.1: 分钟 period 用 minute.priority (券商版优先, 可配置); 非分钟沿用既有路由
             if is_minute:
-                route = self._minute_priority()
+                route = self.t1_route(self._minute_priority())
             else:
-                route = [preferred] + [s for s in get_route_order() if s != preferred] if preferred else get_route_order()
+                if preferred:
+                    data_tier.assert_preferred_allowed(preferred)
+                route = self.t1_route(
+                    [preferred] + [s for s in get_route_order() if s != preferred]
+                    if preferred else get_route_order())
 
             for src_name in route:
                 if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
@@ -375,7 +431,7 @@ class DataSourceManager(DataSourceFetchMixin):
 
     def get_daily_basic(self, ts_code, limit=5):
         """获取基本面数据（带 fallback）"""
-        for src_name in get_route_order():
+        for src_name in self.t1_route(get_route_order()):  # v6.7.0 (B1.7): 剔除 fuyao
             if not self._source_client_ready(src_name):  # V5.3.13: 客户端缺失跳过, 不记失败
                 continue  # V5.3.13: 客户端缺失跳过, 不记失败
             src_cfg = self._get_source_config(src_name)

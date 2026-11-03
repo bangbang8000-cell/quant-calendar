@@ -50,6 +50,16 @@ DEFAULT_CONFIG = {
         },
         "akshare": {
             "enabled": True
+        },
+        # v6.7.0 (B1.2): 同花顺 Fuyao —— 仅 T2 周边功能优先；T1 核心链路禁止参与 (见 data_tier)
+        "fuyao": {
+            "enabled": True,
+            "timeout": 5,
+            "capabilities": {
+                "prices": True, "valuation": True, "special": True,
+                "news": True, "concept": True, "dwh": True,
+            },
+            "quota": {"daily_limit": 3000},
         }
     },
     # V5.4.1 (R1 / FR-5.4.8 可用化): 分钟级 K线 配置
@@ -63,7 +73,11 @@ DEFAULT_CONFIG = {
     }
 }
 
-SOURCE_ORDER = ['sxsc_tushare', 'tushare', 'akshare']
+# v6.7.0 (B1.2): fuyao 追加**末位**——核心链路另有 data_tier 硬断言，顺序只是第一道防线
+SOURCE_ORDER = ['sxsc_tushare', 'tushare', 'akshare', 'fuyao']
+
+#: Fuyao 能力域（三级开关 L2 的可关闭单元，PRD FR-6.7.7）
+FUYAO_CAPABILITIES = ('prices', 'valuation', 'special', 'news', 'concept', 'dwh')
 
 # akshare 列名映射
 AKSHARE_INDEX_COLUMN_MAP = {
