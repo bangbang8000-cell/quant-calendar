@@ -72,11 +72,15 @@ jobs:
   # ---------------------------------------------------------------------------
   # 历史镜像版本留存（运维精简）
   #
-  # 背景：每次 push tag 会为同一 manifest 打 3~4 个标签（如 6.6.0 / 6.6 / v6.6.0 / latest），
-  #       在 GHCR 上表现为「一个版本挂多个标签」。不清理则版本数无限增长（实测 2026-11-03：
-  #       29 个发行版本 / 69 个标签）。
-  # 策略：只保留最近 KEEP_VERSIONS(5) 个版本；更早的整版删除（连带其浮动别名 5.3、v5.3.10 等）。
-  #       latest 永远挂在新版本上，故 min-versions-to-keep 天然保护它。
+  # ⚠️ 为什么不用 actions/delete-package-versions：
+  #    该 action 的 min-versions-to-keep 计数单位是「GHCR 包版本条数」，而 GHCR 对同一个
+  #    manifest 的多个标签（6.6.0 / 6.6 / v6.6.0 / latest）会登记成**多条版本**。
+  #    实测 2026-11-03：设 keep=5 时代码删掉了 97 条版本，连 latest 与 6.4.0/5.7.1/5.6.1
+  #    三个发行版一起没了 —— 即"保留 5 条版本"≠"保留 5 个发行版"。
+  #
+  # ✅ 本 job 的口径：**按发行版本号（semver）分组**，只保留最近 KEEP_VERSIONS 个发行版，
+  #    删掉属于更早发行版的所有版本记录（含其浮动别名 5.3 / v5.3.10 等）。
+  #    额外硬保护：带 latest 标签的版本永不删除。
   # 手动清理：Actions → Docker Build & Publish → Run workflow → mode=prune
   # ---------------------------------------------------------------------------
   prune-versions:
@@ -88,20 +92,68 @@ jobs:
       packages: write
 
     steps:
-      - name: 保留最新 ${{ env.KEEP_VERSIONS }} 个镜像版本并清理更早版本
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: quant-calendar
-          package-type: container
-          min-versions-to-keep: ${{ env.KEEP_VERSIONS }}
-          delete-only-untagged-versions: 'false'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 清理结果摘要
+      - name: 按发行版本号计算保留集并清理更早版本
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PKG: quant-calendar
         run: |
-          {
-            echo "### 镜像版本留存"
-            echo "- 保留最近 **${KEEP_VERSIONS}** 个版本（含 latest 所在版本）"
-            echo "- 更早版本及其浮动别名标签已删除"
-            echo "- 如需回滚到已删除版本：重新打该版本 tag 触发构建即可重建"
-          } >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          gh api "/users/${OWNER}/packages/container/${PKG}/versions?per_page=100" > /tmp/versions.json
+          python3 - <<'PY'
+          import json, re, sys
+          keep_n = int(__import__("os").environ.get("KEEP_VERSIONS", "5"))
+          data = json.load(open("/tmp/versions.json", encoding="utf-8"))
+          SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+
+          def release_of(tags):
+              cands = [t for t in tags if SEMVER.match(t)]
+              if not cands:
+                  return None
+              pref = [t for t in cands if t.startswith("v")]
+              return (pref or cands)[0]
+
+          rows = []
+          for v in data:
+              tags = (v.get("metadata") or {}).get("container", {}).get("tags") or []
+              rel = release_of(tags)
+              rows.append({
+                  "id": v["id"], "tags": tags, "release": rel,
+                  "key": tuple(int(x) for x in SEMVER.match(rel).groups()) if rel else None,
+                  "latest": "latest" in tags,
+              })
+
+          released = sorted([r for r in rows if r["key"]], key=lambda r: r["key"], reverse=True)
+          keep_releases = released[:keep_n]
+          kept_names = {r["release"] for r in keep_releases}
+          drop = [r for r in rows
+                  if r["key"] and r["release"] not in kept_names
+                  and not r["latest"]]
+          unknown = [r for r in rows if not r["key"] and not r["latest"]]
+
+          print(f"包内版本记录 {len(rows)} 条，发行版 {len(released)} 个")
+          print("保留发行版: " + ", ".join(r["release"] for r in keep_releases))
+          print(f"待删除版本记录 {len(drop)} 条")
+          for r in drop:
+              print(f"  ✘ {r['release']:<12} tags={','.join(r['tags'])}")
+          if unknown:
+              print("未知/无发行号版本（保留不动）: " + ", ".join(",".join(r["tags"]) or f"id={r['id']}" for r in unknown))
+
+          with open("/tmp/drop_ids.txt", "w") as f:
+              for r in drop:
+                  f.write(str(r["id"]) + "\n")
+          with open("/tmp/summary.md", "w") as f:
+              f.write("### 镜像版本留存\n")
+              f.write(f"- 保留 {len(keep_releases)} 个发行版: " + ", ".join(r["release"] for r in keep_releases) + "\n")
+              f.write(f"- 删除 {len(drop)} 条更早版本记录（含浮动别名）\n")
+              f.write("- latest 所在版本受硬保护，永不删除\n")
+          PY
+          if [ -s /tmp/drop_ids.txt ]; then
+            while read -r vid; do
+              [ -z "$vid" ] && continue
+              gh api --method DELETE "/users/${OWNER}/packages/container/${PKG}/versions/${vid}" >/dev/null \
+                && echo "已删除 version id=${vid}" \
+                || echo "::warning::删除失败 id=${vid}"
+            done < /tmp/drop_ids.txt
+          fi
+          cat /tmp/summary.md >> "$GITHUB_STEP_SUMMARY"
