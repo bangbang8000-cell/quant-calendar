@@ -165,6 +165,49 @@ def _future_return_matrix(close, window: int):
     return fwd
 
 
+def load_panel_from_dwh(universe, start, end, fields=None):
+    """DWH 优先取面板（v7.0.0 / B4.4）。
+
+    命中条件：`dwh.enabled=true` 且本地库可用且有数据；否则返回 None，
+    调用方回落逐票 `RealDataPortal`（**DWH 永不是唯一路径**，PRD FR-7.0.3）。
+    """
+    try:
+        from dwh import get_backend
+    except Exception as e:  # noqa: BLE001 — 依赖缺失即回落
+        logger.info('因子 IC: DWH 不可用(%s), 回落逐票', e)
+        return None
+    try:
+        backend = get_backend()
+        if not getattr(backend, 'enabled', True):
+            return None
+        st = backend.status()
+        if not st.get('available') or not st.get('rows'):
+            return None
+        # 未来函数守卫：库内最新日期不得晚于窗口右界
+        try:
+            import pit
+            if not pit.available_through(st.get('latest_date'), end):
+                logger.info('因子 IC: DWH 最新日期 %s 晚于窗口 %s, 回落逐票',
+                            st.get('latest_date'), end)
+                return None
+        except Exception:  # noqa: BLE001
+            pass
+        sql = ('SELECT thscode, CAST(date AS VARCHAR) AS trade_date, close '
+               'FROM v_daily WHERE date >= CAST(? AS DATE) AND date <= CAST(? AS DATE)')
+        res = backend.query(sql, [start, end])
+        if not res.get('rows'):
+            return None
+        universe_set = set(universe or [])
+        panel = [{'ts_code': r[0], 'trade_date': r[1], 'close': r[2]}
+                 for r in res['rows'] if not universe_set or r[0] in universe_set]
+        if not panel:
+            return None
+        return {'source': 'dwh', 'rows': panel, 'latest': st.get('latest_date')}
+    except Exception as e:  # noqa: BLE001 — 任何异常都回落逐票, 不影响主流程
+        logger.info('因子 IC: DWH 取数失败(%s), 回落逐票', e)
+        return None
+
+
 def get_factor_ic_report() -> Dict:
     """获取因子 IC 报告 (FR-3.18.7 / V4.7.4 落地真实数据)。
 
