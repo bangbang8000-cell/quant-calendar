@@ -128,3 +128,9 @@ frontend/api-docs.html
 
 # 6.6: 数据订正前的本地备份（含 app.db 等运行时数据, 不入库）
 backups/
+
+# 2026-11 用户决定: 同花顺 Fuyao 对接的评估/规划/PRD 仅本地留存, 不同步 GitHub
+# (内容仍在 docs/ 下可直接阅读; 此处只加忽略规则, 避免 git add -A 误提交)
+docs/EVAL-FUYAO-DATA-PLATFORM-v6.6.md
+docs/PRD-FUYAO-v6.7-v7.0.md
+docs/ROADMAP-FUYAO-v6.7-v7.0.md
