@@ -4380,6 +4380,11 @@ var Qd=(a,e)=>()=>(e||a((e={exports:{}}).exports,e),e.exports);import{aV as Yd,L
                                 <el-date-picker v-model="shortDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选择交易日" @change="loadPools"></el-date-picker>
                                 <el-button size="small" aria-label="刷新数据" @click="refreshCurrent"><qc-icon name="refresh" :size="14" /></el-button>
                                 <span class="text-xs-tertiary" v-if="pools && pools.settled === false"><qc-icon name="alert-triangle" :size="14" /> 未收盘, 数据可能不完整</span>
+                                <!-- v6.8.0 (D4): 涨停口径角标 —— 家数与徽标同源(均读 pools.meta.zt) -->
+                                <span class="text-xs-tertiary" v-if="pools && pools.meta && pools.meta.zt && pools.meta.zt.include_st !== undefined">
+                                    口径 {{ pools.meta.zt.include_st ? '含 ST' : '不含 ST' }}
+                                    <template v-if="pools.meta.zt.source">· 来源 {{ pools.meta.zt.source }}</template>
+                                </span>
 `;window.__quantModules=window.__quantModules||{};window.__quantModules.shorttermPage=window.__quantModules.shorttermPage||{};window.__quantModules.shorttermPage.part2=`                            </div>
                         </div>
                         <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>

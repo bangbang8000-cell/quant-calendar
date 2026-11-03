@@ -33,16 +33,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/shortterm", tags=["短线复盘"])
 
 
+#: v6.8.0 (B2.1/D4): 池响应需带出的口径元数据（前端家数与徽标必须同源）
+_POOL_META_KEYS = ('source', 'include_st', 'stats', 'quality', 'note')
+
+
 def _load_or_fetch(date: str, pool_type: str, fetch_fn):
-    """store 优先; 无则实时抓取并入库; 失败返回 None(前端标不可用)"""
+    """store 优先; 无则实时抓取并入库。
+
+    返回 (rows|None, meta)。meta 携带 source/include_st/stats，供前端角标与家数同源展示；
+    失败时 rows=None 且 meta.reason 说明原因（不静默当"暂无数据"）。
+    """
     cached = store.load_pool(date, pool_type)
     if cached is not None:
-        return cached
+        return cached, {'source': 'store'}
     out = fetch_fn(date)
     if out.get('available'):
         store.save_pool(date, pool_type, out['rows'])
-        return out['rows']
-    return None
+        meta = {k: out.get(k) for k in _POOL_META_KEYS if k in out}
+        meta.setdefault('source', out.get('source') or 'unknown')
+        return out['rows'], meta
+    return None, {'available': False, 'reason': out.get('reason')}
 
 
 @router.get("/latest-session")
@@ -54,12 +64,13 @@ async def get_latest_session(user: Optional[dict] = Depends(get_current_user)):
 async def get_pools(date: str = None, user: Optional[dict] = Depends(get_current_user)):
     d = date or latest_session()
     # v6.8.0 (B2.1): 落库路径同样以 Fuyao 为优先源（缺 Key/收费退场时自动回退本地）
-    zt = _load_or_fetch(d, 'zt', lambda x: fetchers.fetch_zt_pool(x, prefer='fuyao'))
-    zb = _load_or_fetch(d, 'zb', lambda x: fetchers.fetch_zb_pool(x, prefer='fuyao'))
-    dt = _load_or_fetch(d, 'dt', lambda x: fetchers.fetch_dt_pool(x, prefer='fuyao'))
+    zt, zt_meta = _load_or_fetch(d, 'zt', lambda x: fetchers.fetch_zt_pool(x, prefer='fuyao'))
+    zb, zb_meta = _load_or_fetch(d, 'zb', lambda x: fetchers.fetch_zb_pool(x, prefer='fuyao'))
+    dt, dt_meta = _load_or_fetch(d, 'dt', lambda x: fetchers.fetch_dt_pool(x, prefer='fuyao'))
     return {'success': True, 'date': d, 'settled': is_settled(d),
             'zt': zt, 'zb': zb, 'dt': dt,
-            'ladder': ladder.ladder_gap(zt or [])}
+            'ladder': ladder.ladder_gap(zt or []),
+            'meta': {'zt': zt_meta, 'zb': zb_meta, 'dt': dt_meta}}
 
 
 @router.get("/lhb")
