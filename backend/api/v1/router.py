@@ -15,6 +15,8 @@ from .market_fuyao import router as market_fuyao_router
 from .shortterm_extras import router as shortterm_extras_router
 # 7.0: DWH 状态与刷新
 from .dwh import router as dwh_router
+# 7.1: 研究看板（行业强度/导出）
+from .research import router as research_router
 from .auth import router as auth_router
 from .calendar import router as calendar_router
 from .views import router as views_router
@@ -61,6 +63,7 @@ api_router.include_router(market_router)
 api_router.include_router(market_fuyao_router)
 api_router.include_router(shortterm_extras_router)
 api_router.include_router(dwh_router)
+api_router.include_router(research_router)
 api_router.include_router(market_ws_router)
 api_router.include_router(market_extras_router)
 api_router.include_router(auth_router)
