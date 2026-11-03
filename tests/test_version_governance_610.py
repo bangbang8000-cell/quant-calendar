@@ -40,7 +40,7 @@ def _app_version() -> str:
 def test_app_version_defined():
     v = _app_version()
     assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v)
-    assert v.startswith(("6.1.", "6.2.", "6.3.", "6.4.", "6.5.", "6.6.", "6.7.", "6.8.", "6.9.", "7.0.")), "演进线要求 APP_VERSION 为 6.1.N ~ 7.0.N"
+    assert v.startswith(("6.1.", "6.2.", "6.3.", "6.4.", "6.5.", "6.6.", "6.7.", "6.8.", "6.9.", "7.0.", "7.1.")), "演进线要求 APP_VERSION 为 6.1.N ~ 7.1.N"
 
 
 def test_readme_first_row_matches_app_version():

@@ -18,6 +18,12 @@
       const eventsError = ref(false);
       const eventsReason = ref('');
       const eventsSource = ref('fuyao');
+      // v7.1.0 (B5.5): 行业强度作战矩阵（相对强度/加速度/成交额脉冲/排名变化）
+      const industry = ref(null);
+      const industryLoading = ref(false);
+      const industryError = ref(false);
+      const industryReason = ref('');
+      const industryStale = ref(false);
 
       // 盘中情绪聚合（竞价基准 + 热榜 + 异动解读）
       async function loadSentiment(force) {
@@ -47,6 +53,30 @@
         }
       }
 
+      // 行业强度矩阵（缓存优先；refresh=1 时刷新，有配额成本）
+      async function loadIndustryStrength(force) {
+        industryLoading.value = true;
+        industryError.value = false;
+        try {
+          const url = '/api/research/industry-strength' + (force ? '?refresh=1' : '');
+          const res = await cachedGet(url, force);
+          if (res && res.available) {
+            industry.value = res;
+            industryStale.value = !!res.stale;
+          } else {
+            industry.value = null;
+            industryError.value = true;
+            industryReason.value = (res && res.reason) || '该数据未启用（可在系统配置中开启）';
+          }
+        } catch (e) {
+          industry.value = null;
+          industryError.value = true;
+          industryReason.value = '加载失败，请检查服务后重试';
+        } finally {
+          industryLoading.value = false;
+        }
+      }
+
       // 事件流（市场快讯；标题 + 摘要 + 原文跳转，不内嵌正文）
       async function loadEventsFlash(force) {
         eventsLoading.value = true;
@@ -71,6 +101,8 @@
       }
 
       return {
+        industry, industryLoading, industryError, industryReason, industryStale,
+        loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
         eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
         loadSentiment, loadEventsFlash,

@@ -956,3 +956,13 @@
 @media (max-width: 900px) {
   .sentiment-grid { grid-template-columns: 1fr; }
 }
+
+/* ==================== v7.1.0 (B5.5): 行业强度矩阵 ==================== */
+.industry-card { margin-top: var(--sp-4); }
+.industry-card .card-title { font-size: var(--font-md); font-weight: var(--font-medium); }
+.industry-export-link {
+  font-size: var(--font-xs);
+  color: var(--primary-text);
+  text-decoration: none;
+}
+.industry-export-link:hover { text-decoration: underline; }

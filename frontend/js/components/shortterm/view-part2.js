@@ -173,6 +173,41 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
 
+                    <!-- v7.1.0: 行业强度作战矩阵（相对强度/加速度/成交额脉冲/排名变化） -->
+                    <div v-if="currentSubPage === 'overview'" class="card industry-card">
+                        <div class="qc-page-tools">
+                            <div class="flex-c-gap-12">
+                                <span class="card-title">行业强度</span>
+                                <span class="text-xs-tertiary" v-if="industry">覆盖 {{ industry.covered }}/{{ industry.requested }} 行业 · {{ industry.generated_at }}<template v-if="industryStale">（缓存）</template></span>
+                            </div>
+                            <div class="flex-c-gap-12">
+                                <a class="industry-export-link" href="/api/research/industry-export" target="_blank" rel="noopener noreferrer">导出离线报告</a>
+                                <el-button size="small" aria-label="刷新行业强度" @click="loadIndustryStrength(true)"><qc-icon name="refresh" :size="14" /></el-button>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="industryLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="industryError" type="empty"
+                            title="该数据未启用" :desc="industryReason"
+                            action-text="重试" @action="loadIndustryStrength(true)"></qc-state-panel>
+                        <div v-else class="table-container">
+                            <el-table :data="(industry && industry.rows) || []" size="small" max-height="360">
+                                <el-table-column prop="name" label="行业" min-width="120"></el-table-column>
+                                <el-table-column label="相对强度(20日)" width="140" align="right">
+                                    <template #default="s"><span class="num-tabular" :class="riseFall((s.row.rel || {}).rel_20)">{{ fmtPct((s.row.rel || {}).rel_20) }}</span></template>
+                                </el-table-column>
+                                <el-table-column label="加速度" width="110" align="right">
+                                    <template #default="s">{{ fmtPct(s.row.acceleration) }}</template>
+                                </el-table-column>
+                                <el-table-column label="成交额脉冲" width="110" align="right">
+                                    <template #default="s">{{ s.row.volume_pulse == null ? '—' : s.row.volume_pulse }}</template>
+                                </el-table-column>
+                                <el-table-column label="排名" width="80" align="right"><template #default="s">{{ s.row.rank_20 == null ? '—' : s.row.rank_20 }}</template></el-table-column>
+                                <el-table-column label="排名变化" width="100" align="right"><template #default="s">{{ s.row.rank_change == null ? '—' : s.row.rank_change }}</template></el-table-column>
+                            </el-table>
+                            <div class="text-xs-tertiary mt-2" v-if="industry && industry.meta">口径：{{ industry.meta.caliber }}；{{ industry.meta.disclaimer }}</div>
+                        </div>
+                    </div>
+
                     <!-- v6.9.0: 盘中情绪（集合竞价 + 热榜 + 异动解读） -->
                     <div v-if="currentSubPage === 'overview'" class="card sentiment-card">
                         <div class="qc-page-tools">

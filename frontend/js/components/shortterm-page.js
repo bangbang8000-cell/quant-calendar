@@ -396,6 +396,8 @@
         ref, cachedGet,
       });
       const {
+        industry, industryLoading, industryError, industryReason, industryStale,
+        loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
         eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
         loadSentiment, loadEventsFlash,
@@ -609,7 +611,7 @@
         const sp = currentSubPage.value;
         if (sp === 'ztpool') loadPools();
         else if (sp === 'lhb') loadLhb();
-        else if (sp === 'overview') { loadOverview(); loadReview(); loadSentiment(); loadEventsFlash(); }
+        else if (sp === 'overview') { loadOverview(); loadReview(); loadSentiment(); loadEventsFlash(); loadIndustryStrength(); }
         else if (sp === 'sector') loadSectorFlow();
         else if (sp === 'intraday') loadIntraday();
       }
@@ -632,7 +634,7 @@
         const sp = currentSubPage.value;
         if (sp === 'ztpool') loadPools(true);
         else if (sp === 'lhb') loadLhb(true);
-        else if (sp === 'overview') { loadOverview(true); loadReview(true); loadSentiment(true); loadEventsFlash(true); }
+        else if (sp === 'overview') { loadOverview(true); loadReview(true); loadSentiment(true); loadEventsFlash(true); loadIndustryStrength(true); }
         else if (sp === 'sector') loadSectorFlow(true);
         else if (sp === 'intraday') loadIntraday(true);
       }
