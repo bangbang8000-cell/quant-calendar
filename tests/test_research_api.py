@@ -153,3 +153,67 @@ def test_v72_routes_registered():
     for p in ('/api/research/sentiment-pulse', '/api/research/lhb-topology',
               '/api/research/attention-resonance'):
         assert p in paths
+
+
+def test_fin_quality_endpoint(monkeypatch):
+    import api.v1.research as r
+    import fin_quality as fq
+    monkeypatch.setattr(fq, 'screen',
+                        lambda pool, period='annual': {'available': True, 'covered': len(pool),
+                                                       'rows': [{'thscode': pool[0]}]}, raising=False)
+    out = _run(r.fin_quality(codes='600519.SH,000001.SZ', period='annual', user={}))
+    assert out['available'] is True and out['covered'] == 2
+
+
+def test_fin_quality_rejects_bad_period():
+    import api.v1.research as r
+    out = _run(r.fin_quality(codes='600519.SH', period='monthly', user={}))
+    assert out['available'] is False and out['reason'] == 'invalid_period'
+    out2 = _run(r.fin_quality(codes=None, period='annual', user={}))
+    assert out2['reason'] == 'no_codes'
+
+
+def test_pit_audit_endpoint(monkeypatch):
+    import api.v1.research as r
+    import pit_audit as pa
+    monkeypatch.setattr(pa, 'audit', lambda d, **k: {'available': True, 'target_date': d,
+                                                     'passed': True, 'checks': []}, raising=False)
+    out = _run(r.pit_audit(target_date='2026-11-03', user={}))
+    assert out['passed'] is True and out['target_date'] == '2026-11-03'
+
+
+def test_backtest_lab_endpoint_degrades_without_dwh(monkeypatch):
+    import api.v1.research as r
+    import dwh
+    class NoDwh:
+        def status(self):
+            return {'available': False, 'reason': 'db_missing'}
+    monkeypatch.setattr(dwh, 'get_backend', lambda *a, **k: NoDwh(), raising=False)
+    out = _run(r.backtest_lab(lookback=20, top_k=10, start=None, in_sample_frac=0.7, user={}))
+    assert out['available'] is False and 'dwh_unavailable' in out['reason']
+
+
+def test_backtest_lab_endpoint_with_dwh(monkeypatch):
+    import api.v1.research as r
+    import dwh
+    class FakeDwh:
+        def status(self):
+            return {'available': True, 'latest_date': '2026-11-03'}
+        def query(self, sql, params=None, limit=None):
+            rows = []
+            for d in range(40):
+                for c in range(3):
+                    rows.append(['C%d' % c, '2026%04d' % (1000 + d), 10.0 + c * 0.1 * d])
+            return {'columns': ['a', 'b', 'c'], 'rows': rows}
+    monkeypatch.setattr(dwh, 'get_backend', lambda *a, **k: FakeDwh(), raising=False)
+    out = _run(r.backtest_lab(lookback=10, top_k=2, start='2026-01-01', in_sample_frac=0.7, user={}))
+    assert out['success'] is True and out['available'] is True
+    assert 'in_sample' in out and 'out_of_sample' in out
+
+
+def test_v73_routes_registered():
+    import api.v1.router as rr
+    paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
+    for p in ('/api/research/fin-quality', '/api/research/pit-audit',
+              '/api/research/backtest-lab'):
+        assert p in paths

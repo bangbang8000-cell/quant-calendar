@@ -140,3 +140,61 @@ async def attention_resonance(period: str = 'day', window: int = 5,
         return {'success': True, 'available': False,
                 'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
     return {'success': True, 'period': period, **out}
+
+@router.get('/fin-quality')
+async def fin_quality(codes: Optional[str] = None, period: str = 'annual',
+                      user: Optional[dict] = Depends(get_current_user)):
+    """财务质量分位。codes 逗号分隔（≤20 只）；分位为**入参池内样本分位**。"""
+    import fin_quality as fq
+    pool = [c.strip() for c in (codes or '').split(',') if c.strip()][:20]
+    if not pool:
+        return {'success': True, 'available': False, 'reason': 'no_codes', 'rows': []}
+    if period not in ('annual', 'quarter'):
+        return {'success': True, 'available': False, 'reason': 'invalid_period', 'rows': []}
+    try:
+        out = fq.screen(pool, period=period)
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120]), 'rows': []}
+    return {'success': True, **out}
+
+
+@router.get('/pit-audit')
+async def pit_audit(target_date: Optional[str] = None,
+                    user: Optional[dict] = Depends(get_current_user)):
+    """防未来函数审计（五项检查 + 跳过标注）。"""
+    import datetime
+    import pit_audit as pa
+    d = target_date or datetime.date.today().strftime('%Y-%m-%d')
+    try:
+        rep = pa.audit(d, input_dates=[d])
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
+    return {'success': True, **rep}
+
+
+@router.get('/backtest-lab')
+async def backtest_lab(lookback: int = 20, top_k: int = 10, start: Optional[str] = None,
+                       in_sample_frac: float = 0.7,
+                       user: Optional[dict] = Depends(get_current_user)):
+    """回测实验室（DWH 面板 + lag=1 + 双边成本 + 样本内外）。无 DWH 时如实降级。"""
+    import backtest_lab as bl
+    try:
+        from dwh import get_backend
+        backend = get_backend()
+        st = backend.status()
+        if not st.get('available'):
+            return {'success': True, 'available': False,
+                    'reason': 'dwh_unavailable: %s' % st.get('reason')}
+        s = start or '2026-01-01'
+        res = backend.query(
+            'SELECT thscode AS ts_code, CAST(date AS VARCHAR) AS trade_date, close '
+            'FROM v_daily_qfq WHERE date >= CAST(? AS DATE) ORDER BY date', [s])
+        panel = [{'ts_code': r[0], 'trade_date': r[1], 'close': r[2]} for r in res.get('rows') or []]
+        out = bl.walkforward(panel, lookback=int(lookback), top_k=int(top_k),
+                             in_sample_frac=float(in_sample_frac))
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
+    return {'success': True, 'rows': len(panel), 'start': s, **out}
