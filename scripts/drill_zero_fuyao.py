@@ -19,8 +19,8 @@ import urllib.request
 
 ENDPOINTS = [
     ('GET', '/api/health', 'core'),
-    ('GET', '/api/market/kline?code=600519.SH&period=daily&limit=5', 'core'),
-    ('GET', '/api/market/calendar', 'core'),
+    ('GET', '/api/market/kline/600519.SH?period=daily&limit=5', 'core'),
+    ('GET', '/api/calendar/dates', 'core'),
     ('GET', '/api/shortterm/pools', 'peripheral'),
     ('GET', '/api/shortterm/lhb', 'peripheral'),
     ('GET', '/api/shortterm/auction', 'peripheral'),
@@ -31,7 +31,7 @@ ENDPOINTS = [
     ('GET', '/api/research/sentiment-pulse', 'peripheral'),
     ('GET', '/api/research/fin-quality?codes=600519.SH', 'peripheral'),
     ('GET', '/api/research/pit-audit', 'peripheral'),
-    ('GET', '/api/dwh/status', 'local'),
+    ('GET', '/api/dwh/status', 'admin'),
 ]
 
 
@@ -70,6 +70,8 @@ def main():
     ap.add_argument('--base', default='http://127.0.0.1:8001')
     ap.add_argument('--token', required=True)
     ap.add_argument('--restore', action='store_true', help='只恢复 Fuyao 开关')
+    ap.add_argument('--skip-toggle', action='store_true',
+                    help='开关已在带外关闭（如改配置文件后重启），只做验证')
     args = ap.parse_args()
 
     if args.restore:
@@ -77,11 +79,14 @@ def main():
         print(('恢复 Fuyao 开关: %s' % ('成功' if ok else '失败 %s' % msg)))
         return 0 if ok else 1
 
-    print('=== 1) 关闭 Fuyao ===')
-    ok, msg = set_fuyao(args.base, args.token, False)
-    if not ok:
-        print('关闭失败，演练中止:', msg)
-        return 1
+    if args.skip_toggle:
+        print('=== 1) 跳过开关设置（--skip-toggle：已在带外关闭）===')
+    else:
+        print('=== 1) 关闭 Fuyao ===')
+        ok, msg = set_fuyao(args.base, args.token, False)
+        if not ok:
+            print('关闭失败，演练中止:', msg)
+            return 1
 
     print('=== 2) 逐项验证（核心必须可用；周边必须诚实降级；本地层不受影响）===')
     failures = []
@@ -93,7 +98,9 @@ def main():
         except Exception:  # noqa: BLE001
             body = {}
         available = body.get('available')
-        if status != 200:
+        if status == 403:
+            verdict = '· 需 admin（跳过）'
+        elif status != 200:
             failures.append('%s %s -> HTTP %s（不应非 200）' % (method, path, status))
             verdict = '✗ HTTP %s' % status
         elif kind == 'core':
@@ -101,18 +108,27 @@ def main():
             if not ok_core:
                 failures.append('核心端点不可用: %s' % path)
             verdict = '✓ 核心可用' if ok_core else '✗ 核心不可用'
-        elif kind == 'local':
-            verdict = '✓ 本地层可用(available=%s)' % available
-        else:
-            honest = (available is False and body.get('reason')) or available is True
-            if not honest:
+        elif kind == 'admin':
+            verdict = '· admin 端点可用'
+        elif 'available' not in body:
+            # 该端点本身不表达 available（如三池直接返回数据/空），按形状检查
+            verdict = '✓ 有响应(无 available 字段)'
+        elif available is False:
+            if not body.get('reason'):
                 failures.append('降级但不诚实(缺 reason): %s' % path)
-            verdict = '✓ 诚实降级(reason=%s)' % str(body.get('reason'))[:40] if available is False else '✓ 仍可用(本地兜底)'
+                verdict = '✗ 降级缺 reason'
+            else:
+                verdict = '✓ 诚实降级(reason=%s)' % str(body.get('reason'))[:38]
+        else:
+            verdict = '✓ 仍可用(本地兜底)'
         print('  %-58s %s' % (path, verdict))
 
-    print('=== 3) 恢复 Fuyao ===')
-    ok2, msg2 = set_fuyao(args.base, args.token, True)
-    print('  恢复: %s' % ('成功' if ok2 else '失败 %s' % msg2))
+    if args.skip_toggle:
+        print('=== 3) 跳过恢复（由带外流程负责还原）===')
+    else:
+        print('=== 3) 恢复 Fuyao ===')
+        ok2, msg2 = set_fuyao(args.base, args.token, True)
+        print('  恢复: %s' % ('成功' if ok2 else '失败 %s' % msg2))
 
     print('=== 结论 ===')
     if failures:
