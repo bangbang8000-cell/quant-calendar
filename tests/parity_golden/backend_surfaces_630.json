@@ -85,6 +85,9 @@
       "_normalize_minute_df",
       "_save_config",
       "_source_client_ready",
+      "fuyao_capabilities_snapshot",
+      "fuyao_capability_enabled",
+      "fuyao_client",
       "get_config",
       "get_daily_basic",
       "get_daily_basic_series",
@@ -97,6 +100,7 @@
       "get_moneyflow",
       "get_trade_dates",
       "save_config",
+      "t1_route",
       "test_connection"
     ],
     "scheduler.Scheduler": [
