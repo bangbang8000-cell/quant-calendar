@@ -18,13 +18,21 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  # 运维精简：GHCR 只保留最近 KEEP_VERSIONS 个发行版本，更早的连同其浮动别名标签一并删除
-  KEEP_VERSIONS: 5
+  # 留存上限：保留最近 KEEP_VERSIONS 个发行版本，更早的连同其浮动别名标签一并删除。
+  # 2026-11-03 用户决策：当前 5 个全部保留 → 上限放到 10；新版本累积到 10 个后开始滚动淘汰最老的。
+  # 想收紧回 5：把 10 改成 5 即可（下一次 prune 立即按新上限裁）。
+  KEEP_VERSIONS: 10
 
 jobs:
   build-and-push:
-    # 手工触发且 mode=prune 时跳过构建，避免"只为清理却又推送一个新版本"
-    if: github.event_name == 'push' || inputs.mode == 'build' || inputs.mode == 'all'
+    # 构建门槛（2026-11-03 用户决策："小版本不用编译容器版本，只有关键版本才需要"）：
+    #   ① push tag：只有**关键版本**才构建 —— 判定式 = 版本号 patch 位为 0（如 v6.7.0 / v7.0.0）
+    #      这类是里程碑版本；v6.7.1、v6.5.8 这类小版本只打 tag，不产生新容器镜像。
+    #   ② workflow_dispatch：mode=build/all 时无条件构建（用于给小版本补镜像、或重建历史版本）。
+    # 判据用「tag 名以 .0 结尾」而非改版本号规则：不需要任何人记住约定，检查日志即可复核。
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.mode != 'prune') ||
+      (github.event_name == 'push' && github.ref_type == 'tag' && endsWith(github.ref_name, '.0'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,6 +41,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 防呆：semver 标签由 metadata-action 从 tag ref 推导，分支 ref 只会产出 latest=none
+      # → 与其让构建在推送阶段失败，不如在这里给出可执行的修复指引
+      - name: 校验构建来源必须是 tag
+        if: github.ref_type != 'tag'
+        run: |
+          echo "::error::构建需要 tag ref，当前 ref=${GITHUB_REF}（ref_type=${GITHUB_REF_TYPE}）"
+          echo "请改用: gh workflow run \"Docker Build & Publish\" --ref v6.7.0 -f mode=build" >&2
+          exit 1
 
       - name: Extract metadata
         id: meta
@@ -78,9 +95,12 @@ jobs:
   #    实测 2026-11-03：设 keep=5 时代码删掉了 97 条版本，连 latest 与 6.4.0/5.7.1/5.6.1
   #    三个发行版一起没了 —— 即"保留 5 条版本"≠"保留 5 个发行版"。
   #
-  # ✅ 本 job 的口径：**按发行版本号（semver）分组**，只保留最近 KEEP_VERSIONS 个发行版，
+  # ✅ 本 job 的口径：**按发行版本号（semver）分组**，只保留最近 KEEP_VERSIONS(10) 个发行版，
   #    删掉属于更早发行版的所有版本记录（含其浮动别名 5.3 / v5.3.10 等）。
   #    额外硬保护：带 latest 标签的版本永不删除。
+  #
+  # 触发：任何 tag push 都会跑（含不构建镜像的小版本 tag）—— 小版本不新增镜像，因此这一步
+  #       通常"无删除"，成本约 10 s；好处是留存窗口始终被修剪，不会因为长期只打小版本而堆积。
   # 手动清理：Actions → Docker Build & Publish → Run workflow → mode=prune
   # ---------------------------------------------------------------------------
   prune-versions:

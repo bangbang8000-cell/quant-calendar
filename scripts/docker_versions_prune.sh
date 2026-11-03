@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-# 镜像版本留存工具 — 只保留最新 N 个发行版本（默认 5）
+# 镜像版本留存工具 — 只保留最新 N 个发行版本（默认 10，与 workflow 的 KEEP_VERSIONS 一致）
 #
 # 用法:
 #   scripts/docker_versions_prune.sh                      # GHCR 计划（只读，打印保留/删除清单）
 #   scripts/docker_versions_prune.sh --apply              # GHCR 执行删除（需 delete:packages 权限）
 #   scripts/docker_versions_prune.sh --local              # 本地 docker 镜像计划
 #   scripts/docker_versions_prune.sh --local --apply      # 本地执行删除（docker rmi）
-#   KEEP=3 scripts/docker_versions_prune.sh               # 改保留个数
+#   KEEP=5 scripts/docker_versions_prune.sh               # 改保留个数（收紧窗口）
 #
 # 权限说明（GHCR）:
 #   - 只读计划：gh token 需 read:packages；若无，脚本自动回落到匿名 registry tags 接口（仍可出计划）
@@ -24,7 +24,7 @@ set -euo pipefail
 
 OWNER="${OWNER:-bangbang8000-cell}"
 PKG="${PKG:-quant-calendar}"
-KEEP="${KEEP:-5}"
+KEEP="${KEEP:-10}"
 REGISTRY_IMAGE="${REGISTRY_IMAGE:-ghcr.io/${OWNER}/${PKG}}"
 LOCAL_REPO_FILTER="${LOCAL_REPO_FILTER:-quant-calendar}"
 
