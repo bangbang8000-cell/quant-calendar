@@ -66,3 +66,38 @@ def test_dwh_exception_falls_back(monkeypatch):
 
     monkeypatch.setattr(dwh, 'get_backend', boom, raising=False)
     assert factor_ic.load_panel_from_dwh(['600519.SH'], '2026-10-01', '2026-11-03') is None
+
+
+def test_dwh_api_status_and_refresh_degrade(monkeypatch):
+    """B4.5: 端点必须如实降级（依赖缺失/失败不抛 500）"""
+    import asyncio
+    import api.v1.dwh as dwh_api
+
+    class BoomBackend:
+        def status(self):
+            raise RuntimeError('duckdb missing')
+
+    import dwh
+    monkeypatch.setattr(dwh, 'get_backend', lambda *a, **k: BoomBackend(), raising=False)
+    st = asyncio.run(dwh_api.dwh_status(_={}))
+    assert st['available'] is False and 'duckdb missing' in st['reason']
+
+    def boom_sync(**kw):
+        raise RuntimeError('download failed')
+
+    class BoomSync:
+        def sync_mode(self, d):
+            return 'FULL'
+
+        def sync(self, **kw):
+            raise RuntimeError('download failed')
+
+    monkeypatch.setattr(dwh, 'get_backend', lambda *a, **k: BoomSync(), raising=False)
+    out = asyncio.run(dwh_api.dwh_refresh(_={}))
+    assert out['success'] is False and 'download failed' in out['message']
+
+
+def test_dwh_routes_registered():
+    import api.v1.router as r
+    paths = {getattr(x, 'path', '') for x in r.api_router.routes}
+    assert '/api/dwh/status' in paths and '/api/dwh/refresh' in paths

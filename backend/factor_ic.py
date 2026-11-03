@@ -190,8 +190,8 @@ def load_panel_from_dwh(universe, start, end, fields=None):
                 logger.info('因子 IC: DWH 最新日期 %s 晚于窗口 %s, 回落逐票',
                             st.get('latest_date'), end)
                 return None
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as pit_err:  # noqa: BLE001 — PIT 模块异常时按"不校验"降级，但要留痕
+            logger.debug('因子 IC: PIT 守卫不可用(%s), 跳过日期校验', pit_err)
         sql = ('SELECT thscode, CAST(date AS VARCHAR) AS trade_date, close '
                'FROM v_daily WHERE date >= CAST(? AS DATE) AND date <= CAST(? AS DATE)')
         res = backend.query(sql, [start, end])

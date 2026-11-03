@@ -264,8 +264,8 @@ def archive_parquet(src, archive_dir, keep=PARQUET_KEEP):
     for name in files[:-max(1, keep)]:
         try:
             os.remove(os.path.join(archive_dir, name))
-        except OSError:
-            pass
+        except OSError as e:  # noqa: BLE001 — 旧归档删不掉不影响本次落盘，但需留痕
+            logger.warning('[dwh] 旧归档删除失败 %s: %s', name, e)
     return dest
 
 
