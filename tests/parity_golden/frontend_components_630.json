@@ -1681,6 +1681,8 @@
       "flex-c-gap-12",
       "flex-wrap",
       "gold",
+      "industry-card",
+      "industry-export-link",
       "info",
       "intraday-dot",
       "intraday-slot",
@@ -1689,6 +1691,7 @@
       "mb-2",
       "mb-4",
       "mr-4",
+      "mt-2",
       "mt-4",
       "mt-8",
       "null",
@@ -1703,6 +1706,7 @@
       "onboarding-step-badge",
       "onboarding-title",
       "qc-page-tools",
+      "riseFall((s.row.rel",
       "riseFall(b.auction_pct)",
       "riseFall(d.money_effect)",
       "riseFall(s.row.main_net_inflow)",
@@ -1748,7 +1752,8 @@
       "verdictClass(s.row.verdict)",
       "w-select",
       "w-select-xs",
-      "warning"
+      "warning",
+      "||"
     ],
     "directives": [
       "v-else",
@@ -1880,8 +1885,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 38980,
-    "template_sha": "791b81aeb8caa259"
+    "template_len": 42115,
+    "template_sha": "80c249e8360cd400"
   },
   "Sidebar": {
     "classes": [
