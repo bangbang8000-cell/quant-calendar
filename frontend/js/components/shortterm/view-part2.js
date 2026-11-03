@@ -172,4 +172,73 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
+
+                    <!-- v6.9.0: 盘中情绪（集合竞价 + 热榜 + 异动解读） -->
+                    <div v-if="currentSubPage === 'overview'" class="card sentiment-card">
+                        <div class="qc-page-tools">
+                            <div class="flex-c-gap-12">
+                                <span class="card-title">盘中情绪</span>
+                                <span class="text-xs-tertiary">{{ sentimentCaliber }}</span>
+                            </div>
+                            <div class="flex-c-gap-12">
+                                <el-button size="small" aria-label="刷新盘中情绪" @click="loadSentiment(true)"><qc-icon name="refresh" :size="14" /></el-button>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="sentimentLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="sentimentError" type="empty"
+                            title="该数据未启用" :desc="sentimentReason"></qc-state-panel>
+                        <div v-else class="sentiment-grid">
+                            <div class="sentiment-col">
+                                <div class="sentiment-col-title">集合竞价 · 短线风向标</div>
+                                <div v-if="!sentiment.benchmark || !sentiment.benchmark.count" class="text-xs-tertiary">非竞价时段或无数据</div>
+                                <div v-for="b in (sentiment.benchmark && sentiment.benchmark.rows) || []" :key="b.thscode" class="sentiment-row">
+                                    <span class="sentiment-name">{{ b.name }}</span>
+                                    <span class="num-tabular" :class="riseFall(b.auction_pct)">{{ fmtPct(b.auction_pct) }}</span>
+                                </div>
+                            </div>
+                            <div class="sentiment-col">
+                                <div class="sentiment-col-title">{{ (sentiment.hot && sentiment.hot.period_label) || '热榜' }}</div>
+                                <div v-if="!sentiment.hot || !sentiment.hot.count" class="text-xs-tertiary">暂无榜单</div>
+                                <div v-for="h in (sentiment.hot && sentiment.hot.rows) || []" :key="h.thscode" class="sentiment-row">
+                                    <span class="sentiment-rank">{{ h.rank }}</span>
+                                    <span class="sentiment-name">{{ h.name }}</span>
+                                    <span class="text-xs-tertiary">{{ h.heat }}</span>
+                                </div>
+                            </div>
+                            <div class="sentiment-col">
+                                <div class="sentiment-col-title">异动解读</div>
+                                <div v-if="!sentiment.anomaly || !sentiment.anomaly.count" class="text-xs-tertiary">当日暂无披露</div>
+                                <div v-for="a in (sentiment.anomaly && sentiment.anomaly.rows) || []" :key="a.thscode + (a.tag_name || '')" class="sentiment-row sentiment-anomaly">
+                                    <span class="sentiment-name">{{ a.stock_name || a.thscode }}</span>
+                                    <span class="sentiment-tag">{{ a.tag_name }}</span>
+                                    <div class="sentiment-content">{{ (a.analysis_content || '').slice(0, 80) }}</div>
+                                </div>
+                                <div v-if="sentiment.anomaly && sentiment.anomaly.disclaimer" class="text-xs-tertiary sentiment-disclaimer">{{ sentiment.anomaly.disclaimer }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- v6.9.0: 事件流（公告/快讯 → 标题 + 摘要 + 原文跳转） -->
+                    <div v-if="currentSubPage === 'overview'" class="card events-card">
+                        <div class="qc-page-tools">
+                            <div class="flex-c-gap-12">
+                                <span class="card-title">事件流</span>
+                                <span class="text-xs-tertiary">来源 {{ eventsSource }}</span>
+                            </div>
+                            <div class="flex-c-gap-12">
+                                <el-button size="small" aria-label="刷新事件流" @click="loadEventsFlash(true)"><qc-icon name="refresh" :size="14" /></el-button>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="eventsLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="eventsError" type="empty"
+                            title="暂无事件" :desc="eventsReason"></qc-state-panel>
+                        <div v-else>
+                            <div v-for="e in eventsRows" :key="e.id" class="event-row">
+                                <span class="event-date">{{ e.date }}</span>
+                                <span class="event-title">{{ e.title }}</span>
+                                <a v-if="e.url" class="event-link" :href="e.url" target="_blank" rel="noopener noreferrer">原文 ↗</a>
+                            </div>
+                            <div v-if="!eventsRows.length" class="text-xs-tertiary">暂无可展示事件（公告源未接入或当日无更新）</div>
+                        </div>
+                    </div>
                 </div>`;

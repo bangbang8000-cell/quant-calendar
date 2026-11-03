@@ -877,3 +877,82 @@
 .el-progress { --el-color-primary: var(--bar-fill);
   --el-color-success: var(--bar-fill-ok);
   --el-color-danger: var(--bar-fill-bad); }
+
+/* ==================== v6.9.0 (B3.5): 盘中情绪 / 事件流（只用令牌, 禁硬编码色值） ==================== */
+.sentiment-card { margin-top: var(--sp-4); }
+.events-card { margin-top: var(--sp-4); }
+.sentiment-card .card-title,
+.events-card .card-title { font-size: var(--font-md); font-weight: var(--font-medium); }
+
+.sentiment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+.sentiment-col {
+  min-width: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.sentiment-col-title {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-2);
+}
+.sentiment-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-sm);
+}
+.sentiment-row:last-child { border-bottom: none; }
+.sentiment-anomaly { display: block; }
+.sentiment-rank {
+  color: var(--text-tertiary);
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+}
+.sentiment-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sentiment-tag {
+  font-size: var(--font-xs);
+  color: var(--primary-text);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-sm);
+  padding: 0 var(--sp-1);
+}
+.sentiment-content {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--sp-1);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sentiment-disclaimer { margin-top: var(--sp-2); }
+
+.events-card .event-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-sm);
+}
+.events-card .event-date { color: var(--text-tertiary); min-width: 10ch; }
+.events-card .event-title { flex: 1 1 auto; min-width: 0; }
+.events-card .event-link { flex: 0 0 auto; color: var(--primary-text); text-decoration: none; }
+
+@media (max-width: 900px) {
+  .sentiment-grid { grid-template-columns: 1fr; }
+}
