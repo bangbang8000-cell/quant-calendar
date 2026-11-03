@@ -70,38 +70,53 @@ def _cache_get(key):
 
 
 def fetch_anomaly_list(page=1, size=DEFAULT_PAGE_SIZE, tag=None):
-    """当日异动解读（分页）。tag 可选：按异动标签过滤。"""
+    """当日异动解读（分页）。
+
+    实测（2026-11-03）：该接口**忽略 page/size，一次性返回当日全量**（473 条）
+    且不返回 pagination 对象 —— 因此分页必须在本层做（客户端切片），
+    不能把上游"全量"直接当"一页"透出，否则前端会一次性渲染数百条。
+    """
     page = max(1, int(page or 1))
     size = max(1, min(int(size or DEFAULT_PAGE_SIZE), _MAX_PAGE_SIZE))
-    key = 'list:%s:%s:%s' % (page, size, tag)
-    cached = _cache_get(key)
-    if cached is not None:
-        return cached
-    client, why = _client()
-    if client is None:
-        return {'available': False, 'reason': why}
-    params = {'page': page, 'size': size}
-    if tag:
-        params['tag'] = tag
-    r = client.get('special.anomaly-analysis-list',
-                   '/api/a-share/special-data/anomaly-analysis-list', params)
-    if not r.get('ok'):
-        return {'available': False, 'reason': r.get('reason') or 'fetch_failed'}
-    d = r.get('data') or {}
-    items = d.get('item') or []
-    pag = d.get('pagination') or {}
-    out = {
+    key = 'all:%s' % (tag or '')
+    full = _cache_get(key)
+    if full is None:
+        client, why = _client()
+        if client is None:
+            return {'available': False, 'reason': why}
+        params = {'tag': tag} if tag else {}
+        r = client.get('special.anomaly-analysis-list',
+                       '/api/a-share/special-data/anomaly-analysis-list', params)
+        if not r.get('ok'):
+            return {'available': False, 'reason': r.get('reason') or 'fetch_failed'}
+        d = r.get('data') or {}
+        items = d.get('item') or []
+        pag = d.get('pagination') or {}
+        # 上游给了 pagination 就以它为准（未来可能改为真分页），否则按全量处理
+        full = {'items': items, 'pagination': pag}
+        _cache[key] = (datetime.now().timestamp(), full)
+
+    items = full['items']
+    pag = full['pagination']
+    if pag.get('total') is not None:
+        total = int(pag['total'])
+        pages = int(pag.get('pages') or max(1, -(-total // size)))
+        rows = items  # 上游已分页
+    else:
+        total = len(items)
+        pages = max(1, -(-total // size))
+        start = (page - 1) * size
+        rows = items[start:start + size]
+
+    return {
         'available': True, 'source': 'fuyao',
-        'rows': items, 'count': len(items), 'page': page, 'size': size,
-        'total': pag.get('total'),
-        'pages': pag.get('pages'),
-        'has_next': bool(pag.get('has_next')) if pag.get('has_next') is not None
-        else (bool(pag.get('pages')) and page < int(pag['pages'])),
-        'note': '每行含 analysis_content（同花顺 AI 生成，原文展示不改写）；空列表可能为上游降级',
+        'rows': rows, 'count': len(rows), 'page': page, 'size': size,
+        'total': total, 'pages': pages,
+        'has_next': page < pages,
+        'note': '每行含 analysis_content（同花顺 AI 生成，原文展示不改写）；'
+                '空列表可能为上游降级；分页在本层完成（上游一次性返回全量）',
         'disclaimer': DISCLAIMER_HINT,
     }
-    _cache[key] = (datetime.now().timestamp(), out)
-    return out
 
 
 def fetch_anomaly_by_stock(thscodes):

@@ -39,7 +39,7 @@ def clear_cache():
 
 
 def test_pagination_params_and_total(monkeypatch):
-    """TC-FY-6.9-05: 默认 20/页，分页参数透传，total/pages 一致"""
+    """TC-FY-6.9-05: 上游给 pagination 时以其为准"""
     payload = {'item': [{'thscode': '603131.SH', 'tag_name': '跌停'}],
                'pagination': {'page': 2, 'size': 20, 'total': 461, 'pages': 24}}
     client = FakeClient(payload)
@@ -47,18 +47,33 @@ def test_pagination_params_and_total(monkeypatch):
     monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(client), raising=False)
 
     out = anomaly_notes.fetch_anomaly_list(page=2)
-    _, params = client.calls[0]
-    assert params == {'page': 2, 'size': 20}
     assert out['total'] == 461 and out['pages'] == 24 and out['has_next'] is True
 
 
-def test_page_size_capped(monkeypatch):
-    client = FakeClient({'item': []})
+def test_client_side_pagination_when_upstream_returns_all(monkeypatch):
+    """实测：上游忽略 page/size 一次返回全量(473 条) → 必须在本层切片"""
+    payload = {'item': [{'thscode': 'x%d' % i} for i in range(473)]}
+    client = FakeClient(payload)
     import data_sources
     monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(client), raising=False)
-    anomaly_notes.fetch_anomaly_list(page=0, size=999)
-    _, params = client.calls[0]
-    assert params['page'] == 1 and params['size'] == anomaly_notes._MAX_PAGE_SIZE
+
+    first = anomaly_notes.fetch_anomaly_list(page=1, size=20)
+    assert first['count'] == 20 and first['total'] == 473 and first['pages'] == 24
+    assert first['has_next'] is True and first['rows'][0]['thscode'] == 'x0'
+
+    last = anomaly_notes.fetch_anomaly_list(page=24, size=20)
+    assert last['count'] == 13 and last['has_next'] is False
+    assert len(client.calls) == 1, '全量应缓存，翻页不重复请求上游'
+
+
+def test_page_size_capped(monkeypatch):
+    """page<1 归一到 1；size 超上限被截断（分页在本层做，不再透传 page/size 给上游）"""
+    client = FakeClient({'item': [{'i': i} for i in range(300)]})
+    import data_sources
+    monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(client), raising=False)
+    out = anomaly_notes.fetch_anomaly_list(page=0, size=999)
+    assert out['page'] == 1 and out['size'] == anomaly_notes._MAX_PAGE_SIZE
+    assert out['count'] == anomaly_notes._MAX_PAGE_SIZE
 
 
 def test_disclaimer_preserved_in_payload(monkeypatch):
