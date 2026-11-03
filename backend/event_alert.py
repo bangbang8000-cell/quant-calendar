@@ -432,5 +432,11 @@ def run_event_scan(username: str = 'default', scope: str = 'watchlist',
 # 真实事件源 (akshare→tushare 回退) 成为默认, 取代不可达占位 provider,
 # 避免事件页误报「事件数据源未接入」。真实源不可达时由 build_events 如实降级。
 if not EVENT_PROVIDERS:
-    EVENT_PROVIDERS.append(DataSourceEventProvider())
-    logger.info('默认事件源已接入: %s', EVENT_PROVIDERS[0].name)
+    # v6.9.0 (B3.3): Fuyao 个股分时新闻优先（T2 周边），本地源作为补充/兜底
+    try:
+        from event_provider_fuyao import fuyao_event_provider
+        register_event_provider(fuyao_event_provider)
+    except Exception as e:  # noqa: BLE001 — 新源缺失不应阻断事件提醒
+        logger.warning('注册 fuyao 事件源失败: %s', e)
+    register_event_provider(DataSourceEventProvider())
+    logger.info('默认事件源已接入: %s', ', '.join(p.name for p in EVENT_PROVIDERS))
