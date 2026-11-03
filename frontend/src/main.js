@@ -127,6 +127,7 @@ import '../js/components/research/view.js'
 import '../js/components/research-page.js'
 // 6.3.0 (T-6.3.0.9): 短线复盘页结构分治 — 引导逻辑域与模板片段须先于注册文件
 import '../js/components/shortterm/logic-tour.js'
+import '../js/components/shortterm/logic-sentiment.js'
 import '../js/components/shortterm/view-part1.js'
 import '../js/components/shortterm/view-part2.js'
 import '../js/components/shortterm/view.js'

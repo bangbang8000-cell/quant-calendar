@@ -18,17 +18,6 @@
       // V5.2.4 (T-5.2.41): 7 子页共享同一「交易日」(原 poolDate/lhbDate/overviewDate/intradayDate 合并)
       const shortDate = ref('');
       const pools = ref(null);
-      // v6.9.0 (B3.5): 盘中情绪（竞价/热榜/异动）与事件流（快讯）
-      const sentiment = ref({ benchmark: null, hot: null, anomaly: null });
-      const sentimentLoading = ref(false);
-      const sentimentError = ref(false);
-      const sentimentReason = ref('');
-      const sentimentCaliber = ref('竞价 60s / 榜单 5min 刷新；数据源同花顺（T2 周边）');
-      const eventsRows = ref([]);
-      const eventsLoading = ref(false);
-      const eventsError = ref(false);
-      const eventsReason = ref('');
-      const eventsSource = ref('fuyao');
       const poolLoading = ref(false);
       const poolError = ref(false);
       const poolErrTitle = ref('数据加载失败');
@@ -126,56 +115,6 @@
             }
             return data;
           });
-      }
-
-      // v6.9.0 (B3.5): 盘中情绪聚合（竞价基准 + 热榜 + 异动解读）
-      async function loadSentiment(force) {
-        sentimentLoading.value = true;
-        sentimentError.value = false;
-        try {
-          const res = await cachedGet('/api/shortterm/auction', force);
-          const hot = await cachedGet('/api/shortterm/hot-list?period=day&limit=10', force);
-          const an = await cachedGet('/api/shortterm/anomaly?page=1&size=5', force);
-          const unavail = (!res || res.available === false) && (!hot || hot.available === false);
-          if (unavail) {
-            sentimentError.value = true;
-            sentimentReason.value = (res && res.reason) || (hot && hot.reason) || '该数据未启用（可在系统配置中开启）';
-          } else {
-            sentiment.value = {
-              benchmark: (res && res.benchmark) || null,
-              hot: hot && (hot.hot || null),
-              anomaly: an && an.available !== false ? an : null,
-            };
-          }
-        } catch (e) {
-          sentimentError.value = true;
-          sentimentReason.value = '数据加载失败，请检查服务后重试';
-        } finally {
-          sentimentLoading.value = false;
-        }
-      }
-
-      // v6.9.0 (B3.5): 事件流（市场快讯；标题 + 摘要 + 原文跳转，不内嵌正文）
-      async function loadEventsFlash(force) {
-        eventsLoading.value = true;
-        eventsError.value = false;
-        try {
-          const res = await cachedGet('/api/events/flash?limit=15', force);
-          if (res && res.available) {
-            eventsRows.value = res.rows || [];
-            eventsSource.value = res.source || 'fuyao';
-          } else {
-            eventsRows.value = [];
-            eventsError.value = true;
-            eventsReason.value = (res && res.reason) || '事件源暂不可用';
-          }
-        } catch (e) {
-          eventsRows.value = [];
-          eventsError.value = true;
-          eventsReason.value = '事件加载失败';
-        } finally {
-          eventsLoading.value = false;
-        }
       }
 
       async function loadPools(force) {
@@ -452,7 +391,17 @@
         const sel = ztBoardFilter.value;
         const chart = charts.renderSimpleChartTo('shorttermLadderChart', function () {
           const boards = Object.keys(tiers).sort(function (a, b) { return Number(a) - Number(b); });
-          return {
+          // v6.9.0 (B3.5): 盘中情绪与事件流逻辑域（拆分以保持单文件 ≤700 行）
+      const _sentiment = window.__quantModules.shorttermPage.sentiment.create({
+        ref, cachedGet,
+      });
+      const {
+        sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
+        eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
+        loadSentiment, loadEventsFlash,
+      } = _sentiment;
+
+      return {
             grid: { left: 8, right: 16, top: 20, bottom: 4, containLabel: true },
             tooltip: { trigger: 'axis' },
             xAxis: { type: 'category', data: boards.map(function (b) { return b + '板'; }) },

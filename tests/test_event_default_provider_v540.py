@@ -32,8 +32,12 @@ def test_default_event_providers_include_real_source():
 
 
 def test_default_provider_has_meaningful_reason():
-    """真实源不可达时应给出可读原因 (非空括号)"""
-    prov = event_alert.EVENT_PROVIDERS[0]
+    """真实源不可达时应给出可读原因 (非空括号)。
+
+    v6.9.0: EVENT_PROVIDERS 首位改为 fuyao(周边优先)，本地 DataSourceEventProvider
+    作为兜底排在后面 —— 这里断言兜底源仍具备可读 reason。
+    """
+    prov = event_alert.EVENT_PROVIDERS[-1]
     assert getattr(prov, 'reason', ''), '真实源不可达应有可读 reason'
 
 

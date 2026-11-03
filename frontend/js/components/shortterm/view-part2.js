@@ -186,7 +186,8 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="sentimentLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="sentimentError" type="empty"
-                            title="该数据未启用" :desc="sentimentReason"></qc-state-panel>
+                            title="该数据未启用" :desc="sentimentReason"
+                            action-text="重试" @action="loadSentiment(true)"></qc-state-panel>
                         <div v-else class="sentiment-grid">
                             <div class="sentiment-col">
                                 <div class="sentiment-col-title">集合竞价 · 短线风向标</div>
@@ -231,7 +232,8 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
                         <qc-state-panel v-if="eventsLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="eventsError" type="empty"
-                            title="暂无事件" :desc="eventsReason"></qc-state-panel>
+                            title="暂无事件" :desc="eventsReason"
+                            action-text="重试" @action="loadEventsFlash(true)"></qc-state-panel>
                         <div v-else>
                             <div v-for="e in eventsRows" :key="e.id" class="event-row">
                                 <span class="event-date">{{ e.date }}</span>
