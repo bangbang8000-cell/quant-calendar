@@ -978,3 +978,11 @@
 .pulse-token { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 1100px) { .pulse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .pulse-grid { grid-template-columns: 1fr; } }
+
+/* ==================== v7.3.0 (B7.5): 回测与审计 ==================== */
+.lab-card { margin-top: var(--sp-4); }
+.lab-card .card-title { font-size: var(--font-md); font-weight: var(--font-medium); }
+.lab-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
+.lab-col { min-width: 0; padding: var(--sp-3); border: 1px solid var(--border-color); border-radius: var(--r-md); background: var(--surface); }
+.lab-col-title { font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--sp-2); }
+@media (max-width: 900px) { .lab-grid { grid-template-columns: 1fr; } }

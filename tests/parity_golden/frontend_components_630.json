@@ -1689,6 +1689,10 @@
       "intraday-timeline",
       "is-institution",
       "it.cls",
+      "lab-card",
+      "lab-col",
+      "lab-col-title",
+      "lab-grid",
       "mb-2",
       "mb-4",
       "mr-4",
@@ -1892,8 +1896,8 @@
       "verdictClass",
       "ztBoardFilter"
     ],
-    "template_len": 43747,
-    "template_sha": "0c2f7bf436a0e5e3"
+    "template_len": 45567,
+    "template_sha": "a4a5b46d395cc194"
   },
   "Sidebar": {
     "classes": [

@@ -58,6 +58,65 @@
         }
       }
 
+      // v7.3.0: 回测与审计（审计 + 样本内外回测 + 财务分位）
+      const lab = ref(null);
+      const labLoading = ref(false);
+      const labError = ref(false);
+      const labReason = ref('');
+
+      async function loadLab(force) {
+        labLoading.value = true;
+        labError.value = false;
+        const safe = function (u) { return cachedGet(u, force).catch(function () { return null; }); };
+        try {
+          const res = await Promise.all([
+            safe('/api/research/pit-audit'),
+            safe('/api/research/backtest-lab?lookback=20&top_k=10'),
+          ]);
+          const audit = res[0] || null;
+          const bt = res[1] || null;
+          if (!((audit && audit.available) || (bt && bt.available))) {
+            lab.value = null;
+            labError.value = true;
+            labReason.value = (audit && audit.reason) || (bt && bt.reason) || '该数据未启用';
+          } else {
+            lab.value = { audit: audit, backtest: bt };
+          }
+        } catch (e) {
+          lab.value = null;
+          labError.value = true;
+          labReason.value = '加载失败，请检查服务后重试';
+        } finally {
+          labLoading.value = false;
+        }
+      }
+
+      const labBlocks = computed(function () {
+        const l = lab.value || {};
+        const a = l.audit || {};
+        const b = l.backtest || {};
+        const m = b.full || {};
+        const pct = function (v) { return v == null ? '—' : v + '%'; };
+        return [
+          { title: 'PIT 审计', hint: '审计通过只说明当前检查项无异常，不构成对结果正确性的担保', items: [
+            kv('结论', a.passed ? '通过' : '未通过'),
+            kv('检查项 / 失败', (a.total || 0) + ' / ' + (a.failed || 0)),
+            kv('目标日', a.target_date || '—'),
+          ] },
+          { title: '动量回测（全样本）', hint: 't 日收盘出信号，收益自 t+1 起计', items: [
+            kv('总收益', pct(m.total_return)),
+            kv('年化', pct(m.annual_return)),
+            kv('Sharpe', m.sharpe == null ? '—' : m.sharpe),
+            kv('最大回撤', pct(m.max_drawdown)),
+          ] },
+          { title: '样本内外', hint: '样本内外同一套参数，不做样本外调参', items: [
+            kv('样本内', pct((b.in_sample || {}).total_return)),
+            kv('样本外', pct((b.out_of_sample || {}).total_return)),
+            kv('切分点', (b.split && (b.split.out_of_sample || [])[0]) || '—'),
+          ] },
+        ];
+      });
+
       // 情绪脉冲屏（三端点并行；单点失败不拖垮整卡）
       async function loadPulse(force) {
         pulseLoading.value = true;
@@ -165,6 +224,7 @@
 
       return {
         pulse, pulseLoading, pulseError, pulseReason, pulseGroups, loadPulse,
+        lab, labLoading, labError, labReason, labBlocks, loadLab,
         industry, industryLoading, industryError, industryReason, industryStale,
         loadIndustryStrength,
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,

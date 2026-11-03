@@ -173,6 +173,32 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                         <qc-state-panel v-else type="empty" title="暂无快照" desc="点击右上角「采集当前快照」(仅交易时段 6 时点前后 8 分钟可用)" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                     </div>
 
+                    <!-- v7.3.0: 回测与审计（PIT 审计结论 + 样本内外回测 + 财务分位入口） -->
+                    <div v-if="currentSubPage === 'overview'" class="card lab-card">
+                        <div class="qc-page-tools">
+                            <div class="flex-c-gap-12">
+                                <span class="card-title">回测与审计</span>
+                                <span class="text-xs-tertiary" v-if="lab && lab.audit">PIT 审计：{{ lab.audit.passed ? '通过' : '未通过' }}（{{ lab.audit.total }} 项，失败 {{ lab.audit.failed }}）</span>
+                            </div>
+                            <div class="flex-c-gap-12">
+                                <el-button size="small" aria-label="刷新回测与审计" @click="loadLab(true)"><qc-icon name="refresh" :size="14" /></el-button>
+                            </div>
+                        </div>
+                        <qc-state-panel v-if="labLoading" type="loading"></qc-state-panel>
+                        <qc-state-panel v-else-if="labError" type="empty" title="该数据未启用"
+                            :desc="labReason" action-text="重试" @action="loadLab(true)"></qc-state-panel>
+                        <div v-else class="lab-grid">
+                            <div v-for="blk in labBlocks" :key="blk.title" class="lab-col">
+                                <div class="lab-col-title">{{ blk.title }}</div>
+                                <div v-for="it in blk.items" :key="it.k" class="pulse-kv">
+                                    <span class="pulse-token">{{ it.k }}</span>
+                                    <b class="num-tabular">{{ it.v }}</b>
+                                </div>
+                                <div class="text-xs-tertiary" v-if="blk.hint">{{ blk.hint }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- v7.2.0: 情绪脉冲屏（四组指标由 pulseGroups 计算, 模板保持精简） -->
                     <div v-if="currentSubPage === 'overview'" class="card pulse-card">
                         <div class="qc-page-tools">
