@@ -13,11 +13,54 @@ import os
 logger = logging.getLogger(__name__)
 
 
+def reasons_from_rows(rows):
+    """从三池行提取 {代码: 涨停原因}（v6.8.0 B2.2：Fuyao 的 limit_up_reason 直供）。"""
+    out = {}
+    for r in rows or []:
+        code = str(r.get('ts_code') or '').split('.')[0].zfill(6)
+        reason = (r.get('reason') or '').strip()
+        if code and reason and reason.lower() not in ('nan', 'none'):
+            out[code] = reason
+    return out
+
+
+def fetch_zt_reasons_via_fuyao(date: str, min_coverage: float = 0.5):
+    """Fuyao 优先：从三池行直接取涨停原因。
+
+    返回 (reasons, meta)；覆盖不足时返回空 dict 交由问财补充。
+    """
+    try:
+        from . import fetchers
+        pool = fetchers.fetch_zt_pool(date, prefer='fuyao')
+    except Exception as e:  # noqa: BLE001 — 取数失败回退问财
+        return {}, {'available': False, 'reason': f'{type(e).__name__}: {str(e)[:80]}'}
+    rows = pool.get('rows') or []
+    reasons = reasons_from_rows(rows)
+    coverage = (len(reasons) / len(rows)) if rows else 0.0
+    meta = {
+        'available': bool(reasons),
+        'source': pool.get('source'),
+        'total': len(rows),
+        'with_reason': len(reasons),
+        'coverage': round(coverage, 3),
+        'include_st': pool.get('include_st'),
+    }
+    if not reasons or coverage < min_coverage:
+        meta['available'] = False
+        meta['reason'] = 'coverage_low'
+        return {}, meta
+    return reasons, meta
+
+
 def fetch_zt_reasons(date: str):
     """某交易日 代码→题材串。返回 (reasons: dict[code, str], error: str|None)。
 
+    优先级（v6.8.0）：**Fuyao limit_up_reason（接口返回值，不扩写）** → 问财（需 IWENCAI_API_KEY）。
     date 接受 YYYY-MM-DD / YYYYMMDD。error 非 None 表示不可用(诚实降级, 非异常)。
     """
+    reasons, meta = fetch_zt_reasons_via_fuyao(date)
+    if reasons:
+        return reasons, None
     d = str(date).replace('-', '')
     if not (len(d) == 8 and d.isdigit()):
         return {}, f'日期格式应为 YYYYMMDD, 收到 {date!r}'

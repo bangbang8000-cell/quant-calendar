@@ -10,6 +10,20 @@ import pandas as pd
 
 from shortterm import themes
 
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def disable_fuyao_reasons(monkeypatch):
+    """v6.8.0: fetch_zt_reasons 已改为「Fuyao 优先 → 问财补充」。
+
+    本文件守护的是**问财分支**的既有契约，故统一关闭 Fuyao 通道，
+    避免真实取数改变断言前提（Fuyao 分支由 test_shortterm_caliber.py 覆盖）。
+    """
+    monkeypatch.setattr(themes, 'fetch_zt_reasons_via_fuyao',
+                        lambda *a, **k: ({}, {'available': False}), raising=False)
+
+
 
 class _FakeIwencaiClient:
     def __init__(self, df):

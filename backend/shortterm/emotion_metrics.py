@@ -167,6 +167,60 @@ def money_effect(date: str, prev: str = None) -> dict:
     return _money_effect_realtime(date, prev)
 
 
+#: v6.8.0 (B2.2): Fuyao 官方涨停统计（封板率/开板家数/逐档晋级率/精确连板家数）
+_OFFICIAL_FORMULA = {
+    'seal_rate': 'limit_up_stock_count / touched_limit_up_stock_count（封板率）',
+    'promotion_rate': '天梯返回的有限样本内按股票代码匹配估算，**不是全市场晋级率**',
+    'open_stock_count': '炸板家数（当日触板未封住）',
+    'exact_boards': '按 board_num 统计的连板家数',
+}
+
+
+def official_limit_stats(date: str) -> dict:
+    """Fuyao 官方涨停市场统计（T2 周边；能力关闭/未配置时诚实降级）。"""
+    try:
+        from data_sources import data_source_manager
+        if not data_source_manager.fuyao_capability_enabled('special'):
+            return {'available': False, 'reason': 'capability_disabled'}
+        client = data_source_manager.fuyao_client()
+        if client is None:
+            return {'available': False, 'reason': 'not_configured'}
+    except Exception as e:  # noqa: BLE001 — 分层模块不可用时不阻断情绪页
+        return {'available': False, 'reason': f'{type(e).__name__}: {str(e)[:60]}'}
+
+    r = client.get('special.limit-up-statistics',
+                   '/api/a-share/special-data/limit-up-statistics', {})
+    if not r.get('ok'):
+        return {'available': False, 'reason': r.get('reason') or 'fetch_failed'}
+
+    d = r.get('data') or {}
+    levels = []
+    for item in d.get('page_boards') or []:
+        levels.append({
+            'level': item.get('board_level'),
+            'count': item.get('stock_count'),
+            'promotion_rate': item.get('promotion_rate'),
+        })
+    ladders = [{'board_num': it.get('board_num'), 'count': it.get('stock_count')}
+               for it in (d.get('exact_boards') or [])]
+    return {
+        'available': True,
+        'date': d.get('trade_date') or str(date),
+        'source': 'fuyao',
+        'seal_rate': d.get('seal_rate'),
+        'limit_up_stock_count': d.get('limit_up_stock_count'),
+        'touched_limit_up_stock_count': d.get('touched_limit_up_stock_count'),
+        'open_stock_count': d.get('open_stock_count'),
+        'levels': levels,
+        'exact_boards': ladders,
+        'meta': {
+            'formula': _OFFICIAL_FORMULA,
+            'caliber': 'Fuyao 官方口径；exact_boards 与 limit_up_stock_count 默认排除 ST，'
+                       '涨停池(含 ST)家数会略多，两者不可混用',
+        },
+    }
+
+
 def promotion_rates(date: str, prev: str = None) -> dict:
     """晋级率: 昨日各档连板中今日仍涨停比例(1进2/2进3/3板+)。
 
