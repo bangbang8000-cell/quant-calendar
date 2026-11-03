@@ -105,15 +105,45 @@ class DataSourceManager(DataSourceFetchMixin):
             c in '0123456789abcdefABCDEF' for c in token)
 
     def _load_config(self):
-        if os.path.exists(_ds_mod.DATASOURCE_CONFIG_FILE):
-            try:
-                with open(_ds_mod.DATASOURCE_CONFIG_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.warning(f"加载数据源配置失败: {e}")
-        # v6.7.0 (B1.2): 必须深拷贝——此前直接返回模块级 DEFAULT_CONFIG，
-        # 任何对 self.config 的运行时修改（如三级开关热改）都会污染全局默认值。
-        return json.loads(json.dumps(DEFAULT_CONFIG))
+        """加载数据源配置：以 DEFAULT_CONFIG 为骨架，磁盘配置做**深合并**覆盖。
+
+        v6.7.0 (B1.2) 两处修复：
+        1. 深拷贝（此前直接返回模块级 DEFAULT_CONFIG，运行时改配置会污染全局默认值）；
+        2. **新增源自动补齐**——用户既有的 datasource_config.json 早于新源存在时，
+           若不合并就会缺 `fuyao` 整块（能力开关、配额），导致 KeyError / 开关失效。
+        """
+        base = json.loads(json.dumps(DEFAULT_CONFIG))
+        if not os.path.exists(_ds_mod.DATASOURCE_CONFIG_FILE):
+            return base
+        try:
+            with open(_ds_mod.DATASOURCE_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+        except Exception as e:
+            logger.warning(f"加载数据源配置失败: {e}")
+            return base
+        if not isinstance(loaded, dict):
+            return base
+
+        merged = base
+        for key, val in loaded.items():
+            if key == 'sources' and isinstance(val, dict):
+                for src, scfg in val.items():
+                    if not isinstance(scfg, dict):
+                        merged['sources'][src] = scfg
+                        continue
+                    if isinstance(merged['sources'].get(src), dict):
+                        caps = merged['sources'][src].get('capabilities')
+                        merged['sources'][src].update(scfg)
+                        if isinstance(caps, dict) and isinstance(scfg.get('capabilities'), dict):
+                            caps.update(scfg['capabilities'])
+                            merged['sources'][src]['capabilities'] = caps
+                    else:
+                        merged['sources'][src] = scfg
+            elif key == 'minute' and isinstance(val, dict):
+                merged['minute'].update(val)
+            else:
+                merged[key] = val
+        return merged
 
     def _save_config(self):
         os.makedirs(os.path.dirname(_ds_mod.DATASOURCE_CONFIG_FILE), exist_ok=True)

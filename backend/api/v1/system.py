@@ -255,6 +255,10 @@ async def reveal_secret(req: Dict[str, Any], _: Dict = Depends(get_admin_user)):
         if not token:
             token = getattr(settings, "SXSC_TUSHARE_TOKEN" if target == "sxsc_tushare" else "TUSHARE_TOKEN", "") or ""
         return {"success": True, "secret": token}
+    # v6.7.0 (B1.3): 同花顺 Fuyao Key（只存在于环境变量）
+    if target == "fuyao":
+        from data_sources._fuyao import resolve_api_key
+        return {"success": True, "secret": resolve_api_key()}
     # AI 厂商级 api_key
     if target.startswith("ai:"):
         vendor_key = target[3:]

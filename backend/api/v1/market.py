@@ -6,8 +6,6 @@
 from fastapi import APIRouter, Depends
 from typing import Dict, Any, Optional
 import logging
-import os
-import json
 from auth import get_admin_user, get_current_active_user, get_current_user
 from market_data import market_data, get_kline_data
 from merrill_clock import merrill_clock
@@ -246,6 +244,14 @@ async def get_datasource_config(_: Dict = Depends(get_admin_user)):
     for src_name in ('tushare', 'sxsc_tushare'):
         token = config.get('sources', {}).get(src_name, {}).get('token', '') or ''
         config['sources'][src_name]['token'] = mask_secret(token)
+    # v6.7.0 (B1.3): fuyao 的 Key 只存在于环境变量（不落 datasource_config.json），
+    # 这里只回填掩码用于界面展示；完整值走 /api/system/reveal-secret 验密。
+    if 'fuyao' in config.get('sources', {}):
+        try:
+            from data_sources._fuyao import resolve_api_key
+            config['sources']['fuyao']['token'] = mask_secret(resolve_api_key())
+        except Exception:  # noqa: BLE001 — 展示层失败不影响主功能
+            config['sources']['fuyao']['token'] = ''
     return {"success": True, "config": config}
 
 
@@ -267,6 +273,9 @@ async def save_datasource_config(req: Dict[str, Any], _: Dict = Depends(get_admi
             elif '*' in submitted_token:
                 return {"success": False,
                         "message": f"{src_name} Token 含掩码字符(*), 请点击 🔓 编辑解锁后输入完整 Token 再保存"}
+        # v6.7.0 (B1.3): fuyao Key 只从环境变量读取，**不允许**写入配置文件
+        if isinstance(sources.get('fuyao'), dict):
+            sources['fuyao'].pop('token', None)
         data_source_manager.save_config(req)
         return {"success": True, "message": "数据源配置已保存"}
     except Exception as e:
@@ -286,14 +295,22 @@ async def get_datasource_status():
     """获取数据源状态"""
     from data_sources import data_source_manager
     status = {}
-    for src in ['sxsc_tushare', 'tushare', 'akshare']:
+    order = ['sxsc_tushare', 'tushare', 'akshare', 'fuyao']
+    for src in order:
         cfg = data_source_manager._get_source_config(src)
-        status[src] = {
+        item = {
             "enabled": cfg.get('enabled', True),
             "connected": src in data_source_manager._clients,
             "error": data_source_manager._errors.get(src, None),
         }
-    return {"success": True, "status": status, "source_order": ["sxsc_tushare", "tushare", "akshare"]}
+        if src == 'fuyao':
+            # v6.7.0 (B1.2): 三级开关矩阵 + T1 禁入声明，前端据此渲染"未启用"
+            item["capabilities"] = data_source_manager.fuyao_capabilities_snapshot()
+            item["t1_forbidden"] = True
+            item["client"] = repr(data_source_manager.fuyao_client()) if data_source_manager.fuyao_client() else None
+        status[src] = item
+    return {"success": True, "status": status, "source_order": order,
+            "tier": __import__('data_tier').contract_snapshot()}
 
 
 # v1.3.0: Tushare 数据源配置 API
