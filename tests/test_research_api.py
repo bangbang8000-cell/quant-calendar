@@ -208,6 +208,7 @@ def test_backtest_lab_endpoint_with_dwh(monkeypatch):
     monkeypatch.setattr(dwh, 'get_backend', lambda *a, **k: FakeDwh(), raising=False)
     out = _run(r.backtest_lab(lookback=10, top_k=2, start='2026-01-01', in_sample_frac=0.7, user={}))
     assert out['success'] is True and out['available'] is True
+    assert out['panel_rows'] > 0, '面板行数用 panel_rows, 不与 rows(列表) 语义冲突'
     assert 'in_sample' in out and 'out_of_sample' in out
 
 

@@ -197,4 +197,5 @@ async def backtest_lab(lookback: int = 20, top_k: int = 10, start: Optional[str]
     except Exception as e:  # noqa: BLE001
         return {'success': True, 'available': False,
                 'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
-    return {'success': True, 'rows': len(panel), 'start': s, **out}
+    # 注意：panel_rows 是面板行数；不要用 rows（与 fin-quality 的行列表语义冲突）
+    return {'success': True, 'panel_rows': len(panel), 'start': s, **out}
