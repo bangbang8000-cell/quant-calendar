@@ -24,3 +24,8 @@ cryptography>=41.0.0
 pypinyin>=0.55.0
 # V5.17.1 (CI 债务): akshare 是三源热备数据源之一(data_sources/_manager.py 动态 import) — 历史遗漏声明, 补入
 akshare>=1.16.0
+
+# v7.0.0 (D22/D23): 本地数据底座 —— Parquet 落盘 + DuckDB 研究层
+# 只读部署用 pip install --target=<workspace>/qc_ws_pkgs（家目录只读）
+pyarrow>=16,<27
+duckdb>=1.1
