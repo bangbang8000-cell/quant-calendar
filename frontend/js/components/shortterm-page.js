@@ -391,19 +391,6 @@
         const sel = ztBoardFilter.value;
         const chart = charts.renderSimpleChartTo('shorttermLadderChart', function () {
           const boards = Object.keys(tiers).sort(function (a, b) { return Number(a) - Number(b); });
-          // v6.9.0: 盘中情绪/事件流/行业强度/脉冲逻辑域（拆分以保持 ≤700 行）
-      const _sentiment = window.__quantModules.shorttermPage.sentiment.create({
-        ref, computed, cachedGet, fmtAmount, fmtPct,
-      });
-      const {
-        pulse, pulseLoading, pulseError, pulseReason, pulseGroups, loadPulse,
-        lab, labLoading, labError, labReason, labBlocks, loadLab,
-        industry, industryLoading, industryError, industryReason, industryStale,
-        loadIndustryStrength,
-        sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
-        eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
-        loadSentiment, loadEventsFlash,
-      } = _sentiment;
 
       return {
             grid: { left: 8, right: 16, top: 20, bottom: 4, containLabel: true },
@@ -655,9 +642,26 @@
         if (sp === 'overview') maybeShowShorttermTour();
       });
 
+      // v6.9.0/v7.1-v7.3: 盘中情绪 / 事件流 / 行业强度 / 脉冲 / 回测审计 —— 逻辑域装配
+      // （必须放在 setup 顶层；曾误插到 renderLadderChart 的图表回调内，导致 setup 引用未定义变量）
+      const _sentiment = window.__quantModules.shorttermPage.sentiment.create({
+        ref, computed, cachedGet, fmtAmount, fmtPct,
+      });
+      const {
+        sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
+        eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
+        loadSentiment, loadEventsFlash,
+        industry, industryLoading, industryError, industryReason, industryStale, loadIndustryStrength,
+        pulse, pulseLoading, pulseError, pulseReason, pulseGroups, loadPulse,
+        lab, labLoading, labError, labReason, labBlocks, loadLab,
+      } = _sentiment;
+
       return {
         currentPage, currentSubPage,
         shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter, hasAnyPool,
+        // v7.3.1-fix: 四态面板的标题/描述 refs 之前未返回 → 错误态标题空白
+        poolErrTitle, poolErrDesc, lhbErrTitle, lhbErrDesc,
+        overviewErrTitle, overviewErrDesc, sectorErrTitle, sectorErrDesc,
         lhbRows, lhbLoading, lhbError, lhbReason, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
         dateList, dateListLoading, loadDateList, pickDate,
@@ -670,6 +674,9 @@
         sentiment, sentimentLoading, sentimentError, sentimentReason, sentimentCaliber,
         eventsRows, eventsLoading, eventsError, eventsReason, eventsSource,
         loadSentiment, loadEventsFlash,
+        industry, industryLoading, industryError, industryReason, industryStale, loadIndustryStrength,
+        pulse, pulseLoading, pulseError, pulseReason, pulseGroups, loadPulse,
+        lab, labLoading, labError, labReason, labBlocks, loadLab,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
         sendChat, loadIntraday, collectSnapshot, refreshCurrent,
         ladderText, fmtAmount, fmtPct, riseFall, tagClass, openStock,
