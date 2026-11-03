@@ -29,6 +29,20 @@ def _parse_day(v):
         return None
 
 
+def available_through(data_date, as_of):
+    """DWH 可用性 PIT 守卫（v7.0.0 / B4.3）。
+
+    只有当数据的最新日期 **不晚于** 计算基准日时，才允许参与计算——
+    防止把"今天才落盘的历史数据"用到"昨天的因子"里（未来函数）。
+    任一参数缺失 → 返回 False（保守：不允许使用）。
+    """
+    d = _parse_day(data_date)
+    a = _parse_day(as_of)
+    if d is None or a is None:
+        return False
+    return d <= a
+
+
 def pit_filter(rows, as_of, tolerance_days=0, strict=True):
     """PIT 守卫: 保留 trade_date <= as_of(+容差) 的行。
 
