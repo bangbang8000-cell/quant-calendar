@@ -1,186 +1,118 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""V5.2.0 (T-5.2.04): 龙虎榜数据抓取 + 资金性质归类测试
-6.4.5 (FR-651): 测试封闭化 — 屏蔽需真实凭证的 sxsc 龙虎榜源, 本地 .env/网络不影响用例。"""
-import sys
+"""龙虎榜与天梯测试 (v6.8.0 / B2.3, TC-FY-6.8-08/09/10)
 
-import pandas as pd
+守护：Fuyao 龙虎榜题材串/资金性质、range_days=1 去重、天梯样本内口径与对拍一致率。
+"""
 import pytest
 
-from shortterm.lhb import normalize_lhb_df, classify_reading, fetch_lhb
+from shortterm import ladder, lhb
+
+ITEM = {
+    'thscode': '002172.SZ', 'ticker': '002172', 'name': '澳洋健康',
+    'change': 0.099831, 'net_value': 19984996.39, 'net_rate': 0.0071,
+    'buy_value': 107932607, 'sell_value': 87947610,
+    'concept_list': [{'name': '高压氧舱'}, {'name': '毛发医疗'}],
+    'limit_reason': '脑机接口+医疗服务', 'range_days': 1,
+    'org_net_value': 5000000, 'hot_money_net_value': -1000000,
+}
 
 
-@pytest.fixture(autouse=True)
-def _hermetic_no_sxsc(monkeypatch):
-    """V5.3.10 fetch_lhb 首选 sxsc(需真实 token); 测试一律让它抛错走 akshare mock 链。"""
-    from shortterm import lhb as lhb_mod
-
-    def _disabled(*_a, **_k):
-        raise RuntimeError('sxsc 已在测试中禁用 (FR-651 封闭化)')
-    monkeypatch.setattr(lhb_mod, '_fetch_sxsc_lhb', _disabled)
-
-
-# ---------- 解读归类 ----------
-
-def test_classify_institution():
-    tags = classify_reading('1家机构卖出，成功率20.22%')
-    assert '机构' in tags
-
-
-def test_classify_hot_money():
-    tags = classify_reading('知名游资买入，成功率45.10%')
-    assert '游资' in tags
-
-
-def test_classify_main_force():
-    tags = classify_reading('主力做T，成功率9.07%')
-    assert '主力' in tags
-
-
-def test_classify_empty_and_unknown():
-    assert classify_reading('') == []
-    assert classify_reading(None) == []
-    assert classify_reading('日跌幅偏离值达到7%的前5只证券') == []
-
-
-def test_classify_dedup():
-    tags = classify_reading('机构买入，机构卖出，游资跟风')
-    assert tags == ['机构', '游资']
-
-
-# ---------- 标准化 ----------
-
-def _lhb_df():
-    return pd.DataFrame([{
-        '序号': 1, '代码': '11', '名称': '深物业A', '上榜日': '2026-09-01',
-        '解读': '1家机构卖出，成功率20.22%', '收盘价': 9.16, '涨跌幅': -9.04,
-        '龙虎榜净买额': -46085510.86, '龙虎榜买入额': 5.36e7, '龙虎榜卖出额': 9.97e7,
-        '龙虎榜成交额': 1.53e8, '市场总成交额': 5.08e8, '净买额占总成交比': -9.07,
-        '成交额占总成交比': 30.14, '换手率': 10.46, '流通市值': 5.0e9,
-        '上榜原因': '日跌幅偏离值达到7%的前5只证券',
-        '上榜后1日': -5.13, '上榜后2日': None, '上榜后5日': None, '上榜后10日': None,
-    }])
-
-
-def test_normalize_lhb_df():
-    rows = normalize_lhb_df(_lhb_df())
-    assert len(rows) == 1
+def test_normalize_keeps_concepts_tags_reason():
+    rows = lhb.normalize_fuyao_lhb_items([ITEM])
     r = rows[0]
-    assert r['ts_code'] == '000011'          # 代码补零
-    assert r['name'] == '深物业A'
-    assert r['trade_date'] == '2026-09-01'
-    assert r['net_buy'] == -46085510.86
-    assert r['board'] == '10cm'
-    assert r['tags'] == ['机构']
-    assert r['next_2d'] is None
+    assert r['ts_code'] == '002172'
+    assert r['concepts'] == ['高压氧舱', '毛发医疗']
+    assert '机构' in r['tags'] and '游资' not in r['tags']
+    assert r['reason'] == '脑机接口+医疗服务'
+    assert r['pct_chg'] == pytest.approx(9.98, abs=0.01)
+    assert r['net_buy_ratio'] == pytest.approx(0.71, abs=0.01)
 
 
-def test_normalize_lhb_empty():
-    assert normalize_lhb_df(pd.DataFrame()) == []
+def test_fuyao_lhb_filters_range_days(monkeypatch):
+    """TC-FY-6.8-10: 默认只纳入 range_days=1，避免 1 日榜与 3 日榜重复计额"""
+    class FakeClient:
+        def get(self, cap, path, params=None):
+            assert params['date'] == '2026-11-03', 'date 必须是 yyyy-MM-dd'
+            return {'ok': True, 'data': {
+                'trade_date': '2026-11-03',
+                'stock_items': [ITEM, dict(ITEM, ticker='600000', range_days=3)],
+                'hot_money_items': [],
+            }}
+
+    class FakeMgr:
+        def fuyao_capability_enabled(self, cap):
+            return True
+
+        def fuyao_client(self):
+            return FakeClient()
+
+    import data_sources
+    monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(), raising=False)
+    rows, meta = lhb.fetch_lhb_fuyao('2026-11-03')
+    assert len(rows) == 1 and rows[0]['ts_code'] == '002172'
+    assert meta['raw_count'] == 2 and meta['excluded_multi_day'] == 1
+    assert 'range_days=1' in meta['note']
 
 
-# ---------- 抓取 ----------
+def test_fuyao_lhb_degrades(monkeypatch):
+    class FakeMgr:
+        def fuyao_capability_enabled(self, cap):
+            return False
 
-class _FakeAk:
-    def __init__(self, df=None, exc=None):
-        self._df, self._exc = df, exc
-        self.calls = []
+        def fuyao_client(self):
+            raise AssertionError('能力关闭不应取数')
 
-    def stock_lhb_detail_em(self, start_date, end_date):
-        self.calls.append((start_date, end_date))
-        if self._exc:
-            raise self._exc
-        return self._df
-
-
-def test_fetch_lhb_ok(monkeypatch):
-    fake = _FakeAk(df=_lhb_df())
-    monkeypatch.setitem(sys.modules, 'akshare', fake)
-    out = fetch_lhb('2026-09-01', '2026-09-02')
-    assert out['available'] is True
-    assert len(out['rows']) == 1
-    assert fake.calls == [('20260901', '20260902')]
+    import data_sources
+    monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(), raising=False)
+    rows, meta = lhb.fetch_lhb_fuyao('2026-11-03')
+    assert rows is None and meta['reason'] == 'capability_disabled'
 
 
-def test_fetch_lhb_failure_envelope(monkeypatch):
-    from shortterm import lhb as lhb_mod
-    fake = _FakeAk(exc=RuntimeError('boom'))
-    monkeypatch.setitem(sys.modules, 'akshare', fake)
-    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
-                        lambda s, e, c: (_ for _ in ()).throw(RuntimeError('也无权限')))
-    out = fetch_lhb('2026-09-01', '2026-09-02')
-    assert out['available'] is False
-    assert out['reason'].startswith('[⚠️')
+def test_ladder_compare_agreement():
+    """TC-FY-6.8-08: 天梯对拍按 2 板及以上家数比较，一致率 ≥98% 视为通过"""
+    fuyao_ladder = {
+        'available': True,
+        'days': [
+            {'date': '2026-11-03', 'counts': {'two_board': 12, 'three_board': 1}},
+            {'date': '2026-11-02', 'counts': {'two_board': 10, 'three_board': 2}},
+        ],
+    }
+    local = {
+        '2026-11-03': {'two_board': 12, 'three_board': 1},
+        '2026-11-02': {'two_board': 10, 'three_board': 2},
+    }
+    out = ladder.compare_ladder(fuyao_ladder, local)
+    assert out['compared'] == 2 and out['ok'] is True and out['agree_rate'] == 1.0
+
+    local['2026-11-02']['two_board'] = 3
+    out2 = ladder.compare_ladder(fuyao_ladder, local)
+    assert out2['ok'] is False and out2['mismatches']
 
 
-def test_fetch_lhb_empty_is_legal(monkeypatch):
-    fake = _FakeAk(df=pd.DataFrame(columns=list(_lhb_df().columns)))
-    monkeypatch.setitem(sys.modules, 'akshare', fake)
-    out = fetch_lhb('2026-09-01', '2026-09-02')
-    assert out['available'] is True
-    assert out['rows'] == []
+def test_ladder_compare_without_fuyao():
+    out = ladder.compare_ladder(None, {})
+    assert out['ok'] is False and out['reason'] == 'fuyao_unavailable'
 
 
-# ---------- V5.2.2-fix: 东财 → tushare top_list 兜底 ----------
+def test_ladder_meta_declares_sample_caliber(monkeypatch):
+    class FakeClient:
+        def get(self, cap, path, params=None):
+            return {'ok': True, 'data': {
+                'window': {'length': 1, 'date_list': ['2026-11-03'],
+                           'board_caps': {'two_board': 1}},
+                'item': [{'date': '2026-11-03', 'boards': {'two_board': [{'ticker': '000001'}, {'ticker': '000002'}]}}],
+            }}
 
-def test_fetch_lhb_falls_back_to_tushare(monkeypatch):
-    from shortterm import lhb as lhb_mod
-    fake = _FakeAk(exc=RuntimeError('东财反爬'))
-    monkeypatch.setitem(sys.modules, 'akshare', fake)
-    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
-                        lambda s, e, c: {'available': True, 'source': 'tushare',
-                                         'start_date': s, 'end_date': e,
-                                         'rows': [{'ts_code': '000011', 'name': '深物业A',
-                                                   'tags': [], 'board': '10cm'}]})
-    out = fetch_lhb('2026-09-01', '2026-09-02')
-    assert out['available'] is True and out['source'] == 'tushare'
+    class FakeMgr:
+        def fuyao_capability_enabled(self, cap):
+            return True
 
+        def fuyao_client(self):
+            return FakeClient()
 
-def test_tushare_lhb_normalization():
-    from shortterm import lhb as lhb_mod
-    row = lhb_mod._normalize_tushare_row(
-        {'ts_code': '000011.SZ', 'name': '深物业A', 'pct_change': 10.0,
-         'close': 10.0, 'net_amount': 1.2e8, 'l_buy': 2e8, 'l_sell': 0.8e8,
-         'reason': '日涨幅偏离值达7%', 'amount': 3e8, 'turnover_rate': 5.0})
-    assert row['ts_code'] == '000011'
-    assert row['net_buy'] == 1.2e8
-    assert row['buy_amount'] == 2e8 and row['sell_amount'] == 0.8e8
-    assert row['tags'] == []          # 不编造资金性质
-    assert row['board'] == '10cm'
-
-
-def test_fetch_lhb_all_sources_fail(monkeypatch):
-    from shortterm import lhb as lhb_mod
-    fake = _FakeAk(exc=RuntimeError('东财不可达'))
-    monkeypatch.setitem(sys.modules, 'akshare', fake)
-    monkeypatch.setattr(lhb_mod, '_fetch_tushare_lhb',
-                        lambda s, e, c: (_ for _ in ()).throw(RuntimeError('积分不足')))
-    out = fetch_lhb('2026-09-01', '2026-09-02')
-    assert out['available'] is False
-    assert 'tushare' in out['reason'] and 'akshare.eastmoney' in out['reason']
-
-
-# ---------- V5.2.3-fix: 东财「上榜日」date 对象 → ISO 字符串(防 API 500) ----------
-
-def test_lhb_trade_date_serializable(monkeypatch):
-    """上榜日为 datetime.date → 归一化为 ISO 字符串"""
-    import datetime
-    from shortterm import lhb as lhb_mod
-    raw = {'代码': '000011', '名称': '深物业A', '上榜日': datetime.date(2026, 9, 2),
-           '解读': '机构买入', '涨跌幅': 10.0}
-    row = lhb_mod._normalize_lhb_row(raw)
-    assert row['trade_date'] == '2026-09-02'
-    assert not isinstance(row['trade_date'], (datetime.date, datetime.datetime))
-
-
-def test_lhb_rows_all_json_serializable(monkeypatch):
-    """整批行 JSON 可序列化(含 date 列)"""
-    import datetime
-    import json
-    from shortterm import lhb as lhb_mod
-    raw = {'代码': '000011', '名称': '深物业A', '上榜日': datetime.date(2026, 9, 2),
-           '解读': '', '涨跌幅': 10.0, '上榜后1日': datetime.date(2026, 9, 3),
-           '上榜后2日': datetime.date(2026, 9, 4)}
-    rows = [lhb_mod._normalize_lhb_row(raw)]
-    json.dumps(rows, ensure_ascii=False)   # 不抛 TypeError
-    assert rows[0]['next_1d'] is None      # 日期经 _to_float → None, 不落 date
+    import data_sources
+    monkeypatch.setattr(data_sources, 'data_source_manager', FakeMgr(), raising=False)
+    lad, _ = ladder.fetch_ladder_fuyao()
+    assert lad['available'] is True and lad['days'][0]['counts']['two_board'] == 2
+    assert '不是全市场晋级率' in lad['meta']['caliber']

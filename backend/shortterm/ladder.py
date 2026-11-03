@@ -40,3 +40,84 @@ def ladder_gap(rows) -> dict:
     note = '' if continuous else f'断层: 缺少 {gaps} 板, 高标悬空无承接梯队'
     return {'highest': highest, 'tiers': dict(sorted(counts.items())),
             'gaps': gaps, 'continuous': continuous, 'note': note}
+
+
+# ==================== v6.8.0 (B2.3): Fuyao 连板天梯（近 30 交易日矩阵） ====================
+
+_FUYAO_LADDER_PATH = '/api/a-share/special-data/limit-up-ladder'
+
+
+def fetch_ladder_fuyao(days: int = 30):
+    """取 Fuyao 连板天梯（固定近 30 交易日矩阵）。不可用返回 (None, meta)。
+
+    ⚠️ 口径：天梯返回的是**有限样本矩阵**，据此估算的晋级率只能称
+    「样本内估算」，不得外推为全市场晋级率（PRD FR-6.8.3 / 调研 §3.1）。
+    """
+    try:
+        from data_sources import data_source_manager
+        if not data_source_manager.fuyao_capability_enabled('special'):
+            return None, {'available': False, 'reason': 'capability_disabled'}
+        client = data_source_manager.fuyao_client()
+        if client is None:
+            return None, {'available': False, 'reason': 'not_configured'}
+    except Exception as e:  # noqa: BLE001
+        return None, {'available': False, 'reason': f'{type(e).__name__}: {str(e)[:60]}'}
+
+    r = client.get('special.limit-up-ladder', _FUYAO_LADDER_PATH, {})
+    if not r.get('ok'):
+        return None, {'available': False, 'reason': r.get('reason') or 'fetch_failed'}
+    d = r.get('data') or {}
+    window = d.get('window') or {}
+    items = d.get('item') or []
+    tiers = []
+    for day in items:
+        boards = day.get('boards') or {}
+        tiers.append({
+            'date': day.get('date'),
+            'tiers': {k: [x.get('ticker') for x in (v or [])] for k, v in boards.items()},
+            'counts': {k: len(v or []) for k, v in boards.items()},
+        })
+    return {
+        'available': True,
+        'source': 'fuyao',
+        'length': window.get('length') or len(items),
+        'date_list': window.get('date_list') or [],
+        'board_caps': window.get('board_caps') or {},
+        'days': tiers,
+        'meta': {
+            'caliber': '样本内估算（天梯有限样本），不是全市场晋级率；不得外推行业分布',
+        },
+    }, {'available': True, 'source': 'fuyao'}
+
+
+def compare_ladder(fuyao_ladder, local_counts_by_date):
+    """天梯对拍：比较各交易日的 2 板及以上家数。
+
+    local_counts_by_date: {'YYYY-MM-DD': {'two_board': n, ...}} 或 {date: {板位: 家数}}
+    返回 {compared, mismatches, ok}（一致率 ≥98% 视为通过，PRD FR-6.8.5）
+    """
+    if not fuyao_ladder or not fuyao_ladder.get('available'):
+        return {'compared': 0, 'mismatches': [], 'ok': False, 'reason': 'fuyao_unavailable'}
+    mismatches = []
+    compared = 0
+    for day in fuyao_ladder.get('days') or []:
+        date = str(day.get('date') or '')
+        local = (local_counts_by_date or {}).get(date)
+        if not local:
+            continue
+        compared += 1
+        f_counts = {k: v for k, v in (day.get('counts') or {}).items()
+                    if k in ('two_board', 'three_board', 'four_board', 'five_board',
+                             'six_board', 'seven_over')}
+        for tier, fn in f_counts.items():
+            ln = local.get(tier)
+            if ln is not None and int(ln) != int(fn):
+                mismatches.append({'date': date, 'tier': tier, 'local': ln, 'fuyao': fn})
+    agree = (compared - len({m['date'] for m in mismatches})) if compared else 0
+    rate = (agree / compared) if compared else 0.0
+    return {
+        'compared': compared,
+        'mismatches': mismatches[:50],
+        'agree_rate': round(rate, 4),
+        'ok': bool(compared) and rate >= 0.98,
+    }

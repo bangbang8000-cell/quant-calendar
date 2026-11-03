@@ -36,7 +36,9 @@ def test_lhb_source_chain_sxsc_first():
     src = open(os.path.join(BASE, 'backend', 'shortterm', 'lhb.py'), encoding='utf-8').read()
     assert '_fetch_sxsc_lhb' in src, '应新增 sxsc 龙虎榜抓取函数'
     # fetch_lhb 内应先试 sxsc
-    assert src.split('def fetch_lhb')[1].find('_fetch_sxsc_lhb') < src.split('def fetch_lhb')[1].find('_fetch_tushare_lhb'), 'sxsc 应在 tushare 之前尝试'
+    # v6.8.0: 文件里还有 fetch_lhb_fuyao，必须精确取真正的 fetch_lhb( 定义段
+    body = src.split('def fetch_lhb(')[1]
+    assert body.find('_fetch_sxsc_lhb') < body.find('_fetch_tushare_lhb'), 'sxsc 应在 tushare 之前尝试'
 
 
 def test_sxsc_client_missing_falls_back(monkeypatch):
