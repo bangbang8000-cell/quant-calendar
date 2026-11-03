@@ -44,8 +44,13 @@ def _load_or_fetch(date: str, pool_type: str, fetch_fn):
     失败时 rows=None 且 meta.reason 说明原因（不静默当"暂无数据"）。
     """
     cached = store.load_pool(date, pool_type)
-    if cached is not None:
-        return cached, {'source': 'store'}
+    # v6.8.0-fix: **空列表不信任**——历史上有把"取数失败"写成 [] 入库的情况，
+    # 若继续用缓存会把真实数据永久挡在门外（线上实测：zt/dt 显示 0 家）。
+    if cached:
+        meta = {'source': 'store'}
+        if any('is_st' in r for r in cached):
+            meta['include_st'] = True  # 合并后的行带 is_st，可据此还原口径
+        return cached, meta
     out = fetch_fn(date)
     if out.get('available'):
         store.save_pool(date, pool_type, out['rows'])
@@ -82,7 +87,7 @@ async def get_lhb(date: str = None, user: Optional[dict] = Depends(get_current_u
     """
     d = date or latest_session()
     cached = store.load_pool(d, 'lhb')
-    if cached is not None:
+    if cached:  # 空列表不信任（同 _load_or_fetch 的理由）
         return {'success': True, 'date': d, 'settled': is_settled(d),
                 'rows': cached, 'available': True, 'reason': None}
     out = lhb.fetch_lhb(d, d)
