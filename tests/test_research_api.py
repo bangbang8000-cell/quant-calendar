@@ -3,6 +3,8 @@
 """研究看板接口测试 (v7.1.0 / B5.4)"""
 import asyncio
 
+import pytest
+
 
 
 def _run(c):
@@ -76,3 +78,78 @@ def test_routes_registered():
     paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
     assert '/api/research/industry-strength' in paths
     assert '/api/research/industry-export' in paths
+
+
+def test_sentiment_pulse_endpoint(monkeypatch):
+    import api.v1.research as r
+    import sentiment_pulse as sp
+    monkeypatch.setattr(sp, 'build_pulse',
+                        lambda d, pool, lad: {'available': True, 'date': d,
+                                              'counts': {'limit_up_count': 3}}, raising=False)
+    import shortterm.fetchers as f
+    import shortterm.ladder as lad
+    import shortterm.trade_calendar as tc
+    monkeypatch.setattr(f, 'fetch_zt_pool', lambda d, prefer=None: {'available': True, 'rows': [{}]}, raising=False)
+    monkeypatch.setattr(lad, 'fetch_ladder_fuyao', lambda *a, **k: ({'available': True, 'days': []}, {}), raising=False)
+    monkeypatch.setattr(tc, 'latest_session', lambda: '2026-11-03', raising=False)
+    out = _run(r.sentiment_pulse(date=None, user={}))
+    assert out['success'] is True and out['available'] is True
+
+
+def test_sentiment_pulse_degrades(monkeypatch):
+    import api.v1.research as r
+    import shortterm.fetchers as f
+    import shortterm.trade_calendar as tc
+    monkeypatch.setattr(tc, 'latest_session', lambda: '2026-11-03', raising=False)
+
+    def boom(*a, **k):
+        raise RuntimeError('pool down')
+
+    monkeypatch.setattr(f, 'fetch_zt_pool', boom, raising=False)
+    out = _run(r.sentiment_pulse(date='2026-11-03', user={}))
+    assert out['available'] is False and 'pool down' in out['reason']
+
+
+def test_lhb_topology_endpoint(monkeypatch):
+    import api.v1.research as r
+    import shortterm.lhb as lhb
+    import shortterm.trade_calendar as tc
+    monkeypatch.setattr(tc, 'last_trade_dates', lambda n, end=None: ['2026-11-03'], raising=False)
+    monkeypatch.setattr(lhb, 'fetch_lhb', lambda a, b: {'available': True, 'rows': [
+        {'ts_code': '1', 'net_buy': 10.0, 'concepts': ['c1'], 'range_days': 1}]}, raising=False)
+    out = _run(r.lhb_topology(days=1, end=None, user={}))
+    assert out['success'] is True and out['conservation_ok'] is True
+    assert out['concepts'][0]['concept'] == 'c1'
+
+
+def test_attention_resonance_endpoint(monkeypatch):
+    import api.v1.research as r
+    import attention_resonance as ar
+    import hot_rank
+    monkeypatch.setattr(hot_rank, 'fetch_hot_list',
+                        lambda p, n: {'rows': [{'thscode': 'A', 'rank': 1}]}, raising=False)
+    monkeypatch.setattr(ar, 'resonance',
+                        lambda rows, closes, window: {'available': True, 'spearman': -0.5,
+                                                      'verdict': 'resonant'}, raising=False)
+    out = _run(r.attention_resonance(period='day', window=5, user={}))
+    assert out['success'] is True and out['verdict'] == 'resonant'
+
+
+def test_attention_resonance_rejects_bad_period(monkeypatch):
+    import api.v1.research as r
+    import hot_rank
+    def bad(p, n):
+        raise ValueError('period 只接受 day/hour')
+
+    monkeypatch.setattr(hot_rank, 'fetch_hot_list', bad, raising=False)
+    with pytest.raises(Exception) as ei:
+        _run(r.attention_resonance(period='24h', window=5, user={}))
+    assert 'day/hour' in str(ei.value) or '400' in str(ei.value)
+
+
+def test_v72_routes_registered():
+    import api.v1.router as rr
+    paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
+    for p in ('/api/research/sentiment-pulse', '/api/research/lhb-topology',
+              '/api/research/attention-resonance'):
+        assert p in paths

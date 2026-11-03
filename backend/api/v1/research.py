@@ -73,3 +73,70 @@ async def industry_export_to_disk(_: dict = Depends(get_admin_user)):
         return {'success': True, **res}
     except Exception as e:  # noqa: BLE001
         return {'success': False, 'message': '导出失败: %s' % str(e)[:160]}
+
+@router.get('/sentiment-pulse')
+async def sentiment_pulse(date: Optional[str] = None,
+                          user: Optional[dict] = Depends(get_current_user)):
+    """涨停情绪市场脉冲屏（早封率/封单留存/原因分布/板位矩阵）。"""
+    import sentiment_pulse as sp
+    from shortterm import fetchers, ladder, trade_calendar
+    d = date or trade_calendar.latest_session()
+    try:
+        pool = fetchers.fetch_zt_pool(d, prefer='fuyao')
+        lad, _meta = ladder.fetch_ladder_fuyao()
+        out = sp.build_pulse(d, pool, lad)
+    except Exception as e:  # noqa: BLE001 — 取数异常如实降级
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120]), 'date': d}
+    return {'success': True, **out}
+
+
+@router.get('/lhb-topology')
+async def lhb_topology(days: int = 5, end: Optional[str] = None,
+                       user: Optional[dict] = Depends(get_current_user)):
+    """龙虎榜资金拓扑（概念等分 + 守恒）。days 上限 20。"""
+    import lhb_topology as tp
+    from shortterm import lhb, trade_calendar
+    n = max(1, min(int(days or 5), 20))
+    try:
+        dates = trade_calendar.last_trade_dates(n, end=end) if end else \
+            trade_calendar.last_trade_dates(n)
+        results = [(d, (lhb.fetch_lhb(d, d) or {}).get('rows') or []) for d in dates]
+        out = tp.build_topology(results)
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
+    return {'success': True, **out}
+
+
+@router.get('/attention-resonance')
+async def attention_resonance(period: str = 'day', window: int = 5,
+                              user: Optional[dict] = Depends(get_current_user)):
+    """热榜—股价共振（Spearman）。价格优先本地 DWH，缺库时如实降级。"""
+    import attention_resonance as ar
+    import hot_rank
+    try:
+        hot = hot_rank.fetch_hot_list(period, 30)
+        rows = hot.get('rows') or []
+        closes = {}
+        try:
+            from dwh import get_backend
+            backend = get_backend()
+            if backend.status().get('available'):
+                for r in rows:
+                    code = r.get('thscode')
+                    res = backend.query(
+                        'SELECT close FROM v_daily_qfq WHERE thscode=? '
+                        'ORDER BY date DESC LIMIT ?', [code, int(window) + 1])
+                    if res.get('rows'):
+                        closes[code] = [x[0] for x in reversed(res['rows'])]
+        except Exception as e:  # noqa: BLE001 — 无 DWH 时按无面板处理
+            logger.info('共振: DWH 不可用(%s)，按无价格面板降级', e)
+        out = ar.resonance(rows, closes, window=int(window))
+    except ValueError as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:  # noqa: BLE001
+        return {'success': True, 'available': False,
+                'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
+    return {'success': True, 'period': period, **out}
