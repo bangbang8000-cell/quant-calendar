@@ -51,6 +51,10 @@ jobs:
           echo "请改用: gh workflow run \"Docker Build & Publish\" --ref v6.7.0 -f mode=build" >&2
           exit 1
 
+      # latest 只由「push tag」(正常发版) 推进。
+      # 不能用 ref_type=='tag' 判断：workflow_dispatch --ref v5.6.1 的 ref_type 同样是 tag，
+      # 于是每次"给历史版本补镜像"都会把 latest 覆盖成那个旧版本
+      # （实测 2026-11-03：重建 v6.4.0/5.7.1/5.6.1 后 latest 变成了 v5.6.1 的镜像）。
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -60,7 +64,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref_type == 'tag' }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
