@@ -5,13 +5,26 @@ on:
     tags:
       - 'v*'            # 推送版本标签时触发
   workflow_dispatch:      # 手动触发（可指定版本）
+    inputs:
+      mode:
+        description: 'build=构建并发布 / prune=仅清理历史镜像版本 / all=两者都跑'
+        type: choice
+        options:
+          - build
+          - prune
+          - all
+        default: build
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  # 运维精简：GHCR 只保留最近 KEEP_VERSIONS 个发行版本，更早的连同其浮动别名标签一并删除
+  KEEP_VERSIONS: 5
 
 jobs:
   build-and-push:
+    # 手工触发且 mode=prune 时跳过构建，避免"只为清理却又推送一个新版本"
+    if: github.event_name == 'push' || inputs.mode == 'build' || inputs.mode == 'all'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,3 +68,40 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # 历史镜像版本留存（运维精简）
+  #
+  # 背景：每次 push tag 会为同一 manifest 打 3~4 个标签（如 6.6.0 / 6.6 / v6.6.0 / latest），
+  #       在 GHCR 上表现为「一个版本挂多个标签」。不清理则版本数无限增长（实测 2026-11-03：
+  #       29 个发行版本 / 69 个标签）。
+  # 策略：只保留最近 KEEP_VERSIONS(5) 个版本；更早的整版删除（连带其浮动别名 5.3、v5.3.10 等）。
+  #       latest 永远挂在新版本上，故 min-versions-to-keep 天然保护它。
+  # 手动清理：Actions → Docker Build & Publish → Run workflow → mode=prune
+  # ---------------------------------------------------------------------------
+  prune-versions:
+    needs: [build-and-push]
+    if: always() && (github.ref_type == 'tag' || inputs.mode == 'prune' || inputs.mode == 'all')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 保留最新 ${{ env.KEEP_VERSIONS }} 个镜像版本并清理更早版本
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: quant-calendar
+          package-type: container
+          min-versions-to-keep: ${{ env.KEEP_VERSIONS }}
+          delete-only-untagged-versions: 'false'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 清理结果摘要
+        run: |
+          {
+            echo "### 镜像版本留存"
+            echo "- 保留最近 **${KEEP_VERSIONS}** 个版本（含 latest 所在版本）"
+            echo "- 更早版本及其浮动别名标签已删除"
+            echo "- 如需回滚到已删除版本：重新打该版本 tag 触发构建即可重建"
+          } >> "$GITHUB_STEP_SUMMARY"
