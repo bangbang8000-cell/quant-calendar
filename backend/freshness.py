@@ -35,6 +35,8 @@ TABLES = [
     {"key": "backtest_result", "label": "回测结果", "primary_source": "tushare", "expected_hours": 168, "rows_fn": None},
     {"key": "portfolio", "label": "模拟组合", "primary_source": "tushare", "expected_hours": 168, "rows_fn": None},
     {"key": "watchlist", "label": "自选股", "primary_source": "tushare", "expected_hours": 168, "rows_fn": None},
+    # v6.7.0 (B1.5): 影子对拍台账——每日收盘后应更新；主源记为 fuyao（T2 周边，非核心链路）
+    {"key": "fuyao_shadow", "label": "Fuyao对拍", "primary_source": "fuyao", "expected_hours": 24, "rows_fn": None},
 ]
 
 

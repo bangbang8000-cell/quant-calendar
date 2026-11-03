@@ -101,7 +101,6 @@ def test_daily_period_unaffected():
 # ==================== V5.4.1 (R1): 分钟K线 live 可用化 ====================
 # 覆盖: ① 数据源优先级可配置(券商版 sxsc 默认优先) ② 限频串行(1次/分钟)
 #       ③ 分钟列名归一化(trade_time/中文列 → trade_date) ④ 全源失败降级日线(degraded 标记)
-import time
 
 
 def _minute_df_trade_time():
@@ -147,7 +146,9 @@ def test_minute_priority_reads_config(monkeypatch):
     assert mgr._minute_priority() == ['akshare', 'tushare']
     # 无配置时回退默认
     mgr.config = {}
-    assert mgr._minute_priority() == list(m.SOURCE_ORDER)
+    # v6.7.0 (B1.7): 回退顺序必须剔除 T1 禁入源（如 fuyao）
+    import data_tier
+    assert mgr._minute_priority() == data_tier.filter_t1_sources(list(m.SOURCE_ORDER))
 
 
 def test_minute_rate_limit_serializes(monkeypatch):

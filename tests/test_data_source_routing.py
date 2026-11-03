@@ -29,14 +29,16 @@ def _clean():
 
 
 def test_route_order_healthy_all_active():
-    assert ds.get_route_order() == ['sxsc_tushare', 'tushare', 'akshare']
+    # v6.7.0 (B1.2): fuyao 追加末位后，直接对齐 SOURCE_ORDER（避免每加一源就改测试）
+    assert ds.get_route_order() == list(ds.SOURCE_ORDER)
+    assert ds.get_route_order()[:3] == ['sxsc_tushare', 'tushare', 'akshare']
 
 
 def test_route_order_skips_cooling_source():
     ds._pause_source('sxsc_tushare', '连续失败')
     order = ds.get_route_order()
     assert 'sxsc_tushare' not in order
-    assert order == ['tushare', 'akshare']
+    assert order == [s for s in ds.SOURCE_ORDER if s != 'sxsc_tushare']
 
 
 def test_route_order_all_cooling_fallback():

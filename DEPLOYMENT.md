@@ -514,3 +514,83 @@ AI 调用次数 / 失败率 / 平均与 p95 耗时进入用量统计（`/api/sys
 | v3.0.0 | 2026-07 | 美林时钟模块解耦、CSS Token 体系 |
 | v2.5.0 | 2026-07 | UI 全面升级：侧边栏修复、Token 去重、移动端增强 |
 | v2.4.0 | 2026-06 | AI 智能问股：对话式股票分析，流式输出 |
+
+---
+
+## Fuyao（同花顺）数据源
+
+> 自 v6.7.0 起接入。**定位：T2 周边功能增强源**。核心链路（量化日历本身、个股 K 线、策略与回测）
+> **永远不使用 Fuyao**，保证供应商收费/停服时软件照常工作（PRD D21 / FR-6.7.8）。
+
+### 1. 配置
+
+```bash
+# .env
+FUYAO_API_KEY=sk-fuyao-xxxx          # 优先
+# HITHINK_FINANCE_API_KEY=...        # 兼容官方名（两者皆空 = 未启用）
+```
+
+- Key **只从环境变量读取**，不写入 `data/datasource_config.json`（保存配置时会被丢弃）
+- 界面只显示掩码（首 4 尾 4）；查看完整值需 `POST /api/system/reveal-secret` + `KEY_VIEW_PASSWORD`
+- **未配置 Key 不报错、不告警**，等价于该源未启用
+
+### 2. 验活
+
+```bash
+curl -s --noproxy '*' http://127.0.0.1:8000/api/market/datasource/status | python3 -m json.tool
+curl -s --noproxy '*' http://127.0.0.1:8000/api/market/fuyao/status      # 需登录 admin
+```
+
+`/fuyao/status` 返回：`env` / `configured` / `quota` / `codes`（错误码分布）/
+`capabilities`（六域开关矩阵）/ `tier`（T1-T2-T3 分层契约）。
+
+### 3. 三级开关（D1：免费阶段必须能随时关）
+
+| 层级 | 开关 | 生效 | 用户可见 |
+|---|---|---|---|
+| L1 整源 | `sources.fuyao.enabled=false` | 重启（≤3 min） | 全站回到三源行为 |
+| L2 能力域 | `sources.fuyao.capabilities.{prices,valuation,special,news,concept,dwh}=false` | **热生效** | 对应块显示「该数据未启用」 |
+| L3 单接口 | 代码内 capability 白名单 | 热生效 | 仅该块降级 |
+
+### 4. 配额与限流
+
+- 自设 **3000 次/日**（`quota.daily_limit`），**超限仅告警不硬停**
+- 客户端令牌桶 5 QPS + 退避 1/2/4 s（最多 2 次），**禁止立即连续重试**
+- `code=2004`（仅同花顺 AI 客户端）**不是故障**：不计失败、不重试、后续自动跳过
+- `4001` / HTTP 429 计"限流命中"但**不计源失败率**
+
+### 5. 影子对拍（切主前的证据链）
+
+```bash
+curl -s --noproxy '*' 'http://127.0.0.1:8000/api/market/fuyao/shadow?days=10'   # 需 admin
+```
+
+- 台账 `data/fuyao_shadow.json`，按日滚动保留 30 天
+- 阈值：三池对称差异率 ≤2%、日 K 收盘 =0（G1 决策门）
+- 差异超阈值 → 进既有事件提醒通道；**同日同口径比对**（`include_st` 显式标注）
+
+### 6. 故障处置与退场
+
+```bash
+# 单个能力异常 → 热关（无需重启）
+#   data/datasource_config.json: sources.fuyao.capabilities.special = false
+
+# 整体退场（收费/停服/长期不可用）
+#   sources.fuyao.enabled = false，然后重启
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus
+dbus-send --session --print-reply --dest=org.freedesktop.systemd1 /org/freedesktop/systemd1 \
+  org.freedesktop.systemd1.Manager.RestartUnit string:"quant-calendar-ops.service" string:"replace"
+```
+
+退场后预期：日历、个股 K 线（日/周/月/分钟）、策略、回测**完全正常**；
+短线三池等 T2 功能回到东财/tushare 或显示「该数据未启用」。
+
+### 7. 排查工具（可选，非产品依赖）
+
+官方 CLI 仅用于**排障交叉校验**，不进入运行时依赖：
+
+```bash
+npm install -g @hithink-tech/hithink-finance-cli
+hithink-finance capabilities --format json      # 核对官方能力清单
+marketdb status --json --db data/dwh/market.duckdb   # v7.0 起：校验本地库状态
+```
