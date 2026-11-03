@@ -14,13 +14,12 @@ import data_tier  # v6.7.0 (B1.2/B1.7): T1 核心链路禁止 fuyao
 from ._constants import *  # noqa: F401,F403
 from ._health import (record_call, _is_rate_limited, get_route_order)
 from ._mapping import *  # noqa: F401,F403
-from ._mapping import (_safe_float, _ts_code_to_akshare_index, _ts_code_to_akshare_stock,
-              _ts_code_to_sina_symbol, _is_index_code, _map_akshare_columns)
+# v6.7.0: 移除未使用的显式导入（这些辅助函数已随取数逻辑移至 _manager_fetch，本模块不再引用）
 
 logger = logging.getLogger(__name__)
 
 # V5.4.0 (FR-5.4.8): 分钟周期常量 — 6.3.0 (T-6.3.0.4) 定义移至 _manager_fetch, 此处再导出保持原导入路径
-from ._manager_fetch import (  # noqa: F401
+from ._manager_fetch import (  # noqa: E402,F401 — 必须在 sys.path(libs) 之后导入
     MINUTE_PERIODS, MINUTE_PERIOD_TO_FREQ, MINUTE_PERIOD_TO_AKSHARE,
     DataSourceFetchMixin,
 )
