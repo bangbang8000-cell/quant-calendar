@@ -18,6 +18,16 @@ from ._mapping import (_safe_float, _ts_code_to_akshare_index, _ts_code_to_aksha
 
 logger = logging.getLogger(__name__)
 
+
+def _t1_forbidden(source_name):
+    """该源是否被禁止进入 T1 核心链路（v6.7.0 / FR-6.7.8）。失败时保守返回 False。"""
+    try:
+        import data_tier
+        return data_tier.is_forbidden_in_core(source_name)
+    except Exception:  # noqa: BLE001 — 分层模块不可用时不阻断取数
+        return False
+
+
 # V5.4.0 (FR-5.4.8): 分钟级 K线周期白名单 — 打开股票弹窗按需加载(不预加载)
 MINUTE_PERIODS = ('15min', '30min', '60min')
 MINUTE_PERIOD_TO_FREQ = {'15min': '15min', '30min': '30min', '60min': '60min'}
@@ -365,14 +375,18 @@ class DataSourceFetchMixin:
     # ==================== V5.4.1 (R1 / FR-5.4.8 可用化): 分钟级支持 ====================
 
     def _minute_priority(self):
-        """分钟数据源优先级 — 从配置 minute.priority 读取, 缺省 SOURCE_ORDER (券商版优先)。"""
+        """分钟数据源优先级 — 从配置 minute.priority 读取, 缺省 SOURCE_ORDER (券商版优先)。
+
+        v6.7.0 (B1.7 / FR-6.7.8): 分钟线属 **T1 核心**，回退与用户配置都必须剔除
+        `data_tier.T1_FORBIDDEN`（如 fuyao），避免供应商停服时分钟线不可用。
+        """
         try:
             prio = (self.config or {}).get('minute', {}).get('priority')
             if prio:
-                # 过滤: 只保留已知源且去重, 保持用户配置顺序
+                # 过滤: 只保留已知源且去重, 保持用户配置顺序; T1 禁入源剔除
                 seen, out = set(), []
                 for s in prio:
-                    if s in SOURCE_ORDER and s not in seen:
+                    if s in SOURCE_ORDER and s not in seen and not _t1_forbidden(s):
                         seen.add(s)
                         out.append(s)
                 if out:
@@ -380,7 +394,7 @@ class DataSourceFetchMixin:
         except Exception as e:
             # 可降级: 用户配置源优先级不可用时回退内置顺序, 但需留痕
             logger.warning("[data_sources] 读取源优先级配置失败, 回退内置顺序: %s", e)
-        return list(SOURCE_ORDER)
+        return [s for s in SOURCE_ORDER if not _t1_forbidden(s)]
 
     def _minute_interval(self):
         try:
