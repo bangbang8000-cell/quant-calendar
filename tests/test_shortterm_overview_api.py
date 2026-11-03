@@ -51,7 +51,7 @@ def client(monkeypatch):
     # 定稿记录与交易日历全部 mock, 零网络
     monkeypatch.setattr(
         emotion_metrics, 'fetch_prev_pool',
-        lambda d: {'available': True, 'rows': [
+        lambda d, prefer=None: {'available': True, 'rows': [
             {'ts_code': '002909', 'ret': 10.0, 'prev_boards': 3, 'industry': '化学制品'},
             {'ts_code': '600000', 'ret': 2.0, 'prev_boards': 1, 'industry': '银行'},
         ]})
@@ -223,9 +223,7 @@ def test_reflection_endpoint(monkeypatch, client):
 
 
 def test_intraday_snapshot_endpoint(monkeypatch, client):
-    from api.v1 import shortterm as shortterm_api
     from shortterm import intraday as iday
-    import datetime as _dt
     monkeypatch.setattr(iday, 'accept_snapshot',
                         lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
     r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
@@ -285,18 +283,17 @@ def test_review_chat_with_review(monkeypatch, client):
 
 
 def test_intraday_snapshot_persists_and_lists(monkeypatch, client):
-    from api.v1 import shortterm as shortterm_api
     from shortterm import fetchers
     from shortterm import intraday as iday
     monkeypatch.setattr(iday, 'accept_snapshot',
                         lambda d, is_trade_day=True, today=None: (True, '快照时点 10:00'))
     # 盘中快照抓实时池子(源链 fallback)
     monkeypatch.setattr(fetchers, 'fetch_zt_pool',
-                        lambda d: {'available': True, 'rows': [{'ts_code': 'a'}]})
+                        lambda d, prefer=None: {'available': True, 'rows': [{'ts_code': 'a'}]})
     monkeypatch.setattr(fetchers, 'fetch_zb_pool',
-                        lambda d: {'available': True, 'rows': [{'ts_code': 'x'}]})
+                        lambda d, prefer=None: {'available': True, 'rows': [{'ts_code': 'x'}]})
     monkeypatch.setattr(fetchers, 'fetch_dt_pool',
-                        lambda d: {'available': True, 'rows': []})
+                        lambda d, prefer=None: {'available': True, 'rows': []})
     r = client.post('/api/shortterm/intraday/snapshot?date=2026-09-03')
     assert r.json()['accepted'] is True and r.json()['zt_count'] == 1
     assert r.json()['pools_available'] == {'zt': True, 'zb': True, 'dt': True}

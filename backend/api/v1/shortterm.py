@@ -53,9 +53,10 @@ async def get_latest_session(user: Optional[dict] = Depends(get_current_user)):
 @router.get("/pools")
 async def get_pools(date: str = None, user: Optional[dict] = Depends(get_current_user)):
     d = date or latest_session()
-    zt = _load_or_fetch(d, 'zt', fetchers.fetch_zt_pool)
-    zb = _load_or_fetch(d, 'zb', fetchers.fetch_zb_pool)
-    dt = _load_or_fetch(d, 'dt', fetchers.fetch_dt_pool)
+    # v6.8.0 (B2.1): 落库路径同样以 Fuyao 为优先源（缺 Key/收费退场时自动回退本地）
+    zt = _load_or_fetch(d, 'zt', lambda x: fetchers.fetch_zt_pool(x, prefer='fuyao'))
+    zb = _load_or_fetch(d, 'zb', lambda x: fetchers.fetch_zb_pool(x, prefer='fuyao'))
+    dt = _load_or_fetch(d, 'dt', lambda x: fetchers.fetch_dt_pool(x, prefer='fuyao'))
     return {'success': True, 'date': d, 'settled': is_settled(d),
             'zt': zt, 'zb': zb, 'dt': dt,
             'ladder': ladder.ladder_gap(zt or [])}
@@ -480,9 +481,10 @@ async def post_intraday_snapshot(date: str = None,
         return {'success': True, 'date': d, 'accepted': False, 'reason': reason}
     slot = reason.replace('快照时点 ', '')
     # V5.2.2-fix: 抓实时池子(源链 fallback), 而非读收盘 store — 盘中才有意义
-    zt = fetchers.fetch_zt_pool(d)
-    zb = fetchers.fetch_zb_pool(d)
-    dt = fetchers.fetch_dt_pool(d)
+    # v6.8.0 (B2.1): 三池走 Fuyao 优先 + 本地补齐（T2 周边；关掉 Fuyao 自动回退）
+    zt = fetchers.fetch_zt_pool(d, prefer='fuyao')
+    zb = fetchers.fetch_zb_pool(d, prefer='fuyao')
+    dt = fetchers.fetch_dt_pool(d, prefer='fuyao')
     mood = intraday.snapshot_mood(zt['rows'] if zt.get('available') else None,
                                   zb['rows'] if zb.get('available') else None,
                                   dt['rows'] if dt.get('available') else None)

@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 import pytest
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from auth import get_current_active_user
@@ -31,7 +31,7 @@ def client():
     return _make_client()
 
 
-def _fake_pool(date):
+def _fake_pool(date, prefer=None):
     return {'available': True, 'source': 'akshare.eastmoney', 'date': date,
             'rows': [{'ts_code': '002909', 'name': '集泰股份', 'boards': 3,
                       'board': '10cm', 'first_seal_time': '09:25:00',
@@ -76,7 +76,7 @@ def test_pools_structure(monkeypatch, client):
 
 
 def test_pools_failure_is_null_not_zero(monkeypatch, client):
-    def fail(date):
+    def fail(date, prefer=None):
         return {'available': False, 'reason': '[⚠️ 涨停池｜boom]'}
     monkeypatch.setattr(fetchers, 'fetch_zt_pool', fail)
     monkeypatch.setattr(fetchers, 'fetch_zb_pool', _fake_pool)
@@ -138,7 +138,7 @@ def test_dates_lists_captured(monkeypatch, client):
 
 
 def test_capture_failure_marks_null(monkeypatch, client):
-    def fail(date):
+    def fail(date, prefer=None):
         return {'available': False, 'reason': '[⚠️ boom]'}
     monkeypatch.setattr(fetchers, 'fetch_zt_pool', fail)
     monkeypatch.setattr(fetchers, 'fetch_zb_pool', _fake_pool)
