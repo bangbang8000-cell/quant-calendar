@@ -64,6 +64,68 @@ def resolve_api_key(environ=None):
     return ''
 
 
+def shares_to_lots(volume):
+    """成交量：Fuyao 用**股**，项目内部用**手**（1 手 = 100 股）。"""
+    try:
+        return float(volume) / 100.0
+    except (TypeError, ValueError):
+        return None
+
+
+def lots_to_shares(lots):
+    try:
+        return float(lots) * 100.0
+    except (TypeError, ValueError):
+        return None
+
+
+def ms_to_yyyymmdd(ms):
+    """毫秒戳 → 'YYYYMMDD'（按 Asia/Shanghai 自然日）。"""
+    try:
+        from datetime import datetime, timedelta, timezone
+        dt = datetime.fromtimestamp(int(ms) / 1000, tz=timezone(timedelta(hours=8)))
+        return dt.strftime('%Y%m%d')
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def pct_passthrough(value):
+    """Fuyao 的 price_change_ratio_pct 已是百分数（2.84 表示 +2.84%），**禁止再 ×100**。"""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def normalize_bar(item):
+    """把 Fuyao 日 K/快照项归一成项目内部口径。
+
+    单位约定：成交量 股→手、成交额 元→千元（对齐 tushare amount 口径）、日期 毫秒→YYYYMMDD。
+    """
+    if not isinstance(item, dict):
+        return None
+    close = item.get('close_price', item.get('last_price'))
+    return {
+        'trade_date': ms_to_yyyymmdd(item.get('date_ms')),
+        'open': _to_float(item.get('open_price')),
+        'close': _to_float(close),
+        'low': _to_float(item.get('low_price')),
+        'high': _to_float(item.get('high_price')),
+        'vol': shares_to_lots(item.get('volume')),
+        'amount': (lambda v: None if v is None else v / 1000.0)(
+            _to_float(item.get('turnover'))),
+        'pct_chg': pct_passthrough(item.get('price_change_ratio_pct')),
+    }
+
+
+def _to_float(v):
+    try:
+        f = float(v)
+        return None if f != f else f
+    except (TypeError, ValueError):
+        return None
+
+
 def _default_transport(url, headers, timeout):
     import requests  # noqa: PLC0415 — 延迟导入，便于无网测试注入 transport
 
@@ -75,7 +137,8 @@ class FuyaoClient:
     """Fuyao REST 客户端（薄封装：信封 + 语义 + 限速 + 重试）。"""
 
     def __init__(self, api_key=None, *, base_url=None, timeout=(5, 15), max_qps=5,
-                 retries=2, transport=None, sleep=None, clock=None, environ=None):
+                 retries=2, transport=None, sleep=None, clock=None, environ=None,
+                 daily_limit=3000, today=None):
         self._api_key = (api_key if api_key is not None else resolve_api_key(environ)) or ''
         self.base_url = (base_url or BASE_URL).rstrip('/')
         self.timeout = timeout
@@ -87,6 +150,12 @@ class FuyaoClient:
 
         self._tokens = float(self.max_qps)
         self._last = self._clock()
+
+        # 日配额（D15：3000 次/日，超限仅告警不硬停）
+        self.daily_limit = max(0, int(daily_limit))
+        self._today = today or (lambda: __import__('datetime').datetime.now().strftime('%Y-%m-%d'))
+        self._day = None
+        self._used_today = 0
 
         self._stats = {
             'calls': 0,
@@ -131,6 +200,26 @@ class FuyaoClient:
         self._last = self._clock()
         self._tokens = 0.0
 
+    def _consume_quota(self):
+        cur = self._today()
+        if cur != self._day:
+            self._day = cur
+            self._used_today = 0
+        self._used_today += 1
+        if self.daily_limit and self._used_today == self.daily_limit + 1:
+            logger.warning('[fuyao] 已达自设日配额 %d 次，继续调用仅告警不硬停（D15）',
+                           self.daily_limit)
+
+    def quota_snapshot(self):
+        cur = self._today()
+        used = self._used_today if cur == self._day else 0
+        return {
+            'daily_limit': self.daily_limit,
+            'used_today': used,
+            'remaining': max(0, self.daily_limit - used) if self.daily_limit else None,
+            'exceeded': bool(self.daily_limit and used > self.daily_limit),
+        }
+
     # -- 请求 ------------------------------------------------------------------
     def get(self, capability, path, params=None, retries=None):
         """调用一个 Fuyao 能力。
@@ -174,6 +263,7 @@ class FuyaoClient:
 
         for attempt in range(retries + 1):
             attempts = attempt + 1
+            self._consume_quota()
             self._acquire()
             try:
                 status, text = self._transport(url, headers, self.timeout)
@@ -263,6 +353,7 @@ class FuyaoClient:
             'rate_limited': s['rate_limited'],
             'unavailable_capabilities': sorted(self.unavailable_capabilities),
             'avg_latency_ms': int(s['latency_ms_total'] / s['calls']) if s['calls'] else 0,
+            'quota': self.quota_snapshot(),
         }
 
     # -- 健康检查 --------------------------------------------------------------
