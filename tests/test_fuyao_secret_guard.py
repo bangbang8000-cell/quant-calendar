@@ -93,3 +93,21 @@ def _run(coro):
     if not asyncio.iscoroutine(coro):
         return coro
     return asyncio.run(coro)
+
+
+def test_config_endpoint_tolerates_missing_source_sections(monkeypatch):
+    """v7.3.3: 配置里缺 tushare/sxsc_tushare 段时不得 500（真实用户可能只有精简配置）。"""
+    import asyncio
+    from api.v1 import market as market_api
+
+    class FakeManager:
+        def get_config(self):
+            return {'sources': {}}          # 两段都不存在
+
+    import data_sources
+    monkeypatch.setattr(data_sources, 'data_source_manager', FakeManager(), raising=False)
+    out = asyncio.run(market_api.get_datasource_config(_={}))
+    assert out['success'] is True
+    cfg = out['config']
+    assert 'tushare' in cfg['sources'] and 'sxsc_tushare' in cfg['sources']
+    assert 'token' in cfg['sources']['tushare']

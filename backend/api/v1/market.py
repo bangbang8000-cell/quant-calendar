@@ -235,15 +235,21 @@ async def get_datasource_config(_: Dict = Depends(get_admin_user)):
     from config import settings
     from secret_utils import mask_secret
     config = data_source_manager.get_config()
+    # v7.3.3-fix: 旧版/精简版 datasource_config.json 可能没有 tushare/sxsc_tushare 段，
+    # 原实现直接 `config['sources']['sxsc_tushare']['token'] = ...` → KeyError → 该端点 500。
+    # 统一用 setdefault 兜底（缺段就建空段），保证配置页永远打得开。
+    srcs = config.setdefault('sources', {})
     # 回填 config.py 中的 token（若 datasource_config.json 中为空）
-    if config.get('sources', {}).get('tushare', {}).get('token', '') == '':
-        config['sources']['tushare']['token'] = settings.TUSHARE_TOKEN or ''
-    if config.get('sources', {}).get('sxsc_tushare', {}).get('token', '') == '':
-        config['sources']['sxsc_tushare']['token'] = settings.SXSC_TUSHARE_TOKEN or ''
+    ts_cfg = srcs.setdefault('tushare', {})
+    if ts_cfg.get('token', '') == '':
+        ts_cfg['token'] = settings.TUSHARE_TOKEN or ''
+    sx_cfg = srcs.setdefault('sxsc_tushare', {})
+    if sx_cfg.get('token', '') == '':
+        sx_cfg['token'] = settings.SXSC_TUSHARE_TOKEN or ''
     # V4.0 需求2: 掩码展示 (首尾露真实字符, 中间打 *)
     for src_name in ('tushare', 'sxsc_tushare'):
-        token = config.get('sources', {}).get(src_name, {}).get('token', '') or ''
-        config['sources'][src_name]['token'] = mask_secret(token)
+        token = srcs.get(src_name, {}).get('token', '') or ''
+        srcs[src_name]['token'] = mask_secret(token)
     # v6.7.0 (B1.3): fuyao 的 Key 只存在于环境变量（不落 datasource_config.json），
     # 这里只回填掩码用于界面展示；完整值走 /api/system/reveal-secret 验密。
     try:
