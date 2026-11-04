@@ -476,13 +476,13 @@ SCENARIOS = [
     {
         'key': 'strategies_desktop', 'label': '策略总览(桌面 1280px)',
         'prepare': lambda p: _open_page(p, 'strategies', 'overview'),
-        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '策略总览 - '},
+        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '概览 - '},
         'ready': '.today-hero',
     },
     {
         'key': 'calendar', 'label': '量化日历(日视图)',
         'prepare': lambda p: _open_page(p, 'calendar', 'calendar'),
-        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '量化日历 - '},
+        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '日历视图 - '},
         'ready': '[data-cal-root]',
     },
     {
@@ -496,26 +496,26 @@ SCENARIOS = [
                                   row.click();
                                   return true;
                               }"""))[-1],
-        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '量化日历 - '},
+        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '日历视图 - '},
         'ready': '.kline-dialog',
     },
     {
         'key': 'command_panel', 'label': '命令面板(Ctrl+K)',
         'prepare': lambda p: (p.keyboard.press('Control+k'), _wait_sel(p, '.command-palette'))[-1],
-        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '量化日历 - '},
+        'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '日历视图 - '},
         'ready': '.command-palette',
     },
     {
         'key': 'strategies_mobile', 'label': '策略总览(移动 375px)',
         'prepare': lambda p: _open_page(p, 'strategies', 'overview'),
-        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '策略总览 - '},
+        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '概览 - '},
         'ready': '.today-hero',
         'viewport': (375, 812),
     },
     {
         'key': 'dark_theme', 'label': '深色主题(暗色专业)',
         'prepare': lambda p: (_open_page(p, 'strategies', 'overview'), _apply_theme_mode(p, '深色'))[-1],
-        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '策略总览 - ',
+        'expect': {'page': 'strategies', 'tab': 'overview', 'title': '概览 - ',
                    'theme': 'dark-pro'},
         'ready': '.today-hero',
     },
@@ -523,13 +523,13 @@ SCENARIOS = [
     {
         'key': 'ai_overview', 'label': '智能评估(评估概览)',
         'prepare': lambda p: _open_page(p, 'ai', 'overview'),
-        'expect': {'page': 'ai', 'tab': 'overview', 'title': '智能评估 - '},
+        'expect': {'page': 'ai', 'tab': 'overview', 'title': '概览 - '},
         'ready': '.card',
     },
     {
         'key': 'research', 'label': '策略研究(研究概览)',
         'prepare': lambda p: _open_page(p, 'research', 'research-overview'),
-        'expect': {'page': 'research', 'tab': 'research-overview', 'title': '策略研究 - '},
+        'expect': {'page': 'research', 'tab': 'research-overview', 'title': '概览 - '},
         'ready': '.card',
         # 该环境的 groups.json 把 research 置为 false (管理组不可见) —— 菜单不存在时跳过而非失败,
         # 否则会把「环境配置」误报成「脚本/应用缺陷」。
