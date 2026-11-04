@@ -28,6 +28,13 @@ async def industry_strength(refresh: int = 0, limit: Optional[int] = None,
     import industry_strength as ist
     try:
         if refresh:
+            cached = ist.get_matrix(auto_refresh=False, limit=limit)
+            if cached and cached.get('available'):
+                # v7.3.2: 全量刷新实测 68s —— 有缓存就立即返回 + 后台刷新（不卡住请求）
+                started = ist.start_background_refresh(limit=limit)
+                return {'success': True, **cached, 'refreshing': bool(started),
+                        'refresh_note': '已在后台刷新（约 1 分钟），稍后点刷新或等待自动更新'
+                                        if started else '后台刷新进行中'}
             out = ist.refresh(limit=limit)
         else:
             out = ist.get_matrix(auto_refresh=True, limit=limit)

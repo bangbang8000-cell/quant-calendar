@@ -90,32 +90,15 @@
                  : { 'Content-Type': 'application/json' };
       }
 
-      // ─── V5.2.3 高效加载: 客户端 TTL 缓存 + 竞态防护 ───
-      // V6.9.3 (F8.2/H6): 缓存容量上限 50 条 + LRU 淘汰 (防长会话内存增长)
-      const _cache = {};
-      const _cacheOrder = [];
-      const CACHE_MAX = 50;
-      const CACHE_TTL = 60 * 1000;   // 60s 内同 URL 不重拉(切子页/回退秒开)
+      // ─── v7.3.2: 客户端 TTL 缓存（模块级 + 分级 TTL + 并发去重）见 logic-cache.js ───
+      const _cacheDomain = window.__quantModules.shorttermPage.cache.create({ authHeaders });
+      const cachedGet = _cacheDomain.cachedGet;
+      const cacheSnapshot = _cacheDomain.cacheSnapshot;
+
       let _reqSeq = 0;               // 请求序号: 旧响应丢弃, 防快速切换覆盖新数据
       // V5.2.5 (T-5.2.57): overview/review 并行加载共享 _reqSeq 会互相覆盖导致看板永远 loading → 独立序号
       let _overviewSeq = 0;
       let _reviewSeq = 0;
-
-      function cachedGet(url, force) {
-        const now = Date.now();
-        const hit = _cache[url];
-        if (!force && hit && now - hit.ts < CACHE_TTL) return Promise.resolve(hit.data);
-        return fetch(url, { headers: authHeaders() }).then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (!_cache[url]) _cacheOrder.push(url);
-            _cache[url] = { ts: Date.now(), data: data };
-            if (_cacheOrder.length > CACHE_MAX) {
-              const oldest = _cacheOrder.shift();
-              delete _cache[oldest];
-            }
-            return data;
-          });
-      }
 
       async function loadPools(force) {
         const seq = ++_reqSeq;
@@ -518,7 +501,8 @@
           const res = await fetch(url, { method: 'POST', headers: authHeaders() }).then(function (r) { return r.json(); });
           if (res && res.success) {
             review.value = res;
-            _cache[url] = { ts: Date.now(), data: res };   // 生成后刷新缓存
+            // v7.3.2: 缓存已下沉到 logic-cache.js，这里通过域对象回填（生成后刷新缓存）
+            _cacheDomain.put(url, res);
           }
         } catch (e) { /* 失败保持原态 */ } finally {
           reviewRunning.value = false;
@@ -679,7 +663,7 @@
         lab, labLoading, labError, labReason, labBlocks, loadLab,
         loadPools, loadLhb, loadOverview, loadSectorFlow, loadReview, runReview,
         sendChat, loadIntraday, collectSnapshot, refreshCurrent,
-        ladderText, fmtAmount, fmtPct, riseFall, tagClass, openStock,
+        ladderText, fmtAmount, fmtPct, riseFall, tagClass, openStock, cacheSnapshot,
         lhbInstitutionNetBuy, lhbHotMoneyCount, sectorTopName, sectorTopInflow, sectorSource,
         moneySource, promotion1to2, cycleScore, cycleTrend,
         pct, fmtCond, verdictClass, sessionStatusText, sessionStatusClass,

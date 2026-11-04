@@ -6,7 +6,7 @@
   </p>
   <p align="center">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/releases"><img src="https://img.shields.io/github/v/release/bangbang8000-cell/quant-calendar?color=blue&label=release" alt="release"></a>
-    <img src="https://img.shields.io/badge/version-7.3.1-brightgreen" alt="version">
+    <img src="https://img.shields.io/badge/version-7.3.2-brightgreen" alt="version">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
     <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="python">
     <img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue">
@@ -21,7 +21,7 @@
 
 把「今天该看什么」做成一个日历：**宏观周期 → 策略选股 → AI 评估 → 短线复盘 → 研究验证**，全部本地跑、数据可追溯、口径写在页面上。
 
-自 v6.7 起接入同花顺（Fuyao）数据平台，形成一条完整的数据产品线（v6.7 → v7.3），当前版本 **v7.3.1**。
+自 v6.7 起接入同花顺（Fuyao）数据平台，形成一条完整的数据产品线（v6.7 → v7.3），当前版本 **v7.3.2**。
 
 | 维度 | 现状 |
 |---|---|
@@ -262,7 +262,8 @@ quant-calendar/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **v7.3.1** | 2026-11 | **当前开发版本** — 修复短线复盘页整页空白（setup 作用域事故）+ 补齐四态面板标题 + 新增「setup 接线」静态门禁 |
+| **v7.3.2** | 2026-11 | **当前开发版本** — 7.3.X 迭代（见 docs/PRD-7.3.X.md） |
+| **v7.3.1** | 2026-11 | 修复短线复盘页整页空白（setup 作用域事故）+ 补齐四态面板标题 + 新增「setup 接线」静态门禁 |
 | **v7.3.0** | 2026-11 | 财务质量分位 + 防未来函数审计五项 + 回测实验室（lag=1/双边成本/样本内外同参）+ 零 Fuyao 演练 |
 | **v7.2.0** | 2026-11 | 情绪脉冲屏 + 龙虎榜资金拓扑（守恒 diff=0）+ 热榜—股价共振 + 自选异动扫描 |
 | **v7.1.0** | 2026-11 | 行业强度矩阵（320/320 覆盖）+ 单文件离线导出 + 口径禁称词表 |

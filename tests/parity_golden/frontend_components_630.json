@@ -1797,6 +1797,7 @@
     "name": "qc-shortterm-page",
     "setup_keys": [
       "PAGE_SIZE",
+      "cacheSnapshot",
       "chatAnswer",
       "chatLoading",
       "chatQuestion",

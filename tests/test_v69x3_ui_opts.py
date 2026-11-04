@@ -106,11 +106,20 @@ def test_navmode_panel_opaque():
 
 
 def test_shortterm_prefetch_and_lru():
-    """TC-6.9.3.17/18: 短线复盘并行预取 + 缓存 LRU 上限"""
+    """TC-6.9.3.17/18: 短线复盘并行预取 + 缓存 LRU 上限
+
+    v7.3.2: 缓存下沉到逻辑域 `shortterm/logic-cache.js`（模块级 + 分级 TTL），
+    容量上限由 50 提到 120（研究类多 URL + 10 分钟 TTL 需要更大空间）。
+    """
     src = _read_f("js/components/shortterm-page.js")
     assert "prefetchShortterm" in src, "应含并行预取函数"
-    assert "CACHE_MAX" in src and "50" in src, "应含缓存容量上限 50"
     assert "prefetchShortterm();" in src, "onMounted 应触发预取"
+    assert "shorttermPage.cache.create" in src, "缓存应由 logic-cache 域提供"
+
+    cache_src = _read_f("js/components/shortterm/logic-cache.js")
+    assert "max:" in cache_src and "120" in cache_src, "应含缓存容量上限（LRU 淘汰）"
+    assert "TTL_RESEARCH" in cache_src, "应含分级 TTL（研究类更长）"
+    assert "inflight" in cache_src, "应含并发去重（in-flight）"
     # 后端 overview 聚合并行化
     st = _read_b("api/v1/shortterm.py")
     assert "ThreadPoolExecutor" in st, "overview 应并行构建"

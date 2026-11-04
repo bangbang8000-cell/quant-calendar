@@ -22,6 +22,7 @@
 
 import json
 import logging
+import threading
 import os
 import statistics
 import time
@@ -273,3 +274,42 @@ def get_matrix(auto_refresh=True, limit=None):
     if not auto_refresh:
         return {'available': False, 'reason': 'cache_missing'}
     return refresh(limit=limit)
+
+# ==================== v7.3.2: 后台刷新（68s 的全量刷新不能卡住请求） ====================
+
+_refresh_lock = threading.Lock()
+_refreshing = {'flag': False, 'started_at': None, 'finished_at': None, 'error': None}
+
+
+def is_refreshing():
+    return bool(_refreshing['flag'])
+
+
+def refresh_state():
+    return dict(_refreshing)
+
+
+def start_background_refresh(limit=None):
+    """在后台线程跑一次全量刷新；已有刷新在跑时直接返回 False（单飞）。"""
+    with _refresh_lock:
+        if _refreshing['flag']:
+            return False
+        _refreshing['flag'] = True
+        _refreshing['started_at'] = _cst_now().strftime('%Y-%m-%d %H:%M:%S')
+        _refreshing['error'] = None
+
+    def _run():
+        try:
+            out = refresh(limit=limit)
+            if not out.get('available'):
+                _refreshing['error'] = out.get('reason') or 'refresh_failed'
+        except Exception as e:  # noqa: BLE001 — 后台刷新失败只记录
+            _refreshing['error'] = '%s: %s' % (type(e).__name__, str(e)[:120])
+            logger.warning('[industry] 后台刷新失败: %s', e)
+        finally:
+            _refreshing['flag'] = False
+            _refreshing['finished_at'] = _cst_now().strftime('%Y-%m-%d %H:%M:%S')
+
+    t = threading.Thread(target=_run, name='qc-industry-refresh', daemon=True)
+    t.start()
+    return True
