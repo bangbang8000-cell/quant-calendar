@@ -11,6 +11,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 os.environ.setdefault('FERNET_KEY', 'test-fernet-key-not-for-production-use-32bytes!!')
 
 
+@pytest.fixture(autouse=True)
+def clear_ttl_cache():
+    """每个用例前清空进程内 TTL 缓存（v7.3.2）。
+
+    研究接口（backtest-lab / sentiment-pulse / lhb-topology）加了服务端缓存，
+    若不隔离，前一个用例的缓存会让后一个用例的"降级路径"直接命中旧结果。
+    """
+    import ttl_cache
+    ttl_cache.clear()
+    yield
+    ttl_cache.clear()
+
+
 @pytest.fixture(scope='session', autouse=True)
 def patch_users_file():
     """Use temp path so UserManager auto-creates admin+guest"""

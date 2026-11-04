@@ -79,12 +79,16 @@ async def sentiment_pulse(date: Optional[str] = None,
                           user: Optional[dict] = Depends(get_current_user)):
     """涨停情绪市场脉冲屏（早封率/封单留存/原因分布/板位矩阵）。"""
     import sentiment_pulse as sp
+    import ttl_cache
     from shortterm import fetchers, ladder, trade_calendar
     d = date or trade_calendar.latest_session()
     try:
-        pool = fetchers.fetch_zt_pool(d, prefer='fuyao')
-        lad, _meta = ladder.fetch_ladder_fuyao()
-        out = sp.build_pulse(d, pool, lad)
+        def _compute():
+            pool = fetchers.fetch_zt_pool(d, prefer='fuyao')
+            lad, _meta = ladder.fetch_ladder_fuyao()
+            return sp.build_pulse(d, pool, lad)
+
+        out = ttl_cache.cached(('sentiment-pulse', d), 300, _compute)
     except Exception as e:  # noqa: BLE001 — 取数异常如实降级
         return {'success': True, 'available': False,
                 'reason': '%s: %s' % (type(e).__name__, str(e)[:120]), 'date': d}
@@ -96,13 +100,17 @@ async def lhb_topology(days: int = 5, end: Optional[str] = None,
                        user: Optional[dict] = Depends(get_current_user)):
     """龙虎榜资金拓扑（概念等分 + 守恒）。days 上限 20。"""
     import lhb_topology as tp
+    import ttl_cache
     from shortterm import lhb, trade_calendar
     n = max(1, min(int(days or 5), 20))
     try:
-        dates = trade_calendar.last_trade_dates(n, end=end) if end else \
-            trade_calendar.last_trade_dates(n)
-        results = [(d, (lhb.fetch_lhb(d, d) or {}).get('rows') or []) for d in dates]
-        out = tp.build_topology(results)
+        def _compute():
+            dates = trade_calendar.last_trade_dates(n, end=end) if end else \
+                trade_calendar.last_trade_dates(n)
+            results = [(d, (lhb.fetch_lhb(d, d) or {}).get('rows') or []) for d in dates]
+            return tp.build_topology(results)
+
+        out = ttl_cache.cached(('lhb-topology', n, end), 300, _compute)
     except Exception as e:  # noqa: BLE001
         return {'success': True, 'available': False,
                 'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
@@ -180,6 +188,7 @@ async def backtest_lab(lookback: int = 20, top_k: int = 10, start: Optional[str]
                        user: Optional[dict] = Depends(get_current_user)):
     """回测实验室（DWH 面板 + lag=1 + 双边成本 + 样本内外）。无 DWH 时如实降级。"""
     import backtest_lab as bl
+    import ttl_cache
     try:
         from dwh import get_backend
         backend = get_backend()
@@ -188,14 +197,39 @@ async def backtest_lab(lookback: int = 20, top_k: int = 10, start: Optional[str]
             return {'success': True, 'available': False,
                     'reason': 'dwh_unavailable: %s' % st.get('reason')}
         s = start or '2026-01-01'
-        res = backend.query(
-            'SELECT thscode AS ts_code, CAST(date AS VARCHAR) AS trade_date, close '
-            'FROM v_daily_qfq WHERE date >= CAST(? AS DATE) ORDER BY date', [s])
-        panel = [{'ts_code': r[0], 'trade_date': r[1], 'close': r[2]} for r in res.get('rows') or []]
-        out = bl.walkforward(panel, lookback=int(lookback), top_k=int(top_k),
-                             in_sample_frac=float(in_sample_frac))
+        # v7.3.2: 日频数据 + 110 万行面板, 单次 walkforward 实测 9.6~10.4s → 必须服务端缓存
+        # key 带上「库内最新日期」：数据一旦更新自动失效，不会返回过期结论
+        key = ('backtest-lab', int(lookback), int(top_k), s,
+               round(float(in_sample_frac), 4), st.get('latest_date'), st.get('rows'))
+
+        def _compute():
+            res = backend.query(
+                'SELECT thscode AS ts_code, CAST(date AS VARCHAR) AS trade_date, close '
+                'FROM v_daily_qfq WHERE date >= CAST(? AS DATE) ORDER BY date', [s])
+            panel = [{'ts_code': r[0], 'trade_date': r[1], 'close': r[2]}
+                     for r in res.get('rows') or []]
+            return {'panel_rows': len(panel), 'start': s,
+                    **bl.walkforward(panel, lookback=int(lookback), top_k=int(top_k),
+                                     in_sample_frac=float(in_sample_frac))}
+
+        out = ttl_cache.cached(key, 1800, _compute)
     except Exception as e:  # noqa: BLE001
         return {'success': True, 'available': False,
                 'reason': '%s: %s' % (type(e).__name__, str(e)[:120])}
     # 注意：panel_rows 是面板行数；不要用 rows（与 fin-quality 的行列表语义冲突）
-    return {'success': True, 'panel_rows': len(panel), 'start': s, **out}
+    return {'success': True, **out}
+
+
+@router.get('/cache-stats')
+async def cache_stats(_: dict = Depends(get_admin_user)):
+    """研究接口缓存命中情况（v7.3.2 性能可观测）。"""
+    import ttl_cache
+    return {'success': True, **ttl_cache.stats()}
+
+
+@router.post('/cache-clear')
+async def cache_clear(_: dict = Depends(get_admin_user)):
+    """清空研究接口缓存（强制下次实时计算）。"""
+    import ttl_cache
+    ttl_cache.clear()
+    return {'success': True, 'cleared': True}

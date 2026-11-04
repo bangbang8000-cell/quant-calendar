@@ -218,3 +218,16 @@ def test_v73_routes_registered():
     for p in ('/api/research/fin-quality', '/api/research/pit-audit',
               '/api/research/backtest-lab'):
         assert p in paths
+
+def test_cache_stats_and_clear_endpoints(monkeypatch):
+    """v7.3.2: 缓存可观测与强制失效（admin）"""
+    import asyncio
+    import api.v1.research as r
+    import ttl_cache
+    ttl_cache.clear()
+    ttl_cache.cached('research:demo', 60, lambda: 42)
+    st = asyncio.run(r.cache_stats(_={}))
+    assert st['success'] is True and st['entries'] >= 1
+    out = asyncio.run(r.cache_clear(_={}))
+    assert out['cleared'] is True and ttl_cache.get('research:demo') is None
+
