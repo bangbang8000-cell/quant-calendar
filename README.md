@@ -6,11 +6,11 @@
   </p>
   <p align="center">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/releases"><img src="https://img.shields.io/github/v/release/bangbang8000-cell/quant-calendar?color=blue&label=release" alt="release"></a>
-    <img src="https://img.shields.io/badge/version-7.3.2-brightgreen" alt="version">
+    <img src="https://img.shields.io/badge/version-7.3.3-brightgreen" alt="version">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
     <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="python">
     <img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue">
-    <img src="https://img.shields.io/badge/tests-4273%20passed-success" alt="tests">
+    <img src="https://img.shields.io/badge/tests-4293%20passed-success" alt="tests">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/stargazers"><img src="https://img.shields.io/github/stars/bangbang8000-cell/quant-calendar?style=social" alt="stars"></a>
   </p>
 </p>
@@ -21,14 +21,14 @@
 
 把「今天该看什么」做成一个日历：**宏观周期 → 策略选股 → AI 评估 → 短线复盘 → 研究验证**，全部本地跑、数据可追溯、口径写在页面上。
 
-自 v6.7 起接入同花顺（Fuyao）数据平台，形成一条完整的数据产品线（v6.7 → v7.3），当前版本 **v7.3.2**。
+自 v6.7 起接入同花顺（Fuyao）数据平台，形成一条完整的数据产品线（v6.7 → v7.3），当前版本 **v7.3.3**。
 
 | 维度 | 现状 |
 |---|---|
 | 数据源 | 四源热备 `sxsc_tushare → tushare → akshare → fuyao`，任一家挂掉自动降级 |
 | 数据底座 | 本地 DuckDB 全市场面板：**10,368,988 行 / 5,577 只 / 10 年日 K + 复权因子** |
 | 行业覆盖 | 同花顺行业 **320/320 全覆盖**，5/20/60 日横截面相对强度 |
-| 质量门禁 | **4273 项测试全绿**、ruff、体积预算、静默异常、PIT 防未来函数审计、零 Fuyao 演练 |
+| 质量门禁 | **4293 项测试全绿**、GitHub CI 8/8 绿、ruff、体积预算、静默异常、PIT 防未来函数审计、零 Fuyao 演练 |
 
 ---
 
@@ -181,7 +181,7 @@ flowchart LR
 
 | 门禁 | 内容 |
 |---|---|
-| 单元/集成测试 | `pytest -m "not e2e"` → **4273 passed / 1 skipped / 0 failed** |
+| 单元/集成测试 | `pytest -m "not e2e"` → **4293 passed / 1 skipped / 0 failed** |
 | 代码风格 | `ruff check`（新增文件 0 告警） |
 | 结构门禁 | 单文件 ≤700 行、前端源码体积预算、静默异常分级 |
 | 前端门禁 | 一致性 / 令牌无硬编码 / 未定义类 / 组件对拍快照 |
@@ -254,6 +254,7 @@ quant-calendar/
 | DuckDB 面板怎么建、怎么增量、怎么备份 | [Wiki: 数据底座](docs/wiki/06-数据底座DWH.md) |
 | 回测为什么"不好看"、怎么验证没偷看未来 | [Wiki: 回测与审计](docs/wiki/07-回测与审计.md) |
 | 页面/接口为什么快或慢、缓存怎么设计 | [Wiki: 性能与缓存](docs/wiki/11-性能与缓存.md) |
+| GitHub Actions 红了怎么查、门禁有哪些 | [Wiki: CI 与门禁](docs/wiki/12-CI与门禁.md) |
 | 完整版本历史 | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
 | 每个版本怎么验收的（含实测数据） | [docs/ACCEPTANCE-v7.3.0.md](docs/ACCEPTANCE-v7.3.0.md) 等 |
 
@@ -263,7 +264,8 @@ quant-calendar/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| **v7.3.2** | 2026-11 | **当前开发版本** — 7.3.X 迭代（见 docs/PRD-7.3.X.md） |
+| **v7.3.3** | 2026-11 | **当前开发版本** — 7.3.X 迭代（见 docs/PRD-7.3.X.md） |
+| **v7.3.2** | 2026-11 | 7.3.X 迭代（见 docs/PRD-7.3.X.md） |
 | **v7.3.1** | 2026-11 | 修复短线复盘页整页空白（setup 作用域事故）+ 补齐四态面板标题 + 新增「setup 接线」静态门禁 |
 | **v7.3.0** | 2026-11 | 财务质量分位 + 防未来函数审计五项 + 回测实验室（lag=1/双边成本/样本内外同参）+ 零 Fuyao 演练 |
 | **v7.2.0** | 2026-11 | 情绪脉冲屏 + 龙虎榜资金拓扑（守恒 diff=0）+ 热榜—股价共振 + 自选异动扫描 |
