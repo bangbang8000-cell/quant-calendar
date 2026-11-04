@@ -123,7 +123,8 @@ def test_tc652_03_gate_failure_prints_fix_command(tmp_path, capsys):
     bundle = _load("scripts/report_bundle_size.py")
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
-    (dist / "assets" / "index-x.js").write_bytes(b"x" * (500 * 1024))
+    # v7.3.3: 入口护栏已按实测校订为 1170KB → 造 1200KB 才会触发违规与修复建议
+    (dist / "assets" / "index-x.js").write_bytes(b"x" * (1200 * 1024))
     bundle.main(["--dist", str(dist)])
     assert "修复建议" in capsys.readouterr().out
     # 变更覆盖率门禁

@@ -497,7 +497,10 @@ SCENARIOS = [
                                   return true;
                               }"""))[-1],
         'expect': {'page': 'calendar', 'tab': 'calendar', 'title': '日历视图 - '},
-        'ready': '.kline-dialog',
+        # v7.3.3: 详情有两种呈现 —— 宽屏走右栏分栏 (.detail-split-pane)，
+        # 窄屏/关闭分栏才是弹窗 (.kline-dialog)。原断言只认弹窗，
+        # 默认开启分栏时永远等不到 → 场景恒判失败。
+        'ready': '.detail-split-pane, .kline-dialog',
     },
     {
         'key': 'command_panel', 'label': '命令面板(Ctrl+K)',
