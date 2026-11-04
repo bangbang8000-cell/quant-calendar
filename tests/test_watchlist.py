@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """pytest for watchlist per-user isolation"""
-import pytest, sys, os, json, tempfile
+import pytest
+import sys
+import os
+import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 
 @pytest.fixture
 def wl():
     """Setup watchlist in temp dir"""
-    import paths
     import api.v1.watchlist as wlmod
     old_dir = wlmod.BASE_USERS_DIR
     tmp = tempfile.mkdtemp()

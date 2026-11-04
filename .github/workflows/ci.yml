@@ -144,7 +144,9 @@ jobs:
           # V5.0.8 T-5.0.81/5.0.82/5.0.83/5.0.84/5.0.85: RBAC/协作/APIv3/SDK/插件SDK 覆盖率门禁 ≥70% (TEST-PLAN 9.3, 阻塞)
           python -m pytest tests/test_rbac_matrix.py --cov=rbac --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_collaboration.py --cov=collaboration --cov-report=term --cov-fail-under=70 -m "not e2e"
-          python -m pytest tests/test_api_v3.py tests/test_sdk.py --cov=api.v3 --cov=api.v1.watchlist --cov-report=term --cov-fail-under=70 -m "not e2e"
+          # v7.3.3-fix: 补入 test_watchlist.py —— 否则 api/v1/watchlist.py 只有 56%，
+          # 该项合计 64.51% < 70% → 门禁恒红。补入后实测 76.94%。
+          python -m pytest tests/test_api_v3.py tests/test_sdk.py tests/test_watchlist.py --cov=api.v3 --cov=api.v1.watchlist --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_plugins_v2.py --cov=plugin_sdk --cov-report=term --cov-fail-under=70 -m "not e2e"
           # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): AI 评估拆分后覆盖率不降门禁 ≥50% (拆前 ai_evaluator 同测试集基线)
           python -m pytest tests/test_ai_evaluator.py tests/test_ai_mock.py tests/test_eval_track.py tests/test_fact_check.py             tests/test_api_ai_models.py tests/test_api_batch_evaluate_stream.py tests/test_batch_evaluate_stream.py             tests/test_ai_eval_ui.py --cov=ai_eval --cov=ai_evaluator --cov-report=term --cov-fail-under=50 -m "not e2e"
