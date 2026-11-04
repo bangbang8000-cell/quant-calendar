@@ -111,7 +111,10 @@ jobs:
           fi
       - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
         run: |
+          # v7.3.3-fix: 补入 test_v66_merrill_correction.py —— 否则 merrill_clock/_correction.py 覆盖 0%
+          # （56 行全未命中），模块总覆盖被拖到 68.85% → 门禁恒红。补入后实测 78.27%。
           python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
+            tests/test_v66_merrill_correction.py \
             --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
           python -m pytest tests/test_factor_ic.py tests/test_fact_check.py tests/test_eval_track.py \
             tests/test_factor_ic_detail.py \
