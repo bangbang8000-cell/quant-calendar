@@ -62,6 +62,9 @@ def _wait(jobs, job_id, timeout=5.0):
 # ─── 提交/查询 ───────────────────────────────────────────────
 
 def test_create_and_get(jobs):
+    # v7.3.3-fix: 先停 worker —— 否则 create_task 唤醒 worker 后，CI（多核/快机器）
+    # 可能在 get_task 之前就把任务拉到 running，断言 'pending' 变成竞态（实测 CI 恒红）。
+    jobs.shutdown()
     jid = jobs.create_task("test-echo", {"n": 1})
     j = jobs.get_task(jid)
     assert j["status"] == "pending"
