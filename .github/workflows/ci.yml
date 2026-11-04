@@ -38,7 +38,13 @@ jobs:
           diff -u <(tail -n +4 requirements.lock) <(tail -n +4 /tmp/check-runtime.lock)
           uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/check-dev.lock
           diff -u <(tail -n +4 requirements-dev.lock) <(tail -n +4 /tmp/check-dev.lock)
-      - name: "Lint — 失败修复命令: ruff check backend/ --select=E,F,W --ignore=E501 --fix"
+      - name: 安装 ruff（版本取自 dev 锁文件，避免工具漂移）
+        run: |
+          # v7.3.2-fix: 原步骤直接用 `ruff` 但从未安装 → exit 127 command not found
+          V=$(grep -oP '^ruff==\K[0-9.]+' requirements-dev.lock)
+          echo "锁定 ruff 版本: ${V}"
+          uv pip install --system "ruff==${V}"
+      - name: "Lint（ruff，失败时本地跑: ruff check backend/ --select=E,F,W --ignore=E501 --fix）"
         run: ruff check backend/ --select=E,F,W --ignore=E501
       - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5; workflow_dispatch 仅校验存在)
         run: |
