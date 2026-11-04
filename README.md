@@ -253,6 +253,7 @@ quant-calendar/
 | 短线复盘各指标怎么算 | [Wiki: 短线复盘](docs/wiki/04-短线复盘.md) |
 | DuckDB 面板怎么建、怎么增量、怎么备份 | [Wiki: 数据底座](docs/wiki/06-数据底座DWH.md) |
 | 回测为什么"不好看"、怎么验证没偷看未来 | [Wiki: 回测与审计](docs/wiki/07-回测与审计.md) |
+| 页面/接口为什么快或慢、缓存怎么设计 | [Wiki: 性能与缓存](docs/wiki/11-性能与缓存.md) |
 | 完整版本历史 | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
 | 每个版本怎么验收的（含实测数据） | [docs/ACCEPTANCE-v7.3.0.md](docs/ACCEPTANCE-v7.3.0.md) 等 |
 
