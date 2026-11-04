@@ -61,10 +61,12 @@ def _wait(jobs, job_id, timeout=5.0):
 
 # ─── 提交/查询 ───────────────────────────────────────────────
 
-def test_create_and_get(jobs):
-    # v7.3.3-fix: 先停 worker —— 否则 create_task 唤醒 worker 后，CI（多核/快机器）
-    # 可能在 get_task 之前就把任务拉到 running，断言 'pending' 变成竞态（实测 CI 恒红）。
-    jobs.shutdown()
+def test_create_and_get(jobs, monkeypatch):
+    # v7.3.3-fix: 本用例只验证"创建即 pending"的入库语义，因此必须**关掉自动唤醒**。
+    # 原实现直接 create_task：create_task 内部会 _wake_worker()，CI（快机器）常在
+    # get_task 之前就把任务拉到 running，断言 'pending' 变成竞态（实测 CI 恒红）。
+    # 用 monkeypatch 把唤醒置空 —— 不动产品逻辑，也不放松断言。
+    monkeypatch.setattr(jobs, '_wake_worker', lambda: None, raising=False)
     jid = jobs.create_task("test-echo", {"n": 1})
     j = jobs.get_task(jid)
     assert j["status"] == "pending"
