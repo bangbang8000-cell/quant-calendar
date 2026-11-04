@@ -251,7 +251,6 @@ def run_daily_audit(history: Optional[List[Dict]] = None, limit: int = 20,
     unverified = 0
     failures: List[Dict] = []
     for rec in history:
-        result = rec.get("result") or {}
         data_card = _extract_data_card(rec)
         ai_text = _extract_ai_text(rec)
         if not data_card or not ai_text:

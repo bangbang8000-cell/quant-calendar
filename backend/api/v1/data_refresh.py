@@ -10,7 +10,7 @@ from auth import get_admin_user
 
 from data_parser import parser
 from views_aggregator import views_aggregator
-from data_refresh_config import get_config, save_config, update_refresh_status
+from data_refresh_config import update_refresh_status  # get_config/save_config 在函数内按需局部导入
 
 router = APIRouter(prefix="/data-refresh", tags=["数据刷新"])
 
