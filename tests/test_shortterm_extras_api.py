@@ -85,7 +85,9 @@ def test_flash_endpoint_degrades_on_error(monkeypatch):
 
 def test_routes_registered():
     import api.v1.router as r
-    paths = {getattr(x, 'path', '') for x in r.api_router.routes}
+    # v7.3.3: 改为以 OpenAPI 契约为准（旧写法在 fastapi 0.162 上取到空集）
+    import route_paths_helper
+    paths = route_paths_helper.api_paths()
     assert '/api/shortterm/auction' in paths
     assert '/api/shortterm/hot-list' in paths
     assert '/api/shortterm/anomaly' in paths

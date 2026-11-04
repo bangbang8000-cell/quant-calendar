@@ -175,3 +175,17 @@ def test_disabled_backend_raises(tmp_path):
     b.enabled = False
     with pytest.raises(ad.DwhUnavailable):
         b.resolve()
+
+
+def test_date_conversion_is_timezone_independent(dwh):
+    """v7.3.3: date_ms 是「北京时间当日 00:00」，落库日期必须与进程 TZ 无关。
+
+    修复前用 `CAST(to_timestamp(date_ms/1000) AS DATE)`：在 UTC 容器里会退一天，
+    导致 daily 表日期整体前移、增量判定从 INCREMENTAL 误变 FULL（CI 实测）。
+    """
+    b, db, tmp = dwh
+    p = _write_kline_parquet(str(tmp / 'tz.parquet'), [
+        ('600519.SH', _ms('20261102'), 100, 101, 99, 100.5, 10, 1000)])
+    b.sync(kind='daily-k', parquet_path=p)
+    rows = b.query('SELECT CAST(date AS VARCHAR) FROM raw_kline_daily')
+    assert rows['rows'] == [['2026-11-02']], '应与传入的北京时间日期一致'

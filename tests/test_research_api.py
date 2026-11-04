@@ -75,7 +75,9 @@ def test_export_to_disk_admin(monkeypatch, tmp_path):
 
 def test_routes_registered():
     import api.v1.router as rr
-    paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
+    # v7.3.3: 改为以 OpenAPI 契约为准（旧写法在 fastapi 0.162 上取到空集）
+    import route_paths_helper
+    paths = route_paths_helper.api_paths()
     assert '/api/research/industry-strength' in paths
     assert '/api/research/industry-export' in paths
 
@@ -149,7 +151,9 @@ def test_attention_resonance_rejects_bad_period(monkeypatch):
 
 def test_v72_routes_registered():
     import api.v1.router as rr
-    paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
+    # v7.3.3: 改为以 OpenAPI 契约为准（旧写法在 fastapi 0.162 上取到空集）
+    import route_paths_helper
+    paths = route_paths_helper.api_paths()
     for p in ('/api/research/sentiment-pulse', '/api/research/lhb-topology',
               '/api/research/attention-resonance'):
         assert p in paths
@@ -214,7 +218,9 @@ def test_backtest_lab_endpoint_with_dwh(monkeypatch):
 
 def test_v73_routes_registered():
     import api.v1.router as rr
-    paths = {getattr(x, 'path', '') for x in rr.api_router.routes}
+    # v7.3.3: 改为以 OpenAPI 契约为准（旧写法在 fastapi 0.162 上取到空集）
+    import route_paths_helper
+    paths = route_paths_helper.api_paths()
     for p in ('/api/research/fin-quality', '/api/research/pit-audit',
               '/api/research/backtest-lab'):
         assert p in paths

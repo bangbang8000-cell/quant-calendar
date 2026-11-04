@@ -115,7 +115,10 @@ def ingest_daily_k(db_path, parquet_path):
               (thscode, date, open, high, low, close, volume, turnover,
                currency, interval, adjusted, source_batch_id)
             SELECT thscode,
-                   CAST(to_timestamp(date_ms / 1000) AS DATE) AS date,
+                   -- v7.3.3-fix: 不能直接用 to_timestamp（受进程 TZ 影响：UTC 容器里日期会退一天）。
+                   -- dump 的 date_ms 是「北京时间当日 00:00」→ 固定按 +08:00 折算成日期，与时区无关。
+                   CAST(DATE '1970-01-01' + CAST(floor((date_ms / 1000 + 28800) / 86400) AS BIGINT)
+                        * INTERVAL 1 DAY AS DATE) AS date,
                    open_price, high_price, low_price, close_price,
                    volume, turnover,
                    COALESCE(currency, 'CNY') AS currency,
@@ -146,7 +149,9 @@ def ingest_adjustment_events(db_path, parquet_path):
               (thscode, ticker, ex_date, dividend_per_share, per_share_bonus,
                allotment_ratio, allotment_price, currency, source_batch_id)
             SELECT thscode, ticker,
-                   CAST(to_timestamp(ex_date_ms / 1000) AS DATE) AS ex_date,
+                   -- 同上：按 +08:00 固定折算，避免 UTC 部署时复权事件整体前移一天
+                   CAST(DATE '1970-01-01' + CAST(floor((ex_date_ms / 1000 + 28800) / 86400) AS BIGINT)
+                        * INTERVAL 1 DAY AS DATE) AS ex_date,
                    dividend_per_share, per_share_bonus,
                    COALESCE(allotment_ratio, 0.0), COALESCE(allotment_price, 0.0),
                    COALESCE(currency, 'CNY'), ? AS source_batch_id

@@ -99,5 +99,7 @@ def test_dwh_api_status_and_refresh_degrade(monkeypatch):
 
 def test_dwh_routes_registered():
     import api.v1.router as r
-    paths = {getattr(x, 'path', '') for x in r.api_router.routes}
+    # v7.3.3: 改为以 OpenAPI 契约为准（旧写法在 fastapi 0.162 上取到空集）
+    import route_paths_helper
+    paths = route_paths_helper.api_paths()
     assert '/api/dwh/status' in paths and '/api/dwh/refresh' in paths
