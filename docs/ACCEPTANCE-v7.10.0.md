@@ -35,8 +35,8 @@
 |---|---|
 | 新增 `tests/test_marketplace_v710.py` | ✅ 19 passed（原 17 项 + 全零持仓跳日、成本逐日配对 2 项回归） |
 | 事件引擎口径回归（scoring_api_v74 / backtest_benchmark / attribution / cost_model / timing_v75） | ✅ 85 passed |
-| 全量回归 `pytest tests/ -m "not e2e and not network"` | ✅ 待 §7 终态确认（前一版 4445 passed / 0 failed，覆盖率 78%） |
-| 门禁专项（split-parity / rbac / pit / performance / 前端体积 / 虚拟滚动 / 6.4.3 效率 / 迁移连续性） | ✅ 190 passed |
+| 全量回归 `pytest tests/ -m "not e2e and not network"` | ✅ **4445 passed, 4 deselected, 0 failed**（161.59s，覆盖率 **78%**） |
+| 门禁专项（split-parity / rbac / pit / performance / 前端体积 / 虚拟滚动 / 6.4.3 效率 / 迁移连续性） | ✅ 190 passed（52 / 35 / 27 / 13 / 4 / 4 / 14 / 41） |
 | `ruff check backend/ --select=E,F,W --ignore=E501` | ✅ 无告警 |
 | `bump_version --check` | ✅ 通过 |
 | 五维质量护栏复检 | ⚠️ **90.0 / 100，FAIL 1 项**：C1 前端可达性 1/7（详见 §6） |
@@ -53,7 +53,16 @@
 
 ## 5. 部署冒烟
 
-（见 §7，提交后同步 ops 并于 8020 端口验证）
+- dev（commit 170091e）→ ops 同步：`ops HEAD = 170091e`，工作区干净（`git status --short` 0 行）。
+- 独立端口 8020 启动 ops 实例（不干扰既有服务），验证后已关闭（`ss -ltnp | grep 8020` 无监听）：
+  - ✅ 前置体检通过（端口/依赖/目录/数据库正常）；`app_startup ok=true version=7.10.0`；启动自检 `ok=9 warn=1 fail=0`
+  - ✅ `GET /api/health` → `version=7.10.0`，新鲜度 `latest_date=2026-11-20 / lag_trading_days=0 / stale=false`
+  - ✅ 迁移 0011 随启动幂等应用：`schema_migrations` 最新三条 = `(11, market_items) / (10, execution_plans) / (9, param_audit_log)`
+  - ✅ 关键表就绪：`market_items`、`hunting_tracks`、`exec_plans`；索引 `idx_market_kind_status` 存在
+  - ✅ 7 个市场端点全部 deny-by-default（无凭证均 401）：items 列表 / items 详情 / stats / items 发布 /
+    items 导入 / items 下架（DELETE）/ vector-backtest
+  - ✅ 路由注册核对：`/marketplace/{items, items/{id}, items/{id}/import, stats, vector-backtest}` 共 7 条
+- 冒烟未触碰 `data/app.db` 既有数据（仅随启动应用迁移；无写入业务数据）。
 
 ## 6. 五维护栏验收（诚实结论）
 
@@ -71,4 +80,24 @@
 
 ## 7. 终态门禁与冒烟证据
 
-（本次运行结果待补）
+本地等价 CI（复现 `.github/workflows/ci.yml` 的阻塞门禁；因 origin 无 push 凭证，**远程 CI 未触发，不虚报**）：
+
+```text
+GATE_VERDICT=PASS
+  [PASS] ruff (E,F,W / ignore E501)                 → All checks passed!
+  [PASS] 版本治理 (bump_version --check)
+  [PASS] pytest 全量 (not e2e/network, cov≥40)      → 4445 passed, 4 deselected；覆盖率 78%
+  [PASS] split-parity (52)      [PASS] rbac-matrix (35)   [PASS] pit 防前视 (27)
+  [PASS] performance (13)       [PASS] 前端体积预算 (4)   [PASS] 虚拟滚动 (4)
+  [PASS] 6.4.3 运行效率 (14)    [PASS] 迁移连续性 0011 (41)
+```
+
+部署冒烟：见 §5（8020 实例 version=7.10.0、迁移 0011 就位、7 端点 deny-by-default、验证后已关闭）。
+
+## 8. 交给人工审核的两个判断点
+
+1. **C1 前端可达性 FAIL（1/7）是否接受发布**：本次只是把误报改成真报，缺口本身（6 个新域无 UI 入口）自 v7.5 起就存在。
+   建议以「v7.11 前端收口」单独一个中版本解决（含策略市场面板、择时/形态/参数锁定/执行/五维报告入口），
+   在收口完成前**不建议对外宣称"策略研究菜单已全面升级"**。
+2. **事件引擎口径修正会改变历史回测数字**：v7.4 以来所有回测报表（年化/夏普/回撤）在修正后都会变化，
+   方向是"去掉前视后收益更保守"。若线上存有已归档的回测结论截图/报告，需要重跑对齐，避免新旧数字并存造成误解。
