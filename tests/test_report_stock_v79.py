@@ -109,6 +109,40 @@ def test_build_report_veto_overrides_score():
     assert report["score"]["total_score"] == -100
 
 
+def test_all_dimensions_missing_is_not_zero_score():
+    """全维缺数: 不给 0 分"回避"这种伪结论, 明确标数据不足"""
+    report = build_report("600000.SH", "X", "2026-11-18", [])
+    assert report["score"]["total_score"] is None
+    assert report["score"]["level"] == "数据不足"
+    assert "不给综合评分" in report["conclusion"]["text"]
+    assert "—" in render_html(report)
+
+
+def test_collect_facts_normalizes_compact_dates():
+    """数据源面板日期为 YYYYMMDD 时也要能正常收敛(修复截断把行情滤空)"""
+    import pandas as pd
+
+    from api.v1.stock_report import collect_facts
+
+    dates = ["20261028", "20261029", "20261030"]
+    idx = pd.MultiIndex.from_tuples([(d, "600000.SH") for d in dates],
+                                    names=["date", "symbol"])
+    panel = pd.DataFrame({"close": [10.0, 10.2, 10.4], "volume": [1e6, 1e6, 1e6],
+                          "pe": [12.0, 12.0, 12.0], "pb": [1.1, 1.1, 1.1],
+                          "total_mv": [1e10, 1e10, 1e10],
+                          "main_net_inflow": [1e7, 1e7, 1e7]}, index=idx)
+
+    class _Portal:
+        def get_panel(self, fields, start, end, universe=None, max_workers=None):
+            return panel
+
+    facts = collect_facts("600000.SH", date="2026-11-18", portal=_Portal())
+    assert len(facts["bars"]) == 3
+    assert facts["bars"][-1]["date"] == "2026-10-30"
+    assert facts["basics"]["pe"] == 12.0
+    assert len(facts["flows"]) == 3
+
+
 def test_render_html_escapes_and_self_contained():
     report = build_report("600000.SH", "<script>alert(1)</script>", "2026-11-18", _bars())
     html = render_html(report)

@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from auth import get_current_active_user
+from execution.support import normalize_date
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,12 @@ def collect_facts(symbol: str, date: Optional[str] = None, portal=None) -> dict:
     frame = panel_to_desc_df(panel, symbol, fields=PANEL_FIELDS)
     if frame is None or len(frame) == 0:
         raise LookupError(f"{symbol} 无单股面板数据")
+    # 数据源面板日期可能是 YYYYMMDD; 统一归一后再截断, 避免字符串比较把整段行情滤空
+    frame = frame.copy()
+    frame["date"] = frame["date"].map(normalize_date)
     frame = frame[frame["date"] <= end].sort_values("date")
+    if frame.empty:
+        raise LookupError(f"{symbol} 在 {end} 及之前无可用 K 线")
     bars = frame.to_dict("records")
     basics = {}
     for key in ("pe", "pb", "total_mv"):

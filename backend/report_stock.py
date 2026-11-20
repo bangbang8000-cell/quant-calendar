@@ -319,6 +319,11 @@ def build_report(symbol: str, name: str, date: str, bars: List[Dict],
                               details={k: v.get("reasons") for k, v in dims.items()})
     missing = result["missing_dimensions"]
     completeness = round(1 - len(missing) / len(dims), 3)
+    if len(missing) == len(dims):
+        # 全维缺数: 不给"0 分回避"这种伪结论(0 分应是"评分后很差", 不是"没评")
+        result["total_score"] = None
+        result["level"] = "数据不足"
+        result["data_sufficient"] = False
     return {
         "symbol": symbol,
         "name": name or symbol,
@@ -338,6 +343,9 @@ def _conclusion(result: Dict, dims: Dict, completeness: float) -> Dict:
                     key=lambda kv: kv[1], reverse=True)
     drivers = [f"{DIMENSION_LABELS[k]} {s:.0f} 分" for k, s in ranked[:2]]
     risks = [f"{DIMENSION_LABELS[k]} {s:.0f} 分" for k, s in ranked[-2:] if s < 50]
+    if result.get("total_score") is None:
+        return {"text": "五个维度均缺可用数据, 本次不给综合评分(不以 0 分代替结论)。",
+                "level": result["level"], "drivers": [], "risks": []}
     text = f"综合评分 {result['total_score']}（{result['level']}）。"
     if result["veto_flag"]:
         text += f"触发一票否决：{result['veto_reason']}。"
@@ -401,6 +409,7 @@ def render_html(report: Dict) -> str:
                     f"<ul>{reasons or '<li>无可用依据</li>'}</ul></section>")
     conclusion = report.get("conclusion") or {}
     weighted = (score.get("dimensions") or {})
+    total_text = "—" if score.get("total_score") is None else score.get("total_score")
     metrics = ""
     for key, label in DIMENSION_LABELS.items():
         cell = weighted.get(key) or {}
@@ -416,7 +425,7 @@ def render_html(report: Dict) -> str:
 <h1>{_esc(report.get('name'))} <span class="tag">{_esc(report.get('symbol'))}</span></h1>
 <div class="meta">报告日期 {_esc(report.get('date'))} · 数据完整度 {_esc(
         f"{float(report.get('data_completeness') or 0):.0%}")}</div>
-<div class="total"><b>{_esc(score.get('total_score'))}</b>{_esc(score.get('level'))}
+<div class="total"><b>{_esc(total_text)}</b>{_esc(score.get('level'))}
 <span class="tag">{_esc('已否决' if score.get('veto_flag') else '正常')}</span></div>
 <div class="kv">{_esc(conclusion.get('text'))}</div>
 <div class="kv">缺数维度: {_esc('、'.join(report.get('missing_dimensions') or []) or '无')}</div>

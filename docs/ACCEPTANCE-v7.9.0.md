@@ -31,11 +31,12 @@
 
 | 项目 | 结果 |
 |---|---|
-| 新增 `test_report_stock_v79.py`（15） | ✅ 15 passed |
+| 新增 `test_report_stock_v79.py`（17） | ✅ 17 passed |
 | 五维复检综合得分 | ✅ 95.0 / 100（FAIL 0，WARN 1：新功能前端可达性 1/5） |
-| 全量回归 `pytest tests/ -m "not e2e and not network"` | ✅ 4424 passed, 4 deselected, 0 failed |
+| 全量回归 `pytest tests/ -m "not e2e and not network"` | ✅ 4426 passed, 4 deselected, 0 failed |
 | 门禁专项（module_size/rbac/pit/split-parity/frontend×2/coverage_gate） | ✅ 252 passed |
 | ruff / bump_version --check / lockfile diff | ✅ 全过（runtime 213/213 行、dev 57/57 行一致） |
+| 真实数据探针（600000.SH） | ✅ 136 根 K 线 / PE 7.24 / PB 0.48 / 资金流 136 条 → 52.5 分「中性」，完整度 0.6（缺板块、事件） |
 
 ## 4. 依赖变更
 
@@ -44,7 +45,16 @@ lockfile 保持不变。
 
 ## 5. 部署冒烟
 
-待填
+- dev（commit b41e3a2 + 取数日期归一修复）→ ops 同步后，独立端口 8020 启动 ops 实例验证，用后关闭：
+  - ✅ `app_startup ok=true version=7.9.0`；`GET /api/health` → `version=7.9.0`
+  - ✅ `GET /api/reports/stock/600000.SH`（json/html 两种 format）与 `/api/execution/summary` 均 deny-by-default（401）
+  - ✅ `docs/QUALITY-AUDIT-v7.9.md` 随代码同步到 ops，可在运维侧直接查阅
+  - ✅ 验证实例已关闭，无端口残留
+- 真实数据探针（dev 代码 + ops venv，直连数据源）：
+  - 修复前：面板日期为 `YYYYMMDD`，与 `YYYY-MM-DD` 比较导致整段行情被滤空 → 五维全缺、被误判 0 分「回避」
+  - 修复后：136 根 K 线、PE 7.2382 / PB 0.4768、资金流 136 条 → 技术 80 / 资金 50.1 / 基本面 70，
+    综合 **52.5（中性）**，完整度 0.6，缺板块与事件两维（诚实标注）
+  - 样本留存：`docs/samples/report-600000.SH.html`（自包含单文件，可直接离线打开）
 
 ## 6. 五维护栏验收
 

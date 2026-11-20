@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>浦发银行 五维分析报告</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--fg:#1f2329;--muted:#646a73;--line:#e5e6eb;
+--accent:#c62828;--ok:#1f7a4d;--warn:#b26a00}
+@media (prefers-color-scheme: dark){
+:root{--bg:#15171c;--card:#1e2027;--fg:#e8eaed;--muted:#9aa0a6;--line:#2f333a;
+--accent:#ef5350;--ok:#66bb6a;--warn:#ffb74d}}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--bg);color:var(--fg);
+font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.65}
+.wrap{max-width:960px;margin:0 auto}
+header{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+h1{margin:0 0 6px;font-size:22px}
+.meta{color:var(--muted);font-size:13px}
+.total{margin-top:12px;font-size:15px}
+.total b{font-size:26px;color:var(--accent);margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+section h2{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+section h2 span{font-size:13px;color:var(--muted);font-weight:400}
+ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--fg)}
+li{margin:2px 0}
+.kv{font-size:13px;color:var(--muted);margin:4px 0}
+footer{margin-top:16px;font-size:12px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;
+border:1px solid var(--line);color:var(--muted)}
+</style></head>
+<body><div class="wrap">
+<header>
+<h1>浦发银行 <span class="tag">600000.SH</span></h1>
+<div class="meta">报告日期 2026-11-20 · 数据完整度 60%</div>
+<div class="total"><b>52.5</b>中性
+<span class="tag">正常</span></div>
+<div class="kv">综合评分 52.5（中性）。主要支撑来自技术 80 分、基本面 70 分。本次缺 2 个维度数据, 结论完整性受影响。</div>
+<div class="kv">缺数维度: 板块、事件</div>
+</header>
+<div class="grid"><section><h2>技术维度 <span>得分 80</span></h2><ul><li>收盘站上 MA20 (+10)</li><li>均线多头排列 MA5&gt;MA10&gt;MA20 (+15)</li><li>MACD DIF 在 DEA 上 (+10)</li><li>贴近 60 日高点, 追高风险 (-5)</li></ul></section><section><h2>资金维度 <span>得分 50</span></h2><ul><li>近 5 日净流入 0.02%(占成交额)</li></ul></section><section><h2>基本面维度 <span>得分 70</span></h2><ul><li>PE 7.2 处于低位区 (+12)</li><li>PB 0.48 偏低 (+8)</li></ul></section><section><h2>板块维度 <span>得分 缺数</span></h2><ul><li>未接入板块强度, 板块维不评分</li></ul></section><section><h2>事件维度 <span>得分 缺数</span></h2><ul><li>未接入事件数据, 事件维不评分</li></ul></section></div>
+<section style="margin-top:14px"><h2>加权明细</h2><div class="kv">技术: 80.0 (权重 0.35000000000000003)</div><div class="kv">资金: 50.1 (权重 0.35000000000000003)</div><div class="kv">基本面: 70.0 (权重 0.10000000000000002)</div><div class="kv">板块:  (权重 0.10000000000000002)</div><div class="kv">事件:  (权重 0.10000000000000002)</div></section>
+<footer>本报告由量化日历依据公开数据自动生成, 仅用于研究辅助, 不构成任何投资建议。</footer>
+</div></body></html>
