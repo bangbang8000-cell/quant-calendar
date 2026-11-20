@@ -29,3 +29,6 @@ akshare>=1.16.0
 # 只读部署用 pip install --target=<workspace>/qc_ws_pkgs（家目录只读）
 pyarrow>=16,<27
 duckdb>=1.1
+
+# v7.5 (FR-7.5-3): HMM 四状态市场状态识别
+hmmlearn>=0.3.0

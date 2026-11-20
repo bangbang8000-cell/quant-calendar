@@ -29,7 +29,8 @@ def backtest_holdings(holdings: pd.DataFrame,
                       risk_free_rate: float = 0.03,
                       cost_model: Optional[CostModel] = None,
                       benchmark_returns: Optional[List[float]] = None,
-                      industry_map: Optional[Dict] = None) -> Dict:
+                      industry_map: Optional[Dict] = None,
+                      timing_exposure: Optional[Dict[str, float]] = None) -> Dict:
     """回测持仓矩阵, 返回绩效结果 dict(与 BacktestResult 字段对齐)
 
     Args:
@@ -47,6 +48,10 @@ def backtest_holdings(holdings: pd.DataFrame,
     # 归一化 holdings/returns 索引, 后续用归一化日期访问
     holdings = holdings.copy()
     holdings.index = [_norm(d) for d in holdings.index]
+    # v7.5 FR-7.5-1: 择时 Overlay 注入仓位系数, 共用单一回测引擎(信号次日生效)
+    if timing_exposure:
+        from timing.overlay import apply_exposure_series
+        holdings = apply_exposure_series(holdings, pd.Series(timing_exposure, dtype=float))
     if returns is not None:
         returns = returns.copy()
         returns.index = [_norm(d) for d in returns.index]
