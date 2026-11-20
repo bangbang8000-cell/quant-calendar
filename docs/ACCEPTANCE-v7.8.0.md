@@ -47,7 +47,16 @@ lockfile 保持不变。
 
 ## 5. 部署冒烟
 
-部署验证中
+- dev（commit f8f4f9d）→ ops 同步：ops HEAD = f8f4f9d，工作区干净。
+- 独立端口 8020 启动 ops 实例（未干扰现有服务），验证后已关闭：
+  - ✅ `app_startup ok=true version=7.8.0`；启动自检 `ok=9 warn=1 fail=0`
+  - ✅ `GET /api/health` → `version=7.8.0`，数据新鲜度 `lag_trading_days=0 stale=false`
+  - ✅ migration 0010 随启动幂等应用：`schema_migrations` 最新为 `(10, execution_plans)`
+  - ✅ 执行模块四张表就绪：`hunting_tracks / exec_plans / exec_plan_legs / exec_plan_events`
+  - ✅ 10 个执行端点全部 deny-by-default（均 401）：hunting scan/tracks、plans 列表/创建/from-hunting、
+    risk/var、summary、exchange files/export
+  - ✅ 验证实例已关闭，无端口残留（`/api/health` 已不可达）
+- 冒烟数据卫生：验证脚本误连 `data/quant_calendar.db` 曾生成 0 字节空库，已删除，未触碰 `data/app.db`。
 
 ## 6. 五维护栏验收
 
