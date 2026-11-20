@@ -46,6 +46,7 @@ from .strategy_scores import router as strategy_scores_router  # v7.4 五维评�
 from .timing_api import router as timing_router  # v7.5 择时研究
 from .pattern import router as pattern_router  # v7.6 形态匹配实验室
 from .param_governance import router as param_governance_router  # v7.7 参数治理
+from .execution import router as execution_router  # v7.8 执行与实盘联动
 from .strategy_execution import router as strategy_execution_router
 from .reliability import router as reliability_router
 from .quality import router as quality_router
@@ -101,6 +102,7 @@ api_router.include_router(param_governance_router)  # v7.7: /strategies/{sid}/lo
 api_router.include_router(strategy_scores_router)  # v7.4: /strategies/scores/* 须先于 {sid} 通配
 api_router.include_router(timing_router)  # v7.5: /api/timing/*
 api_router.include_router(pattern_router)  # v7.6: /api/pattern/*
+api_router.include_router(execution_router)  # v7.8: /api/execution/*
 api_router.include_router(strategy_research_router)
 api_router.include_router(reliability_router)
 # V5.0.4 T-5.0.43: 自定义预警规则

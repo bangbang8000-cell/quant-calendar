@@ -36,10 +36,12 @@ class Migration:
 def _load_migrations():
     from . import (_0001_baseline, _0002_alert_silence, _0003_event_user_column,
                    _0004_shortterm, _0005_legacy_columns, _0006_hotspot_indexes,
-                   _0007_focus_evals, _0008_pattern_cases, _0009_param_audit_log)
+                   _0007_focus_evals, _0008_pattern_cases, _0009_param_audit_log,
+                   _0010_execution)
     mods = (_0001_baseline, _0002_alert_silence, _0003_event_user_column,
             _0004_shortterm, _0005_legacy_columns, _0006_hotspot_indexes,
-            _0007_focus_evals, _0008_pattern_cases, _0009_param_audit_log)
+            _0007_focus_evals, _0008_pattern_cases, _0009_param_audit_log,
+            _0010_execution)
     ms = [Migration(m.VERSION, m.NAME, m.DESCRIPTION, m.upgrade, m.downgrade) for m in mods]
     ms.sort(key=lambda m: m.version)
     # 版本唯一性校验
