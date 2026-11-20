@@ -54,7 +54,15 @@ Docker 镜像直接 `pip install -r requirements.lock`，新依赖随镜像生�
 
 ## 5. 部署冒烟
 
-待填。
+- dev（commit 7406cb3）→ ops 同步：`git fetch <dev> master && git reset --hard FETCH_HEAD`，ops HEAD = 7406cb3，工作区干净（双副本 commit 对齐）。
+- 独立端口 8020 启动 ops 实例（未干扰现有 8000/8001 服务），验证后已关闭：
+  - ✅ `app_startup ok=true version=7.5.0`（版本生效）
+  - ✅ `启动自检通过: ok=9 warn=1 fail=0`（healthy=true）
+  - ✅ `GET /api/health` → `{"status":"ok","version":"7.5.0","data_freshness":{"stale":false},"self_check":{"healthy":true,"ok_count":9,"warn_count":1,"fail_count":0}}`
+  - ✅ `Uvicorn running on http://127.0.0.1:8020`
+  - ✅ 择时三端点路由存在且 deny-by-default：`GET /api/timing/strategies` → 401；`POST /api/timing/evaluate` → 401；`POST /api/timing/state` → 401
+  - ✅ 验证实例已关闭，无端口残留
+- 真实 HMM 分支探针：`engine=hmmlearn`（0.3.3 / scikit-learn 1.9.1 / scipy 1.17.1），状态 `bull_trend`，时间轴 90 条，迁移概率已输出。
 
 ## 6. 五维护栏验收
 
