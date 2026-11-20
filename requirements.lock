@@ -56,6 +56,8 @@ et-xmlfile==2.0.0
     # via openpyxl
 fastapi==0.165.0
     # via -r requirements.in
+fastdtw==0.3.4
+    # via -r requirements.in
 h11==0.16.0
     # via
     #   uvicorn
@@ -83,6 +85,7 @@ narwhals==2.29.0
 numpy==2.4.6 ; python_full_version < '3.12'
     # via
     #   -r requirements.in
+    #   fastdtw
     #   hmmlearn
     #   pandas
     #   scikit-learn
@@ -90,6 +93,7 @@ numpy==2.4.6 ; python_full_version < '3.12'
 numpy==2.5.5 ; python_full_version >= '3.12'
     # via
     #   -r requirements.in
+    #   fastdtw
     #   hmmlearn
     #   pandas
     #   scikit-learn

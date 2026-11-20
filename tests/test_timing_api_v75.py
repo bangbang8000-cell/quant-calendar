@@ -114,12 +114,13 @@ def test_backend_info_single_source():
     """backend_info 代理必须从 main_new.py 读取, 保持版本单一来源"""
     import backend_info
     from main_new import APP_VERSION
-    assert backend_info.APP_VERSION == APP_VERSION == "7.5.0"
+    assert backend_info.APP_VERSION == APP_VERSION
 
 
 def test_research_history_actually_written(monkeypatch):
     """FR-7.5-5: timing 实验真正写入 research_store (修复 backend_info 静默失败)"""
     import api.v1.timing_api as timing_api
+    from main_new import APP_VERSION
     calls = []
     monkeypatch.setattr("research_store.save_experiment",
                         lambda exp: calls.append(exp) or "exp_test")
@@ -128,5 +129,5 @@ def test_research_history_actually_written(monkeypatch):
                        {"point_count": 2}, {"sid": "rsi"})
     assert len(calls) == 1
     assert calls[0]["type"] == "timing"
-    assert calls[0]["app_version"] == "7.5.0"
+    assert calls[0]["app_version"] == APP_VERSION
     assert calls[0]["subject"] == "rsi"

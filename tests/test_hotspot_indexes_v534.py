@@ -56,7 +56,7 @@ def test_migration_0006_creates_indexes(db_env):
 def test_migration_latest_is_6():
     """最新迁移版本 = 7 (v5.4.0 新增 0007 focus_evals; 0006 热点索引仍在)"""
     from migrations import latest_version, MIGRATIONS
-    assert latest_version() == 7
+    assert latest_version() >= 7  # v7.6 新增 0008 pattern_cases
     assert any(m.version == 6 and m.name == "hotspot_indexes" for m in MIGRATIONS)
     assert any(m.version == 7 and m.name == "focus_evals" for m in MIGRATIONS)
 

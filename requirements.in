@@ -32,3 +32,6 @@ duckdb>=1.1
 
 # v7.5 (FR-7.5-3): HMM 四状态市场状态识别
 hmmlearn>=0.3.0
+
+# v7.6 (FR-7.6-2): B1 形态匹配 DTW
+fastdtw>=0.3.4
