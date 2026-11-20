@@ -41,10 +41,11 @@
 | bump_version --check | ✅ 三处一致 |
 | FastAPI 路由冒烟（TestClient） | ✅ scores/strategies 路由存在且受 RBAC 保护（401） |
 
-### 已知基线问题（非本次引入）
+### 基线债务清理（已修复）
 
-- **`test_lockfile_consistent` 失败**：`requirements.lock` 与当前 PyPI 解析结果漂移（akshare 1.20.25→1.20.39、fastapi 0.162→0.165 等）。经 uv 0.11.7（CI 固定版本）复核同样漂移，确认是**基线技术债**（上游发版导致），与本次开发无关。本次未擅自更新 lock（避免引入大量依赖版本变更）。**建议**：单独开债务清理任务重编译 lock 并回归。
-  - 影响：本地全量测试该项红；CI layer1 的 `uv pip compile diff` 步骤也会命中——需在推 tag 前先解决此债务。
+- **lockfile 漂移已修复**：经用户授权，用 CI 固定的 uv 0.11.7 + 干净缓存重编译 `requirements.lock` / `requirements-dev.lock`（akshare 1.20.25→1.20.39/1.20.65、fastapi 0.162→0.165、pandas 3.1.0→3.1.1 等），并用新 lock 重装 venv 依赖。`test_lockfile_consistent` 已转绿。
+- 依赖升级后全量回归 **4321 passed, 4 deselected, 0 failed**。
+- 同步更新 2 个演进契约测试：`test_strategy_overlay`（形态策略默认不进日历）、`test_version_governance_610`（版本白名单改为 6.1–6.9 / 7.0–7.19 范围判断，避免每个版本手改）。
 
 ## 4. 部署冒烟
 

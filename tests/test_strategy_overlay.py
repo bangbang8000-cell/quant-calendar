@@ -23,11 +23,14 @@ def _write_holdings(data_dir, date, name, stocks):
 
 
 def test_governance_show_in_calendar_default_true():
-    """内置策略 show_in_calendar 默认 True(完全体闭环)"""
+    """原4内置策略 show_in_calendar 默认 True; v7.4 形态策略受控入库默认 False(FR-7.4-9)"""
     import strategy_governance as gov
     state = gov.get_state()
     for sid in gov.BUILTIN_SIDS:
-        assert state[sid].get('show_in_calendar', False) is True, sid
+        if sid in gov.CALENDAR_OPT_IN_SIDS:
+            assert state[sid].get('show_in_calendar', True) is False, sid
+        else:
+            assert state[sid].get('show_in_calendar', False) is True, sid
 
 
 def test_governance_save_state_keeps_show_in_calendar():
