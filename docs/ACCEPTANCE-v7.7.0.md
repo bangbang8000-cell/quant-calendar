@@ -45,7 +45,13 @@
 
 ## 5. 部署冒烟
 
-待填。
+- dev（commit 30b660c）→ ops 同步：ops HEAD = 30b660c，工作区干净。
+- 独立端口 8020 启动 ops 实例（未干扰现有服务），验证后已关闭：
+  - ✅ `app_startup ok=true version=7.7.0`；启动自检 `ok=9 warn=1 fail=0`
+  - ✅ `GET /api/health` → `version=7.7.0`，self_check healthy
+  - ✅ 参数治理五个端点存在且 deny-by-default（均 401）：`GET/POST/DELETE /api/strategies/{sid}/lock`、`POST .../lock/verify`、`GET .../lock/audit`
+  - ✅ migration 0009 随启动幂等应用，服务正常启动
+  - ✅ 验证实例已关闭，无端口残留
 
 ## 6. 五维护栏验收
 
