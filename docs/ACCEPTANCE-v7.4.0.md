@@ -48,7 +48,15 @@
 
 ## 4. 部署冒烟
 
-（待 dev→ops 同步后填写）
+- dev（commit 955ca0d）→ ops 同步：`git fetch <dev> master && git reset --hard FETCH_HEAD`，ops HEAD = 955ca0d，工作区干净（双副本 commit 对齐）。
+- 独立端口 8020 启动 ops 实例验证（未干扰现有 8000/8001 服务），验证后已清理：
+  - ✅ `启动前置体检通过（端口 8020，依赖/目录/数据库正常）`
+  - ✅ 启动事件 `app_startup ok=true version=7.4.0`（版本生效）
+  - ✅ `启动自检通过: ok=9 warn=1 fail=0`
+  - ✅ `GET /api/health` → `{"status":"ok","version":"7.4.0",...}`
+  - ✅ `Uvicorn running on http://0.0.0.0:8020`
+  - ✅ 验证实例已关闭，无端口残留
+- API 路由（TestClient 冒烟）：`/api/strategies/scores/config`、`/api/strategies` 均返回 401（路由存在且受 RBAC deny-by-default 保护，符合 O3/C6）。
 
 ## 5. 五维护栏验收
 
