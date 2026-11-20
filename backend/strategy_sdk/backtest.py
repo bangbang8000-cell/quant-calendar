@@ -63,30 +63,39 @@ def backtest_holdings(holdings: pd.DataFrame,
     if len(dates) < 2:
         return {"success": False, "message": f"有效回测日期不足 (需>=2, 实际 {len(dates)})"}
 
+    # 成本模型需在循环前就绪: 成本必须与"真正产出收益的交易日"逐日配对 — V5.0.2 成本模型 2.0
+    if cost_model is None:
+        cost_model = CostModel(CostConfig(commission_rate=commission_rate,
+                                          slippage=slippage))
+    turnover_costs = _estimate_turnover_cost(holdings, dates, cost_model)
+
     # 组合日收益: t 日收益 × t-1 日权重(信号次日生效, 防前视)
+    # v7.10 修复两处口径缺陷(见 ACCEPTANCE-v7.10.0):
+    #   a) 原实现用"当日"权重 w 乘当日收益, 与模块声明的 t-1 口径相反(构成前视),
+    #      现改为使用 prev_weights;
+    #   b) 原实现把按全量日期算出的成本列表 zip 到已过滤的收益列表, 一旦某日无收益
+    #      即整体错位, 现改为逐日按索引配对。
     daily_returns: List[float] = []
+    net_costs: List[float] = []
     prev_weights = None
-    for d in dates:
+    for idx, d in enumerate(dates):
         w = holdings.loc[d]
-        if returns is not None and d in returns.index:
+        if returns is not None and d in returns.index and prev_weights is not None:
             r = returns.loc[d]
-            if prev_weights is not None:
-                # 仅在两端都有值且权重>0的标的上计算
-                common = [c for c in w.index if c in r.index and w[c] > 0 and pd.notna(r[c])]
-                if common:
-                    ret = float((w[common] * r[common]).sum() / w[common].sum())
-                    daily_returns.append(ret)
+            # 仅在 t-1 日权重>0 且 t 日有有效收益的标的上计算
+            common = [c for c in prev_weights.index
+                      if c in r.index and prev_weights[c] > 0 and pd.notna(r[c])]
+            if common:
+                ret = float((prev_weights[common] * r[common]).sum()
+                            / prev_weights[common].sum())
+                daily_returns.append(ret)
+                net_costs.append(turnover_costs[idx])
         prev_weights = w
 
     if len(daily_returns) < 2:
         return {"success": False, "message": "行情收益数据不足, 无法计算绩效"}
 
-    # 成本: 用换手率近似(仅当有相邻权重可算时) — V5.0.2 可插拔成本模型 2.0
-    if cost_model is None:
-        cost_model = CostModel(CostConfig(commission_rate=commission_rate,
-                                          slippage=slippage))
-    turnover_costs = _estimate_turnover_cost(holdings, dates, cost_model)
-    net_returns = [r - c for r, c in zip(daily_returns, turnover_costs)]
+    net_returns = [r - c for r, c in zip(daily_returns, net_costs)]
 
     # 绩效指标 + 样本内外 + 敏感性 + 过拟合
     metrics = compute_period_metrics(net_returns, annual_trading_days, risk_free_rate)

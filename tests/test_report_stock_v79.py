@@ -198,12 +198,24 @@ def test_api_report_requires_auth():
 
 # ─── 五维复检脚本 ─────────────────────────────────────────────
 
-def test_five_dim_audit_has_no_fail():
-    """五维复检作为门禁: 不允许存在 FAIL 项"""
+def test_five_dim_audit_flags_frontend_gap_honestly():
+    """五维复检: 除 C1 外的维度不得有 FAIL; C1 的已知缺口必须被如实标为 FAIL
+
+    v7.10 修正说明: v7.9 的 C1 标记存在误报 —— "/execution/" 命中既有的
+    /api/strategies/execution/*, "/strategies/scores" 在后端并无此路由, 于是把
+    "0 个新域接入前端" 报成 "1/5 已接入"(warn)。改为真实前缀后, 真相是 v7.4~v7.10
+    新域均未被前端消费。此处不再允许用 warn 掩盖, 必须保持 FAIL 直到前端收口。
+    """
     audit = five_dim_audit.run_audit()
-    fails = [r for r in audit["results"] if r["status"] == "fail"]
-    assert not fails, f"FAIL 项: {[(r['id'], r['detail']) for r in fails]}"
-    assert audit["overall"] >= 80
+    fails = [r["id"] for r in audit["results"] if r["status"] == "fail"]
+    assert fails == ["C1"], f"仅允许 C1 缺口, 实际 FAIL 项: {fails}"
+    c1 = next(r for r in audit["results"] if r["id"] == "C1")
+    assert "待接入" in c1["detail"]
+    assert audit["verdict"] == "FAIL"
+    # 其余四维必须干净(不允许被 C1 的缺口掩盖其它问题)
+    others = [r["id"] for r in audit["results"]
+              if r["dim"] != "C" and r["status"] == "fail"]
+    assert not others, f"非 C 维 FAIL: {others}"
 
 
 def test_five_dim_audit_covers_all_dimensions():

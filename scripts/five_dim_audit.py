@@ -10,7 +10,7 @@
     O 运维   O1 版本三处对齐    O2 迁移与代码同步
 
 用法:
-    python3 scripts/five_dim_audit.py            # 打印 + 写 docs/QUALITY-AUDIT-v7.9.md
+    python3 scripts/five_dim_audit.py            # 打印 + 写 docs/QUALITY-AUDIT-v<APP_VERSION>.md
     python3 scripts/five_dim_audit.py --json     # 仅输出 JSON(供测试/CI 消费)
 
 退出码: 0 = 无 FAIL; 1 = 存在 FAIL(可作门禁)。
@@ -106,12 +106,16 @@ def check_a3_dist_size():
 
 
 # 新增业务域 → 前端可达性标记(便捷性核心: 后端做完前端能否点到)
+# 每个 v7.4~v7.10 新域在前端的消费痕迹: 一律用**带 /api 前缀的真实路由片段**,
+# 避免误命中历史遗留的同名子串(v7.10 修正, 见 ACCEPTANCE-v7.10.0)。
 FRONTEND_MARKERS = {
-    "择时 v7.5": "/timing/",
-    "形态匹配 v7.6": "/pattern/",
-    "五维评分 v7.4": "/strategies/scores",
-    "参数锁定 v7.7": "/lock",
-    "执行计划 v7.8": "/execution/",
+    "五维评分 v7.4": "/score?date=",
+    "择时 v7.5": "/api/timing/",
+    "形态匹配 v7.6": "/api/pattern/",
+    "参数锁定 v7.7": "/lock/audit",
+    "执行计划 v7.8": "/api/execution/",
+    "五维报告 v7.9": "/api/reports/stock/",
+    "策略市场 v7.10": "/api/marketplace/",
 }
 
 
@@ -275,8 +279,18 @@ def run_audit():
             "verdict": "PASS" if not fails else "FAIL"}
 
 
-def render_markdown(audit):
-    lines = ["# 五维质量护栏复检报告 (v7.9)", "",
+def app_version() -> str:
+    """从唯一版本源 backend/main_new.py 读取 APP_VERSION(不硬编码版本号)"""
+    try:
+        text = (BACKEND / "main_new.py").read_text(encoding="utf-8")
+    except OSError:
+        return "unknown"
+    m = re.search(r'APP_VERSION\s*=\s*"([^"]+)"', text)
+    return m.group(1) if m else "unknown"
+
+
+def render_markdown(audit, version: str = "unknown"):
+    lines = [f"# 五维质量护栏复检报告 (v{version})", "",
              f"- 综合得分: **{audit['overall']} / 100**",
              f"- 结论: **{audit['verdict']}**（FAIL {audit['fail_count']} 项，WARN {audit['warn_count']} 项）",
              "- 生成方式: `python3 scripts/five_dim_audit.py`（静态审计，幂等可复跑）", "",
@@ -305,11 +319,12 @@ def main():
     if args.json:
         print(json.dumps(audit, ensure_ascii=False, indent=2))
     else:
-        md = render_markdown(audit)
+        version = app_version()
+        md = render_markdown(audit, version)
         print(md)
         if not args.no_write:
             DOCS.mkdir(exist_ok=True)
-            target = DOCS / "QUALITY-AUDIT-v7.9.md"
+            target = DOCS / f"QUALITY-AUDIT-v{version}.md"
             target.write_text(md, encoding="utf-8")
             print(f"[written] {target}")
     return 0 if audit["fail_count"] == 0 else 1

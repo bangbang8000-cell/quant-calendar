@@ -42,6 +42,7 @@ from .openapi import router as openapi_router
 from .alerts import router as alerts_router
 from .reports import router as reports_router
 from .stock_report import router as stock_report_router  # v7.9 五维分析报告
+from .marketplace import router as marketplace_router  # v7.10 策略/案例市场
 from .strategy_research import router as strategy_research_router
 from .strategy_scores import router as strategy_scores_router  # v7.4 五维评分
 from .timing_api import router as timing_router  # v7.5 择时研究
@@ -111,6 +112,7 @@ api_router.include_router(alerts_router)
 # V5.0.5 T-5.0.52/5.5.3: 报表中心
 api_router.include_router(reports_router)
 api_router.include_router(stock_report_router)  # v7.9: /api/reports/stock/{symbol}
+api_router.include_router(marketplace_router)  # v7.10: /api/marketplace/*
 api_router.include_router(quality_router)
 api_router.include_router(data_dict_router)
 api_router.include_router(lineage_router)
