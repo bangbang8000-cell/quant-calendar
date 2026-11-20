@@ -248,6 +248,7 @@ quant-calendar/
 
 | 想了解 | 去哪里 |
 |---|---|
+| **接手开发新功能（先读这个）** | **[docs/DEV-HANDOVER.md](docs/DEV-HANDOVER.md)** — 环境/分层/新增功能域 13 步/13 道门禁/9 个坑 |
 | 安装、部署、备份、故障排查 | [DEPLOYMENT.md](DEPLOYMENT.md) · [Wiki: 运维与发布](docs/wiki/09-运维与发布.md) |
 | 数据源怎么选、Fuyao 能做什么不能做什么 | [Wiki: 数据源与数据治理](docs/wiki/03-数据源与数据治理.md) |
 | 短线复盘各指标怎么算 | [Wiki: 短线复盘](docs/wiki/04-短线复盘.md) |
