@@ -310,6 +310,10 @@ window.__quantModules.researchPage.part1 = `
                     <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
                         <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
                         <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
+                        <!-- v7.11 (FR-7.11-4): 参数锁定与追踪 — 消费 /api/strategies/{sid}/lock* (v7.7 交付域的前端入口) -->
+                        <div v-if="activeStrategyId && strategyManageMode === 'template'" class="qc711-mt12">
+                            <qc-param-lock :sid="activeStrategyId || ''" :params="paramValues"></qc-param-lock>
+                        </div>
                         <div class="flex-gap-8-mb16">
                             <el-button :type="strategyManageMode === 'template' ? 'primary' : ''" size="small" @click="strategyManageMode = 'template'"><qc-icon name="settings" :size="14" /> 模板编辑</el-button>
                             <el-button :type="strategyManageMode === 'custom' ? 'primary' : ''" size="small" @click="strategyManageMode = 'custom'"><qc-icon name="rocket" :size="14" /> 全新创建</el-button>

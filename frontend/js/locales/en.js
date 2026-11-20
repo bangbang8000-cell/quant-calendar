@@ -45,6 +45,10 @@
     'sub.strategy-write': 'Strategy Builder',
     'sub.backtest': 'Backtest',
     'sub.backtest-history': 'Backtest History',
+    'sub.strategies.timing': 'Timing Radar',
+    'sub.timing': 'Timing Radar',
+    'sub.pattern-lab': 'Pattern Match',
+    'sub.marketplace': 'Strategy Market',
     'sub.market-review': 'Daily Review',   // V6.6.1: rename
     'sub.custom-write': 'New Strategy',
     'sub.strategy-manage': 'Strategy Manager',   // V6.6.1: merged

@@ -199,23 +199,36 @@ def test_api_report_requires_auth():
 # ─── 五维复检脚本 ─────────────────────────────────────────────
 
 def test_five_dim_audit_flags_frontend_gap_honestly():
-    """五维复检: 除 C1 外的维度不得有 FAIL; C1 的已知缺口必须被如实标为 FAIL
+    """五维复检: 全维不得有 FAIL; C1 必须如实反映"前端是否真的接入了新域"
 
-    v7.10 修正说明: v7.9 的 C1 标记存在误报 —— "/execution/" 命中既有的
-    /api/strategies/execution/*, "/strategies/scores" 在后端并无此路由, 于是把
-    "0 个新域接入前端" 报成 "1/5 已接入"(warn)。改为真实前缀后, 真相是 v7.4~v7.10
-    新域均未被前端消费。此处不再允许用 warn 掩盖, 必须保持 FAIL 直到前端收口。
+    演进:
+      v7.9 的 C1 标记存在误报 —— "/execution/" 命中既有的 /api/strategies/execution/*,
+           "/strategies/scores" 在后端并无此路由, 于是把 "0 个新域接入前端" 报成 1/5。
+      v7.10 改为真实前缀, 真相是 v7.4~v7.10 新域均未被前端消费 → C1 FAIL(1/7), 如实挂着。
+      v7.11 前端收口后 C1 应达 7/7; 本用例从"断言存在缺口"改为"断言缺口已闭合且检测能力仍在"
+           —— 检测能力用伪造标记验证, 避免为了绿灯而把检查改瞎。
     """
     audit = five_dim_audit.run_audit()
     fails = [r["id"] for r in audit["results"] if r["status"] == "fail"]
-    assert fails == ["C1"], f"仅允许 C1 缺口, 实际 FAIL 项: {fails}"
+    assert not fails, f"五维护栏不应有 FAIL, 实际: {fails}"
+
     c1 = next(r for r in audit["results"] if r["id"] == "C1")
-    assert "待接入" in c1["detail"]
-    assert audit["verdict"] == "FAIL"
-    # 其余四维必须干净(不允许被 C1 的缺口掩盖其它问题)
-    others = [r["id"] for r in audit["results"]
-              if r["dim"] != "C" and r["status"] == "fail"]
-    assert not others, f"非 C 维 FAIL: {others}"
+    assert c1["status"] == "pass", "C1 应已收口, 实际 %s: %s" % (c1["status"], c1["detail"])
+    assert "待接入" not in c1["detail"], "C1 仍报缺口: %s" % c1["detail"]
+    assert "7/7" in c1["detail"], "C1 覆盖率应达 7/7, 实际: %s" % c1["detail"]
+    assert audit["verdict"] == "PASS"
+
+    # 检测能力自证: 只留一个必然不存在的标记, C1 必须掉到 fail(而不是恒绿灯)
+    original = dict(five_dim_audit.FRONTEND_MARKERS)
+    try:
+        five_dim_audit.FRONTEND_MARKERS.clear()
+        five_dim_audit.FRONTEND_MARKERS["不存在的域"] = "/api/no-such-domain-xyz/"
+        probe = five_dim_audit.check_c1_frontend_reach()
+        assert probe["status"] == "fail", "C1 检测能力失效: 伪造缺口未被识别"
+        assert "不存在的域" in probe["detail"]
+    finally:
+        five_dim_audit.FRONTEND_MARKERS.clear()
+        five_dim_audit.FRONTEND_MARKERS.update(original)
 
 
 def test_five_dim_audit_covers_all_dimensions():

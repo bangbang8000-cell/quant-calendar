@@ -401,7 +401,14 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                     </tbody>
                                 </table>
                             </div>
+                            <!-- v7.11 (FR-7.11-5): 执行计划面板 — 消费 /api/execution/plans* (v7.8 交付域的前端入口) -->
+                            <qc-exec-plans></qc-exec-plans>
                         </div>
+                    </div>
+
+                    <!-- v7.11 (FR-7.11-1): 择时雷达 — 消费 /api/timing/*, 只输出仓位系数, 不产矩阵/不进日历 -->
+                    <div v-else-if="currentSubPage === 'timing'">
+                        <qc-timing-radar></qc-timing-radar>
                     </div>
                     </div>
     `;

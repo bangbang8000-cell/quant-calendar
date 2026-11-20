@@ -51,7 +51,8 @@ case_('TC-653-01', function () {
     ['strategies', 'calendar', 'shortterm', 'ai', 'research', 'ops', 'system']),
     '一级键序应为 strategies/calendar/shortterm/ai/research/ops/system, 实际 ' + keys.join(','));
   const total = NC.NEW_NAV.reduce(function (n, p) { return n + p.members.length; }, 0);
-  assert(total === 38, '38 个旧二级页应全部登记, 实际 ' + total);
+  // v7.11: 38 → 41 (新增 strategies.timing / research.pattern-lab / research.marketplace)
+  assert(total === 41, '41 个二级页应全部登记(38 历史 + v7.11 新增 3), 实际 ' + total);
   NC.NEW_NAV.forEach(function (p) {
     assert(p.members.length <= 7, p.key + ' 单个业务域二级应 ≤7, 实际 ' + p.members.length);
   });

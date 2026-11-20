@@ -267,7 +267,7 @@
                     'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
                     'calendar': '量化日历', 'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池', // V6.6.1: calendar 为合并后主视图 key
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', 'portfolio': '组合持仓', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis; V6.6.1: 组合持仓入口
-                    'execution': '执行看板', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」; V6.9.1-fix: 异动扫描已删除
+                    'execution': '执行看板', 'timing': '择时雷达', 'pattern-lab': '形态匹配', 'marketplace': '策略市场', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」; V6.9.1-fix: 异动扫描已删除
                     'shortterm.ztpool': '涨停复盘', 'shortterm.lhb': '龙虎榜', 'ztpool': '涨停复盘', 'lhb': '龙虎榜',
                     'shortterm.overview': '复盘看板', 'overview': '概览',
                     'shortterm.sector': '板块资金', 'sector': '板块资金',

@@ -725,6 +725,75 @@
     "template_len": 439,
     "template_sha": "42e9ac6d48926815"
   },
+  "ExecPlansPanel": {
+    "classes": [
+      "'buy'",
+      "'qc711-tone-down'",
+      "'qc711-tone-up'",
+      ":",
+      "===",
+      "?",
+      "card-title",
+      "l.row.side",
+      "qc711-card",
+      "qc711-card-title",
+      "qc711-dim",
+      "qc711-empty",
+      "qc711-form",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-label",
+      "qc711-mono",
+      "qc711-mt12",
+      "qc711-note",
+      "qc711-panel",
+      "qc711-toolbar",
+      "qc711-w140",
+      "qc711-w240",
+      "qc711-w90",
+      "statusTone(p.row.status)"
+    ],
+    "directives": [
+      "v-else",
+      "v-if",
+      "v-model"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "clipboard-list",
+      "refresh",
+      "target"
+    ],
+    "name": "qc-exec-plans",
+    "setup_keys": [
+      "S",
+      "buildFromHunting",
+      "building",
+      "cancelLeg",
+      "csvName",
+      "csvText",
+      "detail",
+      "error",
+      "events",
+      "exportCsv",
+      "fill",
+      "fillPrice",
+      "huntDate",
+      "importCsv",
+      "importing",
+      "legs",
+      "loadPlans",
+      "loading",
+      "openPlan",
+      "pickPlan",
+      "plans",
+      "setStatus",
+      "statusFilter",
+      "statusTone"
+    ],
+    "template_len": 6642,
+    "template_sha": "220ccc79333636e0"
+  },
   "FocusView": {
     "classes": [
       "&&",
@@ -1063,6 +1132,73 @@
     "template_len": 6417,
     "template_sha": "e70efd5c15ad6b5b"
   },
+  "MarketplacePanel": {
+    "classes": [
+      "'published'",
+      "'qc711-tone-mute'",
+      "'qc711-tone-up'",
+      ":",
+      "===",
+      "?",
+      "card-title",
+      "m.row.status",
+      "qc711-card",
+      "qc711-card-title",
+      "qc711-empty",
+      "qc711-form",
+      "qc711-grow",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-json",
+      "qc711-note",
+      "qc711-panel",
+      "qc711-pre",
+      "qc711-stat",
+      "qc711-stat-l",
+      "qc711-stat-v",
+      "qc711-stats",
+      "qc711-toolbar",
+      "qc711-w120",
+      "qc711-w140",
+      "qc711-w220",
+      "qc711-w240"
+    ],
+    "directives": [
+      "v-else",
+      "v-if",
+      "v-model"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "package",
+      "refresh",
+      "upload"
+    ],
+    "name": "qc-marketplace-panel",
+    "setup_keys": [
+      "S",
+      "doImport",
+      "doPublish",
+      "doUnpublish",
+      "error",
+      "form",
+      "includeArchived",
+      "items",
+      "keyword",
+      "kind",
+      "kindLabel",
+      "load",
+      "loading",
+      "opened",
+      "payloadText",
+      "publishedOf",
+      "publishing",
+      "stats",
+      "togglePayload"
+    ],
+    "template_len": 4758,
+    "template_sha": "00f87a101c936b11"
+  },
   "MenuConfigDialog": {
     "classes": [
       "mb-8-semibold-sm",
@@ -1232,6 +1368,115 @@
     "template_len": 1110,
     "template_sha": "58f3b80e03296ad7"
   },
+  "ParamLockPanel": {
+    "classes": [
+      "qc711-card-title",
+      "qc711-dim",
+      "qc711-empty",
+      "qc711-form",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-k",
+      "qc711-kv",
+      "qc711-mono",
+      "qc711-mt12",
+      "qc711-panel",
+      "qc711-panel-inline",
+      "qc711-v",
+      "qc711-w240",
+      "verdictClass"
+    ],
+    "directives": [
+      "v-else",
+      "v-if",
+      "v-model"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "lock",
+      "search-check"
+    ],
+    "name": "qc-param-lock",
+    "setup_keys": [
+      "S",
+      "audit",
+      "doLock",
+      "doUnlock",
+      "doVerify",
+      "eventLabel",
+      "eventTag",
+      "lock",
+      "locking",
+      "reason",
+      "shortHash",
+      "shortOf",
+      "unlocking",
+      "verdict",
+      "verdictClass",
+      "verdictText",
+      "verifying"
+    ],
+    "template_len": 3184,
+    "template_sha": "d3528f8d27766ed8"
+  },
+  "PatternLab": {
+    "classes": [
+      "card-title",
+      "qc711-card",
+      "qc711-card-title",
+      "qc711-empty",
+      "qc711-form",
+      "qc711-grid-2",
+      "qc711-grow",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-label",
+      "qc711-note",
+      "qc711-panel",
+      "qc711-strong",
+      "qc711-w120",
+      "qc711-w140",
+      "qc711-w180",
+      "qc711-w200"
+    ],
+    "directives": [
+      "v-else",
+      "v-else-if",
+      "v-if",
+      "v-model"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "dna",
+      "search"
+    ],
+    "name": "qc-pattern-lab",
+    "setup_keys": [
+      "S",
+      "candidates",
+      "caseLoading",
+      "cases",
+      "dim",
+      "form",
+      "hasFeatures",
+      "loadCases",
+      "lookback",
+      "matchError",
+      "matchResult",
+      "matchRows",
+      "matching",
+      "minSim",
+      "picked",
+      "runMatch",
+      "saveCase",
+      "saving",
+      "togglePick",
+      "topN",
+      "weightText"
+    ],
+    "template_len": 6042,
+    "template_sha": "2e241b1c6f09ca69"
+  },
   "ResearchPage": {
     "classes": [
       "!=",
@@ -1366,6 +1611,7 @@
       "ptrade-code-pre",
       "qc-page-tools",
       "qc-status-dot",
+      "qc711-mt12",
       "research-detail-pre",
       "row.max_drawdown",
       "run.status",
@@ -1599,8 +1845,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 66043,
-    "template_sha": "8d1af5cdedaa3565"
+    "template_len": 66943,
+    "template_sha": "eed88751eda220c0"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -2256,6 +2502,7 @@
       "clipboard-list",
       "clock",
       "crosshair",
+      "file-text",
       "flag",
       "lightbulb",
       "loader",
@@ -2295,8 +2542,62 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 39699,
-    "template_sha": "a159ed0031dc782e"
+    "template_len": 40333,
+    "template_sha": "78ccda216dab6ff1"
+  },
+  "StockReportPanel": {
+    "classes": [
+      "''",
+      "'qc711-strong'",
+      "'qc711-tone-down'",
+      "'qc711-tone-mute'",
+      ":",
+      "===",
+      "?",
+      "d.row.score",
+      "null",
+      "qc711-card-title",
+      "qc711-dim",
+      "qc711-empty",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-note",
+      "qc711-panel",
+      "qc711-panel-inline",
+      "qc711-stat",
+      "qc711-stat-l",
+      "qc711-stat-v",
+      "qc711-stats",
+      "qc711-tone-warn",
+      "qc711-toolbar",
+      "veto"
+    ],
+    "directives": [
+      "v-else-if",
+      "v-if"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "file-text",
+      "play"
+    ],
+    "name": "qc-stock-report",
+    "setup_keys": [
+      "S",
+      "conclusionText",
+      "dimRows",
+      "error",
+      "levelText",
+      "load",
+      "loading",
+      "missingText",
+      "openHtml",
+      "report",
+      "scoreText",
+      "veto"
+    ],
+    "template_len": 2569,
+    "template_sha": "cedd84a04f931549"
   },
   "StrategiesPage": {
     "classes": [
@@ -2707,8 +3008,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 60917,
-    "template_sha": "bfdd0de03564d3a7"
+    "template_len": 61329,
+    "template_sha": "5bd9b6a9b8155134"
   },
   "SystemPage": {
     "classes": [
@@ -3221,6 +3522,72 @@
     ],
     "template_len": 111897,
     "template_sha": "9fb2735e3d574d1a"
+  },
+  "TimingRadar": {
+    "classes": [
+      "S.pnlTone(perf.total_return)",
+      "S.stateTone(mktState.state)",
+      "S.stateTone(t.state)",
+      "card-title",
+      "qc711-badge",
+      "qc711-card",
+      "qc711-card-title",
+      "qc711-dim",
+      "qc711-empty",
+      "qc711-grid-2",
+      "qc711-head",
+      "qc711-hint",
+      "qc711-k",
+      "qc711-kv",
+      "qc711-note",
+      "qc711-panel",
+      "qc711-stat",
+      "qc711-stat-l",
+      "qc711-stat-v",
+      "qc711-stats",
+      "qc711-timeline",
+      "qc711-tl-cell",
+      "qc711-tone-down",
+      "qc711-toolbar",
+      "qc711-v",
+      "qc711-w160",
+      "qc711-w260"
+    ],
+    "directives": [
+      "v-else",
+      "v-for",
+      "v-if",
+      "v-model"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "gauge",
+      "play",
+      "refresh"
+    ],
+    "name": "qc-timing-radar",
+    "setup_keys": [
+      "S",
+      "actionTagType",
+      "actionTagTypeOf",
+      "error",
+      "evaluating",
+      "loadState",
+      "loadStrategies",
+      "mktState",
+      "perf",
+      "points",
+      "result",
+      "runEvaluate",
+      "sid",
+      "sourceText",
+      "stateLoading",
+      "strategies",
+      "symbol",
+      "timeline"
+    ],
+    "template_len": 6479,
+    "template_sha": "a28794e21b151f07"
   },
   "TourDialog": {
     "classes": [

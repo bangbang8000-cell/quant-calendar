@@ -28,6 +28,8 @@
         { key: 'merrill', page: 'strategies', sub: 'merrill' },
         { key: 'market', page: 'strategies', sub: 'market' },
         { key: 'consensus', page: 'strategies', sub: 'consensus' },
+        // v7.11 (FR-7.11-1): 择时雷达 — 市场认知域, 与美林时钟/大盘行情同处策略概览
+        { key: 'timing', page: 'strategies', sub: 'timing' },
       ],
     },
     {
@@ -68,6 +70,9 @@
         { key: 'strategy-manage', page: 'research', sub: 'strategy-manage' },
         { key: 'backtest', page: 'research', sub: 'backtest' },
         { key: 'backtest-history', page: 'research', sub: 'backtest-history' },
+        // v7.11 (FR-7.11-2/3): 形态匹配实验室 + 策略市场 — 研究域的两个新工作台
+        { key: 'pattern-lab', page: 'research', sub: 'pattern-lab' },
+        { key: 'marketplace', page: 'research', sub: 'marketplace' },
       ],
     },
     {
@@ -129,6 +134,10 @@
     'strategies.merrill': '美林时钟',
     'strategies.market': '大盘行情',
     'strategies.consensus': '策略共识榜',
+    // v7.11 新增二级的中文兜底 (i18n 缺词时也不露 raw key)
+    'strategies.timing': '择时雷达',
+    'research.pattern-lab': '形态匹配',
+    'research.marketplace': '策略市场',
     'calendar.calendar': '日历视图',
     'calendar.pool': '股票池',
     'shortterm.overview': '概览',

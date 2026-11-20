@@ -41,6 +41,10 @@
     'sub.strategy-write': '策略编写',
     'sub.backtest': '策略回測',
     'sub.backtest-history': '回測记錄',
+    'sub.strategies.timing': '擇時雷達',
+    'sub.timing': '擇時雷達',
+    'sub.pattern-lab': '形態匹配',
+    'sub.marketplace': '策略市場',
     'sub.market-review': '每日複盤',   // V6.6.1: 更名消歧
     'sub.custom-write': '全新策略',
     'sub.strategy-manage': '策略管理',   // V6.6.1: 合併

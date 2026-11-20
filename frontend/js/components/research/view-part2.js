@@ -372,4 +372,14 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             </div><!-- /.market-review-split-content -->
                             </div><!-- /.market-review-split -->
                     </div>
+
+                    <!-- v7.11 (FR-7.11-2): 形态匹配实验室 — 消费 /api/pattern/* (v7.6 交付域的前端入口) -->
+                    <div v-else-if="currentSubPage === 'pattern-lab'" class="card">
+                        <qc-pattern-lab></qc-pattern-lab>
+                    </div>
+
+                    <!-- v7.11 (FR-7.11-3): 策略市场 — 消费 /api/marketplace/* (v7.10 交付域的前端入口) -->
+                    <div v-else-if="currentSubPage === 'marketplace'" class="card">
+                        <qc-marketplace-panel></qc-marketplace-panel>
+                    </div>
                 </div>`;

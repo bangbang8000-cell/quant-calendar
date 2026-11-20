@@ -46,6 +46,11 @@
     'sub.strategy-write': '策略编写',
     'sub.backtest': '策略回测',
     'sub.backtest-history': '回测记录',
+    // v7.11 (FR-7.11) 新增二级: 择时雷达 / 形态匹配 / 策略市场
+    'sub.strategies.timing': '择时雷达',
+    'sub.timing': '择时雷达',
+    'sub.pattern-lab': '形态匹配',
+    'sub.marketplace': '策略市场',
     'sub.market-review': '每日复盘',   // V6.6.1: 更名消歧
     'sub.custom-write': '全新策略',
     'sub.strategy-manage': '策略管理',   // V6.6.1: 策略编写+全新策略合并

@@ -5,6 +5,7 @@
 - GET    /api/pattern/config
 - GET    /api/pattern/cases
 - POST   /api/pattern/cases
+- POST   /api/pattern/cases/from-symbol   按真实行情提取四维特征后入库 (v7.11 前端新建案例走此路径)
 - DELETE /api/pattern/cases/{case_id}
 - POST   /api/pattern/match   候选池 → 逐股四维匹配 → 相似度排行
 
@@ -90,6 +91,64 @@ async def create_pattern_case(payload: Dict[str, Any],
         logger.exception("形态案例保存失败")
         raise HTTPException(status_code=500, detail=f"案例保存失败: {e}")
     return {"success": True, "case_id": case_id}
+
+
+@router.post("/cases/from-symbol")
+async def create_case_from_symbol(payload: Dict[str, Any],
+                                 _: Dict = Depends(get_non_guest_user)):
+    """按标的 + 突破日提取四维特征后入库
+
+    v7.11 补口: 原 POST /cases 只存调用方送来的 features, 前端若不带特征就会
+    写入空特征案例 —— 列表里看得见、匹配时被静默跳过(422 无可用案例特征)。
+    本端点把"提特征"放到后端, 取数失败如实 422, 不写空壳案例。
+    """
+    from pattern_match import PatternFeatureExtractor
+    from pattern_match.store import save_case
+
+    symbol = str(payload.get("symbol") or "").strip()
+    if not symbol:
+        raise HTTPException(status_code=400, detail="symbol 不能为空")
+    try:
+        lookback = int(payload.get("lookback_days") or 25)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="lookback_days 必须为整数")
+    lookback = max(5, min(lookback, 120))
+    breakout = str(payload.get("breakout_date") or "").strip()
+    end = breakout or date.today().isoformat()
+    start = (pd.Timestamp(end) - pd.Timedelta(days=max(150, lookback * 8))).date().isoformat()
+
+    df = None
+    source = "simulated"
+    try:
+        from strategy_sdk.builtin._pattern_utils import panel_to_desc_df
+        from strategy_sdk.data_portal import RealDataPortal
+        panel = RealDataPortal().get_panel(list(_FIELDS), start, end, universe=[symbol])
+        if panel is not None and not panel.empty:
+            frame = panel_to_desc_df(panel, symbol, _FIELDS)
+            if len(frame) >= 40:
+                df, source = frame, "realtime"
+    except Exception as e:
+        logger.info("[pattern] 真实数据不可用, 降级模拟: %s", e)
+    if df is None:
+        df = _resolve_bars({"symbol": symbol, "start_date": start, "end_date": end})
+
+    features = PatternFeatureExtractor(lookback_days=lookback).extract(df)
+    if not any(features.values()):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{symbol} 在 {end} 及之前 K 线不足, 无法提取四维特征(请换标的或放宽突破日)")
+
+    case_id = save_case({
+        "name": str(payload.get("name") or "").strip() or f"{symbol} {end}",
+        "symbol": symbol,
+        "breakout_date": breakout,
+        "lookback_days": lookback,
+        "tags": payload.get("tags") or [],
+        "description": str(payload.get("description") or ""),
+        "features": features,
+    })
+    return {"success": True, "case_id": case_id, "data_source": source,
+            "bar_count": int(len(df)), "features": features}
 
 
 @router.delete("/cases/{case_id}")

@@ -77,6 +77,10 @@
                         <el-button size="small" :type="stockDetailTab === 'performance' ? 'primary' : ''" @click="stockDetailTab = 'performance'">
                             {{ t('detail.tabPerformance') }}
                         </el-button>
+                        <!-- v7.11 (FR-7.11-6): 五维分析报告入口 — 消费 /api/reports/stock/{symbol} -->
+                        <el-button size="small" :type="stockDetailTab === 'report' ? 'primary' : ''" @click="stockDetailTab = 'report'">
+                            <qc-icon name="file-text" :size="13" /> 五维报告
+                        </el-button>
                         <div class="flex-1"></div>
                         <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">
                             {{ t('detail.evaluate') }}
@@ -482,6 +486,11 @@
                             </div>
                         </div>
                         <qc-state-panel v-else type="empty" icon="bar-chart" :title="t('detail.perfEmpty')" action-text="刷新数据" action-key="refresh"></qc-state-panel>
+                    </div>
+
+                    <!-- v7.11 (FR-7.11-6): 五维分析报告 — 技术/资金/基本/板块/事件, 缺维不猜分 -->
+                    <div v-if="stockDetailTab === 'report'">
+                        <qc-stock-report :symbol="stockDetail.stock || ''" :name="stockDetail.name || ''"></qc-stock-report>
                     </div>
                 </div>
             </div>

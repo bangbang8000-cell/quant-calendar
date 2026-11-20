@@ -29,6 +29,8 @@ import '../js/ai-quick-asks.js'
 // 6.5.0 (FR-653): 导航 7→5 合并核心 — shell/lifecycle/runtime 漏斗依赖
 import '../js/nav-merge-core.js'
 import '../js/core.js'
+// v7.11 (FR-7.11-0): 前端收口共用件 — 六个新域面板共用的取数/格式化/语义标签
+import '../js/v711-shared.js'
 // V6.1 (PRD-6.1 F8): 动态页签状态机纯函数 (挂载 __quantModules.tabsCore)
 import '../js/tabs-core.js'
 // V6.3 (PRD-6.3 F3/F4): 导航形态/页签开关状态机纯函数 (挂载 __quantModules.navModeCore)
@@ -125,6 +127,14 @@ import '../js/components/research/view-part1.js'
 import '../js/components/research/view-part2.js'
 import '../js/components/research/view.js'
 import '../js/components/research-page.js'
+// v7.11 (FR-7.11): 六个新域前端入口 — 必须在页面模板装配后、app-logic 前静态导入
+// (组件注册在 mount 时遍历 __quantComponents 完成, 静态导入可避免 <component :is> 空白)
+import '../js/components/overlay-radar.js'
+import '../js/components/pattern-lab.js'
+import '../js/components/marketplace-panel.js'
+import '../js/components/param-lock-panel.js'
+import '../js/components/exec-plans-panel.js'
+import '../js/components/stock-report-panel.js'
 // 6.3.0 (T-6.3.0.9): 短线复盘页结构分治 — 引导逻辑域与模板片段须先于注册文件
 import '../js/components/shortterm/logic-tour.js'
 import '../js/components/shortterm/logic-sentiment.js'

@@ -41,6 +41,10 @@
     'sub.strategy-write': '戦略作成',
     'sub.backtest': '戦略バックテスト',
     'sub.backtest-history': 'バックテスト履歴',
+    'sub.strategies.timing': 'タイミングレーダー',
+    'sub.timing': 'タイミングレーダー',
+    'sub.pattern-lab': 'パターンマッチ',
+    'sub.marketplace': 'ストラテジーマーケット',
     'sub.market-review': '日次レビュー',   // V6.6.1: 名称変更
     'sub.custom-write': '新規戦略',
     'sub.strategy-manage': '戦略管理',   // V6.6.1: 統合

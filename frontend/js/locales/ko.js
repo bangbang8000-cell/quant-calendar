@@ -41,6 +41,10 @@
     'sub.strategy-write': '전략 작성',
     'sub.backtest': '전략 백테스트',
     'sub.backtest-history': '백테스트 이력',
+    'sub.strategies.timing': '타이밍 레이더',
+    'sub.timing': '타이밍 레이더',
+    'sub.pattern-lab': '패턴 매칭',
+    'sub.marketplace': '전략 마켓',
     'sub.market-review': '일일 리뷰',   // V6.6.1: 명칭 변경
     'sub.custom-write': '새 전략',
     'sub.strategy-manage': '전략 관리',   // V6.6.1: 통합

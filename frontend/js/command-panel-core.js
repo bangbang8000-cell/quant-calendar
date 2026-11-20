@@ -390,6 +390,10 @@
     { key: 'open-lhb', label: '打开龙虎榜', icon: 'list', keywords: 'lhb 龙虎榜 席位 资金' },
     { key: 'open-execution', label: '打开执行看板', icon: 'activity', keywords: 'execution 执行 看板 流水线 任务' },
     { key: 'open-about', label: '打开关于', icon: 'info', keywords: 'about 关于 版本 说明' },
+    // v7.11 (FR-7.11): 三个新二级页的命令直达 — 与 nav-merge-core 成员一一对应
+    { key: 'open-timing-radar', label: '打开择时雷达', icon: 'gauge', keywords: 'timing 择时 雷达 仓位 信号' },
+    { key: 'open-pattern-lab', label: '打开形态匹配', icon: 'dna', keywords: 'pattern 形态 匹配 dtw 相似度 案例' },
+    { key: 'open-marketplace', label: '打开策略市场', icon: 'package', keywords: 'marketplace 市场 策略 案例 发布 导入' },
     { key: 'theme-gold', label: '金色主题', icon: 'palette', keywords: 'theme gold 金色 主题 颜色' },
     { key: 'theme-blue', label: '蓝色主题', icon: 'palette', keywords: 'theme blue 蓝色 主题' },
     { key: 'theme-red', label: '红色主题', icon: 'palette', keywords: 'theme red 红色 主题' },

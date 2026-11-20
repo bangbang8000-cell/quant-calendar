@@ -402,6 +402,13 @@
           state.navigateTo('system', 'feature');
         } else if (key === 'open-config') {
           state.navigateTo('system', 'config');
+          // v7.11 (FR-7.11): 三个新二级页直达 — 与 nav-merge-core 成员一一对应
+        } else if (key === 'open-timing-radar') {
+          state.navigateTo('strategies', 'timing');
+        } else if (key === 'open-pattern-lab') {
+          state.navigateTo('research', 'pattern-lab');
+        } else if (key === 'open-marketplace') {
+          state.navigateTo('research', 'marketplace');
           // 6.3.1 (T-6.3.1.6): 补齐子页直达 — 策略总览 / 量化日历 / 智能评估 / 策略研究 / 短线复盘 / 系统状态 / 系统配置
         } else if (key === 'open-strategies-overview') {
           state.navigateTo('strategies', 'overview');

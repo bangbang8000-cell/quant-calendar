@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-11-20",
+  "engine": "vector (numpy)",
+  "data_source": "realtime",
+  "symbols": [
+    "600000.SH",
+    "000001.SZ",
+    "600519.SH",
+    "000858.SZ"
+  ],
+  "days": 320,
+  "weights_rule": "5 日动量 top2 等权, 每 5 交易日调仓",
+  "comparison": [
+    {
+      "metric": "total_return",
+      "legacy_same_day_weight": 18.8,
+      "fixed_t_minus_1": -5.36,
+      "delta": -24.16
+    },
+    {
+      "metric": "annual_return",
+      "legacy_same_day_weight": 12.67,
+      "fixed_t_minus_1": -3.75,
+      "delta": -16.42
+    },
+    {
+      "metric": "sharpe_ratio",
+      "legacy_same_day_weight": 0.53,
+      "fixed_t_minus_1": -0.38,
+      "delta": -0.91
+    },
+    {
+      "metric": "max_drawdown",
+      "legacy_same_day_weight": -18.14,
+      "fixed_t_minus_1": -30.16,
+      "delta": -12.02
+    },
+    {
+      "metric": "volatility",
+      "legacy_same_day_weight": 18.74,
+      "fixed_t_minus_1": 17.83,
+      "delta": -0.91
+    },
+    {
+      "metric": "win_rate",
+      "legacy_same_day_weight": 50.0,
+      "fixed_t_minus_1": 47.93,
+      "delta": -2.07
+    }
+  ],
+  "archived_experiments": 0,
+  "note": "差异来源于前视: 旧口径用当日权重乘当日收益, 相当于提前知道当日仓位. 幅度取决于标的收益自相关, 单日调仓越频繁、自相关越强, 差异越大; 本表是样例矩阵实测, 不等于任一具体策略的历史误差."
+}

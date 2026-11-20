@@ -26,11 +26,15 @@ PAGES = [
      ["overview", "evaluation-analysis", "history", "chat_history", "watchlist", "focus", "portfolio"]),
     ("frontend/js/components/research-page.js", "策略研究",
      ["research-overview", "quant-research", "strategy-manage", "backtest",
-      "backtest-history", "research-history", "market-review"]),
+      "backtest-history", "research-history", "market-review",
+      # v7.11 (FR-7.11-2/3): 形态匹配实验室 / 策略市场 — 四态由子组件内部承载(见 STATIC_SUBPAGES)
+      "pattern-lab", "marketplace"]),
     ("frontend/js/components/shortterm-page.js", "短线复盘",
      ["overview", "ztpool", "lhb", "sector", "intraday"]),
     ("frontend/js/components/strategies-page.js", "策略总览",
-     ["overview", "merrill", "market", "consensus", "backtest", "execution"]),
+     ["overview", "merrill", "market", "consensus", "backtest", "execution",
+      # v7.11 (FR-7.11-1): 择时雷达 — 四态由 qc-timing-radar 内部承载
+      "timing"]),
     ("frontend/js/components/system-page.js", "系统配置",
      ["status", "config", "health", "schedule", "guard", "autoeval", "notification",
       "datasource", "feature", "datadict", "user", "usage", "about"]),
@@ -40,6 +44,16 @@ PAGES = [
 STATIC_SUBPAGES = {
     ("frontend/js/components/system-page.js", "config"): "纯本地配置表单（读写设置项），无远端列表取数",
     ("frontend/js/components/system-page.js", "about"): "静态版本与许可说明，无取数",
+    # v7.11: 三个新子页的模板段只有一行组件标签 —— 取数与加载/空/错误三态由子组件
+    # (qc-timing-radar / qc-pattern-lab / qc-marketplace-panel) 内部用 qc-state-panel 承载,
+    # 页面层不重复声明, 否则同一份状态会出现两套(互相打架)。子组件内四态由
+    # tests/test_frontend_v711.py 与人工核对兜住。
+    ("frontend/js/components/strategies-page.js", "timing"):
+        "四态由子组件 qc-timing-radar 承载（页面层仅挂载）",
+    ("frontend/js/components/research-page.js", "pattern-lab"):
+        "四态由子组件 qc-pattern-lab 承载（页面层仅挂载）",
+    ("frontend/js/components/research-page.js", "marketplace"):
+        "四态由子组件 qc-marketplace-panel 承载（页面层仅挂载）",
 }
 
 # 子页分支标记：currentSubPage === '<x>' / activeSubPage / subPage
