@@ -52,6 +52,12 @@ done
 [ -z "$PY" ] && PY="$(command -v python3 || true)"
 [ -z "$PY" ] && { echo "找不到 python 解释器"; exit 9; }
 
+# 本机可能配了 http_proxy（如 http://127.0.0.1:7890）——它会把回环请求也送去代理,
+# 表现为 curl 全部返回 000。curl 的 no_proxy 不认 "127.*" 这类通配, 必须给精确主机。
+export no_proxy="127.0.0.1,localhost${no_proxy:+,$no_proxy}"
+export NO_PROXY="$no_proxy"
+CURL="curl --noproxy 127.0.0.1,localhost"
+
 TS="$(date +%Y%m%d-%H%M%S)"
 LOG="/tmp/qc_smoke_${TS}.log"
 : > "$LOG"
@@ -89,7 +95,7 @@ if [ -z "$EXTERNAL_BASE" ]; then
   PID=$!
   UP=0
   for _ in $(seq 1 120); do
-    CODE=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/health" 2>/dev/null)
+    CODE=$($CURL -s -o /dev/null -w '%{http_code}' "$BASE/api/health" 2>/dev/null)
     if [ "$CODE" = "200" ]; then UP=1; break; fi
     sleep 1
   done
@@ -104,7 +110,7 @@ fi
 # ---- 2. 健康与版本 ----
 echo ""
 echo "【2】健康与版本"
-HEALTH=$(curl -s -m 10 "$BASE/api/health")
+HEALTH=$($CURL -s -m 10 "$BASE/api/health")
 GOT_VER=$(printf '%s' "$HEALTH" | "$PY" -c 'import json,sys
 try:
     d=json.load(sys.stdin); print(d.get("version",""))
@@ -158,10 +164,10 @@ echo "【4】鉴权面 (裸访问应被拒)"
 check_deny() {
   local method="$1" path="$2" body="${3:-}" code
   if [ -n "$body" ]; then
-    code=$(curl -s -m 10 -o /dev/null -w '%{http_code}' -X "$method" \
+    code=$($CURL -s -m 10 -o /dev/null -w '%{http_code}' -X "$method" \
       -H 'Content-Type: application/json' -d "$body" "$BASE$path")
   else
-    code=$(curl -s -m 10 -o /dev/null -w '%{http_code}' -X "$method" "$BASE$path")
+    code=$($CURL -s -m 10 -o /dev/null -w '%{http_code}' -X "$method" "$BASE$path")
   fi
   case "$code" in
     401|403) echo "  ✅ $method $path -> $code" ;;
@@ -186,7 +192,7 @@ echo ""
 echo "【5】静态产物"
 check_static() {
   local path="$1" needle="$2" code
-  code=$(curl -s -m 10 -o /tmp/qc_smoke_body.txt -w '%{http_code}' "$BASE$path")
+  code=$($CURL -s -m 10 -o /tmp/qc_smoke_body.txt -w '%{http_code}' "$BASE$path")
   if [ "$code" != "200" ]; then
     echo "  ❌ $path -> $code"; RC=1; return
   fi
@@ -210,7 +216,7 @@ check_static /js/components/stock-report-panel.js "qc-stock-report"
 echo ""
 echo "【6】入口注入"
 if [ -n "$EXPECT_VER" ]; then
-  N=$(curl -s -m 10 "$BASE/" | grep -c -- "$EXPECT_VER")
+  N=$($CURL -s -m 10 "$BASE/" | grep -c -- "$EXPECT_VER")
   if [ "$N" -gt 0 ]; then
     echo "  ✅ index.html 命中 $EXPECT_VER 共 $N 次"
   else
@@ -219,6 +225,17 @@ if [ -n "$EXPECT_VER" ]; then
 fi
 
 # ---- 汇总 ----
+if [ "$RC" -ne 0 ] && [ -n "${http_proxy:-}${HTTP_PROXY:-}" ]; then
+  case "$BASE" in
+    *127.0.0.1*|*localhost*)
+      echo ""
+      echo "  ── 提示: 本机 http_proxy=${http_proxy:-$HTTP_PROXY}"
+      echo "     脚本已对回环地址加 --noproxy; 若仍出现 000, 说明代理强制劫持,"
+      echo "     可临时 unset http_proxy https_proxy 后重跑。"
+      ;;
+  esac
+fi
+
 echo ""
 echo "=============================================="
 if [ "$RC" -eq 0 ]; then echo "SMOKE_VERDICT=PASS"; else echo "SMOKE_VERDICT=FAIL"; fi
