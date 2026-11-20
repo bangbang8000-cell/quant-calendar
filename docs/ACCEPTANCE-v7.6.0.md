@@ -45,7 +45,14 @@
 
 ## 5. 部署冒烟
 
-待填。
+- dev（commit baa620a）→ ops 同步：`git fetch <dev> master && git reset --hard FETCH_HEAD`，ops HEAD = baa620a，工作区干净。
+- 独立端口 8020 启动 ops 实例（未干扰现有服务），验证后已关闭：
+  - ✅ `app_startup ok=true version=7.6.0`；启动自检 `ok=9 warn=1 fail=0`（healthy=true）
+  - ✅ `GET /api/health` → `version=7.6.0`，self_check healthy
+  - ✅ 形态匹配三端点存在且 deny-by-default：`GET /api/pattern/config` → 401；`GET /api/pattern/cases` → 401；`POST /api/pattern/match` → 401
+  - ✅ migration 0008 随启动幂等应用，服务正常启动
+  - ✅ 验证实例已关闭，无端口残留
+- 真实 DTW 分支探针：`HAS_FASTDTW=True`、`engine=fastdtw`、自匹配形态分 100。
 
 ## 6. 五维护栏验收
 
