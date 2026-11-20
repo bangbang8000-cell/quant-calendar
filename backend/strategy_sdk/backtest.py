@@ -12,7 +12,8 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from backtest import (compute_period_metrics, overfitting_assessment,
-                      sensitivity_analysis, split_insample_outsample)
+                      sensitivity_analysis, split_insample_outsample,
+                      compute_profit_factor, kelly_fraction)
 from cost_model import CostConfig, CostModel
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,14 @@ def backtest_holdings(holdings: pd.DataFrame,
                                 lambda pct: metrics["annual_return"] * (1 + pct))
     overfit = overfitting_assessment(in_metrics, out_metrics, sens)
 
+    # v7.4 FR-7.4-5: 金额口径 profit_factor + Kelly 建议仓位
+    pf = compute_profit_factor(net_returns)
+    wins = [r for r in net_returns if r > 0]
+    losses = [r for r in net_returns if r < 0]
+    avg_win = sum(wins) / len(wins) if wins else 0.0
+    avg_loss = sum(losses) / len(losses) if losses else 0.0
+    kelly = kelly_fraction(metrics.get("win_rate", 0.0), avg_win, avg_loss)
+
     # 净值曲线(累计净值, 供前端图表) — V4.0 M1-4 回测统一
     equity_curve = []
     _acc = 1.0
@@ -114,6 +123,10 @@ def backtest_holdings(holdings: pd.DataFrame,
         "parameter_sensitivity": sens,
         "overfit_warning": overfit.get("warning", False),
         "overfit_reason": overfit.get("reason", ""),
+        # v7.4 回测口径校准
+        "profit_factor": pf,
+        "kelly_suggestion": kelly,
+        "lookahead_policy": "T-1 持仓 × t 日收益(信号次日生效)",
         "message": "回测完成",
     }
     # V5.0.2 T-5.0.22: 基准对比 (超额/IR/alpha/beta)

@@ -85,6 +85,48 @@ def split_insample_outsample(daily_returns, out_ratio: float = OUT_SAMPLE_RATIO)
     return daily_returns[:cut], daily_returns[cut:]
 
 
+def compute_profit_factor(daily_returns, initial_capital: float = 1.0) -> float:
+    """金额口径 profit_factor (v7.4 FR-7.4-5, 移植 KHunter 严谨口径)。
+
+    PF = 盈利交易总金额 / 亏损交易总金额绝对值。按净值曲线的逐笔盈亏(金额)计算,
+    而非简单胜率统计; 无亏损时返回 +inf, 无盈利时返回 0.0。
+    """
+    gains, losses = 0.0, 0.0
+    equity = float(initial_capital)
+    for r in daily_returns:
+        if r is None:
+            continue
+        pnl = equity * float(r)  # 该笔盈亏金额(以期初净值计)
+        equity *= (1 + float(r))
+        if pnl > 0:
+            gains += pnl
+        elif pnl < 0:
+            losses += abs(pnl)
+    if losses == 0:
+        return float('inf') if gains > 0 else 0.0
+    return round(gains / losses, 4)
+
+
+def kelly_fraction(win_rate: float, avg_win: float, avg_loss: float,
+                   fraction: float = 0.5) -> float:
+    """Kelly 建议仓位 (v7.4 FR-7.4-5, 移植 KHunter)。
+
+    f* = W - (1-W)/R, R = 平均盈利/平均亏损; fraction=0.5 为半 Kelly(保守)。
+    返回 [0, 1] 区间内的建议仓位, 参数非法返回 0(不造数)。
+    """
+    try:
+        w = float(win_rate)
+        aw, al = abs(float(avg_win)), abs(float(avg_loss))
+        if not (0 <= w <= 1) or al <= 0 or aw <= 0:
+            return 0.0
+        r = aw / al
+        f = w - (1 - w) / r
+        f = max(0.0, min(1.0, f)) * float(fraction)
+        return round(max(0.0, min(1.0, f)), 4)
+    except (ValueError, TypeError):
+        return 0.0
+
+
 def compute_period_metrics(daily_returns, annual_trading_days: int = 252, risk_free_rate: float = 0.03) -> Dict:
     """由日收益率序列计算 {total_return, annual_return, max_drawdown, volatility, sharpe_ratio, win_rate}"""
     rets = [float(r) for r in daily_returns if r is not None]

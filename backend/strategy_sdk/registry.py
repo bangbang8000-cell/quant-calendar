@@ -12,6 +12,11 @@ from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
 from strategy_sdk.builtin.sector_rotation import SectorRotationStrategy
 from strategy_sdk.builtin.index_enhance import IndexEnhanceStrategy
 from strategy_sdk.builtin.capital_flow import CapitalFlowStrategy
+# v7.4: KHunter 移植形态策略(首批4个)
+from strategy_sdk.builtin.golden_triangle import GoldenTriangleStrategy
+from strategy_sdk.builtin.oversold_rebound import OversoldReboundStrategy
+from strategy_sdk.builtin.main_uptrend_dip_buy import MainUptrendDipBuyStrategy
+from strategy_sdk.builtin.leader import LeaderStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +31,10 @@ class StrategyRegistry:
     def __init__(self):
         self._strategies: Dict[str, BaseStrategy] = {}
         for s in (MultiFactorStrategy(), SectorRotationStrategy(),
-                  IndexEnhanceStrategy(), CapitalFlowStrategy()):
+                  IndexEnhanceStrategy(), CapitalFlowStrategy(),
+                  # v7.4 形态策略(首批4个); 默认 show_in_calendar=False 由 governance 控制
+                  GoldenTriangleStrategy(), OversoldReboundStrategy(),
+                  MainUptrendDipBuyStrategy(), LeaderStrategy()):
             self.register(s)
 
     def register(self, strategy: BaseStrategy) -> None:

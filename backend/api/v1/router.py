@@ -42,6 +42,7 @@ from .openapi import router as openapi_router
 from .alerts import router as alerts_router
 from .reports import router as reports_router
 from .strategy_research import router as strategy_research_router
+from .strategy_scores import router as strategy_scores_router  # v7.4 五维评分
 from .strategy_execution import router as strategy_execution_router
 from .reliability import router as reliability_router
 from .quality import router as quality_router
@@ -93,6 +94,7 @@ api_router.include_router(strategy_execution_router)
 api_router.include_router(openapi_router)
 # V4.0 M4-3: API v2 版本前缀 — 开放 API 的可版本化契约 (/api/v2/openapi/...), v1 (/api/openapi) 保持兼容
 api_router.include_router(openapi_router, prefix="/v2")
+api_router.include_router(strategy_scores_router)  # v7.4: /strategies/scores/* 须先于 {sid} 通配
 api_router.include_router(strategy_research_router)
 api_router.include_router(reliability_router)
 # V5.0.4 T-5.0.43: 自定义预警规则

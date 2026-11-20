@@ -19,7 +19,9 @@ import db
 logger = logging.getLogger(__name__)
 
 # 合法实验类型 (拒绝未知类型, 防脏数据)
-VALID_TYPES = ('factor_ic', 'layer', 'sweep', 'backtest', 'stability')
+VALID_TYPES = ('factor_ic', 'layer', 'sweep', 'backtest', 'stability',
+               # v7.4: 形态策略回测 / 五维评分实验
+               'score', 'pattern_strategy')
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS research_experiments (

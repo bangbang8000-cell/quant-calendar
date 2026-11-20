@@ -21,8 +21,13 @@ logger = logging.getLogger(__name__)
 GOV_FILE = os.path.join(DATA_DIR, "strategy_governance.json")
 HOLDINGS_ROOT = os.path.join(DATA_DIR, "holdings")
 
-# 4 内置策略(纳管对象, 默认启用但不可删除)
-BUILTIN_SIDS = ["multi_factor", "sector_rotation", "capital_flow", "index_enhance"]
+# 内置策略(纳管对象, 默认启用但不可删除)
+BUILTIN_SIDS = ["multi_factor", "sector_rotation", "capital_flow", "index_enhance",
+                # v7.4 KHunter 移植形态策略(受控入库: 默认不进日历, FR-7.4-9)
+                "golden_triangle", "oversold_rebound", "main_uptrend_dip_buy", "leader"]
+# 默认不进日历的策略(研究不污染日历, variant 同理默认 False)
+CALENDAR_OPT_IN_SIDS = {"golden_triangle", "oversold_rebound",
+                        "main_uptrend_dip_buy", "leader"}
 DEFAULT_SCHEDULE = "20:00"
 
 
@@ -31,8 +36,8 @@ def _default_state() -> dict:
     return {
         sid: {"enabled": True, "schedule": DEFAULT_SCHEDULE,
               "universe": "all",  # V4.7: 默认全市场5530(批量取数已提速); default=策略自带池8只(开发占位)
-              # V4.0 M3: 完全体闭环 — 内置策略引擎持仓默认进入日历展示
-              "show_in_calendar": True,
+              # V4.0 M3: 内置策略持仓默认进日历; v7.4 形态策略受控入库默认关(FR-7.4-9)
+              "show_in_calendar": sid not in CALENDAR_OPT_IN_SIDS,
               "last_run": None, "last_holdings": None}
         for sid in BUILTIN_SIDS
     }
@@ -76,7 +81,7 @@ def save_state(state: dict) -> dict:
             "enabled": bool(s.get("enabled", True)),
             "schedule": str(s.get("schedule") or DEFAULT_SCHEDULE)[:5],
             "universe": "all" if s.get("universe") == "all" else "default",
-            "show_in_calendar": bool(s.get("show_in_calendar", True)),
+            "show_in_calendar": bool(s.get("show_in_calendar", sid not in CALENDAR_OPT_IN_SIDS)),
             "last_run": s.get("last_run"),
             "last_holdings": s.get("last_holdings"),
         }
