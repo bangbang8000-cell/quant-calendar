@@ -45,6 +45,7 @@ from .strategy_research import router as strategy_research_router
 from .strategy_scores import router as strategy_scores_router  # v7.4 五维评分
 from .timing_api import router as timing_router  # v7.5 择时研究
 from .pattern import router as pattern_router  # v7.6 形态匹配实验室
+from .param_governance import router as param_governance_router  # v7.7 参数治理
 from .strategy_execution import router as strategy_execution_router
 from .reliability import router as reliability_router
 from .quality import router as quality_router
@@ -96,6 +97,7 @@ api_router.include_router(strategy_execution_router)
 api_router.include_router(openapi_router)
 # V4.0 M4-3: API v2 版本前缀 — 开放 API 的可版本化契约 (/api/v2/openapi/...), v1 (/api/openapi) 保持兼容
 api_router.include_router(openapi_router, prefix="/v2")
+api_router.include_router(param_governance_router)  # v7.7: /strategies/{sid}/lock/* 先于通配
 api_router.include_router(strategy_scores_router)  # v7.4: /strategies/scores/* 须先于 {sid} 通配
 api_router.include_router(timing_router)  # v7.5: /api/timing/*
 api_router.include_router(pattern_router)  # v7.6: /api/pattern/*
