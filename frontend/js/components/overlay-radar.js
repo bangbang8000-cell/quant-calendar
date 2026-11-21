@@ -99,7 +99,7 @@
               </div>
               <el-table :data="matrix.rows" size="mini" border class="qc711-matrix-table">
                 <el-table-column label="标的" width="150">
-                  <template slot-scope="p">
+                  <template #default="p">
                     <span class="qc711-sym">{{ p.row.symbol }}</span>
                     <span class="qc711-dim" v-if="p.row.name"> {{ p.row.name }}</span>
                     <div v-if="p.row.error" class="qc711-matrix-err">{{ p.row.error }}</div>
@@ -107,7 +107,7 @@
                 </el-table-column>
                 <el-table-column v-for="st in matrix.strategies" :key="st.id"
                                  :label="st.name" min-width="96" align="center">
-                  <template slot-scope="p">
+                  <template #default="p">
                     <el-tag v-if="p.row.signals && p.row.signals[st.id]" size="mini"
                             :type="actionTagTypeOf(p.row.signals[st.id].action)">
                       {{ S.actionLabel(p.row.signals[st.id].action) }} {{ S.pct(p.row.signals[st.id].exposure, 0) }}
@@ -116,7 +116,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column label="平均仓位" width="84" align="center">
-                  <template slot-scope="p">{{ S.pct(p.row.avg_exposure, 0) }}</template>
+                  <template #default="p">{{ S.pct(p.row.avg_exposure, 0) }}</template>
                 </el-table-column>
               </el-table>
               <div class="qc711-note">
@@ -147,16 +147,16 @@
             <el-table v-if="points.length" :data="points.slice(0, 12)" size="small" border>
               <el-table-column prop="date" label="日期" width="110"></el-table-column>
               <el-table-column label="动作" width="80">
-                <template slot-scope="p"><el-tag size="small" :type="actionTagTypeOf(p.row.action)">{{ S.actionLabel(p.row.action) }}</el-tag></template>
+                <template #default="p"><el-tag size="small" :type="actionTagTypeOf(p.row.action)">{{ S.actionLabel(p.row.action) }}</el-tag></template>
               </el-table-column>
               <el-table-column label="价格" width="90">
-                <template slot-scope="p">{{ S.num(p.row.price, 2) }}</template>
+                <template #default="p">{{ S.num(p.row.price, 2) }}</template>
               </el-table-column>
               <el-table-column label="强度" width="80">
-                <template slot-scope="p">{{ S.num(p.row.strength, 2) }}</template>
+                <template #default="p">{{ S.num(p.row.strength, 2) }}</template>
               </el-table-column>
               <el-table-column label="仓位" width="80">
-                <template slot-scope="p">{{ S.pct(p.row.exposure) }}</template>
+                <template #default="p">{{ S.pct(p.row.exposure) }}</template>
               </el-table-column>
               <el-table-column prop="message" label="说明" show-overflow-tooltip></el-table-column>
             </el-table>

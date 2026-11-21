@@ -41,17 +41,17 @@
           <el-table v-if="items.length" :data="items" size="small" border max-height="340">
             <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip></el-table-column>
             <el-table-column label="类型" width="90">
-              <template slot-scope="m"><el-tag size="small" :type="m.row.kind === 'strategy' ? 'warning' : 'info'">{{ kindLabel(m.row.kind) }}</el-tag></template>
+              <template #default="m"><el-tag size="small" :type="m.row.kind === 'strategy' ? 'warning' : 'info'">{{ kindLabel(m.row.kind) }}</el-tag></template>
             </el-table-column>
             <el-table-column prop="ref_id" label="引用" width="150" show-overflow-tooltip></el-table-column>
             <el-table-column prop="version" label="版本" width="80"></el-table-column>
             <el-table-column prop="author" label="发布者" width="100"></el-table-column>
             <el-table-column prop="downloads" label="导入" width="70"></el-table-column>
             <el-table-column label="状态" width="80">
-              <template slot-scope="m"><span :class="m.row.status === 'published' ? 'qc711-tone-up' : 'qc711-tone-mute'">{{ m.row.status === 'published' ? '在架' : '已下架' }}</span></template>
+              <template #default="m"><span :class="m.row.status === 'published' ? 'qc711-tone-up' : 'qc711-tone-mute'">{{ m.row.status === 'published' ? '在架' : '已下架' }}</span></template>
             </el-table-column>
             <el-table-column label="操作" width="150">
-              <template slot-scope="m">
+              <template #default="m">
                 <el-button size="small" type="text" @click="doImport(m.row)">导入</el-button>
                 <el-button size="small" type="text" @click="togglePayload(m.row.id)">{{ opened === m.row.id ? '收起' : '快照' }}</el-button>
                 <el-button v-if="m.row.status === 'published'" size="small" type="text" @click="doUnpublish(m.row)">下架</el-button>

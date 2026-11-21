@@ -40,13 +40,13 @@
                     highlight-current-row @row-click="pickPlan">
             <el-table-column prop="name" label="计划" min-width="180" show-overflow-tooltip></el-table-column>
             <el-table-column label="状态" width="90">
-              <template slot-scope="p"><span :class="statusTone(p.row.status)">{{ S.planStatus(p.row.status) }}</span></template>
+              <template #default="p"><span :class="statusTone(p.row.status)">{{ S.planStatus(p.row.status) }}</span></template>
             </el-table-column>
             <el-table-column prop="leg_count" label="腿" width="60"></el-table-column>
             <el-table-column prop="plan_date" label="计划日" width="110"></el-table-column>
             <el-table-column prop="created_at" label="创建" width="160"></el-table-column>
             <el-table-column label="操作" width="110">
-              <template slot-scope="p">
+              <template #default="p">
                 <el-button size="small" type="text" @click.stop="openPlan(p.row.id)">明细</el-button>
                 <el-button size="small" type="text" @click.stop="exportCsv(p.row.id)">导出</el-button>
               </template>
@@ -71,19 +71,19 @@
             <el-table-column prop="symbol" label="代码" width="110"></el-table-column>
             <el-table-column prop="name" label="名称" width="100" show-overflow-tooltip></el-table-column>
             <el-table-column label="方向" width="70">
-              <template slot-scope="l">
+              <template #default="l">
                 <span :class="l.row.side === 'buy' ? 'qc711-tone-up' : 'qc711-tone-down'">{{ l.row.side === 'buy' ? '买入' : '卖出' }}</span>
               </template>
             </el-table-column>
             <el-table-column label="买入区间" width="130">
-              <template slot-scope="l">{{ S.num(l.row.buy_low, 2) }} ~ {{ S.num(l.row.buy_high, 2) }}</template>
+              <template #default="l">{{ S.num(l.row.buy_low, 2) }} ~ {{ S.num(l.row.buy_high, 2) }}</template>
             </el-table-column>
-            <el-table-column label="仓位" width="70"><template slot-scope="l">{{ S.pct(l.row.position_ratio) }}</template></el-table-column>
-            <el-table-column label="止损" width="80"><template slot-scope="l">{{ S.num(l.row.stop_loss, 2) }}</template></el-table-column>
-            <el-table-column label="止盈" width="80"><template slot-scope="l">{{ S.num(l.row.take_profit, 2) }}</template></el-table-column>
-            <el-table-column label="状态" width="80"><template slot-scope="l">{{ S.legStatus(l.row.status) }}</template></el-table-column>
+            <el-table-column label="仓位" width="70"><template #default="l">{{ S.pct(l.row.position_ratio) }}</template></el-table-column>
+            <el-table-column label="止损" width="80"><template #default="l">{{ S.num(l.row.stop_loss, 2) }}</template></el-table-column>
+            <el-table-column label="止盈" width="80"><template #default="l">{{ S.num(l.row.take_profit, 2) }}</template></el-table-column>
+            <el-table-column label="状态" width="80"><template #default="l">{{ S.legStatus(l.row.status) }}</template></el-table-column>
             <el-table-column label="成交回填" width="190">
-              <template slot-scope="l">
+              <template #default="l">
                 <template v-if="l.row.status === 'pending'">
                   <el-input v-model="fillPrice[l.row.id]" size="small" placeholder="成交价" class="qc711-w90"></el-input>
                   <el-button size="small" type="text" @click="fill(l.row)">成交</el-button>

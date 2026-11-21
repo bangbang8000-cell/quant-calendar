@@ -57,12 +57,12 @@
           <el-table v-if="audit.length" :data="audit" size="small" border max-height="240">
             <el-table-column prop="ts" label="时间" width="160"></el-table-column>
             <el-table-column label="事件" width="90">
-              <template slot-scope="a">
+              <template #default="a">
                 <el-tag size="small" :type="eventTag(a.row.event_type)">{{ eventLabel(a.row.event_type) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="哈希" width="110">
-              <template slot-scope="a"><span class="qc711-mono">{{ shortOf(a.row.params_hash) }}</span></template>
+              <template #default="a"><span class="qc711-mono">{{ shortOf(a.row.params_hash) }}</span></template>
             </el-table-column>
             <el-table-column prop="operator" label="操作人" width="110"></el-table-column>
             <el-table-column prop="reason" label="原因" show-overflow-tooltip></el-table-column>

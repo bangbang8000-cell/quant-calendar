@@ -29,12 +29,12 @@
               <el-table-column prop="symbol" label="代码" width="100"></el-table-column>
               <el-table-column prop="breakout_date" label="突破日" width="100"></el-table-column>
               <el-table-column label="特征" width="70">
-                <template slot-scope="c">
+                <template #default="c">
                   <el-tag size="small" :type="hasFeatures(c.row) ? 'success' : 'info'">{{ hasFeatures(c.row) ? '有' : '缺' }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="70">
-                <template slot-scope="c">
+                <template #default="c">
                   <el-button size="small" type="text" @click="togglePick(c.row.case_id)">{{ picked.indexOf(c.row.case_id) >= 0 ? '取消' : '选用' }}</el-button>
                 </template>
               </el-table-column>
@@ -87,14 +87,14 @@
               <el-table-column prop="symbol" label="代码" width="110"></el-table-column>
               <el-table-column prop="case_name" label="最像案例" width="140" show-overflow-tooltip></el-table-column>
               <el-table-column label="总分" width="80">
-                <template slot-scope="m"><span class="qc711-strong">{{ S.num(m.row.total_score, 1) }}</span></template>
+                <template #default="m"><span class="qc711-strong">{{ S.num(m.row.total_score, 1) }}</span></template>
               </el-table-column>
-              <el-table-column label="趋势" width="70"><template slot-scope="m">{{ dim(m.row, 'trend_structure') }}</template></el-table-column>
-              <el-table-column label="KDJ" width="70"><template slot-scope="m">{{ dim(m.row, 'kdj_state') }}</template></el-table-column>
-              <el-table-column label="量能" width="70"><template slot-scope="m">{{ dim(m.row, 'volume_pattern') }}</template></el-table-column>
-              <el-table-column label="形态" width="70"><template slot-scope="m">{{ dim(m.row, 'price_shape') }}</template></el-table-column>
+              <el-table-column label="趋势" width="70"><template #default="m">{{ dim(m.row, 'trend_structure') }}</template></el-table-column>
+              <el-table-column label="KDJ" width="70"><template #default="m">{{ dim(m.row, 'kdj_state') }}</template></el-table-column>
+              <el-table-column label="量能" width="70"><template #default="m">{{ dim(m.row, 'volume_pattern') }}</template></el-table-column>
+              <el-table-column label="形态" width="70"><template #default="m">{{ dim(m.row, 'price_shape') }}</template></el-table-column>
               <el-table-column label="缺维" width="90">
-                <template slot-scope="m">{{ (m.row.missing_dimensions || []).length ? m.row.missing_dimensions.join(',') : '无' }}</template>
+                <template #default="m">{{ (m.row.missing_dimensions || []).length ? m.row.missing_dimensions.join(',') : '无' }}</template>
               </el-table-column>
               <el-table-column prop="engine" label="引擎" width="100"></el-table-column>
             </el-table>

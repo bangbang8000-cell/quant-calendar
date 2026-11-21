@@ -56,12 +56,12 @@
           <el-table :data="dimRows" size="small" border>
             <el-table-column prop="label" label="维度" width="90"></el-table-column>
             <el-table-column label="评分" width="90">
-              <template slot-scope="d">
+              <template #default="d">
                 <span :class="d.row.score === null ? 'qc711-tone-mute' : 'qc711-strong'">{{ d.row.score === null ? '缺' : S.num(d.row.score, 0) }}</span>
               </template>
             </el-table-column>
             <el-table-column label="要点" show-overflow-tooltip>
-              <template slot-scope="d">{{ d.row.reasons || '—' }}</template>
+              <template #default="d">{{ d.row.reasons || '—' }}</template>
             </el-table-column>
           </el-table>
 

@@ -51,3 +51,17 @@ def test_matrix_css_landed():
     for cls in (".qc711-matrix-card", ".qc711-matrix-head", ".qc711-matrix-aggregate",
                 ".qc711-agg-chip", ".qc711-matrix-table", ".qc711-matrix-err"):
         assert cls in css, f"CSS 缺少 {cls}"
+
+
+def test_no_vue2_slot_scope_anywhere():
+    """Vue3 运行时把 slot-scope 当普通属性丢弃, slot 数据绑定失效 → 表格内容全空。
+
+    v7.11 六个新组件曾全部中招(v7.13 修复)。此门禁全局禁止复发。
+    """
+    import glob
+    offenders = []
+    for path in glob.glob(os.path.join(BASE, "frontend", "js", "**", "*.js"), recursive=True):
+        with open(path, encoding="utf-8") as f:
+            if "slot-scope" in f.read():
+                offenders.append(os.path.relpath(path, BASE))
+    assert offenders == [], "以下文件仍含 Vue2 slot-scope(内容列会渲染为空): %s" % offenders
