@@ -23,7 +23,9 @@ VALID_TYPES = ('factor_ic', 'layer', 'sweep', 'backtest', 'stability',
                # v7.4: 形态策略回测 / 五维评分实验
                'score', 'pattern_strategy',
                # v7.5: 择时评估 / 市场状态实验
-               'timing', 'market_state', 'pattern_match')
+               'timing', 'market_state', 'pattern_match',
+               # v7.13: 自选股择时矩阵
+               'timing_matrix')
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS research_experiments (

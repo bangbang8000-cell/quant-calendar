@@ -226,3 +226,139 @@ async def timing_state(payload: Dict[str, Any], _: Dict = Depends(get_non_guest_
              "temperature": st.temperature, "adx_tier": st.adx_tier},
             state)
     return state
+
+
+# ─── v7.13: 自选股择时矩阵 (FR-7.5 扩展) ─────────────────────────
+_MATRIX_MAX_SYMBOLS = 30
+
+
+def _watchlist_symbols(username: str) -> List[Dict[str, str]]:
+    """当前用户自选股 [{code, name}]; 缺名回退代码。失败返回空, 上层 422。"""
+    try:
+        import db as db_mod
+        rows = db_mod.watchlist_get(username) or []
+        return [{"code": str(r.get("stock_code") or "").strip(),
+                 "name": str(r.get("name") or "")}
+                for r in rows if r.get("stock_code")]
+    except Exception as e:
+        logger.warning("[timing] 自选股读取失败: %s", e)
+        return []
+
+
+def _stock_name(code: str) -> str:
+    try:
+        from stock_manager import stock_manager
+        return stock_manager.get_name(code) or ""
+    except Exception:
+        return ""
+
+
+def _signal_cell(sig) -> Dict[str, Any]:
+    return {
+        "action": sig.action,
+        "strength": round(float(sig.strength), 4),
+        "exposure": round(float(sig.target_exposure), 4),
+        "message": sig.message,
+    }
+
+
+@router.post("/matrix")
+async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_guest_user)):
+    """自选股 × 择时策略矩阵 (v7.13)
+
+    - symbols 缺省时自动加载当前用户自选股 (watchlist), 也可显式传入
+    - 每行 = 一只标的, 每列 = 一个择时策略, 单元格 = 当前信号(action+仓位系数)
+    - 仍是 Overlay 契约: 单元格只承载仓位系数, 不产持仓矩阵、不进日历
+    - 单只标的数据失败不阻塞整表 (行内 honest error)
+    """
+    from timing.overlay import signal_to_exposure
+    from timing.registry import TIMING_REGISTRY, get_timing
+
+    use_prev = bool(payload.get("use_prev_day_signal", True))
+    params = payload.get("params")
+
+    symbols = [str(s).strip() for s in (payload.get("symbols") or []) if str(s).strip()]
+    from_watchlist = not symbols
+    rows_meta: List[Dict[str, str]] = []
+    if from_watchlist:
+        rows_meta = _watchlist_symbols(str(user.get("username") or ""))
+        if not rows_meta:
+            raise HTTPException(status_code=422, detail="自选股为空, 请先在自选股列表添加标的")
+        symbols = [m["code"] for m in rows_meta]
+    symbols = symbols[:_MATRIX_MAX_SYMBOLS]
+
+    sids = [str(s).strip() for s in (payload.get("sids") or []) if str(s).strip()]
+    if not sids:
+        sids = list(TIMING_REGISTRY.keys())
+    strategies = []
+    for sid in sids:
+        try:
+            st = get_timing(sid)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        strategies.append({"id": sid, "name": st.name})
+
+    by_code = {m["code"]: m["name"] for m in rows_meta}
+    matrix_rows: List[Dict[str, Any]] = []
+    for sym in symbols:
+        try:
+            df, source = _resolve_bars({"symbol": sym})
+            asc = _ascending(df)
+            if df is None or df.empty or len(asc) < 20 or \
+                    not {"close", "high", "low"}.issubset(asc.columns):
+                matrix_rows.append({"symbol": sym, "name": by_code.get(sym) or _stock_name(sym),
+                                    "signals": {}, "avg_exposure": None,
+                                    "error": "K线数据不足(≥20根), 未评估"})
+                continue
+            cells: Dict[str, Dict[str, Any]] = {}
+            exposures: List[float] = []
+            for meta in strategies:
+                st = get_timing(meta["id"])
+                sig = st.evaluate(asc, use_prev_day_signal=use_prev, params=params)
+                cells[meta["id"]] = _signal_cell(sig)
+                exposures.append(float(signal_to_exposure(sig)))
+            matrix_rows.append({
+                "symbol": sym,
+                "name": by_code.get(sym) or _stock_name(sym),
+                "data_source": source,
+                "signals": cells,
+                "avg_exposure": round(sum(exposures) / len(exposures), 4) if exposures else None,
+                "error": None,
+            })
+        except Exception as e:
+            logger.warning("[timing] 矩阵行 %s 失败: %s", sym, e)
+            matrix_rows.append({"symbol": sym, "name": by_code.get(sym) or _stock_name(sym),
+                                "signals": {}, "avg_exposure": None,
+                                "error": "评估失败: %s" % e})
+
+    # 按策略聚合: 各动作计数 + 平均仓位, 供表头一眼看共识
+    aggregate: Dict[str, Dict[str, Any]] = {}
+    for meta in strategies:
+        acts: Dict[str, int] = {}
+        exps: List[float] = []
+        for row in matrix_rows:
+            cell = row["signals"].get(meta["id"])
+            if cell:
+                acts[cell["action"]] = acts.get(cell["action"], 0) + 1
+                exps.append(float(cell["exposure"]))
+        aggregate[meta["id"]] = {
+            "action_counts": acts,
+            "avg_exposure": round(sum(exps) / len(exps), 4) if exps else None,
+        }
+
+    ok_rows = [r for r in matrix_rows if not r.get("error")]
+    sources = {r["data_source"] for r in ok_rows if r.get("data_source")}
+    result = {
+        "rows": matrix_rows, "strategies": strategies,
+        "aggregate": aggregate, "symbol_count": len(matrix_rows),
+        "evaluated_count": len(ok_rows), "error_count": len(matrix_rows) - len(ok_rows),
+        "from_watchlist": from_watchlist, "use_prev_day_signal": use_prev,
+        "data_sources": sorted(sources),
+        "overlay_only": True, "holdings_matrix": None, "calendar_opt_in": False,
+        "max_symbols": _MATRIX_MAX_SYMBOLS,
+    }
+    _record("timing_matrix", ",".join(symbols[:5]) + ("..." if len(symbols) > 5 else ""),
+            {"sids": sids, "use_prev_day_signal": use_prev, "from_watchlist": from_watchlist},
+            [], {"symbol_count": len(matrix_rows), "error_count": result["error_count"]},
+            {"rows": matrix_rows, "aggregate": aggregate})
+    return result

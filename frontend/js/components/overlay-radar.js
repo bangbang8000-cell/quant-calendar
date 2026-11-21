@@ -70,6 +70,65 @@
           </div>
         </div>
 
+        <!-- 自选股择时矩阵 (v7.13): 自动加载自选股 × 全部择时策略 -->
+        <div class="qc711-card qc711-matrix-card">
+          <div class="qc711-matrix-head">
+            <div class="qc711-card-title">
+              <qc-icon name="bar-chart" :size="14" /> 自选股择时矩阵
+              <span class="qc711-matrix-meta" v-if="matrix">
+                已评估 {{ matrix.evaluated_count }} / {{ matrix.symbol_count }} 只
+                <span v-if="matrix.from_watchlist">· 来源: 自选股列表</span>
+                <span v-else>· 显式标的</span>
+              </span>
+            </div>
+            <el-button size="mini" :loading="matrixLoading" @click="loadMatrix">
+              <qc-icon name="refresh" :size="12" /> 刷新矩阵
+            </el-button>
+          </div>
+          <qc-state-panel v-if="matrixError" type="error" title="矩阵加载失败" :desc="matrixError" @retry="loadMatrix"></qc-state-panel>
+          <template v-else-if="matrix">
+            <div v-if="!matrix.rows.length" class="qc711-empty">
+              自选股为空 — 在自选股列表添加标的后, 矩阵会自动加载并计算全部择时信号。
+            </div>
+            <template v-else>
+              <div class="qc711-matrix-aggregate">
+                <span v-for="st in matrix.strategies" :key="'agg-' + st.id" class="qc711-agg-chip"
+                      :title="'该策略在自选股上的共识: ' + aggText(st.id)">
+                  {{ st.name }} <b>{{ aggText(st.id) }}</b>
+                </span>
+              </div>
+              <el-table :data="matrix.rows" size="mini" border class="qc711-matrix-table">
+                <el-table-column label="标的" width="150">
+                  <template slot-scope="p">
+                    <span class="qc711-sym">{{ p.row.symbol }}</span>
+                    <span class="qc711-dim" v-if="p.row.name"> {{ p.row.name }}</span>
+                    <div v-if="p.row.error" class="qc711-matrix-err">{{ p.row.error }}</div>
+                  </template>
+                </el-table-column>
+                <el-table-column v-for="st in matrix.strategies" :key="st.id"
+                                 :label="st.name" min-width="96" align="center">
+                  <template slot-scope="p">
+                    <el-tag v-if="p.row.signals && p.row.signals[st.id]" size="mini"
+                            :type="actionTagTypeOf(p.row.signals[st.id].action)">
+                      {{ S.actionLabel(p.row.signals[st.id].action) }} {{ S.pct(p.row.signals[st.id].exposure, 0) }}
+                    </el-tag>
+                    <span v-else class="qc711-dim">—</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="平均仓位" width="84" align="center">
+                  <template slot-scope="p">{{ S.pct(p.row.avg_exposure, 0) }}</template>
+                </el-table-column>
+              </el-table>
+              <div class="qc711-note">
+                单元格 = 当前信号动作 + 目标仓位系数（T+1 生效口径）；行末 = 8 策略平均仓位。
+                <span v-if="simulatedWarn">⚠ 数据源含模拟数据（真实行情不可用），信号仅供研究参考。</span>
+                <span v-else>Overlay 契约不变：矩阵只承载仓位系数，不产持仓、不进日历。</span>
+              </div>
+            </template>
+          </template>
+          <div v-else class="qc711-empty">正在自动加载自选股矩阵…</div>
+        </div>
+
         <!-- 绩效 + 买卖点 -->
         <template v-if="result">
           <div class="qc711-card">
@@ -181,7 +240,46 @@
         }
       }
 
-      onMounted(loadStrategies);
+      // ── v7.13: 自选股择时矩阵 ──────────────────────────────
+      const matrix = ref(null);
+      const matrixLoading = ref(false);
+      const matrixError = ref('');
+
+      const simulatedWarn = computed(() => {
+        const srcs = (matrix.value && matrix.value.data_sources) || [];
+        return srcs.indexOf('simulated') !== -1;
+      });
+
+      // 策略共识摘要: 平均仓位 + top2 动作计数
+      function aggText(sid) {
+        const agg = matrix.value && matrix.value.aggregate && matrix.value.aggregate[sid];
+        if (!agg || agg.avg_exposure === null || agg.avg_exposure === undefined) return '—';
+        const counts = agg.action_counts || {};
+        const parts = Object.keys(counts)
+          .sort((a, b) => counts[b] - counts[a])
+          .slice(0, 2)
+          .map(a => S_().actionLabel(a) + '×' + counts[a]);
+        return S_().pct(agg.avg_exposure, 0) + (parts.length ? ' · ' + parts.join('/') : '');
+      }
+
+      async function loadMatrix() {
+        matrixLoading.value = true;
+        matrixError.value = '';
+        try {
+          // 不传 symbols: 后端自动读当前用户自选股; 显式评估单票时也可带 symbols
+          matrix.value = await S_().post('/api/timing/matrix', {});
+        } catch (e) {
+          matrixError.value = S_().errText(e);
+          matrix.value = null;
+        } finally {
+          matrixLoading.value = false;
+        }
+      }
+
+      onMounted(async () => {
+        await loadStrategies();
+        loadMatrix();  // 自动加载: 进雷达即出矩阵
+      });
 
       return {
         S: window.__quantModules.v711,
@@ -189,6 +287,7 @@
         points, perf, timeline, sourceText,
         actionTagType, actionTagTypeOf,
         loadStrategies, runEvaluate, loadState,
+        matrix, matrixLoading, matrixError, simulatedWarn, aggText, loadMatrix,
       };
     },
   };

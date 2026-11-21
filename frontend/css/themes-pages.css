@@ -1152,6 +1152,18 @@
 .qc711-tl-cell.qc711-tone-down { background: var(--market-down-fill); opacity: 1; }
 .qc711-tl-cell.qc711-tone-warn { background: var(--state-warning-solid); opacity: 1; }
 .qc711-mt12 { margin-top: 12px; }
+/* v7.13: 择时雷达 — 自选股择时矩阵 */
+.qc711-matrix-card { margin-top: 12px; }
+.qc711-matrix-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.qc711-matrix-meta { margin-left: 8px; font-size: var(--qc-font-size-xs); font-weight: 400; color: var(--text-tertiary); }
+.qc711-matrix-aggregate { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.qc711-agg-chip { padding: 4px 8px; font-size: var(--qc-font-size-xs); border-radius: var(--radius-2);
+                  background: var(--bg-hover); border: 1px solid var(--border-light); color: var(--text-secondary); }
+.qc711-agg-chip b { font-weight: 600; color: var(--text-primary); margin-left: 4px; }
+.qc711-matrix-table { margin-top: 8px; }
+.qc711-matrix-err { font-size: var(--qc-font-size-xs); color: var(--state-warning-solid); line-height: 1.4; margin-top: 4px; }
+.qc711-sym { font-weight: 600; color: var(--text-primary); }
+
 @media (max-width: 720px) {
   .qc711-grid-2 { grid-template-columns: 1fr; }
   .qc711-panel-inline { padding: 8px; }
