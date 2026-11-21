@@ -72,14 +72,14 @@
             --primary-color: #64ffda;
             --primary-rgb: 100, 255, 218;
             /* V6.0: qc 暗色导航 token 覆盖 (V6.0.1: 原 .dark 死代码已删除, 暗色统一由本 data-theme 块驱动) */
-            --qc-background: #11100e; --qc-foreground: #f1eee8;
-            --qc-card: #282620;
+            --qc-background: #12110c; --qc-foreground: #f1eee8;
+            --qc-card: #2d2a1f;
             /* 6.5.6 (A1): 暗色表面三档 — canvas < card < raised, 相邻亮度比 1.26 / 1.21;
                6.5.1 原三档仅 1.09/1.10, 肉眼不可辨 */
-            --qc-surface-canvas: #11100e;
-            --qc-surface-card: #282620;
-            --qc-surface-raised: #39362d;
-            --qc-popover: #282620;
+            --qc-surface-canvas: #12110c;
+            --qc-surface-card: #2d2a1f;
+            --qc-surface-raised: #423d2e;
+            --qc-popover: #2d2a1f;
             --qc-primary: #ffd166;
             /* V6.0.1: 补全 dark-pro 金色 scale — 暗底适配 (50-300 深金底 / 400-900 亮金主色与文字) */
             --qc-primary-50: #2b2314; --qc-primary-100: #3d3422;
@@ -88,30 +88,30 @@
             --qc-primary-600: #ffd166; --qc-primary-700: #ffd166;
             --qc-primary-800: #e6cf86; --qc-primary-900: #f0e2b3;
             /* 6.5.6 (A3): 文字/描边/导航统一到色相联动暖中性族 (原 #e6f1ff/#8892b0 冷蓝灰压在暖底上) */
-            --qc-muted: #333128; --qc-muted-foreground: #9c988b;
-            --qc-border: #807860; --qc-ring: #e6cf86;   /* V6.10 (C): --qc-input 已被 --border-control 取代 */
-            --qc-nav-bg: #191815; --qc-nav-border: #3f3c31;
-            --qc-nav-item-default: #9c988b; --qc-nav-item-hover: #f1eee8;
-            --qc-nav-item-hover-bg: #333128;
+            --qc-muted: #393528; --qc-muted-foreground: #afaca1;
+            --qc-border: #615b49; --qc-ring: #e6cf86;   /* V6.10 (C): --qc-input 已被 --border-control 取代 */
+            --qc-nav-bg: #1b1913; --qc-nav-border: #423d2e;
+            --qc-nav-item-default: #afaca1; --qc-nav-item-hover: #f1eee8;
+            --qc-nav-item-hover-bg: #2d2a1f;
             --qc-nav-item-active: #ffd166; --qc-nav-item-active-bg: #3b372a;
             --qc-nav-item-active-border: #ffd166;
-            --qc-nav-group-label: #9c988b;
-            --qc-nav-badge-bg: #333128; --qc-nav-badge-text: #ffd166;
+            --qc-nav-group-label: #afaca1;
+            --qc-nav-badge-bg: #393528; --qc-nav-badge-text: #ffd166;
             --secondary-color: #5e6ad2;
-            --card-border: #807860;
-            --text-primary: #f1eee8; --text-secondary: #bdbab2; --text-tertiary: #a6a296;
+            --card-border: #615b49;
+            --text-primary: #f1eee8; --text-secondary: #c7c4bd; --text-tertiary: #afaca1;
             --text-link: #64ffda;
-            --bg-page: #11100e; --bg-card: #282620;
-            --bg-card-header: #333128;
-            --bg-input: #242218; --bg-hover: #333128;
-            --bg-selected: rgba(255,209,102,0.08); --bg-stripe: #191815;
-            --border-light: #3f3c31; --border-base: #4c4739; --border-heavy: #706951;  /* V5.17.1: dark 边框对比度达标 */  /* 6.5.6 (A3): 统一暖中性族 */
+            --bg-page: #12110c; --bg-card: #2d2a1f;
+            --bg-card-header: #393528;
+            --bg-input: #1b1913; --bg-hover: #393528;
+            --bg-selected: rgba(255,209,102,0.08); --bg-stripe: #1b1913;
+            --border-light: #393528; --border-base: #4e4836; --border-heavy: #726a4f;  /* V5.17.1: dark 边框对比度达标 */  /* 6.5.6 (A3): 统一暖中性族 */
             /* V4.4 (FR-4.4.1): dark 覆盖补全令牌 */
-            --border-color: #3f3c31; --surface: #282620; --bg-code: #0b0b09;
-            --bg-tertiary: #333128;   /* V5.31: 原 #1f2937 为 Tailwind 灰, 与海军蓝族混用 */
+            --border-color: #423d2e; --surface: #2d2a1f; --bg-code: #0f0e0a;
+            --bg-tertiary: #393528;   /* V5.31: 原 #1f2937 为 Tailwind 灰, 与海军蓝族混用 */
             --primary-color-dark: var(--qc-primary-800);   /* V5.31: 原 #3b82f6 蓝色残留 */
-            --surface: #282620; --bg-code: #0b0b09;
-            --text-disabled: #9e998a;   /* EP 禁用态文本 */
+            --surface: #2d2a1f; --bg-code: #0f0e0a;
+            --text-disabled: #afaca1;   /* EP 禁用态文本 */
             /* V6.10 (D): 暗色阴影补全到当前族 --qc-shadow-* —— 原先只有 legacy --shadow-* 的暗色变体,
                而全站引用的是 --qc-shadow-*(亮色 5% 黑), 在暗底完全不可见 (真实缺陷)。 */
             --qc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35) ;
@@ -126,15 +126,15 @@
             --bg-code: var(--surface-sunken);
             /* V6.10 (C·治理): 原 legacy --shadow-* 暗色变体已删除 (全树无引用, 阴影统一走 --qc-shadow-*) */
             /* V4.8.2 (D4): ECharts 网格线/轴线暗色变体 (网格弱于轴线, 暗底可见) */
-            --chart-split: #4c4739 ;  /* V5.17.1: dark 网格线对比度 1.59 (门禁≥1.5) */
-            --chart-axis: #706951 ;  /* V5.17.1: dark 轴线对比度 3.09 (门禁≥2.5) */
+            --chart-split: #4e4836 ;  /* V5.17.1: dark 网格线对比度 1.59 (门禁≥1.5) */
+            --chart-axis: #9b906f ;  /* V5.17.1: dark 轴线对比度 3.09 (门禁≥2.5) */
             /* V5.5 (T-5.0.54): 图表画布背景 = 卡片表面 (V6.10: 原硬编码 #101a2e 海军蓝与 --qc-card 形成双面族) */
             --chart-bg: var(--surface-card) ;
             /* V4.0.2 毛玻璃深色浮层 */
             /* V6.6 (PRD-6.6 F4): 暗色浮层实底 — 0.72 半透明改不透明, 消除玻璃透底 */
             /* 6.2.2 (F12): 玻璃增强 — 暗色浮层改半透明暗玻璃 (6.5.7 B4: 0.82→0.90, 叠底后相对画布
                1.28:1 >= 1.25 层级阈值) + blur 透出层次, 浮层文字仍 ≥4.6:1 */
-            --glass-bg: rgba(44, 42, 35, 0.90);
+            --glass-bg: rgba(45, 42, 31, 0.90);
             --glass-border: rgba(255, 255, 255, 0.12);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
             --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%);
@@ -221,25 +221,25 @@
             --gradient-panel: linear-gradient(135deg, #dccb85 0%, #c3a83f 100%);
             --panel-fg: #2b2109;
             --card-border: #dcd4c4;   /* V5.30: 去金色描边, 改暖中性 */
-            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #7a6847;
-            --text-link: #8b6914;
-            --bg-page: #fdfaf3; --bg-card: #fff;
-            --bg-card-header: #fdf8ec;
-            --bg-input: #fff; --bg-hover: #fef5e0;
-            --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #fdfaf3;
-            --border-light: #f0e4c8; --border-base: #dcc88a; --border-heavy: #c4a64a;
+            --text-primary: #1c1814; --text-secondary: #6b5e4a; --text-tertiary: #6d685a;
+            --text-link: #7b600f;
+            --bg-page: #eae9e6; --bg-card: #fff;
+            --bg-card-header: #f6f6f3;
+            --bg-input: #fff; --bg-hover: #f1f0ee;
+            --bg-selected: rgba(184,146,42,0.08); --bg-stripe: #eae9e6;
+            --border-light: #e6e5e0; --border-base: #d0cdc3; --border-heavy: #c0bcaf;
             --gradient-brand: linear-gradient(135deg, hsl(45, 76%, 28.2%) 0%, hsl(45, 85%, 22.2%) 100%);
-            --badge-gold-bg: #fef9ed; --color-gold: #b8922a;
-            --gold-light: #e8d5b7; --gold-bg: #fdfaf3;
+            --badge-gold-bg: #f6f6f3; --color-gold: #b8922a;
+            --gold-light: #e8d5b7; --gold-bg: #eae9e6;
             --badge-success-bg: #f0fdf4; --badge-success-text: #166534;
             --badge-warning-bg: #fffbeb; --badge-warning-text: #b45309;
             --badge-danger-bg: #fef2f2; --badge-danger-text: #b91c1c;
             --badge-info-bg: #eff6ff; --badge-info-text: #1d4ed8;
             --el-success: #16a34a; --el-warning: #f59e0b; --el-danger: #dc2626; --el-info: #1d4ed8;
             --primary-solid: #927210;
-            --btn-primary-plain-bg: rgba(184,146,42,0.08); --btn-primary-plain-border: rgba(184,146,42,0.25); --btn-primary-plain-color: var(--qc-primary-800);
+            --btn-primary-plain-bg: rgba(184,146,42,0.08); --btn-primary-plain-border: rgba(184,146,42,0.25); --btn-primary-plain-color: #7b600e;
             --btn-primary-plain-hover-bg: rgba(184,146,42,0.15); --btn-primary-plain-hover-border: #927210;
-            --btn-primary-text-color: var(--qc-primary-800);  /* V5.31: #927210 on page bg = 4.33:1 */
+            --btn-primary-text-color: #7b600e;  /* V5.31: #927210 on page bg = 4.33:1 */
         }
         /* 🌙 暗色专业版 - 默认按钮 */
         [data-theme="dark-pro"] .el-button--default {

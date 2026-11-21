@@ -57,7 +57,7 @@
   /* V5.31: 原 #7a7568 在 --qc-muted(#f7f4ee) 底上仅 4.18:1 (表格头/标签大量命中) → 4.73:1 */
   --qc-muted-foreground: #6e6a5f;
   /* V5.30 (P0-1): 页面底色改中性后卡片需可见分界线 — 200(#efe9df, 1.08:1) → 300(#ded5c6) */
-  --qc-border: var(--qc-neutral-300);
+  --qc-border: #b7b2a2;   /* 7.13: 装饰线 2.1:1, 弱于控件边界 3:1 */
   --qc-ring: var(--qc-primary-400);
 
   /* V5.31 (语义色分层): 文字色 / 实底色 与「填充色」分离 —— 原 --primary-color(hsl 75,42%) 同时充当
@@ -115,9 +115,9 @@
   --qc-radius-full: 9999px;
 
   /* ─── Shadows (floating layers only, static cards use border) ─── */
-  --qc-shadow-sm: 0 2px 8px rgba(31, 29, 26, 0.05);
-  --qc-shadow-md: 0 4px 16px rgba(31, 29, 26, 0.05);
-  --qc-shadow-lg: 0 8px 32px rgba(31, 29, 26, 0.05);
+  --qc-shadow-sm: 0 2px 8px rgba(31, 29, 26, 0.10);
+  --qc-shadow-md: 0 4px 16px rgba(31, 29, 26, 0.12);
+  --qc-shadow-lg: 0 8px 32px rgba(31, 29, 26, 0.14);
 
   /* ─── V5.17: 中栏双栏布局 — 中栏默认宽度(35% 分割比例) + 拖拽分隔条宽度 (运行时由 app-logic 覆盖) ─── */
   --split-w: 35%;
@@ -339,12 +339,12 @@
   /* ═══ V6.10 (配色专项·A): 表面角色令牌 (Layer 2, 静态兜底) ═══
      运行期由 themes.js 按色相/模式覆盖; 此处仅保证首屏与无 JS 时的可用值。
      契约: 明暗同名, 组件只允许引用角色名, 不允许再出现模式专属的硬编码面色。 */
-  --surface-canvas: hsl(45, 18%, 98%);
+  --surface-canvas: hsl(45, 10%, 91%);
   --surface-card: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: hsl(45, 16%, 96%);
+  --surface-sunken: hsl(45, 10%, 90%);
   --surface-input: #ffffff;
-  --surface-hover: hsl(45, 26%, 94%);
+  --surface-hover: hsl(45, 10%, 94%);
   /* V6.10 (配色专项·B): 控件边界 (输入/选择器可见边框) —— 运行期按色相求解 >=3:1 (WCAG 1.4.11),
      静态兜底为近似值; 与装饰性分隔线 (--qc-border/--border-*) 分离, 后者保持轻量。 */
   --border-control: hsl(45, 16%, 56%);
@@ -532,16 +532,16 @@
 /* ═══ V6.10 (配色专项·A): 暗色兜底 (运行期 themes.js 会按色相覆盖) ═══
    与上方 :root 同名同结构 —— 明暗对称是硬契约, 缺键即视为缺陷 (由 tests/test_color_tokens.py 断言)。 */
 [data-theme="dark-pro"] {
-  --surface-canvas: hsl(45, 10%, 8%);
-  --surface-card: hsl(45, 11%, 11%);
-  --surface-raised: hsl(45, 12%, 14%);
-  --surface-sunken: hsl(45, 12%, 9%);
-  --surface-input: hsl(45, 12%, 9%);
-  --surface-hover: hsl(45, 12%, 15%);
-  --border-strong: hsl(45, 16%, 42%);
-  --border-control: hsl(45, 16%, 42%);
+  --surface-canvas: hsl(45, 20%, 6%);
+  --surface-card: hsl(45, 18%, 15%);
+  --surface-raised: hsl(45, 18%, 22%);
+  --surface-sunken: hsl(45, 20%, 5%);
+  --surface-input: hsl(45, 18%, 9%);
+  --surface-hover: hsl(45, 18%, 19%);
+  --border-strong: hsl(45, 18%, 42%);
+  --border-control: hsl(45, 18%, 42%);
   --scrollbar-thumb: rgba(138, 146, 176, 0.5);
-  --bg-page-rgb: 20, 19, 16;
+  --bg-page-rgb: 18, 17, 12;
   --qc-overlay: rgba(0, 0, 0, 0.6);
   /* V6.10 (B): 暗色涨跌「填充档」提亮 —— 原 #2E7D32 压暗色卡片仅 3.27:1 (同时两档感知亮度差过小, 色觉障碍难辨) */
   --market-up-fill: #ff6b6b;

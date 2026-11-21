@@ -9,7 +9,8 @@
 - 同时 --qc-border 亮色 1.90:1 / 暗色 2.14:1, 是容器唯一的分层载体却低于可辨阈值。
 
 阈值说明:
-- 容器描边 `--qc-border` 取 2.8:1 (视觉强度上限, 再深会形成"廉价描边框"观感);
+- 容器描边 `--qc-border` 取 2.0:1: 装饰线必须弱于控件边界 3:1, 避免"灰线框"观感;
+  上界 2.2 由 test_visual_art_tokens_713.A3 守护, 防止弱到密集表格融线。
   交互控件的边界走 `--border-control` 的 3:1 (WCAG 1.4.11), 由 test_theme_contrast.py 负责。
 """
 import os
@@ -26,7 +27,7 @@ DARK_RUNTIME_REQUIRED = ("--card-border", "--surface", "--bg-code", "--text-disa
 # 色相偏离容忍: 暖中性族内部允许的色相角偏差
 MAX_HUE_DRIFT = 25
 
-BORDER_MIN = 2.8
+BORDER_MIN = 2.0
 
 
 def _fmt(mode, hue):
@@ -67,7 +68,7 @@ def test_dark_residual_tokens_follow_hue():
 
 
 def test_container_border_contrast():
-    """容器描边 --qc-border 对卡片 >= 2.8:1 (明暗 14 套)。"""
+    """容器描边 --qc-border 对卡片 >= 2.0:1 (装饰线, 明暗 14 套)。"""
     failures = []
     for mode, hue in g.CONFIGS:
         v = g.pair(mode, hue, "--qc-border", "--surface-card")

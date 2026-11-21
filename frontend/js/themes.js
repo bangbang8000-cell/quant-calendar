@@ -95,8 +95,8 @@
     var out = {};
     if (mode === 'light') {
       // 6.5.6 (A1): 画布/凹陷面下拉, 使相邻表面亮度比 >= 1.18 (原 1.04:1 面层级不可辨)
-      out['--qc-neutral-50']  = hsl(hue, 16, 91);
-      out['--qc-neutral-100'] = hsl(hue, 16, 90);
+      out['--qc-neutral-50']  = hsl(hue, 10, 91);
+      out['--qc-neutral-100'] = hsl(hue, 10, 90);
       out['--qc-neutral-200'] = hsl(hue, 14, 90);
       out['--qc-neutral-300'] = hsl(hue, 12, 83);
       out['--qc-neutral-400'] = hsl(hue, 10, 68);
@@ -105,100 +105,100 @@
       out['--qc-neutral-700'] = hsl(hue, 10, 30);
       out['--qc-neutral-800'] = hsl(hue, 10, 20);
       out['--qc-neutral-900'] = hsl(hue, 10, 12);
-      out['--qc-background'] = hsl(hue, 16, 91);
-      out['--qc-muted'] = hsl(hue, 16, 90);
+      out['--qc-background'] = hsl(hue, 10, 91);
+      out['--qc-muted'] = hsl(hue, 10, 90);
       // 6.5.6 (A2): 容器描边按色相求解至 >=2.85:1 (对卡片白); 取满足目标的最深(最轻)明度
-      out['--qc-border'] = _borderL(hue, 13, _gradFgWhite, 2.85, 'max');
+      out['--qc-border'] = _borderL(hue, 13, _gradFgWhite, 2.12, 'max');
       out['--chart-axis'] = hsl(hue, 12, 55);
       out['--chart-split'] = hsl(hue, 10, 88);
       out['--qc-foreground'] = hsl(hue, 10, 12);
-      out['--qc-muted-foreground'] = hsl(hue, 9, 38);
+      out['--qc-muted-foreground'] = hsl(hue, 9, 37);
       out['--qc-nav-item-default'] = hsl(hue, 9, 38);
       out['--qc-nav-item-hover'] = hsl(hue, 10, 12);
       out['--qc-nav-group-label'] = hsl(hue, 9, 40);
       out['--qc-nav-bg'] = '#ffffff';
-      out['--bg-page'] = hsl(hue, 20, 91);
-      out['--bg-stripe'] = hsl(hue, 20, 91);
-      out['--bg-card-header'] = hsl(hue, 24, 96);
-      out['--card-gradient-header'] = 'linear-gradient(135deg, ' + hsl(hue, 24, 96) + ' 0%, #ffffff 100%)';
-      out['--bg-hover'] = hsl(hue, 26, 94);
-      out['--bg-tertiary'] = hsl(hue, 14, 93);
-      out['--badge-gold-bg'] = hsl(hue, 26, 96);
-      out['--gold-bg'] = hsl(hue, 20, 91);
-      out['--border-light'] = hsl(hue, 22, 89);
-      out['--border-base'] = hsl(hue, 24, 79);
-      out['--border-color'] = hsl(hue, 14, 88);
+      out['--bg-page'] = hsl(hue, 10, 91);
+      out['--bg-stripe'] = hsl(hue, 10, 91);
+      out['--bg-card-header'] = hsl(hue, 14, 96);
+      out['--card-gradient-header'] = 'linear-gradient(135deg, ' + hsl(hue, 14, 96) + ' 0%, #ffffff 100%)';
+      out['--bg-hover'] = hsl(hue, 10, 94);
+      out['--bg-tertiary'] = hsl(hue, 10, 93);
+      out['--badge-gold-bg'] = hsl(hue, 14, 96);
+      out['--gold-bg'] = hsl(hue, 10, 91);
+      out['--border-light'] = hsl(hue, 12, 89);
+      out['--border-base'] = hsl(hue, 12, 79);
+      out['--border-color'] = hsl(hue, 10, 88);
       out['--text-primary'] = hsl(hue, 12, 12);
-      out['--text-secondary'] = hsl(hue, 12, 32);
-      out['--text-tertiary'] = hsl(hue, 14, 37);
+      out['--text-secondary'] = hsl(hue, 12, 31);
+      out['--text-tertiary'] = hsl(hue, 10, 39);
       out['--text-disabled'] = hsl(hue, 9, _gradL(hue, 9, _rgbTuple(hue, 16, 91), 25, 70, true, 3.2));
       // 与暗色分支保持键集一致 (applyTheme 只覆盖不清理, 缺键会导致跨模式残留)
       out['--qc-card'] = '#ffffff';
       out['--qc-popover'] = '#ffffff';
-      out['--qc-nav-border'] = hsl(hue, 12, 72);
-      out['--qc-nav-item-hover-bg'] = hsl(hue, 16, 95);
+      out['--qc-nav-border'] = hsl(hue, 10, 72);
+      out['--qc-nav-item-hover-bg'] = hsl(hue, 10, 95);
       out['--qc-overlay'] = 'rgba(31, 29, 26, 0.5)';
       out['--bg-card'] = '#ffffff';
       out['--surface'] = '#ffffff';
-      out['--border-heavy'] = hsl(hue, 22, 72);
+      out['--border-heavy'] = hsl(hue, 12, 72);
       // V6.10 (配色专项·A): 表面角色令牌 — 明暗同名契约, 消除「CSS 硬编码面 vs 运行期生成面」双面族
-      out['--surface-canvas'] = hsl(hue, 16, 91);
+      out['--surface-canvas'] = hsl(hue, 10, 91);
       out['--surface-card'] = '#ffffff';
       out['--surface-raised'] = '#ffffff';
-      out['--surface-sunken'] = hsl(hue, 16, 90);
+      out['--surface-sunken'] = hsl(hue, 10, 90);
       out['--surface-input'] = '#ffffff';
-      out['--surface-hover'] = hsl(hue, 26, 94);
-      out['--border-strong'] = hsl(hue, 22, 72);
-      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 12, 72) + ', 0.5)';
-      out['--bg-page-rgb'] = hslToRgb(hue, 20, 91);
+      out['--surface-hover'] = hsl(hue, 10, 94);
+      out['--border-strong'] = hsl(hue, 12, 72);
+      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 10, 72) + ', 0.5)';
+      out['--bg-page-rgb'] = hslToRgb(hue, 10, 91);
     } else {
       // 暗色: 色相联动「极低饱和暖中性」基调 (6.5.6 Gate0-D1a: 取代原固定海军蓝 #0b1220/#101a2e;
       //   原方案在运行期从未生效, 实测 hue45 产出暖黑 #161512)
-      out['--qc-background'] = hsl(hue, 10, 6);
-      out['--qc-card'] = hsl(hue, 11, 14);
-      out['--qc-popover'] = hsl(hue, 11, 14);
-      out['--qc-muted'] = hsl(hue, 12, 18);
+      out['--qc-background'] = hsl(hue, 20, 6);
+      out['--qc-card'] = hsl(hue, 18, 15);
+      out['--qc-popover'] = hsl(hue, 18, 15);
+      out['--qc-muted'] = hsl(hue, 18, 19);
       // 6.5.6 (A2): 容器描边按色相求解至 >=2.9:1 (冷色相同明度下亮度更低, 固定 L 无法跨色相一致)
-      out['--qc-border'] = _borderL(hue, 14, _rgbTuple(hue, 11, 14), 2.9);
+      out['--qc-border'] = _borderL(hue, 14, _rgbTuple(hue, 18, 15), 2.12);
       out['--chart-axis'] = hsl(hue, 16, 52);
       out['--chart-split'] = hsl(hue, 14, 26);
-      out['--qc-nav-bg'] = hsl(hue, 10, 9);
-      out['--qc-nav-border'] = hsl(hue, 13, 22);
-      out['--qc-nav-item-hover-bg'] = hsl(hue, 12, 14);
-      out['--bg-page'] = hsl(hue, 10, 6);
-      out['--bg-card'] = hsl(hue, 11, 14);
-      out['--bg-card-header'] = hsl(hue, 12, 18);
-      out['--bg-stripe'] = hsl(hue, 10, 9);
-      out['--bg-hover'] = hsl(hue, 12, 18);
-      out['--bg-tertiary'] = hsl(hue, 12, 18);
-      out['--border-light'] = hsl(hue, 13, 18);
-      out['--border-base'] = hsl(hue, 14, 26);
-      out['--border-heavy'] = hsl(hue, 16, 38);
-      out['--border-color'] = hsl(hue, 13, 22);
-      out['--surface'] = hsl(hue, 11, 14);
+      out['--qc-nav-bg'] = hsl(hue, 18, 9);
+      out['--qc-nav-border'] = hsl(hue, 18, 22);
+      out['--qc-nav-item-hover-bg'] = hsl(hue, 18, 15);
+      out['--bg-page'] = hsl(hue, 20, 6);
+      out['--bg-card'] = hsl(hue, 18, 15);
+      out['--bg-card-header'] = hsl(hue, 18, 19);
+      out['--bg-stripe'] = hsl(hue, 18, 9);
+      out['--bg-hover'] = hsl(hue, 18, 19);
+      out['--bg-tertiary'] = hsl(hue, 18, 19);
+      out['--border-light'] = hsl(hue, 18, 19);
+      out['--border-base'] = hsl(hue, 18, 26);
+      out['--border-heavy'] = hsl(hue, 18, 38);
+      out['--border-color'] = hsl(hue, 18, 22);
+      out['--surface'] = hsl(hue, 18, 15);
       // V6.10 (配色专项·A): 表面角色令牌 — 统一到色相联动暖中性族, 替代海军蓝硬编码面
       //   (#0b1220/#101a2e/#16233b/#0d1526/#3a4a6a 等运行时未被覆盖的残留面)
-      out['--surface-canvas'] = hsl(hue, 10, 6);
-      out['--surface-card'] = hsl(hue, 11, 14);
-      out['--surface-raised'] = hsl(hue, 12, 20);
-      out['--surface-sunken'] = hsl(hue, 12, 4);
-      out['--surface-input'] = hsl(hue, 12, 9);
-      out['--surface-hover'] = hsl(hue, 12, 19);
-      out['--border-strong'] = hsl(hue, 16, 42);
+      out['--surface-canvas'] = hsl(hue, 20, 6);
+      out['--surface-card'] = hsl(hue, 18, 15);
+      out['--surface-raised'] = hsl(hue, 18, 22);
+      out['--surface-sunken'] = hsl(hue, 20, 5);
+      out['--surface-input'] = hsl(hue, 18, 9);
+      out['--surface-hover'] = hsl(hue, 18, 19);
+      out['--border-strong'] = hsl(hue, 18, 42);
       // 6.5.6 (A3): 曾回落到 themes.css 海军蓝硬编码的 4 个令牌, 改为运行期提供
       //   --card-border(#1a2a44 1.16:1) / --bg-code(#0f172a 1.07:1) / --text-disabled(#64748b 冷灰)
       out['--card-border'] = out['--qc-border'];
-      out['--bg-code'] = hsl(hue, 12, 4);
+      out['--bg-code'] = hsl(hue, 20, 5);
       out['--text-disabled'] = hsl(hue, 9, 58);
-      out['--qc-muted-foreground'] = hsl(hue, 8, 64);
+      out['--qc-muted-foreground'] = hsl(hue, 8, 66);
       // 6.5.6 (A3): 暗色文字原为 CSS 冷蓝灰 (#e6f1ff/#a0aec8/#8b9bb5), 压在暖底上发蓝;
       //   改为色相联动暖中性并保持三级明度序 (primary > secondary > tertiary)
       out['--qc-foreground'] = hsl(hue, 8, 93);
       out['--text-primary'] = hsl(hue, 8, 93);
-      out['--text-secondary'] = hsl(hue, 8, 72);
-      out['--text-tertiary'] = hsl(hue, 8, 62);
-      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 16, 52) + ', 0.5)';
-      out['--bg-page-rgb'] = hslToRgb(hue, 10, 6);
+      out['--text-secondary'] = hsl(hue, 8, 76);
+      out['--text-tertiary'] = hsl(hue, 8, 66);
+      out['--scrollbar-thumb'] = 'rgba(' + hslToRgb(hue, 18, 52) + ', 0.5)';
+      out['--bg-page-rgb'] = hslToRgb(hue, 20, 6);
       out['--qc-overlay'] = 'rgba(0, 0, 0, 0.6)';
     }
     return out;
@@ -239,6 +239,13 @@
     var wantMax = (dir === 'max');
     return hsl(hue, sat, _gradL(hue, sat, fg, 10, 82, wantMax, target));
   }
+  // 7.13 (FR-3): 品牌文字落在白卡与页面底色两种背景上, 取两者中更严格的明度上限。
+  //   目标 4.9 抵消求解器 0.1% 取整误差, 保证实际渲染 >=4.8:1 (原仅对淡底求解, 金/绿等色相在页底仅 4.65)。
+  function _brandTextL(hue, sat, target) {
+    var cardMax = _gradL(hue, sat, _gradFgWhite, 10, 58, true, target);
+    var canvasMax = _gradL(hue, sat, _rgbTuple(hue, 10, 91), 10, 58, true, target);
+    return Math.min(cardMax, canvasMax);
+  }
 
   // 明色模式 token (覆盖在 themes.css [data-theme=gold] 基底之上)
   function generateLightTokens(hue) {
@@ -254,9 +261,10 @@
     const gL2 = Math.max(12, gL - 5);
     const gL1 = Math.max(10, gL - 11);
     // V5.31: 品牌文字/实底 —— 文字色对白底 4.8:1, 实底色对白字 >=4.6:1 (原 --primary-color hsl(h,75,42) 仅 2.88:1)
-    const _mut = hslToRgb(hue, 16, 90).split(',').map(function (x) { return parseInt(x, 10); });
+    const _mut = _rgbTuple(hue, 10, 91);   // 7.13: 页底去黄后的真实背景
     const _navActiveBg = hslToRgb(hue, 85, 92).split(',').map(function (x) { return parseInt(x, 10); });
-    const txtL = _gradL(hue, 78, _mut, 10, 58, true, 4.6);   // 对淡底求解 (页面/表格头也达标)
+    const txtL = _brandTextL(hue, 78, 4.9);   // 7.13: 白卡 + 页底双取严 >=4.8
+    const txtL80 = _brandTextL(hue, 80, 4.9);
     // V5.12.1: 导航激活文字落在「激活底色 hsl(hue,85,92)」上 (比 muted 更暗), 必须对它求解
     const navL = _gradL(hue, 80, _navActiveBg, 10, 58, true, 4.6);
     // V5.31: 实底色 = 原 32% 与「对白字达标的最亮值」取小 —— 绿/青等亮色相在原 32% 仅 3.99:1, 自动压深
@@ -288,10 +296,10 @@
       '--primary-solid': hsl(hue, 80, solidL),
       '--btn-primary-plain-bg': 'rgba(' + rgb + ', 0.08)',
       '--btn-primary-plain-border': 'rgba(' + rgb + ', 0.25)',
-      '--btn-primary-plain-color': hsl(hue, 80, txtL),   // V5.31: 原 32% 在页面底仅 4.33:1
+      '--btn-primary-plain-color': hsl(hue, 80, txtL80),   // V5.31: 原 32% 在页面底仅 4.33:1
       '--btn-primary-plain-hover-bg': 'rgba(' + rgb + ', 0.15)',
       '--btn-primary-plain-hover-border': hsl(hue, 80, 32),
-      '--btn-primary-text-color': hsl(hue, 80, txtL),   // V5.31: 原 32% 在页面底仅 4.33:1
+      '--btn-primary-text-color': hsl(hue, 80, txtL80),   // V5.31: 原 32% 在页面底仅 4.33:1
       '--gradient-brand': 'linear-gradient(135deg, ' + hsl(hue, 76, gL2) + ' 0%, ' + hsl(hue, 85, gL1) + ' 100%)',
       // V5.29: 详情头卡专用浅色面板 (深色前景), 明度按色相自适应到 PANEL_TARGET
       '--primary-text': hsl(hue, 78, txtL),
@@ -306,10 +314,10 @@
       '--qc-nav-badge-text': hsl(hue, 80, navL),   // V6.10 (B): 原固定 35% 压在激活底色上仅 3.08:1(绿)/3.49:1(金)
       // V6.10 (配色专项·B): 焦点环/控件边界按对比度求解 (原 --qc-ring hsl(h,70,58) 对页底仅 1.67:1;
       //   --qc-input hsl(h,12,72) 对卡片仅 ~2.0:1, 均低于 WCAG 1.4.11 的 3:1 组件边界要求)
-      '--qc-ring': hsl(hue, 75, _gradL(hue, 75, _rgbTuple(hue, 16, 91), 25, 70, true, 3.2)),
+      '--qc-ring': hsl(hue, 75, _gradL(hue, 75, _rgbTuple(hue, 10, 91), 25, 70, true, 3.2)),
       // V6.11 (需求轮4): 浅底彩字按钮/头像/分段控件的文字 —— 对最浅的 soft 底 (--qc-primary-200) 求解
       '--brand-soft-text': hsl(hue, 80, _gradL(hue, 80, _rgbTuple(hue, 80, 84), 10, 58, true, 4.6)),
-      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 16, 91), 30, 80, true, 3.2)),
+      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 10, 91), 30, 80, true, 3.2)),
     };
   }
 
@@ -384,7 +392,7 @@
       '--qc-nav-badge-bg': 'rgba(' + rgb + ', 0.12)',
       '--qc-nav-badge-text': hsl(hue, 85, navD),   // V6.10 (B): 原固定 65% 在紫色相仅 3.88:1
       // V6.10 (B): 暗色控件边界 —— 对卡片底求解 >=3:1 的最「收敛」档 (WCAG 1.4.11)
-      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 11, 14), 25, 70, false, 3.2)),
+      '--border-control': hsl(hue, 16, _gradL(hue, 16, _rgbTuple(hue, 18, 15), 25, 70, false, 3.2)),
       // V6.11 (需求轮4): 浅底彩字文字 —— 暗色下 soft 底是 hsl(h,55%,22~26%), 需单独求解
       '--brand-soft-text': hsl(hue, 85, _gradL(hue, 85, _rgbTuple(hue, 55, 26), 45, 96, false, 4.6)),
       '--qc-ring': hsl(hue, 85, 65),
@@ -459,18 +467,20 @@
 
   // 去彩度会改变同一明度下的感知亮度, 关键文字/焦点/边界令牌需按灰阶重新求解 (契约不降级)
   function _neutralResolve(out, isDark) {
-    var tint = _rgbTuple(45, 0, isDark ? 18 : 90);
+    var tint = _rgbTuple(45, 0, isDark ? 19 : 91);   // 7.13: 取最亮的承载面, 双基准从严
     var canvas = _rgbTuple(45, 0, isDark ? 6 : 91);
-    var card = _rgbTuple(45, 0, isDark ? 14 : 100);
-    var txtL = isDark ? _gradL(45, 0, tint, 45, 96, false, 4.6) : _gradL(45, 0, tint, 10, 58, true, 4.6);
+    var card = _rgbTuple(45, 0, isDark ? 15 : 100);
+    // 7.13 (FR-3): 目标 4.9 抵消 0.1% 取整误差, 实际对白卡/页底均 >=4.8
+    var txtL = isDark ? _gradL(45, 0, tint, 45, 96, false, 4.9)
+                      : _gradL(45, 0, tint, 10, 58, true, 4.9);
     // 导航激活/徽标文字落在 --qc-nav-item-active-bg (亮色 hsl(45,0,92%)) 上, 比通用淡底更暗 → 单独求解
     var navTint = _rgbTuple(45, 0, isDark ? 22 : 92);
     var navL = isDark ? _gradL(45, 0, navTint, 45, 96, false, 4.6) : _gradL(45, 0, navTint, 10, 58, true, 4.6);
     var ringL = isDark ? _gradL(45, 0, canvas, 45, 96, false, 3.2) : _gradL(45, 0, canvas, 25, 70, true, 3.2);
     var bcL = isDark ? _gradL(45, 0, card, 25, 70, false, 3.2) : _gradL(45, 0, canvas, 30, 80, true, 3.2);
     // 6.5.6 (A2): 容器描边在灰阶档单独求解 (去彩度会改变同明度下的感知亮度, 原值回落至 2.69:1)
-    var bdL = isDark ? _gradL(45, 0, card, 25, 70, false, 3.0)
-                     : _gradL(45, 0, canvas, 20, 80, true, 2.9);
+    var bdL = isDark ? _gradL(45, 0, card, 25, 70, false, 2.12)
+                     : _gradL(45, 0, _gradFgWhite, 20, 80, true, 2.12);
     out['--qc-border'] = 'hsl(45, 0%, ' + bdL + '%)';
     if (isDark) { out['--card-border'] = out['--qc-border']; }
     // V6.11 (需求轮4): soft 变体的文字同样按灰阶重解 (去彩度会改变同明度下的感知亮度)

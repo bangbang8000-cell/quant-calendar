@@ -157,3 +157,15 @@ def test_echarts_categorical_palette():
         canvas = _g.color(mode, 45, "--chart-bg")
         worst = min(_g.contrast(hsl(h, sat, lig), canvas) for h in hues)
         assert worst >= 3.0, f"{mode} 分类色板对图表画布最低 {worst:.2f} < 3.0"
+
+
+def test_chart_palette_hue_buckets():
+    """7.13 (A9): 定性色板至少覆盖 4 个色相桶, 防止回退到同色相明度阶梯。"""
+    m = re.search(r"CATEGORICAL_HUES\s*=\s*\[([^\]]+)\]", THEME_JS)
+    assert m, "缺少 CATEGORICAL_HUES 定义"
+    hues = sorted(int(x) for x in re.findall(r"\d+", m.group(1)))
+    buckets = []
+    for h in hues:
+        if not buckets or min(abs(h - b) for b in buckets) >= 30:
+            buckets.append(h)
+    assert len(buckets) >= 4, "分类色相桶不足 4 个: %s" % buckets

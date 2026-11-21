@@ -34,8 +34,9 @@ CHECKS = [
     ("表格头 muted/淡底", "--qc-muted-foreground", "--qc-muted", None, 4.5),
     # 品牌与链接
     ("品牌文字/卡片", "--primary-text", "--surface-card", None, 4.5),
-    ("品牌文字/页底", "--primary-text", "--surface-canvas", None, 4.5),
+    ("品牌文字/页底", "--primary-text", "--surface-canvas", None, 4.8),
     ("文字链接/卡片", "--text-link", "--surface-card", None, 4.5),
+    ("文字链接/页底", "--text-link", "--surface-canvas", None, 4.8),
     ("文字按钮/卡片", "--btn-primary-text-color", "--surface-card", None, 4.5),
     # 6.5.7 (B1): 主按钮已统一为 soft 浅底彩字, 实心组 7 令牌收敛为单一 --primary-solid;
     #   实底档不再承载文字 → 文字对比断言移到 test_button_tokens.py (B6/B7)。

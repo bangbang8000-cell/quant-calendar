@@ -802,8 +802,8 @@
       "statusFilter",
       "statusTone"
     ],
-    "template_len": 6642,
-    "template_sha": "220ccc79333636e0"
+    "template_len": 6624,
+    "template_sha": "cbf2bf1966ec832e"
   },
   "FocusView": {
     "classes": [
@@ -1207,8 +1207,8 @@
       "stats",
       "togglePayload"
     ],
-    "template_len": 4758,
-    "template_sha": "00f87a101c936b11"
+    "template_len": 4752,
+    "template_sha": "c0831e1fd92673ba"
   },
   "MenuConfigDialog": {
     "classes": [
@@ -1427,8 +1427,8 @@
       "verdictText",
       "verifying"
     ],
-    "template_len": 3184,
-    "template_sha": "d3528f8d27766ed8"
+    "template_len": 3180,
+    "template_sha": "f277cf5cd71b0135"
   },
   "PatternLab": {
     "classes": [
@@ -1485,8 +1485,8 @@
       "topN",
       "weightText"
     ],
-    "template_len": 6042,
-    "template_sha": "2e241b1c6f09ca69"
+    "template_len": 6026,
+    "template_sha": "a78c2186db166543"
   },
   "ResearchPage": {
     "classes": [
@@ -2642,8 +2642,8 @@
       "scoreText",
       "veto"
     ],
-    "template_len": 2569,
-    "template_sha": "cedd84a04f931549"
+    "template_len": 2565,
+    "template_sha": "f4dec052378fa643"
   },
   "StrategiesPage": {
     "classes": [
@@ -3648,8 +3648,8 @@
       "symbol",
       "timeline"
     ],
-    "template_len": 9628,
-    "template_sha": "bc6730fc17538816"
+    "template_len": 9614,
+    "template_sha": "b55d5cfeeb3949c6"
   },
   "TourDialog": {
     "classes": [

@@ -36,7 +36,7 @@
         splitLine: { lineStyle: { color: getCSSVar('--chart-split') || '#e2e8f0' } },
       },
       tooltip: {
-        backgroundColor: getCSSVar('--bg-card') || '#ffffff',
+        backgroundColor: getCSSVar('--surface-raised') || '#ffffff',   // 7.13: 浮层取 raised 面
         borderColor: getCSSVar('--border-light') || '#e5e7eb',
         textStyle: { color: getCSSVar('--text-primary') || '#1f2937' },
       },
