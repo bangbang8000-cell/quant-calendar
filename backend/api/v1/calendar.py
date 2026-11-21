@@ -3,9 +3,10 @@
 """
 策略日历 API 路由
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, Optional
 
+from auth import get_non_guest_user
 from data_parser import parser, STRATEGY_CONFIG
 from stock_info import stock_manager
 from data_sources import data_source_manager
@@ -33,10 +34,70 @@ async def get_strategies():
     }
 
 
+# ---- v7.12 (PRD §6.5.2): 股票级受控入库 custom_selections ----
+# 注意: 必须声明在 `/{date}` 之前, 否则 "custom-selection" 会被当作 date 参数吃掉。
+
+@router.get("/custom-selection")
+async def list_custom_selections(date: Optional[str] = None,
+                                 strategy_id: Optional[str] = None,
+                                 mine: bool = False,
+                                 user: Dict = Depends(get_non_guest_user)):
+    """查询股票级勾选(默认查全站, mine=true 只看自己)"""
+    import custom_selection as cs
+    try:
+        rows = cs.list_selections(date=date, strategy_id=strategy_id,
+                                  user=(user.get("username") if mine else None))
+    except cs.CustomSelectionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"items": rows, "count": len(rows)}
+
+
+@router.post("/custom-selection")
+async def upsert_custom_selection(payload: Dict[str, Any],
+                                  user: Dict = Depends(get_non_guest_user)):
+    """提交一组股票级勾选(同一 用户+日期+策略 覆盖式写入, 幂等)"""
+    import custom_selection as cs
+    actor = str(user.get("username") or "").strip()
+    if not actor:
+        raise HTTPException(status_code=403, detail="缺少有效用户身份")
+    symbols = payload.get("symbols")
+    if symbols is None and payload.get("symbol"):
+        symbols = [payload.get("symbol")]
+    try:
+        rec = cs.upsert_selection(
+            user=actor, date=payload.get("date", ""), symbols=symbols or [],
+            strategy_id=payload.get("strategy_id", ""), note=payload.get("note", ""),
+        )
+    except cs.CustomSelectionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "item": rec}
+
+
+@router.delete("/custom-selection")
+async def delete_custom_selection(date: str, symbol: Optional[str] = None,
+                                  strategy_id: Optional[str] = None,
+                                  user: Dict = Depends(get_non_guest_user)):
+    """删除勾选: 带 symbol 只摘该票, 不带则删整行"""
+    import custom_selection as cs
+    actor = str(user.get("username") or "").strip()
+    if not actor:
+        raise HTTPException(status_code=403, detail="缺少有效用户身份")
+    try:
+        out = cs.delete_selection(user=actor, date=date, symbol=symbol,
+                                  strategy_id=strategy_id)
+    except cs.CustomSelectionError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"success": True, **out}
+
+
 @router.get("/{date}")
 async def get_calendar_date(date: str, strategy: Optional[str] = None):
-    """获取指定日期的持仓数据"""
+    """获取指定日期的持仓数据(v7.12: 合并当日股票级勾选为"手动勾选"分组)"""
+    import custom_selection as cs
     holdings = parser.get_holdings_by_date(date, strategy)
+    # 指定单一策略时不做人工合并(避免把手工票混进单策略视图)
+    if not strategy:
+        holdings = cs.merge_into_holdings(holdings, date, strategy_manager=stock_manager)
     return {
         "date": date,
         "holdings": holdings

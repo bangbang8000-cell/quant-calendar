@@ -34,9 +34,14 @@ POLL_INTERVAL = 0.1
 
 STATUS_PENDING = 'pending'
 STATUS_RUNNING = 'running'
+STATUS_PAUSED = 'paused'
 STATUS_SUCCESS = 'success'
 STATUS_FAILED = 'failed'
 STATUS_CANCELLED = 'cancelled'
+
+# v7.12 (FR-7.7-2): 暂停/恢复 — 协作式检查点轮询间隔(秒)
+PAUSE_POLL = 0.2
+TERMINAL_STATUSES = (STATUS_SUCCESS, STATUS_FAILED, STATUS_CANCELLED)
 
 _registry = {}
 _lock = threading.RLock()
@@ -147,6 +152,7 @@ def create_task(task_type, payload=None, max_retries=0, priority=0, dedupe_key=N
         'priority': max(0, int(priority)),
         'dedupe_key': dedupe_key,
         'cancelled': False,
+        'paused': False,
         'created_at': _now_iso(),
         'started_at': None,
         'finished_at': None,
@@ -215,6 +221,58 @@ def cancel_task(job_id):
             j['finished_at'] = _now_iso()
             j['message'] = '已取消'
         _write(jobs)
+
+
+def pause_task(job_id):
+    """暂停任务 (v7.12 FR-7.7-2)。
+
+    - pending: 直接置 paused, worker 不再拾取; 恢复后回到 pending 重新排队
+    - running: 置 paused 标记, 由任务在自身检查点调用 ctx.check_paused() 挂起
+      (不抢占线程: 长任务在批次边界安全停住, 不会留下半写状态)
+    - 终态任务不可暂停, 返回 False
+    """
+    with _lock:
+        jobs = _read()
+        j = jobs.get(job_id)
+        if not j or j.get('status') in TERMINAL_STATUSES:
+            return False
+        if j.get('status') == STATUS_PAUSED:
+            return True
+        j['paused'] = True
+        if j['status'] == STATUS_PENDING:
+            j['status'] = STATUS_PAUSED
+            j['message'] = '已暂停(等待恢复)'
+        else:
+            j['message'] = (j.get('message') or '') + ' [暂停请求已收到]'
+        _write(jobs)
+        _wake_worker()          # 唤醒 worker 重新评估队列(暂停的 pending 不再被拾取)
+    return True
+
+
+def resume_task(job_id):
+    """恢复任务 (v7.12 FR-7.7-2); 终态或未暂停返回 False"""
+    with _lock:
+        jobs = _read()
+        j = jobs.get(job_id)
+        if not j or j.get('status') in TERMINAL_STATUSES:
+            return False
+        was_paused = bool(j.get('paused')) or j.get('status') == STATUS_PAUSED
+        if not was_paused:
+            return False
+        j['paused'] = False
+        if j['status'] == STATUS_PAUSED:
+            j['status'] = STATUS_PENDING
+            j['message'] = '已恢复, 等待调度'
+        else:
+            j['message'] = (j.get('message') or '').replace(' [暂停请求已收到]', '') + ' [已恢复]'
+        _write(jobs)
+        _wake_worker()
+    return True
+
+
+def is_paused(job_id):
+    j = _read().get(job_id) or {}
+    return bool(j.get('paused')) or j.get('status') == STATUS_PAUSED
 
 
 def remove_task(job_id):
@@ -324,6 +382,25 @@ class _TaskCtx:
     def check_cancelled(self):
         return check_cancelled(self._task_id)
 
+    def check_paused(self, timeout=None):
+        """v7.12 (FR-7.7-2): 任务检查点 —— 被暂停则阻塞等待恢复。
+
+        返回 True = 可继续执行; False = 期间被取消, 调用方应尽快收尾。
+        timeout 秒内未恢复则抛 TimeoutError(长任务可据此放弃等待)。
+        用法: 在批次/分片循环体内调用, 天然只在安全边界挂起。
+        """
+        if not is_paused(self._task_id):
+            return not check_cancelled(self._task_id)
+        waited = 0.0
+        while is_paused(self._task_id):
+            if check_cancelled(self._task_id):
+                return False
+            if timeout is not None and waited >= timeout:
+                raise TimeoutError(f"任务 {self._task_id} 暂停超过 {timeout}s")
+            time.sleep(PAUSE_POLL)
+            waited += PAUSE_POLL
+        return not check_cancelled(self._task_id)
+
 
 def _worker_loop():
     while not _worker_stop.is_set():
@@ -335,7 +412,8 @@ def _worker_loop():
             job = None
             # 6.1.7 (T-6.1.7.2): 按 (priority, seq) 取最早 pending — 优先级调度, 同优先按提交序
             _pending = [j for j in jobs.values()
-                        if j['status'] == STATUS_PENDING and not j.get('cancelled')]
+                        if j['status'] == STATUS_PENDING and not j.get('cancelled')
+                        and not j.get('paused')]
             if _pending:
                 job = min(_pending, key=lambda j: (j.get('priority', 0), j.get('seq', 0)))
             if job is None:

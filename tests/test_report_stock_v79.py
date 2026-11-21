@@ -207,6 +207,8 @@ def test_five_dim_audit_flags_frontend_gap_honestly():
       v7.10 改为真实前缀, 真相是 v7.4~v7.10 新域均未被前端消费 → C1 FAIL(1/7), 如实挂着。
       v7.11 前端收口后 C1 应达 7/7; 本用例从"断言存在缺口"改为"断言缺口已闭合且检测能力仍在"
            —— 检测能力用伪造标记验证, 避免为了绿灯而把检查改瞎。
+      v7.12 C1 由子串匹配改为「后端真实路由 × 前端路径字面量」结构化比对, 修掉
+           "/score?date=" 被 v6.x 日历评分误命中的假绿; 自证改为"伪造域"与"空前端"两路。
     """
     audit = five_dim_audit.run_audit()
     fails = [r["id"] for r in audit["results"] if r["status"] == "fail"]
@@ -218,17 +220,27 @@ def test_five_dim_audit_flags_frontend_gap_honestly():
     assert "7/7" in c1["detail"], "C1 覆盖率应达 7/7, 实际: %s" % c1["detail"]
     assert audit["verdict"] == "PASS"
 
-    # 检测能力自证: 只留一个必然不存在的标记, C1 必须掉到 fail(而不是恒绿灯)
-    original = dict(five_dim_audit.FRONTEND_MARKERS)
+    # 检测能力自证 1: 伪造一个后端不存在的域 → 计为"后端无对应路由", 不得算作可达
+    original = dict(five_dim_audit.FRONTEND_DOMAINS)
     try:
-        five_dim_audit.FRONTEND_MARKERS.clear()
-        five_dim_audit.FRONTEND_MARKERS["不存在的域"] = "/api/no-such-domain-xyz/"
+        five_dim_audit.FRONTEND_DOMAINS.clear()
+        five_dim_audit.FRONTEND_DOMAINS["不存在的域"] = "/api/no-such-domain-xyz/"
         probe = five_dim_audit.check_c1_frontend_reach()
         assert probe["status"] == "fail", "C1 检测能力失效: 伪造缺口未被识别"
         assert "不存在的域" in probe["detail"]
     finally:
-        five_dim_audit.FRONTEND_MARKERS.clear()
-        five_dim_audit.FRONTEND_MARKERS.update(original)
+        five_dim_audit.FRONTEND_DOMAINS.clear()
+        five_dim_audit.FRONTEND_DOMAINS.update(original)
+
+    # 检测能力自证 2: 前端路径集合为空时, 全部域必须报"待接入"(C1 不能恒绿)
+    orig_paths = five_dim_audit._frontend_paths
+    try:
+        five_dim_audit._frontend_paths = lambda: set()
+        probe2 = five_dim_audit.check_c1_frontend_reach()
+        assert probe2["status"] == "fail", "前端 0 调用时 C1 仍为绿: 检查已失效"
+        assert "待接入" in probe2["detail"]
+    finally:
+        five_dim_audit._frontend_paths = orig_paths
 
 
 def test_five_dim_audit_covers_all_dimensions():

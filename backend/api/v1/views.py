@@ -5,10 +5,14 @@
 """
 import csv
 import io
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from views_aggregator import views_aggregator
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/view", tags=["多视图聚合"])
 
@@ -60,6 +64,13 @@ async def get_view_data(
             result = views_aggregator.get_year_view(date)
         else:
             raise HTTPException(status_code=400, detail="不支持的视图类型")
+
+        # v7.12 (PRD §6.5.2): 读侧合并股票级勾选 — 手工票进视图片, 并标 manual
+        try:
+            import custom_selection as cs
+            result = cs.merge_into_view(result, date)
+        except Exception as exc:      # 合并失败不影响视图本身
+            logger.warning("视图合并自定义勾选失败: %s", exc)
 
         # 给所有股票添加状态字段
         if "stocks" in result:

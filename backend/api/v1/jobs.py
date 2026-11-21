@@ -46,6 +46,30 @@ async def cancel_job(job_id: str, user: dict = Depends(get_current_active_user))
     return {"success": True}
 
 
+@router.post("/{job_id}/pause")
+async def pause_job(job_id: str, user: dict = Depends(get_current_active_user)):
+    """暂停任务 (v7.12 FR-7.7-2): pending 直接挂起; running 在任务检查点挂起"""
+    from jobs import get_task, pause_task
+    if get_task(job_id) is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    ok = pause_task(job_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail="任务已结束, 无法暂停")
+    return {"success": True, "job_id": job_id, "status": "paused"}
+
+
+@router.post("/{job_id}/resume")
+async def resume_job(job_id: str, user: dict = Depends(get_current_active_user)):
+    """恢复任务 (v7.12 FR-7.7-2)"""
+    from jobs import get_task, resume_task
+    if get_task(job_id) is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    ok = resume_task(job_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail="任务未处于暂停状态")
+    return {"success": True, "job_id": job_id, "status": "resumed"}
+
+
 @router.delete("/{job_id}")
 async def remove_job(job_id: str, user: dict = Depends(get_current_active_user)):
     from jobs import remove_task

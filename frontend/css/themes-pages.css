@@ -1156,3 +1156,26 @@
   .qc711-grid-2 { grid-template-columns: 1fr; }
   .qc711-panel-inline { padding: 8px; }
 }
+
+/* v7.12 (FR-7.4-4): 个股评分卡 — 五维雷达 + 维度明细 */
+.score-card { margin-top: 8px; }
+.score-radar-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.score-radar { width: 200px; height: 200px; flex: 0 0 auto; }
+.score-radar-grid { fill: none; stroke: var(--border-light); stroke-width: 0.6; }
+.score-radar-area { fill: var(--brand-soft-bg); fill-opacity: 0.65; stroke: var(--primary-solid); stroke-width: 1.4; }
+.score-radar-side { flex: 1 1 260px; min-width: 240px; }
+.score-dim-list { margin-top: 8px; display: grid; gap: 4px; }
+.score-dim-row { display: grid; grid-template-columns: 64px 64px 1fr; gap: 8px; align-items: baseline;
+                 padding: 4px 0; border-bottom: 1px dashed var(--border-light); }
+@media (max-width: 720px) {
+  .score-radar { width: 150px; height: 150px; }
+  .score-dim-row { grid-template-columns: 56px 56px 1fr; }
+}
+
+/* v7.12 (PRD §6.5.2): 日历列表「手动勾选」开关 */
+.manual-check { cursor: pointer; margin-left: 8px; color: var(--text-tertiary); display: inline-flex; align-items: center; }
+.manual-check:hover { color: var(--primary-text); }
+.manual-check.is-checked { color: var(--sem-opportunity); }
+.manual-check.is-checked .qc-icon { fill: currentColor; }
+.manual-check.is-busy { opacity: 0.5; pointer-events: none; }
+.manual-check:focus-visible { outline: 2px solid var(--primary-solid); outline-offset: 2px; border-radius: var(--radius-2); }

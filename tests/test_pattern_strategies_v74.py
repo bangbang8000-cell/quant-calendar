@@ -60,8 +60,21 @@ def _all_strategies():
     from strategy_sdk.builtin.oversold_rebound import OversoldReboundStrategy
     from strategy_sdk.builtin.main_uptrend_dip_buy import MainUptrendDipBuyStrategy
     from strategy_sdk.builtin.leader import LeaderStrategy
+    # v7.12: 第二批 8 个形态策略(契约/防前视/持有期 一并对齐)
+    from strategy_sdk.builtin.limit_up_pullback import LimitUpPullbackStrategy
+    from strategy_sdk.builtin.morning_star import MorningStarStrategy
+    from strategy_sdk.builtin.multi_golden_cross import MultiGoldenCrossStrategy
+    from strategy_sdk.builtin.multi_party_cannon import MultiPartyCannonStrategy
+    from strategy_sdk.builtin.resistance_breakout import ResistanceBreakoutStrategy
+    from strategy_sdk.builtin.immortal_guidance import ImmortalGuidanceStrategy
+    from strategy_sdk.builtin.new_stock_drawdown import NewStockDrawdownStrategy
+    from strategy_sdk.builtin.strategy_2560 import Strategy2560
     return [GoldenTriangleStrategy, OversoldReboundStrategy,
-            MainUptrendDipBuyStrategy, LeaderStrategy]
+            MainUptrendDipBuyStrategy, LeaderStrategy,
+            LimitUpPullbackStrategy, MorningStarStrategy,
+            MultiGoldenCrossStrategy, MultiPartyCannonStrategy,
+            ResistanceBreakoutStrategy, ImmortalGuidanceStrategy,
+            NewStockDrawdownStrategy, Strategy2560]
 
 
 # ---------- 1. 契约:schema / 注册 / 产物形态 ----------

@@ -105,35 +105,102 @@ def check_a3_dist_size():
                    f"最大文件 {biggest or '-'} {size / 1024:.0f}KB (上限 {MAX_DIST_BYTES // 1024}KB)", size)
 
 
-# 新增业务域 → 前端可达性标记(便捷性核心: 后端做完前端能否点到)
-# 每个 v7.4~v7.10 新域在前端的消费痕迹: 一律用**带 /api 前缀的真实路由片段**,
-# 避免误命中历史遗留的同名子串(v7.10 修正, 见 ACCEPTANCE-v7.10.0)。
-FRONTEND_MARKERS = {
-    "五维评分 v7.4": "/score?date=",
-    "择时 v7.5": "/api/timing/",
-    "形态匹配 v7.6": "/api/pattern/",
-    "参数锁定 v7.7": "/lock/audit",
-    "执行计划 v7.8": "/api/execution/",
-    "五维报告 v7.9": "/api/reports/stock/",
-    "策略市场 v7.10": "/api/marketplace/",
+# 新增业务域 → 前端可达性(v7.12 重写)
+# 旧实现: 用子串标记("/score?date=")在前端源码全文里搜 → v6.x 日历评分路由
+#         "/api/calendar/stock/{code}/score?date=" 会被误判成"五维评分已接入"(C1 假绿)。
+# 现实现: 「后端真实路由」× 「前端路径字面量」的结构化比对, 并输出命中证据:
+#   1) 域内必须在 backend/api 下存在真实路由(否则该域未交付);
+#   2) 前端必须出现能对上某条路由的路径字面量:
+#      a) 直接前缀: 字面量以 /api + 路由前缀 开头 (如 /api/strategies/scores/calculate);
+#      b) 尾段拼接: 路由去掉 {param} 后的静态尾段(>=2 段)作为独立字面量出现
+#         —— 前端惯用 '/api/strategies/' + sid + '/lock/audit' 的拼接写法。
+FRONTEND_DOMAINS = {
+    "五维评分 v7.4": "/strategies/scores",
+    "择时 v7.5": "/timing/",
+    "形态匹配 v7.6": "/pattern/",
+    "参数锁定 v7.7": "/strategies/{sid}/lock",
+    "执行计划 v7.8": "/execution/",
+    "五维报告 v7.9": "/reports/stock/",
+    "策略市场 v7.10": "/marketplace/",
 }
+
+# 前端路径字面量: 单/双引号包裹、以 / 开头(排除 // 协议头)
+_FE_LITERAL_RE = re.compile(r"""['"](/[^'"\s`]*)['"]""")
+
+
+def _frontend_paths():
+    """前端 js 中出现的路径字面量集合(去 query/hash 与尾斜杠)"""
+    out = set()
+    for root in (FRONTEND / "js", FRONTEND / "src"):
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.js"):
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for raw in _FE_LITERAL_RE.findall(text):
+                if raw.startswith("//"):
+                    continue
+                p = raw.split("?")[0].split("#")[0]
+                if len(p) < 2:
+                    continue
+                out.add(p.rstrip("/") or "/")
+    return out
+
+
+def _static_suffix(route: str, min_segments: int = 2):
+    """路由的静态尾段(从最后一个 {param} 之后算起); 段数不足返回 None"""
+    segs = [s for s in route.split("/") if s]
+    tail = []
+    for seg in reversed(segs):
+        if seg.startswith("{") or seg.startswith("$"):
+            break
+        tail.append(seg)
+    if len(tail) < min_segments:
+        return None
+    return "/" + "/".join(reversed(tail))
+
+
+def _match_frontend(domain_routes, fe_paths, prefix: str):
+    """返回 (命中的前端字面量 or None, 依据说明)"""
+    abs_prefix = ("/api" + prefix).rstrip("/")
+    for lit in sorted(fe_paths):
+        if lit == abs_prefix or lit.startswith(abs_prefix + "/"):
+            return lit, "前缀"
+    tails = sorted({t for t in (_static_suffix(r) for r in domain_routes) if t})
+    for tail in tails:
+        for lit in sorted(fe_paths):
+            if lit == tail or lit.startswith(tail + "/"):
+                return tail, "尾段"
+    return None, ""
 
 
 def check_c1_frontend_reach():
-    """C1: 新功能前端可达性 (后端已交付的域是否在前端代码中被消费)"""
-    roots = [FRONTEND / "js", FRONTEND / "src"]
-    text = ""
-    for root in roots:
-        if root.is_dir():
-            for path in root.rglob("*.js"):
-                text += path.read_text(encoding="utf-8", errors="ignore")
-    hit = [name for name, marker in FRONTEND_MARKERS.items() if marker in text]
-    missing = [name for name in FRONTEND_MARKERS if name not in hit]
-    ratio = round(len(hit) / len(FRONTEND_MARKERS), 3)
+    """C1: 新功能前端可达性(后端已交付的域是否被前端真实调用, 非子串误命中)"""
+    fe = _frontend_paths()
+    routes = [r[1] for r in _api_routes()]
+    reached, missing, orphan = [], [], []
+    evidence = {}
+    for name, prefix in FRONTEND_DOMAINS.items():
+        domain_routes = [r for r in routes if r.startswith(prefix)]
+        if not domain_routes:
+            # 域前缀在后端找不到真实路由 → 属"未交付", 不能算前端可达
+            orphan.append(name)
+            continue
+        hit, how = _match_frontend(domain_routes, fe, prefix)
+        if hit:
+            reached.append(name)
+            evidence[name] = f"{hit}({how})"
+        else:
+            missing.append(name)
+    total = len(FRONTEND_DOMAINS)
+    ratio = round(len(reached) / total, 3)
     status = "pass" if ratio >= 0.6 else ("warn" if ratio >= 0.2 else "fail")
-    detail = f"前端已接入 {len(hit)}/{len(FRONTEND_MARKERS)} 个新域"
+    detail = f"前端已接入 {len(reached)}/{total} 个新域"
+    if evidence:
+        detail += " [" + "; ".join(f"{k}←{v}" for k, v in evidence.items()) + "]"
     if missing:
         detail += "; 待接入: " + "、".join(missing)
+    if orphan:
+        detail += "; 后端无对应路由: " + "、".join(orphan)
     return _result("C1", "新功能前端可达性", status, detail, ratio)
 
 

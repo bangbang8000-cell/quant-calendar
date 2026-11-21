@@ -141,6 +141,11 @@ run "RBAC + PIT + 性能 + 迁移" "$PY" -m pytest \
   tests/test_migrations.py \
   -q
 
+# v7.12 (FR-7.7-6): 双副本 commit 一致性 — ops 副本存在才有效, 单检出环境自动 skip
+if [ -f scripts/check_dual_copy.py ]; then
+  run "双副本 commit 对齐 (FR-7.7-6)" "$PY" scripts/check_dual_copy.py
+fi
+
 run "前端一致性 + 四态 + 便捷性 + 导航 + 行为对拍" "$PY" -m pytest \
   tests/test_frontend_consistency.py \
   tests/test_four_state_631.py \

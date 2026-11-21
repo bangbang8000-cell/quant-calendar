@@ -19,6 +19,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 
+import jobs as jobs_mod
 from auth import get_non_guest_user
 
 logger = logging.getLogger(__name__)
@@ -164,12 +165,20 @@ async def delete_pattern_case(case_id: str,
 async def pattern_match(payload: Dict[str, Any],
                         _: Dict = Depends(get_non_guest_user)):
     """逐股四维匹配 → 排行榜; 显式 materialize 才生成等权持仓建议"""
+    try:
+        return _run_match(payload)
+    except ValueError as e:  # 入参/权重/案例缺失 → 与原实现一致的 4xx
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+def _run_match(payload: Dict[str, Any], ctx=None) -> Dict[str, Any]:
+    """匹配主逻辑 (同步端点与异步任务共用; ctx 非空时在候选间做暂停检查点)。"""
     from pattern_match import PatternFeatureExtractor, PatternMatcher
     from pattern_match.store import get_case, list_cases
 
     candidates = payload.get("candidates") or []
     if not candidates:
-        raise HTTPException(status_code=400, detail="candidates 不能为空")
+        raise ValueError("candidates 不能为空")
 
     cases: List[Dict] = []
     for raw in payload.get("cases") or []:
@@ -186,18 +195,21 @@ async def pattern_match(payload: Dict[str, Any],
                 cases.append({"case_id": row["case_id"], "name": row.get("name", ""),
                               "features": row["features"]})
     if not cases:
-        raise HTTPException(status_code=422, detail="无可用案例特征(请先创建含 features 的案例)")
+        raise ValueError("无可用案例特征(请先创建含 features 的案例)")
 
-    try:
-        matcher = PatternMatcher(weights=payload.get("weights"))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    matcher = PatternMatcher(weights=payload.get("weights"))
     extractor = PatternFeatureExtractor(lookback_days=int(payload.get("lookback_days") or 25))
     min_sim = float(payload.get("min_similarity") or 60.0)
     top_n = payload.get("top_n")
 
     ranked: List[Dict] = []
     for item in candidates:
+        # v7.12 (L5/L9): 异步任务在候选边界检查暂停/取消; 同步端点 ctx=None 不受影响
+        if ctx is not None:
+            if not ctx.check_paused():
+                raise jobs_mod.JobCancelled()
+            ctx.progress(int(len(ranked) / max(1, len(candidates)) * 90) + 5,
+                         "matched %d/%d" % (len(ranked), len(candidates)))
         df = _resolve_bars(item if isinstance(item, dict) else {"bars": item})
         features = extractor.extract(df)
         if not any(features.values()):
@@ -230,3 +242,67 @@ async def pattern_match(payload: Dict[str, Any],
              "top_n": top_n, "case_ids": [c["case_id"] for c in cases]},
             [], {"count": len(ranked), "case_count": len(cases)}, result)
     return result
+
+
+@router.post("/match/async")
+async def pattern_match_async(payload: Dict[str, Any],
+                              _: Dict = Depends(get_non_guest_user)):
+    """异步匹配 (v7.12 / L9, FR-7.6 异步口径): 大候选池走 jobs 队列, 返回 job_id 轮询"""
+    _ensure_match_task_registered()
+    if not (payload.get("candidates") or []):
+        raise HTTPException(status_code=400, detail="candidates 不能为空")
+    job_id = jobs_mod.create_task("pattern_match", dict(payload))
+    return {"success": True, "job_id": job_id, "task_type": "pattern_match"}
+
+
+def _ensure_match_task_registered() -> None:
+    """幂等注册 jobs 任务 (worker 按 task_type 分派)"""
+    if "pattern_match" in jobs_mod._registry:
+        return
+
+    @jobs_mod.register("pattern_match")
+    def _task(payload, ctx):  # noqa: ANN001
+        return _run_match(payload, ctx=ctx)
+
+
+_EXPORT_COLS = ("symbol", "case_name", "total_score", "trend", "volume", "partner", "zone")
+
+
+@router.post("/match/export")
+async def pattern_match_export(payload: Dict[str, Any],
+                               _: Dict = Depends(get_non_guest_user)):
+    """匹配结果导出 CSV (v7.12 / L9, FR-7.6 导出口径)。
+
+    两种入参: {"items": [...]} 直接导已有结果; 或完整 match payload → 先同步跑一遍。
+    产物 text/csv (UTF-8 BOM, Excel 直开), 不落盘。
+    """
+    import csv as _csv
+    import io
+
+    items = payload.get("items")
+    if not isinstance(items, list):
+        try:
+            items = _run_match(payload).get("items") or []
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+    buf = io.StringIO()
+    writer = _csv.writer(buf)
+    writer.writerow(["代码", "案例", "总分", "趋势", "量能", "同伴", "位置"])
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        row = []
+        for col in _EXPORT_COLS:
+            v = it.get(col)
+            if col != "total_score" and isinstance(v, (int, float)):
+                v = round(float(v), 4)
+            row.append("" if v is None else v)
+        writer.writerow(row)
+    csv_text = buf.getvalue()
+    symbol = str(payload.get("symbol") or "pattern_match")
+    from fastapi import Response
+    return Response(
+        content="\ufeff" + csv_text,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition":
+                 "attachment; filename=%s_match.csv" % symbol.replace(".", "_")})

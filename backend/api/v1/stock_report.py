@@ -96,3 +96,51 @@ async def stock_report(symbol: str, date: Optional[str] = Query(None, descriptio
     if format.lower() == "html":
         return HTMLResponse(render_html(report))
     return report
+
+
+@router.get("/stock/{symbol}/ai")
+async def stock_report_ai(symbol: str,
+                          date: Optional[str] = Query(None, description="报告日 YYYY-MM-DD"),
+                          sector_rank: Optional[float] = Query(None, ge=0, le=100),
+                          sector_name: Optional[str] = None,
+                          user: dict = Depends(get_current_active_user)):
+    """五维报告的 AI 解读 (v7.12 / L10, FR-7.9 报告接 ai_eval)。
+
+    诚实口径: 无可用模型或全部调用失败 → 503 并说明, 绝不用模板话术冒充 AI 输出。
+    prompt 由 build_ai_prompt 从报告数据确定性构造, 不含任何编造字段。
+    """
+    from ai_evaluator import ai_evaluator
+    from report_stock import AI_SYSTEM_PROMPT, build_ai_prompt, build_report
+
+    try:
+        facts = collect_facts(symbol, date)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning("五维报告 AI 取数失败 %s: %s", symbol, exc)
+        raise HTTPException(status_code=503, detail=f"数据源不可用: {exc}") from exc
+
+    name = ""
+    try:
+        from stock_info import stock_manager
+        name = stock_manager.get_name(symbol) or ""
+    except Exception:
+        name = ""
+    sector = None
+    if sector_rank is not None:
+        sector = {"name": sector_name or "", "rank_pct": float(sector_rank)}
+    report = build_report(symbol, name, facts["date"], facts["bars"],
+                          flows=facts["flows"], basics=facts["basics"], sector=sector)
+    prompt = build_ai_prompt(report)
+    try:
+        text = ai_evaluator.generate_review(prompt, system_prompt=AI_SYSTEM_PROMPT,
+                                            max_tokens=1200) or ""
+    except Exception as exc:
+        logger.warning("五维报告 AI 调用失败 %s: %s", symbol, exc)
+        raise HTTPException(status_code=503, detail=f"AI 调用失败: {exc}") from exc
+    if not text.strip():
+        raise HTTPException(status_code=503,
+                            detail="无可用 AI 模型或全部模型返回为空, 已跳过解读(不编造)")
+    return {"symbol": symbol, "name": name or symbol, "date": facts["date"],
+            "ai_review": text.strip(), "prompt_chars": len(prompt),
+            "disclaimer": report.get("disclaimer")}

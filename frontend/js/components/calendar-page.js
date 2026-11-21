@@ -106,6 +106,8 @@
                                 >
                                   <template #name-suffix="{ item }">
                                     <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
+                                    <!-- v7.12 (PRD §6.5.2): 股票级受控入库 — 勾选进当日"手动勾选"分组 -->
+                                    <span class="manual-check" :class="{ 'is-checked': isManual(item.code), 'is-busy': manualBusy === item.code }" @click.stop="toggleManualSelection(item)" tabindex="0" role="checkbox" :aria-checked="isManual(item.code) ? 'true' : 'false'" :title="isManual(item.code) ? '移出手动勾选' : '加入手动勾选'" @keydown.enter.prevent="toggleManualSelection(item)" @keydown.space.prevent="toggleManualSelection(item)"><qc-icon name="badge-check" :size="14" /></span>
                                     <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span>
                                     <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span>
                                   </template>
@@ -360,8 +362,70 @@
       function goDatasource() {
         if (typeof window.__quantGoPage === 'function') window.__quantGoPage('system', 'datasource');
       }
+      // ===== v7.12 (PRD §6.5.2 / FR-7.4-9 增强): 股票级受控入库 =====
+      // 勾选落 custom_selections, 读侧由 /api/view/* 与 /api/calendar/{date} 合并成"手动勾选"分组。
+      // 未登录时接口 401 —— 静默降级(不影响日历浏览), 勾选时再明确报错。
+      const manualCodes = ref([]);
+      const manualBusy = ref('');
+      function _manualHeaders() {
+        let token = '';
+        try { token = localStorage.getItem('quant_token') || ''; } catch (e) { token = ''; }
+        return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                     : { 'Content-Type': 'application/json' };
+      }
+      function isManual(code) { return manualCodes.value.indexOf(code) >= 0; }
+      async function loadManualSelections() {
+        const d = state.selectedDate && state.selectedDate.value;
+        if (!d) return;
+        try {
+          const res = await fetch('/api/calendar/custom-selection?date=' + encodeURIComponent(d),
+                                  { headers: _manualHeaders() });
+          if (!res.ok) return;
+          const data = await res.json();
+          const codes = [];
+          (data.items || []).forEach(function (it) {
+            (it.symbols || []).forEach(function (s) { if (codes.indexOf(s) < 0) codes.push(s); });
+          });
+          manualCodes.value = codes;
+        } catch (e) {
+          // 网络异常/无权限: 保持上一次已知状态, 不阻塞日历
+        }
+      }
+      async function toggleManualSelection(item) {
+        const d = state.selectedDate && state.selectedDate.value;
+        const code = item && item.code;
+        if (!d || !code || manualBusy.value) return;
+        const was = isManual(code);
+        manualBusy.value = code;
+        try {
+          let res;
+          if (was) {
+            res = await fetch('/api/calendar/custom-selection?date=' + encodeURIComponent(d)
+                              + '&symbol=' + encodeURIComponent(code),
+                              { method: 'DELETE', headers: _manualHeaders() });
+          } else {
+            res = await fetch('/api/calendar/custom-selection', {
+              method: 'POST',
+              headers: _manualHeaders(),
+              body: JSON.stringify({ date: d, symbols: manualCodes.value.concat([code]), note: '' }),
+            });
+          }
+          const data = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+          await loadManualSelections();
+          ElementPlus.ElMessage.success(was ? '已移出手动勾选' : '已加入手动勾选');
+          if (typeof state.refreshCalendarData === 'function') await state.refreshCalendarData();
+        } catch (e) {
+          ElementPlus.ElMessage.error('勾选失败: ' + (e && e.message ? e.message : e));
+        } finally {
+          manualBusy.value = '';
+        }
+      }
+      Vue.watch(function () { return state.selectedDate && state.selectedDate.value; },
+                function () { loadManualSelections(); }, { immediate: true });
       return { ...state, calType, pullRefreshing, onCalTouchStart, onCalTouchEnd,
                viewLabel, switchViewLocal, loadExamplePool, goDatasource,
+               manualCodes, manualBusy, isManual, loadManualSelections, toggleManualSelection,
                compareVisible, compareLoading, compareError, compareData, comparePairs, openStrategyCompare };
     },
   };

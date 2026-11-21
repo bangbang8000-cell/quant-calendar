@@ -434,3 +434,44 @@ def render_html(report: Dict) -> str:
 <section style="margin-top:14px"><h2>加权明细</h2>{metrics}</section>
 <footer>{_esc(report.get('disclaimer'))}</footer>
 </div></body></html>"""
+
+
+# ─── v7.12 (L10 / FR-7.9 AI 解读): 五维报告接 AI ─────────────
+
+AI_SYSTEM_PROMPT = (
+    "你是专业的A股个股分析解读员。严格基于给定的五维量化报告数据解读, "
+    "不编造任何数字与事实; 缺数维度要明确说\"数据缺失\", 不用推测填补。"
+    "输出 200~400 字中文, 结构: 总评一句 → 分维度两三句 → 风险提示一句。"
+)
+
+
+def build_ai_prompt(report: Dict) -> str:
+    """把五维报告压成确定性 prompt (纯函数, 供测试断言内容覆盖)。
+
+    只放"事实": 维度得分/理由/缺维清单/总分与等级/一票否决, 不放任何模型自己的推测空间。
+    """
+    dims = report.get("dimensions") or {}
+    score = report.get("score") or {}
+    lines = ["请解读以下个股五维量化报告:", ""]
+    lines.append("标的: %s (%s)  报告日: %s" % (
+        report.get("name") or report.get("symbol"),
+        report.get("symbol"), report.get("date")))
+    total = score.get("total_score")
+    lines.append("加权总分: %s  等级: %s" % (
+        "缺失" if total is None else ("%.1f" % float(total)),
+        score.get("level") or "-"))
+    if score.get("veto_flag"):
+        lines.append("一票否决: 是 (%s)" % (score.get("veto_reason") or ""))
+    lines.append("数据完整度: %.0f%%" % (float(report.get("data_completeness") or 0) * 100))
+    missing = report.get("missing_dimensions") or []
+    lines.append("缺数维度: %s" % ("、".join(missing) if missing else "无"))
+    lines.append("")
+    for key, label in DIMENSION_LABELS.items():
+        d = dims.get(key) or {}
+        lines.append("【%s】得分: %s" % (
+            label, "缺失" if d.get("score") is None else "%.0f" % float(d["score"])))
+        for r in (d.get("reasons") or [])[:4]:
+            lines.append("  - %s" % r)
+    lines.append("")
+    lines.append("要求: 只依据上述数据; 缺数维度说明无法评估; 结尾附风险提示; 不构成投资建议。")
+    return "\n".join(lines)

@@ -351,10 +351,15 @@
       const { marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries, fmtPct, fmtEmotion } = __marketReview;
       const __factor = window.__quantModules.researchPage.factor.create({
         ref, seqOf: seqOf, withAuth, authHeaders: _authHeaders, activeStrategyId, paramValues,
+        activeStrategy: activeStrategy,
       });
       const { factorKey, factorIcLoading, factorLayerLoading, factorIcReport, factorLayerResult, factorOptions } = __factor;
       const { runFactorIc, runFactorLayer, factorDetail, factorDetailLoading, runFactorDetail, sweepGrid } = __factor;
       const { sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep } = __factor;
+      // v7.12 (FR-7.4-4): 个股评分卡
+      const { scoreCode, scoreDims, scoreConfigDims, scoreWeights, scoreVeto, scoreVetoReason } = __factor;
+      const { scoreLoading, scoreError, scoreResult, scoreTopN, scoreDimLabel, scoreDimRows } = __factor;
+      const { scoreRadarAxes, scoreRadarPolygon, loadScoreConfig, runScore, exportScore, factorSelectOptions } = __factor;
       const __history = window.__quantModules.researchPage.history.create({
         seqOf: seqOf, state,
       });
@@ -381,6 +386,8 @@
           // v3.19: 进入「量化研究」时加载策略列表
           if (key === 'research/quant-research') {
             loadStrategies();
+            // v7.12 (FR-7.4-4): 评分卡维度/权重与后端同源
+            loadScoreConfig();
           }
           // V4.9 (P3): 进入回测历史时加载列表
           if (key === 'research/backtest-history') {
@@ -676,6 +683,11 @@
         loadCustoms, genCustomCode, loadCustomCode, runCustomBacktest, runCustomOptimize, copyCustomCode,
         // V4.0 M2-1 参数扫描 (修复未进 return 的绑定缺口) + V5.0.2 T-5.0.24 稳定性
         sweepGrid, sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep,
+        // v7.12 (FR-7.4-4): 个股评分卡 — 五维雷达 / 总分 / 否决 / 导出
+        scoreCode, scoreDims, scoreConfigDims, scoreWeights, scoreVeto, scoreVetoReason,
+        scoreLoading, scoreError, scoreResult, scoreTopN,
+        scoreDimLabel, scoreDimRows, scoreRadarAxes, scoreRadarPolygon,
+        loadScoreConfig, runScore, exportScore, factorSelectOptions,
       };
     },
   };

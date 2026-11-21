@@ -5,11 +5,13 @@
 """
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from typing import Dict, Any
 from datetime import datetime
 import requests
 
+import feishu_commands
 from feishu_push import FeishuPusher
 from auth import get_admin_user
 from paths import DATA_DIR
@@ -67,9 +69,10 @@ async def get_feishu_config(_: Dict = Depends(get_admin_user)):
 
 @router.post("/config")
 async def update_feishu_config(config: Dict[str, Any], _: Dict = Depends(get_admin_user)):
-    """更新飞书配置"""
+    """更新飞书配置 (含 v7.12 的 command_secret / command_enabled)"""
     feishu_config.update(config)
     pusher.set_webhook(config.get("webhook_url", ""))
+    save_feishu_config()  # v7.12 修正: 原实现漏了持久化, 重启即丢配置
     return {"status": "ok", "message": "配置已更新"}
 
 
@@ -118,3 +121,28 @@ async def push_report(date: str, _: Dict = Depends(get_admin_user)):
     if success:
         return {"status": "ok", "message": "报告已推送"}
     raise HTTPException(status_code=500, detail="推送失败")
+
+
+# ─── v7.12 (FR-7.7-5): 群指令回调 (签名 + 白名单 + 审计) ───
+
+@router.post("/command")
+async def feishu_command(request: Request):
+    """飞书事件订阅回调入口 (群指令)。
+
+    安全口径 (fail-closed, 详见 backend/feishu_commands.py):
+      - command_secret 未配置或 command_enabled=False → 一律 403
+      - X-Lark-Signature 验签 + ±300s 时间窗防重放, 不过即拒
+      - 指令白名单分发, 未注册指令只回 usage; 每次回调落审计
+    配置: feishu_config.json 里 command_secret / command_enabled (管理员经 /feishu/config 配置)。
+    """
+    body_raw = (await request.body()).decode("utf-8", errors="replace")
+    headers = {k: v for k, v in request.headers.items()}
+    try:
+        payload = json.loads(body_raw) if body_raw else {}
+    except Exception:
+        payload = {}
+    secret = feishu_config.get("command_secret", "")
+    enabled = bool(feishu_config.get("command_enabled", False))
+    status, resp = feishu_commands.handle_event(payload, headers, body_raw,
+                                                secret=secret, enabled=enabled)
+    return JSONResponse(status_code=status, content=resp)

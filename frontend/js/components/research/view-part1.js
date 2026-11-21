@@ -196,7 +196,7 @@ window.__quantModules.researchPage.part1 = `
                             <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-select-lg" v-model="factorKey" size="small" placeholder="选择因子">
-                                    <el-option v-for="f in (activeStrategy && activeStrategy.factor_specs) || factorOptions" :key="f.name" :label="f.name + ' (' + f.category + ')'" :value="f.name" />
+                                    <el-option v-for="f in factorSelectOptions()" :key="f.name" :label="(f.label || f.name) + ' (' + f.category + ')'" :value="f.name" />
                                 </el-select>
                                 <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
                                 <el-button size="small" @click="runFactorLayer" :loading="factorLayerLoading">分层回测</el-button>
@@ -276,6 +276,70 @@ window.__quantModules.researchPage.part1 = `
                                     近1-2年专测: 最优持有期 {{ factorDetail.recent.optimal_window }}
                                     (衰减比 {{ factorDetail.recent.decay_rate != null ? fmtNum(factorDetail.recent.decay_rate, 2) : '—' }})
                                 </div>
+                            </div>
+                            <!-- v7.12 (FR-7.4-4): 个股评分卡 —— 五维雷达 + 总分 + 否决标记 + 导出 -->
+                            <div class="score-card">
+                                <div class="card-title"><qc-icon name="target" :size="16" /> 个股评分卡 <span class="text-sm-tertiary">五维加权(默认 35/35/10/10/10) · 缺维诚实标注 unknown · 支持一票否决</span></div>
+                                <div class="flex-wrap-gap-12-mb16-c">
+                                    <el-input class="w-160" size="small" v-model="scoreCode" placeholder="股票代码, 如 600000.SH" />
+                                    <el-button size="small" type="primary" @click="runScore" :loading="scoreLoading"><qc-icon name="play" :size="14" /> 计算评分</el-button>
+                                    <el-button size="small" @click="exportScore" :disabled="!scoreResult"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
+                                </div>
+                                <div class="grid-auto-fit-140-mb16">
+                                    <div class="stat-card p-12" v-for="k in scoreConfigDims" :key="'sd-' + k">
+                                        <div class="stat-label">{{ scoreDimLabel(k) }}<span v-if="scoreWeights && scoreWeights[k] != null" class="text-sm-tertiary"> · {{ fmtNum(scoreWeights[k] * 100, 0) }}%</span></div>
+                                        <el-input size="small" v-model="scoreDims[k]" placeholder="0-100" />
+                                    </div>
+                                </div>
+                                <div class="flex-wrap-gap-12-mb16-c">
+                                    <el-checkbox v-model="scoreVeto">一票否决</el-checkbox>
+                                    <el-input class="w-260" size="small" v-model="scoreVetoReason" placeholder="否决理由(可选)" :disabled="!scoreVeto" />
+                                    <span class="text-sm-tertiary">TopN 建议</span>
+                                    <el-input-number class="w-140" size="small" v-model="scoreTopN" :min="1" :max="50" :step="1" controls-position="right" />
+                                </div>
+                                <!-- 统一四态: 加载 / 错误 / 空 / 结果 -->
+                                <qc-state-panel v-if="scoreLoading" type="loading"></qc-state-panel>
+                                <qc-state-panel v-else-if="scoreError" type="error" :title="scoreError" desc="请确认已登录且评分服务可用" @retry="runScore"></qc-state-panel>
+                                <div v-else-if="!scoreResult" class="text-sm-tertiary-mt8">
+                                    填入五维分数后点「计算评分」；任一维度留空会标注 unknown，不会按 0 分计入总分。
+                                </div>
+                                <template v-else>
+                                    <div class="score-radar-row">
+                                        <svg viewBox="0 0 120 120" class="score-radar" role="img" aria-label="五维评分雷达图">
+                                            <circle cx="60" cy="60" r="44" class="score-radar-grid"></circle>
+                                            <circle cx="60" cy="60" r="29.3" class="score-radar-grid"></circle>
+                                            <circle cx="60" cy="60" r="14.7" class="score-radar-grid"></circle>
+                                            <line v-for="ax in scoreRadarAxes()" :key="'ax-' + ax.key" x1="60" y1="60" :x2="ax.x" :y2="ax.y" class="score-radar-grid"></line>
+                                            <polygon :points="scoreRadarPolygon()" class="score-radar-area"></polygon>
+                                        </svg>
+                                        <div class="score-radar-side">
+                                            <div class="stat-card p-12">
+                                                <div class="stat-value text-lg" :class="scoreResult.veto_flag ? 'down' : (scoreResult.total_score >= 60 ? 'up' : '')">{{ scoreResult.total_score }}</div>
+                                                <div class="stat-label">综合评分 · {{ scoreResult.level }}</div>
+                                            </div>
+                                            <div class="flex-wrap-gap-12-mb16-c">
+                                                <span class="qc711-badge" :class="scoreResult.veto_flag ? 'qc711-tone-warn' : 'qc711-tone-up'">
+                                                    {{ scoreResult.veto_flag ? '一票否决: ' + (scoreResult.veto_reason || '已触发') : '未触发否决' }}
+                                                </span>
+                                                <span v-if="scoreResult.missing_dimensions && scoreResult.missing_dimensions.length" class="qc711-badge qc711-tone-warn">
+                                                    缺维: {{ scoreResult.missing_dimensions.join(' / ') }}
+                                                </span>
+                                            </div>
+                                            <div class="score-dim-list">
+                                                <div v-for="row in scoreDimRows()" :key="'row-' + row.key" class="score-dim-row">
+                                                    <span class="text-sm-secondary">{{ row.label }}</span>
+                                                    <span class="text-sm-primary" :class="{ 'text-sm-tertiary': row.status === 'unknown' }">
+                                                        {{ row.status === 'unknown' ? 'unknown' : fmtNum(row.score, 1) }}
+                                                    </span>
+                                                    <span class="text-sm-tertiary">权重 {{ fmtNum(row.weight * 100, 0) }}% · 加权 {{ row.weighted == null ? '—' : fmtNum(row.weighted, 2) }}</span>
+                                                </div>
+                                            </div>
+                                            <div v-if="scoreResult.top_n_suggestion && Object.keys(scoreResult.top_n_suggestion).length" class="text-sm-tertiary-mt8">
+                                                TopN 建议: <span v-for="(w, sym) in scoreResult.top_n_suggestion" :key="'tn-' + sym" class="qc711-badge">{{ sym }} {{ fmtNum(w * 100, 0) }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
                             <div class="sweep-research mt-8">

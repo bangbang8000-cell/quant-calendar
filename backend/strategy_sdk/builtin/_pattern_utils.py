@@ -1,14 +1,67 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-形态策略公共工具 (v7.4 FR-7.4-8)
+形态策略公共工具 (v7.4 FR-7.4-8 / v7.12)
 - expand_holding_window: 命中信号 → 持有期化的 0/1 矩阵(避免形态稀疏致 hold_days 恒 1)
 - panel_to_desc_df: MultiIndex(date,symbol) 面板 → 单股倒序 DataFrame(最新在前, 与 KHunter 口径一致)
+- rolling_desc / pct_change_desc / cummax_desc: 在倒序数据上做"仅向后看"的滚动计算
+  (内部先转正序计算再翻回, 保证滚动窗口只含 <= 当前日 的数据, 无未来函数)
 """
 from typing import Iterable, List, Set
 
 import numpy as np
 import pandas as pd
+
+
+# ---------- 倒序序列上的"仅向后看"计算 ----------
+
+def _asc(series: pd.Series) -> pd.Series:
+    return series.reset_index(drop=True).iloc[::-1].reset_index(drop=True)
+
+
+def rolling_stat_desc(series: pd.Series, window: int, how: str = "mean",
+                      min_periods: int = None) -> pd.Series:
+    """在倒序序列上计算滚动统计量, 返回与入参同序(倒序)的 Series。
+
+    实现: 翻转成正序 → rolling → 再翻回。因翻转是位置对称的, 每行窗口内只含
+    "该日及更早"的数据, 与正序 rolling 完全等价, 不引入未来数据。
+    """
+    s = series.reset_index(drop=True)
+    asc = _asc(s)
+    r = asc.rolling(int(window), min_periods=min_periods if min_periods is not None else int(window))
+    out = getattr(r, how)()
+    return out.iloc[::-1].reset_index(drop=True)
+
+
+def pct_change_desc(series: pd.Series, periods: int = 1) -> pd.Series:
+    """倒序序列上的日涨跌幅(相对 N 个交易日前收盘), 口径与正序 pct_change 一致"""
+    s = series.reset_index(drop=True)
+    asc = _asc(s)
+    out = asc.pct_change(int(periods))
+    return out.iloc[::-1].reset_index(drop=True)
+
+
+def cummax_desc(series: pd.Series) -> pd.Series:
+    """倒序序列上的累计最大值(= 上市以来最高, 截至当日), 无未来函数"""
+    s = series.reset_index(drop=True)
+    asc = _asc(s)
+    out = asc.cummax()
+    return out.iloc[::-1].reset_index(drop=True)
+
+
+def ewm_desc(series: pd.Series, span: int = None, alpha: float = None) -> pd.Series:
+    """倒序序列上的 EMA(KDJ/MACD 用), 无未来函数"""
+    s = series.reset_index(drop=True)
+    asc = _asc(s)
+    if alpha is not None:
+        out = asc.ewm(alpha=alpha, adjust=False).mean()
+    else:
+        out = asc.ewm(span=span, adjust=False).mean()
+    return out.iloc[::-1].reset_index(drop=True)
+
+
+def rolling_sum_desc(series: pd.Series, window: int) -> pd.Series:
+    return rolling_stat_desc(series, window, "sum", min_periods=1)
 
 
 def expand_holding_window(dates: List[str], symbols: List[str],

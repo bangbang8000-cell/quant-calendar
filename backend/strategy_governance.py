@@ -24,10 +24,17 @@ HOLDINGS_ROOT = os.path.join(DATA_DIR, "holdings")
 # 内置策略(纳管对象, 默认启用但不可删除)
 BUILTIN_SIDS = ["multi_factor", "sector_rotation", "capital_flow", "index_enhance",
                 # v7.4 KHunter 移植形态策略(受控入库: 默认不进日历, FR-7.4-9)
-                "golden_triangle", "oversold_rebound", "main_uptrend_dip_buy", "leader"]
+                "golden_triangle", "oversold_rebound", "main_uptrend_dip_buy", "leader",
+                # v7.12 补齐的 8 个形态策略(同样受控入库, 默认不进日历)
+                "limit_up_pullback", "morning_star", "multi_golden_cross",
+                "multi_party_cannon", "resistance_breakout", "immortal_guidance",
+                "new_stock_drawdown", "strategy_2560"]
 # 默认不进日历的策略(研究不污染日历, variant 同理默认 False)
 CALENDAR_OPT_IN_SIDS = {"golden_triangle", "oversold_rebound",
-                        "main_uptrend_dip_buy", "leader"}
+                        "main_uptrend_dip_buy", "leader",
+                        "limit_up_pullback", "morning_star", "multi_golden_cross",
+                        "multi_party_cannon", "resistance_breakout",
+                        "immortal_guidance", "new_stock_drawdown", "strategy_2560"}
 DEFAULT_SCHEDULE = "20:00"
 
 

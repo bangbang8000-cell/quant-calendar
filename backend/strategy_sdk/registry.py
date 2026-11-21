@@ -17,6 +17,15 @@ from strategy_sdk.builtin.golden_triangle import GoldenTriangleStrategy
 from strategy_sdk.builtin.oversold_rebound import OversoldReboundStrategy
 from strategy_sdk.builtin.main_uptrend_dip_buy import MainUptrendDipBuyStrategy
 from strategy_sdk.builtin.leader import LeaderStrategy
+# v7.12: 补齐 PRD 承诺的 12 个形态策略(第二批8个)
+from strategy_sdk.builtin.limit_up_pullback import LimitUpPullbackStrategy
+from strategy_sdk.builtin.morning_star import MorningStarStrategy
+from strategy_sdk.builtin.multi_golden_cross import MultiGoldenCrossStrategy
+from strategy_sdk.builtin.multi_party_cannon import MultiPartyCannonStrategy
+from strategy_sdk.builtin.resistance_breakout import ResistanceBreakoutStrategy
+from strategy_sdk.builtin.immortal_guidance import ImmortalGuidanceStrategy
+from strategy_sdk.builtin.new_stock_drawdown import NewStockDrawdownStrategy
+from strategy_sdk.builtin.strategy_2560 import Strategy2560
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +43,12 @@ class StrategyRegistry:
                   IndexEnhanceStrategy(), CapitalFlowStrategy(),
                   # v7.4 形态策略(首批4个); 默认 show_in_calendar=False 由 governance 控制
                   GoldenTriangleStrategy(), OversoldReboundStrategy(),
-                  MainUptrendDipBuyStrategy(), LeaderStrategy()):
+                  MainUptrendDipBuyStrategy(), LeaderStrategy(),
+                  # v7.12 形态策略(第二批8个) —— 补齐 PRD G1「12 个形态策略」
+                  LimitUpPullbackStrategy(), MorningStarStrategy(),
+                  MultiGoldenCrossStrategy(), MultiPartyCannonStrategy(),
+                  ResistanceBreakoutStrategy(), ImmortalGuidanceStrategy(),
+                  NewStockDrawdownStrategy(), Strategy2560()):
             self.register(s)
 
     def register(self, strategy: BaseStrategy) -> None:

@@ -36,6 +36,15 @@ STRATEGY_SUPPORT_METHODS = {
     "sector_rotation": "ma20",
     "index_enhance": "ma20",
     "capital_flow": "key_close_5",
+    # v7.12 补齐的 8 个形态策略
+    "limit_up_pullback": "key_close",     # 打板回踩: 涨停日收盘即支撑
+    "morning_star": "ma20",              # 底部反转: 均线支撑
+    "multi_golden_cross": "ma20",        # 多指标共振: 均线支撑
+    "multi_party_cannon": "key_close_5",  # 两阳夹一阴: 形态收盘下方缓冲
+    "resistance_breakout": "key_close",   # 平台突破: 突破日收盘转支撑
+    "immortal_guidance": "key_open",      # 仙人指路: 关键日开盘即支撑(与 KHunter 一致)
+    "new_stock_drawdown": "ma20",        # 超跌次新: 均线支撑
+    "strategy_2560": "ma20",             # 2560: 25日线体系, 取 ma20 近似
 }
 
 # 距支撑位分类阈值 (相对支撑位的偏离比例)
