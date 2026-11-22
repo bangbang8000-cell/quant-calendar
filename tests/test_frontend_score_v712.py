@@ -72,7 +72,7 @@ def test_factor_dropdown_offers_composite_score():
     assert 'factorSelectOptions' in logic
     # 模板必须改用合并后的选项源, 否则选中策略后"综合评分"会被 factor_specs 覆盖掉
     view = _read(VIEW_PART1)
-    assert 'factorSelectOptions()' in view
+    assert 'factorGroupedOptions()' in view  # v7.14: 模板改用分组选项源(内部仍走 factorSelectOptions 合并逻辑, composite_score 恒在)
     assert '|| factorOptions' not in view, "模板仍直接用 factorOptions, 未走合并逻辑"
 
 

@@ -503,7 +503,11 @@ async function loadFeishuConfig() {
 }
 async function loadAiConfig() {
     try {
-        const res = await fetch('/api/ai/config');
+        // v7.15 (FR-5): 带 auth 头 + 401 静默(登录前由 lifecycle 控制不调用)
+        const _core = (window.__quantModules && window.__quantModules.core) || {};
+        const _headers = (typeof _core.authHeaders === 'function') ? _core.authHeaders() : {};
+        const res = await fetch('/api/ai/config', { headers: _headers });
+        if (res.status === 401) return;
         const data = await res.json();
         if (data.success && data.data) {
             aiConfig.value = { ...aiConfig.value, ...data.data };

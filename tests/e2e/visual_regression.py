@@ -324,8 +324,9 @@ def _login(page):
     if page.locator('.login-box').count() == 0:
         return False
     page.wait_for_selector('.login-box .login-btn', timeout=15000)
-    page.fill('.login-box input[name="username"], .login-box input[type=text]', 'admin')
-    page.fill('.login-box input[name="password"], .login-box input[type=password]', 'admin')
+    import os as _os  # v7.15: 口令走 env(对齐 color_audit 的 QC_USER/QC_PASSWORD), 默认 admin 兼容旧基线
+    page.fill('.login-box input[name="username"], .login-box input[type=text]', _os.environ.get('QC_USER', 'admin'))
+    page.fill('.login-box input[name="password"], .login-box input[type=password]', _os.environ.get('QC_PASSWORD', 'admin'))
     page.locator('.login-box .login-btn:not(.login-guest-btn)').first.click()
     deadline = time.time() + 25
     while time.time() < deadline:

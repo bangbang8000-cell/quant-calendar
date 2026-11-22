@@ -189,11 +189,10 @@
             // 阶段配置加载完成后，再加载时钟数据
             withTimeout(fetchMerrillClock(), 3000, 'merrillClock');
           });
-          loadAiConfig();
-          loadAiCatalog();
-          // V4.6 修复: loadAiVendors 需登录后才加载(未登录 401 会污染 aiModelsError,
-          // 导致进入「自动评估」子页时厂商卡不显示, 误以为配置丢失)
+          // v7.15 (FR-5): AI 配置/目录/厂商统一移到登录后加载(未登录时 /api/ai/* 401 噪音)
           if (hasSession && currentUser.value) {
+            loadAiConfig();
+            loadAiCatalog();
             loadAiVendors();
           }
 

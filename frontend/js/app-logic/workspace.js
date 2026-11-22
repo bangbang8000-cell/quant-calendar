@@ -8,24 +8,48 @@
       const { ref, computed, watch, currentPage, currentSubPage, allMenuDefs,
         menus, navigateTo, ensureVisiblePage, currentUser } = ctx;
                 // ===== v3.2.0-T21: 策略回测（护栏片段保留）=====
-                const backtestStrategies = [
-                    { id: 'multifactor', name: '多因子策略' },
-                    { id: 'industry_rotation', name: '行业轮动' },
-                    { id: 'index_enhance', name: '指数增强' },
-                    { id: 'money_flow', name: '资金流策略' },
-                ];
-                const backtestStrategy = ref('multifactor');
+                // v7.14 (FR-1 / P0-1): 策略下拉改为动态拉取注册表, 删除写死的 4 个错误 sid
+                const backtestStrategies = ref([]);
+                const backtestStrategy = ref('');
                 const backtestRange = ref(null);
                 const backtestCapital = ref(100000);
                 const backtestRunning = ref(false);
                 const backtestResult = ref(null);
                 // 6.3.1 (T-6.3.1.3): 回测取数失败标志 (runBacktest catch 真实置位, 供四态面板承接)
                 const backtestError = ref(false);
+                // v7.14 (FR-3): 数据降级持久标志(替代一次性 toast)
+                const backtestDegraded = ref(false);
                 let backtestChart = null;
                 let _backtestCurve = null;  // v3.15 (15.4): 主题重绘缓存
+                function _wsAuthHeaders() {
+                    const t = localStorage.getItem('quant_token') || '';
+                    const h = { 'Content-Type': 'application/json' };
+                    if (t) h['Authorization'] = 'Bearer ' + t;
+                    return h;
+                }
+                // v7.14 (FR-1): 拉取策略注册表填充回测下拉
+                async function loadBacktestStrategies() {
+                    if (backtestStrategies.value.length) return;
+                    try {
+                        const res = await fetch('/api/strategies', { headers: _wsAuthHeaders() });
+                        const data = await res.json();
+                        const list = Array.isArray(data) ? data : (data && data.strategies) || [];
+                        // v7.14 注意: 回调内不用对象字面量形式的 return — 域返回面契约测试按尾部锚定正则提取
+                        backtestStrategies.value = list.map(function (s) {
+                            const item = { id: s.id, name: s.name };
+                            return item;
+                        });
+                        if (backtestStrategies.value.length && !backtestStrategy.value) {
+                            backtestStrategy.value = backtestStrategies.value[0].id;
+                        }
+                    } catch (e) {
+                        console.error('[backtest] 策略注册表加载失败:', e);
+                    }
+                }
                 async function runBacktest() {
                     const token = localStorage.getItem('quant_token');
                     if (!token) { ElementPlus.ElMessage.warning('请先登录'); return; }
+                    if (!backtestStrategy.value) { ElementPlus.ElMessage.warning('请先选择策略'); return; }
                     const params = {
                         initial_capital: backtestCapital.value || 100000,
                     };
@@ -36,11 +60,13 @@
                     backtestRunning.value = true;
                     backtestResult.value = null;
                     backtestError.value = false;
+                    backtestDegraded.value = false;
                     try {
                         // V4.0 M1-4: 统一走策略 SDK 回测引擎(防前视/样本内外/过拟合), 旧 /api/backtest 退役
+                        // v7.14 (FR-1): 修复 — 携带 Authorization 头(原先缺失导致登录态也 401)
                         const res = await fetch('/api/strategies/' + backtestStrategy.value + '/backtest', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: _wsAuthHeaders(),
                             body: JSON.stringify(params),
                         });
                         if (!res.ok) {
@@ -50,19 +76,24 @@
                         const data = await res.json();
                         const r = data.result || {};
                         if (!r.success) throw new Error(r.message || '回测失败');
+                        // v7.14 (FR-3): 降级信息持久化到结果区(而非一次性 toast)
+                        backtestDegraded.value = !!data.data_degraded;
                         if (data.data_degraded) ElementPlus.ElMessage.warning('数据不可达, 结果基于降级数据');
-                        // 归一化 SDK 回测字段(比率×100 为百分比)
+                        // v7.14.1: 后端已返回百分数值(%), 不再 ×100 — 修复总收益 707%/年化 5924% 错位
                         backtestResult.value = {
-                            total_return_pct: ((r.total_return ?? 0) * 100).toFixed(2),
-                            annual_return_pct: ((r.annual_return ?? 0) * 100).toFixed(2),
-                            max_drawdown_pct: ((r.max_drawdown ?? 0) * 100).toFixed(2),
+                            total_return_pct: (r.total_return ?? 0).toFixed(2),
+                            annual_return_pct: (r.annual_return ?? 0).toFixed(2),
+                            max_drawdown_pct: (r.max_drawdown ?? 0).toFixed(2),
                             sharpe_ratio: (r.sharpe_ratio ?? 0).toFixed(2),
-                            win_rate: ((r.win_rate ?? 0) * 100).toFixed(2),
-                            out_sample: r.outsample_total_return === undefined ? '' : ((r.outsample_total_return ?? 0) * 100).toFixed(2),
+                            win_rate: (r.win_rate ?? 0).toFixed(2),
+                            out_sample: r.outsample_total_return === undefined ? '' : (r.outsample_total_return ?? 0).toFixed(2),
                             overfit_warning: r.overfit_warning || false,
                             message: r.message || '',
                         };
-                        renderBacktestChart(r.equity_curve);
+                        // v7.14.1: 等结果区 v-if 渲染完成后再取 #backtestEquityChart (修复净值图静默不渲染)
+                        if (window.Vue && typeof window.Vue.nextTick === 'function') {
+                            window.Vue.nextTick(function () { renderBacktestChart(r.equity_curve); });
+                        } else { renderBacktestChart(r.equity_curve); }
                         ElementPlus.ElMessage.success('回测完成');
                     } catch (e) {
                         backtestError.value = true;
@@ -264,7 +295,7 @@
                 }
                 // ===== v1.5.0: subPageNames 映射 =====
                 const subPageNames = {
-                    'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」
+                    'overview': '概览', 'strategies.overview': '策略概览', 'ai.overview': '评估概览', 'research.research-overview': '研究概览', 'research-history': '研究历史', 'merrill': '美林时钟', 'market': '大盘行情', 'consensus': '策略共识榜', // V6.6.1: market 更名「大盘行情」; v7.14: research-history 入导航
                     'calendar': '量化日历', 'daily': '日视图', 'weekly': '周视图', 'monthly': '月视图', 'yearly': '年视图', 'pool': '股票池', // V6.6.1: calendar 为合并后主视图 key
                     'watchlist': '我的自选', 'history': '评估历史', 'chat_history': '问股历史', 'focus': '重点跟踪', 'evaluation-analysis': '评估分析', 'portfolio': '组合持仓', // V6.3 (PRD-6.3 F5): 补配 evaluation-analysis; V6.6.1: 组合持仓入口
                     'execution': '执行看板', 'timing': '择时雷达', 'pattern-lab': '形态匹配', 'marketplace': '策略市场', 'research-overview': '研究概览', 'quant-research': '量化研究', 'strategy-write': '策略编写', 'custom-write': '全新策略', 'strategy-manage': '策略管理', 'backtest': '策略回测', 'backtest-history': '回测记录', 'market-review': '每日复盘', // V6.6.1: strategy-write/custom-write 合并为 strategy-manage; market-review 更名「每日复盘」; V6.9.1-fix: 异动扫描已删除
@@ -509,6 +540,7 @@
 return {
         backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
         backtestRunning, backtestResult, backtestError, runBacktest,
+        backtestDegraded, loadBacktestStrategies,
         currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,

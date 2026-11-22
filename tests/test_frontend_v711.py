@@ -103,7 +103,7 @@ def test_nav_registers_three_new_members():
 
     # 结构约束未被破坏
     assert out["primaryCount"] == 7, "一级仍应恰为 7 业务域"
-    assert out["maxMembers"] <= 7, "单个业务域二级仍应 ≤7, 实际 %s" % out["maxMembers"]
+    assert out["maxMembers"] <= 8, "单个业务域二级 ≤8 (v7.14 research-history 入研究域, 顶栏超 7 走「更多」兜底), 实际 %s" % out["maxMembers"]
 
     # 三个新入口就位
     assert out["strategiesHasTiming"] is True

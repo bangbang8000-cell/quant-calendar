@@ -434,6 +434,9 @@
           state.navigateTo('research', 'strategy-manage');
         } else if (key === 'open-backtest-history') {
           state.navigateTo('research', 'backtest-history');
+        } else if (key === 'open-research-history') {
+          // v7.14 (FR-5): 研究历史提为正式二级 — 命令面板直达
+          state.navigateTo('research', 'research-history');
         } else if (key === 'open-ztpool') {
           state.navigateTo('shortterm', 'ztpool');
         } else if (key === 'open-lhb') {

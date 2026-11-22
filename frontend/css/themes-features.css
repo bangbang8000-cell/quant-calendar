@@ -172,18 +172,18 @@
     
     /* ===== 市场行情卡片 ===== */
     .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-    .market-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--qc-radius-large); padding: 16px; transition: all 0.2s ease; }
-    .market-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-up) 15%, transparent); }
-    .market-card.up { border-left: 4px solid var(--primary-color); }
-    .market-card.down { border-left: 4px solid var(--color-down); }
+    .market-card { background: var(--bg-card); border: 1px solid var(--qc-border); border-radius: var(--qc-radius-large); padding: 16px; transition: all 0.2s ease; }
+    .market-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-rise) 15%, transparent); }
+    .market-card.up { border-left: 4px solid var(--color-rise); }
+    .market-card.down { border-left: 4px solid var(--color-fall); }
     .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .market-name { font-weight: var(--font-semibold); color: var(--text-primary); font-size: var(--qc-font-size-base); }
     .market-tag { font-size: var(--qc-font-size-xs); padding: 4px 6px; border-radius: var(--qc-radius-small); background: var(--bg-hover); color: var(--text-secondary); }
     .market-price-row { display: flex; align-items: baseline; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
     .market-price { font-size: var(--qc-font-size-lg); font-weight: var(--font-bold); color: var(--text-primary); }
     .market-chg { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); }
-    .market-chg.up { color: var(--primary-text); }
-    .market-chg.down { color: var(--market-down-text); }
+    .market-chg.up { color: var(--color-rise); }
+    .market-chg.down { color: var(--color-fall); }
     .market-info-row { display: flex; justify-content: space-between; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light); }
     /* V6.12 (需求轮3·item2): 原独立「普涨行情」整条渐变横幅信息密度过低 → 删除该行,
        判断文字 + 均值涨跌并入状态行 (无底色块, 仅细分隔线 + 语义色数值) */

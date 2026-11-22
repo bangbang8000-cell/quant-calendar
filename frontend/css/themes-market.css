@@ -59,7 +59,7 @@
             padding: 12px 12px;
             border-radius: var(--qc-radius-large);
             text-align: center;
-            background: rgba(var(--primary-rgb), 0.08);
+            background: var(--bg-card-header);
         }
         .stat-label { color: var(--text-secondary); font-size: var(--qc-font-size-sm); margin-bottom: 4px; }
         .stat-value { font-size: var(--qc-font-size-md); font-weight: var(--font-semibold); }

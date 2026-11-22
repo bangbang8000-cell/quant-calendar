@@ -386,6 +386,8 @@
     { key: 'open-quant-research', label: '打开量化研究', icon: 'flask-conical', keywords: 'quant research 量化 研究 注册表' },
     { key: 'open-strategy-manage', label: '打开策略管理', icon: 'layers', keywords: 'manage 策略 管理 微调 母本' },
     { key: 'open-backtest-history', label: '打开回测记录', icon: 'history', keywords: 'backtest 回测 记录 历史 净值' },
+    // v7.14 (FR-5): 研究历史提为正式二级 — 命令面板直达
+    { key: 'open-research-history', label: '打开研究历史', icon: 'folder', keywords: 'research 实验 因子IC 分层 扫描 对比 历史' },
     { key: 'open-ztpool', label: '打开涨停复盘', icon: 'trending-up', keywords: 'ztpool 涨停 复盘 池' },
     { key: 'open-lhb', label: '打开龙虎榜', icon: 'list', keywords: 'lhb 龙虎榜 席位 资金' },
     { key: 'open-execution', label: '打开执行看板', icon: 'activity', keywords: 'execution 执行 看板 流水线 任务' },

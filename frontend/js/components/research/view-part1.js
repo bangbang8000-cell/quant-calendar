@@ -37,7 +37,26 @@ window.__quantModules.researchPage.part1 = `
                                     <div class="stat-value">{{ customs.length }}</div>
                                     <div class="stat-label">自定义策略</div>
                                 </div>
-                            </div>
+                            </div>                        <!-- v7.15 (FR-7): 跨策略回测对比摘要卡 (涨红跌绿) -->
+                        <div class="section-title-base mt-8"><qc-icon name="git-compare" :size="16" /> 跨策略回测对比 <span class="text-sm-tertiary">每策略最近一次回测 · 点击行跳转回测页</span></div>
+                        <qc-state-panel v-if="overviewCompareLoading" type="loading"></qc-state-panel>
+                        <div v-else-if="!overviewCompareRows.length" class="text-sm-tertiary mt-8">还没有回测实验。到 策略回测 运行一次后，这里会出现跨策略横向对比。</div>
+                        <table v-else class="qr-compare-table">
+                            <thead>
+                                <tr><th>策略</th><th>年化</th><th>回撤</th><th>夏普</th><th>胜率</th><th>时间</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="r in overviewCompareRows" :key="'ovc-' + r.sid" class="clickable" @click="goBacktestFor(r.sid)">
+                                    <td><strong>{{ r.sid }}</strong></td>
+                                    <td :class="r.annual_return >= 0 ? 'is-rise' : 'is-fall'">{{ fmtNum(r.annual_return) }}%</td>
+                                    <td :class="r.max_drawdown >= 0 ? 'is-rise' : 'is-fall'">{{ fmtNum(r.max_drawdown) }}%</td>
+                                    <td>{{ fmtNum(r.sharpe_ratio) }}</td>
+                                    <td>{{ fmtNum(r.win_rate) }}%</td>
+                                    <td class="text-sm-tertiary">{{ r.ts }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
                             <div class="stat-card clickable" @click="goShortterm('market-review')">
                                 <div class="stat-icon"><qc-icon name="file-text" :size="18" /></div>
                                 <div class="stat-content">
@@ -109,6 +128,13 @@ window.__quantModules.researchPage.part1 = `
                     </div>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
                         <div class="card-title">{{ t('research.quantResearch') }}</div>
+                        <!-- v7.14 (FR-6): 页内锚点导航 — 策略运行 / 因子研究 / 个股评分 / 参数扫描 -->
+                        <div class="qr-anchor-nav" role="navigation" aria-label="页面区块导航">
+                            <el-button size="small" text type="primary" @click="researchAnchorScroll('qr-run')">策略运行</el-button>
+                            <el-button size="small" text type="primary" @click="researchAnchorScroll('qr-factor')">因子研究</el-button>
+                            <el-button size="small" text type="primary" @click="researchAnchorScroll('qr-score')">个股评分</el-button>
+                            <el-button size="small" text type="primary" @click="researchAnchorScroll('qr-sweep')">参数扫描</el-button>
+                        </div>
                         <!-- V6.9.4 (F6.2): 持仓数据文件缺失可诊断提示条 (策略定义列表仍可用) -->
                         <div v-if="strategiesWarn" class="text-danger-semibold mt-8" role="alert"><qc-icon name="alert-triangle" :size="14" /> {{ strategiesWarn }}</div>
                         <!-- v3.19 (策略研究 P0): 策略注册表 → schema 表单 → 运行/回测/PTrade 导出 -->
@@ -117,7 +143,7 @@ window.__quantModules.researchPage.part1 = `
                             :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
                         <qc-state-panel v-else-if="strategies.length === 0" type="empty" icon="flask-conical" :title="t('state.emptyStrategy')" :desc="t('state.descEmptyStrategy')" action-text="去创建策略" action-key="go_strategy"></qc-state-panel>
                         <template v-else>
-                            <div class="flex-wrap mb-4">
+                            <div id="qr-run" class="flex-wrap mb-4">
                                 <div class="stat-card"><div class="stat-icon info"><qc-icon name="flask-conical" :size="18" /></div><div class="stat-label">策略总数</div><div class="stat-value">{{ strategies.length }}</div></div>
                                 <div class="stat-card"><div class="stat-icon success"><span class="qc-status-dot is-success"></span></div><div class="stat-label">当前策略</div><div class="stat-value stat-value-lg">{{ activeStrategy ? activeStrategy.name : '—' }}</div></div>
                             </div>
@@ -162,8 +188,8 @@ window.__quantModules.researchPage.part1 = `
                                         <el-button v-if="profileSelect" size="small" type="danger" @click="deleteProfile"><qc-icon name="trash-2" :size="14" /> 删除</el-button>
                                     </div>
                                 </div>
-                                <!-- schema 驱动参数表单 -->
-                                <div class="strategy-params">
+                                <!-- schema 驱动参数表单 (v7.14 FR-6: 双列栅格) -->
+                                <div class="strategy-params qr-param-grid">
                                     <div v-for="f in activeStrategy.schema" :key="f.key" class="strategy-param-row">
                                         <label class="strategy-param-label">{{ f.label }}</label>
                                         <el-select v-if="f.type === 'enum'" class="w-select-lg" size="small" v-model="paramValues[f.key]" @change="paramValues[f.key] = $event">
@@ -179,28 +205,42 @@ window.__quantModules.researchPage.part1 = `
                                     <pre class="ptrade-code-pre">{{ ptradeCode }}</pre>
                                     <el-button size="small" type="primary" @click="copyPtradeCode">复制代码</el-button>
                                 </div>
-                                <!-- 运行历史 -->
+                                <!-- 运行历史 (v7.14 FR-7: 行可展开查看选股明细) -->
                                 <div v-if="strategyRuns.length" class="strategy-runs">
                                     <div class="strategy-param-label">最近运行</div>
                                     <div v-for="run in strategyRuns.slice(0, 5)" :key="run.id" class="strategy-run-row">
                                         <span class="strategy-run-status" :class="run.status">{{ run.status }}</span>
                                         <span class="text-sm">{{ run.mode }} · {{ run.started_at }}</span>
                                         <span v-if="run.summary && run.summary.symbols" class="text-sm">选股 {{ run.summary.symbols.length }} 只</span>
+                                        <el-button v-if="run.summary && run.summary.symbols && run.summary.symbols.length" size="small" link type="primary" @click="toggleRunDetail(run.id)">
+                                            {{ expandedRunId === run.id ? '收起' : '明细' }}
+                                        </el-button>
+                                        <div v-if="expandedRunId === run.id && run.summary && run.summary.symbols" class="qr-run-detail mt-8">
+                                            <span v-for="sym in run.summary.symbols" :key="sym" class="qc711-badge">{{ sym }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </template>
 
                         <!-- v3.20 (P1-F8): 因子研究 — 单因子IC评价 + 分层回测 -->
-                        <div class="factor-research">
-                            <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究</div>
+                        <div id="qr-factor" class="factor-research">
+                            <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 因子研究 <span class="text-sm-tertiary">窗口默认 = 最近交易日往前 6 个月, 可自定义</span></div>
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-select-lg" v-model="factorKey" size="small" placeholder="选择因子">
-                                    <el-option v-for="f in factorSelectOptions()" :key="f.name" :label="(f.label || f.name) + ' (' + f.category + ')'" :value="f.name" />
+                                    <el-option-group v-for="g in factorGroupedOptions()" :key="g.category" :label="g.label">
+                                        <el-option v-for="f in g.items" :key="f.name" :label="(f.label || f.name) + ' (' + f.category + ')'" :value="f.name" />
+                                    </el-option-group>
                                 </el-select>
+                                <!-- v7.14 (FR-2): 研究时间窗口 -->
+                                <el-date-picker class="w-260" v-model="factorRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
                                 <el-button size="small" type="primary" @click="runFactorIc" :loading="factorIcLoading">IC 分析</el-button>
                                 <el-button size="small" @click="runFactorLayer" :loading="factorLayerLoading">分层回测</el-button>
                                 <el-button size="small" @click="runFactorDetail" :loading="factorDetailLoading">因子详情</el-button>
+                            </div>
+                            <!-- v7.14 (FR-3): 数据降级持久警示条 -->
+                            <div v-if="factorIcDegraded || factorLayerDegraded || factorDetailDegraded" class="qr-degraded-banner" role="alert">
+                                <qc-icon name="alert-triangle" :size="14" /> 数据源不可达，以下结果基于模拟数据，不可作为研究结论
                             </div>
                             <!-- IC 报告 -->
                             <div v-if="factorIcReport" class="factor-ic-report">
@@ -223,6 +263,8 @@ window.__quantModules.researchPage.part1 = `
                                     </div>
                                 </div>
                                 <div class="text-sm-tertiary-mt8">样本 {{ factorIcReport.count }} 日</div>
+                                <!-- v7.14 (FR-4): IC 时序曲线 -->
+                                <div class="w-100-h240 mt-8" id="factorIcChart"></div>
                             </div>
                             <!-- 分层回测 -->
                             <div v-if="factorLayerResult" class="factor-layer-result">
@@ -235,6 +277,8 @@ window.__quantModules.researchPage.part1 = `
                                 <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
                                     单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ fmtNum(factorLayerResult.spread) }}%
                                 </div>
+                                <!-- v7.14 (FR-4): 分层收益柱状图(涨红跌绿) -->
+                                <div class="w-100-h240 mt-8" id="factorLayerChart"></div>
                             </div>
                             <!-- T-5.1.16: 因子详情面板 (定义/覆盖度/IC衰减/换手/多重检验/近2年) -->
                             <div v-if="factorDetail" class="factor-detail-panel mt-8">
@@ -278,10 +322,16 @@ window.__quantModules.researchPage.part1 = `
                                 </div>
                             </div>
                             <!-- v7.12 (FR-7.4-4): 个股评分卡 —— 五维雷达 + 总分 + 否决标记 + 导出 -->
-                            <div class="score-card">
+                            <div id="qr-score" class="score-card">
                                 <div class="card-title"><qc-icon name="target" :size="16" /> 个股评分卡 <span class="text-sm-tertiary">五维加权(默认 35/35/10/10/10) · 缺维诚实标注 unknown · 支持一票否决</span></div>
                                 <div class="flex-wrap-gap-12-mb16-c">
-                                    <el-input class="w-160" size="small" v-model="scoreCode" placeholder="股票代码, 如 600000.SH" />
+                                    <el-select class="w-select-lg" size="small" v-model="scoreCode" filterable allow-create
+                                               default-first-option placeholder="从最近运行结果选择或输入代码">
+                                        <el-option v-for="s in lastRunSymbols" :key="'srs-' + s" :label="s" :value="s"></el-option>
+                                    </el-select>
+                                    <el-tooltip content="基于该股票近一年行情自动预估可算维度(技术面=20日动量自身历史分位); 数据不可得的维度保持 unknown, 绝不编造" placement="top">
+                                        <el-button size="small" @click="autoEstimateDims" :loading="scoreAutoLoading" :disabled="!scoreCode"><qc-icon name="zap" :size="14" /> 自动预估维度分</el-button>
+                                    </el-tooltip>
                                     <el-button size="small" type="primary" @click="runScore" :loading="scoreLoading"><qc-icon name="play" :size="14" /> 计算评分</el-button>
                                     <el-button size="small" @click="exportScore" :disabled="!scoreResult"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
                                 </div>
@@ -302,6 +352,8 @@ window.__quantModules.researchPage.part1 = `
                                 <qc-state-panel v-else-if="scoreError" type="error" :title="scoreError" desc="请确认已登录且评分服务可用" @retry="runScore"></qc-state-panel>
                                 <div v-else-if="!scoreResult" class="text-sm-tertiary-mt8">
                                     填入五维分数后点「计算评分」；任一维度留空会标注 unknown，不会按 0 分计入总分。
+                                    <div class="text-sm-tertiary mt-4">提示: 先运行一次策略，即可从上方下拉直接选择本次选股代码并一键预估维度分。</div>
+                                    <div v-if="scoreAutoMsg" class="text-sm-tertiary mt-4">{{ scoreAutoMsg }}</div>
                                 </div>
                                 <template v-else>
                                     <div class="score-radar-row">
@@ -342,12 +394,27 @@ window.__quantModules.researchPage.part1 = `
                                 </template>
                             </div>
                             <!-- V4.0 M2-1: 参数网格扫描 (策略实验室) -->
-                            <div class="sweep-research mt-8">
+                            <div id="qr-sweep" class="sweep-research mt-8">
                                 <div class="card-title"><qc-icon name="flask-conical" :size="16" /> 参数扫描 <span class="text-sm-tertiary">网格搜索 → SDK 回测 → 按指标排序</span></div>
                                 <div class="flex-wrap-gap-12-mb16-c">
                                     <el-input class="w-260" size="small" v-model="sweepGrid" placeholder='JSON 网格, 如 {"top_n":[10,20,30],"st_filter":[true,false]}' />
                                     <el-button size="small" type="primary" @click="runSweep" :loading="sweepLoading"><qc-icon name="play" :size="14" /> 运行扫描</el-button>
+                                    <!-- v7.14 (FR-8): 网格模板一键填充 -->
+                                    <el-dropdown trigger="click" @command="applySweepTemplate">
+                                        <el-button size="small">网格模板 <qc-icon name="chevron-down" :size="12" /></el-button>
+                                        <template #dropdown>
+                                            <el-dropdown-menu>
+                                                <el-dropdown-item command="topn">选股数梯度</el-dropdown-item>
+                                                <el-dropdown-item command="topn_cycle">选股数×调仓周期</el-dropdown-item>
+                                                <el-dropdown-item command="topn_st">选股数×剔除ST</el-dropdown-item>
+                                            </el-dropdown-menu>
+                                        </template>
+                                    </el-dropdown>
                                     <span class="text-sm-tertiary">指标: 年化收益(降序)</span>
+                                </div>
+                                <!-- v7.14 (FR-3): 数据降级持久警示条 -->
+                                <div v-if="sweepDegraded" class="qr-degraded-banner mt-8" role="alert">
+                                    <qc-icon name="alert-triangle" :size="14" /> 数据源不可达，以下结果基于模拟数据，不可作为研究结论
                                 </div>
                                 <div v-if="sweepMessage" class="text-sm-tertiary-mt8">{{ sweepMessage }}</div>
                                 <!-- V5.0.2 T-5.0.24: 参数稳定性诊断 (高原 + 过拟合判定) -->
@@ -374,9 +441,13 @@ window.__quantModules.researchPage.part1 = `
                     <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
                         <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
                         <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
-                        <!-- v7.11 (FR-7.11-4): 参数锁定与追踪 — 消费 /api/strategies/{sid}/lock* (v7.7 交付域的前端入口) -->
+                        <!-- v7.11 (FR-7.11-4): 参数锁定与追踪 — 消费 /api/strategies/{sid}/lock* (v7.14: 默认折叠, 未使用者不占首屏) -->
                         <div v-if="activeStrategyId && strategyManageMode === 'template'" class="qc711-mt12">
-                            <qc-param-lock :sid="activeStrategyId || ''" :params="paramValues"></qc-param-lock>
+                            <el-collapse class="qr-lock-collapse">
+                                <el-collapse-item name="lock" title="参数锁定与追踪 (审计/校验一致)">
+                                    <qc-param-lock :sid="activeStrategyId || ''" :params="paramValues"></qc-param-lock>
+                                </el-collapse-item>
+                            </el-collapse>
                         </div>
                         <div class="flex-gap-8-mb16">
                             <el-button :type="strategyManageMode === 'template' ? 'primary' : ''" size="small" @click="strategyManageMode = 'template'"><qc-icon name="settings" :size="14" /> 模板编辑</el-button>

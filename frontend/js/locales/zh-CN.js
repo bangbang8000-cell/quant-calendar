@@ -21,7 +21,8 @@
     'nav.shortterm': '短线复盘',
     // 二级导航（global-header 子页 tab；组件 subPageNames 保留作回退）
     'sub.overview': '概览',
-    'sub.strategies.overview': '概览', 'sub.ai.overview': '概览', 'sub.research.research-overview': '概览',
+    'sub.strategies.overview': '概览', 'sub.ai.overview': '概览', 'sub.research.research-overview': '研究总览',
+    'sub.research.research-history': '研究历史',
     'sub.execution': '执行看板',
     'sub.merrill': '美林时钟',
     'sub.market': '大盘行情',   // V6.6.1: 更名消歧
@@ -435,7 +436,7 @@
     'state.descEmptyFreshness': '接口未返回任何数据表，可点击刷新重试',
     'state.descEmptyPool': '当前交易日三池为空，可切换交易日或刷新重试',
     'state.descEmptyStrategyResearch': '先去「量化研究」加载策略注册表，或创建自定义策略',
-    'state.descEmptyStrategyManage': '先复制母本创建微调策略，或用 AI 代写全新策略',
+    'state.descEmptyStrategyManage': '内置 16 个策略为只读, 可在 研究总览 / 量化研究 / 策略回测 中查看使用; 本页管理从母策略复制创建的微调策略与 AI 全新创建',
     'state.descEmptyStrategy': '策略注册表为空，请检查后端策略目录或创建自定义策略',
     'state.descEmptyDictField': '当前分类没有字典字段，可切换分类或点击刷新',
     'state.descRetryDict': '点击重试重新加载数据字典',
@@ -447,6 +448,7 @@
     'a11y.shorttermDateList': '复盘日历日期列表',
     'a11y.selectWatchStock': '选择 {code} {name}',
     'a11y.viewMarketReview': '查看 {date} 市场复盘',
+    'msg.runDone': '运行完成: 选股 {n} 只',
     'msg.runFailed': '运行失败: {msg}',
     'msg.exportFailed': '导出失败: {msg}',
     'msg.factorIcFailed': '因子 IC 分析失败: {msg}',

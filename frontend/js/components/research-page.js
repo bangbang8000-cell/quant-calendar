@@ -290,6 +290,25 @@
         }
       }
 
+      // v7.14 (FR-7): 手工运行异步化 — 后端立即返回 running, 前端轮询至终态
+      const RUN_POLL_INTERVAL_MS = 2000;
+      const RUN_POLL_MAX_MS = 120000;
+      async function _pollRunUntilDone(sid, rid) {
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < RUN_POLL_MAX_MS) {
+          await new Promise(function (r) { setTimeout(r, RUN_POLL_INTERVAL_MS); });
+          try {
+            const res = await withAuth('/api/strategies/' + sid + '/runs/' + rid)
+              .then(function (r) { return r.json(); });
+            if (res && res.status && res.status !== 'running') return res;
+          } catch (e) { /* 单次轮询失败不中断, 下轮重试 */ }
+        }
+        return { status: 'timeout', detail: '运行超时(120s), 请稍后在运行记录中查看结果' };
+      }
+
+      // v7.15 (FR-1): 最近一次成功运行的选股代码列表(评分卡预填数据源)
+      const lastRunSymbols = ref([]);
+
       async function runActiveStrategy() {
         if (!activeStrategyId.value) return;
         strategyRunning.value = true;
@@ -299,10 +318,26 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ params: paramValues.value, as_of: runAsOf.value || undefined }),
           }).then(function (r) { return r.json(); });
-          if (res && res.status === 'success') {
+          if (res && res.detail) {
+            ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: res.detail }));
+          } else if (res && res.status === 'running' && res.id) {
+            ElementPlus.ElMessage.info('策略运行已启动, 请稍候…');
+            const fin = await _pollRunUntilDone(activeStrategyId.value, res.id);
+            if (fin.status === 'success') {
+              lastRunSymbols.value = ((fin.summary && fin.summary.symbols) || []);  // v7.15 (FR-1)
+              ElementPlus.ElMessage.success(state.t('msg.runDone', {
+                n: ((fin.summary && fin.summary.symbols && fin.summary.symbols.length) || 0),
+              }));
+            } else if (fin.status === 'timeout') {
+              ElementPlus.ElMessage.warning(fin.detail);
+            } else {
+              ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: fin.error || fin.detail || '运行失败' }));
+            }
+            loadRuns();
+          } else if (res && res.status === 'success') {
             loadRuns();
           } else {
-            ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: res.detail || JSON.stringify(res) }));
+            ElementPlus.ElMessage.error(state.t('msg.runFailed', { msg: JSON.stringify(res) }));
           }
         } catch (e) {
           console.error('[research] 策略运行失败:', e);
@@ -310,6 +345,18 @@
         } finally {
           strategyRunning.value = false;
         }
+      }
+
+      // v7.14 (FR-7): 运行记录展开选股明细
+      const expandedRunId = ref('');
+      function toggleRunDetail(rid) {
+        expandedRunId.value = expandedRunId.value === rid ? '' : rid;
+      }
+
+      // v7.14 (FR-6): 量化研究页页内锚点平滑滚动
+      function researchAnchorScroll(secId) {
+        const el = document.getElementById(secId);
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       async function exportActivePtradeCode() {
@@ -351,13 +398,17 @@
       const { marketReviewChgClass, marketReviewChgText, marketReviewSrcEntries, fmtPct, fmtEmotion } = __marketReview;
       const __factor = window.__quantModules.researchPage.factor.create({
         ref, seqOf: seqOf, withAuth, authHeaders: _authHeaders, activeStrategyId, paramValues,
-        activeStrategy: activeStrategy,
+        activeStrategy: activeStrategy, lastRunSymbols,  // v7.15 (FR-1) 评分预填数据源
       });
       const { factorKey, factorIcLoading, factorLayerLoading, factorIcReport, factorLayerResult, factorOptions } = __factor;
       const { runFactorIc, runFactorLayer, factorDetail, factorDetailLoading, runFactorDetail, sweepGrid } = __factor;
       const { sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep } = __factor;
+      // v7.14: 时间窗口 / 降级透明 / 分组下拉 / 扫描模板
+      const { factorRange, factorIcDegraded, factorLayerDegraded, factorDetailDegraded, sweepDegraded } = __factor;
+      const { factorGroupedOptions, applySweepTemplate } = __factor;
       // v7.12 (FR-7.4-4): 个股评分卡
       const { scoreCode, scoreDims, scoreConfigDims, scoreWeights, scoreVeto, scoreVetoReason } = __factor;
+      const { scoreAutoLoading, scoreAutoMsg, prefillFromRun, autoEstimateDims } = __factor;  // v7.15 (FR-1)
       const { scoreLoading, scoreError, scoreResult, scoreTopN, scoreDimLabel, scoreDimRows } = __factor;
       const { scoreRadarAxes, scoreRadarPolygon, loadScoreConfig, runScore, exportScore, factorSelectOptions } = __factor;
       const __history = window.__quantModules.researchPage.history.create({
@@ -366,6 +417,7 @@
       const { researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType, researchHistorySelected, researchDetailId } = __history;
       const { researchCompareRows, researchCompareLoading, researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory } = __history;
       const { loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory } = __history;
+      const { overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor } = __history;  // v7.15 (FR-7)
 
       watch(
         function () {
@@ -378,6 +430,17 @@
             loadMarketReviews();
             loadVariants();
             loadCustoms();
+            // v7.14 (FR-5): 研究历史计数真实化 — 概览进入即加载
+            loadResearchHistory();
+            loadOverviewCompare();  // v7.15 (FR-7): 跨策略对比
+          }
+          // v7.14.1: 进入研究历史页时加载实验列表 (此前漏注册 watch 分支 → 页面恒 0 条)
+          if (key === 'research/research-history') {
+            loadResearchHistory();
+          }
+          // v7.14 (FR-1): 进入回测页时加载策略注册表填充下拉
+          if (key === 'research/backtest' && state.loadBacktestStrategies) {
+            state.loadBacktestStrategies();
           }
           // 进入「市场复盘」且未停留在详情时加载列表 (V5.2.3: 移入短线复盘后 key=shortterm/market-review)
           if ((key === 'research/market-review' || key === 'shortterm/market-review') && !selectedReviewDate.value) {
@@ -683,11 +746,19 @@
         loadCustoms, genCustomCode, loadCustomCode, runCustomBacktest, runCustomOptimize, copyCustomCode,
         // V4.0 M2-1 参数扫描 (修复未进 return 的绑定缺口) + V5.0.2 T-5.0.24 稳定性
         sweepGrid, sweepResult, sweepMessage, sweepLoading, sweepStability, runSweep,
+        // v7.14: 时间窗口 / 降级透明 / 分组下拉 / 扫描模板 / 锚点 / 运行明细
+        factorRange, factorIcDegraded, factorLayerDegraded, factorDetailDegraded, sweepDegraded,
+        factorGroupedOptions, applySweepTemplate,
+        expandedRunId, toggleRunDetail, researchAnchorScroll,
         // v7.12 (FR-7.4-4): 个股评分卡 — 五维雷达 / 总分 / 否决 / 导出
         scoreCode, scoreDims, scoreConfigDims, scoreWeights, scoreVeto, scoreVetoReason,
         scoreLoading, scoreError, scoreResult, scoreTopN,
         scoreDimLabel, scoreDimRows, scoreRadarAxes, scoreRadarPolygon,
         loadScoreConfig, runScore, exportScore, factorSelectOptions,
+        // v7.15 (FR-1): 评分预填
+        lastRunSymbols, scoreAutoLoading, scoreAutoMsg, prefillFromRun, autoEstimateDims,
+        // v7.15 (FR-7): 总览跨策略对比
+        overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,
       };
     },
   };

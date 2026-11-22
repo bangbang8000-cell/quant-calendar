@@ -280,6 +280,16 @@
             background: var(--glass-bg, rgba(26,26,62,0.72)) ;
             border: 1px solid var(--glass-border, rgba(255,255,255,0.10)) ;
         }
+
+        /* 7.13.1: 双栏内嵌详情卡 (.qc-embedded-dialog / .kline-dialog) 是 position:static 的静态块,
+           非浮层 — 不该套用 --glass-bg 半透明玻璃 (硬编码金灰 rgba(45,42,31,0.90),
+           蓝色相下与冷调主程序卡脱节, 叠底后 "灰蒙蒙")。改用实色 --surface-card 跟随色相
+           + --qc-border 描边, 与指数卡/主程序卡同源。全局浮动弹窗的玻璃效果保持不变。 */
+        [data-theme="dark-pro"] .el-dialog.qc-embedded-dialog,
+        [data-theme="dark-pro"] .el-dialog.kline-dialog {
+            background: var(--surface-card) ;
+            border: 1px solid var(--qc-border) ;
+        }
         [data-theme="dark-pro"] .el-dialog__header {
             border-bottom: 1px solid var(--border-base) ;
         }

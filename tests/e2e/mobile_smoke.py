@@ -48,7 +48,9 @@ def token_login(page):
     import urllib.request as _url
     req = _url.Request(
         _BASE.rstrip('/') + '/api/login',
-        data=_json.dumps({"username": "admin", "password": "admin"}).encode(),
+        # v7.15: 口令走 env(对齐 color_audit), 默认 admin 兼容旧基线
+        data=_json.dumps({"username": __import__('os').environ.get('QC_USER', 'admin'),
+                          "password": __import__('os').environ.get('QC_PASSWORD', 'admin')}).encode(),
         headers={'Content-Type': 'application/json'}, method='POST')
     with _url.urlopen(req, timeout=10) as r:
         body = _json.loads(r.read().decode())
@@ -510,9 +512,11 @@ def main():
             token_login(page)
             # 取 token 供 API 准备自选
             import urllib.request as _url
+            import os as _os  # v7.15: 口令走 env, 默认 admin 兼容旧基线
             req = _url.Request(
                 _BASE.rstrip('/') + '/api/login',
-                data=json.dumps({"username": "admin", "password": "admin"}).encode(),
+                data=json.dumps({"username": _os.environ.get('QC_USER', 'admin'),
+                                 "password": _os.environ.get('QC_PASSWORD', 'admin')}).encode(),
                 headers={'Content-Type': 'application/json'}, method='POST')
             with _url.urlopen(req, timeout=10) as r:
                 token = json.loads(r.read().decode())['data']['access_token']

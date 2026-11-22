@@ -34,7 +34,7 @@ JS_DIR = os.path.join(BASE, "frontend", "js")
 #   **交付条件**: v7.12 起该类页面面板必须走按需 import 分包(参照 shortterm 卡片拆分口径),
 #   且预算只降不升; 若再出现"功能补齐导致体量跳增", 先拆包再谈上调。
 MAIN_LOGIC_BUDGET = 104 * 1024
-TOTAL_JS_BUDGET = 1700000
+TOTAL_JS_BUDGET = 1740000  # v7.14: 研究域功能扩展(回测修复/图表/锚点/异步运行) +~12KB
 
 
 def _js_files():

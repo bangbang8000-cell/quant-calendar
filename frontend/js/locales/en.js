@@ -21,7 +21,8 @@
     'nav.shortterm': 'Short-term Review',
     // 二级导航
     'sub.overview': 'Overview',
-    'sub.strategies.overview': 'Overview', 'sub.ai.overview': 'Overview', 'sub.research.research-overview': 'Overview',
+    'sub.strategies.overview': 'Overview', 'sub.ai.overview': 'Overview', 'sub.research.research-overview': 'Research Overview',
+    'sub.research.research-history': 'Research History',
     'sub.execution': 'Execution Dashboard',
     'sub.merrill': 'Merrill Clock',
     'sub.market': 'Index Market',   // V6.6.1: rename
@@ -433,7 +434,7 @@
     'state.descEmptyFreshness': 'The API returned no tables; click refresh to retry',
     'state.descEmptyPool': 'All three pools are empty for this trading day; switch day or refresh',
     'state.descEmptyStrategyResearch': 'Load the strategy registry in Quant Research first, or create a custom strategy',
-    'state.descEmptyStrategyManage': 'Copy a template to create a tuned strategy, or let AI write a new one',
+    'state.descEmptyStrategyManage': 'The 16 built-in strategies are read-only — see them under Research Overview / Quant Research / Backtest. This page manages tweaked variants cloned from a base strategy and AI-created strategies',
     'state.descEmptyStrategy': 'The strategy registry is empty; check the backend strategy directory or create a custom strategy',
     'state.descEmptyDictField': 'This category has no dictionary fields; switch category or refresh',
     'state.descRetryDict': 'Click retry to reload the data dictionary',
@@ -446,6 +447,7 @@
     'a11y.selectWatchStock': 'Select {code} {name}',
     'a11y.viewMarketReview': 'View market review for {date}',
     'msg.runFailed': 'Run failed: {msg}',
+    'msg.runDone': 'Run completed: {n} stocks selected',
     'msg.exportFailed': 'Export failed: {msg}',
     'msg.factorIcFailed': 'Factor IC analysis failed: {msg}',
     'msg.layerBacktest': 'Layer backtest: {msg}',

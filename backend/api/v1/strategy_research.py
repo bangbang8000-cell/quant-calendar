@@ -24,6 +24,16 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/strategies', tags=['策略研究'])
 
+# v7.14: 支撑层拆分 — 动态窗口/门户解析/实验持久化/面板工具 (使主文件回到 ≤700 行门禁内)
+from .strategy_research_support import (
+    default_research_range as _default_research_range,
+    default_end_sync as _default_end_sync,
+    date_range as _date_range,
+    future_returns as _future_returns,
+    record_experiment as _record_experiment,
+    resolve_portal as _resolve_portal,
+)
+
 
 @router.get('')
 async def list_strategies(_: Dict = Depends(get_non_guest_user)):
@@ -165,7 +175,7 @@ async def update_strategy(sid: str, body: Dict[str, Any],
 @router.post('/{sid}/run')
 async def run_strategy(sid: str, body: Dict[str, Any],
                        _: Dict = Depends(get_non_guest_user)):
-    """手工运行(互斥) —— 当前为同步骨架: 生成信号 + 落库"""
+    """手工运行(互斥) —— v7.14 (FR-7): 后台线程异步执行, 立即返回 running, 前端轮询 runs/{rid}"""
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
@@ -176,37 +186,44 @@ async def run_strategy(sid: str, body: Dict[str, Any],
         rid = append_run(sid, st.version, params, mode, 'running')
     except StrategyBusyError as e:
         raise HTTPException(status_code=409, detail=str(e))
-    try:
-        # 数据门户: 真实三源优先, 不可达降级模拟
-        universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, is_real = _resolve_portal(universe=universe)
-        # v3.21: 评估日支持前端传入 as_of(YYYY-MM-DD), 默认取最近交易日(数据中心最后一个交易日)
-        as_of = body.get('as_of') or body.get('run_date')
-        if not as_of:
-            from data_sources import data_source_manager
+
+    import threading as _threading
+
+    def _worker():
+        try:
+            # 数据门户: 真实三源优先, 不可达降级模拟
+            universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
+            portal, is_real = _resolve_portal(universe=universe)
+            # v3.21: 评估日支持前端传入 as_of(YYYY-MM-DD), 默认取最近交易日(数据中心最后一个交易日)
+            as_of = body.get('as_of') or body.get('run_date')
+            if not as_of:
+                from data_sources import data_source_manager
+                try:
+                    latest = data_source_manager.get_index_daily('000300.SH', None)
+                    as_of = str(latest.get('trade_date') or '')[:4] + '-' + str(latest.get('trade_date') or '')[4:6] + '-' + str(latest.get('trade_date') or '')[6:8]
+                except Exception:
+                    as_of = None
+            # v7.14 (FR-2): 兜底日期动态化(今天), 不再硬编码 2026-08-18
+            if not as_of or len(as_of) != 10:
+                from datetime import date as _date
+                as_of = _default_end_sync() or _date.today().isoformat()
+            ctx = StrategyContext(portal=portal, params=params, as_of=as_of)
+            holdings = st.generate_signals(ctx)
+            summary = {
+                'holdings_days': len(holdings) if holdings is not None else 0,
+                'symbols': list(holdings.columns) if holdings is not None and len(holdings.columns) else [],
+            }
+            finish_run(rid, 'success', summary=summary)
+        except Exception as e:
+            logger.exception('策略 %s 运行失败', sid)
             try:
-                # V4.6: 同步数据源调用迁 to_thread, 防 sxsc 超时阻塞事件循环
-                import asyncio
-                latest = await asyncio.to_thread(data_source_manager.get_index_daily, '000300.SH', None)
-                as_of = str(latest.get('trade_date') or '')[:4] + '-' + str(latest.get('trade_date') or '')[4:6] + '-' + str(latest.get('trade_date') or '')[6:8]
-            except Exception:
-                as_of = None
-        if not as_of or len(as_of) != 10:
-            as_of = '2026-08-18'
-        ctx = StrategyContext(portal=portal, params=params, as_of=as_of)
-        holdings = st.generate_signals(ctx)
-        summary = {
-            'holdings_days': len(holdings) if holdings is not None else 0,
-            'symbols': list(holdings.columns) if holdings is not None and len(holdings.columns) else [],
-        }
-        finish_run(rid, 'success', summary=summary)
-        # V4.0 M1-2: 数据不可达时透出 data_degraded, 不再静默返回模拟数据
-        return {'id': rid, 'status': 'success', 'data_degraded': not is_real,
-                'summary': summary}
-    except Exception as e:
-        logger.exception('策略 %s 运行失败', sid)
-        finish_run(rid, 'failed', error=str(e))
-        raise HTTPException(status_code=500, detail=f'运行失败: {e}')
+                finish_run(rid, 'failed', error=str(e))
+            except Exception as e2:
+                logger.error('运行 %s 失败状态落库异常: %s', rid, e2)
+
+    _threading.Thread(target=_worker, daemon=True, name=f'strategy-run-{sid}').start()
+    # V4.0 M1-2: data_degraded 由运行结果决定, 前端轮询 runs/{rid} 获取最终状态
+    return {'id': rid, 'status': 'running', 'mode': mode}
 
 
 @router.post('/{sid}/backtest')
@@ -222,8 +239,10 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
         from strategy_sdk.backtest import backtest_holdings
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, is_real = _resolve_portal(universe=universe)
-        end = body.get('end_date') or '2026-08-18'
-        start = body.get('start_date') or '2024-01-01'
+        # v7.14 (FR-2): 默认窗口动态化 — end=最近交易日, start=end-约30个月(保持原跨度语义)
+        _dstart, _dend = await _default_research_range(months=30)
+        end = body.get('end_date') or _dend
+        start = body.get('start_date') or _dstart
         ctx = StrategyContext(portal=portal, params=params, as_of=end)
         holdings = st.generate_signals(ctx)
         # 真实收益序列: 取 close 面板 → 日收益率 (date×symbol, 回测器内部防前视)
@@ -258,6 +277,8 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
                  'sharpe_ratio': _r.get('sharpe_ratio'),
                  'win_rate': _r.get('win_rate')},
                 {'result': result})
+        # v7.15 (FR-6 双轨统一): experiments 单源(_record_experiment 已写入),
+        # 不再调 save_backtest_result 二次入库(其签名保留供 standalone 端点委托使用)
         return {'strategy_id': sid, 'params': params, 'data_degraded': not is_real,
                 'result': result}
     except Exception as e:
@@ -277,8 +298,10 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
     param_grid = body.get('param_grid') or {}
     if not param_grid:
         raise HTTPException(status_code=400, detail='param_grid 不能为空')
-    start = body.get('start_date') or '2026-04-01'
-    end = body.get('end_date') or '2026-07-31'
+    # v7.14 (FR-2): 默认窗口动态化
+    _dstart, _dend = await _default_research_range(months=6)
+    start = body.get('start_date') or _dstart
+    end = body.get('end_date') or _dend
     metric = body.get('metric') or 'annual_return'
     universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
     portal, is_real = _resolve_portal(universe=universe)
@@ -433,8 +456,10 @@ async def factor_ic_research(body: Dict[str, Any],
     """单因子 IC 研究: 因子值 vs 次日收益 的横截面 Rank IC 评价"""
     sid = body.get('sid', 'multi_factor')
     factor_key = body.get('factor_key', 'mom20')
-    start_date = body.get('start_date') or '2026-04-01'
-    end_date = body.get('end_date') or '2026-07-31'
+    # v7.14 (FR-2): 默认窗口动态化
+    _dstart, _dend = await _default_research_range(months=6)
+    start_date = body.get('start_date') or _dstart
+    end_date = body.get('end_date') or _dend
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
@@ -449,12 +474,13 @@ async def factor_ic_research(body: Dict[str, Any],
         symbols = list(getattr(st, 'universe', []) or [])
         if not symbols:
             symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, _ = _resolve_portal(universe=symbols)
+        portal, is_real = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
         factor_values = compute_cross_section_factors(panel, [spec])
         if not factor_values:
             return {'factor_key': factor_key, 'sid': sid, 'report': {},
+                    'data_degraded': not is_real,
                     'message': '因子计算无有效值(数据不足)'}
         fv = factor_values[factor_key]
         returns = _future_returns(panel)
@@ -469,6 +495,7 @@ async def factor_ic_research(body: Dict[str, Any],
              'win_rate': _rpt.get('win_rate'), 'grade': _rpt.get('grade')},
             {'report': report})
         return {'factor_key': factor_key, 'sid': sid, 'report': report,
+                'data_degraded': not is_real,
                 'fields': fields, 'date_range': [start_date, end_date]}
     except Exception as e:
         logger.exception('因子 IC 研究失败: %s', e)
@@ -483,8 +510,10 @@ async def factor_detail_research(body: Dict[str, Any],
     """
     sid = body.get('sid', 'multi_factor')
     factor_key = body.get('factor_key', 'mom20')
-    start_date = body.get('start_date') or '2026-04-01'
-    end_date = body.get('end_date') or '2026-07-31'
+    # v7.14 (FR-2): 默认窗口动态化
+    _dstart, _dend = await _default_research_range(months=6)
+    start_date = body.get('start_date') or _dstart
+    end_date = body.get('end_date') or _dend
     n_layers = int(body.get('n_layers', 5))
     try:
         st = registry.get(sid)
@@ -499,12 +528,13 @@ async def factor_detail_research(body: Dict[str, Any],
         symbols = list(getattr(st, 'universe', []) or [])
         if not symbols:
             symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, _ = _resolve_portal(universe=symbols)
+        portal, is_real = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
         factor_values = compute_cross_section_factors(panel, [spec])
         if not factor_values:
             return {'factor_key': factor_key, 'sid': sid, 'detail': {},
+                    'data_degraded': not is_real,
                     'message': '因子计算无有效值(数据不足)'}
         fv = factor_values[factor_key]
         returns = _future_returns(panel)
@@ -521,6 +551,7 @@ async def factor_detail_research(body: Dict[str, Any],
                                      meta, n_factors_tested=int(body.get('n_factors_tested', 10)))
         detail['decay_report'] = panels['decay_report']
         return {'factor_key': factor_key, 'sid': sid, 'detail': detail,
+                'data_degraded': not is_real,
                 'date_range': [start_date, end_date]}
     except Exception as e:
         logger.exception('因子详情失败: %s', e)
@@ -534,8 +565,10 @@ async def factor_layer_research(body: Dict[str, Any],
     sid = body.get('sid', 'multi_factor')
     factor_key = body.get('factor_key', 'mom20')
     n_layers = int(body.get('n_layers', 5))
-    start_date = body.get('start_date') or '2026-04-01'
-    end_date = body.get('end_date') or '2026-07-31'
+    # v7.14 (FR-2): 默认窗口动态化
+    _dstart, _dend = await _default_research_range(months=6)
+    start_date = body.get('start_date') or _dstart
+    end_date = body.get('end_date') or _dend
     try:
         st = registry.get(sid)
     except StrategyNotFoundError:
@@ -549,7 +582,7 @@ async def factor_layer_research(body: Dict[str, Any],
         symbols = list(getattr(st, 'universe', []) or [])
         if not symbols:
             symbols = [f'{600000 + i:06d}.SH' for i in range(24)]
-        portal, _ = _resolve_portal(universe=symbols)
+        portal, is_real = _resolve_portal(universe=symbols)
         fields = list(spec.inputs or ['close'])
         panel = portal.get_panel(fields, start=start_date, end=end_date, universe=symbols)
         factor_values = compute_cross_section_factors(panel, [spec])
@@ -561,6 +594,8 @@ async def factor_layer_research(body: Dict[str, Any],
         result = layer_backtest(fv, returns, n_layers=n_layers)
         result['factor_key'] = factor_key
         result['sid'] = sid
+        # v7.14 (FR-3): 数据降级透明化
+        result['data_degraded'] = not is_real
         # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
         _record_experiment(
             'layer', f'{sid}/{factor_key}',
@@ -573,82 +608,6 @@ async def factor_layer_research(body: Dict[str, Any],
     except Exception as e:
         logger.exception('因子分层回测失败: %s', e)
         raise HTTPException(status_code=500, detail=f'因子分层回测失败: {e}')
-
-
-def _date_range(start: str, end: str, max_days: int) -> list:
-    """生成日期序列(最多 max_days 个, 简化按工作日近似交易日)"""
-    from datetime import date, timedelta
-    s = date.fromisoformat(start)
-    e = date.fromisoformat(end)
-    days = (e - s).days
-    step = max(1, days // max_days) if days > max_days else 1
-    out = []
-    d = s
-    while d <= e and len(out) < max_days:
-        if d.weekday() < 5:
-            out.append(d.isoformat())
-        d += timedelta(days=step)
-    return out or [start]
-
-
-def _future_returns(panel):
-    """由面板收盘价生成次日收益(近似未来收益, 研究演示用)"""
-    close = panel['close'].unstack('symbol')
-    return close.pct_change().shift(-1)
-
-
-def _record_experiment(etype: str, subject: str, params: dict,
-                       date_range: list, summary: dict, result: dict = None,
-                       app_version: str = '5.1.0') -> str | None:
-    """研究历史持久化 (T-5.1.2 / FR-5.1.0.2): 把一次研究运行写入实验存储。
-
-    静默失败(不阻塞主流程): 存储异常仅记录日志, 不影响研究结果返回。
-    返回实验 id (写入成功) 或 None (跳过)。
-    """
-    try:
-        from backend_info import APP_VERSION as _V  # 运行时取真实版本号
-        _ver = _V
-    except Exception:
-        _ver = app_version
-    try:
-        return save_experiment({
-            'type': etype,
-            'subject': subject,
-            'params': params or {},
-            'date_range': date_range or [],
-            'app_version': _ver,
-            'summary': summary or {},
-            'result': result or {},
-        })
-    except Exception as e:
-        logger.warning('[research_store] 实验记录跳过: %s', e)
-        return None
-
-
-# ---------- 数据门户解析 (FR: 数据层) ----------
-
-def _resolve_portal(universe: Optional[list] = None, seed: int = 2026):
-    """优先真实三源 DataPortal; 数据不可达(无网络/无 universe)时降级 FakePortal。
-
-    Returns (portal, is_real): is_real=False 表示降级到可复现模拟数据。
-    """
-    # 有 universe 才尝试真实数据(无 universe 无从取数)
-    if universe:
-        try:
-            from strategy_sdk.data_portal import RealDataPortal
-            portal = RealDataPortal()
-            # 探测: 用完整三源 fallback(get_kline_data 含东财→新浪兜底)
-            probe = portal.source.get_kline_data(universe[0], period='daily', limit=5)
-            probe_data = (probe or {}).get('data') or []
-            if probe_data:
-                return portal, True
-            logger.info('真实数据探测为空(首源失败), 降级模拟')
-        except Exception as e:
-            logger.info('真实数据门户不可用, 降级模拟: %s', e)
-    from strategy_sdk.testsupport import FakePortal
-    dates = _date_range('2026-04-01', '2026-07-31', 40)
-    symbols = universe or [f'{600000 + i:06d}.SH' for i in range(24)]
-    return FakePortal(dates=dates, symbols=symbols, seed=seed), False
 
 
 # 6.3.0 (T-6.3.0.4): 自定义策略 / 研究历史路由拆至子模块, 以子路由挂载 (路径与注册顺序不变)

@@ -172,6 +172,21 @@
 .strategy-params { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 .strategy-param-row { display: flex; align-items: center; gap: 12px; }
 .strategy-param-label { width: 150px; flex-shrink: 0; font-size: var(--qc-font-size-sm); color: var(--text-primary); }
+
+/* ===== v7.14: 策略研究模块改进 ===== */
+/* FR-6: 量化研究页页内锚点导航 (粘性) */
+.qr-anchor-nav { display: flex; align-items: center; gap: 4px; padding: 4px 0 8px; border-bottom: 1px dashed var(--border-color); margin-bottom: 8px; position: sticky; top: 0; z-index: 5; background: inherit; }
+/* FR-6: schema 参数表单双列栅格 (≥1100px 两列, 以下单列) */
+.qr-param-grid { display: grid; grid-template-columns: 1fr; gap: 8px 24px; }
+@media (min-width: 1100px) { .qr-param-grid { grid-template-columns: repeat(2, minmax(300px, 1fr)); } }
+/* FR-3: 数据降级持久警示条 */
+.qr-degraded-banner { display: flex; align-items: center; gap: 6px; padding: 8px 12px; margin: 8px 0; border-radius: var(--radius-2, 6px); font-size: var(--qc-font-size-sm); background: var(--badge-warning-bg); color: var(--badge-warning-text); border: 1px solid var(--border-color); }
+/* FR-7: 运行记录选股明细 chips */
+.qr-run-detail { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-left: 12px; }
+/* FR-4: 研究图表容器高度 */
+.w-100-h240 { width: 100%; height: 240px; }
+/* v7.14: 参数锁定折叠块留白 */
+.qr-lock-collapse { margin-bottom: 8px; }
 .ptrade-code-box { margin: 12px 0; }
 .ptrade-code-pre { max-height: 240px; overflow: auto; background: var(--bg-code); border: 1px solid var(--border-color); border-radius: var(--qc-radius-medium); padding: 12px; font-family: var(--font-mono); font-size: var(--qc-font-size-xs); color: var(--text-primary); white-space: pre; }
 .strategy-runs { margin-top: 12px; }
@@ -732,7 +747,7 @@
 .market-grid.is-vertical .market-card {
   width: 100%;
   cursor: pointer;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--qc-border);
   border-radius: var(--qc-radius-small);
 }
 .market-grid.is-vertical .market-card.is-active {
@@ -1042,3 +1057,13 @@ body.qc-split-resizing * {
   font-weight: var(--qc-h1-weight);
   color: var(--text-primary);
 }
+
+/* v7.15 (FR-7): 研究总览跨策略对比表 — 只用既有令牌 */
+.qr-compare-table { width: 100%; border-collapse: collapse; margin-top: var(--qc-space-8); }
+.qr-compare-table th, .qr-compare-table td {
+  padding: var(--qc-space-2) var(--qc-space-3);
+  border-bottom: 1px solid var(--border-color);
+  text-align: left; font-size: var(--qc-font-size-sm, 13px);
+}
+.qr-compare-table th { color: var(--text-tertiary); font-weight: 500; }
+.qr-compare-table tbody tr:hover { background: var(--surface-hover, transparent); }

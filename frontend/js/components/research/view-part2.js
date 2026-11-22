@@ -39,6 +39,10 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         <!-- 回测结果 -->
                         <div v-if="customBtResult" class="strategy-params">
                             <div class="section-title-base mt-8"><qc-icon name="bar-chart-3" :size="16" /> 回测结果</div>
+                            <!-- v7.14 (FR-9): 静态持仓近似回测警示 -->
+                            <div class="qr-degraded-banner" role="note">
+                                <qc-icon name="alert-triangle" :size="14" /> 静态持仓近似回测（未逐日执行策略逻辑），仅供方向性参考
+                            </div>
                             <div class="custom-bt-grid">
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
@@ -52,33 +56,37 @@ window.__quantModules.researchPage.part2 = `                            </div>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">{{ t('research.backtest') }}</div>
-                        <!-- v3.2.0-T21: 回测参数 -->
+                        <!-- v3.2.0-T21: 回测参数 (v7.14 FR-1: 下拉动态拉取注册表) -->
                         <div class="flex-wrap-gap-12-mb16-c">
-                            <el-select class="w-select-md" v-model="backtestStrategy" size="small" placeholder="选择策略">
-                                <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name" :value="s.id" />
+                            <el-select class="w-select-md" v-model="backtestStrategy" size="small" placeholder="选择策略" :loading="!backtestStrategies.length">
+                                <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                             </el-select>
                             <el-date-picker class="w-260" v-model="backtestRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
                             <el-input-number class="w-140" v-model="backtestCapital" size="small" :min="10000" :step="50000"/>
-                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning"><qc-icon name="play" :size="14" /> 运行回测</el-button>
+                            <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning" :disabled="!backtestStrategy"><qc-icon name="play" :size="14" /> 运行回测</el-button>
+                        </div>
+                        <!-- v7.14 (FR-3): 数据降级持久警示条 (不可作为研究结论) -->
+                        <div v-if="backtestDegraded" class="qr-degraded-banner" role="alert">
+                            <qc-icon name="alert-triangle" :size="14" /> 数据源不可达，以下结果基于模拟数据，不可作为研究结论
                         </div>
                         <!-- 回测结果 -->
                         <template v-if="backtestResult">
                             <div class="grid-auto-fit-140-mb16">
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtNum(backtestResult.total_return_pct) }}%</div>
-                                    <div class="stat-label">总收益率</div>
+                                    <el-tooltip content="区间累计收益率 = (期末净值 / 期初净值 - 1) × 100%" placement="top"><div class="stat-label">总收益率 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtNum(backtestResult.annual_return_pct) }}%</div>
-                                    <div class="stat-label">年化收益</div>
+                                    <el-tooltip content="年化收益 = 区间收益折算为 1 年期复利收益; 样本过短时数字仅供参考" placement="top"><div class="stat-label">年化收益 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtNum(backtestResult.max_drawdown_pct) }}%</div>
-                                    <div class="stat-label">最大回撤</div>
+                                    <el-tooltip content="最大回撤 = 净值从峰值到谷底的最大跌幅, 负值表示亏损幅度" placement="top"><div class="stat-label">最大回撤 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtNum(backtestResult.sharpe_ratio) }}</div>
-                                    <div class="stat-label">夏普比率</div>
+                                    <el-tooltip content="夏普比率 = 年化超额收益 / 年化波动率; >1 较好, >2 优秀; 样本内交易数不足时 profit_factor 与 Kelly 仓位建议会显示 0.0(非异常)" placement="top"><div class="stat-label">夏普比率 ⓘ</div></el-tooltip>
                                 </div>
                             </div>
                             <div class="w-100-h320" id="backtestEquityChart"></div>

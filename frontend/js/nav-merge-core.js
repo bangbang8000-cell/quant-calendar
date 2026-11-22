@@ -70,6 +70,8 @@
         { key: 'strategy-manage', page: 'research', sub: 'strategy-manage' },
         { key: 'backtest', page: 'research', sub: 'backtest' },
         { key: 'backtest-history', page: 'research', sub: 'backtest-history' },
+        // v7.14 (FR-5): 研究历史提为正式二级 — 深链 #/research/research-history 自然可解析
+        { key: 'research-history', page: 'research', sub: 'research-history' },
         // v7.11 (FR-7.11-2/3): 形态匹配实验室 + 策略市场 — 研究域的两个新工作台
         { key: 'pattern-lab', page: 'research', sub: 'pattern-lab' },
         { key: 'marketplace', page: 'research', sub: 'marketplace' },
@@ -153,11 +155,12 @@
     'ai.evaluation-analysis': '评估分析',
     'ai.portfolio': '组合持仓',
     'ai.chat_history': '问股历史',
-    'research.research-overview': '概览',
+    'research.research-overview': '研究总览',
     'research.quant-research': '量化研究',
     'research.strategy-manage': '策略管理',
     'research.backtest': '策略回测',
     'research.backtest-history': '回测记录',
+    'research.research-history': '研究历史',
     'ops.status': '系统状态',
     'ops.health': '数据源健康',
     'ops.schedule': '调度任务',

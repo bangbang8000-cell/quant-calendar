@@ -35,6 +35,7 @@
                 });
                 const { backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                         backtestRunning, backtestResult, backtestError, runBacktest,
+                        backtestDegraded, loadBacktestStrategies,
                         currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
                         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
                         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
@@ -357,6 +358,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     feedbackText, feedbackSubmitting, submitFeedback,
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                     backtestRunning, backtestResult, backtestError, runBacktest,
+                    backtestDegraded, loadBacktestStrategies,
                     // v3.17.4 (FR-3.17.4): 回测工作台
                     btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
                     btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,

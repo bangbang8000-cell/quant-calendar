@@ -164,8 +164,12 @@ async function loadAiVendors() {
 
 async function loadAiCatalog() {
     // fire-and-forget：目录加载失败仅降级「新增厂商」下拉
+    // v7.15 (FR-5): 带 auth 头; 登录前不调用(由 lifecycle 控制时序), 401 静默
     try {
-        const res = await fetch('/api/ai/catalog');
+        const _core = (window.__quantModules && window.__quantModules.core) || {};
+        const _headers = (typeof _core.authHeaders === 'function') ? _core.authHeaders() : {};
+        const res = await fetch('/api/ai/catalog', { headers: _headers });
+        if (res.status === 401) return;  // v7.15 (FR-5): 未登录静默
         const data = await res.json();
         if (data.success && data.data) aiCatalog.value = data.data;
     } catch (e) {

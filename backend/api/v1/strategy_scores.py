@@ -62,3 +62,53 @@ async def scores_calculate(payload: Dict[str, Any], _: Dict = Depends(get_non_gu
     except Exception as e:
         logger.exception("五维评分失败: %s", e)
         raise HTTPException(status_code=500, detail=f"五维评分失败: {e}")
+
+
+@router.get("/auto")
+async def scores_auto(stock_code: str = '', _: Dict = Depends(get_non_guest_user)):
+    """v7.15 (FR-1): 维度分自动预估 — 诚实设计: 仅估算数据可得维度, 其余一律 null(unknown)。
+
+    technical: 20日动量在自身历史(最多260根日K)中的百分位 0~100, 口径透明可复核。
+    moneyflow/fundamental/sector/event: 当前无独立数据源, 一律 null, 绝不编造。
+    """
+    code = (stock_code or '').strip()
+    if not code:
+        raise HTTPException(status_code=400, detail='缺少 stock_code')
+    dims = ('technical', 'moneyflow', 'fundamental', 'sector', 'event')
+    est = {d: None for d in dims}
+    meta = {}
+    try:
+        import asyncio as _asyncio
+        from data_sources import data_source_manager as _dsm
+        res = await _asyncio.to_thread(_dsm.get_kline_data, code, 'daily', 260)
+        data = (res or {}).get('data') or []
+        closes = []
+        for r in data:
+            try:
+                if len(r) > 2 and r[2] is not None:
+                    closes.append(float(r[2]))
+            except (TypeError, ValueError):
+                continue
+        if len(closes) >= 40:
+            mom = []
+            for i in range(20, len(closes)):
+                base = closes[i - 20]
+                if base > 0:
+                    mom.append(closes[i] / base - 1.0)
+            if mom:
+                cur = mom[-1]
+                rank = sum(1 for m in mom if m <= cur)
+                est['technical'] = round(max(0.0, min(100.0, rank / len(mom) * 100.0)), 1)
+                meta['technical'] = {
+                    'method': 'momentum20_self_percentile',
+                    'window_days': len(closes), 'samples': len(mom),
+                    'momentum20': round(cur, 6),
+                }
+    except Exception as e:
+        logger.warning('[scores/auto] technical 预估失败(如实降级为 null): %s', e)
+    return {
+        'stock_code': code,
+        'estimates': est,
+        'estimate_meta': meta,
+        'unknown_dims': [k for k, v in est.items() if v is None],
+    }

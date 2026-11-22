@@ -26,7 +26,10 @@ LIMIT = 700
 
 # 待拆分清单：路径 -> 承接该文件的拆分任务号（拆分完成后必须移除）
 # 6.3.0 收尾: app-logic.js 已按域下沉 js/app-logic/*.js（T-6.3.0.10），清单清空。
-PENDING_SPLIT = {}
+PENDING_SPLIT = {
+    # v7.14: 研究页新增锚点导航/运行明细/异步轮询后超限, 待拆任务 v7.15-T1 (按「视图/状态/取数」三段拆分)
+    'frontend/js/components/research-page.js': 'v7.15-T1',
+}
 
 
 def _count_lines(path):

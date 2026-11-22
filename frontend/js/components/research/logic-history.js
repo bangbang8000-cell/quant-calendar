@@ -19,6 +19,10 @@
       const researchCompareRows = Vue.ref([]);
       const researchCompareLoading = Vue.ref(false);
       const researchExportLoading = Vue.ref(false);
+      // v7.15 (FR-7): 研究总览跨策略对比 — backtest 实验按 sid 分组取最新
+      const overviewCompareRows = Vue.ref([]);
+      const overviewCompareLoading = Vue.ref(false);
+
 
       const RESEARCH_TYPE_LABELS = {
         'factor_ic': '因子IC', 'layer': '分层', 'sweep': '扫描',
@@ -129,12 +133,47 @@
         }
       }
 
+      // v7.15 (FR-7): 跨策略对比聚合
+      async function loadOverviewCompare() {
+        overviewCompareLoading.value = true;
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const res = await fetch('/api/strategies/research-history?limit=200', { headers })
+            .then(function (r) { return r.json(); });
+          const list = (res && res.items) || [];
+          const bySid = {};
+          list.forEach(function (e) {
+            if (e.type !== 'backtest') return;
+            const sid = e.subject || '';
+            if (!bySid[sid] || String(e.created_at) > String(bySid[sid].created_at)) bySid[sid] = e;
+          });
+          overviewCompareRows.value = Object.keys(bySid).map(function (sid) {
+            const s = bySid[sid].summary || {};
+            return { sid: sid, ts: bySid[sid].created_at,
+              annual_return: s.annual_return, max_drawdown: s.max_drawdown,
+              sharpe_ratio: s.sharpe_ratio, win_rate: s.win_rate };
+          });
+        } catch (e) {
+          console.error('[overview-compare] 加载失败:', e);
+        } finally {
+          overviewCompareLoading.value = false;
+        }
+      }
+
+      function goBacktestFor(sid) {
+        if (!sid) return;
+        state.currentSubPage.value = 'backtest';
+        if (state.activeStrategyId) state.activeStrategyId.value = sid;
+      }
+
       return {
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
         researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory,
         loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail,
         runResearchCompare, deleteResearchHistory,
+        overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)
       };
     },
   };

@@ -46,19 +46,75 @@ class TestSchedulerHistory:
 
 
 class TestBacktestHistory:
-    def test_save_and_load(self, tmp_path):
-        import backtest as bt_mod
-        with patch.object(bt_mod, "BACKTEST_HISTORY_FILE", str(tmp_path / "bt_hist.json")):
-            assert bt_mod.save_backtest_result("sid1", {"win_rate": 50.0}, {"start_date": "2026-01-01"}) is True
-            assert bt_mod.save_backtest_result("sid2", {"win_rate": 60.0}, {}) is True
-            hist = bt_mod.get_backtest_history(days=30)
-            assert len(hist) == 2
-            assert hist[0]["sid"] == "sid2"  # 时间倒序
-            only1 = bt_mod.get_backtest_history(days=30, sid="sid1")
-            assert len(only1) == 1
-            assert only1[0]["params"]["start_date"] == "2026-01-01"
+    """v7.15 (FR-6 双轨统一): save 委托 research_store(experiments 单源);
+    get 优先 experiments, 为空时回退旧 json 并标 legacy。"""
 
-    def test_load_empty_when_missing(self, tmp_path):
+    @staticmethod
+    def _fake_store(monkeypatch):
+        """内存化 research_store 存取, 隔离真实 app.db"""
+        import research_store as rs
+        store = {}
+
+        def fake_save(exp):
+            eid = exp.get("id") or ("e_%d" % (len(store) + 1))
+            exp = dict(exp, id=eid, created_at=rs._now())
+            store[eid] = exp
+            return eid
+
+        def fake_list(type=None, limit=50):
+            rows = [v for v in store.values() if type is None or v.get("type") == type]
+            # 与真实 SQL 一致: created_at DESC, id DESC
+            rows.sort(key=lambda e: (e.get("created_at", ""), e.get("id", "")), reverse=True)
+            return rows[:limit]
+
+        monkeypatch.setattr(rs, "save_experiment", fake_save)
+        monkeypatch.setattr(rs, "list_experiments", fake_list)
+        return store
+
+    def test_save_and_load(self, monkeypatch):
         import backtest as bt_mod
-        with patch.object(bt_mod, "BACKTEST_HISTORY_FILE", str(tmp_path / "none.json")):
-            assert bt_mod.get_backtest_history() == []
+        import backtest_history_store as bhs_mod
+        self._fake_store(monkeypatch)
+        assert bt_mod.save_backtest_result("sid1", {"win_rate": 50.0}, {"start_date": "2026-01-01"}) is True
+        assert bt_mod.save_backtest_result("sid2", {"win_rate": 60.0}, {}) is True
+        hist = bt_mod.get_backtest_history(days=30)
+        assert len(hist) == 2
+        assert hist[0]["sid"] == "sid2"  # 时间倒序
+        assert "legacy" not in hist[0]  # 单源记录不带 legacy 标记
+        only1 = bt_mod.get_backtest_history(days=30, sid="sid1")
+        assert len(only1) == 1
+        assert only1[0]["params"]["start_date"] == "2026-01-01"
+
+    def test_save_no_longer_writes_json(self, tmp_path, monkeypatch):
+        """FR-6: 旧 backtest_history.json 写路径废弃"""
+        import backtest as bt_mod
+        import backtest_history_store as bhs_mod
+        self._fake_store(monkeypatch)
+        jf = tmp_path / "bt_hist.json"
+        monkeypatch.setattr(bhs_mod, "BACKTEST_HISTORY_FILE", str(jf))
+        bt_mod.save_backtest_result("sid_x", {"win_rate": 55.0}, {})
+        assert not jf.exists()  # 不再写 json
+
+    def test_legacy_json_fallback(self, tmp_path, monkeypatch):
+        """FR-6: experiments 为空时回退读旧 json, 条目带 legacy 标记"""
+        import json as _json
+        import backtest as bt_mod
+        import backtest_history_store as bhs_mod
+        self._fake_store(monkeypatch)  # 空 store
+        jf = tmp_path / "bt_hist.json"
+        jf.write_text(_json.dumps([
+            {"sid": "old1", "ts": "2026-11-01 10:00:00", "summary": {"win_rate": 40.0}, "params": {}},
+            {"sid": "old2", "ts": "2026-11-02 10:00:00", "summary": {"win_rate": 45.0}, "params": {}},
+        ]), encoding="utf-8")
+        monkeypatch.setattr(bhs_mod, "BACKTEST_HISTORY_FILE", str(jf))
+        hist = bt_mod.get_backtest_history(days=30)
+        assert len(hist) == 2
+        assert all(r.get("legacy") is True for r in hist)
+        assert hist[0]["sid"] == "old2"  # 时间倒序
+
+    def test_load_empty_when_missing(self, tmp_path, monkeypatch):
+        import backtest as bt_mod
+        import backtest_history_store as bhs_mod
+        self._fake_store(monkeypatch)
+        monkeypatch.setattr(bhs_mod, "BACKTEST_HISTORY_FILE", str(tmp_path / "none.json"))
+        assert bt_mod.get_backtest_history() == []

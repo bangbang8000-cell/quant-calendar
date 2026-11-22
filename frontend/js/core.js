@@ -24,6 +24,13 @@
     return options;
   }
 
+  // v7.14.1: 补 authHeaders() — logic-history/ops/strategies-page 等 8 处调用
+  // core.authHeaders() 因函数不存在而静默降级为空 headers → 全部 401(研究历史永远 0 条)
+  function authHeaders() {
+    const token = localStorage.getItem('quant_token');
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
   async function apiFetch(url, options = {}) {
     const opts = withAuthHeaders(url, options);
     const headers = {
@@ -380,6 +387,7 @@
   const core = {
     apiFetch,
     withAuthHeaders,
+    authHeaders,
     getToday,
     formatDate,
     withTimeout,
