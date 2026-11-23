@@ -245,6 +245,9 @@
                                 <span v-if="aiResult.result && aiResult.result.provider && aiResult.result.provider !== (aiResult.model_provider || '')" class="ai-result-meta" title="引擎">{{ aiResult.result.provider }}</span>
                                 <span v-if="aiResult.llm_latency_ms" class="ai-result-meta" title="LLM 延迟"><qc-icon name="zap" :size="13" /> {{ aiResult.llm_latency_ms }}ms</span>
                                 <span v-if="aiResult.from_cache || (aiResult.llm_latency_ms === 0 && !aiResult.model_used)" class="ai-result-meta" title="命中缓存">{{ t('detail.cachedResult') }}</span>
+                                <!-- v7.16 FR-8: rubric 元数据透明化 -->
+                                <span v-if="aiResult.result && aiResult.result.meta && aiResult.result.meta.rubric_version" class="ai-result-meta" title="评分口径">口径 {{ aiResult.result.meta.rubric_version }}</span>
+                                <span v-if="aiResult.result && aiResult.result.meta && aiResult.result.meta.confidence" class="ai-result-meta" title="置信度">置信度 {{ aiResult.result.meta.confidence }}</span>
                                 <span class="flex-1"></span>
                                 <el-button size="small" @click="copyAiReport">{{ t('detail.copyReport') }}</el-button>
                                 <el-button size="small" type="primary" @click="doAiEvaluate" :loading="aiLoading">{{ t('detail.reevaluate') }}</el-button>
@@ -351,6 +354,8 @@
                             <div class="factor-empty-note" v-if="aiResult.result.data_quality_note">
                                 <qc-icon name="clipboard-list" :size="14" /> {{ aiResult.result.data_quality_note }}
                             </div>
+                            <!-- v7.16 FR-8: AI 免责同屏可见 -->
+                            <div class="qc711-note qc-disclaimer" style="font-size:var(--qc-font-size-xs);opacity:.8">{{ t('common.disclaimer') }} AI 可能出错，请独立核实。</div>
                         </div>
                         <div class="text-center-tertiary-pad40" v-else>
                             <div class="text-3xl-mb12"><qc-icon name="bot" :size="36" /></div>

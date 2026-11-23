@@ -217,7 +217,7 @@
         const code = stockDetail.value.stock;
         const oldScore = stockDetail.value.score_data?.score;
         try {
-          const today = new Date().toISOString().split('T')[0];
+          const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
           const date = selectedDate.value || today;
           const res = await fetch(`/api/calendar/stock/${encodeURIComponent(code)}/score?date=${date}`);
           const data = await res.json();

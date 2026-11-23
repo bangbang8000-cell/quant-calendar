@@ -68,8 +68,16 @@
   }
 
   // ─── 日期工具 ───────────────────────────────────────
+  // v7.16 FR-6: 业务"今天"一律用本地日期 (toISOString 是 UTC, 北京时间 00:00-08:00 会退一天)
+  function localToday() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
   function getToday() {
-    return new Date().toISOString().split('T')[0];
+    return localToday();
   }
 
   function formatDate(dateStr) {
@@ -388,7 +396,7 @@
     apiFetch,
     withAuthHeaders,
     authHeaders,
-    getToday,
+    getToday, localToday,
     formatDate,
     withTimeout,
     showToast,

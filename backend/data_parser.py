@@ -77,7 +77,9 @@ class DataParser:
 
             with open(filepath, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                headers = next(reader)[1:]  # 跳过第一列空列
+                # v7.16 FR-12: 空文件 next() 不再抛 StopIteration 致服务启动失败
+                _header_row = next(reader, [])
+                headers = _header_row[1:] if _header_row else []  # 跳过第一列空列
 
                 for row in reader:
                     if not row or not row[0]:
@@ -87,7 +89,12 @@ class DataParser:
                     stocks = set()
 
                     for idx, value in enumerate(row[1:]):
-                        if idx < len(headers) and value and float(value) > 0:
+                        # v7.16 FR-12: 脏值 'N/A'/'1,000'/空 不再抛 ValueError
+                        try:
+                            _v = float(str(value).replace(',', '').strip()) if value else 0.0
+                        except (TypeError, ValueError):
+                            _v = 0.0
+                        if idx < len(headers) and _v > 0:
                             stock_code = headers[idx].strip()
                             stocks.add(stock_code)
                             self.stock_info[stock_code]['strategies'].add(strategy_id)
@@ -143,7 +150,12 @@ class DataParser:
                         date = date[:4] + '-' + date[4:6] + '-' + date[6:8]
                     stocks = set()
                     for idx, value in enumerate(row[1:]):
-                        if idx < len(headers) and value and float(value) > 0:
+                        # v7.16 FR-12: 脏值 'N/A'/'1,000'/空 不再抛 ValueError
+                        try:
+                            _v = float(str(value).replace(',', '').strip()) if value else 0.0
+                        except (TypeError, ValueError):
+                            _v = 0.0
+                        if idx < len(headers) and _v > 0:
                             stocks.add(headers[idx].strip())
                     if stocks:
                         # 引擎优先: 覆盖 qresult 同日期(完全体闭环, 内置引擎持仓进日历)
@@ -235,7 +247,12 @@ class DataParser:
                     date = row[0].strip()
                     stocks = set()
                     for idx, value in enumerate(row[1:]):
-                        if idx < len(headers) and value and float(value) > 0:
+                        # v7.16 FR-12: 脏值 'N/A'/'1,000'/空 不再抛 ValueError
+                        try:
+                            _v = float(str(value).replace(',', '').strip()) if value else 0.0
+                        except (TypeError, ValueError):
+                            _v = 0.0
+                        if idx < len(headers) and _v > 0:
                             stock_code = headers[idx].strip()
                             stocks.add(stock_code)
                             temp_stock_info[stock_code]['strategies'].add(strategy_id)
@@ -284,7 +301,9 @@ class DataParser:
             return
         try:
             if today is None:
-                today = datetime.now().strftime('%Y-%m-%d')
+                # v7.16 FR-6: 业务"今天"统一北京时间, 避免 UTC 容器退日致继承日判断错位
+                from timeutil import cst_today
+                today = cst_today()
             last_d = datetime.strptime(self.date_list[-1], '%Y-%m-%d').date()
             today_d = datetime.strptime(today, '%Y-%m-%d').date()
             if today_d <= last_d:

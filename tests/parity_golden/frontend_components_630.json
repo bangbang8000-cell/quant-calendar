@@ -746,6 +746,7 @@
       "?",
       "card-title",
       "l.row.side",
+      "qc-disclaimer",
       "qc711-card",
       "qc711-card-title",
       "qc711-dim",
@@ -802,8 +803,8 @@
       "statusFilter",
       "statusTone"
     ],
-    "template_len": 6624,
-    "template_sha": "cbf2bf1966ec832e"
+    "template_len": 6840,
+    "template_sha": "85e458a5e101c2ae"
   },
   "FocusView": {
     "classes": [
@@ -1626,10 +1627,12 @@
       "param-stability",
       "ptrade-code-box",
       "ptrade-code-pre",
+      "qc-disclaimer",
       "qc-page-tools",
       "qc-status-dot",
       "qc711-badge",
       "qc711-mt12",
+      "qc711-note",
       "qc711-tone-warn",
       "qr-anchor-nav",
       "qr-compare-table",
@@ -1713,6 +1716,7 @@
       "a11y.dailyReviewList",
       "a11y.reviewDateList",
       "a11y.viewMarketReview",
+      "common.disclaimer",
       "research.backtest",
       "research.backtestHistory",
       "research.quantResearch",
@@ -1918,8 +1922,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 80974,
-    "template_sha": "2a0ce2dd985ef614"
+    "template_len": 81436,
+    "template_sha": "96db750cc9c691c0"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -2469,7 +2473,9 @@
       "qc-chat-tool-row",
       "qc-chat-tool-val",
       "qc-chat-tools",
+      "qc-disclaimer",
       "qc-stale-note",
+      "qc711-note",
       "ring-box",
       "ring-center-text",
       "ring-value",
@@ -2512,6 +2518,7 @@
       "v-model"
     ],
     "i18n_keys": [
+      "common.disclaimer",
       "detail.addWatch",
       "detail.amplitude",
       "detail.cachedResult",
@@ -2615,8 +2622,8 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 40333,
-    "template_sha": "78ccda216dab6ff1"
+    "template_len": 41043,
+    "template_sha": "660cd5bc6485ca39"
   },
   "StockReportPanel": {
     "classes": [
@@ -2862,7 +2869,9 @@
       "pool-change-val",
       "poolChangeBadge.dir",
       "progress-bar",
+      "qc-disclaimer",
       "qc-page-tools",
+      "qc711-note",
       "r.success",
       "r.visible",
       "row.cur",
@@ -2962,6 +2971,7 @@
     "i18n_keys": [
       "calendar.newPool",
       "calendar.outPool",
+      "common.disclaimer",
       "exec.countdown",
       "exec.dayTotal",
       "exec.invisible",
@@ -3081,8 +3091,8 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 61329,
-    "template_sha": "5bd9b6a9b8155134"
+    "template_len": 61560,
+    "template_sha": "eab4de9590dae5db"
   },
   "SystemPage": {
     "classes": [
@@ -3606,6 +3616,7 @@
       "qc711-badge",
       "qc711-card",
       "qc711-card-title",
+      "qc711-degraded-warn",
       "qc711-dim",
       "qc711-empty",
       "qc711-grid-2",
@@ -3654,6 +3665,8 @@
       "actionTagType",
       "actionTagTypeOf",
       "aggText",
+      "calendarDate",
+      "calendarInherited",
       "error",
       "evaluating",
       "loadMatrix",
@@ -3662,12 +3675,15 @@
       "matrix",
       "matrixError",
       "matrixLoading",
+      "matrixSource",
       "mktState",
       "perf",
       "points",
       "result",
       "runEvaluate",
       "sid",
+      "signalAsOf",
+      "signalGeneratedAt",
       "simulatedWarn",
       "sourceText",
       "stateLoading",
@@ -3675,8 +3691,8 @@
       "symbol",
       "timeline"
     ],
-    "template_len": 9614,
-    "template_sha": "b55d5cfeeb3949c6"
+    "template_len": 11395,
+    "template_sha": "e39efa05e24dc7f3"
   },
   "TourDialog": {
     "classes": [

@@ -37,7 +37,8 @@ def _next_trade_date_ttl():
     """下一交易日 22:00 距当前的秒数 (交易日历联动 TTL); 日历不可用回退默认。"""
     try:
         from datetime import date, datetime
-        today = date.today()
+        from timeutil import cst_today
+        today = date.fromisoformat(cst_today())
         probe = today
         for _ in range(14):  # 最多探测 14 天
             if stock_calendar.is_trade_day(probe):

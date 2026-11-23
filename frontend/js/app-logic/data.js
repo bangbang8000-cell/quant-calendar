@@ -138,11 +138,13 @@
           try {
             const res = await fetch(`/api/calendar/${selectedDate.value}/consensus`);
             const data = await res.json();
+            // v7.16 FR-3: 降级路径不得硬编码 current(会使新入池恒 0), 明确标 unknown
             consensus.value = (data.consensus || []).map(item => ({
               ...item,
               code: item.stock,
-              status: 'current'
+              status: 'unknown'
             }));
+            viewNote.value = '数据来自降级接口, 入池/出池状态未知, 仅供参考';
           } catch (e2) {
             consensusError.value = true;
             ElementPlus.ElMessage.error('数据加载失败');

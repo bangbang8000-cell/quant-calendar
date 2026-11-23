@@ -120,14 +120,26 @@ def test_data_sync_task_success(job_env, monkeypatch):
 
     def fake_pull(pool=None, date=None):
         captured["pool"] = pool
-        return {"rows": 123, "date": date}
+        # v7.16 FR-2: run_daily_pull 真实返回字段为 pulled/failed, 0 行按失败处理
+        return {"pulled": 123, "failed": 0, "date": date}
 
     monkeypatch.setattr("data_pipeline.run_daily_pull", fake_pull)
     jid = job_env.create_task("data_sync", {"pool": ["600000.SH"]})
     j = _wait(job_env, jid)
     assert j["status"] == "success"
-    assert j["result"] == {"rows": 123, "date": None}
+    assert j["result"]["pulled"] == 123
     assert captured["pool"] == ["600000.SH"]
+
+
+def test_data_sync_zero_rows_fails(job_env, monkeypatch):
+    """v7.16 FR-2: 拉取 0 行按失败处理(原假成功)"""
+    def fake_pull(pool=None, date=None):
+        return {"pulled": 0, "failed": 0, "date": date}
+
+    monkeypatch.setattr("data_pipeline.run_daily_pull", fake_pull)
+    jid = job_env.create_task("data_sync", {})
+    j = _wait(job_env, jid)
+    assert j["status"] == "failed" 
 
 
 # ─── report_generate ─────────────────────────────────────────

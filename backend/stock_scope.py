@@ -38,11 +38,9 @@ def normalize_code(code):
         return s
     if len(s) != 6 or not s.isdigit():
         return s
-    if s.startswith('92') or s[0] in ('4', '8'):
-        return s + '.BJ'
-    if s[0] == '6':
-        return s + '.SH'
-    return s + '.SZ'
+    # v7.16 FR-10: 委托权威实现 (510300 ETF → SH, 92 → BJ, 规则统一)
+    from data_sources._mapping import _normalize_ts_code
+    return _normalize_ts_code(s)
 
 
 def scan(watch_codes, client=None):

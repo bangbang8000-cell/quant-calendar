@@ -1124,6 +1124,10 @@
 .qc711-v { color: var(--text-primary); }
 .qc711-dim { margin-left: 8px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 .qc711-note { margin-top: 8px; font-size: var(--qc-font-size-xs); line-height: 1.5; color: var(--text-tertiary); }
+/* v7.16 FR-8: 免责文案 (弱化展示, 使用既有令牌) */
+.qc-disclaimer { margin-top: 4px; line-height: 1.4; }
+/* v7.16 FR-5: 模拟数据降级醒目提示 */
+.qc711-degraded-warn { margin-top: 6px; padding: 4px 8px; border-left: 2px solid var(--color-warning); color: var(--color-warning); background: var(--surface-raised); }
 .qc711-empty { padding: 16px 0; font-size: var(--qc-font-size-sm); line-height: 1.6; color: var(--text-tertiary); }
 .qc711-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 8px 0; }
 .qc711-stat { padding: 8px; text-align: center; background: var(--surface-sunken); border-radius: var(--radius-2); }

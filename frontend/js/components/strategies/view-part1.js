@@ -199,6 +199,8 @@ window.__quantModules.strategiesPage.part1 = `
                             <div class="strategy-title-bar">
                                 <qc-icon name="clock" :size="14" /> 美林时钟 · 经济周期
                             </div>
+                            <!-- v7.16 FR-8: 模型假设 + 免责同屏可见 -->
+                            <span class="qc711-note qc-disclaimer" style="font-size:var(--qc-font-size-xs);opacity:.8">{{ t('common.disclaimer') }} 阶段含时间驱动模型假设。</span>
                             <!-- V6.12 (需求轮3·item1): 阶段实色作底改为浅色阶段底 (merrillChipStyle) -->
                             <span class="strategy-tag-pill" :style="merrillChipStyle">
                                 {{ merrillData.name || '计算中...' }}

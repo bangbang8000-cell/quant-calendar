@@ -392,7 +392,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'backtest-' + r.strategies.map((s) => s.id).join('_') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+        a.download = 'backtest-' + r.strategies.map((s) => s.id).join('_') + '-' + (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })() + '.csv';
         a.click();
         URL.revokeObjectURL(url);
         ElementPlus.ElMessage.success('回测结果已导出 CSV');

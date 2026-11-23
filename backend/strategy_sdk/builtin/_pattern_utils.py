@@ -7,10 +7,13 @@
 - rolling_desc / pct_change_desc / cummax_desc: 在倒序数据上做"仅向后看"的滚动计算
   (内部先转正序计算再翻回, 保证滚动窗口只含 <= 当前日 的数据, 无未来函数)
 """
+import logging
 from typing import Iterable, List, Set
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 # ---------- 倒序序列上的"仅向后看"计算 ----------
@@ -126,6 +129,9 @@ def panel_to_desc_df(panel: pd.DataFrame, symbol: str,
     df = df.sort_values("date", ascending=False).reset_index(drop=True)
     for c in cols:
         if c not in df.columns:
+            # v7.16 FR-1: 缺字段补 NaN 不再静默 — 显式告警, 消费方须做值校验
+            logger.warning("[panel_to_desc_df] 字段 %s 缺失(symbol=%s), 以 NaN 补齐; "
+                           "消费方必须校验 notna, 不得静默计算", c, symbol)
             df[c] = np.nan
     return df
 

@@ -82,13 +82,9 @@ def _normalize_code(raw) -> Optional[str]:
         return None
     if not code.isdigit() or len(code) != 6:
         return None
-    if code.startswith(('60', '68', '51')):
-        return f"{code}.SH"
-    if code.startswith(('00', '30', '15', '16')):
-        return f"{code}.SZ"
-    if code.startswith(('8', '4', '92')):
-        return f"{code}.BJ"
-    return None
+    # v7.16 FR-10: 委托权威实现, 统一 5/9/1/2 开头规则 (历史仅支持 60/68/51, 其余返回 None)
+    from data_sources._mapping import _normalize_ts_code
+    return _normalize_ts_code(code)
 
 
 def _resolve_name(code: str) -> str:

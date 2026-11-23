@@ -203,6 +203,7 @@
       "SchedulerReportsMixin",
       "ai_evaluator",
       "backup_db",
+      "count_holdings_rows",
       "datetime",
       "generate_weekly_report",
       "logger",

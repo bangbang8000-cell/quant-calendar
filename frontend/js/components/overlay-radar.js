@@ -44,6 +44,10 @@
               <div class="qc711-kv"><span class="qc711-k">信号强度</span><span class="qc711-v">{{ S.num(result.current_signal.strength, 3) }}</span></div>
               <div class="qc711-kv"><span class="qc711-k">目标仓位</span><span class="qc711-v">{{ S.pct(result.current_exposure) }}</span></div>
               <div class="qc711-kv"><span class="qc711-k">数据来源</span><span class="qc711-v">{{ sourceText }}</span></div>
+              <!-- v7.16 FR-5: 信号三要素 — 数据截止/生成时间/口径 -->
+              <div class="qc711-kv"><span class="qc711-k">信号截至</span><span class="qc711-v">{{ signalAsOf }}</span></div>
+              <div class="qc711-kv"><span class="qc711-k">生成于</span><span class="qc711-v">{{ signalGeneratedAt }}</span></div>
+              <div v-if="result.degraded" class="qc711-degraded-warn">⚠ 真实行情不可用, 当前为模拟信号, 仅供研究参考, 不构成投资建议。</div>
               <div class="qc711-note">{{ result.current_signal.message || '—' }}</div>
             </template>
             <div v-else class="qc711-empty">选择策略后点「评估信号」；信号次日生效（T+1 口径）。</div>
@@ -74,21 +78,38 @@
         <div class="qc711-card qc711-matrix-card">
           <div class="qc711-matrix-head">
             <div class="qc711-card-title">
-              <qc-icon name="bar-chart" :size="14" /> 自选股择时矩阵
-              <span class="qc711-matrix-meta" v-if="matrix">
+              <qc-icon name="bar-chart" :size="14" /> 择时信号矩阵
+              <span class="qc711-matrix-meta" v-if="matrix && !calendarInherited">
                 已评估 {{ matrix.evaluated_count }} / {{ matrix.symbol_count }} 只
-                <span v-if="matrix.from_watchlist">· 来源: 自选股列表</span>
+                <span v-if="matrixSource === 'calendar'">· 日历新增（池日期 {{ matrix.poolDate || calendarDate }}）</span>
+                <span v-else-if="matrix.from_watchlist">· 来源: 自选股列表</span>
                 <span v-else>· 显式标的</span>
+                <span v-if="matrix.truncated"> · 已评估 {{ matrix.symbol_count }} / 请求 {{ matrix.requested_count }} 只，超出上限已截断</span>
               </span>
             </div>
-            <el-button size="mini" :loading="matrixLoading" @click="loadMatrix">
-              <qc-icon name="refresh" :size="12" /> 刷新矩阵
-            </el-button>
+            <div class="qc711-toolbar">
+              <el-radio-group v-model="matrixSource" size="mini" @change="loadMatrix">
+                <el-radio-button value="watchlist">自选股</el-radio-button>
+                <el-radio-button value="calendar">日历新增</el-radio-button>
+              </el-radio-group>
+              <el-date-picker v-if="matrixSource === 'calendar'" v-model="calendarDate" type="date"
+                              size="mini" value-format="YYYY-MM-DD" placeholder="选池日期"
+                              class="qc711-w160" @change="loadMatrix" />
+              <el-button size="mini" :loading="matrixLoading" @click="loadMatrix">
+                <qc-icon name="refresh" :size="12" /> 刷新矩阵
+              </el-button>
+            </div>
+          </div>
+          <!-- v7.16 FR-9: 日历新增口径标注 / 继承态提示 -->
+          <div v-if="matrixSource === 'calendar'" class="qc711-note">
+            池日期 = {{ calendarDate }}；信号取数 = {{ matrix && matrix.data_sources && matrix.data_sources.join('/') || '实时/模拟' }}（实时行情，非该历史日的信号）。
+            <span v-if="calendarInherited">当日沿用上一交易日持仓，无新增股票。</span>
           </div>
           <qc-state-panel v-if="matrixError" type="error" title="矩阵加载失败" :desc="matrixError" @retry="loadMatrix"></qc-state-panel>
           <template v-else-if="matrix">
             <div v-if="!matrix.rows.length" class="qc711-empty">
-              自选股为空 — 在自选股列表添加标的后, 矩阵会自动加载并计算全部择时信号。
+              <span v-if="matrixSource === 'calendar'">{{ calendarInherited ? '当日沿用上一交易日持仓，无新增股票。' : '该日期无新增股票（或非真实持仓日），请换一个交易日。' }}</span>
+              <span v-else>自选股为空 — 在自选股列表添加标的后, 矩阵会自动加载并计算全部择时信号。</span>
             </div>
             <template v-else>
               <div class="qc711-matrix-aggregate">
@@ -196,6 +217,18 @@
         return map[s] || s || '—';
       });
 
+      // v7.16 FR-5: 时间戳展示 (北京时间)
+      const signalAsOf = computed(() => {
+        const a = result.value && result.value.as_of;
+        return a ? ('信号截至 ' + a + (result.value.use_prev_day_signal ? '（基于上一交易日）' : '')) : '—';
+      });
+      const signalGeneratedAt = computed(() => {
+        const g = result.value && result.value.generated_at;
+        if (!g) return '—';
+        const d = new Date(g);
+        return isNaN(d.getTime()) ? String(g) : d.toLocaleString('zh-CN', { hour12: false });
+      });
+
       function actionTagType() { return tagOf(result.value && result.value.current_signal && result.value.current_signal.action); }
       function actionTagTypeOf(a) { return tagOf(a); }
       function tagOf(a) {
@@ -244,6 +277,14 @@
       const matrix = ref(null);
       const matrixLoading = ref(false);
       const matrixError = ref('');
+      // v7.16 FR-9: 数据源 tab — watchlist(自选股) / calendar(日历新增)
+      const matrixSource = ref('watchlist');
+      const calendarDate = ref(localToday());
+      const calendarInherited = ref(false);
+      function localToday() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
 
       const simulatedWarn = computed(() => {
         const srcs = (matrix.value && matrix.value.data_sources) || [];
@@ -265,9 +306,29 @@
       async function loadMatrix() {
         matrixLoading.value = true;
         matrixError.value = '';
+        calendarInherited.value = false;
         try {
-          // 不传 symbols: 后端自动读当前用户自选股; 显式评估单票时也可带 symbols
-          matrix.value = await S_().post('/api/timing/matrix', {});
+          if (matrixSource.value === 'calendar') {
+            // v7.16 FR-9: 先取日历新增股票, 再传 symbols 给矩阵 (后端零改动)
+            const day = await S_().api('/api/view/day/' + encodeURIComponent(calendarDate.value) + '?status=new');
+            calendarInherited.value = !!(day && day.data_inherited);
+            const codes = calendarInherited.value ? [] : ((day && day.stocks) || [])
+              .map(s => s.code || s.stock).filter(Boolean);
+            const empty = { rows: [], strategies: [], aggregate: {}, evaluated_count: 0,
+                            symbol_count: 0, data_sources: [], poolDate: calendarDate.value };
+            if (!codes.length) {
+              matrix.value = empty;
+              return;
+            }
+            const m = await S_().post('/api/timing/matrix', { symbols: codes });
+            m.poolDate = calendarDate.value;
+            matrix.value = m;
+          } else {
+            // 不传 symbols: 后端自动读当前用户自选股
+            const m = await S_().post('/api/timing/matrix', {});
+            m.poolDate = null;
+            matrix.value = m;
+          }
         } catch (e) {
           matrixError.value = S_().errText(e);
           matrix.value = null;
@@ -288,6 +349,8 @@
         actionTagType, actionTagTypeOf,
         loadStrategies, runEvaluate, loadState,
         matrix, matrixLoading, matrixError, simulatedWarn, aggText, loadMatrix,
+        matrixSource, calendarDate, calendarInherited,
+        signalAsOf, signalGeneratedAt,
       };
     },
   };

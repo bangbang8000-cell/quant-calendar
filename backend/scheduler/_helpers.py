@@ -13,6 +13,18 @@ PULL_ALERT_THRESHOLD = 3
 HISTORY_FILE = os.path.join(_m.DATA_DIR, "scheduler_history.json")
 _HISTORY_MAX = 5000
 
+
+def count_holdings_rows(date):
+    """v7.16 FR-2: 统计某交易日真实持仓行数 (日视图 total), 异常返回 0。
+
+    抽自 _core.strategy_loop: 原实现把"执行的策略数"len(executed) 当持仓行数记入
+    freshness, 非交易日/无产出时记 0 仍标 ok。此处统一口径并复用。
+    """
+    try:
+        return int((_m.views_aggregator.get_day_view(date) or {}).get('total') or 0)
+    except Exception:
+        return 0
+
 def run_strategy_once(progress_cb=None):
     """执行所有启用策略的 run-once (同步, 供调度任务与手工触发共用)
     返回 (ok, executed_sids, errors)

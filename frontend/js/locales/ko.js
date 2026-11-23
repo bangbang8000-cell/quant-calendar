@@ -441,6 +441,7 @@
     'msg.factorDetail': '팩터 상세: {msg}',
     'msg.factorDetailFailed': '팩터 상세 실패: {msg}',
     'msg.noData': '데이터 없음',
+    'common.disclaimer': '본 내용은 모델 추정 및 연구 참고용이며 투자 조언이 아닙니다.',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

@@ -95,7 +95,7 @@ def test_ic_series_unavailable_day_none():
 
 def test_evaluate_effective():
     # IC 全部为正且高 → 有效
-    res = fi.evaluate_ic_series([0.5, 0.6, 0.7, 0.8, 0.9])
+    res = fi.evaluate_ic_series([0.5, 0.6, 0.7, 0.8, 0.9] * 5)
     assert res['grade'] == '有效'
     assert res['icir'] is not None and res['icir'] >= fi.ICIR_EFFECTIVE
     assert res['win_rate'] == 1.0
@@ -103,13 +103,13 @@ def test_evaluate_effective():
 
 def test_evaluate_failed():
     # IC 全部为负且显著 → 失效
-    res = fi.evaluate_ic_series([-0.5, -0.6, -0.7, -0.8, -0.9])
+    res = fi.evaluate_ic_series([-0.5, -0.6, -0.7, -0.8, -0.9] * 5)
     assert res['grade'] == '失效'
 
 
 def test_evaluate_unstable():
     # 正负混杂 → 不稳定
-    res = fi.evaluate_ic_series([0.5, -0.6, 0.7, -0.8, 0.9])
+    res = fi.evaluate_ic_series([0.5, -0.6, 0.7, -0.8, 0.9] * 5)
     assert res['grade'] == '不稳定'
 
 
@@ -120,7 +120,7 @@ def test_evaluate_insufficient():
 
 def test_evaluate_icir_none_when_constant():
     # IC 全部相同 → 标准差为 0, icir=None
-    res = fi.evaluate_ic_series([0.5, 0.5, 0.5])
+    res = fi.evaluate_ic_series([0.5] * 25)
     assert res['icir'] is None
     assert res['grade'] in ('有效', '不稳定')
 
@@ -138,18 +138,25 @@ def _panel(day, fv, ret_n5, ret_n10):
 
 
 def test_build_factor_ic_report():
+    # v7.16 FR-8: MIN_IC_SAMPLES 3→20, 样本量同步扩到 20 个交易日。
+    # IC 需有真实波动(否则 std=0→icir=None→不稳定): 隔日轻微生物打乱使 IC≈0.8~1.0, win_rate=1。
+    import datetime as _dt
+    _base = _dt.date(2026, 8, 10)
+    _rets = [0.01, 0.02, 0.03, 0.04]
     panels = {
         'pe': {'n5': [
-            _panel('2026-08-10', [1, 2, 3, 4], [0.01, 0.02, 0.03, 0.04], [0.01, 0.02, 0.03, 0.04]),
-            _panel('2026-08-11', [1, 2, 3, 4], [0.01, 0.02, 0.03, 0.04], [0.01, 0.02, 0.03, 0.04]),
-            _panel('2026-08-12', [1, 2, 3, 4], [0.01, 0.02, 0.03, 0.04], [0.01, 0.02, 0.03, 0.04]),
+            _panel((_base + _dt.timedelta(days=i)).isoformat(),
+                   [1, 2, 3, 4],
+                   _rets if i % 2 == 0 else [0.02, 0.01, 0.03, 0.04],
+                   _rets)
+            for i in range(20)
         ]},
     }
     report = fi.build_factor_ic_report(panels)
     assert 'pe' in report and 'n5' in report['pe']
     assert report['pe']['n5']['grade'] == '有效'
-    assert report['pe']['n5']['count'] == 3
-    assert report['pe']['n5']['ic_mean'] == pytest.approx(1.0)
+    assert report['pe']['n5']['count'] == 20
+    assert report['pe']['n5']['ic_mean'] > 0.7
 
 
 def test_build_factor_ic_report_empty():

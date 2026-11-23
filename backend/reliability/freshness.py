@@ -16,6 +16,7 @@ import os
 import threading
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from timeutil import cst_now, cst_today
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,11 @@ ASSET_REGISTRY: dict = {
         id="stock_info", name="股票信息", freshness_type="age",
         max_age_hours=72, stale_policy="alert",
     ),
+    # v7.16 FR-5: 择时信号纳入新鲜度监控 (按需写入, 无生产任务时状态 unknown)
+    "timing": AssetSpec(
+        id="timing", name="择时信号", freshness_type="age",
+        max_age_hours=48, stale_policy="alert",
+    ),
 }
 
 
@@ -118,7 +124,7 @@ def record_update(asset_id: str, latest_date: str = None, count: int = None,
     """
     if asset_id not in ASSET_REGISTRY:
         raise ValueError(f"未知数据资产: {asset_id}")
-    now = now or datetime.now()
+    now = now or cst_now()
     with _WRITE_LOCK:  # T-5.0.4: 读-改-写整段加锁, 防并发丢记录
         store = _load()
         rec = store.get(asset_id) or {}
@@ -182,7 +188,7 @@ def expected_latest_with_source(now: datetime = None, calendar=None):
     返回 (date, source)，source ∈ {'calendar', 'weekday_fallback'}。
     'weekday_fallback' 意味着没有可用交易日历 —— 此时基准不可信。
     """
-    now = now or datetime.now()
+    now = now or cst_now()
     today = now.date()
     if calendar:
         dates = sorted(d for d in calendar if isinstance(d, date) and d <= today)
@@ -213,7 +219,7 @@ def _weekday_gap(start: date, end: date) -> int:
 
 def calendar_lag_days(now: datetime = None, calendar=None, expected: date = None) -> int:
     """v6.4 (FR-6.4.5): 基准滞后多少个工作日（expected_latest → today）。"""
-    now = now or datetime.now()
+    now = now or cst_now()
     exp = expected or expected_latest_date(now=now, calendar=calendar)
     return _weekday_gap(exp, now.date())
 
@@ -260,7 +266,7 @@ def evaluate_asset(spec: AssetSpec, record: dict, expected_latest: date, now: da
     被判成 fresh —— 体系自我通过。现在改为 unknown（而非 stale），
     因为无法判断"到底该是哪天"，误报成 stale 会引发无意义自愈。
     """
-    now = now or datetime.now()
+    now = now or cst_now()
     if not record:
         return "missing"
     if spec.freshness_type == "trading_day":
@@ -280,6 +286,11 @@ def evaluate_asset(spec: AssetSpec, record: dict, expected_latest: date, now: da
         last_dt = None
     if last_dt is None:
         return "missing"
+    # v7.16 FR-6: 历史 last_update 无时区 → 视为 CST 再相减, 兼容 aware/naive
+    if last_dt.tzinfo is None and now.tzinfo is not None:
+        last_dt = last_dt.replace(tzinfo=now.tzinfo)
+    elif last_dt.tzinfo is not None and now.tzinfo is None:
+        now = now.replace(tzinfo=last_dt.tzinfo)
     hours = (now - last_dt).total_seconds() / 3600
     return "fresh" if hours <= spec.max_age_hours else "stale"
 
@@ -294,7 +305,7 @@ def status_summary(now: datetime = None, calendar=None) -> dict:
     - items: 每资产 {asset_id,name,freshness_type,stale_policy,status,expected_latest,last_update,latest_date,count,detail}
     - now/calendar 可注入 (测试确定性)
     """
-    now = now or datetime.now()
+    now = now or cst_now()
     expected, expected_source = expected_latest_with_source(now=now, calendar=calendar)
     cal_stale = is_calendar_stale(now=now, calendar=calendar, expected=expected,
                                   source=expected_source)
@@ -333,7 +344,8 @@ def status_summary(now: datetime = None, calendar=None) -> dict:
         "expected_age_days": max((now.date() - expected).days, 0),
         "calendar_stale": cal_stale,
         "calendar_lag_days": lag,
-        "healthy": len(stale) == 0,
+        # v7.16 FR-7: unknown(无法判定)不得当作 healthy —— 与 stale/missing 一样视为不健康
+        "healthy": len(stale) == 0 and len(unknown) == 0,
         "stale_count": len(stale),
         "unknown_count": len(unknown),
         "items": items,
@@ -346,7 +358,7 @@ _CALENDAR_WARN_DATE = None
 def _warn_calendar_stale_once(expected: date, lag: int, source: str) -> None:
     """基准失效告警按天节流，避免每次面板刷新都刷日志。"""
     global _CALENDAR_WARN_DATE
-    today = date.today()
+    today = cst_today()
     if _CALENDAR_WARN_DATE == today:
         return
     _CALENDAR_WARN_DATE = today

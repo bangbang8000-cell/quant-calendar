@@ -8,6 +8,7 @@
 """
 from datetime import date, datetime, timedelta
 import logging
+from timeutil import cst_now
 
 DEFAULT_EXPECTED_HOURS = 24
 
@@ -47,7 +48,12 @@ def _age_hours(iso_ts, now=None):
         dt = datetime.fromisoformat(iso_ts)
     except (TypeError, ValueError):
         return None
-    now = now or datetime.now()
+    now = now or cst_now()
+    # v7.16 FR-6: 历史落盘 last_update 无时区偏移 → 视为 CST 再相减, 避免 aware/naive TypeError
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=now.tzinfo)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.tzinfo)
     return round((now - dt).total_seconds() / 3600.0, 1)
 
 
@@ -184,7 +190,7 @@ def stale_guard(latest_date=None, now=None) -> dict:
     - message: 置灰条文案（stale 时非空）
     - annotation: 结果标注短语（导出与 AI 复用）
     """
-    now = now or datetime.now()
+    now = now or cst_now()
     latest = latest_date
     if latest is None:
         latest = latest_data_date()

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # 三档标注阈值
 ICIR_EFFECTIVE = 0.5      # |ICIR| >= 0.5 视为显著
 WIN_RATE_MIN = 0.55       # 胜率(IC>0 占比) >= 0.55 视为一致
-MIN_IC_SAMPLES = 3        # 最少有效 IC 样本数
+MIN_IC_SAMPLES = 20       # v7.16 FR-8: 最少有效 IC 样本数 (3→20, 3点判'有效'无统计意义)
 TRACK_WINDOWS = ('n5', 'n10', 'n20')
 
 

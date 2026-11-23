@@ -227,7 +227,11 @@ def decide_sync_mode(latest_date, target_date, max_lag=INCREMENTAL_MAX_LAG_DAYS)
 def _parse_date(v):
     from datetime import date  # noqa: PLC0415
     s = str(v).replace('-', '')[:8]
-    return date(int(s[0:4]), int(s[4:6]), int(s[6:8]))
+    # v7.16 FR-12: 非法日期(如 20269999)不再抛异常, 返回 None 由调用方保守走全量
+    try:
+        return date(int(s[0:4]), int(s[4:6]), int(s[6:8]))
+    except (ValueError, IndexError):
+        return None
 
 
 def backup(db_path, keep_days=BACKUP_KEEP_DAYS, backup_dir=None):

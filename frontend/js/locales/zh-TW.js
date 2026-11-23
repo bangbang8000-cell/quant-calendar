@@ -441,6 +441,7 @@
     'msg.factorDetail': '因子詳情: {msg}',
     'msg.factorDetailFailed': '因子詳情失敗: {msg}',
     'msg.noData': '無資料',
+    'common.disclaimer': '本內容為模型估計與研究參考，不構成投資建議；據此操作風險自擔。',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

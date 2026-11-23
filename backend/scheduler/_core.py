@@ -3,7 +3,6 @@
 """
 定时任务调度器
 """
-
 import asyncio
 import logging
 import os
@@ -14,7 +13,6 @@ from db import backup_db
 from report_generator import generate_weekly_report  # noqa: F401  # 原模块级公开名(报告类任务已移至 _core_reports)
 
 logger = logging.getLogger(__name__)
-
 import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)  # noqa: E402
 
 # v3.17.12 (FR-3.17.12): 数据拉取任务连续失败飞书告警阈值
@@ -27,6 +25,7 @@ _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 # 6.3.0 (T-6.3.0.4): 报告类与健康告警类任务按职责拆至同级子模块, 此处聚合
 from ._core_reports import SchedulerReportsMixin  # noqa: E402
 from ._core_health import SchedulerHealthMixin  # noqa: E402
+from ._helpers import count_holdings_rows  # v7.16 FR-2  # noqa: E402
 
 
 class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
@@ -101,7 +100,7 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                 await asyncio.sleep(max((target - now).total_seconds(), 10))
                 if not self.running:
                     break
-                today = datetime.now().strftime("%Y-%m-%d")
+                from timeutil import cst_today as _cst_today; today = _cst_today()
                 if last_date == today:
                     await asyncio.sleep(60)
                     continue
@@ -126,20 +125,21 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                     run_ok, executed, errors = await asyncio.to_thread(_m.run_strategy_once, _progress_cb)
                     # V4.9.2 (F1.1/F1.2): 刷新 parser+聚合器并校验当日已进日视图
                     _ok, _detail = self._refresh_after_strategy_run(today)
-                    ok = run_ok and _ok and not errors
-                    detail = f"策略持仓已生成 {today}; {_detail}; 策略:{','.join(executed or []) or '无'}"
+                    holdings_count = count_holdings_rows(today)  # v7.16 FR-2: 真实持仓行数(非策略数)
+                    ok = run_ok and _ok and not errors and holdings_count > 0
+                    detail = f"策略持仓已生成 {today}; {_detail}; 执行策略数={len(executed or [])}, 持仓行数={holdings_count}; 策略:{','.join(executed or []) or '无'}"[:200]
+                    if holdings_count <= 0:
+                        detail += "; 持仓0行按失败处理(未标fresh)"; logger.error("[FR-2] %s 策略运行产出持仓0行, 按失败处理", today)
                     if errors:
                         detail += "; 失败:" + ";".join(e["sid"] + ":" + e["error"] for e in errors)[:100]
                     self.execution_progress = {
-                        "phase": "done" if ok else "failed", "current_sid": None,
-                        "stage": "reloaded", "started_at": started.strftime("%Y-%m-%d %H:%M:%S"),
-                        "updated_at": datetime.now().strftime("%H:%M:%S"),
-                        "detail": detail[:200],
-                    }
+                        "phase": "done" if ok else "failed", "current_sid": None, "stage": "reloaded",
+                        "started_at": started.strftime("%Y-%m-%d %H:%M:%S"),
+                        "updated_at": datetime.now().strftime("%H:%M:%S"), "detail": detail[:200]}
                     self._record_task_run("strategy_run", ok, detail[:200])
                     if ok:
-                        self._record_freshness("strategy_holdings", latest_date=today,
-                                               count=len(executed or []), detail="strategy_run ok")
+                        self._record_freshness("strategy_holdings", latest_date=today, count=holdings_count,
+                                               detail="strategy_run ok; 执行策略数=%d, 持仓行数=%d" % (len(executed or []), holdings_count))
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
                     if self.execution_progress:

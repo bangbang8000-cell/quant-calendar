@@ -441,6 +441,7 @@
     'msg.factorDetail': 'ファクター詳細: {msg}',
     'msg.factorDetailFailed': 'ファクター詳細の取得に失敗しました: {msg}',
     'msg.noData': 'データなし',
+    'common.disclaimer': '本内容はモデル推定と調査参考であり、投資助言ではありません。',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

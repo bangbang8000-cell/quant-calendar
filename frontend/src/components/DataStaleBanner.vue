@@ -21,6 +21,7 @@ export default {
     const loaded = ref(false)
     const calendarStale = ref(false)
     const staleCount = ref(0)
+    const unknownCount = ref(0)  // v7.16 FR-7: 无法判定的资产数
     const expectedLatest = ref('')
     const expectedDays = ref(0)
     const expectedSource = ref('')
@@ -44,6 +45,7 @@ export default {
         const d = (body && body.data) || {}
         calendarStale.value = !!d.calendar_stale
         staleCount.value = Number(d.stale_count) || 0
+        unknownCount.value = Number(d.unknown_count) || 0
         expectedLatest.value = d.expected_latest || ''
         expectedDays.value = Number(d.expected_age_days) || 0
         expectedSource.value = d.expected_source || ''
@@ -56,7 +58,8 @@ export default {
 
     const showStale = computed(() => {
       if (!loaded.value || dismissed.value) return false
-      return calendarStale.value || staleCount.value > 0
+      // v7.16 FR-7: unknown 资产也需提示, 不静默放过
+      return calendarStale.value || staleCount.value > 0 || unknownCount.value > 0
     })
 
     const staleText = computed(() => {
@@ -70,11 +73,12 @@ export default {
     })
 
     const staleDetail = computed(() => {
-      if (!calendarStale.value) {
-        return '期望最近交易日本身已滞后，页面上的「新鲜」判定不可信；请先恢复交易数据源。'
+      // v7.16 FR-7: 原条件写反 —— 基准失效提示应对应 calendarStale=true
+      if (calendarStale.value) {
+        return '期望最近交易日为 ' + expectedLatest.value + '（' + expectedDays.value +
+          ' 天前）。在该基准恢复前，交易类资产一律标记为「无法判定」，不再显示为新鲜。'
       }
-      return '期望最近交易日为 ' + expectedLatest.value + '（' + expectedDays.value +
-        ' 天前）。在该基准恢复前，交易类资产一律标记为「无法判定」，不再显示为新鲜。'
+      return '个别数据资产已过期或无法判定；其余数据基准正常。'
     })
 
     function dismiss() {

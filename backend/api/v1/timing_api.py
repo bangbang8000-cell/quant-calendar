@@ -31,6 +31,21 @@ _STATE_EXPOSURE = {
 _TRADE_ACTIONS = ("buy", "sell", "add", "reduce")
 
 
+def _signal_meta(df, source: str, degraded: bool = False, reason: str = "") -> dict:
+    """v7.16 FR-5: 信号三要素 — 数据截止/生成时间/数据来源 + 降级标记。"""
+    from timeutil import cst_iso
+    asc = _ascending(df) if df is not None and not df.empty else None
+    dr = _date_range(asc) if asc is not None else []
+    return {
+        "as_of": dr[-1] if dr else None,
+        "generated_at": cst_iso(),
+        "date_range": dr,
+        "data_source": source,
+        "degraded": bool(degraded),
+        "degrade_reason": reason,
+    }
+
+
 def _jsonable(obj):
     """numpy / pandas 标量 → JSON 原生类型, 避免响应序列化失败"""
     if isinstance(obj, dict):
@@ -48,6 +63,20 @@ def _jsonable(obj):
     return obj
 
 
+def _bars_sufficient(df, fields=("close", "high", "low"), min_valid=20):
+    """v7.16 FR-1: 字段契约校验到值 — 列名齐全且每字段 notna >= min_valid。
+
+    历史实现只做 set(fields).issubset(df.columns), high/low 全 NaN 时仍通过,
+    导致 5/8 策略恒 hold 且 data_source 仍标 realtime。此处升级为值校验。
+    """
+    if df is None or df.empty or not set(fields).issubset(df.columns):
+        return False
+    try:
+        return all(int(df[f].notna().sum()) >= min_valid for f in fields)
+    except Exception:
+        return False
+
+
 def _resolve_bars(payload: Dict[str, Any]):
     """优先 payload.bars, 其次真实门户, 最后可复现模拟数据。返回 (df, source)。"""
     bars = payload.get("bars")
@@ -57,16 +86,25 @@ def _resolve_bars(payload: Dict[str, Any]):
             df.insert(0, "date", [str(x) for x in df.index])
         return df, "payload"
     symbol = str(payload.get("symbol") or "000001.SH")
-    end = str(payload.get("end_date") or date.today().isoformat())
-    start = str(payload.get("start_date") or (date.today() - timedelta(days=240)).isoformat())
+    # v7.16 FR-6: 业务"今天"统一北京时间 (UTC 容器下 date.today() 会退一天)
+    from timeutil import cst_today
+    from datetime import date as _date
+    _end = str(payload.get("end_date") or cst_today())
+    if payload.get("start_date"):
+        _start = str(payload["start_date"])
+    else:
+        _start = (_date.fromisoformat(_end) - timedelta(days=240)).isoformat()
+    end, start = _end, _start
     try:
         from strategy_sdk.builtin._pattern_utils import panel_to_desc_df
         from strategy_sdk.data_portal import RealDataPortal
         panel = RealDataPortal().get_panel(list(_FIELDS), start, end, universe=[symbol])
         if panel is not None and not panel.empty:
             df = panel_to_desc_df(panel, symbol, _FIELDS)
-            if len(df) >= 20:
+            # v7.16 FR-1: realtime 必须字段齐全且 notna 达标, 否则不冒充 realtime
+            if len(df) >= 20 and _bars_sufficient(df):
                 return df, "realtime"
+            logger.warning("[timing] realtime 面板 OHLC 不完整, 降级模拟: %s", symbol)
     except Exception as e:
         logger.info("[timing] 真实数据不可用, 降级模拟: %s", e)
     from strategy_sdk.builtin._pattern_utils import panel_to_desc_df
@@ -160,8 +198,8 @@ async def timing_evaluate(payload: Dict[str, Any], _: Dict = Depends(get_non_gue
         raise HTTPException(status_code=404, detail=str(e))
 
     df, source = _resolve_bars(payload)
-    if df is None or df.empty or not {"close", "high", "low"}.issubset(df.columns):
-        raise HTTPException(status_code=422, detail="K线数据不足, 无法评估择时")
+    if not _bars_sufficient(df):
+        raise HTTPException(status_code=422, detail="K线数据不足或 OHLC 字段缺失/全空, 无法评估择时")
     asc = _ascending(df)
     use_prev = bool(payload.get("use_prev_day_signal", True))
     params = payload.get("params")
@@ -192,6 +230,9 @@ async def timing_evaluate(payload: Dict[str, Any], _: Dict = Depends(get_non_gue
         "current_exposure": round(float(exposure), 4),
         "points": points, "point_count": len(points), "performance": perf,
         "overlay_only": True, "holdings_matrix": None, "calendar_opt_in": False,
+        # v7.16 FR-5: 时间戳 + 降级标记 (模拟数据时前端醒目提示)
+        **_signal_meta(asc, source, degraded=(source == "simulated"),
+                       reason=("真实行情不可用, 已降级模拟" if source == "simulated" else "")),
     }
     _record("timing", str(sid),
             {"params": params or {}, "use_prev_day_signal": use_prev, "warmup": warmup},
@@ -209,19 +250,25 @@ async def timing_state(payload: Dict[str, Any], _: Dict = Depends(get_non_guest_
     if df is None or df.empty or "close" not in df.columns:
         raise HTTPException(status_code=422, detail="K线数据不足, 无法识别市场状态")
     asc = _ascending(df)
+    dr = _date_range(asc)
     from timing.market_state import MarketStateAnalyzer
     analyzer = MarketStateAnalyzer()
     st = analyzer.detect_state(asc)
     state = _jsonable(asdict(st))
     state.update({
         "data_source": source,
+        # v7.16 FR-5: 市场状态同样带时间戳
+        "as_of": (dr or [None, None])[-1],
+        "date_range": dr,
+        "generated_at": _signal_meta(asc, source)["generated_at"],
+        "degraded": source == "simulated",
         "exposure_cap": _STATE_EXPOSURE.get(st.state, 0.5),
         "temperature_exposure": round(max(0.2, min(1.0, st.temperature / 100.0)), 4),
         "timeline": analyzer.state_timeline(asc),
         "transition_matrix": analyzer.transition_matrix(asc),
     })
     _record("market_state", str(payload.get("symbol") or "index"),
-            {"source": source}, _date_range(asc),
+            {"source": source}, dr,
             {"state": st.state, "confidence": st.confidence,
              "temperature": st.temperature, "adx_tier": st.adx_tier},
             state)
@@ -246,11 +293,12 @@ def _watchlist_symbols(username: str) -> List[Dict[str, str]]:
 
 
 def _stock_name(code: str) -> str:
+    # v7.16 FR-4: 修正坏导入(原 from stock_manager 模块不存在, 显式 symbols 时名称恒为空)
     try:
-        from stock_manager import stock_manager
-        return stock_manager.get_name(code) or ""
+        from stock_info import stock_manager
+        return stock_manager.get_name(code) or code
     except Exception:
-        return ""
+        return code
 
 
 def _signal_cell(sig) -> Dict[str, Any]:
@@ -285,7 +333,9 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
         if not rows_meta:
             raise HTTPException(status_code=422, detail="自选股为空, 请先在自选股列表添加标的")
         symbols = [m["code"] for m in rows_meta]
+    requested_count = len(symbols)
     symbols = symbols[:_MATRIX_MAX_SYMBOLS]
+    truncated = requested_count > len(symbols)
 
     sids = [str(s).strip() for s in (payload.get("sids") or []) if str(s).strip()]
     if not sids:
@@ -300,12 +350,12 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
 
     by_code = {m["code"]: m["name"] for m in rows_meta}
     matrix_rows: List[Dict[str, Any]] = []
+    date_ranges: List[List[str]] = []
     for sym in symbols:
         try:
             df, source = _resolve_bars({"symbol": sym})
             asc = _ascending(df)
-            if df is None or df.empty or len(asc) < 20 or \
-                    not {"close", "high", "low"}.issubset(asc.columns):
+            if not _bars_sufficient(asc) or len(asc) < 20:
                 matrix_rows.append({"symbol": sym, "name": by_code.get(sym) or _stock_name(sym),
                                     "signals": {}, "avg_exposure": None,
                                     "error": "K线数据不足(≥20根), 未评估"})
@@ -317,6 +367,7 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
                 sig = st.evaluate(asc, use_prev_day_signal=use_prev, params=params)
                 cells[meta["id"]] = _signal_cell(sig)
                 exposures.append(float(signal_to_exposure(sig)))
+            date_ranges.append(_date_range(asc))
             matrix_rows.append({
                 "symbol": sym,
                 "name": by_code.get(sym) or _stock_name(sym),
@@ -346,8 +397,11 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
             "avg_exposure": round(sum(exps) / len(exps), 4) if exps else None,
         }
 
+    all_dates = sorted({d for dr in date_ranges for d in dr})
     ok_rows = [r for r in matrix_rows if not r.get("error")]
     sources = {r["data_source"] for r in ok_rows if r.get("data_source")}
+    # v7.16 FR-5: 任一行走模拟 -> 整表降级标记 (前端醒目提示)
+    source_degraded = "simulated" in sources
     result = {
         "rows": matrix_rows, "strategies": strategies,
         "aggregate": aggregate, "symbol_count": len(matrix_rows),
@@ -356,9 +410,15 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
         "data_sources": sorted(sources),
         "overlay_only": True, "holdings_matrix": None, "calendar_opt_in": False,
         "max_symbols": _MATRIX_MAX_SYMBOLS,
+        "requested_count": requested_count, "truncated": truncated,
+        # v7.16 FR-5: 矩阵级时间戳; degraded=任一行为模拟数据
+        "generated_at": _signal_meta(None, ",".join(sorted(sources)))["generated_at"],
+        "as_of": all_dates[-1] if all_dates else None,
+        "date_range": all_dates,
+        "degraded": source_degraded,
     }
     _record("timing_matrix", ",".join(symbols[:5]) + ("..." if len(symbols) > 5 else ""),
             {"sids": sids, "use_prev_day_signal": use_prev, "from_watchlist": from_watchlist},
-            [], {"symbol_count": len(matrix_rows), "error_count": result["error_count"]},
+            all_dates, {"symbol_count": len(matrix_rows), "error_count": result["error_count"]},
             {"rows": matrix_rows, "aggregate": aggregate})
     return result

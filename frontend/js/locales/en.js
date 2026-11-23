@@ -455,6 +455,7 @@
     'msg.factorDetail': 'Factor detail: {msg}',
     'msg.factorDetailFailed': 'Factor detail failed: {msg}',
     'msg.noData': 'No data',
+    'common.disclaimer': 'Model estimates for research only; not investment advice. Use at your own risk.',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

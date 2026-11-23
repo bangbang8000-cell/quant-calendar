@@ -26,6 +26,31 @@ import lineage
 import paths
 from reliability.atomic import atomic_write_json
 
+# v7.16 FR-11: 缓存命名空间 → lineage 批次 kind 元组。
+# 历史 bug: market_cache 用 ns='kline_daily', data_pipeline 记 lineage kind='kline',
+# 两者不一致 → is_data_stale('kline_daily') 恒 False, 缓存血缘失效从未生效。
+# 修复: 同时认两种 kind, 取 batch_id 字典序最大者(batch_id 含时间戳, 即最新);
+# 保留原 kline_daily 契约 (既有测试/调用方照常工作)。
+_LINEAGE_KINDS = {'kline_daily': ('kline_daily', 'kline')}
+
+
+def _lineage_kinds(ns):
+    return _LINEAGE_KINDS.get(ns, (ns,))
+
+
+def _latest_batch_id(ns):
+    """ns 对应所有 lineage kind 中的最新 batch_id (无则空串)。"""
+    ids = []
+    for kind in _lineage_kinds(ns):
+        try:
+            batches = lineage.get_batches(kind=kind, limit=1)
+        except Exception as e:  # pragma: no cover
+            logger.warning('cache lineage 读取失败 kind=%s: %s', kind, e)
+            continue
+        if batches and batches[0].get('batch_id'):
+            ids.append(str(batches[0]['batch_id']))
+    return max(ids) if ids else ''
+
 logger = logging.getLogger(__name__)
 
 CACHE_FILE = os.path.join(paths.DATA_DIR, "cache.json")
@@ -169,13 +194,7 @@ def mark_data_version(ns):
     调用点: 缓存写入后 (或业务层加载数据后)。若 lineage 无该 kind 批次,
     记录为 None 并视为"未确认版本" (is_data_stale 返回 False, 避免误失效)。
     """
-    latest = ""
-    try:
-        batches = lineage.get_batches(kind=ns, limit=1)
-        if batches:
-            latest = batches[0].get("batch_id") or ""
-    except Exception as e:  # pragma: no cover
-        logger.warning("cache mark_data_version lineage 读取失败: %s", e)
+    latest = _latest_batch_id(ns)
     _meta_set(ns, latest)
     return latest
 
@@ -186,10 +205,9 @@ def is_data_stale(ns):
     if recorded is None:
         return False
     try:
-        batches = lineage.get_batches(kind=ns, limit=1)
-        if not batches:
-            return False
-        return batches[0].get("batch_id") != recorded
+        # v7.16 FR-11: 同时认 kline_daily/kline 两种 kind, 取最新批次比较
+        current = _latest_batch_id(ns)
+        return bool(current) and current != recorded
     except Exception:  # pragma: no cover
         return False
 

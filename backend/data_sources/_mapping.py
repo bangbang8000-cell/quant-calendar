@@ -48,12 +48,16 @@ def _normalize_ts_code(ts_code):
     if not ts_code or '.' in str(ts_code):
         return ts_code
     s = str(ts_code).strip().zfill(6)
-    if s[0] in ('6', '5', '9', '1') or s.startswith('90'):
-        return f"{s}.SH"
-    if s[0] in ('0', '3', '2') or s.startswith(('12', '15', '16', '18')):
-        return f"{s}.SZ"
-    if s.startswith(('83', '87', '88', '43', '82', '92', '4')):
+    # v7.16 FR-10: 北交所前置判断 — 历史版本中 92 被 s[0] in ('9') 的 SH 分支提前截获,
+    # 导致 BJ 分支永远到不了 (92xxxx → 错误归 SH)。
+    if s.startswith(('83', '87', '88', '43', '82', '92')) or s[0] == '4':
         return f"{s}.BJ"
+    # 沪: 60/68 主板科创, 5x 基金/ETF(51/58), 11/13 国债可转债, 90 B股
+    if s.startswith(('60', '68', '51', '58', '90', '11', '13')):
+        return f"{s}.SH"
+    # 深: 00/30 主板创业, 20/12/15/16/18 基金指数可转债
+    if s.startswith(('00', '30', '20', '12', '15', '16', '18')):
+        return f"{s}.SZ"
     return ts_code
 
 

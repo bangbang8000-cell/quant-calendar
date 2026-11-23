@@ -368,6 +368,9 @@ window.__quantModules.researchPage.part1 = `
                                             <div class="stat-card p-12">
                                                 <div class="stat-value text-lg" :class="scoreResult.veto_flag ? 'down' : (scoreResult.total_score >= 60 ? 'up' : '')">{{ scoreResult.total_score }}</div>
                                                 <div class="stat-label">综合评分 · {{ scoreResult.level }}</div>
+                                                <!-- v7.16 FR-8: 缺维度覆盖率标注 -->
+                                                <div v-if="scoreResult.coverage_note" class="qc711-note" style="font-size:var(--qc-font-size-xs);color:var(--color-warning)">{{ scoreResult.coverage_note }}</div>
+                                                <div class="qc711-note qc-disclaimer" style="font-size:var(--qc-font-size-xs);opacity:.8">{{ t('common.disclaimer') }}</div>
                                             </div>
                                             <div class="flex-wrap-gap-12-mb16-c">
                                                 <span class="qc711-badge" :class="scoreResult.veto_flag ? 'qc711-tone-warn' : 'qc711-tone-up'">

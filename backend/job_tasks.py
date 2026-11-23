@@ -68,6 +68,11 @@ def data_sync_job(payload, ctx):
     date = payload.get('date') or None
     ctx.progress(10, '开始每日数据同步')
     stats = data_pipeline.run_daily_pull(pool=pool, date=date)
+    # v7.16 FR-2: 复用 refresh_service 的"0行/失败按失败处理"口径 (FR-641 验收)
+    rows = int(stats.get('pulled') or 0) if isinstance(stats, dict) else int(stats or 0)
+    failed = int(stats.get('failed') or 0) if isinstance(stats, dict) else 0
+    if failed or rows <= 0:
+        raise RuntimeError('数据同步未写入有效行(rows=%d, failed=%d), 按失败处理' % (rows, failed))
     ctx.progress(100, '数据同步完成')
     return dict(stats) if isinstance(stats, dict) else {'rows': stats}
 

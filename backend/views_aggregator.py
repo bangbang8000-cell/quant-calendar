@@ -248,6 +248,7 @@ class ViewsAggregator:
             'stocks': formatted,
             'prev_trading_date': _prev,
             'data_inherited': _inherited,
+            'inherited_from': _prev if _inherited else None,
         }
         if _prev:
             if _inherited:
@@ -511,6 +512,17 @@ class ViewsAggregator:
 
         c, p = _codes(date), _codes(prev)
         return bool(c) and c == p
+
+
+def pool_changes_between(curr_codes, prev_codes):
+    """v7.16 FR-3: 新入池/出池的唯一口径 — 当日集合 − 上一交易日集合。
+
+    日历与总览共用此函数, 消除两处实现漂移。继承日两集合相同 → 差集为空,
+    调用方应配合 data_inherited 明示, 而非把 0 误读为"当日无新增"。
+    """
+    curr = set(c for c in (curr_codes or []) if c)
+    prev = set(c for c in (prev_codes or []) if c)
+    return {'new': sorted(curr - prev), 'out': sorted(prev - curr)}
 
 
 # 全局实例

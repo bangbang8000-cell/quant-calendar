@@ -93,6 +93,8 @@
               </template>
             </el-table-column>
           </el-table>
+          <!-- v7.16 FR-8: 买卖点纯公式推算, 免责同屏可见 (本组件未注入 i18n t, 用中文) -->
+          <div class="qc711-note qc-disclaimer" style="font-size:var(--qc-font-size-xs);opacity:.8">本内容为模型估计与研究参考, 不构成投资建议; 买卖点为规则推算, 非交易指令。</div>
 
           <div class="qc711-card-title qc711-mt12">事件流</div>
           <el-table v-if="events.length" :data="events" size="small" border max-height="180">

@@ -230,11 +230,15 @@ class AIEvalCoreMixin:
             cached["from_cache"] = True
             # 6.4.1 (FR-642d): 缓存结果同样附陈旧标注（数据可能已过期）
             cached = self._attach_stale_note(cached)
+            # v7.16 FR-8: 缓存命中返回"原始评估时间", 不再用 datetime.now() 造假
+            _orig_time = (cached.get("evaluate_time") or cached.get("created_at")
+                          or cached.get("timestamp"))
             return {
                 "id": hashlib.md5(f"{stock_code}{strategy}cached".encode()).hexdigest()[:12],
                 "stock_code": stock_code,
                 "stock_name": stock_name,
-                "evaluate_time": datetime.now().isoformat(),
+                "evaluate_time": _orig_time or "未知(缓存)",
+                "evaluate_time_from_cache": True,
                 "result": cached,
                 "model_used": None,
                 "model_provider": cached.get("provider", ""),

@@ -252,19 +252,28 @@ class RealDataPortal:
     # ---- 各数据源方法(带失败兜底) ----
 
     def _fetch_kline(self, code, start, end, limit=250):
-        """K线: 返回 {date: [...], close: [...]} 或 None (limit 按请求区间参数化)"""
+        """K线: 返回完整 OHLCV DataFrame(date/open/low/high/close/volume) 或 None (limit 按请求区间参数化)"""
         try:
             res = self.source.get_kline_data(code, period='daily', limit=limit)
             data = (res or {}).get('data') or []
             if not data:
                 return None
-            dates, closes, vols = [], [], []
+            # v7.16 FR-1: 历史实现只构造 date/close/volume, 丢弃 row[1]=open,
+            # row[3]=low, row[4]=high → panel_to_desc_df 补 NaN → 择时/形态/五维/狩猎场
+            # 等 6+ 模块静默失真。此处恢复完整 OHLCV 契约。
+            # 真实数据源个别OHLC字段可能为 None, 以 close 兜底避免 NaN 污染指标。
+            dates, opens, closes, lows, highs, vols = [], [], [], [], [], []
             for row in data:
                 # [trade_date, open, close, low, high, vol, ...]
+                _c = float(row[2])
                 dates.append(str(row[0]))
-                closes.append(float(row[2]))
-                vols.append(float(row[5]) if len(row) > 5 else 0.0)
-            df = pd.DataFrame({'date': dates, 'close': closes, 'volume': vols})
+                opens.append(float(row[1]) if len(row) > 1 and row[1] is not None else _c)
+                closes.append(_c)
+                lows.append(float(row[3]) if len(row) > 3 and row[3] is not None else _c)
+                highs.append(float(row[4]) if len(row) > 4 and row[4] is not None else _c)
+                vols.append(float(row[5]) if len(row) > 5 and row[5] is not None else 0.0)
+            df = pd.DataFrame({'date': dates, 'open': opens, 'low': lows,
+                               'high': highs, 'close': closes, 'volume': vols})
             # 过滤日期范围 (统一 YYYYMMDD 格式, 兼容 K线源 YYYYMMDD/YYYY-MM-DD 差异)
             df['_d'] = df['date'].str.replace('-', '', regex=False)
             s = (start or '').replace('-', '')

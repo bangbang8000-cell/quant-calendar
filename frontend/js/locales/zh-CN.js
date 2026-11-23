@@ -457,6 +457,7 @@
     'msg.factorDetail': '因子详情: {msg}',
     'msg.factorDetailFailed': '因子详情失败: {msg}',
     'msg.noData': '无数据',
+    'common.disclaimer': '本内容为模型估计与研究参考，不构成投资建议；据此操作风险自担。',
   };
 
   if (typeof window !== 'undefined' && window.__quantModules && window.__quantModules.i18n) {

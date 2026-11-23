@@ -105,7 +105,7 @@ async function showStockKline(code, name) {
         window.__quantModules.recent.recordViewed(code, name || '');
     }
     // v1.8.0: 先获取完整股票详情（含今日行情+均线+评分）
-    const today = new Date().toISOString().split('T')[0];
+    const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
     const date = selectedDate.value || today;
     // v3.16 (16.10-fix): 立即弹窗（加载态），数据异步填充 — 避免行情接口慢导致弹窗延迟
     // v3.16 (bugfix): 强制切到 K线 tab + 销毁旧图表实例 — 否则上次停留在 AI/问股 tab 时
@@ -163,7 +163,7 @@ async function watchlistEvaluate(code, name) {
     aiEvalStage.value = 'fetching';
     stockKlineLoaded.value = false;
     disposeStockKline();
-    const today = new Date().toISOString().split('T')[0];
+    const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
     const date = selectedDate.value || today;
     try {
         const res = await fetch(`/api/calendar/stock/${encodeURIComponent(code)}?date=${date}`);

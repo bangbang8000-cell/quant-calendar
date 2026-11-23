@@ -4,6 +4,9 @@
 策略回测 API 路由 (v3.9.10: 归因看板端点)
 """
 from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Dict, Any
 
 from backtest import backtest_engine, save_backtest_result, get_backtest_history
@@ -58,6 +61,22 @@ async def run_strategy_backtest(
         )
 
         summary = backtest_engine.get_backtest_summary(result)
+        # v7.16 FR-8: 可信度闸门 — 把 credibility_guard 接入回测响应
+        # has_benchmark/cost_rate 由请求参数驱动; 未提供则据实标注为不达标(诚实)
+        try:
+            from credibility_guard import credibility_report
+            _cost = float(params.get("commission_rate", 0.0003)) + float(params.get("slippage", 0.001))
+            _cred = credibility_report(
+                trades=int(summary.get("total_trades") or 0),
+                sample_days=int(summary.get("total_days") or 0),
+                has_benchmark=bool(params.get("benchmark")),
+                cost_rate=_cost,
+            )
+            summary["credibility"] = _cred
+        except Exception as _ce:
+            logger.warning("可信度检查失败: %s", _ce)
+            summary["credibility"] = {"healthy": False, "grade": "unknown",
+                                      "warnings": ["可信度检查未执行"], "checks": {}}
         # V4.9 (P3): 保存回测结果到历史
         save_backtest_result(strategy_id, summary, {
             "start_date": params.get("start_date"),

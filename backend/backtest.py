@@ -386,17 +386,20 @@ class BacktestEngine:
             result.trade_history = trade_history
             result.total_trades = len(trade_history)
 
-            # 收益率
-            result.total_return = (capital - initial_capital) / initial_capital * 100
-            years = len(backtest_dates) / 252.0  # 年化
-            result.annual_return = (capital / initial_capital) ** (1 / years) - 1
-            result.annual_return *= 100
-
-            # 日均持仓
-            result.avg_positions_per_day = total_positions / len(backtest_dates)
-
-            # 换手率
-            result.turnover_rate = len(trade_history) / len(backtest_dates) / result.avg_positions_per_day * 100
+            # v7.16 FR-12: 空序列/零基数除零保护
+            _n_days = len(backtest_dates) or 0
+            _base = initial_capital if initial_capital else 1.0
+            result.total_return = (capital - initial_capital) / _base * 100
+            if _n_days <= 0:
+                result.annual_return = 0.0
+                result.avg_positions_per_day = 0.0
+                result.turnover_rate = 0.0
+            else:
+                years = _n_days / 252.0
+                result.annual_return = ((capital / _base) ** (1 / years) - 1) * 100 if capital > 0 and _base > 0 else 0.0
+                result.avg_positions_per_day = total_positions / _n_days
+                _avg_pos = result.avg_positions_per_day or 0.0
+                result.turnover_rate = (len(trade_history) / _n_days / _avg_pos * 100) if _avg_pos > 0 else 0.0
 
             # 最大回撤
             result.max_drawdown, result.max_drawdown_duration = self._calculate_max_drawdown(equity_curve)

@@ -72,13 +72,21 @@ async def get_view_data(
         except Exception as exc:      # 合并失败不影响视图本身
             logger.warning("视图合并自定义勾选失败: %s", exc)
 
+        # v7.16 FR-3: 继承日不计算入池/出池 — 全部标 current(而非误报 new/0),
+        # 并由 data_inherited/inherited_from 显式告知前端"沿用上一交易日持仓"。
+        _inherited = bool(result.get("data_inherited"))
+        result["inherited_from"] = result.get("inherited_from")
         # 给所有股票添加状态字段
         if "stocks" in result:
             for s in result["stocks"]:
-                s["status"] = views_aggregator.calculate_status(s["code"], date, view_type)
+                if _inherited and view_type == "day":
+                    s["status"] = "current"
+                else:
+                    s["status"] = views_aggregator.calculate_status(s["code"], date, view_type)
             if status != "all":
                 result["stocks"] = [s for s in result["stocks"] if s["status"] == status]
                 result["filtered_count"] = len(result["stocks"])
+        result["data_inherited"] = _inherited
 
         # CSV 导出
         if format == "csv":

@@ -60,13 +60,18 @@ class ScoreEngine:
                    if d not in dimension_scores or dimension_scores[d] is None]
         dims: Dict[str, Any] = {}
         total = 0.0
+        # v7.16 FR-8: 缺维度时按"实际可用权重"归一化, 避免少一个维度就把总分压低、
+        # 同时杜绝"仅 1 维有分却给出强烈推荐"(等级按覆盖率封顶)。
+        available_weight = sum(self.weights[d] for d in SCORE_DIMENSIONS if d not in missing)
+        n_available = len(SCORE_DIMENSIONS) - len(missing)
         for d in SCORE_DIMENSIONS:
             s = dimension_scores.get(d)
             if s is None:
                 dims[d] = {"score": None, "weight": self.weights[d],
                            "weighted_score": None, "status": "unknown"}
             else:
-                ws = float(s) * self.weights[d]
+                norm_w = self.weights[d] / available_weight if available_weight > 0 else 0.0
+                ws = float(s) * norm_w  # 归一化权重 → 总分与满维度同量纲
                 total += ws
                 dims[d] = {"score": float(s), "weight": self.weights[d],
                            "weighted_score": round(ws, 2), "status": "ok"}
@@ -76,9 +81,18 @@ class ScoreEngine:
             final = VETO_SCORE
         else:
             final = round(total, 1)
+        level = self.level_of(final)
+        # v7.16 FR-8: 维度覆盖不足时等级封顶为"中性", 并附参考标注
+        coverage_note = ""
+        if n_available < len(SCORE_DIMENSIONS):
+            if level in ("强烈推荐", "推荐"):
+                level = "中性"
+            coverage_note = "仅基于 %d/5 维度, 等级仅供参考" % n_available
         return {
             "total_score": final,
-            "level": self.level_of(final),
+            "level": level,
+            "coverage_note": coverage_note,
+            "coverage": n_available,
             "veto_flag": do_veto,
             "veto_reason": veto_reason if do_veto else "",
             "dimensions": dims,

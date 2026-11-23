@@ -29,48 +29,53 @@ class SchedulerHealthMixin:
             await asyncio.sleep(600)
             try:
                 today = datetime.now().strftime('%Y-%m-%d')
-                self._scan_freshness_alerts(today)
-                self._scan_task_failure_alerts(today)
-                self._record_task_run("freshness_alert", True, today)
+                # v7.16 FR-2: 子扫描内部降级不得记为成功 (原恒 True 掩盖告警失效)
+                _fresh_ok = self._scan_freshness_alerts(today)
+                _task_ok = self._scan_task_failure_alerts(today)
+                _all_ok = bool(_fresh_ok) and bool(_task_ok)
+                self._record_task_run("freshness_alert", _all_ok,
+                                      today if _all_ok else "新鲜度/任务告警扫描内部降级")
             except Exception as e:
                 logger.error("新鲜度告警任务异常: %s", e)
                 self._record_task_run("freshness_alert", False, str(e)[:120])
     def _scan_freshness_alerts(self, today):
-        """数据资产过期/缺失 → 面板告警 (同资产每日一条)"""
+        """数据资产过期/缺失 → 面板告警 (同资产每日一条)。返回是否完整执行(未降级)"""
         try:
             from reliability import freshness
             summary = freshness.status_summary()
         except Exception as e:
             logger.warning("新鲜度状态读取失败 (降级): %s", e)
-            return
+            return False
         try:
             from data_sources._health import enqueue_alert
         except Exception:
             logger.warning("告警队列不可用 (降级)")
-            return
+            return False
         for item in summary.get("items") or []:
-            if item.get("status") not in ("stale", "missing"):
+            # v7.16 FR-7: unknown(无法判定)也需告警, 不再静默放过
+            if item.get("status") not in ("stale", "missing", "unknown"):
                 continue
             aid = item.get("asset_id", "")
             if self._freshness_alert_date.get(aid) == today:
                 continue  # 每日节流
             self._freshness_alert_date[aid] = today
             level = "error" if item.get("status") == "missing" else "warning"
+            _status_cn = {"missing": "缺失", "stale": "过期", "unknown": "无法判定"}.get(item.get("status"), "异常")
             message = ("数据资产 %s %s: 期望最近交易日 %s, 最近数据 %s, 最后更新 %s"
-                       % (item.get("name", aid),
-                          "缺失" if item.get("status") == "missing" else "过期",
+                       % (item.get("name", aid), _status_cn,
                           item.get("expected_latest") or "-",
                           item.get("latest_date") or "-",
                           item.get("last_update") or "-"))
             enqueue_alert(level, "freshness", message)
             logger.warning("[新鲜度告警] %s", message)
+        return True
     def _scan_task_failure_alerts(self, today):
-        """调度任务连续失败达阈值 → 面板告警 (同任务每日一条)"""
+        """调度任务连续失败达阈值 → 面板告警 (同任务每日一条)。返回是否完整执行(未降级)"""
         try:
             from data_sources._health import enqueue_alert
         except Exception:
             logger.warning("告警队列不可用 (降级)")
-            return
+            return False
         for task, slot in (self.get_task_status() or {}).items():
             fails = int((slot or {}).get("consecutive_failures", 0) or 0)
             if fails < _m.PULL_ALERT_THRESHOLD:
@@ -82,6 +87,7 @@ class SchedulerHealthMixin:
                           "任务 %s 连续失败 %d 次 (最近: %s)"
                           % (task, fails, (slot or {}).get("detail", "") or ""))
             logger.warning("[任务告警] %s 连续失败 %d 次", task, fails)
+        return True
     def _verify_backup_after_backup(self, name: str):
         """6.3.2 (T-6.3.2.2): 备份产出后自动校验 — 结果写入健康指标 + 失败告警
 
