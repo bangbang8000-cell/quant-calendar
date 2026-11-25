@@ -6,11 +6,11 @@
   </p>
   <p align="center">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/releases"><img src="https://img.shields.io/github/v/release/bangbang8000-cell/quant-calendar?color=blue&label=release" alt="release"></a>
-    <img src="https://img.shields.io/badge/version-7.3.3-brightgreen" alt="version">
+    <img src="https://img.shields.io/badge/version-7.22.0-brightgreen" alt="version">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
     <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="python">
     <img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue">
-    <img src="https://img.shields.io/badge/tests-4293%20passed-success" alt="tests">
+    <img src="https://img.shields.io/badge/tests-4829%20passed-success" alt="tests">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/stargazers"><img src="https://img.shields.io/github/stars/bangbang8000-cell/quant-calendar?style=social" alt="stars"></a>
   </p>
 </p>
@@ -66,24 +66,31 @@
 
 ## 界面预览
 
+> 以下截图基于 **v7.22.0**、**亮色 · 紫色主题**，在 1440×900 实机采集；AI 截图取自一次评估成功后的结果页。
+
 <details open>
-<summary><b>策略总览</b> — 今日一屏、共识榜、股票池</summary>
+<summary><b>策略总览</b> — 策略共识榜、新版股票行、个股详情</summary>
 <p align="center"><img src="assets/screenshots/策略总览.png" alt="策略总览" width="90%"></p>
 </details>
 
 <details>
-<summary><b>量化日历</b> — 日/周/月/年视图，内置 K 线</summary>
+<summary><b>量化日历</b> — 日/周/月/年视图，入池出池与内置 K 线</summary>
 <p align="center"><img src="assets/screenshots/量化日历.png" alt="量化日历" width="90%"></p>
 </details>
 
 <details>
-<summary><b>AI 评估</b> — 多模型串行评估，历史追溯</summary>
+<summary><b>择时信号矩阵</b> — 买入 / 加仓 / 持有 / 减仓 / 卖出文字信号</summary>
+<p align="center"><img src="assets/screenshots/择时信号矩阵.png" alt="择时信号矩阵" width="90%"></p>
+</details>
+
+<details>
+<summary><b>AI 评估</b> — 多模型串行评估，评分与五维报告</summary>
 <p align="center"><img src="assets/screenshots/评估历史.png" alt="AI评估" width="90%"></p>
 </details>
 
 <details>
-<summary><b>系统配置</b> — 数据源管理、飞书推送、AI 模型</summary>
-<p align="center"><img src="assets/screenshots/系统配置.png" alt="系统配置" width="90%"></p>
+<summary><b>平台能力</b> — 核心功能一览与版本信息（v7.22.0）</summary>
+<p align="center"><img src="assets/screenshots/系统配置.png" alt="平台能力" width="90%"></p>
 </details>
 
 ---
