@@ -126,6 +126,11 @@
                 <el-checkbox v-model="matrixOnlySignaled" size="mini">仅看有信号（仓位 > 0）</el-checkbox>
                 <span class="qc711-dim">共 {{ matrixRows.length }} / {{ matrix.rows.length }} 只</span>
               </div>
+              <div class="qc711-note">
+                {{ matrix.legend }}
+                <span v-if="simulatedWarn">⚠ 数据源含模拟数据（真实行情不可用），信号仅供研究参考。</span>
+                <span v-else>Overlay 契约不变：矩阵只承载仓位系数，不产持仓、不进日历。</span>
+              </div>
               <el-table :data="matrixRows" size="mini" border class="qc711-matrix-table">
                 <el-table-column label="标的" width="140" fixed="left">
                   <template #default="p">
@@ -153,11 +158,6 @@
                   <template #default="p">{{ S.pct(p.row.avg_exposure, 0) }}</template>
                 </el-table-column>
               </el-table>
-              <div class="qc711-note">
-                {{ matrix.legend }}
-                <span v-if="simulatedWarn">⚠ 数据源含模拟数据（真实行情不可用），信号仅供研究参考。</span>
-                <span v-else>Overlay 契约不变：矩阵只承载仓位系数，不产持仓、不进日历。</span>
-              </div>
             </template>
           </template>
           <div v-else class="qc711-empty">正在自动加载自选股矩阵…</div>
