@@ -1370,8 +1370,8 @@
   line-height: 1.5;
   white-space: nowrap;
 }
-.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-text); }
-.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-text); }
+.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-on); }
+.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-on); }
 .qc711-sig.tone-flat { background: var(--qc-muted); border-color: var(--qc-border); color: var(--text-secondary); }
 .qc711-dot {
   flex: 0 0 auto;

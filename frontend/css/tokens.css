@@ -106,6 +106,9 @@
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
+  /* v7.21: 实底信号标签前景色 (与 fill 对比 >=4.5:1), 暗色由 themes.css 覆盖 */
+  --market-up-on: #111111;
+  --market-down-on: #ffffff;
 
   /* ─── Navigation Specific Tokens ─── */
   --qc-nav-bg: var(--qc-neutral-0);

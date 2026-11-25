@@ -112,6 +112,9 @@
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
+  /* v7.21: 实底信号标签前景色 (与 fill 对比 >=4.5:1), 暗色由 themes.css 覆盖 */
+  --market-up-on: #111111;
+  --market-down-on: #ffffff;
 
   /* ─── Navigation Specific Tokens ─── */
   --qc-nav-bg: var(--qc-neutral-0);
@@ -834,6 +837,8 @@ html[data-density="spacious"] {
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
             --market-up-text: #ff8080; --market-down-text: #5fd07a;
+            --market-up-on: #1a1512;
+            --market-down-on: #102014;
             --badge-success-bg: #0a2e1a; --badge-success-text: #64ffda;
             --badge-warning-bg: #2e1f0a; --badge-warning-text: #ffb74d;
             --badge-danger-bg: #2e0a0a; --badge-danger-text: #ff5252;
@@ -8932,8 +8937,8 @@ body.qc-split-resizing * {
   line-height: 1.5;
   white-space: nowrap;
 }
-.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-text); }
-.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-text); }
+.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-on); }
+.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-on); }
 .qc711-sig.tone-flat { background: var(--qc-muted); border-color: var(--qc-border); color: var(--text-secondary); }
 .qc711-dot {
   flex: 0 0 auto;

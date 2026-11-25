@@ -143,6 +143,8 @@
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
             --market-up-text: #ff8080; --market-down-text: #5fd07a;
+            --market-up-on: #1a1512;
+            --market-down-on: #102014;
             --badge-success-bg: #0a2e1a; --badge-success-text: #64ffda;
             --badge-warning-bg: #2e1f0a; --badge-warning-text: #ffb74d;
             --badge-danger-bg: #2e0a0a; --badge-danger-text: #ff5252;
