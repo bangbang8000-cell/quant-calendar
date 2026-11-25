@@ -144,8 +144,7 @@
                   <template #default="p">
                     <div v-if="p.row.signals && p.row.signals[st.id]" class="qc711-cell"
                          :title="cellTitle(st, p.row.signals[st.id])">
-                      <span class="qc711-sig" :class="'tone-' + (p.row.signals[st.id].tone || 'flat')">{{ p.row.signals[st.id].label || S.actionLabel(p.row.signals[st.id].action) }}</span>
-                      <span v-if="p.row.signals[st.id].strength_band" class="qc711-sig-band">{{ p.row.signals[st.id].strength_band }}</span>
+                      <span class="qc711-sig" :class="'tone-' + (p.row.signals[st.id].tone || 'flat')">{{ p.row.signals[st.id].display }}</span>
                     </div>
                     <span v-else class="qc711-dim">—</span>
                   </template>
@@ -155,7 +154,7 @@
                 </el-table-column>
               </el-table>
               <div class="qc711-note">
-                单元格 = 择时动作文字 + 信号强度档（T+1 生效口径）；悬停看仓位系数与判定理由；行末 = 平均仓位。
+                {{ matrix.legend }}
                 <span v-if="simulatedWarn">⚠ 数据源含模拟数据（真实行情不可用），信号仅供研究参考。</span>
                 <span v-else>Overlay 契约不变：矩阵只承载仓位系数，不产持仓、不进日历。</span>
               </div>
@@ -288,7 +287,7 @@
       }
 
       // ── v7.13: 自选股择时矩阵 ──────────────────────────────
-      // v7.20: 单元格改为文字+强度档(后端字典下发), 弃旧色点/仓位条/百分比。
+      // v7.21: 单元格统一为「动作·强度档」单标签(后端下发 display)。
       const matrixSortMode = ref('exposure');   // exposure | symbol
       const matrixOnlySignaled = ref(false);
       const matrix = ref(null);
@@ -354,13 +353,12 @@
           .map(a => (labels[a] || S_().actionLabel(a)) + '×' + counts[a]);
         return parts.length ? parts.join('/') : '—';
       }
-      // v7.20: 单元格 tooltip — 动作语义 + 强度 + 仓位系数(辅助) + 判定理由
+      // v7.21: tooltip 复用后端下发的统一 display
       function cellTitle(st, cell) {
-        const label = cell.label || S_().actionLabel(cell.action);
-        const band = cell.strength_band ? ' · 强度' + cell.strength_band : '';
+        const label = cell.display || S_().actionLabel(cell.action);
         const exp = cell.exposure_note || ('仓位 ' + S_.pct(cell.exposure, 0));
         const msg = cell.message ? ' · ' + cell.message : '';
-        return st.name + ' · ' + label + band + ' · ' + exp + msg;
+        return st.name + ' · ' + label + ' · ' + exp + msg;
       }
 
       async function loadMatrix() {

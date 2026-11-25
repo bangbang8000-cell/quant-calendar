@@ -8921,24 +8921,20 @@ body.qc-split-resizing * {
   gap: 3px;
   min-width: 0;
 }
-/* v7.20: 单元格改为明确文字标签, 取代旧的色点+仓位条+百分比 */
+/* v7.21: 统一单元格为「动作·强度档」单标签, 所有档位同构 */
 .qc711-sig {
   display: inline-block;
   padding: 1px 5px;
+  border: 1px solid var(--qc-border);
   border-radius: var(--qc-radius-small, 4px);
   font-size: var(--qc-font-size-2xs);
   font-weight: 500;
   line-height: 1.5;
   white-space: nowrap;
 }
-.qc711-sig.tone-up { background: var(--market-up-fill); color: var(--market-up-text); }
-.qc711-sig.tone-down { background: var(--market-down-fill); color: var(--market-down-text); }
-.qc711-sig.tone-flat { background: var(--qc-muted); color: var(--text-secondary); }
-.qc711-sig-band {
-  font-size: var(--qc-font-size-2xs);
-  color: var(--text-tertiary);
-  white-space: nowrap;
-}
+.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-text); }
+.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-text); }
+.qc711-sig.tone-flat { background: var(--qc-muted); border-color: var(--qc-border); color: var(--text-secondary); }
 .qc711-dot {
   flex: 0 0 auto;
   width: 8px;

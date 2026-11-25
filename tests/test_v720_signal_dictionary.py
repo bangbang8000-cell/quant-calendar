@@ -13,6 +13,7 @@
 """
 import os
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -23,6 +24,7 @@ sys.path.insert(0, os.path.join(ROOT, "backend"))
 from timing.base import VALID_ACTIONS, TimingSignal  # noqa: E402
 from timing.signal_dict import (  # noqa: E402
     SIGNAL_DICTIONARY, action_display, signal_display, strength_band,
+    matrix_legend,
 )
 
 
@@ -36,7 +38,7 @@ def test_d1_dictionary_covers_all_actions():
     assert required.issubset(SIGNAL_DICTIONARY.keys()), \
         "字典必须覆盖全部合法 action + wait 兜底"
     for key, meta in SIGNAL_DICTIONARY.items():
-        assert set(meta.keys()) == {"label", "tone", "meaning", "exposure"}, key
+        assert set(meta.keys()) == {"label", "tone", "meaning", "exposure", "short"}, key
         assert meta["tone"] in ("up", "down", "flat"), key
         assert meta["label"], key
 
@@ -84,9 +86,28 @@ def test_d3_signal_display_keeps_contract_fields():
     assert "0.5→0.25" in d["meaning"], "减仓语义须说明强度联动"
 
 
+def test_d3_display_is_unified_action_dot_band():
+    """所有单元格同构: 动作·强度档; hold/wait 用 — 占位而不是裸文字"""
+    cases = [
+        ("buy", 0.8, "买入·强"), ("add", 0.5, "加仓·中"),
+        ("reduce", 0.2, "减仓·弱"), ("sell", 0.9, "卖出·强"),
+        ("hold", 0.0, "持有·—"), ("wait", 0.0, "观望·—"),
+    ]
+    for action, strength, expected in cases:
+        sig = SimpleNamespace(action=action, strength=strength,
+                              target_exposure=1.0, message="")
+        d = signal_display(sig)
+        assert d["display"] == expected, (action, d["display"])
+        assert "·" in d["display"], "格式必须统一为 动作·强度档"
+    assert "红=买入/加仓" in matrix_legend()
+    assert "绿=减仓/卖出" in matrix_legend()
+    assert "强/中/弱=信号强度（非方向）" in matrix_legend()
+
+
 def test_d3_hold_has_no_strength_band():
     d = signal_display(TimingSignal("hold", 0.0, 1.0))
     assert d["label"] == "持有" and d["strength_band"] == ""
+    assert d["display"] == "持有·—"
     assert "不代表满仓买入" in d["meaning"]
 
 
@@ -101,6 +122,7 @@ def test_d3_three_endpoints_emit_dictionary():
 def test_d3_frontend_uses_dict_not_hardcode():
     """前端只渲染后端下发的 label/tone, 不硬编码文案"""
     src = _read("frontend/js/components/overlay-radar.js")
-    assert "p.row.signals[st.id].label" in src
+    assert "p.row.signals[st.id].display" in src
     assert "p.row.signals[st.id].tone" in src
+    assert "matrix.legend" in src, "图例须由后端同源下发"
     assert "tone-up" in _read("frontend/css/components.css")

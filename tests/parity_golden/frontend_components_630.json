@@ -3787,7 +3787,6 @@
       "qc711-note",
       "qc711-panel",
       "qc711-sig",
-      "qc711-sig-band",
       "qc711-stat",
       "qc711-stat-l",
       "qc711-stat-v",
@@ -3852,8 +3851,8 @@
       "symbol",
       "timeline"
     ],
-    "template_len": 12494,
-    "template_sha": "a8676c21cb9d4024"
+    "template_len": 12274,
+    "template_sha": "d77021b90ea7f486"
   },
   "TourDialog": {
     "classes": [

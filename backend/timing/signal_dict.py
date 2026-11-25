@@ -24,6 +24,10 @@ from timing.base import TimingSignal
 _STRONG = 0.66
 _MID = 0.33
 
+# 统一单元格文案: 动作·强度档; hold/wait 无强度语义时用 — 占位, 保证格式同构。
+def _display_text(label, band):
+    return label + ("·" + band if band else "·—")
+
 # 字典: action -> 展示元数据
 # label    单元格主文字(用户第一眼要读的)
 # tone     配色档: up(红)/down(绿)/flat(灰), 与 A 股涨跌口径一致
@@ -31,32 +35,32 @@ _MID = 0.33
 # exposure 目标仓位系数的文字说明(辅助信息, 非主视觉)
 SIGNAL_DICTIONARY: Dict[str, Dict[str, str]] = {
     "buy": {
-        "label": "买入", "tone": "up",
+        "label": "买入", "tone": "up", "short": "建仓",
         "meaning": "首次建仓，从空仓升至目标仓位",
         "exposure": "目标仓位 100%",
     },
     "add": {
-        "label": "加仓", "tone": "up",
+        "label": "加仓", "tone": "up", "short": "追加",
         "meaning": "已有持仓上追加（海龟突破、趋势回调缩量等）",
         "exposure": "目标仓位 100%",
     },
     "hold": {
-        "label": "持有", "tone": "flat",
+        "label": "持有", "tone": "flat", "short": "维持",
         "meaning": "无信号，维持原仓位（不代表满仓买入）",
         "exposure": "维持原仓位",
     },
     "reduce": {
-        "label": "减仓", "tone": "down",
+        "label": "减仓", "tone": "down", "short": "部分减仓",
         "meaning": "部分减仓，信号越强减得越多（仓位系数 0.5→0.25）",
         "exposure": "目标仓位 ≤50%",
     },
     "sell": {
-        "label": "卖出", "tone": "down",
+        "label": "卖出", "tone": "down", "short": "清仓/空仓",
         "meaning": "清仓离场",
         "exposure": "目标仓位 0%",
     },
     "wait": {
-        "label": "观望", "tone": "flat",
+        "label": "观望", "tone": "flat", "short": "数据不足",
         "meaning": "数据不足或数据源降级，暂无法判定方向",
         "exposure": "不调整",
     },
@@ -92,6 +96,7 @@ def signal_display(sig: TimingSignal) -> Dict[str, Any]:
     meta = SIGNAL_DICTIONARY.get(action, SIGNAL_DICTIONARY["wait"])
     strength = float(getattr(sig, "strength", 0.0) or 0.0)
     exposure = float(getattr(sig, "target_exposure", 1.0))
+    band = strength_band(strength) if action not in ("hold", "wait") else ""
     return {
         "action": action,
         "strength": round(strength, 4),
@@ -99,10 +104,24 @@ def signal_display(sig: TimingSignal) -> Dict[str, Any]:
         "message": getattr(sig, "message", "") or "",
         "label": meta["label"],
         "tone": meta["tone"],
-        "strength_band": strength_band(strength) if action not in ("hold", "wait") else "",
+        "strength_band": band,
+        "display": _display_text(meta["label"], band),
         "meaning": meta["meaning"],
         "exposure_note": meta["exposure"],
     }
+
+
+def matrix_legend() -> str:
+    """矩阵图例: 颜色语义 + 动作语义 + 强度档说明, 与字典同源。"""
+    order = ("buy", "add", "hold", "reduce", "sell", "wait")
+    def group(tone):
+        return "/".join(SIGNAL_DICTIONARY[k]["label"] for k in order
+                        if SIGNAL_DICTIONARY[k]["tone"] == tone)
+    items = "；".join(
+        SIGNAL_DICTIONARY[k]["label"] + "（" + SIGNAL_DICTIONARY[k]["short"] + "）"
+        for k in order)
+    return ("图例：红=" + group("up") + "，绿=" + group("down") + "，灰=" + group("flat")
+            + "；" + items + "。·强/中/弱=信号强度（非方向），—=该动作无强度档；悬停看仓位系数与判定理由。")
 
 
 def action_display(action: Any) -> Dict[str, str]:

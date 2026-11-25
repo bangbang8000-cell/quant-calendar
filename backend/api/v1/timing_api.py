@@ -31,7 +31,9 @@ _STATE_EXPOSURE = {
 _TRADE_ACTIONS = ("buy", "sell", "add", "reduce")
 
 # v7.20: 信号字典单一事实来源 (策略判断 -> 界面文案)
-from timing.signal_dict import SIGNAL_DICTIONARY, action_display, signal_display
+from timing.signal_dict import (
+    SIGNAL_DICTIONARY, action_display, signal_display, matrix_legend,
+)
 
 
 
@@ -432,6 +434,7 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
         "date_range": all_dates,
         "degraded": source_degraded,
         "signal_dictionary": SIGNAL_DICTIONARY,  # v7.20: 矩阵文案同源下发
+        "legend": matrix_legend(),  # v7.21: 图例同源, 前端不硬编码颜色/动作说明
     }
     _record("timing_matrix", ",".join(symbols[:5]) + ("..." if len(symbols) > 5 else ""),
             {"sids": sids, "use_prev_day_signal": use_prev, "from_watchlist": from_watchlist},
