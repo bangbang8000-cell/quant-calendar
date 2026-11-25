@@ -8917,15 +8917,27 @@ body.qc-split-resizing * {
 .qc711-cell {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   min-width: 0;
 }
-.qc711-cell-num {
+/* v7.20: 单元格改为明确文字标签, 取代旧的色点+仓位条+百分比 */
+.qc711-sig {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: var(--qc-radius-small, 4px);
+  font-size: var(--qc-font-size-2xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.qc711-sig.tone-up { background: var(--market-up-fill); color: var(--market-up-text); }
+.qc711-sig.tone-down { background: var(--market-down-fill); color: var(--market-down-text); }
+.qc711-sig.tone-flat { background: var(--qc-muted); color: var(--text-secondary); }
+.qc711-sig-band {
   font-size: var(--qc-font-size-2xs);
   color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
-  min-width: 28px;
-  text-align: right;
+  white-space: nowrap;
 }
 .qc711-dot {
   flex: 0 0 auto;

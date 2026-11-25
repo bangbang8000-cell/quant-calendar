@@ -30,6 +30,10 @@ _STATE_EXPOSURE = {
 }
 _TRADE_ACTIONS = ("buy", "sell", "add", "reduce")
 
+# v7.20: 信号字典单一事实来源 (策略判断 -> 界面文案)
+from timing.signal_dict import SIGNAL_DICTIONARY, action_display, signal_display
+
+
 
 def _signal_meta(df, source: str, degraded: bool = False, reason: str = "") -> dict:
     """v7.16 FR-5: 信号三要素 — 数据截止/生成时间/数据来源 + 降级标记。"""
@@ -210,6 +214,7 @@ async def timing_evaluate(payload: Dict[str, Any], _: Dict = Depends(get_non_gue
     for i in range(warmup, len(asc)):
         sig = st.evaluate(asc.iloc[:i + 1].copy(), use_prev_day_signal=use_prev, params=params)
         if sig.action in _TRADE_ACTIONS:
+            disp = signal_display(sig)  # v7.20: 策略判断与展示文案同源
             points.append({
                 "date": str(asc["date"].iloc[i]),
                 "price": float(asc["close"].iloc[i]),
@@ -217,6 +222,9 @@ async def timing_evaluate(payload: Dict[str, Any], _: Dict = Depends(get_non_gue
                 "strength": round(float(sig.strength), 4),
                 "exposure": round(float(sig.target_exposure), 4),
                 "message": sig.message,
+                "label": disp["label"],
+                "tone": disp["tone"],
+                "strength_band": disp["strength_band"],
             })
 
     from timing.overlay import signal_to_exposure
@@ -226,8 +234,12 @@ async def timing_evaluate(payload: Dict[str, Any], _: Dict = Depends(get_non_gue
     result = {
         "sid": sid, "name": st.name, "data_source": source,
         "use_prev_day_signal": use_prev,
-        "current_signal": _jsonable(asdict(current)),
+        "current_signal": dict(_jsonable(asdict(current)), **{
+            k: signal_display(current)[k]
+            for k in ("label", "tone", "strength_band", "meaning", "exposure_note")
+        }),
         "current_exposure": round(float(exposure), 4),
+        "signal_dictionary": SIGNAL_DICTIONARY,  # v7.20: 前端不硬编码文案
         "points": points, "point_count": len(points), "performance": perf,
         "overlay_only": True, "holdings_matrix": None, "calendar_opt_in": False,
         # v7.16 FR-5: 时间戳 + 降级标记 (模拟数据时前端醒目提示)
@@ -266,6 +278,7 @@ async def timing_state(payload: Dict[str, Any], _: Dict = Depends(get_non_guest_
         "temperature_exposure": round(max(0.2, min(1.0, st.temperature / 100.0)), 4),
         "timeline": analyzer.state_timeline(asc),
         "transition_matrix": analyzer.transition_matrix(asc),
+        "signal_dictionary": SIGNAL_DICTIONARY,  # v7.20: 与 evaluate/matrix 同口径
     })
     _record("market_state", str(payload.get("symbol") or "index"),
             {"source": source}, dr,
@@ -302,12 +315,12 @@ def _stock_name(code: str) -> str:
 
 
 def _signal_cell(sig) -> Dict[str, Any]:
-    return {
-        "action": sig.action,
-        "strength": round(float(sig.strength), 4),
-        "exposure": round(float(sig.target_exposure), 4),
-        "message": sig.message,
-    }
+    """单元格 = 原始信号(权威) + 字典文案(v7.20)。
+
+    保留 action/strength/exposure/message 原字段, 不改变 overlay 契约;
+    附加 label/tone/strength_band/meaning/exposure_note 供界面直读。
+    """
+    return signal_display(sig)
 
 
 @router.post("/matrix")
@@ -394,6 +407,8 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
                 exps.append(float(cell["exposure"]))
         aggregate[meta["id"]] = {
             "action_counts": acts,
+            "action_labels": {a: action_display(a)["label"] for a in acts},  # v7.20
+            "action_tones": {a: action_display(a)["tone"] for a in acts},
             "avg_exposure": round(sum(exps) / len(exps), 4) if exps else None,
         }
 
@@ -416,6 +431,7 @@ async def timing_matrix(payload: Dict[str, Any], user: Dict = Depends(get_non_gu
         "as_of": all_dates[-1] if all_dates else None,
         "date_range": all_dates,
         "degraded": source_degraded,
+        "signal_dictionary": SIGNAL_DICTIONARY,  # v7.20: 矩阵文案同源下发
     }
     _record("timing_matrix", ",".join(symbols[:5]) + ("..." if len(symbols) > 5 else ""),
             {"sids": sids, "use_prev_day_signal": use_prev, "from_watchlist": from_watchlist},

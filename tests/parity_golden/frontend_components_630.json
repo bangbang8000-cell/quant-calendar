@@ -3755,9 +3755,9 @@
   },
   "TimingRadar": {
     "classes": [
-      "'hold')",
-      "'is-'",
-      "(p.row.signals[st.id].action",
+      "'flat')",
+      "'tone-'",
+      "(p.row.signals[st.id].tone",
       "+",
       "S.pnlTone(perf.total_return)",
       "S.stateTone(mktState.state)",
@@ -3765,14 +3765,11 @@
       "card-title",
       "qc711-agg-chip",
       "qc711-badge",
-      "qc711-bar",
       "qc711-card",
       "qc711-card-title",
       "qc711-cell",
-      "qc711-cell-num",
       "qc711-degraded-warn",
       "qc711-dim",
-      "qc711-dot",
       "qc711-empty",
       "qc711-grid-2",
       "qc711-head",
@@ -3789,6 +3786,8 @@
       "qc711-matrix-tools",
       "qc711-note",
       "qc711-panel",
+      "qc711-sig",
+      "qc711-sig-band",
       "qc711-stat",
       "qc711-stat-l",
       "qc711-stat-v",
@@ -3825,7 +3824,7 @@
       "aggText",
       "calendarDate",
       "calendarInherited",
-      "cellBarWidth",
+      "cellTitle",
       "error",
       "evaluating",
       "loadMatrix",
@@ -3853,8 +3852,8 @@
       "symbol",
       "timeline"
     ],
-    "template_len": 12557,
-    "template_sha": "ad7446f7ae63eab7"
+    "template_len": 12494,
+    "template_sha": "a8676c21cb9d4024"
   },
   "TourDialog": {
     "classes": [

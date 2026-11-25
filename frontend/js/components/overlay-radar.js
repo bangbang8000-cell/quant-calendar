@@ -39,7 +39,7 @@
             <template v-if="result && result.current_signal">
               <div class="qc711-kv">
                 <span class="qc711-k">动作</span>
-                <span class="qc711-v"><el-tag size="small" :type="actionTagType()">{{ S.actionLabel(result.current_signal.action) }}</el-tag></span>
+                <span class="qc711-v"><el-tag size="small" :type="actionTagType()">{{ result.current_signal.label || S.actionLabel(result.current_signal.action) }}</el-tag></span>
               </div>
               <div class="qc711-kv"><span class="qc711-k">信号强度</span><span class="qc711-v">{{ S.num(result.current_signal.strength, 3) }}</span></div>
               <div class="qc711-kv"><span class="qc711-k">目标仓位</span><span class="qc711-v">{{ S.pct(result.current_exposure) }}</span></div>
@@ -135,6 +135,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column v-for="st in matrix.strategies" :key="st.id"
+                                 :prop="'signals.' + st.id" :label="st.name"
                                  min-width="68" align="center">
                   <!-- v7.19 (T3.4): 表头横排简称 + hover 全名（全称会让 8 列一起换行/撑爆） -->
                   <template #header>
@@ -142,11 +143,9 @@
                   </template>
                   <template #default="p">
                     <div v-if="p.row.signals && p.row.signals[st.id]" class="qc711-cell"
-                         :title="st.name + ' · ' + S.actionLabel(p.row.signals[st.id].action) + ' · 仓位 ' + S.pct(p.row.signals[st.id].exposure, 0)">
-                      <span class="qc711-dot" :class="'is-' + (p.row.signals[st.id].action || 'hold')"></span>
-                      <span class="qc711-bar"><i :class="'is-' + (p.row.signals[st.id].action || 'hold')"
-                                                 :style="{ width: cellBarWidth(p.row.signals[st.id].exposure) }"></i></span>
-                      <span class="qc711-cell-num">{{ S.pct(p.row.signals[st.id].exposure, 0) }}</span>
+                         :title="cellTitle(st, p.row.signals[st.id])">
+                      <span class="qc711-sig" :class="'tone-' + (p.row.signals[st.id].tone || 'flat')">{{ p.row.signals[st.id].label || S.actionLabel(p.row.signals[st.id].action) }}</span>
+                      <span v-if="p.row.signals[st.id].strength_band" class="qc711-sig-band">{{ p.row.signals[st.id].strength_band }}</span>
                     </div>
                     <span v-else class="qc711-dim">—</span>
                   </template>
@@ -156,7 +155,7 @@
                 </el-table-column>
               </el-table>
               <div class="qc711-note">
-                单元格 = 当前信号动作 + 目标仓位系数（T+1 生效口径）；行末 = 8 策略平均仓位。
+                单元格 = 择时动作文字 + 信号强度档（T+1 生效口径）；悬停看仓位系数与判定理由；行末 = 平均仓位。
                 <span v-if="simulatedWarn">⚠ 数据源含模拟数据（真实行情不可用），信号仅供研究参考。</span>
                 <span v-else>Overlay 契约不变：矩阵只承载仓位系数，不产持仓、不进日历。</span>
               </div>
@@ -183,7 +182,7 @@
             <el-table v-if="points.length" :data="points.slice(0, 12)" size="small" border>
               <el-table-column prop="date" label="日期" width="110"></el-table-column>
               <el-table-column label="动作" width="80">
-                <template #default="p"><el-tag size="small" :type="actionTagTypeOf(p.row.action)">{{ S.actionLabel(p.row.action) }}</el-tag></template>
+                <template #default="p"><el-tag size="small" :type="actionTagTypeOf(p.row.action)">{{ p.row.label || S.actionLabel(p.row.action) }}</el-tag></template>
               </el-table-column>
               <el-table-column label="价格" width="90">
                 <template #default="p">{{ S.num(p.row.price, 2) }}</template>
@@ -289,8 +288,7 @@
       }
 
       // ── v7.13: 自选股择时矩阵 ──────────────────────────────
-      // v7.19 (T3.4): 矩阵重排 —— 8 策略并排时，用户真正的诉求是"哪几只现在能上、敢上多少"，
-      // 而不是逐个读标签文字。故：色点表方向、仓位条表力度、默认按"平均仓位倒序 + 非持有优先"。
+      // v7.20: 单元格改为文字+强度档(后端字典下发), 弃旧色点/仓位条/百分比。
       const matrixSortMode = ref('exposure');   // exposure | symbol
       const matrixOnlySignaled = ref(false);
       const matrix = ref(null);
@@ -299,21 +297,14 @@
       // v7.16 FR-9: 数据源 tab — watchlist(自选股) / calendar(日历新增)
       const matrixSource = ref('watchlist');
 
-      // 策略简称：中文名去掉「策略」后缀，最多 3 字（表头横排用），全名走 title 悬浮
+      // 策略简称：去括号/后缀, 4 字封顶, 全名走 title
       function shortStrategyName(name) {
-        // v7.19 (FR-3): 表头横排简称 —— 先去括号补充说明与通用后缀, 再按 4 字封顶。
-        // 直接 slice(0,4) 会切出「布林带择」「顺势宝(」这种半截词, 反而更难读。
+        // 直接 slice(0,4) 会切出「布林带择」「顺势宝(」这种半截词, 更难读。
         var raw = String(name || '').trim();
         var n = raw.replace(/[（(].*$/, '').replace(/(择时|信号|策略|选股|模型|系统)$/g, '').trim();
         if (!n) n = raw;
         n = n.replace(/plus$/i, '+');
         return n.length > 4 ? n.slice(0, 4) : n;
-      }
-      function cellBarWidth(exposure) {
-        var n = Number(exposure);
-        if (!isFinite(n)) return '0%';
-        var pct = Math.max(0, Math.min(1, n)) * 100;
-        return pct.toFixed(0) + '%';
       }
       const matrixRows = computed(function () {
         var m = matrix.value;
@@ -356,11 +347,20 @@
         const agg = matrix.value && matrix.value.aggregate && matrix.value.aggregate[sid];
         if (!agg || agg.avg_exposure === null || agg.avg_exposure === undefined) return '—';
         const counts = agg.action_counts || {};
+        const labels = agg.action_labels || {};
         const parts = Object.keys(counts)
           .sort((a, b) => counts[b] - counts[a])
           .slice(0, 2)
-          .map(a => S_().actionLabel(a) + '×' + counts[a]);
-        return S_().pct(agg.avg_exposure, 0) + (parts.length ? ' · ' + parts.join('/') : '');
+          .map(a => (labels[a] || S_().actionLabel(a)) + '×' + counts[a]);
+        return parts.length ? parts.join('/') : '—';
+      }
+      // v7.20: 单元格 tooltip — 动作语义 + 强度 + 仓位系数(辅助) + 判定理由
+      function cellTitle(st, cell) {
+        const label = cell.label || S_().actionLabel(cell.action);
+        const band = cell.strength_band ? ' · 强度' + cell.strength_band : '';
+        const exp = cell.exposure_note || ('仓位 ' + S_.pct(cell.exposure, 0));
+        const msg = cell.message ? ' · ' + cell.message : '';
+        return st.name + ' · ' + label + band + ' · ' + exp + msg;
       }
 
       async function loadMatrix() {
@@ -404,13 +404,13 @@
 
       return {
         // v7.19 (T3.4): 矩阵重排
-        matrixSortMode, matrixOnlySignaled, matrixRows, shortStrategyName, cellBarWidth,
+        matrixSortMode, matrixOnlySignaled, matrixRows, shortStrategyName,
         S: window.__quantModules.v711,
         symbol, sid, strategies, evaluating, stateLoading, error, result, mktState,
         points, perf, timeline, sourceText,
         actionTagType, actionTagTypeOf,
         loadStrategies, runEvaluate, loadState,
-        matrix, matrixLoading, matrixError, simulatedWarn, aggText, loadMatrix,
+        matrix, matrixLoading, matrixError, simulatedWarn, aggText, cellTitle, loadMatrix,
         matrixSource, calendarDate, calendarInherited,
         signalAsOf, signalGeneratedAt,
       };

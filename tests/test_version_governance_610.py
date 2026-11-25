@@ -40,11 +40,11 @@ def _app_version() -> str:
 def test_app_version_defined():
     v = _app_version()
     assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v)
-    # 演进线: 6.1.N ~ 6.9.N 或 7.X.N (X=0..19, 对齐 PRD v7.X 规划约束)
+    # 演进线: 6.1.N ~ 6.9.N 或 7.X.N (X=0..29, 对齐 PRD v7.X 规划约束)
     major_minor = tuple(int(x) for x in v.split(".")[:2])
     in_evolution = (major_minor[0] == 6 and 1 <= major_minor[1] <= 9) or \
-                   (major_minor[0] == 7 and 0 <= major_minor[1] <= 19)
-    assert in_evolution, f"演进线要求 APP_VERSION 为 6.1.N~6.9.N 或 7.0.N~7.19.N, 实际 {v}"
+                   (major_minor[0] == 7 and 0 <= major_minor[1] <= 29)
+    assert in_evolution, f"演进线要求 APP_VERSION 为 6.1.N~6.9.N 或 7.0.N~7.29.N, 实际 {v}"
 
 
 def test_readme_first_row_matches_app_version():

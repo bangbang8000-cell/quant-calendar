@@ -24,7 +24,7 @@ def test_matrix_header_short_name_with_tooltip():
     assert "shortStrategyName" in src, "应有策略简称函数"
     assert '<template #header>' in src, "表头应走 #header 插槽以支持简称"
     assert ':title="st.name"' in src, "简称必须带 hover 全名"
-    assert "min-width=\"68\"" in src, "策略列宽应收到 68px（色点+仓位条 + 数字）"
+    assert "min-width=\"68\"" in src, "策略列宽保持 68px（文字标签 + 强度档）"
 
 
 def test_matrix_first_column_fixed_and_avoid_fab():
@@ -36,16 +36,23 @@ def test_matrix_first_column_fixed_and_avoid_fab():
     assert "@media (max-width: 1024px)" in css, "窄屏应收回避让（否则内容被挤）"
 
 
-def test_matrix_cell_dot_and_bar():
-    """单元格 = 色点（方向）+ 12px 仓位条（力度），不再用文字标签撑列宽"""
+def test_matrix_cell_text_label():
+    """v7.20: 单元格 = 明确文字标签 + 强度档；仓位系数降级为 tooltip 辅助信息
+
+    旧版「色点 + 仓位条 + 百分比」把 buy/add/hold 都渲成 100%, 用户无法理解,
+    已按用户反馈改为文字。此断言锁定新契约, 防止回退。
+    """
     src = _read("js/components/overlay-radar.js")
-    assert "qc711-dot" in src and "qc711-bar" in src
-    assert "cellBarWidth(" in src, "仓位条宽度需由 exposure 换算"
+    assert "qc711-sig" in src and "strength_band" in src, "单元格应渲染文字标签 + 强度档"
+    assert "cellTitle(" in src, "应有 tooltip 函数承载仓位系数/判定理由"
+    assert "qc711-dot" not in src and "qc711-bar" not in src, "旧色点+仓位条渲染应移除"
+    assert "cellBarWidth" not in src, "仓位条换算函数应移除"
     assert "<el-tag" not in src.split("qc711-matrix-tools")[1].split("平均仓位")[0], \
-        "策略单元格不应再用 el-tag（文字撑宽是重排要解决的问题本身）"
+        "策略单元格仍不应使用 el-tag（用轻量 span 标签避免撑宽）"
     css = _read("css/components.css")
-    assert ".qc711-dot.is-buy" in css and ".qc711-dot.is-hold" in css, "色点需按动作分色"
-    assert ".qc711-bar > i" in css, "仓位条内层填充缺失"
+    assert ".qc711-sig.tone-up" in css and ".qc711-sig.tone-down" in css \
+        and ".qc711-sig.tone-flat" in css, "文字标签需按 up/down/flat 三档分色"
+    assert ".qc711-sig-band" in css, "强度档样式缺失"
 
 
 def test_matrix_sort_and_filter():
