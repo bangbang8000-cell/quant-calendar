@@ -27,9 +27,23 @@
       const RESEARCH_TYPE_LABELS = {
         'factor_ic': '因子IC', 'layer': '分层', 'sweep': '扫描',
         'backtest': '回测', 'stability': '稳定性',
+        'timing_matrix': '择时矩阵', 'timing': '择时', 'market_state': '市场状态',
+        'score': '评分', 'pattern_strategy': '形态策略', 'pattern_match': '形态匹配',
       };
       function researchTypeLabel(type) {
         return RESEARCH_TYPE_LABELS[type] || type || '—';
+      }
+      // v7.22 (FR-5): 代码 + 中文名展示（后端只读补字段；查不到名称显示 —）
+      function researchSubjectLabel(exp) {
+        if (!exp) return '—';
+        const names = exp.subject_names || {};
+        const codes = exp.subject_codes || [];
+        if (codes.length) {
+          const parts = codes.slice(0, 3).map(function (c) { return c + (names[c] ? ' ' + names[c] : ' —'); });
+          if (codes.length > 3) parts.push('等 ' + codes.length + ' 只');
+          return parts.join('、');
+        }
+        return exp.subject || '—';
       }
       function goShortterm(sub) {
         // V5.2.3: 市场复盘移入短线复盘 → 研究页入口跳转过去 (V6.9.1-fix: 异动扫描已删除)
@@ -252,7 +266,7 @@
       return {
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
-        researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory,
+        researchExportLoading, researchTypeLabel, researchSubjectLabel, goShortterm, openResearchHistory,
         loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail,
         runResearchCompare, deleteResearchHistory,
         overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)

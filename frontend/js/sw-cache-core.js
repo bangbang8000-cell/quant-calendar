@@ -1,16 +1,5 @@
 // quant-calendar: Service Worker 缓存分区纯函数 (V6.3.6 安全加固)
 // UMD: Node require / 浏览器 self.QuantSwCacheCore；由 sw.js 经 importScripts 加载。
-//
-// 背景（已在 ops 真实密钥上复现）:
-//   Cache API 的键只有 URL（响应头仅 Vary: Accept-Encoding），caches.match() 不看 Authorization。
-//   原实现把全部 GET /api/* 写进同一个缓存、断网时无条件回放 —— 于是一个已缓存了
-//   「管理员会话产出的明文密钥响应」的浏览器，在断网时会把该响应回放给访客 / 无凭据 /
-//   伪造凭据的请求（UI 上表现为：访客离线点「编辑密钥」直接看到管理员的完整 API Key）。
-//
-// 对策（本模块只提供纯判定，缓存命名与策略在 sw.js）:
-//   ① isSensitiveApi: 密钥/凭据/配置/用户等敏感端点一律不进缓存、不回放，只走网络；
-//   ② identityKey:   其余 API 缓存按「请求身份」分区（JWT sub），跨身份不可能命中；
-//   ③ 身份不可解析时退化为「整串 token 的哈希」，绝不与匿名或他人共用分区。
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
     module.exports = factory();

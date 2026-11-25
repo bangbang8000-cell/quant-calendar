@@ -8,6 +8,7 @@ include_router 挂载, 路径 (/strategies/research-history*) 与注册顺序保
 """
 import json
 import logging
+import re
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -17,6 +18,44 @@ from auth import get_non_guest_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=['策略研究'])
+
+
+def _subject_extras(exp):
+    """v7.22 (FR-5): 读取端补 subject_codes/subject_names，不改历史 subject 语义。
+
+    代码来源：subject 内的 6 位代码 + timing_matrix.result.rows[].symbol（subject 只保留前 5 个）。
+    名称优先取 result.rows[].name，缺失时查本地名称库；查不到不写入（前端显示 —）。
+    """
+    subject = str(exp.get('subject') or '')
+    codes = []
+    for part in subject.split(','):
+        code = part.strip().removesuffix('...').strip()
+        if re.fullmatch(r'\d{6}\.(SH|SZ|BJ)', code) and code not in codes:
+            codes.append(code)
+    result = exp.get('result') if isinstance(exp.get('result'), dict) else {}
+    rows = [r for r in (result.get('rows') or []) if isinstance(r, dict)]
+    for row in rows:
+        code = str(row.get('symbol') or row.get('code') or '')
+        if re.fullmatch(r'\d{6}\.(SH|SZ|BJ)', code) and code not in codes:
+            codes.append(code)
+    try:
+        from .strategy_research_support import symbol_names
+        names = symbol_names(codes)
+    except Exception:  # noqa: BLE001 — 名称缺失不应阻断历史列表
+        names = {}
+    for row in rows:
+        code = str(row.get('symbol') or row.get('code') or '')
+        nm = str(row.get('name') or '').strip()
+        if code and nm and nm != code:
+            names[code] = nm
+    return codes, names
+
+
+def _with_subject_display(item):
+    codes, names = _subject_extras(item)
+    item['subject_codes'] = codes
+    item['subject_names'] = names
+    return item
 
 
 # ==================== 5.1.0 (T-5.1.3): 研究历史 API ====================
@@ -33,6 +72,7 @@ async def research_history_list(limit: int = 50, type: Optional[str] = None,
     except Exception as e:
         logger.exception('研究历史列表失败')
         raise HTTPException(status_code=500, detail=f'研究历史列表失败: {e}')
+    items = [_with_subject_display(dict(x)) for x in items]
     return {'items': items, 'count': len(items)}
 
 
@@ -107,6 +147,7 @@ async def research_history_compare(body: Dict[str, Any],
     except Exception as e:
         logger.exception('研究实验对比失败')
         raise HTTPException(status_code=500, detail=f'研究实验对比失败: {e}')
+    rows = [_with_subject_display(dict(x)) for x in rows]
     return {'items': rows, 'count': len(rows)}
 
 

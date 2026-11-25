@@ -716,12 +716,14 @@
 }
 .qc-stock-name > :not(.qc-stock-name-text) { flex: 0 0 auto; }
 /* v7.18 (FR-1101): tags 2行×2列 固定网格 (148px) — 「N 策略」徽章占首格, tag 顺延, 超出 +N */
-/* v7.18 (用户定版 20261124 二次调整): 「N 策略」计数徽章前置定宽 44px, 策略网格 2行×2列 列优先
-   — 1-2 个策略竖排靠左, 右列留空占位, 网格起始位置恒定; 总宽仍 148px, 四列栅格与图标列不受影响。 */
+/* v7.22 (用户定版 20261125): 「N 策略」计数徽章前置定宽 44px, 策略网格 2行×2列 列优先
+   — 1-2 个策略竖排靠左, 右列留空占位; 策略名居中, 纵向 row-gap 6px + tag 上下 padding 2px。
+   列宽由令牌控制（info 92 / ops 92 / badge 44 / 策略区弹性），四列栅格与图标列不受影响。 */
 .qc-stock-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* v7.22: 横向 gap 6→4，把 2px 让给 13px 策略名 */
+  gap: 4px;
   width: 100%;
   min-width: 0;
 }
@@ -730,8 +732,8 @@
   width: var(--qc-stock-badge-w);
   padding: 2px 2px;
   text-align: center;
-  /* v7.19 (FR-1): 徽章字号回到 11px（标准档），不再为省空间压到 10px */
-  font-size: var(--qc-font-size-2xs);
+  /* v7.22 (FR-1): 计数徽章与策略 tag 同阶（12px），消除徽章比 tag 更小的倒挂观感 */
+  font-size: var(--qc-font-size-xs);
 }
 .qc-strat-grid {
   flex: 1 1 auto;
@@ -740,16 +742,18 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   grid-auto-flow: column;
-  gap: 4px;
+  /* v7.22 (FR-2): 只加大纵向间距，列间距保持 4px 不挤压横向容量 */
+  column-gap: 4px;
+  row-gap: 6px;
 }
 /* v7.19 (FR-1): 策略 tag 字号读令牌（标准 12px / 紧凑 11px）；
    列宽由 1fr 分配，1600 屏标准档每格约 78px，6 字策略名完整显示（7 字以上 title 兜底）。 */
 .qc-strat-grid .qc-stock-tag {
-  font-size: var(--qc-stock-tag-font);
-  /* v7.19：横向 padding 4→2。spacious 档行内左右 padding 随 --qc-space 放大到 21px，
-     策略格子只剩 78px，而 6 字中文名 @12px + 8px padding = 80px 会被裁 2px（实测 20 处）。
-     缩到 2px 后 6 字名 76px，留 2px 余量，三档密度全部 0 截断。 */
-  padding: 0 4px;
+  /* v7.22 (FR-1/FR-2): 标准/宽松档 13px，紧凑档仍 11px；
+     行内让宽（info 96→92、徽章 46→44、横向 gap 6→4）抵消字体增量，实测三档 0 截断。 */
+  font-size: var(--qc-stock-tag-font-lg);
+  padding: 2px 4px;
+  text-align: center;
 }
 .qc-stock-tag.is-empty {
   background: transparent;

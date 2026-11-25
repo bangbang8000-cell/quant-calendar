@@ -421,7 +421,7 @@
         seqOf: seqOf, state,
       });
       const { researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType, researchHistorySelected, researchDetailId } = __history;
-      const { researchCompareRows, researchCompareLoading, researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory } = __history;
+      const { researchCompareRows, researchCompareLoading, researchExportLoading, researchTypeLabel, researchSubjectLabel, goShortterm, openResearchHistory } = __history;
       const { loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory } = __history;
       const { overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)
         // v7.19 (T3.2): 策略工作台
@@ -731,7 +731,7 @@
         // 5.1.0 (T-5.1.4): 研究历史
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,
-        researchTypeLabel, goShortterm, openResearchHistory, loadResearchHistory, researchExportLoading, exportResearchHistory,
+        researchTypeLabel, researchSubjectLabel, goShortterm, openResearchHistory, loadResearchHistory, researchExportLoading, exportResearchHistory,
         toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory,
         marketReviews, marketReviewLoading, marketReviewError,
         selectedReviewDate, marketReviewDetail, marketReviewDetailLoading, marketReviewDetailError,

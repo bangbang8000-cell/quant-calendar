@@ -22,6 +22,8 @@ const selectedChatIds = ref([]);
 const expandedChatDates = ref([]);
 // v7.19 (FR-7): 历史计数 —— 用于区分「当前账号无记录」与「系统无数据」
 const chatHistoryMeta = ref({ total: 0, system_total: 0, other_total: 0 });
+// v7.22 (FR-3): 问股历史视图范围（mine=当前账号 / all=管理员只读全量）
+const chatHistoryScope = ref('mine');
 const expandedChatMonths = ref([]);
 const expandedChatStocks = ref([]);
 
@@ -296,7 +298,10 @@ async function askStockQuick(mode) {
     stockChatLoading.value = false;
 }
 
-async function loadChatHistory() {
+async function loadChatHistory(scope) {
+    // v7.22 (FR-3): 显式 scope 时先翻转状态，刷新按钮沿用当前 scope
+    if (scope === 'all' || scope === 'mine') chatHistoryScope.value = scope;
+    const activeScope = chatHistoryScope.value;
     // v3.16 (16.7): 统一错误态状态机
     chatHistoryLoading.value = true;
     chatHistoryError.value = false;
@@ -304,7 +309,7 @@ async function loadChatHistory() {
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 15000) : null;
     try {
-        const res = await fetch('/api/ai/chat/history?view=date', ctrl ? { signal: ctrl.signal } : undefined);
+        const res = await fetch('/api/ai/chat/history?view=date&scope=' + encodeURIComponent(activeScope), ctrl ? { signal: ctrl.signal } : undefined);
         if (res.ok) {
             const groups = await res.json();
             const sessions = [];
@@ -318,7 +323,7 @@ async function loadChatHistory() {
                 expandedChatDates.value = [sessions[0].date];
             }
             // 计数为非关键路径：失败静默，不影响列表
-            fetch('/api/ai/chat/history/stats').then(function (r) {
+            fetch('/api/ai/chat/history/stats?scope=' + encodeURIComponent(activeScope)).then(function (r) {
                 return r.ok ? r.json() : null;
             }).then(function (d) {
                 if (d) chatHistoryMeta.value = d;
@@ -332,6 +337,16 @@ async function loadChatHistory() {
     } finally {
         if (timer) clearTimeout(timer);
         chatHistoryLoading.value = false;
+    }
+}
+
+// v7.22 (FR-3): 空态主行动 —— 有他账号记录则切全量只读；全量态返回本人
+function onChatHistoryEmptyAction() {
+    const meta = chatHistoryMeta.value || {};
+    if (chatHistoryScope.value === 'all') {
+        loadChatHistory('mine');
+    } else if (meta.other_total > 0) {
+        loadChatHistory('all');
     }
 }
 
@@ -410,7 +425,7 @@ function renderMarkdown(md) {
 
       return {
         chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
-        chatHistoryMeta,
+        chatHistoryMeta, chatHistoryScope, onChatHistoryEmptyAction,
         chatHistoryLoading, chatHistoryError,
         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,

@@ -179,6 +179,9 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 <el-radio-button value="layer">分层</el-radio-button>
                                 <el-radio-button value="sweep">扫描</el-radio-button>
                                 <el-radio-button value="backtest">回测</el-radio-button>
+                                <el-radio-button value="timing_matrix">择时矩阵</el-radio-button>
+                                <el-radio-button value="timing">择时</el-radio-button>
+                                <el-radio-button value="market_state">市场状态</el-radio-button>
                             </el-radio-group>
                             <span class="text-sm-tertiary">勾选 ≤10 条可对比</span>
                             <el-button size="small" :loading="researchExportLoading" @click="exportResearchHistory"><qc-icon name="download" :size="14" /> 导出 CSV</el-button>
@@ -211,7 +214,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                         </thead>
                                         <tbody>
                                             <tr v-for="row in researchCompareRows" :key="row.id">
-                                                <td>{{ row.subject }}</td>
+                                                <td>{{ researchSubjectLabel(row) }}</td>
                                                 <td>{{ researchTypeLabel(row.type) }}</td>
                                                 <td>{{ row.summary.ic_mean != null ? fmtNum(row.summary.ic_mean) : '—' }}</td>
                                                 <td>{{ row.summary.icir != null ? fmtNum(row.summary.icir) : '—' }}</td>
@@ -230,7 +233,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                     <div class="flex-c-gap-8">
                                         <el-checkbox :model-value="researchHistorySelected.includes(exp.id)"
                                             @change="toggleResearchSelect(exp.id)"></el-checkbox>
-                                        <span class="strategy-name">{{ exp.subject }}</span>
+                                        <span class="strategy-name">{{ researchSubjectLabel(exp) }}</span>
                                         <span class="strategy-tag">{{ researchTypeLabel(exp.type) }}</span>
                                         <span class="text-xs-tertiary ml-8">{{ exp.created_at }}</span>
                                     </div>
@@ -250,7 +253,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                     <span v-if="exp.summary.spread != null" class="text-sm-secondary">多空价差 <strong>{{ fmtPct(exp.summary.spread) }}</strong></span>
                                     <span v-if="exp.summary.best_param" class="text-sm-secondary">最优参数 <strong>{{ JSON.stringify(exp.summary.best_param) }}</strong></span>
                                 </div>
-                                <div v-if="exp.range" class="text-xs-tertiary">区间 {{ exp.date_range.join(' → ') }} · v{{ exp.app_version }}</div>
+                                <div v-if="exp.date_range && exp.date_range.length" class="text-xs-tertiary">区间 {{ exp.date_range.join(' → ') }} · v{{ exp.app_version }}</div>
                                 <template v-if="researchDetailId === exp.id">
                                     <div class="card mt-8">
                                         <div class="card-title">实验详情</div>

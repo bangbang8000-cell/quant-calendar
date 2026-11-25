@@ -193,6 +193,7 @@
      旧名保留为别名 (sm/base 同档 14), 业务侧 616 处引用无需批量改动。 */
   --qc-font-size-xs: 12px;
   --qc-font-size-2xs: 11px;   /* v7.18: 个股行计数徽章字号 (FR-1101) */
+  --qc-stock-tag-font-lg: 13px;  /* v7.22 FR-1: 标准/宽松档策略匹配 tag 字号 */
   --qc-font-size-sm: 14px;      /* 别名 → base (原 13px 与 12/14 不可辨) */
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
@@ -657,10 +658,10 @@ html[data-density="spacious"] {
 :root {
   --qc-row-h: 88px;          /* 标准档行高 */
   --qc-row-gap: 8px;         /* 标准档行距（虚拟分支同样生效） */
-  --qc-stock-info-w: 96px;   /* 信息列定宽：消灭 1fr 吃宽造成的死区；留 16px 给策略区 */
+  --qc-stock-info-w: 92px;   /* v7.22: 96→92，让 4px 给 13px 策略名 */
   --qc-stock-ops-w: 92px;    /* 操作区列宽 = 4 槽 × 20px + 3 × 4px */
   --qc-op-hit: 20px;         /* 操作槽位热区边长 */
-  --qc-stock-badge-w: 46px;  /* 「N 策略」徽章定宽 */
+  --qc-stock-badge-w: 44px;  /* v7.22: 46→44，让 2px 给策略名 */
   --qc-stock-icon: 16px;     /* 行内图标尺寸 */
   --qc-stock-tag-font: var(--qc-font-size-xs);  /* 策略 tag 12px */
 }
@@ -673,6 +674,7 @@ html[data-density="compact"] {
   --qc-stock-badge-w: 44px;
   --qc-stock-icon: 15px;
   --qc-stock-tag-font: var(--qc-font-size-2xs);   /* 11px：1366 屏不截断 */
+  --qc-stock-tag-font-lg: var(--qc-font-size-2xs);  /* 紧凑档不放大 */
 }
 /* 横向预算说明 (v7.19 实测 @1440 · 中栏 476px)：
    可用 = 476 − 34(padding) − 16(序号) − 12(3×gap) − info − ops = 策略区
@@ -683,12 +685,13 @@ html[data-density="compact"] {
 html[data-density="spacious"] {
   --qc-row-h: 96px;
   --qc-row-gap: 12px;
-  --qc-stock-info-w: 96px;
+  --qc-stock-info-w: 92px;
   --qc-stock-ops-w: 92px;
   --qc-op-hit: 22px;
-  --qc-stock-badge-w: 46px;
+  --qc-stock-badge-w: 44px;
   --qc-stock-icon: 18px;
   --qc-stock-tag-font: var(--qc-font-size-xs);
+  --qc-stock-tag-font-lg: 13px;
 }
 
 /* ===== themes.css ===== */
@@ -3685,7 +3688,11 @@ text {
 
 /* V5.0 (T-5.0.6): 健康与可靠性面板 */
 .health-badge {
-    display: inline-block;
+    /* v7.22 (FR-7): inline-flex + 最小高度，图标与文字在同一交叉轴居中 */
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 24px;
     padding: 0px 10px;
     border-radius: var(--qc-radius-full);
     font-size: var(--qc-font-size-xs);
@@ -5449,16 +5456,16 @@ text {
 .usage-ai-stat-num { font-size: var(--qc-font-size-xl); font-weight: var(--font-semibold); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .usage-ai-stat-num small { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); font-weight: var(--font-normal); }
 .usage-ai-stat-meter .meter-bar { margin-top: 8px; }
-.usage-ai-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 12px; }
-.usage-ai-panel { border: 1px solid var(--border-base); border-radius: var(--qc-radius-large); background: var(--bg-card); box-shadow: var(--qc-shadow-sm); padding: 12px 14px; }
+.usage-ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.usage-ai-panel { min-width: 0; border: 1px solid var(--border-base); border-radius: var(--qc-radius-large); background: var(--bg-card); box-shadow: var(--qc-shadow-sm); padding: 12px 14px; }
 .usage-ai-panel-title { display: flex; align-items: baseline; gap: 8px; font-size: var(--qc-font-size-sm); font-weight: var(--font-medium); color: var(--text-secondary); margin-bottom: 8px; }
 .usage-ai-panel-meta { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); font-weight: var(--font-normal); }
-.usage-ai-model-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--border-light); }
+.usage-ai-model-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--border-light); }
 .usage-ai-model-row:last-child { border-bottom: 0; }
 .usage-ai-model-no { width: 20px; height: 20px; border-radius: var(--qc-radius-small); background: var(--bg-hover); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--qc-font-size-xs); flex: none; }
 .usage-ai-model-no-top { background: var(--bg-selected); color: var(--primary-text); font-weight: var(--font-semibold); }
-.usage-ai-model-name { min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; color: var(--text-primary); font-size: var(--qc-font-size-sm); }
-.usage-ai-model-bar { flex: 0 0 90px; height: 7px; border-radius: var(--qc-radius-full); background: var(--border-light); overflow: hidden; }
+.usage-ai-model-name { min-width: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; color: var(--text-primary); font-size: var(--qc-font-size-sm); }
+.usage-ai-model-bar { flex: 1 1 40px; min-width: 24px; height: 7px; border-radius: var(--qc-radius-full); background: var(--border-light); overflow: hidden; }
 .usage-ai-model-fill { display: block; height: 100%; border-radius: var(--qc-radius-full); background: var(--bar-fill); }
 .usage-ai-model-pct { flex: none; min-width: 42px; text-align: right; font-size: var(--qc-font-size-xs); color: var(--primary-text); font-variant-numeric: tabular-nums; }
 .usage-ai-model-count { flex: none; min-width: 44px; text-align: right; font-size: var(--qc-font-size-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
@@ -6912,7 +6919,8 @@ body.qc-split-resizing * {
 }
 
 /* v7.15 (FR-7): 研究总览跨策略对比表 — 只用既有令牌 */
-.qr-compare-table { width: 100%; border-collapse: collapse; margin-top: var(--qc-space-8); }
+.qr-compare-table { width: 100%; min-width: 560px; border-collapse: collapse; margin-top: var(--qc-space-8); }
+.qr-compare-table .qr-ts { white-space: nowrap; }
 .qr-compare-table th, .qr-compare-table td {
   padding: var(--qc-space-2) var(--qc-space-3);
   border-bottom: 1px solid var(--border-color);
@@ -8283,12 +8291,14 @@ body.qc-split-resizing * {
 }
 .qc-stock-name > :not(.qc-stock-name-text) { flex: 0 0 auto; }
 /* v7.18 (FR-1101): tags 2行×2列 固定网格 (148px) — 「N 策略」徽章占首格, tag 顺延, 超出 +N */
-/* v7.18 (用户定版 20261124 二次调整): 「N 策略」计数徽章前置定宽 44px, 策略网格 2行×2列 列优先
-   — 1-2 个策略竖排靠左, 右列留空占位, 网格起始位置恒定; 总宽仍 148px, 四列栅格与图标列不受影响。 */
+/* v7.22 (用户定版 20261125): 「N 策略」计数徽章前置定宽 44px, 策略网格 2行×2列 列优先
+   — 1-2 个策略竖排靠左, 右列留空占位; 策略名居中, 纵向 row-gap 6px + tag 上下 padding 2px。
+   列宽由令牌控制（info 92 / ops 92 / badge 44 / 策略区弹性），四列栅格与图标列不受影响。 */
 .qc-stock-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* v7.22: 横向 gap 6→4，把 2px 让给 13px 策略名 */
+  gap: 4px;
   width: 100%;
   min-width: 0;
 }
@@ -8297,8 +8307,8 @@ body.qc-split-resizing * {
   width: var(--qc-stock-badge-w);
   padding: 2px 2px;
   text-align: center;
-  /* v7.19 (FR-1): 徽章字号回到 11px（标准档），不再为省空间压到 10px */
-  font-size: var(--qc-font-size-2xs);
+  /* v7.22 (FR-1): 计数徽章与策略 tag 同阶（12px），消除徽章比 tag 更小的倒挂观感 */
+  font-size: var(--qc-font-size-xs);
 }
 .qc-strat-grid {
   flex: 1 1 auto;
@@ -8307,16 +8317,18 @@ body.qc-split-resizing * {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   grid-auto-flow: column;
-  gap: 4px;
+  /* v7.22 (FR-2): 只加大纵向间距，列间距保持 4px 不挤压横向容量 */
+  column-gap: 4px;
+  row-gap: 6px;
 }
 /* v7.19 (FR-1): 策略 tag 字号读令牌（标准 12px / 紧凑 11px）；
    列宽由 1fr 分配，1600 屏标准档每格约 78px，6 字策略名完整显示（7 字以上 title 兜底）。 */
 .qc-strat-grid .qc-stock-tag {
-  font-size: var(--qc-stock-tag-font);
-  /* v7.19：横向 padding 4→2。spacious 档行内左右 padding 随 --qc-space 放大到 21px，
-     策略格子只剩 78px，而 6 字中文名 @12px + 8px padding = 80px 会被裁 2px（实测 20 处）。
-     缩到 2px 后 6 字名 76px，留 2px 余量，三档密度全部 0 截断。 */
-  padding: 0 4px;
+  /* v7.22 (FR-1/FR-2): 标准/宽松档 13px，紧凑档仍 11px；
+     行内让宽（info 96→92、徽章 46→44、横向 gap 6→4）抵消字体增量，实测三档 0 截断。 */
+  font-size: var(--qc-stock-tag-font-lg);
+  padding: 2px 4px;
+  text-align: center;
 }
 .qc-stock-tag.is-empty {
   background: transparent;

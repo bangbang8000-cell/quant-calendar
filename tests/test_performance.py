@@ -164,16 +164,17 @@ def test_ai_history_api_returns_total_and_paging():
     assert "offset: int = 0" in api
 
 
-def _seed_chat_history_json(sessions):
-    """写入问股历史 JSON 存档 (default 用户, 测试环境 SQLite 未初始化时 _load_history 走 JSON)"""
+def _seed_chat_history_json(sessions, monkeypatch, tmp_path):
+    """写入临时问股历史 JSON 存档 (v7.22: 不再污染生产 data/chat_history.json)"""
     import api.v1.chat as chat_mod
-    os.makedirs(os.path.dirname(chat_mod.HISTORY_FILE), exist_ok=True)
-    with open(chat_mod.HISTORY_FILE, "w", encoding="utf-8") as f:
+    history_file = str(tmp_path / "chat_history.json")
+    monkeypatch.setattr(chat_mod, "HISTORY_FILE", history_file)
+    with open(history_file, "w", encoding="utf-8") as f:
         json.dump({"sessions": sessions}, f, ensure_ascii=False)
     return chat_mod
 
 
-def test_chat_history_limit_offset_slicing():
+def test_chat_history_limit_offset_slicing(monkeypatch, tmp_path):
     """问股历史分页: 先按 limit/offset 切片会话, 再分组 (flat 计数正确)"""
     import asyncio
     sessions = [
@@ -182,7 +183,7 @@ def test_chat_history_limit_offset_slicing():
          "messages": [{"role": "user", "content": f"消息{i}", "time": "2026-07-01T09:00:00"}]}
         for i in range(120)
     ]
-    chat_mod = _seed_chat_history_json(sessions)
+    chat_mod = _seed_chat_history_json(sessions, monkeypatch, tmp_path)
     page1 = asyncio.run(chat_mod.get_history(view="date", limit=50, offset=0,
                                              user={"username": "default"}))
     page2 = asyncio.run(chat_mod.get_history(view="date", limit=50, offset=50,
@@ -193,7 +194,7 @@ def test_chat_history_limit_offset_slicing():
     assert flat2 == 50, f"第二页应 50 条会话, 实得 {flat2}"
 
 
-def test_chat_history_pagination_boundary():
+def test_chat_history_pagination_boundary(monkeypatch, tmp_path):
     """问股历史分页边界: offset 超界返回空; 默认参数保持 50"""
     import asyncio
     sessions = [
@@ -202,7 +203,7 @@ def test_chat_history_pagination_boundary():
          "messages": [{"role": "user", "content": "m", "time": "2026-07-01T09:00:00"}]}
         for i in range(3)
     ]
-    chat_mod = _seed_chat_history_json(sessions)
+    chat_mod = _seed_chat_history_json(sessions, monkeypatch, tmp_path)
     out = asyncio.run(chat_mod.get_history(view="date", limit=2, offset=10,
                                            user={"username": "default"}))
     assert sum(len(g["items"]) for g in out) == 0, "offset 超界应返回空"

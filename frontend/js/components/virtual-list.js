@@ -1,20 +1,5 @@
 // quant-calendar: VirtualList 组件 (v3.11 / FR-3.11.3)
 // 固定行高虚拟滚动列表 — 仅渲染可视区行 + 上下缓冲，滚动流畅不卡顿。
-// 用法（父模板，v7.19 起行高/行距不再写死数字，一律读 CSS 令牌）：
-//   <qc-virtual-list class="h-calc-260" :items="stockPool"
-//                    :row-height="rowH" :item-gap="rowGapPx">
-//     <template #default="{ item, index }">
-//       <div class="consensus-item" @click="showStockDetail(item.code)">...</div>
-//     </template>
-//   </qc-virtual-list>
-// 说明：
-//   - 滚动容器 = 组件根元素，高度由父级 style 控制（overflow-y:auto 内置）；
-//   - 行高固定为 :row-height（超出部分 overflow:hidden 裁切），行内交互事件不变；
-//   - :item-gap 是行间距：绝对定位分支没有 CSS gap 概念，它必须参与窗口/位移/总高计算，
-//     否则列表超一屏就会「行贴着行」；plain 分支用同一值做 flex gap，两分支视觉一致；
-//   - 父组件（StockList.vue）用 getComputedStyle 读 --qc-row-h / --qc-row-gap 传给这里，
-//     单一来源是 tokens.css —— 不要再在模板里写 :row-height="78" 这类字面量；
-//   - style/class 等非 prop attribute 自动落到根元素（Vue 3 单根 fallthrough）。
 (function () {
   const { ref, computed, onMounted, onBeforeUnmount } = Vue;
   const VL = window.QuantVirtualList || {};

@@ -1072,7 +1072,8 @@ body.qc-split-resizing * {
 }
 
 /* v7.15 (FR-7): 研究总览跨策略对比表 — 只用既有令牌 */
-.qr-compare-table { width: 100%; border-collapse: collapse; margin-top: var(--qc-space-8); }
+.qr-compare-table { width: 100%; min-width: 560px; border-collapse: collapse; margin-top: var(--qc-space-8); }
+.qr-compare-table .qr-ts { white-space: nowrap; }
 .qr-compare-table th, .qr-compare-table td {
   padding: var(--qc-space-2) var(--qc-space-3);
   border-bottom: 1px solid var(--border-color);

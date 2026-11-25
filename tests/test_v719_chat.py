@@ -39,7 +39,7 @@ def test_stats_reports_other_account_records(monkeypatch):
     monkeypatch.setattr(chat, '_load_history', lambda username='default': [{'id': 1}, {'id': 2}])
     monkeypatch.setattr(db, 'get_conn', lambda: _Conn(5))
     out = asyncio.run(chat.get_history_stats(user={'username': 'admin'}))
-    assert out == {'total': 2, 'system_total': 5, 'other_total': 3}
+    assert out == {'total': 2, 'system_total': 5, 'other_total': 3, 'scope': 'mine'}
 
 
 def test_stats_falls_back_when_db_unavailable(monkeypatch):

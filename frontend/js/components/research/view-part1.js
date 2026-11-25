@@ -37,26 +37,7 @@ window.__quantModules.researchPage.part1 = `
                                     <div class="stat-value">{{ customs.length }}</div>
                                     <div class="stat-label">自定义策略</div>
                                 </div>
-                            </div>                        <!-- v7.15 (FR-7): 跨策略回测对比摘要卡 (涨红跌绿) -->
-                        <div class="section-title-base mt-8"><qc-icon name="git-compare" :size="16" /> 跨策略回测对比 <span class="text-sm-tertiary">每策略最近一次回测 · 点击行跳转回测页</span></div>
-                        <qc-state-panel v-if="overviewCompareLoading" type="loading"></qc-state-panel>
-                        <div v-else-if="!overviewCompareRows.length" class="text-sm-tertiary mt-8">还没有回测实验。到 策略回测 运行一次后，这里会出现跨策略横向对比。</div>
-                        <table v-else class="qr-compare-table">
-                            <thead>
-                                <tr><th>策略</th><th>年化</th><th>回撤</th><th>夏普</th><th>胜率</th><th>时间</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="r in overviewCompareRows" :key="'ovc-' + r.sid" class="clickable" @click="goBacktestFor(r.sid)">
-                                    <td><strong>{{ LX.sid(r.sid) }}</strong></td>
-                                    <td :class="r.annual_return >= 0 ? 'is-rise' : 'is-fall'">{{ fmtPct(r.annual_return) }}</td>
-                                    <td :class="r.max_drawdown >= 0 ? 'is-rise' : 'is-fall'">{{ fmtPct(r.max_drawdown) }}</td>
-                                    <td>{{ fmtNum(r.sharpe_ratio) }}</td>
-                                    <td>{{ fmtPct(r.win_rate) }}</td>
-                                    <td class="text-sm-tertiary">{{ r.ts }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        
+                            </div>
                             <div class="stat-card clickable" @click="goShortterm('market-review')">
                                 <div class="stat-icon"><qc-icon name="file-text" :size="18" /></div>
                                 <div class="stat-content">
@@ -71,6 +52,31 @@ window.__quantModules.researchPage.part1 = `
                                     <div class="stat-value">{{ researchHistory.length }}</div>
                                     <div class="stat-label">研究历史</div>
                                 </div>
+                            </div>
+                        </div>
+                        <!-- v7.22 (FR-4): 对比块移出 dashboard-grid，独立卡片 + 滚动表格容器 -->
+                        <div class="card mt-8">
+                            <div class="card-title"><qc-icon name="git-compare" :size="16" /> 跨策略回测对比 <span class="text-sm-tertiary">每策略最近一次回测 · 点击行跳转回测页</span></div>
+                            <qc-state-panel v-if="overviewCompareLoading" type="loading"></qc-state-panel>
+                            <div v-else-if="!overviewCompareRows.length" class="text-sm-tertiary mt-8">还没有回测实验。到 策略回测 运行一次后，这里会出现跨策略横向对比。</div>
+                            <div v-else class="table-container">
+                                <table class="qr-compare-table">
+                                    <thead>
+                                        <tr><th>策略</th><th>年化</th><th>回撤</th><th>夏普</th><th>胜率</th><th>时间</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="r in overviewCompareRows" :key="'ovc-' + r.sid" class="clickable" @click="goBacktestFor(r.sid)">
+                                            <td><strong>{{ LX.sid(r.sid) }}</strong></td>
+                                            <td :class="r.annual_return >= 0 ? 'is-rise' : 'is-fall'">{{ fmtPct(r.annual_return) }}</td>
+                                            <!-- v7.22: 回撤统一按负向指标展示，避免两条后端路径符号口径相反导致一红一绿 -->
+                                            <td class="is-fall">{{ fmtPct(-Math.abs(r.max_drawdown || 0)) }}</td>
+                                            <td>{{ fmtNum(r.sharpe_ratio) }}</td>
+                                            <!-- v7.22: 胜率无正号；时间单行显示 -->
+                                            <td>{{ fmtPct(r.win_rate).replace('+', '') }}</td>
+                                            <td class="text-sm-tertiary qr-ts">{{ r.ts ? r.ts.slice(0, 16).replace('T', ' ') : '—' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                         <!-- 快速入口列表 -->

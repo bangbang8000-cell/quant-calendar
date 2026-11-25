@@ -75,6 +75,11 @@ def _resolve_username(user) -> str:
     return "default"
 
 
+def _is_admin(user) -> bool:
+    """v7.22: 是否管理员（仅 admin 可显式请求全量问股历史）"""
+    return isinstance(user, dict) and (user.get('role') == 'admin' or user.get('is_admin') is True)
+
+
 def _load_history(username: str = 'default') -> list:
     """加载指定用户的聊天历史 (v3.17.13: 按用户隔离; SQLite 为主, JSON 仅 default 兼容读取)"""
     try:
@@ -94,6 +99,7 @@ def _load_history(username: str = 'default') -> list:
                             sname = _resolve_stock_name(code)
                         by_code[code] = {
                             "id": r['id'],
+                            "owner": (r.get('username') or ''),
                             "stock_code": code,
                             "stock_name": sname,
                             "created_at": r['created_at'],
@@ -117,6 +123,15 @@ def _load_history(username: str = 'default') -> list:
         except Exception:
             logger.warning("操作异常 (v3.4.0-T8)")
     return []
+
+
+def _history_scope(user, scope: str = 'mine') -> list:
+    """v7.22 FR-3: 默认按用户隔离；admin + scope=all 才读全量；匿名不读 default 归档。"""
+    if not isinstance(user, dict) or not user.get('username'):
+        return []
+    if scope == 'all' and _is_admin(user):
+        return _load_history(None)
+    return _load_history(_resolve_username(user))
 
 
 def _save_history(sessions: list, username: str = 'default'):
@@ -439,10 +454,10 @@ async def chat_usage_board(user: dict = Depends(get_current_user)):
 
 @router.get("/history")
 async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
-                      user: Optional[dict] = Depends(get_current_user)):
+                      scope: str = "mine", user: Optional[dict] = Depends(get_current_user)):
     """获取问股历史列表 — 支持 date/month/stock 分组视图 (v3.17.13: 按当前用户;
-    v3.17.9 FR-3.17.9: 支持 limit/offset 分页, 先切片会话再分组)"""
-    sessions = _load_history(_resolve_username(user))
+    v3.17.9 FR-3.17.9: limit/offset 分页; v7.22 FR-3: admin 可 scope=all 只读全量)"""
+    sessions = _history_scope(user, scope)
     sessions = sessions[offset:offset + limit]
     items = []
     for s in sessions:
@@ -453,6 +468,7 @@ async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
             sname = _resolve_stock_name(code)
         items.append({
             "id": s["id"],
+            "owner": s.get("owner", ""),
             "stock_code": code,
             "stock_name": sname,
             "first_msg": s["messages"][0]["content"][:50] if s.get("messages") else "",
@@ -491,7 +507,7 @@ async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
 
 
 @router.get("/history/stats")
-async def get_history_stats(user: Optional[dict] = Depends(get_current_user)):
+async def get_history_stats(scope: str = "mine", user: Optional[dict] = Depends(get_current_user)):
     """v7.19 (FR-7): 问股历史计数
 
     用户反馈「左侧列表加载不了」，实测接口 200 + `[]`：`chat_history` 只有 2 行且属于
@@ -499,7 +515,7 @@ async def get_history_stats(user: Optional[dict] = Depends(get_current_user)):
     于是把空态理解成故障。这里补三个计数，前端据此给出准确文案。
     注意：本路由必须声明在 `/history/{session_id}` 之前，否则会被路径参数吞掉。
     """
-    mine = _load_history(_resolve_username(user))
+    mine = _history_scope(user, scope)
     system_total = 0
     try:
         import db
@@ -512,8 +528,10 @@ async def get_history_stats(user: Optional[dict] = Depends(get_current_user)):
     except Exception as exc:  # noqa: BLE001 — 统计失败不影响主流程
         logger.warning("统计问股历史失败: %s", exc)
         system_total = len(mine)
+    all_view = scope == 'all' and _is_admin(user)
     return {"total": len(mine), "system_total": system_total,
-            "other_total": max(0, system_total - len(mine))}
+            "scope": "all" if all_view else "mine",
+            "other_total": 0 if all_view else max(0, system_total - len(mine))}
 
 
 @router.get("/history/{session_id}")

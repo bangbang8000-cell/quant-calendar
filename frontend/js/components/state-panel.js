@@ -1,17 +1,5 @@
 // quant-calendar: 状态面板组件 (v3.11 / FR-3.11.5; 6.4.2 FR-644/646 增强)
 // 统一四态（空/加载/错误/离线）——各页不再各自拼空态/骨架屏，全部收敛到本组件。
-// 元数据来自 state-panel-core.js（纯数据，node 可测 TC-11.8），本组件只负责渲染。
-// 6.4.2 增强:
-//   - 空态必有主行动 (action-text 可定制, 缺省「刷新数据」)
-//   - 错误态接 error-map 九类人话文案 + 两段式说明
-//   - 重试节流 (最多 3 次, 指数退避) 防连点风暴
-//   - 埋点 error_shown / error_retry / empty_action
-// 用法（组件模板内，成对标签）：
-//   <qc-state-panel type="loading"></qc-state-panel>
-//   <qc-state-panel type="empty" title="暂无数据" action-text="去配置数据池" @action="goPool"></qc-state-panel>
-//   <qc-state-panel type="error" :error-code="500" @retry="reload"></qc-state-panel>
-//       <template #action><el-button size="small" type="primary" @click="reload">重试</el-button></template>
-//   </qc-state-panel>
 (function () {
   const { computed, onMounted, ref } = Vue;
   const CORE = window.QuantStatePanel || {};

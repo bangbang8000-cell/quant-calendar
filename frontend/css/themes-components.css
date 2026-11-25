@@ -30,7 +30,11 @@
 
 /* V5.0 (T-5.0.6): 健康与可靠性面板 */
 .health-badge {
-    display: inline-block;
+    /* v7.22 (FR-7): inline-flex + 最小高度，图标与文字在同一交叉轴居中 */
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 24px;
     padding: 0px 10px;
     border-radius: var(--qc-radius-full);
     font-size: var(--qc-font-size-xs);

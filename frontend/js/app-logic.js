@@ -155,7 +155,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     ? window.__quantModules['ai-chat'].create({ stockKlineLoaded, stockDetailVisible, stockDetailTab, stockDetail, disposeStockKline })
                     : {};
                 const { chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
-                        chatHistoryLoading, chatHistoryError, chatHistoryMeta,
+                        chatHistoryLoading, chatHistoryError, chatHistoryMeta, chatHistoryScope, onChatHistoryEmptyAction,
                         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                         toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,
@@ -502,7 +502,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard,
                     // v2.4: AI 问股
                     chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
-                    chatHistoryLoading, chatHistoryError, chatHistoryMeta,
+                    chatHistoryLoading, chatHistoryError, chatHistoryMeta, chatHistoryScope, onChatHistoryEmptyAction,
                     allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                     toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                     toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,

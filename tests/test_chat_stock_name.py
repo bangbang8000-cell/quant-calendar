@@ -111,7 +111,8 @@ class TestChatHistoryResolution:
                 }]}, f)
             import asyncio
             with patch.object(chat_mod, '_resolve_stock_name', return_value='贵州茅台'):
-                items = asyncio.run(chat_mod.get_history(view='date'))
+                # v7.22: 匿名不再回退 default 归档，显式 default 账号仍兼容只读
+                items = asyncio.run(chat_mod.get_history(view='date', user={'username': 'default'}))
             flat = [it for g in items for it in g['items']]
             assert flat[0]['stock_name'] == '贵州茅台'
         finally:

@@ -1143,7 +1143,8 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         <!-- V6.6.1 (PRD F-6.6.8 方案A): 运维健康摘要条 — 替代重复整块渲染, 点击跳转对应子页 -->
                         <div class="card mb-14">
                             <div class="card-title"><qc-icon name="activity" :size="14" /> 运维健康摘要 <span class="text-sm-tertiary">点击跳转详情</span></div>
-                            <div class="flex-wrap-gap-12">
+                            <!-- v7.22 (FR-7): 原 flex-wrap-gap-12 默认 stretch，badge 文字贴顶 -->
+                            <div class="flex-c-gap-12-wrap">
                                 <span class="health-badge" :class="(healthDetail.data_sources || []).some(d => d.routing_status === 'cooling' || d.degraded) ? 'qc-text-warning' : 'qc-text-success'">
                                     <qc-icon :name="(healthDetail.data_sources || []).some(d => d.routing_status === 'cooling' || d.degraded) ? 'alert-triangle' : 'check'" :size="13" /> 数据源 {{ (healthDetail.data_sources || []).filter(d => d.routing_status === 'cooling' || d.degraded).length }} 个降级
                                 </span>
@@ -1160,7 +1161,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                                 <el-button size="small" text @click="goSystemSub('feature')">备份设置</el-button>
                             </div>
                         </div>
-                        <!-- v3.22-I2: 用量统计卡片化 — 4卡片网格 -->
+                        <!-- v3.22-I2: 用量统计卡片化 — 2卡片网格 (运维健康摘要已上移独立卡) -->
                         <div class="usage-card-grid">
                         <!-- 卡1: 资源监控 -->
                         <div class="usage-card">
@@ -1244,6 +1245,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                                         <span class="usage-ai-model-count">{{ m.count }}</span>
                                     </div>
                                 </div>
+                                <div class="usage-ai-panel" v-else><div class="usage-ai-panel-title">模型调用分布</div><div class="text-sm-tertiary">暂无 AI 调用记录</div></div>
                                 <div class="usage-ai-panel">
                                     <div class="usage-ai-panel-title">近 30 天调用趋势
                                         <span class="usage-ai-panel-meta">峰值 {{ aiDayPeak }} 次</span>

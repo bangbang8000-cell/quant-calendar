@@ -433,7 +433,10 @@ window.__quantModules.aiPage.part1 = `
                         </div>
 
                         <div class="card">
-                            <div class="card-title"><qc-icon name="message-circle" :size="16" /> AI 问股历史 <span class="card-title-hint">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span></div>
+                            <div class="card-title"><qc-icon name="message-circle" :size="16" /> AI 问股历史 <span class="card-title-hint">共 {{ Object.keys(chatGroupedByDate).length }} 天 · {{ allChatSessionsFlat.length }} 条</span>
+                                <el-button v-if="chatHistoryScope === 'all'" size="small" text @click="loadChatHistory('mine')">返回我的记录</el-button>
+                                <el-button v-else-if="chatHistoryMeta && chatHistoryMeta.other_total > 0" size="small" text @click="loadChatHistory('all')">查看其他账号记录（{{ chatHistoryMeta.other_total }} 条）</el-button>
+                            </div>
                         <!-- v3.16 (16.7): 统一加载/离线/错误态（可重试） -->
                         <qc-state-panel v-if="chatHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadChatHistory"></qc-state-panel>
@@ -441,8 +444,8 @@ window.__quantModules.aiPage.part1 = `
                         <!-- v7.19 (FR-7): 空态分级 —— 「当前账号无记录」与「系统无数据」是两件事 -->
                         <qc-state-panel v-else-if="allChatSessionsFlat.length === 0" type="empty" icon="message-circle"
                             :title="(chatHistoryMeta && chatHistoryMeta.other_total > 0) ? '当前账号暂无问股记录' : '暂无问股记录'"
-                            :desc="(chatHistoryMeta && chatHistoryMeta.other_total > 0) ? ('系统另有 ' + chatHistoryMeta.other_total + ' 条记录属于其他账号，按账号隔离不可见；可在本账号发起问股') : '在股票详情页点击「AI 问股」开始对话'"
-                            action-text="开始新对话" action-key="new_chat"></qc-state-panel>
+                            :desc="(chatHistoryMeta && chatHistoryMeta.other_total > 0) ? ('系统另有 ' + chatHistoryMeta.other_total + ' 条记录属于其他账号，按账号隔离不可见；点击查看全部记录（只读）') : '在股票详情页点击「AI 问股」开始对话'"
+                            action-text="开始新对话" action-key="new_chat" @action="onChatHistoryEmptyAction"></qc-state-panel>
 
                         <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
 `;

@@ -402,8 +402,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 83214,
-    "template_sha": "bc3666c72e0c91d4"
+    "template_len": 83642,
+    "template_sha": "de488a2f7ddcb315"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -1651,6 +1651,7 @@
       "ic-decay-chip",
       "ic-decay-row",
       "info",
+      "is-fall",
       "is-success",
       "item.date",
       "item.summary.emotion_score",
@@ -1723,8 +1724,8 @@
       "qr-lock-collapse",
       "qr-param-grid",
       "qr-run-detail",
+      "qr-ts",
       "r.annual_return",
-      "r.max_drawdown",
       "research-detail-pre",
       "row.max_drawdown",
       "row.status",
@@ -1953,6 +1954,7 @@
       "researchHistoryLoading",
       "researchHistorySelected",
       "researchHistoryType",
+      "researchSubjectLabel",
       "researchTypeLabel",
       "runActiveStrategy",
       "runCustomBacktest",
@@ -2016,8 +2018,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 85678,
-    "template_sha": "9d2f18b5fa13ddcb"
+    "template_len": 86504,
+    "template_sha": "591f576bbc526a0c"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -3750,8 +3752,8 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 111922,
-    "template_sha": "9daf2221534d0ef7"
+    "template_len": 112197,
+    "template_sha": "bd52cd61649aceeb"
   },
   "TimingRadar": {
     "classes": [

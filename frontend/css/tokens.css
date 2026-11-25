@@ -187,6 +187,7 @@
      旧名保留为别名 (sm/base 同档 14), 业务侧 616 处引用无需批量改动。 */
   --qc-font-size-xs: 12px;
   --qc-font-size-2xs: 11px;   /* v7.18: 个股行计数徽章字号 (FR-1101) */
+  --qc-stock-tag-font-lg: 13px;  /* v7.22 FR-1: 标准/宽松档策略匹配 tag 字号 */
   --qc-font-size-sm: 14px;      /* 别名 → base (原 13px 与 12/14 不可辨) */
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
@@ -651,10 +652,10 @@ html[data-density="spacious"] {
 :root {
   --qc-row-h: 88px;          /* 标准档行高 */
   --qc-row-gap: 8px;         /* 标准档行距（虚拟分支同样生效） */
-  --qc-stock-info-w: 96px;   /* 信息列定宽：消灭 1fr 吃宽造成的死区；留 16px 给策略区 */
+  --qc-stock-info-w: 92px;   /* v7.22: 96→92，让 4px 给 13px 策略名 */
   --qc-stock-ops-w: 92px;    /* 操作区列宽 = 4 槽 × 20px + 3 × 4px */
   --qc-op-hit: 20px;         /* 操作槽位热区边长 */
-  --qc-stock-badge-w: 46px;  /* 「N 策略」徽章定宽 */
+  --qc-stock-badge-w: 44px;  /* v7.22: 46→44，让 2px 给策略名 */
   --qc-stock-icon: 16px;     /* 行内图标尺寸 */
   --qc-stock-tag-font: var(--qc-font-size-xs);  /* 策略 tag 12px */
 }
@@ -667,6 +668,7 @@ html[data-density="compact"] {
   --qc-stock-badge-w: 44px;
   --qc-stock-icon: 15px;
   --qc-stock-tag-font: var(--qc-font-size-2xs);   /* 11px：1366 屏不截断 */
+  --qc-stock-tag-font-lg: var(--qc-font-size-2xs);  /* 紧凑档不放大 */
 }
 /* 横向预算说明 (v7.19 实测 @1440 · 中栏 476px)：
    可用 = 476 − 34(padding) − 16(序号) − 12(3×gap) − info − ops = 策略区
@@ -677,10 +679,11 @@ html[data-density="compact"] {
 html[data-density="spacious"] {
   --qc-row-h: 96px;
   --qc-row-gap: 12px;
-  --qc-stock-info-w: 96px;
+  --qc-stock-info-w: 92px;
   --qc-stock-ops-w: 92px;
   --qc-op-hit: 22px;
-  --qc-stock-badge-w: 46px;
+  --qc-stock-badge-w: 44px;
   --qc-stock-icon: 18px;
   --qc-stock-tag-font: var(--qc-font-size-xs);
+  --qc-stock-tag-font-lg: 13px;
 }
