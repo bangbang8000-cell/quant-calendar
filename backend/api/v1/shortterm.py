@@ -101,23 +101,47 @@ async def get_lhb(date: str = None, user: Optional[dict] = Depends(get_current_u
 async def get_sector_flow(indicator: str = '今日', sector_type: str = '行业资金流',
                           user: Optional[dict] = Depends(get_current_user)):
     """板块资金流。V5.2.3: 先读 store 缓存(今日 10min / 5日10日 1h 新鲜度), 命中则秒开;
-    未命中才实时抓(东财→同花顺兜底)并落盘。"""
+    未命中才实时抓(东财→同花顺兜底)并落盘。
+
+    v7.19 (FR-5) 错误分级 —— error_code ∈ ok|cache|stale|data_unavailable|server_error：
+    缓存命中 = cache；实时成功 = ok；实时失败但有历史快照 = stale（带 captured_at，
+    前端展示「数据源暂不可用，展示截至 X 的快照」）；无快照 = data_unavailable；
+    抓取层意外抛错 = server_error。前端按 error_code 分级文案，不再统一「服务器出错」。
+    """
     import time
     _FRESH = {'今日': 600, '5日': 3600, '10日': 3600}
     cached = store.latest_sector_flow(sector_type, indicator)
+    age = None
     if cached and cached.get('captured_at'):
         try:
             age = time.time() - time.mktime(time.strptime(cached['captured_at'][:19], '%Y-%m-%dT%H:%M:%S'))
-            if age < _FRESH.get(indicator, 600):
-                return {'success': True, 'available': True, 'source': 'cache',
-                        'indicator': indicator, 'sector_type': sector_type,
-                        'rows': cached.get('rows') or []}
         except Exception:  # noqa: BLE001 — 时间解析失败走实时
-            pass
-    out = sector_flow.fetch_sector_flow(indicator, sector_type)
+            age = None
+    if cached and age is not None and age < _FRESH.get(indicator, 600):
+        return {'success': True, 'available': True, 'error_code': 'cache',
+                'source': 'cache', 'captured_at': cached.get('captured_at'),
+                'indicator': indicator, 'sector_type': sector_type,
+                'rows': cached.get('rows') or []}
+    try:
+        out = sector_flow.fetch_sector_flow(indicator, sector_type)
+    except Exception as exc:  # noqa: BLE001 — 只有真正的服务端异常才归 server_error
+        out = {'available': False, 'error_code': 'server_error', 'reason': str(exc)}
     if out.get('available'):
         store.save_sector_flow(sector_type, indicator, out['rows'])
+        return {'success': True, **out}
+    if cached and (cached.get('rows') or []):
+        return {'success': True, 'available': True, 'error_code': 'stale',
+                'source': 'snapshot', 'captured_at': cached.get('captured_at'),
+                'indicator': indicator, 'sector_type': sector_type,
+                'rows': cached.get('rows') or [],
+                'reason': out.get('reason'), 'tried': out.get('tried')}
     return {'success': True, **out}
+
+
+@router.get("/sector-flow/health")
+async def get_sector_flow_health(user: Optional[dict] = Depends(get_current_user)):
+    """v7.19 (FR-5.4): 板块资金数据源健康度（最近成功时间 + 连续失败；≥3 次 degraded）"""
+    return {'success': True, **sector_flow.get_health()}
 
 
 @router.get("/dates")

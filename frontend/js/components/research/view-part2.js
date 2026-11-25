@@ -46,24 +46,48 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             <div class="custom-bt-grid">
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">标的</span><b>{{ customBtResult.symbols.length }}</b></div>
                                 <div class="custom-bt-item"><span class="text-sm-tertiary">区间</span><b>{{ customBtResult.dates[0] }} → {{ customBtResult.dates[1] }}</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">年化</span><b>{{ fmtNum(customBtResult.metrics.annual_return_pct) }}%</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">最大回撤</span><b>{{ fmtNum(customBtResult.metrics.max_drawdown_pct) }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">年化</span><b>{{ fmtPct(customBtResult.metrics.annual_return_pct) }}</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">最大回撤</span><b>{{ fmtPct(customBtResult.metrics.max_drawdown_pct) }}</b></div>
                                 <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">夏普</span><b>{{ fmtNum(customBtResult.metrics.sharpe) }}</b></div>
-                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ fmtNum(customBtResult.metrics.win_rate_pct) }}%</b></div>
+                                <div v-if="customBtResult.metrics" class="custom-bt-item"><span class="text-sm-tertiary">胜率</span><b>{{ fmtPct(customBtResult.metrics.win_rate_pct) }}</b></div>
                             </div>
                         </div>
                         </template>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
                         <div class="card-title">{{ t('research.backtest') }}</div>
+                        <!-- v7.19 (T3.2): 策略工作台 —— 先罗列，再在列表上操作 (PRD 需求 ⑧) -->
+                        <qc-strategy-board
+                            :rows="strategyCardRows" :loading="strategyOverviewLoading"
+                            :error="strategyOverviewError" :degraded="strategyOverviewDegraded"
+                            :keyword="overviewKeyword" :sort-key="overviewSortKey" :only-enabled="overviewOnlyEnabled"
+                            @update:keyword="overviewKeyword = $event"
+                            @update:sortKey="overviewSortKey = $event"
+                            @update:onlyEnabled="overviewOnlyEnabled = $event"
+                            @backtest="goBacktestFor" @detail="openStrategyManageFor"
+                            @retry="loadStrategyOverview(true)"></qc-strategy-board>
+
                         <!-- v3.2.0-T21: 回测参数 (v7.14 FR-1: 下拉动态拉取注册表) -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-select class="w-select-md" v-model="backtestStrategy" size="small" placeholder="选择策略" :loading="!backtestStrategies.length">
                                 <el-option v-for="s in backtestStrategies" :key="s.id" :label="s.name + ' (' + s.id + ')'" :value="s.id" />
                             </el-select>
                             <el-date-picker class="w-260" v-model="backtestRange" type="daterange" size="small" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"/>
-                            <el-input-number class="w-140" v-model="backtestCapital" size="small" :min="10000" :step="50000"/>
+                            <!-- v7.19 (T3.1): 快捷档 — 默认 18 个月，一键切换常用窗口，避免每次手点日历 -->
+                            <div class="qc-bt-quick" role="group" aria-label="回测区间快捷档">
+                                <el-button v-for="m in [6, 12, 18, 36]" :key="m" size="small"
+                                           :type="backtestMonths === m ? 'primary' : 'default'"
+                                           :plain="backtestMonths !== m" @click="setBacktestMonths(m)">{{ m }}个月</el-button>
+                            </div>
+                            <el-input-number class="w-140" v-model="backtestCapital" size="small" :min="10000" :step="100000"/>
+                            <span class="text-sm-tertiary">初始资金（元）</span>
                             <el-button type="primary" size="small" @click="runBacktest" :loading="backtestRunning" :disabled="!backtestStrategy"><qc-icon name="play" :size="14" /> 运行回测</el-button>
+                        </div>
+                        <!-- v7.19 (T3.1): 参数回显 — 让用户核对「我选的区间/资金」是否真被采用 -->
+                        <div class="text-sm-tertiary-mt8" v-if="backtestResult && backtestResult.used_range">
+                            本次回测口径：区间 {{ backtestResult.used_range }} · 初始资金
+                            {{ backtestResult.initial_capital != null ? fmtNum(backtestResult.initial_capital) : '—' }} 元
+                            · 费率 0.03% · 滑点 0.1%
                         </div>
                         <!-- v7.14 (FR-3): 数据降级持久警示条 (不可作为研究结论) -->
                         <div v-if="backtestDegraded" class="qr-degraded-banner" role="alert">
@@ -73,20 +97,31 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         <template v-if="backtestResult">
                             <div class="grid-auto-fit-140-mb16">
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.total_return_pct) }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtPct(backtestResult.total_return_pct) }}</div>
                                     <el-tooltip content="区间累计收益率 = (期末净值 / 期初净值 - 1) × 100%" placement="top"><div class="stat-label">总收益率 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.annual_return_pct) }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtPct(backtestResult.annual_return_pct) }}</div>
                                     <el-tooltip content="年化收益 = 区间收益折算为 1 年期复利收益; 样本过短时数字仅供参考" placement="top"><div class="stat-label">年化收益 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.max_drawdown_pct) }}%</div>
+                                    <div class="stat-value text-lg">{{ fmtPct(backtestResult.max_drawdown_pct) }}</div>
                                     <el-tooltip content="最大回撤 = 净值从峰值到谷底的最大跌幅, 负值表示亏损幅度" placement="top"><div class="stat-label">最大回撤 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtNum(backtestResult.sharpe_ratio) }}</div>
                                     <el-tooltip content="夏普比率 = 年化超额收益 / 年化波动率; >1 较好, >2 优秀; 样本内交易数不足时 profit_factor 与 Kelly 仓位建议会显示 0.0(非异常)" placement="top"><div class="stat-label">夏普比率 ⓘ</div></el-tooltip>
+                                </div>
+                            </div>
+                            <!-- v7.19 (T3.1): 金额口径的两张卡 — 「赚了多少钱」比百分比更直观 -->
+                            <div class="grid-auto-fit-140-mb16" v-if="backtestResult.final_equity !== ''">
+                                <div class="stat-card p-12">
+                                    <div class="stat-value text-lg">{{ fmtNum(backtestResult.final_equity) }}</div>
+                                    <div class="stat-label">期末权益（元）</div>
+                                </div>
+                                <div class="stat-card p-12">
+                                    <div class="stat-value text-lg" :class="Number(backtestResult.total_pnl) >= 0 ? 'qc-pnl-up' : 'qc-pnl-down'">{{ Number(backtestResult.total_pnl) >= 0 ? '+' : '' }}{{ fmtNum(backtestResult.total_pnl) }}</div>
+                                    <div class="stat-label">总盈亏（元）</div>
                                 </div>
                             </div>
                             <div class="w-100-h320" id="backtestEquityChart"></div>
@@ -116,18 +151,18 @@ window.__quantModules.researchPage.part2 = `                            </div>
                             <div v-for="r in btHistory" :key="r.ts + '-' + r.sid" class="card mb-12">
                                 <div class="flex-between-start-wrap">
                                     <div>
-                                        <span class="strategy-name">{{ r.sid }}</span>
+                                        <span class="strategy-name">{{ r.sid_cn || r.sid }}</span>
                                         <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
                                     </div>
                                     <div class="flex-c-gap-8">
-                                        <span class="strategy-tag" v-if="r.summary">年化 {{ fmtNum(r.summary.annual_return) }}%</span>
-                                        <span class="strategy-tag" v-if="r.summary">回撤 {{ fmtNum(r.summary.max_drawdown) }}%</span>
+                                        <span class="strategy-tag" v-if="r.summary">年化 {{ fmtPct(r.summary.annual_return) }}</span>
+                                        <span class="strategy-tag" v-if="r.summary">回撤 {{ fmtPct(r.summary.max_drawdown) }}</span>
                                         <span class="strategy-tag" v-if="r.summary">夏普 {{ fmtNum(r.summary.sharpe_ratio) }}</span>
                                     </div>
                                 </div>
                                 <div v-if="r.summary" class="flex-wrap-gap-12-mb16-c mt-8">
-                                    <span class="text-sm-secondary">总收益: <strong :class="(r.summary.total_return || 0) >= 0 ? 'color-success' : 'color-danger'">{{ fmtNum(r.summary.total_return) }}%</strong></span>
-                                    <span class="text-sm-secondary">胜率: <strong>{{ fmtNum(r.summary.win_rate) }}%</strong></span>
+                                    <span class="text-sm-secondary">总收益: <strong :class="(r.summary.total_return || 0) >= 0 ? 'color-success' : 'color-danger'">{{ fmtPct(r.summary.total_return) }}</strong></span>
+                                    <span class="text-sm-secondary">胜率: <strong>{{ fmtPct(r.summary.win_rate) }}</strong></span>
                                     <span class="text-sm-secondary">交易次数: <strong>{{ r.summary.total_trades || 0 }}</strong></span>
                                 </div>
                             </div>
@@ -207,12 +242,12 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                 <div class="flex-wrap-gap-12-mb16-c mt-8">
                                     <span v-if="exp.summary.ic_mean != null" class="text-sm-secondary">IC均值 <strong>{{ fmtNum(exp.summary.ic_mean) }}</strong></span>
                                     <span v-if="exp.summary.icir != null" class="text-sm-secondary">ICIR <strong>{{ fmtNum(exp.summary.icir) }}</strong></span>
-                                    <span v-if="exp.summary.win_rate != null" class="text-sm-secondary">胜率 <strong>{{ fmtNum(exp.summary.win_rate) }}%</strong></span>
-                                    <span v-if="exp.summary.annual_return != null" class="text-sm-secondary">年化 <strong>{{ fmtNum(exp.summary.annual_return) }}%</strong></span>
-                                    <span v-if="exp.summary.max_drawdown != null" class="text-sm-secondary">回撤 <strong>{{ fmtNum(exp.summary.max_drawdown) }}%</strong></span>
+                                    <span v-if="exp.summary.win_rate != null" class="text-sm-secondary">胜率 <strong>{{ fmtPct(exp.summary.win_rate) }}</strong></span>
+                                    <span v-if="exp.summary.annual_return != null" class="text-sm-secondary">年化 <strong>{{ fmtPct(exp.summary.annual_return) }}</strong></span>
+                                    <span v-if="exp.summary.max_drawdown != null" class="text-sm-secondary">回撤 <strong>{{ fmtPct(exp.summary.max_drawdown) }}</strong></span>
                                     <span v-if="exp.summary.sharpe_ratio != null" class="text-sm-secondary">夏普 <strong>{{ fmtNum(exp.summary.sharpe_ratio) }}</strong></span>
                                     <span v-if="exp.summary.monotonic != null" class="text-sm-secondary">单调 <strong>{{ exp.summary.monotonic ? '✓' : '✗' }}</strong></span>
-                                    <span v-if="exp.summary.spread != null" class="text-sm-secondary">多空价差 <strong>{{ fmtNum(exp.summary.spread) }}%</strong></span>
+                                    <span v-if="exp.summary.spread != null" class="text-sm-secondary">多空价差 <strong>{{ fmtPct(exp.summary.spread) }}</strong></span>
                                     <span v-if="exp.summary.best_param" class="text-sm-secondary">最优参数 <strong>{{ JSON.stringify(exp.summary.best_param) }}</strong></span>
                                 </div>
                                 <div v-if="exp.range" class="text-xs-tertiary">区间 {{ exp.date_range.join(' → ') }} · v{{ exp.app_version }}</div>

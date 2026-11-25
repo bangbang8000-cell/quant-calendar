@@ -25,11 +25,14 @@ def _read(rel):
 
 
 def test_header_has_single_h1():
-    """Header.vue 恰含 1 个 h1 (页面大纲单点)"""
-    src = _read("src/components/Header.vue")
-    h1s = re.findall(r"<h1[ >]", src)
-    assert len(h1s) == 1, f"Header 应恰有 1 个 h1, 实际 {len(h1s)}"
-    assert "visually-hidden" in src, "h1 应为视觉隐藏 (不影响布局)"
+    """页面大纲 h1 单点 — v7.17 (FR-201/D-06) 起语义 h1 统一到 .qc-page-head
+    (index.html 页头面包屑), Header.vue 不再持有 h1 (V5 顶栏原可视隐藏 h1 已改 p)"""
+    header = _read("src/components/Header.vue")
+    assert len(re.findall(r"<h1[ >]", header)) == 0, "Header.vue 不应再含 h1 (语义 h1 已下沉页头)"
+    idx = _read("index.html")
+    h1s = re.findall(r"<h1[ >]", idx)
+    assert len(h1s) == 1, f"index.html 页头应恰有 1 个语义 h1, 实际 {len(h1s)}"
+    assert "qc-page-head" in idx, "h1 应位于 .qc-page-head 页头块内"
 
 
 def test_detail_dialogs_use_h2_not_h3():

@@ -1,121 +1,87 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""v7.19 (FR-9): 股票中文名幂等回填
+
+自选表 `watchlist` 与持仓表 `portfolio_positions` 中 name 为空（或等于代码）的行，
+用本地名称库（stock_info）回填中文名；查不到的保持原样并在输出里列出（不写占位串）。
+
+用法：
+    python scripts/backfill_stock_names.py            # 实际写入
+    python scripts/backfill_stock_names.py --dry-run  # 只看将改多少
+幂等：重复执行，第二次起修改数为 0。
 """
-v3.14.2 数据回填: 自选股名称 + 评估历史股票名
-- SQLite watchlist.name (空/==代码 → stock_manager 解析)
-- data/users/*/watchlist.json 的 name 字段
-- data/users/*/ai_evaluation_history.json 的 stock_name 字段
-用法: python3 scripts/backfill_stock_names.py <backend_dir>
-"""
-import json
+import argparse
 import os
 import sys
-import glob
 
-backend_dir = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "backend")
-sys.path.insert(0, backend_dir)
-
-import db  # noqa: E402
-from stock_info import stock_manager  # noqa: E402
-
-DATA_DIR = os.path.join(os.path.dirname(backend_dir), "data")
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(BASE, 'backend'))
 
 
-def lookup_name(code: str) -> str:
-    """stock_manager 解析, 裸代码(无后缀)时尝试补 .SZ/.SH"""
-    code = (code or "").strip()
-    if not code:
-        return code
+def _needs_name(name, code):
+    n = (name or '').strip()
+    return (not n) or n == code
+
+
+def backfill(dry_run=False):
+    import db
+    from stock_info import stock_manager
+
+    stats = {'watchlist': 0, 'positions': 0, 'unresolved': [], 'checked': 0}
+    conn = db.get_conn()
     try:
-        n = stock_manager.get_name(code)
-        if n and n != code:
-            return n
-        if "." not in code:
-            for suffix in (".SZ", ".SH"):
-                cand = code + suffix
-                n = stock_manager.get_name(cand)
-                if n and n != cand:
-                    return n
-    except Exception:
-        pass
-    return code
-
-
-def backfill_sqlite():
-    """回填 SQLite watchlist.name"""
-    changed = 0
-    db.migrate()
-    for r in db.watchlist_all():
-        code, name = r["stock_code"], (r.get("name") or "").strip()
-        if not name or name == code:
-            new = lookup_name(code)
-            if new and new != code:
-                db.watchlist_set(r["username"], code, new, r["added_at"])
-                changed += 1
-    print(f"[sqlite] 回填 {changed} 行自选名称")
-    return changed
-
-
-def backfill_watchlist_json():
-    """回填 data/users/*/watchlist.json 的 name"""
-    changed = 0
-    for path in glob.glob(os.path.join(DATA_DIR, "users", "*", "watchlist.json")):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            stocks = data.get("stocks", [])
-            hit = False
-            for s in stocks:
-                name = (s.get("name") or "").strip()
-                if not name or name == s.get("code"):
-                    new = lookup_name(s.get("code", ""))
-                    if new and new != s.get("code"):
-                        s["name"] = new
-                        hit = True
-                        changed += 1
-            if hit:
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                print(f"[watchlist.json] {os.path.basename(os.path.dirname(path))} 回填")
-        except Exception as e:
-            print(f"[watchlist.json] 失败 {path}: {e}")
-    print(f"[watchlist.json] 回填 {changed} 条自选名称")
-    return changed
-
-
-def backfill_history():
-    """回填 data/users/*/ai_evaluation_history.json 的 stock_name"""
-    changed = 0
-    for path in glob.glob(os.path.join(DATA_DIR, "users", "*", "ai_evaluation_history.json")):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                items = json.load(f)
-            if not isinstance(items, list):
-                print(f"[history] 跳过非列表: {path}")
+        # (统计键, 表名, 名称列) —— v7.19: 持仓表用 stock_name，不是 name
+        tables = (
+            ('watchlist', 'watchlist', 'name'),
+            ('positions', 'portfolio_positions', 'stock_name'),
+        )
+        for label, table, name_col in tables:
+            sql = f"SELECT username, stock_code, {name_col} AS name FROM {table}"
+            try:
+                rows = conn.execute(sql).fetchall()
+            except Exception as exc:  # noqa: BLE001 — 表不存在时跳过（旧库）
+                print(f'[skip] {table}: {exc}')
                 continue
-            hit = False
-            for r in items:
-                sn = (r.get("stock_name") or "").strip()
-                sc = r.get("stock_code") or ""
-                if not sn or sn == sc:
-                    new = lookup_name(sc)
-                    if new and new != sc:
-                        r["stock_name"] = new
-                        hit = True
-                        changed += 1
-            if hit:
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(items, f, ensure_ascii=False, indent=2)
-                print(f"[history] {os.path.basename(os.path.dirname(path))} 回填")
-        except Exception as e:
-            print(f"[history] 失败 {path}: {e}")
-    print(f"[history] 回填 {changed} 条历史股票名")
-    return changed
+            updates = []
+            for row in rows:
+                code = row['stock_code'] if not isinstance(row, tuple) else row[1]
+                name = row['name'] if not isinstance(row, tuple) else row[2]
+                username = row['username'] if not isinstance(row, tuple) else row[0]
+                stats['checked'] += 1
+                if not _needs_name(name, code):
+                    continue
+                resolved = ''
+                try:
+                    resolved = stock_manager.get_name(code) or ''
+                except Exception:  # noqa: BLE001
+                    resolved = ''
+                if resolved and resolved != code:
+                    updates.append((resolved, username, code))
+                elif code not in stats['unresolved']:
+                    stats['unresolved'].append(code)
+            if updates and not dry_run:
+                conn.executemany(
+                    f"UPDATE {table} SET {name_col}=? WHERE username=? AND stock_code=?", updates)
+            stats[label] = len(updates)
+        if not dry_run:
+            conn.commit()
+    finally:
+        conn.close()
+    return stats
 
 
-if __name__ == "__main__":
-    print(f"== 数据回填: {DATA_DIR} ==")
-    backfill_sqlite()
-    backfill_watchlist_json()
-    backfill_history()
-    print("== 回填完成 ==")
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+    s = backfill(dry_run=args.dry_run)
+    print(('（dry-run）' if args.dry_run else '') + '回填完成: '
+          f"自选 {s['watchlist']} 行 / 持仓 {s['positions']} 行；"
+          f"检查 {s['checked']} 行；未解析 {len(s['unresolved'])} 个代码")
+    if s['unresolved']:
+        print('未解析代码:', ', '.join(s['unresolved'][:20]))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

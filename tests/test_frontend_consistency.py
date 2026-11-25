@@ -82,7 +82,12 @@ def test_qcstate_key_count_stable():
     V6.10 配色专项按实测校订; V6.9.3 主题共享 +6; F11.2 策略研究恒显 -2;
     V5.16 详情双栏 +4; V5.17 中栏拖拽 +3; 6.3.1 四态错误标志 +9"""
     keys = _extract_qcstate_keys(_read("js/app-logic.js"))
-    assert len(set(keys)) == 536, f"qcState 唯一键数异常: {len(set(keys))} (期望 536; 6.6 +13: M1 自选列表 P0-1a/1b realtimeWsStateText/watchlistRenderGuard/auditWatchlistRender/dismissWatchlistRenderGuard/exportPageDiagnostics/reloadPage +6, M2 美林订正 merrillCorrection/fetchMerrillCorrection +2, M3 市值与多周期 indexQuoteSummary/loadIndexQuoteSummary/stockQuoteSummary/loadStockQuoteSummary +4, AC-18/D9 量比涨速无数据隐藏 realtimeRatioAvailable +1;  6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError); v7.14 策略研究改进 +2: backtestDegraded/loadBacktestStrategies(因子域新键经 research-page 自身 return 暴露, 不入 qcState 字面量)"
+    # v7.19 +1（净）: merrillStale/merrillDataAsOf 显式标注「数据未更新，展示的是上次成功抓取的结论」
+    # (+2)，getStageAngle 移除（伪角度是美林周期走乱的根因之一，−1）。
+    # v7.19 T3.1 +6: 回测默认 18 个月 / 100 万 / 滑点可见 ——
+    #   backtestMonths, setBacktestMonths（研究页回测子页，+2）
+    #   btSlippage, btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS（回测工作台，+4）
+    assert len(set(keys)) == 545, f"qcState 唯一键数异常: {len(set(keys))} (期望 545; v7.19 FR-7 +1: chatHistoryMeta(问股历史分级空态计数, 漏暴露会让模板拿到 undefined 而静默降级); v7.19 净 +1: merrillStale/merrillDataAsOf (+2) 与 getStageAngle (−1); v7.18 FR-1003 +1: fmtPct(占位符不粘单位); 原 536: 6.6 +13: M1 自选列表 P0-1a/1b realtimeWsStateText/watchlistRenderGuard/auditWatchlistRender/dismissWatchlistRenderGuard/exportPageDiagnostics/reloadPage +6, M2 美林订正 merrillCorrection/fetchMerrillCorrection +2, M3 市值与多周期 indexQuoteSummary/loadIndexQuoteSummary/stockQuoteSummary/loadStockQuoteSummary +4, AC-18/D9 量比涨速无数据隐藏 realtimeRatioAvailable +1;  6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError); v7.14 策略研究改进 +2: backtestDegraded/loadBacktestStrategies(因子域新键经 research-page 自身 return 暴露, 不入 qcState 字面量)"
 
 
 def test_watch_currentpage_single():
@@ -441,10 +446,11 @@ def test_virtual_list_infrastructure():
 def test_history_record_script_loaded():
     """FR-3.16.8 (16.10): history-record.js 已注册到入口 HTML
     V4.3 (方案A): 业务 JS 打包至 src/main.js, 顺序校验改在构建入口"""
+    # v7.18 (FR-501): history-record 仅 ai 域消费, 随 ai/lazy-entry.js 域加载 (懒加载)
+    lazy = _read("js/components/ai/lazy-entry.js")
+    assert "../history-record.js" in lazy, "ai 域 lazy-entry 应导入 history-record.js"
     main = _read("src/main.js")
-    assert "components/history-record.js" in main, "main.js 应加载 history-record.js"
-    assert main.index("history-record.js") < main.index("app-logic.js"), \
-        "history-record.js 应早于 app-logic.js 加载"
+    assert "js/components/history-record.js" not in main, "main.js 不应再静态导入 history-record"
 
 
 # ─── v3.16 (16.10-fix / 详情弹窗性能优化) 回归 ──────────────────────────
@@ -1072,7 +1078,12 @@ def test_index_all_external_scripts_deferred():
     assert "/src/main.js" in idx, "应引用构建入口 main.js (V4.3)"
     main = _read("src/main.js")
     assert "components/dialogs/stock-detail.js" in main, "对话框组件应在构建入口 (V4.3)"
-    assert "components/ai-page.js" in main, "页面组件应在构建入口 (V4.3)"
+    # v7.18 (FR-501): 页面组件改域懒加载 — ai-page 经 ai/lazy-entry.js 动态导入
+    assert "components/ai-page.js" not in main, "main.js 不应静态导入页面组件 (首屏体积)"
+    lazy = _read("js/components/ai/lazy-entry.js")
+    assert "../ai-page.js" in lazy, "ai 域 lazy-entry 应导入 ai-page.js"
+    loadmap = _read("src/main.js")
+    assert "__lazyLoaders" in loadmap, "main.js 应维护 __lazyLoaders 域加载映射"
 
 
 def test_index_echarts_lazy_loaded():

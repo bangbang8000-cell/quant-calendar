@@ -45,6 +45,7 @@
       "'portfolio-rule-badge-warn'",
       "'portfolio-rule-warn'",
       "'portfolio-sell'",
+      "'qc-plan-row-skip'",
       "*",
       "100)",
       ":",
@@ -154,6 +155,19 @@
       "portfolio-trade-stock",
       "portfolio-trades-list",
       "portfolio-view",
+      "qc-plan-bar",
+      "qc-plan-capital",
+      "qc-plan-code",
+      "qc-plan-empty",
+      "qc-plan-label",
+      "qc-plan-name",
+      "qc-plan-note",
+      "qc-plan-overwrite",
+      "qc-plan-row-note",
+      "qc-plan-summary",
+      "qc-plan-table",
+      "qc-plan-table-wrap",
+      "qc-plan-warn",
       "quote-meta",
       "quote-pct",
       "quote-price",
@@ -164,6 +178,7 @@
       "records-indent",
       "records-indent-sm",
       "records.every(r",
+      "row.lots",
       "rt-bar",
       "rt-connecting",
       "rt-degraded-text",
@@ -327,9 +342,11 @@
     "name": "qc-ai-page",
     "setup_keys": [
       "...state",
+      "PLAN_QUICK_CAPITAL",
       "addForm",
       "addPosition",
       "addSaving",
+      "applyPlan",
       "equityDays",
       "equityHasData",
       "equityLoading",
@@ -346,10 +363,20 @@
       "loadTrack",
       "loadTrades",
       "loading",
+      "money",
       "onFocusLoadState",
+      "openPlanDialog",
       "openTradeForm",
+      "planApplying",
+      "planForm",
+      "planLoading",
+      "planNote",
+      "planPreview",
+      "planTotals",
+      "planVisible",
       "portfolioTab",
       "positions",
+      "previewPlan",
       "reloadFocus",
       "removePosition",
       "riskData",
@@ -358,6 +385,7 @@
       "riskMetricList",
       "riskNote",
       "riskTab",
+      "setPlanCapital",
       "setTrackWindow",
       "showAddForm",
       "signClass",
@@ -374,8 +402,8 @@
       "tradeSaving",
       "trades"
     ],
-    "template_len": 78125,
-    "template_sha": "fd287863e769c889"
+    "template_len": 83214,
+    "template_sha": "bc3666c72e0c91d4"
   },
   "AutoEvaluateDialog": {
     "classes": [
@@ -445,8 +473,6 @@
   "CalendarPage": {
     "classes": [
       "''",
-      "'is-busy':",
-      "'is-checked':",
       "'is-watched'",
       ":",
       "===",
@@ -471,10 +497,6 @@
       "gold-link",
       "h-calc-250",
       "inline-tag",
-      "isManual(item.code),",
-      "item.code",
-      "manual-check",
-      "manualBusy",
       "mt-4",
       "pull-refresh-indicator",
       "pull-refresh-spinner",
@@ -493,7 +515,6 @@
       "text-base-semibold",
       "text-semibold-primary",
       "text-sm",
-      "text-sm-ml2",
       "text-xl",
       "text-xl-danger",
       "text-xl-primary",
@@ -503,7 +524,6 @@
       "text-xs-tag-tertiary",
       "w-100",
       "watch-star",
-      "watchlistCodes.has(item.code)",
       "watchlistCodes.has(stock.code)"
     ],
     "directives": [
@@ -592,8 +612,8 @@
       "toggleManualSelection",
       "viewLabel"
     ],
-    "template_len": 18175,
-    "template_sha": "7b46504ccb55c18c"
+    "template_len": 17089,
+    "template_sha": "e16e59163e24681c"
   },
   "ChangePasswordDialog": {
     "classes": [],
@@ -909,8 +929,8 @@
       "trackLoading",
       "trackNote"
     ],
-    "template_len": 7895,
-    "template_sha": "ed11b48ac73ceee2"
+    "template_len": 7888,
+    "template_sha": "61d119d14dcc5e82"
   },
   "GlobalHeader": {
     "classes": [
@@ -1141,8 +1161,18 @@
     "setup_keys": [
       "...state"
     ],
-    "template_len": 6417,
-    "template_sha": "e70efd5c15ad6b5b"
+    "template_len": 6533,
+    "template_sha": "8a295160ab297e6d"
+  },
+  "LazyFallback": {
+    "classes": [],
+    "directives": [],
+    "i18n_keys": [],
+    "icons": [],
+    "name": "qc-lazy-fallback",
+    "setup_keys": [],
+    "template_len": 0,
+    "template_sha": ""
   },
   "MarketplacePanel": {
     "classes": [
@@ -1341,8 +1371,8 @@
     "setup_keys": [
       "...state"
     ],
-    "template_len": 15549,
-    "template_sha": "cc2be96da4a47f1b"
+    "template_len": 15557,
+    "template_sha": "73093d667d30e740"
   },
   "Onboarding": {
     "classes": [
@@ -1486,8 +1516,57 @@
       "topN",
       "weightText"
     ],
-    "template_len": 6026,
-    "template_sha": "a78c2186db166543"
+    "template_len": 6075,
+    "template_sha": "ec1c2fce6920488e"
+  },
+  "QcCardList": {
+    "classes": [
+      "it.badgeClass",
+      "qc-card-badge",
+      "qc-card-foot",
+      "qc-card-head",
+      "qc-card-item",
+      "qc-card-line",
+      "qc-card-lines",
+      "qc-card-list",
+      "qc-card-note",
+      "qc-card-sub",
+      "qc-card-title"
+    ],
+    "directives": [
+      "v-for",
+      "v-if"
+    ],
+    "i18n_keys": [],
+    "icons": [],
+    "name": "qc-card-list",
+    "setup_keys": [
+      "list",
+      "onKey",
+      "onPick"
+    ],
+    "template_len": 944,
+    "template_sha": "1cd55127ae2671af"
+  },
+  "QcSkeletonTable": {
+    "classes": [
+      "qc-skeleton-cell",
+      "qc-skeleton-row",
+      "qc-skeleton-table",
+      "visually-hidden"
+    ],
+    "directives": [
+      "v-for"
+    ],
+    "i18n_keys": [],
+    "icons": [],
+    "name": "qc-skeleton-table",
+    "setup_keys": [
+      "colIdx",
+      "rowIdx"
+    ],
+    "template_len": 408,
+    "template_sha": "ba9c48fc0cc7d810"
   },
   "ResearchPage": {
     "classes": [
@@ -1508,6 +1587,8 @@
       "'overfit',",
       "'param-stability-overfit':",
       "'param-stability-robust':",
+      "'qc-pnl-down'",
+      "'qc-pnl-up'",
       "'qc711-tone-up'",
       "'qc711-tone-warn'",
       "'robust'",
@@ -1534,6 +1615,7 @@
       ">",
       ">=",
       "?",
+      "Number(backtestResult.total_pnl)",
       "bt-compare-table",
       "card",
       "card-title",
@@ -1627,6 +1709,7 @@
       "param-stability",
       "ptrade-code-box",
       "ptrade-code-pre",
+      "qc-bt-quick",
       "qc-disclaimer",
       "qc-page-tools",
       "qc-status-dot",
@@ -1763,6 +1846,7 @@
     "name": "qc-research-page",
     "setup_keys": [
       "...state",
+      "LX",
       "activeStrategy",
       "activeStrategyId",
       "aiCode",
@@ -1832,6 +1916,7 @@
       "loadResearchHistory",
       "loadScoreConfig",
       "loadStrategies",
+      "loadStrategyOverview",
       "loadVariantSpec",
       "loadVariants",
       "marketReviewChgClass",
@@ -1848,7 +1933,11 @@
       "openMarketReview",
       "openResearchHistory",
       "openStrategyManage",
+      "openStrategyManageFor",
       "overviewCompareLoading",
+      "overviewKeyword",
+      "overviewOnlyEnabled",
+      "overviewSortKey",
       "paramValues",
       "prefillFromRun",
       "profileName",
@@ -1902,9 +1991,14 @@
       "strategiesErrorText",
       "strategiesLoading",
       "strategiesWarn",
+      "strategyCardRows",
       "strategyManageMode",
+      "strategyOverviewDegraded",
+      "strategyOverviewError",
+      "strategyOverviewLoading",
       "strategyRunning",
       "strategyRuns",
+      "strategyStatusText",
       "sweepDegraded",
       "sweepLoading",
       "sweepMessage",
@@ -1922,8 +2016,8 @@
       "variantSpec",
       "variants"
     ],
-    "template_len": 81436,
-    "template_sha": "96db750cc9c691c0"
+    "template_len": 85678,
+    "template_sha": "9d2f18b5fa13ddcb"
   },
   "SetupWizardDialog": {
     "classes": [
@@ -2039,7 +2133,11 @@
       "pulse-grid",
       "pulse-kv",
       "pulse-token",
+      "qc-desktop-only",
+      "qc-mobile-only",
       "qc-page-tools",
+      "qc-zt-pager",
+      "qc711-note",
       "riseFall((s.row.rel",
       "riseFall(b.auction_pct)",
       "riseFall(d.money_effect)",
@@ -2132,6 +2230,7 @@
       "cycleTrend",
       "dateList",
       "dateListLoading",
+      "dtCards",
       "emotionNotice",
       "eventsError",
       "eventsLoading",
@@ -2145,6 +2244,7 @@
       "fmtCond",
       "fmtPct",
       "gotoSector",
+      "gotoTzPage",
       "hasAnyPool",
       "industry",
       "industryError",
@@ -2187,6 +2287,7 @@
       "loadSectorFlow",
       "loadSentiment",
       "moneySource",
+      "onCardPick",
       "openStock",
       "overview",
       "overviewErrDesc",
@@ -2213,6 +2314,7 @@
       "sectorErrDesc",
       "sectorErrTitle",
       "sectorError",
+      "sectorErrorCode",
       "sectorFlowSource",
       "sectorIndicator",
       "sectorKeyword",
@@ -2221,6 +2323,7 @@
       "sectorPageRows",
       "sectorRows",
       "sectorSource",
+      "sectorStale",
       "sectorTopInflow",
       "sectorTopName",
       "sectorType",
@@ -2243,10 +2346,13 @@
       "slotClass",
       "tagClass",
       "verdictClass",
-      "ztBoardFilter"
+      "zbCards",
+      "ztBoardFilter",
+      "ztCards",
+      "ztPageRows"
     ],
-    "template_len": 45567,
-    "template_sha": "a4a5b46d395cc194"
+    "template_len": 47245,
+    "template_sha": "6eba5b8c95bd9878"
   },
   "Sidebar": {
     "classes": [
@@ -2286,8 +2392,9 @@
   },
   "StatePanel": {
     "classes": [
-      "'qc-state-'",
+      "'qc-size-'",
       "+",
+      "['qc-state-'",
       "empty-state",
       "qc-state-action",
       "qc-state-desc",
@@ -2296,11 +2403,12 @@
       "qc-state-panel",
       "qc-state-retry",
       "qc-state-title",
+      "size]",
       "skeleton-grid",
       "skeleton-header",
       "skeleton-item",
       "skeleton-loader",
-      "type"
+      "type,"
     ],
     "directives": [
       "v-else",
@@ -2323,8 +2431,8 @@
       "showAction",
       "title"
     ],
-    "template_len": 1107,
-    "template_sha": "f6d41848560a4b75"
+    "template_len": 1211,
+    "template_sha": "bb26c8efa506ad2f"
   },
   "StockDetailDialog": {
     "classes": [
@@ -2533,7 +2641,6 @@
       "detail.factorNoData",
       "detail.factorPercentile",
       "detail.highLow",
-      "detail.holdDays",
       "detail.inWatch",
       "detail.loadKline",
       "detail.loading",
@@ -2563,7 +2670,6 @@
       "detail.sectionKline",
       "detail.sectionQuote",
       "detail.strategyHoldings",
-      "detail.subtitle",
       "detail.tabChat",
       "detail.tabEval",
       "detail.tabFactor",
@@ -2610,6 +2716,8 @@
       "factorLoading",
       "factorSemClass",
       "factorSummary",
+      "fmtHoldDays",
+      "fmtTotalDays",
       "fmtY",
       "levelRingColor",
       "loadFactorIc",
@@ -2622,8 +2730,8 @@
       "perfLoading",
       "poolInfo"
     ],
-    "template_len": 41043,
-    "template_sha": "660cd5bc6485ca39"
+    "template_len": 40974,
+    "template_sha": "7dd727374b6bfcf1"
   },
   "StockReportPanel": {
     "classes": [
@@ -2697,7 +2805,6 @@
       "'is-up'",
       "'is-up':",
       "'is-vertical':",
-      "'is-watched'",
       "'opportunity'",
       "'sell'",
       "'sig-opp'",
@@ -2728,6 +2835,7 @@
       "bt-error",
       "bt-form",
       "bt-form-actions",
+      "bt-form-hint",
       "bt-form-label",
       "bt-form-row",
       "bt-input",
@@ -2772,7 +2880,6 @@
       "g.live",
       "gold",
       "gold-hint",
-      "gold-link",
       "grid-2col-gap8-mb14",
       "h-calc-240",
       "i",
@@ -2869,6 +2976,7 @@
       "pool-change-val",
       "poolChangeBadge.dir",
       "progress-bar",
+      "qc-bt-quick",
       "qc-disclaimer",
       "qc-page-tools",
       "qc711-note",
@@ -2911,7 +3019,6 @@
       "text-center-secondary-lh",
       "text-md-medium-primary",
       "text-sm",
-      "text-sm-ml2",
       "text-sm-mono",
       "text-sm-primary-link",
       "text-sm-secondary",
@@ -2957,9 +3064,7 @@
       "w-100px",
       "w-select",
       "w-select-sm",
-      "warning",
-      "watch-star",
-      "watchlistCodes.has(item.code)"
+      "warning"
     ],
     "directives": [
       "v-else",
@@ -3011,8 +3116,8 @@
     ],
     "icons": [
       "activity",
+      "alert-triangle",
       "bar-chart-3",
-      "bot",
       "calendar",
       "calendar-days",
       "check",
@@ -3031,7 +3136,6 @@
       "s.icon",
       "settings",
       "sparkles",
-      "star",
       "target",
       "trending-up",
       "trophy",
@@ -3091,8 +3195,51 @@
       "todayText",
       "tradingStatus"
     ],
-    "template_len": 61560,
-    "template_sha": "eab4de9590dae5db"
+    "template_len": 63157,
+    "template_sha": "af0f8e1599b96f88"
+  },
+  "StrategyBoard": {
+    "classes": [
+      "&&",
+      "pnlClass(r.last_backtest",
+      "qc-sb-col-name",
+      "qc-sb-col-num",
+      "qc-sb-col-ops",
+      "qc-sb-head",
+      "qc-sb-id",
+      "qc-sb-name",
+      "qc-sb-note",
+      "qc-sb-scroll",
+      "qc-sb-status",
+      "qc-sb-table",
+      "qc-sb-title",
+      "qc-sb-tools",
+      "qc-sb-warn",
+      "qc-strategy-board",
+      "qr-compare-table",
+      "r.last_backtest.annual_return)",
+      "r.last_backtest.max_drawdown)",
+      "statusClass(r)",
+      "text-sm-tertiary",
+      "w-200",
+      "w-select-sm"
+    ],
+    "directives": [
+      "v-else",
+      "v-else-if",
+      "v-for",
+      "v-if"
+    ],
+    "i18n_keys": [],
+    "icons": [
+      "alert-triangle",
+      "layers",
+      "refresh"
+    ],
+    "name": "qc-strategy-board",
+    "setup_keys": [],
+    "template_len": 3371,
+    "template_sha": "91daa51325f36dfc"
   },
   "SystemPage": {
     "classes": [
@@ -3603,21 +3750,29 @@
       "toggleAlertRule",
       "viewIcon"
     ],
-    "template_len": 111897,
-    "template_sha": "9fb2735e3d574d1a"
+    "template_len": 111922,
+    "template_sha": "9daf2221534d0ef7"
   },
   "TimingRadar": {
     "classes": [
+      "'hold')",
+      "'is-'",
+      "(p.row.signals[st.id].action",
+      "+",
       "S.pnlTone(perf.total_return)",
       "S.stateTone(mktState.state)",
       "S.stateTone(t.state)",
       "card-title",
       "qc711-agg-chip",
       "qc711-badge",
+      "qc711-bar",
       "qc711-card",
       "qc711-card-title",
+      "qc711-cell",
+      "qc711-cell-num",
       "qc711-degraded-warn",
       "qc711-dim",
+      "qc711-dot",
       "qc711-empty",
       "qc711-grid-2",
       "qc711-head",
@@ -3630,6 +3785,8 @@
       "qc711-matrix-head",
       "qc711-matrix-meta",
       "qc711-matrix-table",
+      "qc711-matrix-th",
+      "qc711-matrix-tools",
       "qc711-note",
       "qc711-panel",
       "qc711-stat",
@@ -3643,7 +3800,8 @@
       "qc711-toolbar",
       "qc711-v",
       "qc711-w160",
-      "qc711-w260"
+      "qc711-w260",
+      "||"
     ],
     "directives": [
       "v-else",
@@ -3667,6 +3825,7 @@
       "aggText",
       "calendarDate",
       "calendarInherited",
+      "cellBarWidth",
       "error",
       "evaluating",
       "loadMatrix",
@@ -3675,12 +3834,15 @@
       "matrix",
       "matrixError",
       "matrixLoading",
+      "matrixOnlySignaled",
+      "matrixRows",
       "matrixSource",
       "mktState",
       "perf",
       "points",
       "result",
       "runEvaluate",
+      "shortStrategyName",
       "sid",
       "signalAsOf",
       "signalGeneratedAt",
@@ -3691,8 +3853,8 @@
       "symbol",
       "timeline"
     ],
-    "template_len": 11395,
-    "template_sha": "e39efa05e24dc7f3"
+    "template_len": 12557,
+    "template_sha": "ad7446f7ae63eab7"
   },
   "TourDialog": {
     "classes": [
@@ -3747,11 +3909,12 @@
       "plainMode",
       "scrollEl",
       "startIndex",
+      "step",
       "totalHeight",
       "visibleItems"
     ],
-    "template_len": 1348,
-    "template_sha": "b2d4a8b1849c2c73"
+    "template_len": 1435,
+    "template_sha": "aa6f48554513355b"
   },
   "WatchGroupsDialog": {
     "classes": [

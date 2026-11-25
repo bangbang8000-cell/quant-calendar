@@ -4,11 +4,11 @@
 //   (npm 依赖替代原 CDN script), 业务模块执行前全局就绪
 
 import './globals.js'
-// 6.2.0 (F1): 字体系统落地 — Inter 自托管 (latin 400/500/600/700, 中文回退系统字体), 随构建打包进 dist
-import '@fontsource/inter/latin-400.css'
-import '@fontsource/inter/latin-500.css'
-import '@fontsource/inter/latin-600.css'
-import '@fontsource/inter/latin-700.css'
+// v7.17 (FR-401): 全站数字/占位格式化层 — 无依赖, 须早于所有业务模块与组件
+// (页面模板经 window.QuantFmt 取用; 缺失统一输出 '—', 消除 undefined/--/0.00 混排)
+import '../js/fmt.js'
+// v7.19 (FR-9): 策略研究术语中文映射（后端枚举不再原样透出）
+import '../js/research-lexicon.js'
 import '../js/themes.js'
 import '../js/i18n.js'
 import '../js/locales/zh-CN.js'
@@ -109,40 +109,20 @@ import '../js/components/strategies/view.js'
 import '../js/components/strategies-page.js'
 // V6.9.4 (FIX): 页面组件静态预加载 — 与 calendar/strategies 一致, 消除懒加载注册时序导致
 // 刷新/启动停留在懒加载页时组件未注册 → <component :is> 渲染为自定义元素 → 工作区空白
-// 6.3.0 (T-6.3.0.5): 系统页模板分治 — 片段与装配须先于注册文件 (注册对象创建时即取 template 值)
-import '../js/components/system/view-part1.js'
-import '../js/components/system/view-part2.js'
-import '../js/components/system/view.js'
-import '../js/components/system-page.js'
-// 6.3.0 (T-6.3.0.9): AI 页模板分治 — 片段与装配须先于注册文件 (注册对象创建时即取 template 值)
-import '../js/components/ai/view-part1.js'
-import '../js/components/ai/view-part2.js'
-import '../js/components/ai/view.js'
-import '../js/components/ai-page.js'
-// 6.3.0 (T-6.3.0.6): 研究页结构分治 — 逻辑域与模板片段须先于注册文件 (注册对象创建时即取值)
-import '../js/components/research/logic-market-review.js'
-import '../js/components/research/logic-factor.js'
-import '../js/components/research/logic-history.js'
-import '../js/components/research/view-part1.js'
-import '../js/components/research/view-part2.js'
-import '../js/components/research/view.js'
-import '../js/components/research-page.js'
+// v7.18 (FR-501): 系统页改为按域懒加载 —— 原静态 import 顺序已原样迁移至
+// js/components/system/lazy-entry.js（片段先于装配、装配先于注册的约束不变），
+// 由文件末尾 __lazyLoaders.system 动态加载。首屏不再携带本域 ~140KB 源码。
+// v7.18 (FR-501): AI 页改为按域懒加载 —— 见 js/components/ai/lazy-entry.js
+// v7.18 (FR-501): 研究页改为按域懒加载 —— 见 js/components/research/lazy-entry.js
+// (该入口一并带上仅本域消费的 pattern-lab / marketplace-panel / param-lock-panel)
 // v7.11 (FR-7.11): 六个新域前端入口 — 必须在页面模板装配后、app-logic 前静态导入
 // (组件注册在 mount 时遍历 __quantComponents 完成, 静态导入可避免 <component :is> 空白)
-import '../js/components/overlay-radar.js'
 import '../js/components/pattern-lab.js'
 import '../js/components/marketplace-panel.js'
 import '../js/components/param-lock-panel.js'
 import '../js/components/exec-plans-panel.js'
 import '../js/components/stock-report-panel.js'
-// 6.3.0 (T-6.3.0.9): 短线复盘页结构分治 — 引导逻辑域与模板片段须先于注册文件
-import '../js/components/shortterm/logic-tour.js'
-import '../js/components/shortterm/logic-sentiment.js'
-import '../js/components/shortterm/logic-cache.js'
-import '../js/components/shortterm/view-part1.js'
-import '../js/components/shortterm/view-part2.js'
-import '../js/components/shortterm/view.js'
-import '../js/components/shortterm-page.js'
+// v7.18 (FR-501): 短线复盘页改为按域懒加载 —— 见 js/components/shortterm/lazy-entry.js
 import '../js/virtual-list-core.js'
 // 6.6 (T-6.6.1): 自选列表渲染策略纯函数（退化渲染/渲染守卫/组件门禁/诊断导出）
 import '../js/watchlist-render-core.js'
@@ -154,6 +134,12 @@ import '../js/state-panel-core.js'
 // 6.4.2 (FR-646): 错误码人话映射 + 重试节流 (状态面板消费)
 import '../js/error-map.js'
 import '../js/components/state-panel.js'
+// v7.18 (FR-901): 窄屏长表卡片降级容器
+import '../js/components/qc-card-list.js'
+// v7.18 (FR-1001): 表格骨架屏
+import '../js/components/qc-skeleton.js'
+// v7.11 (FR-7.11-1): 择时雷达 qc-timing-radar (v7.18 恢复: 文件名与注册名不一致导致审计误判死代码, strategies 页 view-part2 在用)
+import '../js/components/overlay-radar.js'
 import '../js/command-panel-core.js'
 import '../js/onboarding-core.js'
 import '../js/onboarding.js'
@@ -173,9 +159,8 @@ import '../js/components/dialogs/index-detail.js'
 import '../js/components/dialogs/setup-wizard.js'
 import '../js/components/dialogs/merrill-detail.js'
 import '../js/components/dialogs/stock-detail.js'
-import '../js/components/history-record.js'
-import '../js/components/focus-view.js'
-import '../js/components/focus-view.js'
+// v7.18 (FR-501): history-record / focus-view 经 grep 确认仅 ai 域模板消费,
+// 移入 js/components/ai/lazy-entry.js 随域加载; 原先重复的 focus-view import 一并消除。
 import '../js/app-logic/data.js'
 import '../js/app-logic/market.js'
 import '../js/app-logic/ops.js'
@@ -190,12 +175,26 @@ import '../js/app-logic/detail.js'
 import '../js/app-logic/runtime.js'
 import '../js/app-logic.js'
 
-// V4.3-S3 (方案A): 页面组件懒加载 — V6.9.4 起改为顶部静态 import (与 calendar/strategies 一致, 消除注册时序空白)
-// __lazyLoaders 保留接口兼容 (__quantGoPage / watch.js 调用), 模块已静态加载, 返回已解析 Promise
+// v7.18 (FR-501): 真正的按域懒加载 —— 每个域一个 chunk, 首次进入该域才下载。
+// 关键约束 (V6.9.4 曾因违反此点退回静态 import):
+//   刷新/启动停留在懒加载页时, 若组件未注册, <component :is> 解析失败 → 工作区空白。
+// 三道防线:
+//   1) lifecycle.js 启动恢复时先 await 对应 loader 再赋值 currentPage;
+//   2) workspace.js pageComp 在组件未注册时返回 qc-lazy-fallback 占位(骨架), 而非组件名;
+//   3) runtime.js __quantGoPage 加载完成后补注册 + lazyTick 触发 pageComp 重算。
+// 同一路径的 import() 由 ES 模块缓存, 重复调用不会重复下载。
 window.__lazyLoaders = {
-  system: () => Promise.resolve(),
-  ops: () => Promise.resolve(),   // V6.9.1-fix: 系统状态一级菜单复用 system-page 渲染
-  ai: () => Promise.resolve(),
-  research: () => Promise.resolve(),
-  shortterm: () => Promise.resolve(),
+  system: () => import('../js/components/system/lazy-entry.js'),
+  ops: () => import('../js/components/system/lazy-entry.js'),   // V6.9.1-fix: 系统状态一级菜单复用 system-page 渲染
+  ai: () => import('../js/components/ai/lazy-entry.js'),
+  research: () => import('../js/components/research/lazy-entry.js'),
+  shortterm: () => import('../js/components/shortterm/lazy-entry.js'),
+};
+
+// v7.18 (FR-501): 懒加载域未就绪时的整页占位 —— 复用四态面板的 loading 态(含 size=lg 最小高度),
+// 使首帧表现为「骨架」而非空白。qc-state-panel 本身是静态组件, 不参与懒加载。
+window.__quantComponents = window.__quantComponents || {};
+window.__quantComponents.LazyFallback = {
+  name: 'qc-lazy-fallback',
+  template: '<qc-state-panel type="loading" size="lg"></qc-state-panel>',
 };

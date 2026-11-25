@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth import get_non_guest_user
 from strategy_db import StrategyBusyError, append_run, finish_run, get_run, list_runs
 from strategy_sdk.base import StrategyContext
+from strategy_sdk.labels import localize_run
 from strategy_sdk.registry import registry, StrategyNotFoundError
 from research_store import save_experiment
 
@@ -24,8 +25,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/strategies', tags=['策略研究'])
 
+
 # v7.14: 支撑层拆分 — 动态窗口/门户解析/实验持久化/面板工具 (使主文件回到 ≤700 行门禁内)
 from .strategy_research_support import (
+    symbol_names as _symbol_names,
     default_research_range as _default_research_range,
     default_end_sync as _default_end_sync,
     date_range as _date_range,
@@ -209,9 +212,12 @@ async def run_strategy(sid: str, body: Dict[str, Any],
                 as_of = _default_end_sync() or _date.today().isoformat()
             ctx = StrategyContext(portal=portal, params=params, as_of=as_of)
             holdings = st.generate_signals(ctx)
+            _symbols = list(holdings.columns) if holdings is not None and len(holdings.columns) else []
             summary = {
                 'holdings_days': len(holdings) if holdings is not None else 0,
-                'symbols': list(holdings.columns) if holdings is not None and len(holdings.columns) else [],
+                'symbols': _symbols,
+                # v7.19 (FR-9): 名称随运行结果一起返回，前端不再「只有代码没有中文名」
+                'symbol_names': _symbol_names(_symbols),
             }
             finish_run(rid, 'success', summary=summary)
         except Exception as e:
@@ -224,6 +230,33 @@ async def run_strategy(sid: str, body: Dict[str, Any],
     _threading.Thread(target=_worker, daemon=True, name=f'strategy-run-{sid}').start()
     # V4.0 M1-2: data_degraded 由运行结果决定, 前端轮询 runs/{rid} 获取最终状态
     return {'id': rid, 'status': 'running', 'mode': mode}
+
+
+def _scale_equity_to_capital(result: Dict[str, Any], initial_capital: float) -> Dict[str, Any]:
+    """v7.19 (T3.1): 把回测引擎的「净值倍数」序列换算成金额序列。
+
+    引擎产出 equity_curve 起点为 1.0（无量纲倍数），金额本身不参与收益计算 ——
+    所以"初始资金填 100 万还是 1 万"过去得到的是同一条曲线，用户无法回答
+    "这一百万最后变成多少"。这里按 initial_capital 换算，并给出期末权益与总盈亏。
+
+    原始倍数保留在 equity_curve_index，避免破坏需要无量纲曲线的既有图表口径。
+    """
+    if not isinstance(result, dict):
+        return result
+    result['initial_capital'] = initial_capital
+    curve = result.get('equity_curve') or []
+    if not curve:
+        return result
+    try:
+        index = [float(x) for x in curve]
+    except (TypeError, ValueError):
+        return result
+    result['equity_curve_index'] = [round(x, 6) for x in index]
+    amounts = [round(initial_capital * x, 2) for x in index]
+    result['equity_curve'] = amounts
+    result['final_equity'] = amounts[-1]
+    result['total_pnl'] = round(amounts[-1] - initial_capital, 2)
+    return result
 
 
 @router.post('/{sid}/backtest')
@@ -239,10 +272,34 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
         from strategy_sdk.backtest import backtest_holdings
         universe = list(getattr(st, 'universe', []) or []) or [f'{600000 + i:06d}.SH' for i in range(24)]
         portal, is_real = _resolve_portal(universe=universe)
-        # v7.14 (FR-2): 默认窗口动态化 — end=最近交易日, start=end-约30个月(保持原跨度语义)
-        _dstart, _dend = await _default_research_range(months=30)
+        # v7.14 (FR-2): 默认窗口动态化 — end=最近交易日
+        # v7.19 (T3.1): 30 → 18 个月。30 个月跨两轮风格切换，样本内/外切分后样本外只剩半年，
+        # 夏普与胜率的置信区间过宽；18 个月（≈360 交易日）是"够统计、覆盖一轮行业轮动"的折中，
+        # 也是 PRD 需求 ⑧ 指定的默认建议区间。
+        _dstart, _dend = await _default_research_range(months=18)
         end = body.get('end_date') or _dend
         start = body.get('start_date') or _dstart
+        # v7.19 (T3.1): 金额与成本三件套 —— 之前 initial_capital 只被记录、未参与任何计算，
+        # 用户填 100 万和填 1 万得到同一条曲线，是"回测结果不可信"的来源之一。
+        # 注意 `body.get(...) or 1_000_000` 会把用户填的 0 静默吞成默认值 ——
+        # 必须显式区分「未传」与「传了非法值」，否则输入 0 会悄悄跑出一条 100 万的曲线。
+        _raw_capital = body.get('initial_capital')
+        if _raw_capital is None or _raw_capital == '':
+            initial_capital = 1_000_000
+        else:
+            try:
+                initial_capital = float(_raw_capital)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail='initial_capital 必须是数字')
+            if initial_capital <= 0:
+                raise HTTPException(status_code=400, detail='initial_capital 必须大于 0')
+        try:
+            fee_rate = float(body.get('fee_rate', body.get('commission_rate', 0.0003)))
+            slippage = float(body.get('slippage', 0.001))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail='fee_rate / slippage 必须是数字')
+        if fee_rate < 0 or slippage < 0:
+            raise HTTPException(status_code=400, detail='fee_rate / slippage 不能为负')
         ctx = StrategyContext(portal=portal, params=params, as_of=end)
         holdings = st.generate_signals(ctx)
         # 真实收益序列: 取 close 面板 → 日收益率 (date×symbol, 回测器内部防前视)
@@ -259,17 +316,22 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
             returns=returns,
             start_date=body.get('start_date'),
             end_date=body.get('end_date'),
-            commission_rate=body.get('commission_rate', 0.0003),
-            slippage=body.get('slippage', 0.001),
+            commission_rate=fee_rate,
+            slippage=slippage,
         )
+        # v7.19 (T3.1): 资金参与计算 —— 引擎产出的是「净值倍数」序列(起点 1.0)，
+        # 这里换算成金额序列并给出期末权益/总盈亏，前端才能显示"100 万变成多少"。
+        # 保留原始倍数(equity_curve_index) 供需要无量纲曲线的场景使用，避免破坏既有图表口径。
+        if isinstance(result, dict) and result.get('success', True):
+            _scale_equity_to_capital(result, initial_capital)
         # V4.0 M1-2: 数据不可达时透出 data_degraded
         # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
         if isinstance(result, dict) and result.get('success', True):
             _r = result if isinstance(result, dict) else {}
             _record_experiment(
                 'backtest', sid,
-                {'params': params, 'commission_rate': body.get('commission_rate', 0.0003),
-                 'slippage': body.get('slippage', 0.001)},
+                {'params': params, 'initial_capital': initial_capital,
+                 'commission_rate': fee_rate, 'slippage': slippage},
                 [start, end],
                 {'total_return': _r.get('total_return'),
                  'annual_return': _r.get('annual_return'),
@@ -279,8 +341,23 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
                 {'result': result})
         # v7.15 (FR-6 双轨统一): experiments 单源(_record_experiment 已写入),
         # 不再调 save_backtest_result 二次入库(其签名保留供 standalone 端点委托使用)
+        _bt_symbols = []
+        try:
+            _bt_symbols = list(holdings.columns) if holdings is not None else []
+        except Exception:  # noqa: BLE001
+            _bt_symbols = []
+        # v7.19 (T3.1): 回显本次实际生效的参数 —— 用户能核对"我填的 18 个月/100 万"是否真被采用
+        used_params = {'initial_capital': initial_capital, 'fee_rate': fee_rate,
+                       'slippage': slippage, 'start_date': start, 'end_date': end,
+                       'months': 18}
         return {'strategy_id': sid, 'params': params, 'data_degraded': not is_real,
+                'symbol_names': _symbol_names(_bt_symbols),
+                'used_params': used_params,
                 'result': result}
+    except HTTPException:
+        # v7.19 (T3.1): 参数校验类 4xx 必须原样透出 —— 被下面的 broad except 兜成
+        # 500 后前端只能提示"回测失败"，用户看不出是自己把初始资金填成了 0。
+        raise
     except Exception as e:
         logger.exception('策略 %s 回测失败', sid)
         raise HTTPException(status_code=500, detail=f'回测失败: {e}')
@@ -346,7 +423,8 @@ async def strategy_param_sweep(sid: str, body: Dict[str, Any],
 async def strategy_runs(sid: str, limit: int = 50,
                         _: Dict = Depends(get_non_guest_user)):
     """运行历史"""
-    return list_runs(sid, limit=limit)
+    # v7.19 (FR-9): 运行记录补 status_cn / mode_cn / sid_cn，中文模式不再裸露 success/manual
+    return [localize_run(r) for r in list_runs(sid, limit=limit)]
 
 
 @router.get('/{sid}/runs/{rid}')
@@ -356,7 +434,7 @@ async def strategy_run_detail(sid: str, rid: str,
     r = get_run(rid)
     if not r or r['strategy_id'] != sid:
         raise HTTPException(status_code=404, detail='运行记录不存在')
-    return r
+    return localize_run(r)
 
 
 @router.get('/{sid}/ptrade-code')

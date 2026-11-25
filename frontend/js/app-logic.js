@@ -18,7 +18,7 @@
 
                 // v3.0: 美林时钟模块 - 从 merrill.js 加载
                 const merrill = useMerrillClock();
-                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, merrillError, merrillCorrection, fetchMerrillCorrection, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
+                const { merrillData, merrillStagesConfig, showMerrillDetail, merrillDetailData, merrillClockConfig, merrillClockLastUpdated, merrillReevalResult, merrillReevalLoading, stages, indicatorList, dimensionScoreList, detailDimensionScoreList, confidenceColor, timelineStages, clockPosition, merrillProgressStyle, FULL_CYCLE_MONTHS, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted, getCharLabel, getAssetName, getRankColor, fetchMerrillStages, fetchMerrillClock, merrillError, merrillStale, merrillDataAsOf, merrillCorrection, fetchMerrillCorrection, loadMerrillTimeline, showTimelineStage, merrillTimeline, timelineLoading, showStageDetail, saveMerrillClockConfig, doMerrillReevaluate, startAutoRefresh, stopAutoRefresh,
                     // V5.21: 评估轨迹 (快照) — 周期演进板的"随大模型评估更新"数据源
                     merrillSnapshots, merrillSnapshotsTotal, fetchMerrillSnapshots } = merrill;
 
@@ -36,6 +36,7 @@
                 const { backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                         backtestRunning, backtestResult, backtestError, runBacktest,
                         backtestDegraded, loadBacktestStrategies,
+                        backtestMonths, setBacktestMonths,
                         currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
                         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
                         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,
@@ -61,8 +62,13 @@
 
                 // ===== 6.3.0 (T-6.3.0.10): 详情/K线域 — 后置域经惰性访问器引用 (TDZ 安全) =====
                 // 6.6 (T-6.6.28): detail 域新增 ctx 依赖 getIndexQuoteSummary (K线 tooltip 用指数行情摘要)
+                // v7.17 (FR-102 / D-02): 补传 healthMetrics — detail 域 loadHealthMetrics() 内
+                // 直接赋值 healthMetrics.value，但该标识符未进入 ctx 作用域，ES 模块严格模式下
+                // 赋值未声明变量会抛 ReferenceError (ops/health、ops/usage 两页实测报错)。
+                // (注: 装配参数内不能写注释 — 契约测试的逗号解析器会把「注释+裸键」整体吞掉)
                 const __detail = window.__quantAppLogic.detail.create({
                   ref, computed, nextTick,
+                  healthMetrics,
                   stockDetail, stockDetailTab, stockDetailVisible, stockDetailLoading,
                   rememberDialogTrigger,
                   getIsMobile: () => isMobile,
@@ -149,7 +155,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     ? window.__quantModules['ai-chat'].create({ stockKlineLoaded, stockDetailVisible, stockDetailTab, stockDetail, disposeStockKline })
                     : {};
                 const { chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
-                        chatHistoryLoading, chatHistoryError,
+                        chatHistoryLoading, chatHistoryError, chatHistoryMeta,
                         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                         toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,
@@ -241,7 +247,8 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     ? window.__quantModules.backtest.create({ backtestStrategies })
                     : {};
                 const { btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
-                        btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
+                        btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
+                        btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
                         btRunning, btResult, btError,
                         btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
                         runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum } = __backtestDomain;
@@ -320,8 +327,15 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
 
                 // ===== v3.8.1: 通用数值格式化 (弹窗展示用, 最多保留 digits 位小数, null/NaN 回退 '--')
                 function fmtNum(v, digits = 2) {
-                    if (v == null || v === '' || isNaN(Number(v))) return '--';
+                    // v7.18 (FR-1003/FR-401): 缺失输出单一占位符 '—', 禁止 '--'
+                    if (v == null || v === '' || isNaN(Number(v))) return '—';
                     return Number(v).toFixed(digits);
+                }
+                // v7.18 (FR-1003): 百分比含单位格式化 — 缺失输出 '—' 不粘 '%',
+                // 替代模板里 fmtNum 后硬编码百分号的写法 (缺失时会渲染成 '—' 粘单位)
+                function fmtPct(v, digits = 2) {
+                    if (v == null || v === '' || isNaN(Number(v))) return '—';
+                    return Number(v).toFixed(digits) + '%';
                 }
 
                 // v3.6.0: 整个 setup 状态对象提升为 qcState, provide 给所有子组件 (T4+: System/Strategies/Calendar/AI 共用)
@@ -331,7 +345,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     navMode, setNavMode,
                     // V6.1 (PRD-6.1 F8): 动态页签状态 (内部导航副作用保留: openTab 同步 hash/当前二级)
                     tabGroups, openTab, closeTab, activateTab,
-                    fmtNum, sanitizeHtml, keyClick, isOnline,
+                    fmtNum, fmtPct, sanitizeHtml, keyClick, isOnline,
                     currentUser, allMenuDefs,
                     // v3.17.14 (FR-3.17.14): i18n（全局 t / 当前 locale / 语言切换）
                     t, locale, changeLanguage,
@@ -343,7 +357,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     themeHues, themeHueNames, themeHue, themeMode, hueColor, hueName,
                     density, changeDensity,
 
-                    marketData, marketError, merrillData, merrillError, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
+                    marketData, marketError, merrillData, merrillError, merrillStale, merrillDataAsOf, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
                     merrillSnapshots, merrillSnapshotsTotal, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
@@ -359,9 +373,11 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
                     backtestRunning, backtestResult, backtestError, runBacktest,
                     backtestDegraded, loadBacktestStrategies,
+                    backtestMonths, setBacktestMonths,
                     // v3.17.4 (FR-3.17.4): 回测工作台
                     btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
-                    btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
+                    btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
+                    btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
                     btRunning, btResult, btError,
                     btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
                     runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum,
@@ -393,7 +409,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     scoreAnimating, scoreDelta, scorePulse, refreshStockScore, animateScoreEntrance,
                     showMerrillDetail, merrillDetailData, showStageDetail, getCharLabel, getAssetName, getRankColor,
                     levelColor, levelBg,
-                    timelineStages, getStageAngle, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted,
+                    timelineStages, getCycleProgress, getCurrentStageMonths, getStageTotalMonths, isStageCompleted,
                     stages, indicatorList, dimensionScoreList, confidenceColor,
                     views, currentView, statusFilter,
                     loginForm, logining, guestLogining,
@@ -486,7 +502,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     showSetupWizard, setupForm, setupStep, checkSetupWizard, completeSetupWizard,
                     // v2.4: AI 问股
                     chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
-                    chatHistoryLoading, chatHistoryError,
+                    chatHistoryLoading, chatHistoryError, chatHistoryMeta,
                     allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
                     toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,
                     toggleChatDateExpand, toggleChatMonthExpand, toggleChatStockExpand,

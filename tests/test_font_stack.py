@@ -26,6 +26,8 @@ import color_gate as g  # noqa: E402
 
 FRONTEND = g.FRONTEND
 DIST_CSS = os.path.join(FRONTEND, "dist", "assets", "*.css")
+# v7.18: @font-face 迁移至 tokens.css 经合并产物 app.css 输出 — 校验数据源加 app.css
+APP_CSS = os.path.join(FRONTEND, "css", "app.css")
 TOKENS = os.path.join(FRONTEND, "css", "tokens.css")
 
 # 系统字体白名单: 各平台预置, 无需 @font-face
@@ -97,8 +99,8 @@ def test_f1_stack_families_loadable():
 def test_f2_inter_self_hosted_with_swap():
     assert "inter" in _imported_font_packages() or "inter" in _font_face_families(), \
         "Inter 必须由 @fontsource 自托管 (frontend/src/main.js 导入)"
-    dist = glob.glob(DIST_CSS)
-    assert dist, "缺少构建产物 dist/assets/*.css, 无法校验 @font-face"
+    dist = glob.glob(DIST_CSS) + ([APP_CSS] if os.path.isfile(APP_CSS) else [])
+    assert dist, "缺少 css 产物 (dist/assets/*.css 或 css/app.css), 无法校验 @font-face"
     ok = False
     for path in dist:
         src = open(path, encoding="utf-8", errors="ignore").read()

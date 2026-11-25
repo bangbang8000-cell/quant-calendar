@@ -96,7 +96,7 @@
               <el-table-column label="缺维" width="90">
                 <template #default="m">{{ (m.row.missing_dimensions || []).length ? m.row.missing_dimensions.join(',') : '无' }}</template>
               </el-table-column>
-              <el-table-column prop="engine" label="引擎" width="100"></el-table-column>
+              <el-table-column label="引擎" width="100"><template #default="p">{{ LX.engine(p.row.engine) }}</template></el-table-column>
             </el-table>
             <div v-else class="qc711-empty">无候选达到阈值。可下调阈值或放宽回看区间（不达标不造分）。</div>
           </template>
@@ -202,6 +202,9 @@
 
       return {
         S: window.__quantModules.v711,
+        // v7.19 (FR-9): 引擎枚举中文化（fastdtw → 快速DTW）
+        LX: (window.__quantModules && window.__quantModules.researchLexicon)
+          || { engine: function (k) { return k; } },
         cases, picked, caseLoading, saving, matching, matchError, matchResult,
         candidates, lookback, minSim, topN, form,
         matchRows, weightText,

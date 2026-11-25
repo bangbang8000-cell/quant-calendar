@@ -7,12 +7,14 @@
 
   window.__quantModules.portfolio = {
     create(deps) {
-      const { ref, computed } = Vue;
+      const { ref, computed, watch } = Vue;
 
       // ─── 状态 ───────────────────────────────────────────────
       const positions = ref([]);
       const summary = ref(null);
       const trades = ref([]);
+      // v7.19: 调仓记录懒加载标记 (切到「交易」页签才请求)
+      const tradesHasData = ref(false);
       const loading = ref(false);
       const loadError = ref(false);
       const showAddForm = ref(false);
@@ -75,6 +77,13 @@
           riskLoading.value = false;
         }
       }
+
+      // v7.19: 分页签懒加载 —— 各端点内部逐只调 tushare 取价, 并发会把事件循环占满
+      // (建仓弹窗因此要等 6s+), 故风控/交易只在切到对应页签时请求。
+      watch(portfolioTab, function (tab) {
+        if (tab === 'risk' && !riskHasData.value && !riskLoading.value) loadRisk();
+        if (tab === 'trades' && !tradesHasData.value) loadTrades();
+      });
 
       // ─── 持仓 ───────────────────────────────────────────────
       async function loadPortfolio() {
@@ -194,7 +203,10 @@
         try {
           const res = await fetch('/api/portfolio/trades');
           const data = await res.json();
-          if (data.success) trades.value = data.trades || [];
+          if (data.success) {
+            trades.value = data.trades || [];
+            tradesHasData.value = true;
+          }
         } catch (e) {
           console.warn('[portfolio] 加载调仓记录失败:', e);
         }
@@ -312,6 +324,119 @@
         }
       }
 
+      // ─── v7.19 (FR-6): 自选等权均分建仓 ──────────────────────
+      // 诉求: 把自选股一次性放进组合, 总额均分, 整手取整, 尾差留现金。
+      const planVisible = ref(false);
+      const planLoading = ref(false);
+      const planApplying = ref(false);
+      const planPreview = ref(null);
+      const planNote = ref('');
+      const planForm = ref({ total_capital: 1000000, overwrite: false });
+      const PLAN_QUICK_CAPITAL = [200000, 500000, 1000000, 2000000];
+
+      const planTotals = computed(function () {
+        const p = planPreview.value;
+        if (!p) return null;
+        return {
+          total: p.total_capital,
+          invested: p.invested,
+          cash: p.cash_reserve,
+          cashPct: p.cash_reserve_pct,
+          count: p.position_count,
+          skipped: (p.skipped || []).length,
+          warnings: p.warnings || [],
+        };
+      });
+
+      function money(v) {
+        if (v == null || isNaN(Number(v))) return '--';
+        return Number(v).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function setPlanCapital(v) {
+        planForm.value.total_capital = v;
+        previewPlan();
+      }
+
+      async function openPlanDialog() {
+        planVisible.value = true;
+        planPreview.value = null;
+        planNote.value = '';
+        await previewPlan();
+      }
+
+      async function previewPlan() {
+        planLoading.value = true;
+        planNote.value = '';
+        try {
+          const res = await fetch('/api/portfolio/plans/preview', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              total_capital: Number(planForm.value.total_capital) || 0,
+              mode: 'equal'
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            planPreview.value = data.plan || null;
+            planNote.value = data.note || '';
+          } else {
+            planPreview.value = null;
+            planNote.value = (data && (data.detail || data.message)) || '预览失败';
+          }
+        } catch (e) {
+          console.warn('[portfolio] 建仓预览失败:', e);
+          planPreview.value = null;
+          planNote.value = '网络异常，预览失败';
+        } finally {
+          planLoading.value = false;
+        }
+      }
+
+      async function applyPlan() {
+        const p = planPreview.value;
+        if (!p || !p.position_count) {
+          ElementPlus.ElMessage.warning('没有可建仓的标的，请调整总资金后重新预览');
+          return;
+        }
+        if (planForm.value.overwrite) {
+          try {
+            await ElementPlus.ElMessageBox.confirm(
+              '将清空当前组合的全部持仓后按本次计划重建，是否继续？', '覆盖建仓', {
+                confirmButtonText: '覆盖建仓', cancelButtonText: '取消', type: 'warning'
+              });
+          } catch (e) { return; }
+        }
+        planApplying.value = true;
+        try {
+          const res = await fetch('/api/portfolio/plans', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              total_capital: Number(planForm.value.total_capital) || 0,
+              mode: 'equal',
+              overwrite: !!planForm.value.overwrite
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            if (data.already_applied) {
+              ElementPlus.ElMessage.warning(data.message || '该计划此前已建仓');
+            } else {
+              ElementPlus.ElMessage.success(data.message || '已按计划建仓');
+            }
+            planVisible.value = false;
+            await loadPortfolio();
+            loadEquity(equityDays.value);
+          } else {
+            ElementPlus.ElMessage.error((data && (data.detail || data.message)) || '建仓失败');
+          }
+        } catch (e) {
+          ElementPlus.ElMessage.error('网络异常，建仓失败');
+        } finally {
+          planApplying.value = false;
+        }
+      }
+
       // 主题切换 → 用缓存 option 工厂重绘 (与回测图同模式)
       if (window.__quantModules && window.__quantModules.echartsTheme && !window.__quantModules.echartsTheme.__portfolioChartRegistered) {
         window.__quantModules.echartsTheme.__portfolioChartRegistered = true;
@@ -356,6 +481,10 @@
         fmtSigned, fmtSignedPct, signClass,
         riskTab, riskLoading, riskNote, riskHasData, riskData,
         riskMetricList, loadRisk,
+        // v7.19 (FR-6): 自选等权均分建仓
+        planVisible, planLoading, planApplying, planPreview, planNote, planForm,
+        PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
+        openPlanDialog, previewPlan, applyPlan,
       };
     }
   };

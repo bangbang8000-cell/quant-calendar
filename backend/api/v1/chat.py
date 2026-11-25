@@ -490,6 +490,32 @@ async def get_history(view: str = "date", limit: int = 50, offset: int = 0,
         return [{"date": k, "items": v, "count": len(v)} for k, v in sorted(grouped.items(), reverse=True)]
 
 
+@router.get("/history/stats")
+async def get_history_stats(user: Optional[dict] = Depends(get_current_user)):
+    """v7.19 (FR-7): 问股历史计数
+
+    用户反馈「左侧列表加载不了」，实测接口 200 + `[]`：`chat_history` 只有 2 行且属于
+    guest 账号，admin 查不到。前端无法区分「当前账号没有记录」与「系统没有数据」，
+    于是把空态理解成故障。这里补三个计数，前端据此给出准确文案。
+    注意：本路由必须声明在 `/history/{session_id}` 之前，否则会被路径参数吞掉。
+    """
+    mine = _load_history(_resolve_username(user))
+    system_total = 0
+    try:
+        import db
+        conn = db.get_conn()
+        try:
+            row = conn.execute("SELECT COUNT(*) FROM chat_history").fetchone()
+            system_total = int((row[0] if row else 0) or 0)
+        finally:
+            conn.close()
+    except Exception as exc:  # noqa: BLE001 — 统计失败不影响主流程
+        logger.warning("统计问股历史失败: %s", exc)
+        system_total = len(mine)
+    return {"total": len(mine), "system_total": system_total,
+            "other_total": max(0, system_total - len(mine))}
+
+
 @router.get("/history/{session_id}")
 async def get_history_detail(session_id: str, user: Optional[dict] = Depends(get_current_user)):
     """获取单条对话详情 (v3.17.13: 按当前用户)

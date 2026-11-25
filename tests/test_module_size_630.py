@@ -29,6 +29,11 @@ LIMIT = 700
 PENDING_SPLIT = {
     # v7.14: 研究页新增锚点导航/运行明细/异步轮询后超限, 待拆任务 v7.15-T1 (按「视图/状态/取数」三段拆分)
     'frontend/js/components/research-page.js': 'v7.15-T1',
+    # v7.18: 涨停池分页+窄屏卡片降级 (FR-1002) 后超限, 待拆任务 v7.18-T1 (按「视图/状态/取数」三段拆分)
+    'frontend/js/components/shortterm-page.js': 'v7.18-T1',
+    # v7.19: strategy_research.py 曾因 T3.1/T3.2 涨到 822 行, 拆出 overview(已独立
+    # strategy_overview.py) 与 _symbol_names(strategy_research_support.py) 后降至 697 行,
+    # 登记项已移除 —— 反向门禁要求登记项必须仍超限。
 }
 
 

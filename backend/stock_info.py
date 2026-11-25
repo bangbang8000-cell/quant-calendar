@@ -97,20 +97,28 @@ class StockInfoManager:
             url = 'http://api.tushare.pro'
 
             # 获取A股股票列表
-            params = {
-                "api_name": "stock_basic",
-                "token": TUSHARE_TOKEN,
-                "params": {
-                    "exchange": "",
-                    "list_status": "L"  # L上市状态：上市
-                },
-                "fields": "ts_code,symbol,name,area,industry,list_date"
-            }
+            # v7.19 (FR-9): L/D/P 三态全收 —— 旧实现只收 L（在市），实测持仓中
+            # 000004.SZ / 002808.SZ / 002898.SZ / 300029.SZ / 600193.SH / 600608.SH / 605081.SH
+            # 等 7 只退市/暂停上市标的恒定查不到名称。
+            total, ok_any = 0, False
+            for list_status in ('L', 'D', 'P'):
+                params = {
+                    "api_name": "stock_basic",
+                    "token": TUSHARE_TOKEN,
+                    "params": {
+                        "exchange": "",
+                        "list_status": list_status
+                    },
+                    "fields": "ts_code,symbol,name,area,industry,list_date"
+                }
 
-            response = requests.post(url, json=params, timeout=30)
-            data = response.json()
+                response = requests.post(url, json=params, timeout=30)
+                data = response.json()
 
-            if data.get('code') == 0:
+                if data.get('code') != 0:
+                    logger.warning(f"❌ Tushare API错误(list_status={list_status}): {data}")
+                    continue
+                ok_any = True
                 items = data.get('data', {}).get('items', [])
                 fields = data.get('data', {}).get('fields', [])
 
@@ -124,20 +132,29 @@ class StockInfoManager:
                         # 我们的数据格式是 600000.SH，与持仓数据一致
                         self.stock_map[ts_code] = name
 
+                total += len(items)
+                logger.info("从Tushare获取 %s 状态股票 %d 只", list_status, len(items))
+
+            if ok_any:
                 self._save_to_file()
-                logger.info(f"✅ 从Tushare获取了 {len(items)} 只股票信息")
+                logger.info(f"✅ 从Tushare获取了 {total} 只股票信息（L/D/P 三态）")
                 return True
-            else:
-                logger.warning(f"❌ Tushare API错误: {data}")
-                return False
+            return False
 
         except Exception as e:
             logger.error(f"❌ 获取股票信息失败: {e}")
             return False
 
     def get_name(self, stock_code: str) -> str:
-        """获取股票中文名称"""
-        return self.stock_map.get(stock_code, stock_code)
+        """获取股票中文名称
+
+        v7.19 (FR-9): 查不到时返回空串，**不再把代码当名称返回**。
+        旧行为 `stock_map.get(code, code)` 会让调用方无法区分「名称就是代码」与「没有名称」，
+        最终在界面上表现为「有代码没中文名」却不报错。降级展示（`—`）由前端统一负责。
+        """
+        if not stock_code:
+            return ''
+        return self.stock_map.get(stock_code, '') or ''
 
     def search(self, keyword: str) -> list:
         """搜索股票"""

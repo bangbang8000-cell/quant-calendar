@@ -6,6 +6,7 @@ V6.0 (DS-6.0 §2, D1): 基础组件统一层令牌纪律门禁
 - 组件类齐备 (卡片/KPI/状态点/徽标/chip/空态/错误态/骨架)
 - index.html 已引入 components.css 且位于 nav.css 之前
 """
+import json
 import os
 import re
 
@@ -62,8 +63,11 @@ def test_components_css_has_component_classes():
 
 
 def test_index_links_components_css_before_nav():
+    # v7.18 (FR-802): link 已合并为 app.css, 层叠顺序由 app.manifest.json 保持 —
+    # components.css 必须早于 nav.css (qc-* 组件类先定义, 导航覆盖其后)
     idx = _read(INDEX_HTML)
-    assert "css/components.css" in idx, "index.html 应引入 components.css"
-    comp_pos = idx.index("css/components.css")
-    nav_pos = idx.index("css/nav.css")
-    assert comp_pos < nav_pos, "components.css 应早于 nav.css 加载"
+    assert "css/app.css" in idx, "index.html 应引入合并产物 app.css"
+    manifest = json.loads(_read(os.path.join(FRONTEND, "css", "app.manifest.json")))
+    order = manifest if isinstance(manifest, list) else manifest.get("order", [])
+    assert "components.css" in order and "nav.css" in order, "manifest 缺 components/nav"
+    assert order.index("components.css") < order.index("nav.css"), "components.css 应早于 nav.css"

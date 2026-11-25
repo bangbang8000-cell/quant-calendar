@@ -1,3 +1,42 @@
+/* v7.18 (FR-802/TC-40): Inter 自托管字体改走 /static/fonts 稳定路径,
+   替代原 fontsource import(vite 提取为独立 index-*.css, 每次构建换哈希,
+   无法并入 app.css, 徒增一个首屏阻塞 CSS 请求)。font-display: swap。 */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/static/fonts/inter-latin-400-normal.woff2') format('woff2'),
+       url('/static/fonts/inter-latin-400-normal.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/static/fonts/inter-latin-500-normal.woff2') format('woff2'),
+       url('/static/fonts/inter-latin-500-normal.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/static/fonts/inter-latin-600-normal.woff2') format('woff2'),
+       url('/static/fonts/inter-latin-600-normal.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/static/fonts/inter-latin-700-normal.woff2') format('woff2'),
+       url('/static/fonts/inter-latin-700-normal.woff') format('woff');
+}
+
 /* ===== Design Tokens v3.1 ===== */
 /* Single source of truth: Layer 1 Raw | Layer 2 Semantic | Layer 3 Component */
 /* V6.0 (PRD-6.0 FR-6.0.5): 引入 --qc-* 全新体系（源自 quant-calendar-ui-redesign/colors_and_type.css）
@@ -119,8 +158,10 @@
   --qc-shadow-md: 0 4px 16px rgba(31, 29, 26, 0.12);
   --qc-shadow-lg: 0 8px 32px rgba(31, 29, 26, 0.14);
 
-  /* ─── V5.17: 中栏双栏布局 — 中栏默认宽度(35% 分割比例) + 拖拽分隔条宽度 (运行时由 app-logic 覆盖) ─── */
-  --split-w: 35%;
+  /* ─── V5.17: 中栏双栏布局 — 中栏默认宽度(分割比例) + 拖拽分隔条宽度 (运行时由 app-logic 覆盖) ───
+     v7.19 (FR-1): 35% → 42%。1600 屏列表列从 ~452px 增到 ~540px，才能承载 12px 策略 tag +
+     16px 图标；拖拽范围 35%–50% 不变，用户仍可自行调回。 */
+  --split-w: 42%;
   --split-gutter: 6px;
 
   /* ─── V5.17.1: 过渡令牌 — 禁用过渡 (门禁: transition 须 0.2s 标准或令牌) ─── */
@@ -142,6 +183,7 @@
      原 12/13/14 相邻不可辨、20 为补丁档、32/36/40 命名与数值不同向;
      旧名保留为别名 (sm/base 同档 14), 业务侧 616 处引用无需批量改动。 */
   --qc-font-size-xs: 12px;
+  --qc-font-size-2xs: 11px;   /* v7.18: 个股行计数徽章字号 (FR-1101) */
   --qc-font-size-sm: 14px;      /* 别名 → base (原 13px 与 12/14 不可辨) */
   --qc-font-size-base: 14px;
   --qc-font-size-md: 16px;
@@ -592,4 +634,50 @@ html[data-density="spacious"] {
 @media (pointer: coarse) {
   /* 注意: 必须用 :root (0,1,0) — 用 html (0,0,1) 会被上方 :root 的 32px 压回去 */
   :root { --qc-hit-min: 44px; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   v7.19 (FR-1): 个股行尺寸三档 — 单一来源
+   行高/行距/信息列/徽章/图标/操作区热区全部令牌化：
+     · CSS 直接消费下面的变量；
+     · JS（StockList.vue / qc-virtual-list）用 getComputedStyle 读同一令牌，
+       消灭 :row-height="78" 与 CSS height:78px 的双写（旧实现改 CSS 不改 JS 会滚动错位）。
+   密度档位取值域来自 preferences.js：compact / comfortable(默认) / spacious。
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --qc-row-h: 88px;          /* 标准档行高 */
+  --qc-row-gap: 8px;         /* 标准档行距（虚拟分支同样生效） */
+  --qc-stock-info-w: 96px;   /* 信息列定宽：消灭 1fr 吃宽造成的死区；留 16px 给策略区 */
+  --qc-stock-ops-w: 92px;    /* 操作区列宽 = 4 槽 × 20px + 3 × 4px */
+  --qc-op-hit: 20px;         /* 操作槽位热区边长 */
+  --qc-stock-badge-w: 46px;  /* 「N 策略」徽章定宽 */
+  --qc-stock-icon: 16px;     /* 行内图标尺寸 */
+  --qc-stock-tag-font: var(--qc-font-size-xs);  /* 策略 tag 12px */
+}
+html[data-density="compact"] {
+  --qc-row-h: 78px;
+  --qc-row-gap: 4px;
+  --qc-stock-info-w: 90px;
+  --qc-stock-ops-w: 88px;
+  --qc-op-hit: 19px;
+  --qc-stock-badge-w: 44px;
+  --qc-stock-icon: 15px;
+  --qc-stock-tag-font: var(--qc-font-size-2xs);   /* 11px：1366 屏不截断 */
+}
+/* 横向预算说明 (v7.19 实测 @1440 · 中栏 476px)：
+   可用 = 476 − 34(padding) − 16(序号) − 12(3×gap) − info − ops = 策略区
+   standard 226 → 2×85 格 @12px；compact 239 → 2×91 格 @11px；
+   spacious 若把 info/ops/badge 也放大，策略区掉到 157~187 → 格 65~77px < 6 字 80px，
+   实测截断 20~29 处。故 spacious 横向与 standard 完全一致，只在纵向放大
+   （行高 96 / 行距 12 / 图标 18 / 热区 22）。 */
+html[data-density="spacious"] {
+  --qc-row-h: 96px;
+  --qc-row-gap: 12px;
+  --qc-stock-info-w: 96px;
+  --qc-stock-ops-w: 92px;
+  --qc-op-hit: 22px;
+  --qc-stock-badge-w: 46px;
+  --qc-stock-icon: 18px;
+  --qc-stock-tag-font: var(--qc-font-size-xs);
 }

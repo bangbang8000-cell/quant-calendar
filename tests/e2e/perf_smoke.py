@@ -44,7 +44,10 @@ def _token_login(page, base_url):
     """复用 smoke_v315 方案: 直调 /api/login 拿 token, add_init_script 注入 localStorage"""
     req = urllib.request.Request(
         base_url.rstrip("/") + "/api/login",
-        data=json.dumps({"username": "admin", "password": "admin"}).encode(),
+        # v7.18: 口令走 env(对齐 color_audit/mobile_smoke/visual_regression 的 QC_USER/QC_PASSWORD 约定),
+# 默认 admin 兼容旧基线 —— 硬编码导致改密环境 401
+data=json.dumps({"username": __import__('os').environ.get('QC_USER', 'admin'),
+                 "password": __import__('os').environ.get('QC_PASSWORD', 'admin')}).encode(),
         headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=10) as r:
         body = json.loads(r.read().decode())

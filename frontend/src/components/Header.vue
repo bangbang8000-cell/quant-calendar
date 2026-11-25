@@ -174,9 +174,17 @@ export default {
     const marketData = computed(() => (state.marketData && state.marketData.value) || {})
     const bannerDismissed = ref((typeof window !== 'undefined' && localStorage.getItem('qc.hideNonTradingBanner') === '1'))
     const dismissBanner = () => { bannerDismissed.value = true; try { localStorage.setItem('qc.hideNonTradingBanner','1') } catch(e) {} }
+    // v7.17 (FR-202 / D-05): 搜索框默认收为图标态 —— 原来固定占 300px, 把二级标签区压到只剩 500px,
+    // 1440px 下 7 个标签只能显示 4 个其余进「更多」。聚焦即展开 (Ctrl+K 同样触发), 失焦且无输入时收起。
+    const searchExpanded = ref(false)
+    function onSearchFocus() { searchExpanded.value = true }
+    function onSearchBlur() {
+      if (!searchQuery.value) searchExpanded.value = false
+    }
     return {
       marketData, bannerDismissed, dismissBanner,
       state, showUserMenu, currentUser, isDark, searchQuery, navMode, crumbRoot, crumbSub, hasToptabs,
+      searchExpanded, onSearchFocus, onSearchBlur,
       toggleThemeQuick, toggleSidebar, openUserMenu, closeUserMenu, menuItem, handleLogout,
       // V6.9.3 (F4): 通知铃铛面板
       openBellMenu, notifItems, notifLoading, notifError, toggleBell, closeBell, goNotificationCenter,
@@ -204,8 +212,10 @@ export default {
     <button class="non-trading-banner-close" @click="dismissBanner" aria-label="关闭提示">×</button>
   </div>
   <header class="qc-header">
-    <!-- 6.2.0 (F6): 页面大纲 h1 — 可视隐藏, 屏幕阅读器可读 (业务页不再散落 h 标签) -->
-    <h1 class="visually-hidden">{{ crumbRoot || '量化日历' }}</h1>
+    <!-- 6.2.0 (F6): 页面大纲 — 可视隐藏, 屏幕阅读器可读。
+         v7.17 (FR-201 / D-06): 由 h1 改为 p —— 页面语义 h1 已统一到 .qc-page-head,
+         此处再放 h1 会让每页出现两个一级标题 (测试 TC-07 断言 h1 数量 = 1)。 -->
+    <p class="visually-hidden">{{ crumbRoot || '量化日历' }}</p>
     <div class="qc-header-left">
       <button class="qc-icon-btn" :aria-label="state.sidebarCollapsed?.value ? '展开侧边栏' : '折叠侧边栏'" @click="toggleSidebar">
         <AppIcon name="menu" :size="20" />
@@ -244,7 +254,7 @@ export default {
       </template>
     </div>
 
-    <div class="qc-header-center">
+    <div class="qc-header-center" :class="{ 'is-collapsed': !searchExpanded }">
       <el-autocomplete
         class="qc-header-search"
         v-model="searchQuery"
@@ -254,6 +264,8 @@ export default {
         clearable
         size="small"
         @select="state.onSearchSelect"
+        @focus="onSearchFocus"
+        @blur="onSearchBlur"
       >
         <template #prefix>
           <AppIcon name="search" :size="16" class="qc-header-search-icon" />

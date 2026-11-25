@@ -1,9 +1,13 @@
 {
   "name": "quant-calendar-frontend",
   "private": true,
-  "description": "V4.3 方案A: Vite 构建层 — 全部业务 JS 打包为单一 chunk, 首屏哈希缓存破坏",
+  "description": "Vite 构建层 — 业务 JS 按域分包(首屏 index + 5 域懒加载), 首屏哈希缓存破坏; CSS 由 scripts/build_css.py 合并为 app.css",
   "scripts": {
-    "build": "vite build"
+    "css": "python3 scripts/build_css.py",
+    "registry": "python3 scripts/gen_el_registry.py",
+    "check": "python3 scripts/build_css.py --check && python3 scripts/gen_el_registry.py --check",
+    "build": "python3 scripts/build_css.py && vite build",
+    "build:direct": "python3 scripts/build_css.py && node node_modules/vite/bin/vite.js build"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",

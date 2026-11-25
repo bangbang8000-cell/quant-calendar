@@ -380,7 +380,7 @@
       //          斜纹=预测, 当前段宽度随进度"生长" ③历史周期压缩 (可切阶段矩阵) ④评估轨迹:
       //          快照按阶段压缩成连续段, 阶段切换即出现第二段 => "大模型评估修订"可见
       const mcHistView = Vue.ref('band');
-      const MC_STAGE_KEYS = ['recession', 'recovery', 'overheating', 'stagflation'];
+      const MC_STAGE_KEYS = ['recession', 'recovery', 'overheat', 'stagflation'];  // v7.19 (FR-4): 与后端枚举一致
       function _mcYm(s) {
         if (!s) return null;
         const p = String(s).split('-');

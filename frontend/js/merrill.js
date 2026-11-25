@@ -41,23 +41,19 @@
   // ─── 导出 composable ──────────────────────
   window.useMerrillClock = function() {
     // ===== 状态 =====
+    // v7.19 (FR-4): 初始态不再伪造「复苏期 + 硬编码宏观指标」。
+    // 旧实现把 2025 年的估计值写进默认值，接口失败时页面仍显示一个看似权威的「复苏期」，
+    // 这是「周期走乱」的直接来源之一。现在 stage 为空 = 未就绪，由 UI 显示「计算中」/错误态。
     const merrillData = ref({
-      stage: 'recovery',
-      stage_cn: '复苏',
-      stage_name: '复苏期',
-      name: '复苏期',
-      icon: 'sprout',
+      stage: '',
+      stage_cn: '',
+      stage_name: '',
+      name: '',
+      icon: 'clock',
       color: 'var(--state-success-solid)',
-      description: '2025年开启新一轮复苏周期，政策发力，经济触底回升',
-      timing: {
-        current_stage_start_date: '2025年初',
-        duration_days: 500,
-        avg_duration_months: 18,
-        progress_percent: 72
-      },
-      indicators: {
-        pmi: 50.8, gdp_growth: 5.3, cpi: 0.8, m2_growth: 9.8
-      }
+      description: '',
+      timing: {},
+      indicators: {}
     });
 
     const merrillStagesConfig = ref({});
@@ -76,6 +72,11 @@
     const merrillPrevStage = ref('');
     // 6.3.1 (T-6.3.1.3): 美林时钟取数失败标志 (fetchMerrillClock catch 置 true, 供四态面板承接)
     const merrillError = ref(false);
+    // v7.19 (FR-4): 数据新鲜度 —— 接口失败但有上次成功数据时置 stale, 页面标注「数据未更新（截至 X）」,
+    // 不允许静默回退到某个默认阶段。
+    const merrillStale = ref(false);
+    const merrillDataAsOf = ref('');
+    let _merrillLoadedOnce = false;
     // 6.6 (T-6.6.19, PRD FR-6.6.4 / 决策 D8): 数据订正元信息。
     // 宏观指标抓取修复后阶段结论必然变化(衰退→复苏), 必须向用户说明「为什么变了」。
     // null = 无订正记录 → 前端不显示角标。
@@ -98,7 +99,10 @@
     // ===== Computed =====
     const stages = computed(() => {
       const cfg = merrillStagesConfig.value;
-      const order = ['recession', 'recovery', 'overheat', 'stagflation'];
+      // v7.19 (FR-4): 四象限按标准美林周期顺时针排列（2 列栅格 → 左上/右上/右下/左下）：
+      // 复苏(TL) → 过热(TR) → 滞胀(BR) → 衰退(BL)。旧顺序 recession/recovery/overheat/stagflation
+      // 顺时针读是「衰退→复苏→滞胀→过热」，与周期顺序不符 —— 用户感知的「走乱」主要来自这里。
+      const order = ['recovery', 'overheat', 'stagflation', 'recession'];
       return order.map(key => {
         const s = cfg[key] || {};
         return {
@@ -211,15 +215,8 @@
     });
 
     // ===== 辅助函数 =====
-    function getStageAngle() {
-      const angles = {
-        recovery: Math.PI / 4,
-        overheat: 3 * Math.PI / 4,
-        stagflation: 5 * Math.PI / 4,
-        recession: 7 * Math.PI / 4
-      };
-      return angles[merrillData.value.stage] || 0;
-    }
+    // v7.19 (FR-4): 删除死代码 getStageAngle —— 与 clockPosition 对同一阶段差 90°–180°，
+    // 且全仓无调用方（保留会造成「两套角度映射」的误解）。指针/象限统一以 clockPosition 为准。
 
     function getCycleProgress() {
       return merrillData.value?.timing?.progress_percent || 0;
@@ -305,8 +302,12 @@
       merrillError.value = false;
       try {
         const res = await fetch('/api/market/merrill-clock');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        const stage = data.stage || 'recovery';
+        // v7.19 (FR-4): 响应必须带 stage，否则视为失败（旧实现 `data.stage || 'recovery'`
+        // 会把后端故障伪装成「复苏期」，用户完全无法察觉数据是假的）。
+        if (!data || !data.stage) throw new Error('响应缺少 stage 字段');
+        const stage = data.stage;
         const preset = merrillStagesConfig.value[stage] || {};
         merrillData.value = {
           ...preset,
@@ -316,6 +317,9 @@
           name: data.name || preset.name || '复苏期'
         };
         merrillClockLastUpdated.value = new Date().toLocaleTimeString('zh-CN');
+        _merrillLoadedOnce = true;
+        merrillStale.value = !!(data.stale || data.stale_snapshot);
+        merrillDataAsOf.value = data.as_of || data.data_time || data.indicators_as_of || '';
 
         // 阶段变更检测
         if (merrillPrevStage.value && merrillPrevStage.value !== stage) {
@@ -334,12 +338,10 @@
         fetchMerrillCorrection();
       } catch (e) {
         console.error('获取美林时钟失败:', e);
-        merrillError.value = true;
-        const recoveryCfg = merrillStagesConfig.value.recovery || {};
-        merrillData.value = {
-          ...recoveryCfg,
-          indicators: { pmi: 51.2, gdp_growth: 5.2, cpi: 0.8, m2_growth: 10.5 }
-        };
+        // v7.19 (FR-4): 有历史成功数据 → 保留并标 stale；一无所有 → 才进入错误态。
+        // 绝不写入伪造指标（旧实现会填入 pmi/gdp/cpi/m2 假值，看起来像真实数据）。
+        merrillStale.value = _merrillLoadedOnce;
+        merrillError.value = !_merrillLoadedOnce;
       }
     }
 
@@ -482,7 +484,6 @@
       // 常量
       FULL_CYCLE_MONTHS,
       // 辅助函数
-      getStageAngle,
       getCycleProgress,
       getCurrentStageMonths,
       getStageTotalMonths,
@@ -494,6 +495,8 @@
       fetchMerrillStages,
       fetchMerrillClock,
       merrillError,
+      merrillStale,
+      merrillDataAsOf,
       loadMerrillTimeline,
       showTimelineStage,
       showStageDetail,

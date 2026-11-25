@@ -44,6 +44,7 @@ from .reports import router as reports_router
 from .stock_report import router as stock_report_router  # v7.9 五维分析报告
 from .marketplace import router as marketplace_router  # v7.10 策略/案例市场
 from .strategy_research import router as strategy_research_router
+from .strategy_overview import router as strategy_overview_router  # v7.19 (T3.2)
 from .strategy_scores import router as strategy_scores_router  # v7.4 五维评分
 from .timing_api import router as timing_router  # v7.5 择时研究
 from .pattern import router as pattern_router  # v7.6 形态匹配实验室
@@ -106,6 +107,7 @@ api_router.include_router(timing_router)  # v7.5: /api/timing/*
 api_router.include_router(pattern_router)  # v7.6: /api/pattern/*
 api_router.include_router(execution_router)  # v7.8: /api/execution/*
 api_router.include_router(strategy_research_router)
+api_router.include_router(strategy_overview_router)  # v7.19 (T3.2): /strategies/overview
 api_router.include_router(reliability_router)
 # V5.0.4 T-5.0.43: 自定义预警规则
 api_router.include_router(alerts_router)

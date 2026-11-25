@@ -33,10 +33,13 @@
       actionKey: { type: String, default: '' },
       // 6.4.2: 错误码/错误类型 (401/403/404/429/500/timeout/offline/datasource/file_missing)
       errorCode: { type: [String, Number], default: '' },
+      // v7.17 (FR-301): 尺寸档 — sm(卡片内) / md(区块, 默认) / lg(整页)
+      size: { type: String, default: 'md' },
     },
     emits: ['retry', 'action'],
     template: `
-        <div class="qc-state-panel" :class="'qc-state-' + type" role="status">
+        <div class="qc-state-panel" :class="['qc-state-' + type, 'qc-size-' + size]" role="status"
+             :data-state="type" :aria-busy="type === 'loading' ? 'true' : 'false'">
             <!-- 加载态：复用骨架屏 -->
             <div v-if="type === 'loading'" class="skeleton-loader">
                 <div class="skeleton-header"></div>

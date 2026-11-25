@@ -27,20 +27,34 @@
 
       // ─── 参数表单状态 ───
       const btSelectedStrategies = ref(btStrategyOptions.length ? [btStrategyOptions[0].id] : []);
+      // v7.19 (T3.1): 默认 18 个月 / 100 万 —— PRD 需求 ⑧ 指定的建议区间与金额。
+      // 旧默认 12 个月 / 10 万：一年窗口只覆盖单一季节，10 万在 A 股连一手高价股都紧张。
+      const BT_DEFAULT_MONTHS = 18;
       const btDateRange = ref(defaultDateRange());
-      const btCapital = ref(100000);
+      const btQuickRange = ref(BT_DEFAULT_MONTHS);
+      const btCapital = ref(1000000);
       const btCommissionRate = ref(0.0003);
+      const btSlippage = ref(0.001);
       const btIncludeBenchmark = ref(false);
       const btRunning = ref(false);
       const btResult = ref(null);
       const btError = ref('');
 
-      function defaultDateRange() {
+      function defaultDateRange(months) {
+        const n = months || BT_DEFAULT_MONTHS;
         const end = new Date();
-        const start = new Date();
-        start.setFullYear(start.getFullYear() - 1);
+        // 按「月」回退而非按年：18 个月用 setMonth 才对（按年只能整年，18 会被吞成 12 或 24）
+        const start = new Date(end.getFullYear(), end.getMonth() - n, end.getDate());
         const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         return [fmt(start), fmt(end)];
+      }
+
+      // v7.19 (T3.1): 区间快捷档 — 点一下就把日期区间换成最近 N 个月，同时高亮当前档位
+      function setBtQuickRange(months) {
+        const n = parseInt(months, 10);
+        if (!(n > 0)) return;
+        btQuickRange.value = n;
+        btDateRange.value = defaultDateRange(n);
       }
 
       // 切换策略勾选（保留至少一个）
@@ -214,8 +228,11 @@
           if (ids.length === 1) {
             // 单策略：/api/backtest/{id}（支持初始资金/手续费率，并返回 trade_history）
             const params = Object.assign({}, payload, {
-              initial_capital: Number(btCapital.value) || 100000,
+              initial_capital: Number(btCapital.value) || 1000000,
               commission_rate: Number(btCommissionRate.value) || 0.0003,
+              // v7.19 (T3.1): 滑点之前只在后端有默认值、界面上完全不可见，
+              // 用户无从判断"回测收益为什么和实盘差这么多"。现在显式下发并在表单里露出。
+              slippage: Number(btSlippage.value) || 0.001,
             });
             const res = await fetch('/api/backtest/' + encodeURIComponent(ids[0]), {
               method: 'POST', headers: headers, body: JSON.stringify(params),
@@ -406,7 +423,8 @@
 
       return {
         btStrategyOptions, btSelectedStrategies, toggleBtStrategy,
-        btDateRange, btCapital, btCommissionRate, btIncludeBenchmark,
+        btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
+        btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
         btRunning, btResult, btError,
         btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
         runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum,

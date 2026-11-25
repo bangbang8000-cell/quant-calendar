@@ -20,6 +20,8 @@ const chatHistoryError = ref(false);
 const chatHistoryView = ref('date');
 const selectedChatIds = ref([]);
 const expandedChatDates = ref([]);
+// v7.19 (FR-7): 历史计数 —— 用于区分「当前账号无记录」与「系统无数据」
+const chatHistoryMeta = ref({ total: 0, system_total: 0, other_total: 0 });
 const expandedChatMonths = ref([]);
 const expandedChatStocks = ref([]);
 
@@ -298,8 +300,11 @@ async function loadChatHistory() {
     // v3.16 (16.7): 统一错误态状态机
     chatHistoryLoading.value = true;
     chatHistoryError.value = false;
+    // v7.19 (FR-7): 15s 超时 —— 后端事件循环被同步重任务阻塞时，旧实现会永久转圈
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 15000) : null;
     try {
-        const res = await fetch('/api/ai/chat/history?view=date');
+        const res = await fetch('/api/ai/chat/history?view=date', ctrl ? { signal: ctrl.signal } : undefined);
         if (res.ok) {
             const groups = await res.json();
             const sessions = [];
@@ -308,11 +313,26 @@ async function loadChatHistory() {
                 for (const s of (group.items || [])) sessions.push(s);
             }
             chatSessions.value = sessions;
+            // v7.19 (FR-7): 默认展开最近一天（旧实现 expandedChatDates 初始为空，有数据也只见 ▶）
+            if (sessions.length && !expandedChatDates.value.length) {
+                expandedChatDates.value = [sessions[0].date];
+            }
+            // 计数为非关键路径：失败静默，不影响列表
+            fetch('/api/ai/chat/history/stats').then(function (r) {
+                return r.ok ? r.json() : null;
+            }).then(function (d) {
+                if (d) chatHistoryMeta.value = d;
+            }).catch(function () {});
         } else {
             chatHistoryError.value = true;
         }
-    } catch (e) { console.error(e); chatHistoryError.value = true; }
-    finally { chatHistoryLoading.value = false; }
+    } catch (e) {
+        console.error(e);
+        chatHistoryError.value = true;
+    } finally {
+        if (timer) clearTimeout(timer);
+        chatHistoryLoading.value = false;
+    }
 }
 
 async function deleteChatSession(id) {
@@ -390,6 +410,7 @@ function renderMarkdown(md) {
 
       return {
         chatSessions, chatHistoryView, selectedChatIds, expandedChatDates, expandedChatMonths, expandedChatStocks,
+        chatHistoryMeta,
         chatHistoryLoading, chatHistoryError,
         allChatSessionsFlat, chatGroupedByDate, chatGroupedByMonth, chatGroupedByStock,
         toggleSelectChat, toggleSelectChatDate, toggleSelectChatMonth, toggleSelectChatStock,

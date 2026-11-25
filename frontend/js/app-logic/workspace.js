@@ -11,8 +11,32 @@
                 // v7.14 (FR-1 / P0-1): 策略下拉改为动态拉取注册表, 删除写死的 4 个错误 sid
                 const backtestStrategies = ref([]);
                 const backtestStrategy = ref('');
-                const backtestRange = ref(null);
-                const backtestCapital = ref(100000);
+                // v7.19 (T3.1): 默认区间 = 最近 18 个月（PRD 需求 ⑧ 的建议区间）。
+                // 旧实现留空 → 后端按自己的默认窗口跑，用户看到的日期框是"未选"，
+                // 既不知道实际跑了多长，也无法用快捷档快速比对不同窗口。
+                function _btRangeOfMonths(months) {
+                    const end = new Date();
+                    const start = new Date(end.getFullYear(), end.getMonth() - months, end.getDate());
+                    const f = function (d) {
+                        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                            + '-' + String(d.getDate()).padStart(2, '0');
+                    };
+                    return [f(start), f(end)];
+                }
+                const backtestMonths = ref(18);
+                const backtestRange = ref(_btRangeOfMonths(18));
+                function setBacktestMonths(m) {
+                    const n = parseInt(m, 10);
+                    if (!(n > 0)) return;
+                    backtestMonths.value = n;
+                    backtestRange.value = _btRangeOfMonths(n);
+                }
+                // v7.19 (T3.1): 默认 100 万（原 10 万）。10 万在 A 股买不满一手高价股，
+                // 与"组合等权建仓"的真实场景脱节，回测出来的换手/成本结构也不具参考性。
+                const backtestCapital = ref(1000000);
+                // 成本默认值集中在此，避免请求体里散落魔法数字（费率 0.03% / 滑点 0.1%）
+                const BT_FEE_RATE = 0.0003;
+                const BT_SLIPPAGE = 0.001;
                 const backtestRunning = ref(false);
                 const backtestResult = ref(null);
                 // 6.3.1 (T-6.3.1.3): 回测取数失败标志 (runBacktest catch 真实置位, 供四态面板承接)
@@ -50,13 +74,17 @@
                     const token = localStorage.getItem('quant_token');
                     if (!token) { ElementPlus.ElMessage.warning('请先登录'); return; }
                     if (!backtestStrategy.value) { ElementPlus.ElMessage.warning('请先选择策略'); return; }
+                    // v7.19 (T3.1): 金额与成本三件套随请求下发；区间缺省时按快捷档月数即时计算，
+                    // 保证"界面上显示的区间"与"后端实际使用的区间"始终一致。
+                    const _range = (backtestRange.value && backtestRange.value.length === 2)
+                        ? backtestRange.value : _btRangeOfMonths(backtestMonths.value || 18);
                     const params = {
-                        initial_capital: backtestCapital.value || 100000,
+                        initial_capital: backtestCapital.value || 1000000,
+                        fee_rate: BT_FEE_RATE,
+                        slippage: BT_SLIPPAGE,
+                        start_date: _range[0],
+                        end_date: _range[1],
                     };
-                    if (backtestRange.value && backtestRange.value.length === 2) {
-                        params.start_date = backtestRange.value[0];
-                        params.end_date = backtestRange.value[1];
-                    }
                     backtestRunning.value = true;
                     backtestResult.value = null;
                     backtestError.value = false;
@@ -86,6 +114,11 @@
                             max_drawdown_pct: (r.max_drawdown ?? 0).toFixed(2),
                             sharpe_ratio: (r.sharpe_ratio ?? 0).toFixed(2),
                             win_rate: (r.win_rate ?? 0).toFixed(2),
+                            // v7.19 (T3.1): 期末权益 / 总盈亏（金额口径，后端已按 initial_capital 换算）
+                            final_equity: r.final_equity == null ? '' : Number(r.final_equity).toFixed(2),
+                            total_pnl: r.total_pnl == null ? '' : Number(r.total_pnl).toFixed(2),
+                            initial_capital: data.used_params ? data.used_params.initial_capital : null,
+                            used_range: data.used_params ? (data.used_params.start_date + ' ~ ' + data.used_params.end_date) : '',
                             out_sample: r.outsample_total_return === undefined ? '' : (r.outsample_total_return ?? 0).toFixed(2),
                             overfit_warning: r.overfit_warning || false,
                             message: r.message || '',
@@ -177,6 +210,16 @@
                 // V4.3-S3: 动态页面组件名映射 — currentPage -> qc-xxx-page
                 // <component :is> 每次渲染重新解析组件名, 懒加载 chunk 注册后即可命中
                 const lazyTick = ref(0);  // V5.2.12 (FIX-2): 懒加载组件补注册后 tick 强制 pageComp 重算
+                // v7.18 (FR-501): 判定页面组件是否已注册 —— 即其所属域的 chunk 是否已到达。
+                // 静态域(strategies/calendar)在 main.js 顶部即注册, 恒为 true, 不受影响。
+                const _isPageCompReady = (compName) => {
+                    const cs = window.__quantComponents;
+                    if (!cs) return true;
+                    for (const _k in cs) {
+                        if (cs[_k] && cs[_k].name === compName) return true;
+                    }
+                    return false;
+                };
                 const pageComp = computed(() => {
                     void lazyTick.value;  // 依赖: 补加载注册完成后 lazyTick++ 触发重算
                     const _map = { strategies: 'qc-strategies-page', calendar: 'qc-calendar-page', ai: 'qc-ai-page', research: 'qc-research-page', shortterm: 'qc-shortterm-page', ops: 'qc-system-page', system: 'qc-system-page' };
@@ -184,9 +227,14 @@
                     // 组件按顶层菜单选, 子页归属变化时路由到原组件(复用渲染, 避免复制模板)
                     // V6.9.1-fix: 异动扫描已删除; 执行看板移入 ops 一级菜单
                     const _sp = currentSubPage.value;
-                    if (currentPage.value === 'shortterm' && (_sp === 'market-review')) return 'qc-research-page';
-                    if (currentPage.value === 'ops' && _sp === 'execution') return 'qc-strategies-page';
-                    return _map[currentPage.value] || '';
+                    let _name = _map[currentPage.value] || '';
+                    if (currentPage.value === 'shortterm' && (_sp === 'market-review')) _name = 'qc-research-page';
+                    if (currentPage.value === 'ops' && _sp === 'execution') _name = 'qc-strategies-page';
+                    // v7.18 (FR-501): 懒加载域组件未就绪 → 先渲染占位骨架。
+                    // 若直接返回未注册的组件名, Vue resolveComponent 失败, <component :is> 渲染成空自定义元素 → 工作区白屏。
+                    // chunk 到达后 __quantGoPage 会 lazyTick++ 触发本 computed 重算, 自动换成真实组件。
+                    if (_name && !_isPageCompReady(_name)) return 'qc-lazy-fallback';
+                    return _name;
                 });
                 const showUserMenu = ref(false);
                 const dashboardData = ref({});
@@ -226,9 +274,26 @@
                   isNarrow.value = window.innerWidth <= 1024;
                 });
 
-                // ===== V5.17 (F3) + V5.17.1: 中栏宽度 — 默认 35% (5% 整数倍, 用户确认), 可拖拽调宽 =====
-                // 下限 = 默认比例(35%), 上限 = 容器 50%; 拖拽后 px 持久化, 无持久化值用默认百分比
-                const SPLIT_DEFAULT_PCT = 35;     // 默认分割比例 (%) — 靠近 5% 整数倍
+                // ===== V5.17 (F3) + V5.17.1: 中栏宽度 — 可拖拽调宽 =====
+                // 下限 = 默认比例, 上限 = 容器 50%; 拖拽后 px 持久化, 无持久化值用默认百分比
+                // v7.19 (D1): 默认 35% → 42%。个股行要承载 12px 策略 tag + 16px 图标 + 2×2 策略矩阵，
+                // 35% 下列表只有 ~396px，策略名必然截断。CSS 侧 tokens.css 的 --split-w 同步为 42%，
+                // 但**真正生效的是这里的 JS 内联写法**（它会覆盖 CSS 变量），两处必须一致。
+                const SPLIT_DEFAULT_PCT = 42;
+                // v7.19: 老版本已把 35% 折算成 px 存进 qc_split_width，只改默认值对老用户无效
+                // （他们永远停在旧绝对值上）。这里按 42/35 等比放大一次，保留「用户把中栏拖得更宽/更窄」
+                // 的相对偏好，而不是粗暴清空。迁移只跑一次，之后由 qc_split_v 标记拦住。
+                const SPLIT_MIGRATE_TAG = '719';
+                (function migrateSplitWidth() {
+                  try {
+                    if (localStorage.getItem('qc_split_v') === SPLIT_MIGRATE_TAG) return;
+                    const raw = parseInt(localStorage.getItem('qc_split_width') || '', 10);
+                    if (raw > 0) {
+                      localStorage.setItem('qc_split_width', String(Math.round(raw * 42 / 35)));
+                    }
+                    localStorage.setItem('qc_split_v', SPLIT_MIGRATE_TAG);
+                  } catch (e) { /* 隐私模式/禁用存储：忽略，走默认百分比 */ }
+                })();
                 const splitWidth = ref(parseInt(localStorage.getItem('qc_split_width') || '', 10) || null);
                 // 同步 --split-w CSS 变量到根元素 (CSS 变量继承进所有双栏容器, 模板无需 :style 绑定)
                 function syncSplitWidthVar() {
@@ -244,7 +309,7 @@
                   syncSplitWidthVar();
                   try { localStorage.setItem('qc_split_width', String(clamped)); } catch (e) {}
                 }
-                // 当前中栏实际像素宽 (未持久化时按容器 35% 计算)
+                // 当前中栏实际像素宽 (未持久化时按容器 SPLIT_DEFAULT_PCT 计算)
                 function currentSplitPx(containerEl) {
                   if (splitWidth.value) return splitWidth.value;
                   const cw = containerEl ? containerEl.getBoundingClientRect().width : 0;
@@ -541,6 +606,7 @@ return {
         backtestStrategies, backtestStrategy, backtestRange, backtestCapital,
         backtestRunning, backtestResult, backtestError, runBacktest,
         backtestDegraded, loadBacktestStrategies,
+        backtestMonths, setBacktestMonths,
         currentPageName, currentSubName, lazyTick, pageComp, showUserMenu,
         dashboardData, healthMetrics, dashboardDate, views, currentView, statusFilter,
         stockDetailVisible, stockDetailTab, stockDetail, stockDetailLoading,

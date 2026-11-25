@@ -80,6 +80,15 @@ def _load_watchlist(username: str) -> list:
     return []
 
 
+def load_watchlist(username: str) -> list:
+    """公开的自选股读取入口 (SQLite 优先, JSON 回退) — 供其它域复用同一份口径。
+
+    v7.19 (FR-6): 组合「均分建仓」按自选股建仓, 必须与自选页读到同一份数据,
+    否则会出现「自选页有 10 只、建仓页说没有标的」的口径分裂。
+    """
+    return _load_watchlist(username)
+
+
 def _save_watchlist(username: str, stocks: list):
     """保存自选股 (v3.17.13: SQLite 为主; 6.1.2 B2: SQLite 不可用时回退 JSON, 防止数据静默丢失)"""
     saved_db = False

@@ -29,9 +29,6 @@ WHITELIST = {
     # 对端已关闭时 close 失败同样属预期，记日志只是增噪
     "backend/api/v1/market_ws.py::ws_quotes::except Exception:#1":
         "连接可能已由对端关闭, close 失败属预期",
-    # 该处失败即走实时行情，是设计内的两条路径之一
-    "backend/api/v1/shortterm.py::get_sector_flow::except Exception:#1":
-        "时间解析失败走实时行情, 属设计内分支",
     # 部分 SMTP 服务器不开放认证，登录失败后按匿名投递
     "backend/notify.py::EmailChannel.send::except smtplib.SMTPException:#1":
         "部分 SMTP 无需认证, 登录失败后按匿名投递",

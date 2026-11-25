@@ -62,7 +62,7 @@ def test_stocklist_consensus_props():
     src = _read_f("src/components/common/StockList.vue")
     for prop in ("showConsensus", "showPrice", "virtual", "copyCode"):
         assert f"{prop}:" in src, f"StockList 应含 {prop} prop"
-    assert "displayTags" in src and "qc-stock-badge" in src, "应含标签折叠与共识徽章渲染"
+    assert "tagCells" in src and "is-count" in src, "应含标签折叠与共识徽章渲染 (v7.18 FR-1101: tagCells/is-count)"
     assert "qc-virtual-list" in src, "应支持虚拟滚动分支"
     # 调用点: TOP5 启用 show-consensus/show-price; 共识榜虚拟; 日历池统一组件
     sp = _read_f("js/components/strategies-page.js")

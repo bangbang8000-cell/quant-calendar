@@ -86,7 +86,7 @@ window.__quantModules.aiPage.part1 = `
                                 <div class="rec-card" v-for="r in strategyRecommendations" :key="r.strategy_id">
                                     <div class="flex-between-mb6">
                                         <span class="text-semibold">{{ r.name }}</span>
-                                        <span class="text-sm-primary-semibold">{{ fmtNum(r.score) }}%</span>
+                                        <span class="text-sm-primary-semibold">{{ fmtPct(r.score) }}</span>
                                     </div>
                                     <div class="text-sm-secondary-mb8">{{ r.desc }}</div>
                                     <div class="flex-wrap-gap-6">
@@ -438,7 +438,11 @@ window.__quantModules.aiPage.part1 = `
                         <qc-state-panel v-if="chatHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="!isOnline" type="offline" @retry="loadChatHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="chatHistoryError" type="error" @retry="loadChatHistory"></qc-state-panel>
-                        <qc-state-panel v-else-if="allChatSessionsFlat.length === 0" type="empty" icon="message-circle" title="暂无问股记录" desc="在股票详情页点击「AI 问股」开始对话" action-text="去量化日历选股" action-key="go_pool"></qc-state-panel>
+                        <!-- v7.19 (FR-7): 空态分级 —— 「当前账号无记录」与「系统无数据」是两件事 -->
+                        <qc-state-panel v-else-if="allChatSessionsFlat.length === 0" type="empty" icon="message-circle"
+                            :title="(chatHistoryMeta && chatHistoryMeta.other_total > 0) ? '当前账号暂无问股记录' : '暂无问股记录'"
+                            :desc="(chatHistoryMeta && chatHistoryMeta.other_total > 0) ? ('系统另有 ' + chatHistoryMeta.other_total + ' 条记录属于其他账号，按账号隔离不可见；可在本账号发起问股') : '在股票详情页点击「AI 问股」开始对话'"
+                            action-text="开始新对话" action-key="new_chat"></qc-state-panel>
 
                         <!-- V5.20 (F1): 中栏分组列表 + 右栏详情工作区 (弹窗模式时仅列表全宽, 面板不渲染) -->
 `;

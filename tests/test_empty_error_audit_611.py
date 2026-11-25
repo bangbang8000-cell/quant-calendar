@@ -45,6 +45,11 @@ EXPLICIT_SKIP = {
     "frontend/js/components/dialogs/menu-config.js",
     "frontend/js/components/global-header.js",
     "frontend/js/components/sidebar.js",
+    # v7.18 (FR-1001/FR-1002): 基础展示原语, 空态/加载态由父级状态面板承接
+    #   qc-skeleton.js    — 骨架屏本身即加载态占位, 不存在"空态"语义
+    #   qc-card-list.js   — 纯卡片渲染容器, 空态由调用方 (shortterm view-part2) 的 qc-state-panel 处理
+    "frontend/js/components/qc-skeleton.js",
+    "frontend/js/components/qc-card-list.js",
 }
 
 

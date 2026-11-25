@@ -4,7 +4,8 @@ window.__quantModules = window.__quantModules || {};
 window.__quantModules.shorttermPage = window.__quantModules.shorttermPage || {};
 window.__quantModules.shorttermPage.part2 = `                            </div>
                         </div>
-                        <qc-state-panel v-if="poolLoading" type="loading"></qc-state-panel>
+                        <!-- v7.18 (FR-1001): 表格页用骨架屏替代转圈 —— 加载期间保持版式轮廓, 与"空数据"可区分 -->
+                        <qc-skeleton-table v-if="poolLoading" :rows="5" :cols="4" label="涨停池加载中"></qc-skeleton-table>
                         <qc-state-panel v-else-if="poolError" type="error" :title="poolErrTitle" :desc="poolErrDesc" @retry="loadPools"></qc-state-panel>
                         <qc-state-panel v-else-if="pools && !hasAnyPool" type="empty" icon="inbox" :title="t('state.emptyPool')" :desc="t('state.descEmptyPool')" action-text="去配置数据池" action-key="go_datasource"></qc-state-panel>
                         <div v-else-if="pools">
@@ -22,8 +23,8 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                 <div class="text-base-secondary">涨停池 ({{ (pools.zt || []).length }} 家)</div>
                                 <span v-if="ztBoardFilter" class="tag-chip is-institution">已筛选 {{ ztBoardFilter }} 板 <span role="button" tabindex="0" aria-label="清除筛选" style="cursor:pointer;display:inline-flex" @click="clearBoardFilter" @keydown.enter.prevent="clearBoardFilter" @keydown.space.prevent="clearBoardFilter"><qc-icon name="x" :size="12" /></span></span>
                             </div>
-                            <div class="table-container">
-                                <el-table :data="filteredZt" size="small">
+                            <div class="table-container qc-desktop-only" id="ztPoolList">
+                                <el-table :data="ztPageRows" size="small">
                                     <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
                                     <el-table-column prop="boards" label="连板" width="55" align="center"></el-table-column>
@@ -36,9 +37,22 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                     <el-table-column prop="board" label="板别" width="85"></el-table-column>
                                 </el-table>
                             </div>
+                            <!-- v7.18 (FR-901): 窄屏卡片降级 —— 10 列压进 390px 时窄列仅 3~6px, 不可读 -->
+                            <qc-card-list class="qc-mobile-only" :items="ztCards" aria-label="涨停池"
+                                @select="onCardPick"></qc-card-list>
+                            <!-- v7.18 (FR-902): 分页 (50/页) —— 原 189 行一次渲染 -->
+                            <el-pagination
+                                v-if="filteredZt.length > PAGE_SIZE"
+                                class="qc-zt-pager"
+                                layout="prev, pager, next, total"
+                                :total="filteredZt.length"
+                                :page-size="PAGE_SIZE"
+                                :current-page="ztPage"
+                                small
+                                @current-change="gotoTzPage"></el-pagination>
 
                             <div class="text-base-secondary mt-8 mb-2">炸板池 ({{ pools.zb ? pools.zb.length : 0 }})</div>
-                            <div class="table-container">
+                            <div class="table-container qc-desktop-only">
                                 <el-table :data="pools.zb || []" size="small">
                                     <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
@@ -48,9 +62,11 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                     <el-table-column prop="industry" label="行业"></el-table-column>
                                 </el-table>
                             </div>
+                            <qc-card-list class="qc-mobile-only" :items="zbCards" aria-label="炸板池"
+                                @select="onCardPick"></qc-card-list>
 
                             <div class="text-base-secondary mt-8 mb-2">跌停池 ({{ pools.dt ? pools.dt.length : 0 }})</div>
-                            <div class="table-container">
+                            <div class="table-container qc-desktop-only">
                                 <el-table :data="pools.dt || []" size="small">
                                     <el-table-column label="名称" width="90"><template #default="s"><span class="stock-link" @click="openStock(s.row)">{{ s.row.name }}</span></template></el-table-column>
                                     <el-table-column prop="ts_code" label="代码" width="85"></el-table-column>
@@ -59,6 +75,8 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                     <el-table-column prop="industry" label="行业"></el-table-column>
                                 </el-table>
                             </div>
+                            <qc-card-list class="qc-mobile-only" :items="dtCards" aria-label="跌停池"
+                                @select="onCardPick"></qc-card-list>
                         </div>
                     </div>
 
@@ -132,6 +150,10 @@ window.__quantModules.shorttermPage.part2 = `                            </div>
                                     <el-table-column label="主力净占比" width="105" align="right"><template #default="s">{{ fmtPct(s.row.main_net_inflow_ratio) }}</template></el-table-column>
                                 </el-table>
                                 <el-pagination v-if="filteredSectorRows.length > 200" small layout="prev, pager, next, total" :total="filteredSectorRows.length" :page-size="PAGE_SIZE" v-model:current-page="sectorPage" class="mt-4"></el-pagination>
+                            </div>
+                            <!-- v7.19 (FR-5): 快照态显式标注 —— 数据源断供时不再冒充「服务器错误」 -->
+                            <div v-if="sectorStale" class="qc711-note mb-4">
+                                <qc-icon name="alert-triangle" :size="12" /> 数据源暂不可用，当前展示截至 {{ sectorStale }} 的快照（非实时）。
                             </div>
                             <div class="text-xs-tertiary mt-4">数据源: {{ sectorSource }} · 实时值口径: 盘中为实时快照, 历史场次仅最近一次抓取值</div>
                         </div>

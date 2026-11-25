@@ -33,7 +33,7 @@
                             <h2 class="text-xl-title">{{ stockDetail.stock }} <span class="text-md-muted">{{ stockDetail.name }}</span></h2>
                             <!-- V5.24: 入池历史并入金色卡片 (原先独占一行) — 与持仓天数同排, 提升信息密度 -->
                             <div class="detail-subtitle dh-meta">
-                                <span class="dh-item">{{ t('detail.subtitle', { days: stockDetail.total_days }) }}</span>
+                                <span class="dh-item">{{ fmtTotalDays() }}</span>
                                 <template v-if="poolInfo && poolInfo.pool_history && poolInfo.pool_history.first_appear">
                                     <span class="dh-sep">·</span>
                                     <span class="dh-item">首入 <b>{{ poolInfo.pool_history.first_appear }}</b></span>
@@ -144,7 +144,7 @@
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.volume') }}</div>
-                            <div class="stat-value text-md">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() : '—' }}万</div>
+                            <div class="stat-value text-md">{{ stockDetail.daily_data?.vol != null ? Math.round(stockDetail.daily_data.vol / 10000).toLocaleString() + '万' : '—' }}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-label">{{ t('detail.turnover') }}</div>
@@ -230,7 +230,7 @@
                     <div class="section-title">{{ t('detail.strategyHoldings') }}</div>
                     <div v-for="h in stockDetail.history" :key="h.strategy" class="hold-item">
                         <span class="hold-name">{{ h.strategy_name }}</span>
-                        <span class="hold-days">{{ t('detail.holdDays', { days: h.hold_count }) }}</span>
+                        <span class="hold-days">{{ fmtHoldDays(h) }}</span>
                     </div>
                     </div>  <!-- close kline tab -->
 
@@ -314,10 +314,10 @@
                             <div class="factor-note-box" v-if="aiResult.result.signal_attribution">
                                 <div class="panel-title-mb8"><qc-icon name="bar-chart-3" :size="14" /> 信号归因</div>
                                 <div class="flex-gap-8-wrap">
-                                    <span class="chip-info" v-if="aiResult.result.signal_attribution.technical">技术面 {{ fmtNum(aiResult.result.signal_attribution.technical, 0) }}%{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
-                                    <span class="chip-success" v-if="aiResult.result.signal_attribution.fundamentals">基本面 {{ fmtNum(aiResult.result.signal_attribution.fundamentals, 0) }}%{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
-                                    <span class="gold-chip" v-if="aiResult.result.signal_attribution.capital_flow">资金面 {{ fmtNum(aiResult.result.signal_attribution.capital_flow, 0) }}%{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
-                                    <span class="gold-chip" v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment">资金面 {{ fmtNum(aiResult.result.signal_attribution.market_sentiment, 0) }}%</span>
+                                    <span class="chip-info" v-if="aiResult.result.signal_attribution.technical">技术面 {{ fmtPct(aiResult.result.signal_attribution.technical, 0) }}{{ aiResult.result.signal_attribution.technical_driver ? ' · '+aiResult.result.signal_attribution.technical_driver : '' }}</span>
+                                    <span class="chip-success" v-if="aiResult.result.signal_attribution.fundamentals">基本面 {{ fmtPct(aiResult.result.signal_attribution.fundamentals, 0) }}{{ aiResult.result.signal_attribution.fundamental_driver ? ' · '+aiResult.result.signal_attribution.fundamental_driver : '' }}</span>
+                                    <span class="gold-chip" v-if="aiResult.result.signal_attribution.capital_flow">资金面 {{ fmtPct(aiResult.result.signal_attribution.capital_flow, 0) }}{{ aiResult.result.signal_attribution.capital_flow_driver ? ' · '+aiResult.result.signal_attribution.capital_flow_driver : '' }}</span>
+                                    <span class="gold-chip" v-if="!aiResult.result.signal_attribution.capital_flow && aiResult.result.signal_attribution.market_sentiment">资金面 {{ fmtPct(aiResult.result.signal_attribution.market_sentiment, 0) }}</span>
                                 </div>
                                 <div class="text-sm-secondary-mt6" v-if="aiResult.result.signal_attribution.strongest_bullish">
                                     <span class="color-success">●</span> 最强看多: {{ aiResult.result.signal_attribution.strongest_bullish }}
@@ -665,8 +665,30 @@
         if (vis) loadPoolInfo();
         else poolInfo.value = null;
       });
+      // v7.17 (FR-401 / D-04): 持仓天数缺失时曾直接插值, 界面出现「策略持仓 undefined 天」。
+      // 统一走 fmt 层: 缺失输出 '—' (不带单位), 有值才走 i18n 模板, 保证中英日韩文案一致。
+      function fmtHoldDays(h) {
+        var F = window.QuantFmt || {};
+        var n = h && h.hold_count;
+        if (typeof F.isNil === 'function' && F.isNil(n)) return F.EMPTY || '\u2014';
+        var i18n = window.__quantModules && window.__quantModules.i18n;
+        if (i18n && typeof i18n.t === 'function') return i18n.t('detail.holdDays', { days: n });
+        return n + ' \u5929';
+      }
+
+      // v7.17 (FR-401 / D-04): 「策略持仓 undefined 天」的真正来源是 detail.subtitle 直插 total_days。
+      // 缺失时输出 '—' (不拼单位), 有值才走 i18n 模板。
+      function fmtTotalDays() {
+        var F = window.QuantFmt || {};
+        var n = state.stockDetail && state.stockDetail.value ? state.stockDetail.value.total_days : null;
+        if (typeof F.isNil === 'function' && F.isNil(n)) return F.EMPTY || '\u2014';
+        var i18n = window.__quantModules && window.__quantModules.i18n;
+        if (i18n && typeof i18n.t === 'function') return i18n.t('detail.subtitle', { days: n });
+        return '\u7b56\u7565\u6301\u4ed3 ' + n + ' \u5929';
+      }
+
       return { ...state, aiStageText, levelRingColor, copyAiReport, factorLoading, factorError, factorSummary, factorGroups, factorSemClass, loadFactorPanel, factorIc, loadFactorIc, factorIcGrade,
-        perfLoading, perfError, perfForecast, perfExpress, fmtY, loadPerformance, poolInfo, loadPoolInfo };
+        perfLoading, perfError, perfForecast, perfExpress, fmtY, loadPerformance, poolInfo, loadPoolInfo, fmtHoldDays, fmtTotalDays };
     },
   };
 })();

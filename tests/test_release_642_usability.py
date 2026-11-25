@@ -80,6 +80,28 @@ def test_tc644_01b_onboarding_template_not_hardcoded():
     assert "OC.stepCount()" in src
 
 
+def _tag_end(src, start):
+    """返回标签结束 `>` 的下标 —— 引号感知。
+
+    v7.19 修复: 旧实现直接 src.find('>'), 模板里只要出现
+    :title="x.other_total > 0 ? ..." 这种表达式, 就会在属性值中间被截断,
+    于是 action-text 落到 tag 之外 → 误报「空态缺主行动」。
+    """
+    quote = None
+    i = start
+    while i < len(src):
+        ch = src[i]
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch == ">":
+            return i
+        i += 1
+    return -1
+
+
 def test_tc644_02_every_empty_state_has_primary_action():
     """TC-644-02: 所有 qc-state-panel 空态必须带主行动 (action-text/action-key/#action 插槽)"""
     offenders = []
@@ -91,7 +113,7 @@ def test_tc644_02_every_empty_state_has_primary_action():
             with open(path, encoding="utf-8") as f:
                 src = f.read()
             for m in re.finditer(r"<qc-state-panel\b", src):
-                end = src.find(">", m.start())
+                end = _tag_end(src, m.start())
                 if end < 0:
                     continue
                 tag = src[m.start():end + 1]

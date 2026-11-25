@@ -196,10 +196,17 @@ export default {
       if (rafId) cancelAnimationFrame(rafId)
     })
 
+    // v7.17 (FR-202 / D-05): 「更多」与本省空间互斥 —— 原实现里滚动按钮(‹ ›)与「更多」同时出现,
+    // 两者共占约 136px, 反过来把标签可见宽度压到 716px, 形成"越溢出越显示不下"的循环。
+    // 规则: 一旦决定用「更多」兜底, 就收起滚动按钮 (下拉里可直接跳转)。
+    const showMore = computed(() => moreTabs.value.length > 0 || (hasOverflow.value && hiddenTabs.value.length > 0))
+    const moreCount = computed(() => (moreTabs.value.length ? moreTabs.value.length : hiddenTabs.value.length))
+
     return {
       state, tabs, primaryTabs, moreTabs, currentSubPage, go, isActiveTab,
       scrollRef, hasOverflow, canScrollLeft, canScrollRight,
       scrollByStep, scrollToTab, hiddenTabs, onTabKeydown, updateScrollState,
+      showMore, moreCount,
     }
   },
 }
@@ -207,7 +214,7 @@ export default {
 
 <template>
   <div v-if="tabs.length" class="qc-top-tabs-bar" role="tablist" aria-label="二级页面">
-    <button v-if="hasOverflow" class="qc-top-tabs-btn" :disabled="!canScrollLeft"
+    <button v-if="hasOverflow && !showMore" class="qc-top-tabs-btn" :disabled="!canScrollLeft"
       aria-label="向左滚动" @click="scrollByStep(-1)">‹</button>
     <div ref="scrollRef" class="qc-header-tabs qc-top-tabs-scroll" :class="{ 'has-overflow': hasOverflow }" @scroll.passive="updateScrollState">
       <div
@@ -223,12 +230,12 @@ export default {
         <span class="qc-top-tab-label">{{ tab.label }}</span>
       </div>
     </div>
-    <button v-if="hasOverflow" class="qc-top-tabs-btn" :disabled="!canScrollRight"
+    <button v-if="hasOverflow && !showMore" class="qc-top-tabs-btn" :disabled="!canScrollRight"
       aria-label="向右滚动" @click="scrollByStep(1)">›</button>
     <!-- 6.5.4 (FR-654.3): 二级上限 7 (单业务域不再超限); DOM 溢出时 hiddenTabs 兜底 -->
-    <el-dropdown v-if="moreTabs.length || (hasOverflow && hiddenTabs.length)" class="qc-top-tabs-more"
+    <el-dropdown v-if="showMore" class="qc-top-tabs-more"
       trigger="click" @command="scrollToTab">
-      <button class="qc-top-tabs-btn qc-top-tabs-more-btn" aria-label="更多页面">更多 ▾</button>
+      <button class="qc-top-tabs-btn qc-top-tabs-more-btn" :aria-label="'更多页面，还有 ' + moreCount + ' 项'">更多 {{ moreCount }} ▾</button>
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item v-for="t in (moreTabs.length ? moreTabs : hiddenTabs)" :key="t.key" :command="t.key"

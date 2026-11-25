@@ -94,23 +94,22 @@
                             
                             <div v-else class="stock-list">
                                 <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + name-suffix 图标 + footer 信号行) -->
+                                <!-- v7.18 (FR-1101 个股列表统一): 图标收口组件内建 row-ops — 收藏/AI/K线/手动勾选
+                                     位置·顺序·热区·a11y·i18n 单一来源, 与策略概览/共识榜一致 -->
                                 <qc-stock-list
                                   class="h-calc-250"
                                   :items="stockPool"
                                   :virtual="true"
-                                  :row-height="78"
                                   :copy-code="true"
                                   show-rank
+                                  show-strategy-count
                                   :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                                   @select="(item) => showStockDetail(item.code)"
+                                  :ops="{ watch: true, ai: true, kline: true, manual: true }"
+                                  :manual-state="isManual"
+                                  :manual-busy-code="manualBusy"
+                                  @manual="toggleManualSelection"
                                 >
-                                  <template #name-suffix="{ item }">
-                                    <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" tabindex="0" role="button" :aria-label="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" :title="watchlistCodes.has(item.code)?t('calendar.unwatch'):t('calendar.watch')" @keydown.enter.prevent="keyClick($event)" @keydown.space.prevent="keyClick($event)"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
-                                    <!-- v7.12 (PRD §6.5.2): 股票级受控入库 — 勾选进当日"手动勾选"分组 -->
-                                    <span class="manual-check" :class="{ 'is-checked': isManual(item.code), 'is-busy': manualBusy === item.code }" @click.stop="toggleManualSelection(item)" tabindex="0" role="checkbox" :aria-checked="isManual(item.code) ? 'true' : 'false'" :title="isManual(item.code) ? '移出手动勾选' : '加入手动勾选'" @keydown.enter.prevent="toggleManualSelection(item)" @keydown.space.prevent="toggleManualSelection(item)"><qc-icon name="badge-check" :size="14" /></span>
-                                    <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" :title="t('calendar.aiEvaluated')"><qc-icon name="bot" :size="13" /></span>
-                                    <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" :title="t('calendar.klineLoaded')"><qc-icon name="trending-up" :size="13" /></span>
-                                  </template>
                                   <!-- v3.7.11: AI入池信号解读（整行占位, V6.9.3 经 footer 插槽渲染） -->
                                   <template #footer="{ item }">
                                     <span v-if="poolSignals[item.code]"><qc-icon name="bot" :size="14" /> {{ poolSignals[item.code] }}</span>

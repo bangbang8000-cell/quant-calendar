@@ -5,6 +5,7 @@
 from datetime import datetime, timedelta
 import logging
 from ._constants import *  # noqa: F401,F403
+from . import _hysteresis as hysteresis  # v7.19 (FR-4): 阶段切换滞回规则
 
 logger = logging.getLogger(__name__)
 
@@ -52,15 +53,56 @@ class ClockCoreMixin:
         # === 3. 信心度 ===
         confidence_level = '高' if distance > 1.2 else ('中' if distance > 0.5 else '低')
 
-        # === 4. 综合得分 ===
+        # === 4. 综合得分 + v7.19 (FR-4) 滞回判定 ===
         weighted_score = sum(
             SCORING_WEIGHTS[k] * dims[k]['score']
             for k in SCORING_WEIGHTS
         )
+        # 三层规则：滞回带（|score|<0.15 保持）/ 连续 2 次确认 / 最短持续 20 交易日。
+        # 时间驱动切换（严重超期 + 临边界）已明确允许，跳过滞回以免规则互相打架。
+        hysteresis_info = {
+            'decision': 'time_driven' if switch_trigger == 'time_driven' else 'same',
+            'band': hysteresis.HYSTERESIS_BAND,
+            'dwell_trading_days': 0,
+            'min_dwell_trading_days': hysteresis.MIN_DWELL_TRADING_DAYS,
+            'pending_stage': None,
+            'pending_count': 0,
+            'dwell_blocked': False,
+        }
+        prev_stage_for_dwell = self.history.get('current_stage')
+        if prev_stage_for_dwell and switch_trigger != 'time_driven':
+            _start_raw = self.history.get('current_stage_start')
+            try:
+                _dwell_cal = (today - datetime.fromisoformat(_start_raw)).days if _start_raw else 0
+            except Exception:  # noqa: BLE001 — 起始时间损坏按 0 天处理
+                _dwell_cal = 0
+            _dwell = hysteresis.to_trading_days(_dwell_cal)
+            _dec = hysteresis.decide(
+                stage, prev_stage_for_dwell, weighted_score,
+                self.history.get('stage_pending'), _dwell)
+            stage = _dec['stage']
+            if _dec['trigger']:
+                switch_trigger = _dec['trigger']
+            self.history['stage_pending'] = _dec['pending']
+            hysteresis_info = {
+                'decision': _dec['decision'],
+                'band': _dec['band'],
+                'dwell_trading_days': _dwell,
+                'min_dwell_trading_days': hysteresis.MIN_DWELL_TRADING_DAYS,
+                'pending_stage': (_dec['pending'] or {}).get('stage'),
+                'pending_count': (_dec['pending'] or {}).get('count', 0),
+                'dwell_blocked': _dec['dwell_blocked'],
+            }
+            if _dec['decision'] in ('hysteresis', 'confirming', 'blocked_dwell'):
+                logger.info(
+                    '美林阶段保持 %s（decision=%s, score=%.2f, 已持续%d交易日, 候选=%s）',
+                    stage, _dec['decision'], weighted_score, _dwell,
+                    (_dec['pending'] or {}).get('stage'))
 
         stage_info = STAGES[stage].copy()
         stage_info['stage'] = stage
         stage_info['indicators'] = indicators
+        stage_info['hysteresis'] = hysteresis_info
 
         # 多维度评分详情
         stage_info['dimension_scores'] = dims
@@ -88,7 +130,9 @@ class ClockCoreMixin:
                 'to_name': STAGES[stage]['name'],
                 'trigger': switch_trigger,
                 'reason': '时间驱动切换（阶段严重超期且临近象限边界）' if switch_trigger == 'time_driven'
-                          else '边界/数据驱动切换',
+                          else ('滞回确认后切换（连续 %d 次评估一致且满足最短持续期）'
+                                % hysteresis.CONFIRM_EVALUATIONS),
+                'hysteresis': hysteresis_info,
                 'transition_time': today.isoformat(),
                 'transition_date': today.strftime('%Y-%m-%d')
             }
@@ -102,6 +146,17 @@ class ClockCoreMixin:
             if len(self.history['transitions']) > 20:
                 self.history['transitions'] = self.history['transitions'][:20]
 
+            # v7.19 (FR-4): 切换后承接上一段已持续天数（上限 = 新阶段均值的 25%），
+            # 进度条不再「一切换就归零」；真实本阶段天数仍由 duration_days 单独给出。
+            _prev_start_raw = self.history.get('current_stage_start')
+            _prev_days = 0
+            if _prev_start_raw:
+                try:
+                    _prev_days = max(0, (today - datetime.fromisoformat(_prev_start_raw)).days)
+                except Exception:  # noqa: BLE001
+                    _prev_days = 0
+            _new_avg_days = STAGES[stage]['historical_stats']['avg_duration_months'] * 30
+            self.history['inherited_days'] = int(min(_prev_days, _new_avg_days * hysteresis.INHERIT_CAP_RATIO))
             self.history['current_stage'] = stage
             self.history['current_stage_start'] = today.isoformat()
             self._save_history()
@@ -128,7 +183,10 @@ class ClockCoreMixin:
             predicted_duration_mid = avg_months * 30
             predicted_duration_high = (avg_months + std_months) * 30
 
-            progress_percent = min(100, round(duration_days / predicted_duration_mid * 100, 2))
+            # v7.19 (FR-4): 进度按「本阶段已过 + 承接天数」计算；真实本阶段天数另给 duration_days。
+            inherited_days = int(self.history.get('inherited_days') or 0)
+            cycle_days = duration_days + inherited_days
+            progress_percent = min(100, round(cycle_days / predicted_duration_mid * 100, 2))
 
             # 阶段成熟度
             if progress_percent < 33:
@@ -149,6 +207,8 @@ class ClockCoreMixin:
                 'current_stage_start_date': start_time.strftime('%Y-%m-%d'),
                 'duration_days': duration_days,
                 'duration_months': round(duration_days / 30, 2),
+                'inherited_days': inherited_days,
+                'cycle_days': cycle_days,
                 'avg_duration_months': avg_months,
                 'std_duration_months': std_months,
                 'progress_percent': progress_percent,

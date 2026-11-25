@@ -26,7 +26,7 @@
                         <div class="detail-subtitle"><qc-icon name="line-chart" :size="13" /> {{ indexDetail.market }} 市场指数</div>
                     </div>
                     <div class="detail-score">
-                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ indexDetail.pct_chg >= 0 ? '+' : '' }}{{ indexDetail.pct_chg.toFixed(2) }}%</div>
+                        <div class="num" :style="{color: indexDetail.pct_chg >= 0 ? 'var(--color-rise)' : 'var(--color-fall)'}">{{ indexDetail.pct_chg == null ? '—' : (indexDetail.pct_chg >= 0 ? '+' : '') + indexDetail.pct_chg.toFixed(2) + '%' }}</div>
                         <div class="label">{{ indexDetail.pct_chg >= 0 ? '上涨' : '下跌' }}</div>
                     </div>
                 </div>
@@ -45,13 +45,13 @@
                     </div>
                     <div class="stat-box" v-if="indexDetail.vol">
                         <div class="stat-label">成交量</div>
-                        <div class="stat-value">{{ Math.round(indexDetail.vol / 10000).toLocaleString() }}万手</div>
+                        <div class="stat-value">{{ indexDetail.vol != null ? Math.round(indexDetail.vol / 10000).toLocaleString() + '万手' : '—' }}</div>
                     </div>
                     <div class="stat-box" v-if="indexDetail.amount">
                         <div class="stat-label">成交额</div>
                         <!-- 6.6 (T-6.6.21, PRD FR-6.6.5): tushare amount 单位**千元**,
                              千元→亿元须 /1e5。旧代码 /1e4 导致成交额 10 倍虚高(71,562亿 vs 真实 7,156亿)。 -->
-                        <div class="stat-value">{{ (indexDetail.amount / 100000).toFixed(2) }}亿</div>
+                        <div class="stat-value">{{ indexDetail.amount == null ? '—' : (indexDetail.amount / 100000).toFixed(2) + '亿' }}</div>
                     </div>
                     <div class="stat-box" v-if="indexQuoteSummary">
                         <div class="stat-label">总市值</div>
@@ -109,7 +109,7 @@
                         <el-tag :type="indexAiResult.suggestion === '买入' ? 'success' : indexAiResult.suggestion === '卖出' ? 'danger' : 'warning'" size="large">
                             <qc-icon name="pin" :size="14" /> {{ indexAiResult.suggestion || '暂无' }}
                         </el-tag>
-                        <span class="ml-12-base-secondary">信心指数: {{ fmtNum(indexAiResult.confidence || 75, 0) }}%</span>
+                        <span class="ml-12-base-secondary">信心指数: {{ fmtPct(indexAiResult.confidence || 75, 0) }}</span>
                     </div>
                 </div>
 

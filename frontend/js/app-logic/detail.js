@@ -1,11 +1,11 @@
 // 6.3.0 (T-6.3.0.10): App 逻辑层 — 详情/K线域（K线状态与编排 / 健康指标 / 外部股票目标 / 档位色映射）
 // 自 frontend/js/app-logic.js 按域逐字符切出（保留原缩进）；装配见 app-logic.js 的 create 调用
-// ctx 依赖: ref/computed/nextTick/stockDetail*/getIsMobile/getIndexDetail/getIndexDetailVisible/getMarkKlineLoaded/getAiResult/getLoadLastEvaluation/getSelectedDateRef/getRefreshStockScore/getAnimateScoreEntrance
+// ctx 依赖: ref/computed/nextTick/healthMetrics/stockDetail*/getIsMobile/getIndexDetail/getIndexDetailVisible/getMarkKlineLoaded/getAiResult/getLoadLastEvaluation/getSelectedDateRef/getRefreshStockScore/getAnimateScoreEntrance
 (function () {
   window.__quantAppLogic = window.__quantAppLogic || {};
   window.__quantAppLogic.detail = {
     create: function (ctx) {
-      const { ref, computed, nextTick, stockDetail, stockDetailTab, stockDetailVisible,
+      const { ref, computed, nextTick, healthMetrics, stockDetail, stockDetailTab, stockDetailVisible,
         stockDetailLoading, rememberDialogTrigger, getIsMobile, getIndexDetail, getIndexDetailVisible,
         getMarkKlineLoaded, getAiResult, getLoadLastEvaluation, getSelectedDateRef, getIndexQuoteSummary,
         getRefreshStockScore, getAnimateScoreEntrance } = ctx;

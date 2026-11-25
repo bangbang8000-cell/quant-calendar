@@ -247,7 +247,8 @@
   align-items: center;
   gap: var(--qc-space-2);
   height: var(--qc-nav-subitem-h);  /* 6.2.1 (F3): 顶部二级 36px 标尺 */
-  padding: 0 var(--qc-space-4);
+  /* v7.17 (FR-202): 水平内边距 16→12, 7 个标签共省约 56px, 让 7 项业务域在 1440px 零裁切 */
+  padding: 0 var(--qc-space-3);
   border: 1px solid transparent;
   border-radius: var(--qc-radius-small);
   background: transparent;
@@ -281,11 +282,39 @@
 .qc-header-search {
   /* V6.5 (PRD-6.5 F3): 固定窄宽 220px, 贴近右侧铃铛; 去掉弹性伸缩 */
   /* V5.7.2 (UX-15): 宽度定案 300px — 介于 v4 评估 420px 与实测 220px 之间, 桌面可读/移动端可收缩 */
+  /* v7.17 (FR-202 / D-05): 默认收起为 40px 图标, 聚焦展开 300px。
+     原固定 300px 与二级标签争宽, 1440px 下标签可见率只有 4/7。 */
   flex: 0 0 300px;
   width: 300px;
   max-width: 300px;
   min-width: 300px;
+  transition: flex-basis var(--duration-fast, .18s) ease, width var(--duration-fast, .18s) ease,
+              min-width var(--duration-fast, .18s) ease;
 }
+/* 收起态: 只露搜索图标, 点击/聚焦即展开 */
+/* v7.17 (FR-202): 关键一步 —— 容器本身必须放弃 240px 基宽 (flex:0 0 auto),
+   否则搜索框缩到 40px 后容器仍占 240px, 省下的空间并不会让给二级标签。 */
+.qc-header-center.is-collapsed {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+  margin: 0 var(--qc-space-2);
+}
+.qc-header-center.is-collapsed .qc-header-search {
+  flex: 0 0 40px;
+  width: 40px;
+  max-width: 40px;
+  min-width: 40px;
+}
+.qc-header-center.is-collapsed .qc-header-search-kbd,
+.qc-header-center.is-collapsed .qc-header-search .el-input__suffix { display: none; }
+.qc-header-center.is-collapsed .qc-header-search .el-input__inner { opacity: 0; }
+.qc-header-center.is-collapsed .qc-header-search .el-input__wrapper {
+  padding: 0;
+  justify-content: center;
+  cursor: pointer;
+}
+.qc-header-center.is-collapsed .qc-header-search .el-input__prefix { margin: 0 auto; }
 .qc-header-search .el-input { width: 100%; }
 .qc-header-search .el-input__wrapper {
   background: var(--qc-muted);

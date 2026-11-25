@@ -75,7 +75,10 @@ def test_generate_holdings_all_mode_uses_full_universe(admin_client, monkeypatch
     class _SM:
         stock_map = {"600000.SH": {}, "600004.SH": {}, "600519.SH": {},
                      "601318.SH": {}, "600036.SH": {}, "601166.SH": {}}
-    _sys.modules["stock_info"] = _types.SimpleNamespace(stock_manager=_SM())
+    # v7.19 修复: 原来直接写 sys.modules 会永久污染后续用例的 stock_info
+    # (v719_names 的 `from stock_info import StockInfoManager` 会拿到这个假模块而报
+    #  ImportError)。改用 monkeypatch.setitem 由 pytest 在用例结束后自动还原。
+    monkeypatch.setitem(_sys.modules, "stock_info", _types.SimpleNamespace(stock_manager=_SM()))
     fake = FakePortal(dates=["2026-07-01", "2026-07-02"],
                       symbols=["600000.SH", "600004.SH", "600519.SH",
                                "601318.SH", "600036.SH", "601166.SH"])

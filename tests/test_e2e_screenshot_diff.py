@@ -43,10 +43,16 @@ def test_e2e_screenshot_diff():
     if not _server_up():
         pytest.skip(f'dev server 未启动: {BASE_URL}（启动: uvicorn main_new:app --port 8001）')
 
-    # chromium 路径: 环境变量 > 本机 snap chromium > 空 (Playwright 自带, CI 已 install)
+    # chromium 路径: 环境变量 > 本机 snap chromium > Playwright 缓存目录 > 空 (CI 已 install)
     chromium = os.environ.get('PLAYWRIGHT_CHROMIUM', '')
     if not chromium and os.path.exists('/snap/bin/chromium'):
         chromium = '/snap/bin/chromium'
+    if not chromium:
+        import glob as _glob
+        _cands = sorted(_glob.glob(os.path.expanduser(
+            '~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome')))
+        if _cands:
+            chromium = _cands[-1]
     cmd = [sys.executable, HARNESS, '--report', '--base-url', BASE_URL]
     if chromium:
         cmd += ['--chromium', chromium]

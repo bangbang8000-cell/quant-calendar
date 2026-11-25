@@ -128,11 +128,17 @@ COMMON_TRADING_PARAMS: List[ParamSpec] = [
 
 @dataclass
 class FactorSpec:
-    """因子声明"""
+    """因子声明
+
+    v7.19 (FR-9): 增 label / category_cn —— 中文模式下不再把 `mom20 (technical)` 原样透出。
+    两者留空时由 strategy_sdk/labels.py 兜底填充（注册表输出处统一处理）。
+    """
     name: str
     category: str                   # valuation | fundamental | capital | sentiment | technical
     inputs: List[str] = field(default_factory=list)
     params: Dict[str, Any] = field(default_factory=dict)
+    label: str = ''                 # 中文因子名，如「20日动量」
+    category_cn: str = ''           # 中文类别，如「技术面」
 
 
 # ---------- 数据访问层协议 ----------

@@ -252,6 +252,8 @@
 .bt-form { display: flex; flex-direction: column; gap: 12px; }
 .bt-form-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .bt-form-label { width: 110px; flex-shrink: 0; font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
+/* v7.19 (T3.1): 表单单位/默认值提示 — 让「万三 / 千一 / 100 万」这些约定肉眼可见 */
+.bt-form-hint { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 
 .bt-strategy-opts { display: flex; flex-wrap: wrap; gap: 8px; }
 .bt-strategy-opt {

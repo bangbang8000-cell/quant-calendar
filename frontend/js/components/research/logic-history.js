@@ -161,10 +161,92 @@
         }
       }
 
+      // ===== v7.19 (T3.2): 策略工作台 —— 「先罗列，再在列表上操作」 =====
+      // 一次 /api/strategies/overview 拿到 16 个策略的纳管状态、最近运行、选股数、最近回测绩效，
+      // 页面首屏就是一张可筛选/可排序的表，而不是"先选一个策略再点运行"的盲盒。
+      const strategyOverview = Vue.ref([]);
+      const strategyOverviewLoading = Vue.ref(false);
+      const strategyOverviewError = Vue.ref('');
+      const strategyOverviewDegraded = Vue.ref(false);
+      const overviewKeyword = Vue.ref('');
+      const overviewSortKey = Vue.ref('recent');   // recent | return | holdings
+      const overviewOnlyEnabled = Vue.ref(false);
+
+      async function loadStrategyOverview(force) {
+        if (strategyOverview.value.length && !force) return;
+        strategyOverviewLoading.value = true;
+        strategyOverviewError.value = '';
+        try {
+          const core = (window.__quantModules && window.__quantModules.core) || {};
+          const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+          const res = await fetch('/api/strategies/overview', { headers: headers });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          strategyOverview.value = (data && data.items) || [];
+          strategyOverviewDegraded.value = !!(data && data.degraded);
+        } catch (e) {
+          strategyOverviewError.value = String(e && e.message ? e.message : e);
+        } finally {
+          strategyOverviewLoading.value = false;
+        }
+      }
+
+      function _num(v) { const n = Number(v); return isFinite(n) ? n : null; }
+
+      const strategyCardRows = Vue.computed(function () {
+        var kw = (overviewKeyword.value || '').trim().toLowerCase();
+        var rows = strategyOverview.value.filter(function (r) {
+          if (overviewOnlyEnabled.value && !r.enabled) return false;
+          if (!kw) return true;
+          return (String(r.name) + ' ' + String(r.id) + ' ' + String(r.id_cn)).toLowerCase().indexOf(kw) >= 0;
+        });
+        var key = overviewSortKey.value;
+        rows = rows.slice().sort(function (a, b) {
+          if (key === 'return') {
+            var av = _num(a.last_backtest && a.last_backtest.annual_return);
+            var bv = _num(b.last_backtest && b.last_backtest.annual_return);
+            // 没有回测记录的排最后（而不是当 0 参与排序 —— 那会让"未回测"看起来像"零收益"）
+            if (av === null && bv === null) return 0;
+            if (av === null) return 1;
+            if (bv === null) return -1;
+            return bv - av;
+          }
+          if (key === 'holdings') return (_num(b.holdings_count) || 0) - (_num(a.holdings_count) || 0);
+          // recent：最近运行为空排最后
+          var at = (a.last_run && a.last_run.started_at) || '';
+          var bt = (b.last_run && b.last_run.started_at) || '';
+          if (!at && !bt) return 0;
+          if (!at) return 1;
+          if (!bt) return -1;
+          return String(bt) > String(at) ? 1 : -1;
+        });
+        return rows;
+      });
+
+      function strategyStatusText(r) {
+        if (!r) return '—';
+        var st = r.last_run && r.last_run.status;
+        if (st === 'running') return '运行中';
+        if (st === 'failed') return '上次失败';
+        if (!r.enabled) return '未纳管';
+        return '正常';
+      }
+
+      function openStrategyManageFor(sid) {
+        if (!sid) return;
+        if (state.activeStrategyId) state.activeStrategyId.value = sid;
+        state.currentSubPage.value = 'strategy-manage';
+      }
+
       function goBacktestFor(sid) {
         if (!sid) return;
         state.currentSubPage.value = 'backtest';
         if (state.activeStrategyId) state.activeStrategyId.value = sid;
+        // v7.19 (T3.2): 旧实现只改「母本策略」，回测下拉没变 —— 用户从列表点「回测」进来，
+        // 看到的仍是上一个策略，跑出来的自然不是自己点的那一个。这里同步选中回测策略，
+        // 并把区间重置为默认 18 个月（PRD 需求 ⑧ 的建议区间）。
+        if (state.backtestStrategy) state.backtestStrategy.value = sid;
+        if (state.setBacktestMonths) state.setBacktestMonths(18);
       }
 
       return {
@@ -174,6 +256,10 @@
         loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail,
         runResearchCompare, deleteResearchHistory,
         overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)
+        // v7.19 (T3.2): 策略工作台
+        strategyOverview, strategyOverviewLoading, strategyOverviewError, strategyOverviewDegraded,
+        overviewKeyword, overviewSortKey, overviewOnlyEnabled, strategyCardRows,
+        loadStrategyOverview, strategyStatusText, openStrategyManageFor,
       };
     },
   };

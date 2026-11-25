@@ -128,8 +128,13 @@ def test_menu_config_dialog_members():
 # ── TC-652-07: tree 形态中栏去重面包屑 (顶栏面包屑 + 侧栏树已承担) ──
 def test_tree_mode_dedupe_breadcrumb_css():
     css = _read("css/layout.css")
-    assert re.search(r'\[data-navmode="tree"\]\s+\.qc-page-head\s+\.qc-breadcrumb\s*\{\s*display:\s*none', css)
-    # 仅藏面包屑, h1 页面标题保留
+    # v7.17 (FR-201 / D-06): 页面 h1 已并入面包屑末级节点（每页只有一个 h1），
+    # 因此 tree 形态不能再整块隐藏 .qc-breadcrumb —— 那会把页面标题一起藏掉。
+    # 去重语义不变: 只隐藏「上级路径 + 分隔符」，当前位置仍由末级 h1 承担。
+    assert re.search(r'\[data-navmode="tree"\]\s+\.qc-page-head\s+\.qc-breadcrumb-item:not\(\.is-leaf\)', css)
+    assert re.search(r'\[data-navmode="tree"\]\s+\.qc-page-head\s+\.qc-breadcrumb-sep', css)
+    # 必须不存在整块隐藏面包屑的旧规则（会连带隐藏 h1）
+    assert not re.search(r'\[data-navmode="tree"\]\s+\.qc-page-head\s+\.qc-breadcrumb\s*\{\s*display:\s*none', css)
     assert css.count(".qc-page-h1") >= 1
 
 

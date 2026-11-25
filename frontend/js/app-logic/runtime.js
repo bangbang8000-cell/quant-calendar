@@ -25,6 +25,13 @@
                     try {
                         const l = window.__lazyLoaders && window.__lazyLoaders[goPage];
                         if (l) await l();
+                        // v7.18 (FR-501): 交叉依赖补齐 —— shortterm 的 market-review 子页复用 research 页组件
+                        // (映射见 workspace.js pageComp)。只加载 shortterm 域时 research 组件未注册, 该子页会白屏。
+                        // ops/execution 复用 strategies 组件, 而 strategies 是静态加载的, 无需处理。
+                        if (goPage === 'shortterm' && goSub === 'market-review') {
+                            const _rl = window.__lazyLoaders && window.__lazyLoaders['research'];
+                            if (_rl) await _rl();
+                        }
                     } catch (e) {
                         console.warn('[lazy] 页面组件加载失败', goPage, e);
                     }

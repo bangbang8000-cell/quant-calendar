@@ -146,7 +146,7 @@ window.__quantModules.strategiesPage.part1 = `
                         <div v-for="item in filteredStrategyCounts" :key="item.strategy_id" class="strategy-item clickable" @click="navigateToStrategyFilter(item.strategy_name)">
                             <div class="strategy-header">
                                 <span class="strategy-name">{{ item.strategy_name }} <span class="text-xs-tertiary-ml4">→</span></span>
-                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ fmtNum(item.percentage) }}%)</span></span>
+                                <span class="strategy-count">{{ item.count }}只 <span class="strategy-percent">(占在池{{ fmtPct(item.percentage) }})</span></span>
                             </div>
                             <div class="strategy-progress">
                                 <div class="progress-bar" :style="{width: item.percentage + '%'}"></div>
@@ -165,19 +165,18 @@ window.__quantModules.strategiesPage.part1 = `
                         <template #list>
                         <!-- V6.2 (PRD-6.2 F5): 概览 TOP5 改用通用 StockList 组件 -->
                         <!-- V6.9.3 (F1): 启用共识徽章/进度条/价格列, 移除冗余「N 策略」extra -->
+                        <!-- v7.18 (FR-1101 个股列表统一): 图标收口组件内建 row-ops, 补齐 K线图标/键盘可达/i18n/copy-code -->
                         <qc-stock-list
                           :items="filteredConsensusRank.slice(0, 5)"
                           empty-text="暂无共识数据"
                           show-rank
                           show-consensus
                           show-price
+                          :copy-code="true"
+                          :ops="{ watch: true, ai: true, kline: true }"
                           :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                           @select="(item) => showStockDetail(item.code)"
                         >
-                          <template #actions="{ item }">
-                            <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
-                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估"><qc-icon name="bot" :size="13" /></span>
-                          </template>
                         </qc-stock-list>
                         </template>
                         <template #pane>
@@ -218,6 +217,20 @@ window.__quantModules.strategiesPage.part1 = `
                                 </template>
                                 <span class="merrill-correction-badge">
                                     <qc-icon name="info" :size="12" /> {{ merrillCorrection.label }}
+                                </span>
+                            </el-tooltip>
+                            <!-- v7.19 (FR-4): 数据未更新显式标注 —— 接口失败时保留上次结论并说明截止时间,
+                                 不再静默回退成「复苏期」（旧的 || 默认值写法已彻底移除；模板内注释禁写反引号,
+                                 会提前终止 template 的模板字符串）。 -->
+                            <el-tooltip v-if="merrillStale" placement="bottom">
+                                <template #content>
+                                    <div class="text-xs-leading">
+                                        <div><strong>数据未更新</strong>{{ merrillDataAsOf ? '（截至 ' + merrillDataAsOf + '）' : '' }}</div>
+                                        <div>当前展示的是最近一次成功抓取的结论，非实时。可点「配置 → 手动重评估」重试。</div>
+                                    </div>
+                                </template>
+                                <span class="merrill-correction-badge" style="border-color:var(--qc-border);color:var(--state-warning-text)">
+                                    <qc-icon name="alert-triangle" :size="12" /> 数据未更新{{ merrillDataAsOf ? '（截至 ' + merrillDataAsOf + '）' : '' }}
                                 </span>
                             </el-tooltip>
                             <!-- V4.5 (FR-4.5.1): 配置就近 -->
@@ -281,7 +294,7 @@ window.__quantModules.strategiesPage.part1 = `
                                     </div>
                                     <div class="mc-prog-meta">
                                         <span>已过 <b>{{ merrillData.timing.duration_days }}</b> 天</span>
-                                        <span>进度 <b>{{ fmtNum(merrillData.timing.progress_percent) }}%</b></span>
+                                        <span>进度 <b>{{ fmtPct(merrillData.timing.progress_percent) }}</b></span>
                                         <span v-if="merrillData.timing.days_remaining">预计还需 <b>{{ merrillData.timing.days_remaining }}</b> 天</span>
                                         <span class="mc-avg-note">历史均值 {{ fmtNum(merrillData.timing.avg_duration_months) }} 月</span>
                                     </div>
@@ -290,7 +303,7 @@ window.__quantModules.strategiesPage.part1 = `
                                     <div class="mc-next" v-if="merrillData.next_stage_prediction">
                                         <span class="mc-next-lab">下一阶段</span>
                                         <span class="mc-next-name">→ {{ merrillData.next_stage_prediction.next_stage_name }}</span>
-                                        <span class="mc-next-prob">{{ fmtNum(merrillData.next_stage_prediction.transition_probability * 100) }}%</span>
+                                        <span class="mc-next-prob">{{ fmtPct(merrillData.next_stage_prediction.transition_probability * 100) }}</span>
                                         <span class="mc-next-sig" v-if="(merrillData.next_stage_prediction.transition_signals || []).length">触发信号: {{ (merrillData.next_stage_prediction.transition_signals || []).join(' · ') }}</span>
                                     </div>
                                     <div class="mc-end" v-if="mcEndRange"><span class="mc-end-lab">预计结束</span>{{ mcEndRange }}</div>
@@ -301,7 +314,7 @@ window.__quantModules.strategiesPage.part1 = `
                                     <span v-for="(run, i) in mcTrailRuns" :key="i" class="mc-trail-run" :class="{ 'is-latest': i === mcTrailRuns.length - 1 }" :title="run.first + ' → ' + run.last">
                                         <span class="mc-trail-dot" :style="{background: getTimelineStageColor(run.stage)}"></span>{{ run.name }} ×{{ run.count }}
                                     </span>
-                                    <span class="mc-trail-note">近 {{ merrillSnapshotsTotal || merrillSnapshots.length }} 次评估{{ mcTrailRuns.length > 1 ? ' · 阶段有变更' : ' · 阶段稳定' }}</span>
+                                    <span class="mc-trail-note">近 {{ merrillSnapshotsTotal || merrillSnapshots.length }} 次评估{{ mcTrailRuns.length > 1 ? ' · 翻转 ' + (mcTrailRuns.length - 1) + ' 次' : ' · 阶段稳定' }}</span>
                                 </div>
                             </div>
 

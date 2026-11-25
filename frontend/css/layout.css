@@ -1032,30 +1032,43 @@ body.qc-split-resizing * {
   .mc-eval-ts { margin-left: 0; flex-basis: 100%; }
 }
 
-/* 6.5.0 (FR-654.1/FR-653.4): 页面头 — 面包屑 + 唯一 h1 (与选中态/标题三者一致) */
+/* 6.5.0 (FR-654.1/FR-653.4): 页面头 — 面包屑 + 唯一 h1 (与选中态/标题三者一致)
+   v7.17 (FR-201 / D-06): 改为单行 —— 上级 12px + 当前页 18px 同行基线对齐,
+   h1 作为面包屑末级节点 (页面内 h1 数量恒为 1), 整块高度由 54px 降到 37px。 */
 .qc-page-head {
-  padding: var(--qc-space-2) var(--qc-space-4) 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--qc-space-2);
+  min-height: 37px;
+  padding: var(--qc-space-3) var(--qc-space-4) 0;
 }
-/* 6.5.2 (FR-653): tree 形态位置指示由顶栏面包屑 (Header qc-header-crumbs) + 侧栏树承担,
-   中栏页面头的面包屑与之重复 — 仅隐藏面包屑, 保留 h1 标题 */
-[data-navmode="tree"] .qc-page-head .qc-breadcrumb { display: none; }
+/* 6.5.2 (FR-653): tree 形态位置指示由顶栏面包屑 (Header qc-header-crumbs) + 侧栏树承担。
+   v7.17: h1 已并入面包屑节点, 故只隐藏「上级路径」, 不能整块 display:none (否则标题一起消失)。 */
+[data-navmode="tree"] .qc-page-head .qc-breadcrumb-item:not(.is-leaf),
+[data-navmode="tree"] .qc-page-head .qc-breadcrumb-sep { display: none; }
 .qc-breadcrumb {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--qc-space-2);
   font-size: var(--qc-font-size-xs);
   color: var(--text-tertiary);
+  min-width: 0;
 }
 .qc-breadcrumb-sep { color: var(--qc-neutral-400); }
 .qc-breadcrumb-item.is-leaf { color: var(--text-secondary); }
 .qc-page-h1 {
-  margin: var(--qc-space-1) 0 0;
+  margin: 0;
   /* 6.5.1 (FR-655.2): 标题层级令牌 — 字号/行高/字重/字体栈单一来源 */
   font-family: var(--qc-font-display);
   font-size: var(--qc-h1-size);
   line-height: var(--qc-h1-line);
   font-weight: var(--qc-h1-weight);
   color: var(--text-primary);
+  /* v7.17: 长标题单行省略, 避免与右侧动作区争宽时换行把页头撑高 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* v7.15 (FR-7): 研究总览跨策略对比表 — 只用既有令牌 */

@@ -84,6 +84,9 @@
         fmtSigned, fmtSignedPct, signClass,
         riskTab, riskLoading, riskNote, riskHasData, riskData,
         riskMetricList, loadRisk,
+        planVisible, planLoading, planApplying, planPreview, planNote, planForm,
+        PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
+        openPlanDialog, previewPlan, applyPlan,
       } = __portfolioDomain;
       // v3.17.10 (FR-3.17.10): 持仓纳入本地拼音检索索引（自选/持仓/评估历史构造可测索引）
       watch(positions, function (list) {
@@ -98,10 +101,10 @@
         function () { return state.currentPage.value + '/' + state.currentSubPage.value; },
         function (key) {
           if (key === 'ai/portfolio') {
-            loadPortfolio();
-            loadTrades();
-            loadEquity(equityDays ? equityDays.value : 30);
-            if (typeof loadRisk === 'function') loadRisk();
+            // v7.19: 先持仓, 收益曲线串行在后; 调仓记录归「交易」页签懒加载
+            Promise.resolve(loadPortfolio()).then(function () {
+              if (!equityHasData.value) loadEquity(equityDays ? equityDays.value : 30);
+            });
           } else if (key === 'ai/overview') {
             loadPortfolio();
           }
@@ -180,6 +183,9 @@
         fmtSigned, fmtSignedPct, signClass,
         riskTab, riskLoading, riskNote, riskHasData, riskData,
         riskMetricList, loadRisk,
+        planVisible, planLoading, planApplying, planPreview, planNote, planForm,
+        PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
+        openPlanDialog, previewPlan, applyPlan,
       };
     },
   };

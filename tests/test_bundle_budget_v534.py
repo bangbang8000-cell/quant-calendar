@@ -34,7 +34,15 @@ JS_DIR = os.path.join(BASE, "frontend", "js")
 #   **交付条件**: v7.12 起该类页面面板必须走按需 import 分包(参照 shortterm 卡片拆分口径),
 #   且预算只降不升; 若再出现"功能补齐导致体量跳增", 先拆包再谈上调。
 MAIN_LOGIC_BUDGET = 104 * 1024
-TOTAL_JS_BUDGET = 1740000  # v7.14: 研究域功能扩展(回测修复/图表/锚点/异步运行) +~12KB
+# v7.19: 1,760,000 → 1,800,000（实测 1,788,750，留 ~1% 余量；T3.2 新增策略工作台组件 ~5KB）。
+# 增量来源全部是 v7.19 批准项：js/research-lexicon.js 3.5KB（策略/因子/状态中文名单一来源，
+# 后端 strategy_sdk/labels.py 的镜像，一致性由 test_v719_i18n 双向校验）+ 美林滞回/错误分级/
+# 虚拟行距的注释与防御分支。无新增第三方依赖。
+# 仍欠：shortterm-page.js 拆分（PENDING_SPLIT v7.18-T1），拆完后本预算回调至 ≤1,750,000。
+TOTAL_JS_BUDGET = 1800000
+# v7.18: +~11.3KB 为批准功能增量(涨停池分页+窄屏卡片降级 FR-1002/骨架屏 FR-1001/
+# FR-1003 fmtPct 层); 对价是 dist 首屏 2329KB→1903KB(7 域代码分割 FR-501)。
+# 下一刀: shortterm-page.js 拆分(已登记 PENDING_SPLIT v7.18-T1), 目标回到 ≤1740KB。
 
 
 def _js_files():

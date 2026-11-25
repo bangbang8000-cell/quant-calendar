@@ -533,7 +533,7 @@ SCENARIOS = [
     {
         'key': 'research', 'label': '策略研究(研究概览)',
         'prepare': lambda p: _open_page(p, 'research', 'research-overview'),
-        'expect': {'page': 'research', 'tab': 'research-overview', 'title': '概览 - '},
+        'expect': {'page': 'research', 'tab': 'research-overview', 'title': '研究总览 - '},
         'ready': '.card',
         # 该环境的 groups.json 把 research 置为 false (管理组不可见) —— 菜单不存在时跳过而非失败,
         # 否则会把「环境配置」误报成「脚本/应用缺陷」。

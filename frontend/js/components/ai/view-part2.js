@@ -324,6 +324,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                     <el-radio-button value="risk">风控</el-radio-button>
                                 </el-radio-group>
                                 <el-button size="small" type="primary" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起表单' : '新增持仓' }}</el-button>
+                                <el-button size="small" @click="openPlanDialog">均分建仓</el-button>
                             </div>
 
                             <!-- 新增持仓表单 -->
@@ -366,7 +367,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                                 <td>{{ fmtNum(p.cost_price, 3) }}</td>
                                                 <td>{{ fmtNum(p.quantity, 2) }}</td>
                                                 <td>{{ p.close != null ? fmtNum(p.close, 2) : '数据暂不可用' }}</td>
-                                                <td>{{ p.market_value != null ? fmtNum(p.market_value, 2) : '--' }}</td>
+                                                <td>{{ p.market_value != null ? fmtNum(p.market_value, 2) : '—' }}</td>
                                                 <td>
                                                     <span v-if="p.float_profit != null" :class="signClass(p.float_profit)">{{ fmtSigned(p.float_profit) }} ({{ fmtSignedPct(p.float_profit_pct) }})</span>
                                                     <span v-else class="portfolio-na">数据暂不可用</span>
@@ -448,7 +449,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                         </div>
 
                         <!-- 调仓弹窗 -->
-                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="440px">
+                        <el-dialog v-model="tradeFormVisible" title="记录调仓" width="440px" append-to-body>
                             <div class="portfolio-trade-form">
                                 <div class="portfolio-trade-row">
                                     <span class="portfolio-trade-label">股票</span>
@@ -481,6 +482,64 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                             <template #footer>
                                 <el-button size="small" @click="tradeFormVisible = false">取消</el-button>
                                 <el-button type="primary" size="small" :loading="tradeSaving" @click="submitTrade">保存</el-button>
+                            </template>
+                        </el-dialog>
+
+                        <!-- v7.19 (FR-6): 自选等权均分建仓 (整手取整, 尾差留现金) -->
+                        <el-dialog v-model="planVisible" title="自选均分建仓" width="800px" append-to-body>
+                            <div class="qc-plan-bar">
+                                <span class="qc-plan-label">总资金(元)</span>
+                                <el-input-number v-model="planForm.total_capital" :min="10000" :step="100000" size="small" controls-position="right" class="qc-plan-capital" />
+                                <el-button v-for="cap in PLAN_QUICK_CAPITAL" :key="cap" size="small" :type="planForm.total_capital === cap ? 'primary' : 'default'" @click="setPlanCapital(cap)">{{ cap / 10000 }} 万</el-button>
+                                <el-button size="small" :loading="planLoading" @click="previewPlan">重新计算</el-button>
+                            </div>
+                            <div class="qc-plan-note">标的取自全部自选股，按等权均分后向下取整到整手（沪深 100 股 / 科创板 200 股），不足一手的零头留作现金，不会超出总资金。</div>
+                            <qc-state-panel v-if="planLoading" type="loading"></qc-state-panel>
+                            <template v-else-if="planPreview && planPreview.items.length">
+                                <div class="qc-plan-table-wrap">
+                                    <table class="qc-plan-table">
+                                        <thead>
+                                            <tr>
+                                                <th>代码 / 名称</th>
+                                                <th>现价</th>
+                                                <th>手数</th>
+                                                <th>数量(股)</th>
+                                                <th>金额(元)</th>
+                                                <th>占比</th>
+                                                <th>备注</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="row in planPreview.items" :key="row.stock_code" :class="row.lots ? '' : 'qc-plan-row-skip'">
+                                                <td>
+                                                    <div class="qc-plan-name">{{ row.stock_name }}</div>
+                                                    <div class="qc-plan-code">{{ row.stock_code }}</div>
+                                                </td>
+                                                <td>{{ fmtNum(row.price, 2) }}</td>
+                                                <td>{{ row.lots }}</td>
+                                                <td>{{ fmtNum(row.quantity, 0) }}</td>
+                                                <td>{{ money(row.amount) }}</td>
+                                                <td>{{ fmtPct(row.weight_actual * 100) }}</td>
+                                                <td class="qc-plan-row-note">{{ row.note || '—' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div v-if="planTotals" class="qc-plan-summary">
+                                    <span>标的 <b>{{ planTotals.count }}</b> 只</span>
+                                    <span>投入 <b>{{ money(planTotals.invested) }}</b> 元</span>
+                                    <span>留作现金 <b>{{ money(planTotals.cash) }}</b> 元（{{ fmtPct(planTotals.cashPct) }}）</span>
+                                    <span v-if="planTotals.skipped">跳过 <b>{{ planTotals.skipped }}</b> 只</span>
+                                </div>
+                                <div v-if="planTotals && planTotals.warnings.length" class="qc-plan-warn">
+                                    <div v-for="(w, i) in planTotals.warnings" :key="i">{{ w }}</div>
+                                </div>
+                                <el-checkbox v-model="planForm.overwrite" class="qc-plan-overwrite">覆盖现有持仓（清空后按计划重建）</el-checkbox>
+                            </template>
+                            <div v-else class="qc-plan-empty">{{ planNote || '自选股为空，或现价暂不可用' }}</div>
+                            <template #footer>
+                                <el-button size="small" @click="planVisible = false">取消</el-button>
+                                <el-button type="primary" size="small" :loading="planApplying" :disabled="!planPreview || !planPreview.position_count" @click="applyPlan">确认建仓</el-button>
                             </template>
                         </el-dialog>
                     </div>

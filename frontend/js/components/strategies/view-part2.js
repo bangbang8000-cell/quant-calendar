@@ -11,7 +11,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                 <span class="market-mood" v-if="marketData.market_sentiment">
                                     {{ marketData.market_sentiment.text }}
                                     <b v-if="marketData.market_sentiment.avg_pct_chg != null"
-                                       :class="marketData.market_sentiment.avg_pct_chg >= 0 ? 'up' : 'down'">{{ marketData.market_sentiment.avg_pct_chg >= 0 ? '+' : '' }}{{ fmtNum(marketData.market_sentiment.avg_pct_chg) }}%</b>
+                                       :class="marketData.market_sentiment.avg_pct_chg >= 0 ? 'up' : 'down'">{{ marketData.market_sentiment.avg_pct_chg >= 0 ? '+' : '' }}{{ fmtPct(marketData.market_sentiment.avg_pct_chg) }}</b>
                                 </span>
                             </span>
                             <span class="text-xs-tertiary">{{ marketData.date }}</span>
@@ -30,7 +30,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                 <div class="market-price-row">
                                     <span class="market-price">{{ Number(idx.close).toFixed(2) }}</span>
                                     <span class="market-chg" :class="idx.pct_chg >= 0 ? 'up' : 'down'">
-                                        {{ idx.pct_chg >= 0 ? '+' : '' }}{{ Number(idx.pct_chg).toFixed(2) }}%
+                                        {{ idx.pct_chg == null ? '—' : (idx.pct_chg >= 0 ? '+' : '') + Number(idx.pct_chg).toFixed(2) + '%' }}
                                     </span>
                                 </div>
                             </div>
@@ -55,23 +55,20 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                         <qc-detail-split :enabled="detailSplitEnabled">
                         <template #list>
                         <!-- V6.9.3 (F1.4): 统一 StockList 组件 (虚拟滚动 + 共识徽章/进度条/价格列) -->
+                        <!-- v7.18 (FR-1101 个股列表统一): 图标收口组件内建 row-ops, title 走 i18n -->
                         <qc-stock-list
                           class="h-calc-240"
                           :items="filteredConsensusRank"
                           :virtual="true"
-                          :row-height="78"
                           empty-text="暂无共识数据"
                           show-rank
                           show-consensus
                           show-price
+                          :copy-code="true"
+                          :ops="{ watch: true, ai: true, kline: true }"
                           :active-code="detailSplitEnabled ? (stockDetail && stockDetail.stock) : ''"
                           @select="(item) => showStockDetail(item.code)"
                         >
-                          <template #actions="{ item }">
-                            <span class="gold-link watch-star" @click.stop="toggleWatchlist(item.code, item.name)" :title="watchlistCodes.has(item.code)?'取消收藏':'加入收藏'"><qc-icon name="star" :size="14" :class="watchlistCodes.has(item.code) ? 'is-watched' : ''" /></span>
-                            <span class="text-sm-ml2" v-if="evaluatedCodes.has(item.code)" title="已AI评估"><qc-icon name="bot" :size="13" /></span>
-                            <span class="text-sm-ml2" v-if="klineLoadedCodes.has(item.code)" title="已加载K线"><qc-icon name="trending-up" :size="13" /></span>
-                          </template>
                         </qc-stock-list>
                         </template>
                         <template #pane>
@@ -108,12 +105,27 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                         value-format="YYYY-MM-DD" class="bt-date-picker"></el-date-picker>
                                 </div>
                                 <div class="bt-form-row">
+                                    <span class="bt-form-label">快捷区间</span>
+                                    <div class="qc-bt-quick" role="group" aria-label="回测区间快捷档">
+                                        <el-button v-for="m in [6, 12, 18, 36]" :key="m" size="small"
+                                                   :type="btQuickRange === m ? 'primary' : 'default'"
+                                                   :plain="btQuickRange !== m" @click="setBtQuickRange(m)">{{ m }}个月</el-button>
+                                    </div>
+                                </div>
+                                <div class="bt-form-row">
                                     <span class="bt-form-label">初始资金</span>
-                                    <el-input-number v-model="btCapital" size="small" :min="10000" :step="50000" class="bt-input"></el-input-number>
+                                    <el-input-number v-model="btCapital" size="small" :min="10000" :step="100000" class="bt-input"></el-input-number>
+                                    <span class="bt-form-hint">元（默认 100 万）</span>
                                 </div>
                                 <div class="bt-form-row">
                                     <span class="bt-form-label">手续费率</span>
                                     <el-input-number v-model="btCommissionRate" size="small" :min="0" :max="0.01" :step="0.0001" :precision="4" class="bt-input"></el-input-number>
+                                    <span class="bt-form-hint">默认 0.0003（万三）</span>
+                                </div>
+                                <div class="bt-form-row">
+                                    <span class="bt-form-label">滑点</span>
+                                    <el-input-number v-model="btSlippage" size="small" :min="0" :max="0.05" :step="0.0001" :precision="4" class="bt-input"></el-input-number>
+                                    <span class="bt-form-hint">默认 0.001（千一）</span>
                                 </div>
                                 <div class="bt-form-row">
                                     <span class="bt-form-label">基准对比</span>
@@ -143,7 +155,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                             <!-- 最大回撤区间说明 -->
                             <div v-if="btDrawdownRegion" class="card">
                                 <div class="card-title">最大回撤区间</div>
-                                <div class="bt-dd-info">回撤幅度 <b>{{ fmtNum(btDrawdownRegion.maxDrawdown) }}%</b> · {{ btDrawdownRegion.peakDate }} → {{ btDrawdownRegion.troughDate }}（净值图中已标注）</div>
+                                <div class="bt-dd-info">回撤幅度 <b>{{ fmtPct(btDrawdownRegion.maxDrawdown) }}</b> · {{ btDrawdownRegion.peakDate }} → {{ btDrawdownRegion.troughDate }}（净值图中已标注）</div>
                             </div>
 
                             <!-- 净值曲线（多线 + 图例可切换） -->
@@ -164,7 +176,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                         <tbody>
                                             <tr v-for="row in btAnnualReturns" :key="row.year">
                                                 <td>{{ row.year }}</td>
-                                                <td :class="row.return >= 0 ? 'is-up' : 'is-down'">{{ row.return >= 0 ? '+' : '' }}{{ fmtNum(row.return) }}%</td>
+                                                <td :class="row.return >= 0 ? 'is-up' : 'is-down'">{{ row.return >= 0 ? '+' : '' }}{{ fmtPct(row.return) }}</td>
                                             </tr>
                                         </tbody>
                                     </table>

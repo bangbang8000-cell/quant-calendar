@@ -317,51 +317,98 @@ def test_time_driven_switch_trigger(clock, monkeypatch):
     assert 'duration_days' in t and 'duration_months' in t
 
 
-def test_boundary_switch_trigger(clock, monkeypatch):
-    """近期开始 + 正常边界 → trigger=boundary，非时间驱动"""
+def test_hysteresis_confirmed_switch_trigger(clock, monkeypatch):
+    """v7.19 (FR-4): 满足最短持续期 + 连续 2 次确认 → trigger=confirmed（不再是 boundary 即切）"""
+    clock.history['current_stage'] = 'recovery'
+    clock.history['current_stage_start'] = (datetime.now() - timedelta(days=120)).isoformat()
+    clock.history['transitions'] = []
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
+    monkeypatch.setattr(clock, '_determine_stage_from_scores',
+                        lambda dims: ('recession', 0.8, 0.5))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-1.5, inflation=-1.2))
+    info = clock.determine_stage(_recession_indicators())
+    assert info['stage'] == 'recession'
+    assert info['hysteresis']['decision'] == 'switch'
+    t = info['recent_transitions'][0]
+    assert t['trigger'] == 'confirmed'
+    assert '滞回确认' in t['reason']
+
+
+def test_dwell_blocked_keeps_stage(clock, monkeypatch):
+    """v7.19 (FR-4): 候选已确认但当前阶段未满 20 交易日 → 保持原阶段（blocked_dwell）"""
     clock.history['current_stage'] = 'recovery'
     clock.history['current_stage_start'] = (datetime.now() - timedelta(days=5)).isoformat()
     clock.history['transitions'] = []
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
     monkeypatch.setattr(clock, '_determine_stage_from_scores',
                         lambda dims: ('recession', 0.8, 0.5))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-1.5, inflation=-1.2))
     info = clock.determine_stage(_recession_indicators())
-    assert info['stage'] == 'recession'  # 未被强制切换
-    t = info['recent_transitions'][0]
-    assert t['trigger'] == 'boundary'
-    assert t['reason'] == '边界/数据驱动切换'
+    assert info['stage'] == 'recovery'
+    assert info['hysteresis']['decision'] == 'blocked_dwell'
+    assert info['hysteresis']['dwell_blocked'] is True
+    assert info['recent_transitions'] == []
+
+
+def test_band_keeps_stage_on_noise(clock, monkeypatch):
+    """v7.19 (FR-4): |加权分| < 0.15 时贴轴抖动不切换（滞回带）"""
+    clock.history['current_stage'] = 'recovery'
+    clock.history['current_stage_start'] = (datetime.now() - timedelta(days=200)).isoformat()
+    clock.history['transitions'] = []
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
+    monkeypatch.setattr(clock, '_determine_stage_from_scores',
+                        lambda dims: ('recession', 0.8, 0.5))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-0.02, inflation=-0.01))
+    info = clock.determine_stage(_recession_indicators())
+    assert info['stage'] == 'recovery'
+    assert info['hysteresis']['decision'] == 'hysteresis'
+    assert info['recent_transitions'] == []
+    assert clock.history.get('stage_pending') is None
 
 
 def test_time_driven_not_fired_when_not_overdue(clock, monkeypatch):
-    """临边界但未超期 → 不触发时间驱动"""
-    clock.history['current_stage'] = 'overheat'  # 与计算阶段不同，记录 boundary 切换
+    """临边界但未超期 → 不触发时间驱动；且未满最短持续期 → 保持原阶段"""
+    clock.history['current_stage'] = 'overheat'
     clock.history['current_stage_start'] = (datetime.now() - timedelta(days=5)).isoformat()
     clock.history['transitions'] = []
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
     monkeypatch.setattr(clock, '_determine_stage_from_scores',
                         lambda dims: ('recession', 0.8, 0.1))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-1.5, inflation=-1.2))
     info = clock.determine_stage(_recession_indicators())
-    assert info['stage'] == 'recession'
-    assert info['recent_transitions'][0]['trigger'] == 'boundary'
+    assert info['stage'] == 'overheat'
+    assert info['hysteresis']['decision'] == 'blocked_dwell'
 
 
 def test_time_driven_not_fired_when_far_from_boundary(clock, monkeypatch):
-    """超期但远离边界 → 不触发时间驱动"""
-    clock.history['current_stage'] = 'overheat'  # 与计算阶段不同，记录 boundary 切换
+    """超期但远离边界 → 不触发时间驱动（走滞回确认切换）"""
+    clock.history['current_stage'] = 'overheat'
     clock.history['current_stage_start'] = (datetime.now() - timedelta(days=1200)).isoformat()
     clock.history['transitions'] = []
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
     monkeypatch.setattr(clock, '_determine_stage_from_scores',
                         lambda dims: ('recession', 0.8, 0.9))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-1.5, inflation=-1.2))
     info = clock.determine_stage(_recession_indicators())
     assert info['stage'] == 'recession'
-    assert info['recent_transitions'][0]['trigger'] == 'boundary'
+    assert info['recent_transitions'][0]['trigger'] == 'confirmed'
 
 
 def test_transition_history_capped_at_20(clock, monkeypatch):
     """切换记录最多保留 20 条"""
     clock.history['transitions'] = [{'to_stage': 'recovery'} for _ in range(25)]
     clock.history['current_stage'] = 'overheat'
-    clock.history['current_stage_start'] = (datetime.now() - timedelta(days=5)).isoformat()
+    clock.history['current_stage_start'] = (datetime.now() - timedelta(days=120)).isoformat()
+    clock.history['stage_pending'] = {'stage': 'recession', 'count': 1}
     monkeypatch.setattr(clock, '_determine_stage_from_scores',
                         lambda dims: ('recession', 0.8, 0.5))
+    monkeypatch.setattr(clock, '_compute_dimension_scores',
+                        lambda ind: _dims(growth=-1.5, inflation=-1.2))
     info = clock.determine_stage(_recession_indicators())
     assert len(clock.history['transitions']) <= 20
     assert len(info['recent_transitions']) <= 5  # API 只暴露前 5

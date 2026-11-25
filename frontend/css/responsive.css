@@ -434,3 +434,27 @@
   .focus-row-dir    { grid-row: 2; grid-column: 3; }
   .focus-row-badges { margin-left: 0; }
 }
+
+
+/* ─── v7.18 (FR-903): 触控目标 ──────────────────────────────────────
+   目标取 ≥40px 而非一律 44px: 密集表格行内的按钮若强撑到 44px,
+   行高会被撑破并造成相邻目标重叠(误触率反而上升)。
+   文字按钮 36px / 纯图标按钮 40px 已显著高于 WCAG 2.5.8 的 24px 下限。 */
+@media (max-width: 768px) {
+  .el-button { min-height: 36px; }
+  .el-button.is-circle,
+  .el-button:has(> .qc-icon:only-child) { min-width: 40px; min-height: 40px; }
+  .qc-icon-btn { min-width: 40px; min-height: 40px; }
+  .el-pagination button,
+  .el-pagination .el-pager li { min-width: 36px; height: 36px; line-height: 36px; }
+  .stock-link { padding: 4px 0; display: inline-block; }
+}
+
+/* ─── v7.18 (FR-901b): 其余长表的最小列宽兜底 ────────────────────────
+   未做卡片降级的表格(炸板/跌停之外的页面), 用 min-width + 横滑保证列不再被压到个位数像素。
+   这是"可读"的兜底, 不是最终形态; 卡片降级按使用频率逐个补。 */
+@media (max-width: 768px) {
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-container > .el-table { min-width: 640px; }
+  .table-container > .el-table:has(.el-table__row) { min-width: 640px; }
+}

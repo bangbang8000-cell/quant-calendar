@@ -12,6 +12,7 @@
 浏览器视觉项 (人工走查, 不可静态化): TC-655-01 断网复现 / TC-656-01 密度实测 /
 TC-657-01 移动实机 / 弹窗三主题实机。
 """
+import json
 import os
 import re
 
@@ -183,13 +184,18 @@ def test_themes_css_split_and_linked():
     for fname in THEME_FILES:
         lines = _read("css/" + fname).count("\n") + 1
         assert lines <= 1200, "%s %d 行超上限 1200" % (fname, lines)
+    # v7.18 (FR-802): 13 个 link 合并为单一 app.css (build_css.py 按 manifest 顺序生成),
+    # 挂载断言改为: index.html 引 app.css + manifest 保持 THEME_FILES 拆分顺序
     idx = _read("index.html")
+    assert "/static/css/app.css" in idx, "index.html 应引入合并产物 css/app.css"
+    manifest = json.loads(_read("css/app.manifest.json"))
+    order = manifest if isinstance(manifest, list) else manifest.get("order", [])
     pos = -1
     for fname in THEME_FILES:
-        p = idx.find("/static/css/" + fname)
-        assert p >= 0, "index.html 缺 %s link" % fname
-        assert p > pos, "%s 应按拆分顺序挂载" % fname
-        pos = p
+        assert fname in order, "app.manifest.json 缺 %s" % fname
+        q = order.index(fname)
+        assert q > pos, "%s 应按拆分顺序出现在 manifest" % fname
+        pos = q
 
 
 def test_legacy_mobile_classes_removed():

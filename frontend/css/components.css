@@ -488,6 +488,81 @@
 }
 
 /* ─── §2.8 空态 / 错误态 / 骨架 ───────────────────────── */
+/* v7.17 (FR-301 / D-03 / D-13): qc-state-panel 组件此前**没有任何样式** ——
+   模板渲染出的 .qc-state-icon/.qc-state-title/.qc-state-desc 全部走浏览器默认排版,
+   于是「板块资金」等页失败时只剩一行裸文字 + 大片空白, 且与 .qc-empty 旧类观感割裂。
+   此块为该组件唯一外观来源: 四态(空/载/错/离线) × 三尺寸, 居中并有最小高度撑住内容区。
+   旧的 .qc-empty* / .qc-empty-state 保留一个版本做过渡, M2 全站替换后删除。 */
+.qc-state-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--qc-space-6) var(--qc-space-4);
+  min-height: 220px;
+}
+.qc-state-panel.qc-size-sm { min-height: 120px; padding: var(--qc-space-4) var(--qc-space-3); }
+.qc-state-panel.qc-size-lg { min-height: 320px; }
+.qc-state-panel .empty-state,
+.qc-state-panel .qc-state-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+}
+.qc-state-panel .qc-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: var(--qc-muted-foreground);
+  margin-bottom: var(--qc-space-3);
+  opacity: 0.9;
+}
+.qc-state-panel .qc-state-title {
+  font-size: var(--qc-font-size-base);
+  font-weight: var(--qc-font-weight-medium);
+  color: var(--text-primary);
+}
+.qc-state-panel .qc-state-desc {
+  margin-top: var(--qc-space-2);
+  font-size: var(--qc-font-size-sm);
+  color: var(--text-tertiary);
+  line-height: 1.55;
+  max-width: 380px;
+}
+.qc-state-panel .qc-state-action { margin-top: var(--qc-space-4); }
+.qc-state-panel .qc-state-retry {
+  appearance: none;
+  /* v7.17: 走品牌"软底"按钮令牌, 与 .el-button--primary 同一套配色, 避免自造实底+白色文字 */
+  border: 1px solid var(--brand-soft-border);
+  background: var(--brand-soft-bg);
+  color: var(--brand-soft-text);
+  font-size: var(--qc-font-size-sm);
+  font-weight: var(--qc-font-weight-medium);
+  padding: var(--qc-space-2) var(--qc-space-4);
+  border-radius: var(--qc-radius-medium);
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s, opacity .2s;
+}
+.qc-state-panel .qc-state-retry:hover {
+  background: var(--brand-soft-bg-hover);
+  border-color: var(--qc-primary-300);
+}
+.qc-state-panel .qc-state-retry:focus-visible { outline: 2px solid var(--qc-ring); outline-offset: 2px; }
+.qc-state-panel .qc-state-retry:disabled { opacity: .55; cursor: not-allowed; }
+/* 四态语义区分: 错误=危险色, 离线=警示色, 空=中性; 不允许"看起来一样" */
+.qc-state-panel.qc-state-error .qc-state-icon,
+.qc-state-panel.qc-state-error .qc-state-title { color: var(--danger-text); }
+.qc-state-panel.qc-state-error { border-color: transparent; }
+.qc-state-panel.qc-state-offline .qc-state-icon,
+.qc-state-panel.qc-state-offline .qc-state-title { color: var(--warning-text); }
+/* 加载态由骨架承担, 去掉外框内边距 */
+.qc-state-panel.qc-state-loading { padding: 0; align-items: stretch; }
+.qc-state-panel.qc-state-loading .skeleton-loader { width: 100%; }
+
 .qc-empty {
   display: flex;
   flex-direction: column;
@@ -558,15 +633,25 @@
 .qc-stock-list {
   display: flex;
   flex-direction: column;
-  gap: var(--qc-space-2);
+  /* v7.19 (FR-2): 行距读令牌；虚拟分支由 qc-virtual-list 的 itemGap 消费同一令牌值 */
+  gap: var(--qc-row-gap);
 }
 .qc-stock-row {
   display: grid;
-  /* V6.9.3 (F1): 扩容列 — rank/info/tags/badge/data/extra/actions */
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
+  /* v7.18 (FR-1101 用户定版 20261124 · 三次调整: 策略名全显): 固定行高 + 固定四列栅格。
+     [rank 16][info 1fr(min 68)][tags 182 = 徽章40+6+策略网格136][ops 84] gap 4。
+     396px 窄栏实测: 内容区 364 = 16+68~70+182+84+12(3 gaps) ✓ 精确填满。
+     策略 tag 10px (--qc-font-size-3xs): 6 字策略名 66px/格完整显示不截断;
+     ops 84 = 4 槽×18px 热区 + 3×4 gap。旧 92/148/11px 组合致 6 字名截断, 用户复核后取消。 */
+  /* v7.19 (FR-1): 四列 = [序号][信息列·定宽][策略区·吃掉剩余宽度][操作区·定宽]。
+     信息列不再用 1fr —— 旧实现把富余宽度全吸进信息列，名称右边形成死区、策略区被推到最右。
+     现在富余宽度全部给策略区，视觉上「策略计数/矩阵整体左移并放大」。 */
+  grid-template-columns: 16px var(--qc-stock-info-w) minmax(0, 1fr) var(--qc-stock-ops-w);
+  gap: var(--qc-space-1);
+  height: var(--qc-row-h);
+  padding: var(--qc-space-2) var(--qc-space-4);
+  overflow: hidden;
   align-items: center;
-  gap: var(--qc-space-3);
-  padding: var(--qc-space-3) var(--qc-space-4);
   border-radius: var(--qc-radius-medium);
   background: var(--qc-card);
   border: 1px solid var(--qc-border);
@@ -586,7 +671,7 @@
   outline-offset: -2px;
 }
 .qc-stock-rank {
-  min-width: 24px;
+  min-width: 16px;
   text-align: center;
   font-family: var(--qc-font-mono);
   font-size: var(--qc-font-size-sm);
@@ -600,21 +685,92 @@
   font-family: var(--qc-font-mono);
   font-weight: var(--qc-font-weight-semibold);
   color: var(--qc-foreground);
+  /* v7.17 (FR-105 / D-07): 允许状态徽标换到第二行, 而不是把信息列挤到只剩几十像素 */
+  flex-wrap: wrap;
+  min-width: 0;
 }
+.qc-stock-code-num { white-space: nowrap; }
 .qc-stock-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: var(--qc-font-size-sm);
   color: var(--qc-muted-foreground);
   margin-top: 2px;
+  /* v7.17 (FR-105 / D-07): 选中态出现额外徽标后 info 列被压缩, 名称曾换行成「贵/州/…」并被裁切。
+     改为「名称文本 + 后缀槽」两段 flex: 文本段单行省略, 后缀段不压缩, 因此永远单行。 */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
-.qc-stock-tags { display: flex; gap: var(--qc-space-1); flex-wrap: wrap; }
+.qc-stock-name-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* v7.19 (FR-9): 名称缺失占位 — 与真实名称区分，避免「看起来只是名字很短」 */
+.qc-stock-name-text.is-name-missing {
+  color: var(--qc-muted-foreground);
+  opacity: 0.65;
+}
+.qc-stock-name > :not(.qc-stock-name-text) { flex: 0 0 auto; }
+/* v7.18 (FR-1101): tags 2行×2列 固定网格 (148px) — 「N 策略」徽章占首格, tag 顺延, 超出 +N */
+/* v7.18 (用户定版 20261124 二次调整): 「N 策略」计数徽章前置定宽 44px, 策略网格 2行×2列 列优先
+   — 1-2 个策略竖排靠左, 右列留空占位, 网格起始位置恒定; 总宽仍 148px, 四列栅格与图标列不受影响。 */
+.qc-stock-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.qc-stock-tags .qc-stock-tag.is-count {
+  flex: 0 0 var(--qc-stock-badge-w);
+  width: var(--qc-stock-badge-w);
+  padding: 2px 2px;
+  text-align: center;
+  /* v7.19 (FR-1): 徽章字号回到 11px（标准档），不再为省空间压到 10px */
+  font-size: var(--qc-font-size-2xs);
+}
+.qc-strat-grid {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+}
+/* v7.19 (FR-1): 策略 tag 字号读令牌（标准 12px / 紧凑 11px）；
+   列宽由 1fr 分配，1600 屏标准档每格约 78px，6 字策略名完整显示（7 字以上 title 兜底）。 */
+.qc-strat-grid .qc-stock-tag {
+  font-size: var(--qc-stock-tag-font);
+  /* v7.19：横向 padding 4→2。spacious 档行内左右 padding 随 --qc-space 放大到 21px，
+     策略格子只剩 78px，而 6 字中文名 @12px + 8px padding = 80px 会被裁 2px（实测 20 处）。
+     缩到 2px 后 6 字名 76px，留 2px 余量，三档密度全部 0 截断。 */
+  padding: 0 4px;
+}
+.qc-stock-tag.is-empty {
+  background: transparent;
+  border: 1px dashed var(--qc-border);
+  box-sizing: border-box;
+}
 .qc-stock-tag {
-  font-size: var(--qc-font-size-xs);
-  padding: 1px 8px;
+  /* v7.19：字号由 --qc-stock-tag-font 统管（三档密度），这里只留兜底；
+     横向 padding 6→4：spacious 档格子只有 78px，6 字名 @12px 需 80px，多出的 4px 必须让出来。 */
+  font-size: var(--qc-stock-tag-font);
+  padding: 1px 4px;
   border-radius: var(--qc-radius-full);
   background: var(--qc-muted);
   color: var(--qc-muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .qc-stock-tag.is-more { background: var(--qc-primary-100); color: var(--qc-primary-800); font-weight: var(--qc-font-weight-medium); }
+.qc-stock-tag.is-count { background: var(--qc-primary-100); color: var(--qc-primary-800); font-weight: var(--qc-font-weight-semibold); }
 /* V6.9.3 (F1): 共识度徽章 + 迷你进度条 + 价格列 */
 .qc-stock-badge {
   font-size: var(--qc-font-size-xs);
@@ -656,6 +812,38 @@
    在暗色卡片上仅 4.02:1 / 3.27:1, 不达 AA。 */
 .qc-stock-change.is-up { color: var(--market-up-text); }
 .qc-stock-change.is-down { color: var(--market-down-text); }
+/* v7.18 (FR-1101 个股列表统一): 行内操作区 — 92px 定宽列 (栅格模板固定) + 统一间距/热区/焦点环。
+   4 槽 (收藏/AI/K线/勾选 20px 热区 + 3 gap 4px = 92px): 缺席图标 visibility 占位而非移除,
+   列内容恒宽 → 收藏星跨行跨页零漂移。 */
+.qc-stock-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  /* v7.19 (FR-1): 列宽与槽位热区都读令牌（标准 92 = 4×20 + 3×4） */
+  width: var(--qc-stock-ops-w);
+}
+.qc-stock-actions > * { flex: 0 0 auto; }
+.qc-stock-actions .gold-link,
+.qc-stock-actions .manual-check,
+.qc-stock-actions .ops-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--qc-op-hit);
+  min-height: var(--qc-op-hit);
+  border-radius: var(--qc-radius-small);
+}
+/* 条件状态图标 (AI/K线) 缺席时占位隐藏而非移除 — 槽位恒定, 列宽不浮动 */
+.qc-stock-actions .is-off { visibility: hidden; pointer-events: none; }
+/* manual-check 旧全局样式带 margin-left: 8px — 操作区已用 gap 统一间距, 覆盖之 */
+.qc-stock-actions .manual-check { margin-left: 0; }
+.qc-stock-actions .gold-link:focus-visible,
+.qc-stock-actions .manual-check:focus-visible,
+.qc-stock-actions .ops-ic:focus-visible {
+  outline: 2px solid var(--qc-ring);
+  outline-offset: 2px;
+}
 /* V6.2 (PRD-6.2 F5): 股票状态徽标 (新增/调出) */
 .qc-stock-code-num { font-family: var(--qc-font-mono); }
 .qc-stock-status {
@@ -986,3 +1174,285 @@
 .lab-col { min-width: 0; padding: var(--sp-3); border: 1px solid var(--border-color); border-radius: var(--r-md); background: var(--surface); }
 .lab-col-title { font-size: var(--font-sm); color: var(--text-secondary); margin-bottom: var(--sp-2); }
 @media (max-width: 900px) { .lab-grid { grid-template-columns: 1fr; } }
+
+/* ─── v7.18 (FR-901): 窄屏长表卡片降级 ───────────────────────────────
+   用于「涨停/炸板/跌停」三池。信息取舍见 PRD §15 FR-901:
+   首行标识 + 涨跌幅, 次行决策要素, 底部低频字段弱化。 */
+.qc-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-space-2);
+}
+.qc-card-item {
+  border: 1px solid var(--qc-border);
+  border-radius: var(--qc-radius-medium);
+  background: var(--surface-raised, var(--qc-card));
+  padding: var(--qc-space-3);
+  min-height: 72px;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.qc-card-item:active { background: var(--surface-sunken, var(--qc-muted)); }
+.qc-card-item:focus-visible {
+  outline: 2px solid var(--qc-primary-500);
+  outline-offset: 2px;
+}
+.qc-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--qc-space-2);
+  min-width: 0;
+}
+.qc-card-title {
+  /* 名称是主标识: 恒单行不换行, 允许省略但不允许被压成竖排 */
+  font-size: var(--qc-font-size-md);
+  font-weight: var(--qc-font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 40px;
+}
+.qc-card-sub {
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.qc-card-badge {
+  margin-left: auto;
+  font-family: var(--qc-font-mono);
+  font-size: var(--qc-font-size-md);
+  font-weight: var(--qc-font-weight-semibold);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.qc-card-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qc-space-1) var(--qc-space-4);
+  margin: var(--qc-space-2) 0 0;
+}
+.qc-card-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--qc-space-1);
+  font-size: var(--qc-font-size-xs);
+}
+.qc-card-line dt {
+  color: var(--text-tertiary);
+  margin: 0;
+}
+.qc-card-line dd {
+  margin: 0;
+  color: var(--text-secondary);
+  font-family: var(--qc-font-mono);
+}
+.qc-card-note {
+  margin: var(--qc-space-2) 0 0;
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-secondary);
+  /* 涨停原因允许两行, 再长省略 —— 卡片不承担全文阅读 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.qc-card-foot {
+  margin-top: var(--qc-space-1);
+  font-size: var(--qc-font-size-xs);
+  color: var(--text-tertiary);
+}
+/* 分页器与表格的间距 */
+.qc-zt-pager {
+  margin-top: var(--qc-space-3);
+  justify-content: flex-end;
+}
+
+
+/* ─── v7.18 (FR-901): 窄屏可见性工具类 ───────────────────────────────
+   必须放在本文件末尾: responsive.css 先于 components.css 加载,
+   若把 .qc-mobile-only{display:none} 写在 responsive.css, 会被后面的
+   .qc-card-list{display:flex} 以「同特异性、后者胜」覆盖 —— 实测踩过:
+   桌面端卡片列表照常显示(visible=3)。
+   断点与全站其余规则一致: 768px。 */
+.qc-mobile-only { display: none; }
+.qc-card-list.qc-mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .qc-mobile-only { display: block; }
+  .qc-card-list.qc-mobile-only { display: flex; }
+  .qc-desktop-only { display: none !important; }
+}
+
+/* ─── v7.18 (FR-1001): 表格骨架屏 ─────────────────────────────────────
+   行高固定 40px = el-table size="small" 的实测行高。
+   不用 shimmer 动画的渐变位移(会触发重绘), 只做透明度呼吸。 */
+.qc-skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--qc-space-2) 0;
+}
+.qc-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qc-space-3);
+  height: 40px;                 /* 与真实行一致, 避免加载完成时跳动 */
+  padding: 0 var(--qc-space-2);
+  border-bottom: 1px solid var(--qc-border);
+}
+.qc-skeleton-cell {
+  height: 10px;
+  border-radius: var(--qc-radius-small, 3px);
+  background: var(--qc-muted);
+  animation: qc-skeleton-breathe var(--duration-skeleton, 1500ms) ease-in-out infinite;
+}
+@keyframes qc-skeleton-breathe {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qc-skeleton-cell { animation: none; opacity: .7; }
+}
+
+/* v7.19 (T3.1): 回测区间快捷档 — 四个小按钮紧贴日期选择器，作为"默认 18 个月"的可视化承接 */
+.qc-bt-quick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.qc-bt-quick .el-button + .el-button {
+  margin-left: 0;
+}
+/* v7.19 (T3.1): 盈亏金额配色跟随 A 股习惯（涨红跌绿），走市场色令牌而非硬编码 */
+.qc-pnl-up { color: var(--market-up-text); }
+.qc-pnl-down { color: var(--market-down-text); }
+
+/* ─── v7.19 (T3.4): 择时信号矩阵重排 ───
+   8 个策略并排时，逐格读「动作+仓位」文字既慢又撑宽；改为色点（方向）+ 仓位条（力度），
+   默认按平均仓位倒序，先看"现在敢上的"，空仓行自然沉底。 */
+.qc711-matrix-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.qc711-matrix-th {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--qc-font-size-2xs);
+}
+.qc711-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.qc711-cell-num {
+  font-size: var(--qc-font-size-2xs);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+}
+.qc711-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--qc-radius-full);
+  background: var(--text-tertiary);
+}
+.qc711-dot.is-buy, .qc711-dot.is-add, .qc711-dot.is-increase { background: var(--market-up-text); }
+.qc711-dot.is-sell, .qc711-dot.is-reduce, .qc711-dot.is-decrease, .qc711-dot.is-exit { background: var(--market-down-text); }
+.qc711-dot.is-hold { background: var(--text-tertiary); }
+.qc711-bar {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 4px;
+  border-radius: var(--qc-radius-full);
+  background: var(--qc-muted);
+  overflow: hidden;
+}
+.qc711-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: var(--qc-radius-full);
+  background: var(--text-tertiary);
+  transition: width 0.2s var(--qc-ease-standard, ease);
+}
+.qc711-bar > i.is-buy, .qc711-bar > i.is-add, .qc711-bar > i.is-increase { background: var(--market-up-text); }
+.qc711-bar > i.is-sell, .qc711-bar > i.is-reduce, .qc711-bar > i.is-decrease, .qc711-bar > i.is-exit { background: var(--market-down-text); }
+/* 右侧 56px 避让：AI 悬浮球固定在右下，横向滚到最后一列时会被压住 */
+.qc711-matrix-card { padding-right: 56px; }
+@media (max-width: 1024px) {
+  .qc711-matrix-card { padding-right: var(--qc-space-4); }
+}
+
+/* ─── v7.19 (T3.2): 策略工作台列表 ─── */
+.qc-strategy-board { margin-bottom: var(--qc-space-4); }
+.qc-sb-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.qc-sb-title { display: inline-flex; align-items: center; gap: 8px; font-size: var(--qc-font-size-base); font-weight: var(--qc-font-weight-semibold); color: var(--text-primary); }
+.qc-sb-tools { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.qc-sb-note { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-bottom: 8px; }
+.qc-sb-warn { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 8px; border-radius: var(--qc-radius-medium); background: var(--qc-muted); color: var(--text-secondary); font-size: var(--qc-font-size-xs); }
+.qc-sb-table { width: 100%; }
+/* 16 个策略全量铺开会把下方的「模板编辑」推到屏幕外：表体限高内滚，表头悬浮 */
+.qc-sb-scroll { max-height: 384px; overflow-y: auto; border-radius: var(--qc-radius-medium); }
+.qc-sb-scroll thead th { position: sticky; top: 0; z-index: 2; background: var(--qc-card); }
+.qc-sb-col-name { min-width: 152px; }
+.qc-sb-col-num { text-align: right; white-space: nowrap; }
+.qc-sb-col-ops { white-space: nowrap; text-align: right; }
+.qc-sb-name { font-weight: var(--qc-font-weight-medium); color: var(--text-primary); }
+.qc-sb-id { font-size: var(--qc-font-size-2xs); color: var(--text-tertiary); }
+.qc-sb-status { display: inline-block; padding: 0 8px; border-radius: var(--qc-radius-full); font-size: var(--qc-font-size-2xs); }
+.qc-sb-status.is-ok { background: var(--qc-muted); color: var(--market-up-text); }
+.qc-sb-status.is-failed { background: var(--qc-muted); color: var(--market-down-text); }
+.qc-sb-status.is-running { background: var(--qc-primary-100); color: var(--qc-primary-800); }
+.qc-sb-status.is-idle { background: var(--qc-muted); color: var(--text-tertiary); }
+
+/* v7.19: 操作区图标尺寸也由令牌决定 —— 与 StockList.vue 的 :size="opIconSize" 同源，
+   保证「换密度档 → 图标跟着变」，而不是组件里写死一个数、CSS 里再写死另一个数。 */
+.qc-stock-actions .ops-ic svg { width: var(--qc-stock-icon); height: var(--qc-stock-icon); }
+
+/* ===== v7.19 (FR-6): 自选等权均分建仓弹窗 ===== */
+.qc-plan-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.qc-plan-label { font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
+.qc-plan-capital { width: 148px; }
+.qc-plan-note { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-bottom: 12px; line-height: 1.6; }
+.qc-plan-table-wrap { overflow: auto; max-height: 328px; border: 1px solid var(--border-light); border-radius: var(--qc-radius-medium); }
+/* 13 只自选全量铺开会把「确认建仓」按钮顶到视口外: 表体限高内滚 + 表头悬浮 */
+.qc-plan-table thead th { position: sticky; top: 0; z-index: 2; }
+/* v7.19: 固定布局 —— auto 布局下 7 列的最小内容宽会到 1016px, 把 800px 弹窗撑成 1100px,
+   且被弹窗 overflow:hidden 从两侧裁掉 (首列股票名被切掉半个字)。固定列宽后恒等分不溢出。 */
+.qc-plan-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--qc-font-size-sm); }
+.qc-plan-table th:nth-child(1) { width: 30%; }
+.qc-plan-table th:nth-child(2) { width: 11%; }
+.qc-plan-table th:nth-child(3) { width: 9%; }
+.qc-plan-table th:nth-child(4) { width: 12%; }
+.qc-plan-table th:nth-child(5) { width: 15%; }
+.qc-plan-table th:nth-child(6) { width: 9%; }
+.qc-plan-table th:nth-child(7) { width: 14%; }
+.qc-plan-table th { text-align: left; padding: 8px 12px; color: var(--text-tertiary); font-weight: var(--qc-font-weight-medium); background: var(--bg-card-header); border-bottom: 1px solid var(--border-light); white-space: nowrap; }
+.qc-plan-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.qc-plan-name { font-weight: var(--qc-font-weight-medium); color: var(--text-primary); }
+.qc-plan-code { font-size: var(--qc-font-size-2xs); color: var(--text-tertiary); }
+.qc-plan-row-note { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); max-width: 168px; white-space: normal; word-break: break-word; }
+/* 不足一手的标的置灰但不隐藏: 用户要能看到「为什么这只没买」 */
+.qc-plan-row-skip td { color: var(--text-tertiary); }
+.qc-plan-row-skip .qc-plan-name { color: var(--text-tertiary); font-weight: normal; }
+.qc-plan-summary { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: var(--qc-font-size-sm); color: var(--text-secondary); }
+.qc-plan-summary b { color: var(--text-primary); font-weight: var(--qc-font-weight-medium); }
+.qc-plan-warn { margin-top: 8px; padding: 8px 12px; border-radius: var(--qc-radius-medium); background: var(--qc-muted); color: var(--text-secondary); font-size: var(--qc-font-size-xs); }
+.qc-plan-warn div + div { margin-top: 4px; }
+.qc-plan-overwrite { margin-top: 12px; }
+.qc-plan-empty { text-align: center; padding: 40px 0; color: var(--text-tertiary); font-size: var(--qc-font-size-sm); }

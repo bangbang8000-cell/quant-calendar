@@ -35,8 +35,11 @@ def test_focus_view_component_registered():
 
 
 def test_focus_view_imported_in_main():
+    # v7.18 (FR-501): focus-view 仅 ai 域消费, 移入 js/components/ai/lazy-entry.js 随域懒加载
+    lazy = _read("js/components/ai/lazy-entry.js")
+    assert "../focus-view.js" in lazy, "ai 域 lazy-entry 应导入 focus-view.js"
     src = _read("src/main.js")
-    assert "js/components/focus-view.js" in src
+    assert "js/components/focus-view.js" not in src, "main.js 不应再静态导入 focus-view (首屏体积)"
 
 
 def test_ai_page_wired():

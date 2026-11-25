@@ -46,7 +46,7 @@
       <div>
         <!-- 今日概览卡 -->
         <div class="card mb-4">
-          <div class="card-title"><qc-icon name="target" :size="14" /> 重点跟踪 · 今日概览
+          <div class="card-title"><qc-icon name="target" :size="14" /> 今日概览
             <span class="card-title-hint" v-if="latestNote">{{ latestNote }}</span>
             <span class="card-title-hint" v-if="baseNote">{{ baseNote }}</span>
           </div>
@@ -263,9 +263,11 @@
         if (!st || st.total === 0 || st.rate === null || st.rate === undefined) return '样本不足';
         return st.rate.toFixed(1) + '% (' + st.total + ' 样本)';
       }
-      function sessionLabel() {
+      // v7.17 (FR-101 / D-01): 原为普通函数, 模板 {{ sessionLabel }} 插值会 String(fn) 把函数源码渲染到界面。
+      // 改为 computed: 模板无需加括号 (自动解包), 且随 session 变化自动更新。
+      const sessionLabel = computed(function () {
         return SESSION_LABELS[session.value] || session.value;
-      }
+      });
       function toggle(code) {
         const i = expanded.value.indexOf(code);
         if (i >= 0) expanded.value.splice(i, 1);

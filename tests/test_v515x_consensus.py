@@ -41,5 +41,5 @@ def test_stocklist_has_consensus_helper():
 def test_stocklist_keeps_strategy_badge():
     """TC-5.15.03: 保留「N 策略」徽章与策略标签"""
     src = _read_f("src/components/common/StockList.vue")
-    assert "qc-stock-badge" in src, "N 策略徽章应保留"
+    assert "is-count" in src, "N 策略徽章应保留 (v7.18 FR-1101: 并入 tags 网格首格 is-count)"
     assert "strategy_count" in src, "徽章应读 strategy_count"

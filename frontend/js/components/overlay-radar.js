@@ -118,8 +118,16 @@
                   {{ st.name }} <b>{{ aggText(st.id) }}</b>
                 </span>
               </div>
-              <el-table :data="matrix.rows" size="mini" border class="qc711-matrix-table">
-                <el-table-column label="标的" width="150">
+              <div class="qc711-matrix-tools">
+                <el-radio-group v-model="matrixSortMode" size="mini">
+                  <el-radio-button value="exposure">按平均仓位</el-radio-button>
+                  <el-radio-button value="symbol">按代码</el-radio-button>
+                </el-radio-group>
+                <el-checkbox v-model="matrixOnlySignaled" size="mini">仅看有信号（仓位 > 0）</el-checkbox>
+                <span class="qc711-dim">共 {{ matrixRows.length }} / {{ matrix.rows.length }} 只</span>
+              </div>
+              <el-table :data="matrixRows" size="mini" border class="qc711-matrix-table">
+                <el-table-column label="标的" width="140" fixed="left">
                   <template #default="p">
                     <span class="qc711-sym">{{ p.row.symbol }}</span>
                     <span class="qc711-dim" v-if="p.row.name"> {{ p.row.name }}</span>
@@ -127,12 +135,19 @@
                   </template>
                 </el-table-column>
                 <el-table-column v-for="st in matrix.strategies" :key="st.id"
-                                 :label="st.name" min-width="96" align="center">
+                                 min-width="68" align="center">
+                  <!-- v7.19 (T3.4): 表头横排简称 + hover 全名（全称会让 8 列一起换行/撑爆） -->
+                  <template #header>
+                    <span class="qc711-matrix-th" :title="st.name">{{ shortStrategyName(st.name) }}</span>
+                  </template>
                   <template #default="p">
-                    <el-tag v-if="p.row.signals && p.row.signals[st.id]" size="mini"
-                            :type="actionTagTypeOf(p.row.signals[st.id].action)">
-                      {{ S.actionLabel(p.row.signals[st.id].action) }} {{ S.pct(p.row.signals[st.id].exposure, 0) }}
-                    </el-tag>
+                    <div v-if="p.row.signals && p.row.signals[st.id]" class="qc711-cell"
+                         :title="st.name + ' · ' + S.actionLabel(p.row.signals[st.id].action) + ' · 仓位 ' + S.pct(p.row.signals[st.id].exposure, 0)">
+                      <span class="qc711-dot" :class="'is-' + (p.row.signals[st.id].action || 'hold')"></span>
+                      <span class="qc711-bar"><i :class="'is-' + (p.row.signals[st.id].action || 'hold')"
+                                                 :style="{ width: cellBarWidth(p.row.signals[st.id].exposure) }"></i></span>
+                      <span class="qc711-cell-num">{{ S.pct(p.row.signals[st.id].exposure, 0) }}</span>
+                    </div>
                     <span v-else class="qc711-dim">—</span>
                   </template>
                 </el-table-column>
@@ -274,11 +289,56 @@
       }
 
       // ── v7.13: 自选股择时矩阵 ──────────────────────────────
+      // v7.19 (T3.4): 矩阵重排 —— 8 策略并排时，用户真正的诉求是"哪几只现在能上、敢上多少"，
+      // 而不是逐个读标签文字。故：色点表方向、仓位条表力度、默认按"平均仓位倒序 + 非持有优先"。
+      const matrixSortMode = ref('exposure');   // exposure | symbol
+      const matrixOnlySignaled = ref(false);
       const matrix = ref(null);
       const matrixLoading = ref(false);
       const matrixError = ref('');
       // v7.16 FR-9: 数据源 tab — watchlist(自选股) / calendar(日历新增)
       const matrixSource = ref('watchlist');
+
+      // 策略简称：中文名去掉「策略」后缀，最多 3 字（表头横排用），全名走 title 悬浮
+      function shortStrategyName(name) {
+        // v7.19 (FR-3): 表头横排简称 —— 先去括号补充说明与通用后缀, 再按 4 字封顶。
+        // 直接 slice(0,4) 会切出「布林带择」「顺势宝(」这种半截词, 反而更难读。
+        var raw = String(name || '').trim();
+        var n = raw.replace(/[（(].*$/, '').replace(/(择时|信号|策略|选股|模型|系统)$/g, '').trim();
+        if (!n) n = raw;
+        n = n.replace(/plus$/i, '+');
+        return n.length > 4 ? n.slice(0, 4) : n;
+      }
+      function cellBarWidth(exposure) {
+        var n = Number(exposure);
+        if (!isFinite(n)) return '0%';
+        var pct = Math.max(0, Math.min(1, n)) * 100;
+        return pct.toFixed(0) + '%';
+      }
+      const matrixRows = computed(function () {
+        var m = matrix.value;
+        if (!m || !m.rows) return [];
+        var rows = m.rows.slice();
+        if (matrixOnlySignaled.value) {
+          rows = rows.filter(function (r) {
+            var sig = r.signals || {};
+            return Object.keys(sig).some(function (k) { return sig[k] && sig[k].exposure > 0; });
+          });
+        }
+        if (matrixSortMode.value === 'symbol') {
+          rows.sort(function (a, b) { return String(a.symbol) < String(b.symbol) ? -1 : 1; });
+        } else {
+          rows.sort(function (a, b) {
+            var ae = Number(a.avg_exposure) || 0;
+            var be = Number(b.avg_exposure) || 0;
+            if (be !== ae) return be - ae;                       // 平均仓位倒序
+            var ac = Number(a.hold_count) || 0;
+            var bc = Number(b.hold_count) || 0;
+            return bc - ac;                                      // 同等仓位下"更多策略持有"优先
+          });
+        }
+        return rows;
+      });
       const calendarDate = ref(localToday());
       const calendarInherited = ref(false);
       function localToday() {
@@ -343,6 +403,8 @@
       });
 
       return {
+        // v7.19 (T3.4): 矩阵重排
+        matrixSortMode, matrixOnlySignaled, matrixRows, shortStrategyName, cellBarWidth,
         S: window.__quantModules.v711,
         symbol, sid, strategies, evaluating, stateLoading, error, result, mktState,
         points, perf, timeline, sourceText,

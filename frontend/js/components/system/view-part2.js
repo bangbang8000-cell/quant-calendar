@@ -566,7 +566,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                         <span class="usage-ai-model-bar">
                                             <span class="usage-ai-model-fill" :style="{width: Math.round(m.count / aiModelMax * 100) + '%'}"></span>
                                         </span>
-                                        <span class="usage-ai-model-pct">{{ Math.round(m.count / aiTotal * 100) }}%</span>
+                                        <span class="usage-ai-model-pct">{{ aiTotal > 0 ? Math.round(m.count / aiTotal * 100) + '%' : '—' }}</span>
                                         <span class="usage-ai-model-count">{{ m.count }}</span>
                                     </div>
                                 </div>

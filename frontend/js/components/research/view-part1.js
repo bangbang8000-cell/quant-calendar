@@ -9,7 +9,7 @@ window.__quantModules.researchPage.part1 = `
                     <!-- V6.9.3 (F11.2): 策略研究菜单恒显 — 移除 researchMenuEnabled 占位分支 -->
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
-                        <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 策略研究概览</div>
+                        <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 资产总览</div>
                         <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 加载/错误/空态收敛到 qc-state-panel -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || t('state.strategiesError')" :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
@@ -47,11 +47,11 @@ window.__quantModules.researchPage.part1 = `
                             </thead>
                             <tbody>
                                 <tr v-for="r in overviewCompareRows" :key="'ovc-' + r.sid" class="clickable" @click="goBacktestFor(r.sid)">
-                                    <td><strong>{{ r.sid }}</strong></td>
-                                    <td :class="r.annual_return >= 0 ? 'is-rise' : 'is-fall'">{{ fmtNum(r.annual_return) }}%</td>
-                                    <td :class="r.max_drawdown >= 0 ? 'is-rise' : 'is-fall'">{{ fmtNum(r.max_drawdown) }}%</td>
+                                    <td><strong>{{ LX.sid(r.sid) }}</strong></td>
+                                    <td :class="r.annual_return >= 0 ? 'is-rise' : 'is-fall'">{{ fmtPct(r.annual_return) }}</td>
+                                    <td :class="r.max_drawdown >= 0 ? 'is-rise' : 'is-fall'">{{ fmtPct(r.max_drawdown) }}</td>
                                     <td>{{ fmtNum(r.sharpe_ratio) }}</td>
-                                    <td>{{ fmtNum(r.win_rate) }}%</td>
+                                    <td>{{ fmtPct(r.win_rate) }}</td>
                                     <td class="text-sm-tertiary">{{ r.ts }}</td>
                                 </tr>
                             </tbody>
@@ -209,14 +209,18 @@ window.__quantModules.researchPage.part1 = `
                                 <div v-if="strategyRuns.length" class="strategy-runs">
                                     <div class="strategy-param-label">最近运行</div>
                                     <div v-for="run in strategyRuns.slice(0, 5)" :key="run.id" class="strategy-run-row">
-                                        <span class="strategy-run-status" :class="run.status">{{ run.status }}</span>
-                                        <span class="text-sm">{{ run.mode }} · {{ run.started_at }}</span>
+                                        <span class="strategy-run-status" :class="run.status">{{ run.status_cn || LX.status(run.status) }}</span>
+                                        <span class="text-sm">{{ run.mode_cn || LX.mode(run.mode) }} · {{ run.started_at }}</span>
                                         <span v-if="run.summary && run.summary.symbols" class="text-sm">选股 {{ run.summary.symbols.length }} 只</span>
                                         <el-button v-if="run.summary && run.summary.symbols && run.summary.symbols.length" size="small" link type="primary" @click="toggleRunDetail(run.id)">
                                             {{ expandedRunId === run.id ? '收起' : '明细' }}
                                         </el-button>
                                         <div v-if="expandedRunId === run.id && run.summary && run.summary.symbols" class="qr-run-detail mt-8">
-                                            <span v-for="sym in run.summary.symbols" :key="sym" class="qc711-badge">{{ sym }}</span>
+                                            <!-- v7.19 (FR-9): 代码 + 中文名同排；后端未命中名称时显式 —，不伪装 -->
+                                            <span v-for="sym in run.summary.symbols" :key="sym" class="qc711-badge"
+                                                  :title="sym + ' ' + ((run.summary.symbol_names && run.summary.symbol_names[sym]) || '名称缺失')">
+                                                {{ sym }} {{ (run.summary.symbol_names && run.summary.symbol_names[sym]) || '—' }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -229,7 +233,7 @@ window.__quantModules.researchPage.part1 = `
                             <div class="flex-wrap-gap-12-mb16-c">
                                 <el-select class="w-select-lg" v-model="factorKey" size="small" placeholder="选择因子">
                                     <el-option-group v-for="g in factorGroupedOptions()" :key="g.category" :label="g.label">
-                                        <el-option v-for="f in g.items" :key="f.name" :label="(f.label || f.name) + ' (' + f.category + ')'" :value="f.name" />
+                                        <el-option v-for="f in g.items" :key="f.name" :label="LX.factorWithCategory(f.name, f.category, f.label, f.category_cn)" :value="f.name" />
                                     </el-option-group>
                                 </el-select>
                                 <!-- v7.14 (FR-2): 研究时间窗口 -->
@@ -270,12 +274,12 @@ window.__quantModules.researchPage.part1 = `
                             <div v-if="factorLayerResult" class="factor-layer-result">
                                 <div class="flex-wrap-gap-12-mb16-c">
                                     <div class="stat-card p-12" v-for="ly in factorLayerResult.layers" :key="ly.layer">
-                                        <div class="stat-value text-lg" :class="ly.layer === factorLayerResult.layers.length ? 'up' : (ly.return < 0 ? 'down' : 'flat')">{{ fmtNum(ly.return) }}%</div>
+                                        <div class="stat-value text-lg" :class="ly.layer === factorLayerResult.layers.length ? 'up' : (ly.return < 0 ? 'down' : 'flat')">{{ fmtPct(ly.return) }}</div>
                                         <div class="stat-label">层 {{ ly.layer }}</div>
                                     </div>
                                 </div>
                                 <div class="text-sm-tertiary-mt8" :class="factorLayerResult.monotonic ? 'up' : 'down'">
-                                    单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ fmtNum(factorLayerResult.spread) }}%
+                                    单调性: {{ factorLayerResult.monotonic ? '单调递增 ✓' : '非单调' }} · 多空价差 {{ fmtPct(factorLayerResult.spread) }}
                                 </div>
                                 <!-- v7.14 (FR-4): 分层收益柱状图(涨红跌绿) -->
                                 <div class="w-100-h240 mt-8" id="factorLayerChart"></div>
@@ -287,7 +291,7 @@ window.__quantModules.researchPage.part1 = `
                                 <!-- 覆盖度 -->
                                 <div class="grid-auto-fit-140-mb16 mt-8">
                                     <div class="stat-card p-12">
-                                        <div class="stat-value text-lg">{{ fmtNum(factorDetail.coverage * 100, 0) }}%</div>
+                                        <div class="stat-value text-lg">{{ fmtPct(factorDetail.coverage * 100, 0) }}</div>
                                         <div class="stat-label">因子覆盖度</div>
                                     </div>
                                     <div class="stat-card p-12">
@@ -299,7 +303,7 @@ window.__quantModules.researchPage.part1 = `
                                         <div class="stat-label">年化换手</div>
                                     </div>
                                     <div class="stat-card p-12">
-                                        <div class="stat-value text-lg">{{ fmtNum(factorDetail.turnover.cost_drag_pct, 1) }}%</div>
+                                        <div class="stat-value text-lg">{{ fmtPct(factorDetail.turnover.cost_drag_pct, 1) }}</div>
                                         <div class="stat-label">年化成本拖累</div>
                                     </div>
                                 </div>
@@ -337,7 +341,7 @@ window.__quantModules.researchPage.part1 = `
                                 </div>
                                 <div class="grid-auto-fit-140-mb16">
                                     <div class="stat-card p-12" v-for="k in scoreConfigDims" :key="'sd-' + k">
-                                        <div class="stat-label">{{ scoreDimLabel(k) }}<span v-if="scoreWeights && scoreWeights[k] != null" class="text-sm-tertiary"> · {{ fmtNum(scoreWeights[k] * 100, 0) }}%</span></div>
+                                        <div class="stat-label">{{ scoreDimLabel(k) }}<span v-if="scoreWeights && scoreWeights[k] != null" class="text-sm-tertiary"> · {{ fmtPct(scoreWeights[k] * 100, 0) }}</span></div>
                                         <el-input size="small" v-model="scoreDims[k]" placeholder="0-100" />
                                     </div>
                                 </div>
@@ -386,11 +390,11 @@ window.__quantModules.researchPage.part1 = `
                                                     <span class="text-sm-primary" :class="{ 'text-sm-tertiary': row.status === 'unknown' }">
                                                         {{ row.status === 'unknown' ? 'unknown' : fmtNum(row.score, 1) }}
                                                     </span>
-                                                    <span class="text-sm-tertiary">权重 {{ fmtNum(row.weight * 100, 0) }}% · 加权 {{ row.weighted == null ? '—' : fmtNum(row.weighted, 2) }}</span>
+                                                    <span class="text-sm-tertiary">权重 {{ fmtPct(row.weight * 100, 0) }} · 加权 {{ row.weighted == null ? '—' : fmtNum(row.weighted, 2) }}</span>
                                                 </div>
                                             </div>
                                             <div v-if="scoreResult.top_n_suggestion && Object.keys(scoreResult.top_n_suggestion).length" class="text-sm-tertiary-mt8">
-                                                TopN 建议: <span v-for="(w, sym) in scoreResult.top_n_suggestion" :key="'tn-' + sym" class="qc711-badge">{{ sym }} {{ fmtNum(w * 100, 0) }}%</span>
+                                                TopN 建议: <span v-for="(w, sym) in scoreResult.top_n_suggestion" :key="'tn-' + sym" class="qc711-badge">{{ sym }} {{ fmtPct(w * 100, 0) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -424,17 +428,17 @@ window.__quantModules.researchPage.part1 = `
                                 <div v-if="sweepStability" class="param-stability mt-8" :class="{ 'param-stability-overfit': sweepStability.verdict === 'overfit', 'param-stability-robust': sweepStability.verdict === 'robust' }">
                                     <span class="text-sm-secondary">参数稳定性:</span>
                                     <span v-if="sweepStability.verdict === 'overfit'" class="text-danger-semibold">过拟合风险 (扰动衰减比 {{ fmtNum(sweepStability.spread_ratio) }})</span>
-                                    <span v-else-if="sweepStability.verdict === 'robust'" class="text-sm-primary">稳健高原 (衰减比 {{ fmtNum(sweepStability.spread_ratio) }}, 高原覆盖 {{ fmtNum(sweepStability.plateau_ratio * 100, 0) }}%)</span>
+                                    <span v-else-if="sweepStability.verdict === 'robust'" class="text-sm-primary">稳健高原 (衰减比 {{ fmtNum(sweepStability.spread_ratio) }}, 高原覆盖 {{ fmtPct(sweepStability.plateau_ratio * 100, 0) }})</span>
                                     <span v-else class="text-sm-tertiary">{{ sweepStability.note || '稳定性诊断不可用' }}</span>
                                     <span v-if="sweepStability.verdict !== 'unknown'" class="text-sm-tertiary">最优参数 {{ sweepStability.best_param }} · 高原区间 [{{ sweepStability.plateau_min }}, {{ sweepStability.plateau_max }}]</span>
                                 </div>
                                 <div v-if="sweepResult && sweepResult.length" class="sweep-table mt-8">
                                     <div v-for="(row, i) in sweepResult" :key="i" class="sweep-row flex-wrap-gap-12-mb16-c" :class="{ 'sweep-best': i === 0 }">
                                         <span class="text-sm-secondary w-260">参数: {{ JSON.stringify(row.params) }}</span>
-                                        <span class="text-sm-primary">年化 {{ (row.annual_return * 100).toFixed(2) }}%</span>
-                                        <span class="text-sm-secondary">总收益 {{ (row.total_return * 100).toFixed(2) }}%</span>
-                                        <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ (row.max_drawdown * 100).toFixed(2) }}%</span>
-                                        <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio.toFixed(2) }}</span>
+                                        <span class="text-sm-primary">年化 {{ row.annual_return == null ? '—' : (row.annual_return * 100).toFixed(2) + '%' }}</span>
+                                        <span class="text-sm-secondary">总收益 {{ row.total_return == null ? '—' : (row.total_return * 100).toFixed(2) + '%' }}</span>
+                                        <span class="text-sm-secondary" :class="{ down: row.max_drawdown < -0.2 }">回撤 {{ row.max_drawdown == null ? '—' : (row.max_drawdown * 100).toFixed(2) + '%' }}</span>
+                                        <span class="text-sm-secondary">夏普 {{ row.sharpe_ratio == null ? '—' : row.sharpe_ratio.toFixed(2) }}</span>
                                         <span v-if="row.overfit_warning" class="text-sm-tertiary"><qc-icon name="alert-triangle" :size="14" /> 疑似过拟合</span>
                                     </div>
                                 </div>
@@ -444,6 +448,17 @@ window.__quantModules.researchPage.part1 = `
                     <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
                         <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
                         <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
+                        <!-- v7.19 (T3.2): 策略工作台 —— 先罗列，再在列表上操作 (PRD 需求 ⑧) -->
+                        <qc-strategy-board
+                            :rows="strategyCardRows" :loading="strategyOverviewLoading"
+                            :error="strategyOverviewError" :degraded="strategyOverviewDegraded"
+                            :keyword="overviewKeyword" :sort-key="overviewSortKey" :only-enabled="overviewOnlyEnabled"
+                            @update:keyword="overviewKeyword = $event"
+                            @update:sortKey="overviewSortKey = $event"
+                            @update:onlyEnabled="overviewOnlyEnabled = $event"
+                            @backtest="goBacktestFor" @detail="openStrategyManageFor"
+                            @retry="loadStrategyOverview(true)"></qc-strategy-board>
+
                         <!-- v7.11 (FR-7.11-4): 参数锁定与追踪 — 消费 /api/strategies/{sid}/lock* (v7.14: 默认折叠, 未使用者不占首屏) -->
                         <div v-if="activeStrategyId && strategyManageMode === 'template'" class="qc711-mt12">
                             <el-collapse class="qr-lock-collapse">

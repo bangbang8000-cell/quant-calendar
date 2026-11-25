@@ -35,7 +35,7 @@ def test_stocklist_no_consensus_bar():
     assert "qc-stock-consensus-bar" not in src, "StockList 不应再含进度条容器"
     assert "qc-stock-consensus-fill" not in src, "StockList 不应再含进度条填充"
     assert "qc-stock-consensus" in src, "应保留共识文本元素"
-    assert "qc-stock-badge" in src, "应保留 N 策略徽章"
+    assert "is-count" in src, "应保留 N 策略徽章 (v7.18 FR-1101: 并入 tags 网格首格 is-count)"
     assert "% 共识" in src, "共识文本应含百分比与标签"
 
 

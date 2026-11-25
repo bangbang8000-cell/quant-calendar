@@ -15,9 +15,17 @@
   var DEFAULT_BUFFER = 8; // 上下预渲染行缓冲
 
   // ─── 可视区窗口计算 (TC-11.6) ─────────────────────
-  // scrollTop 下渲染 [startIndex, endIndex)，两端各多 buffer 行预渲染
-  function computeVisibleRange(scrollTop, viewportH, rowHeight, total, buffer) {
+  // v7.19 (FR-2): step = 行高 + 行距。旧实现按 rowHeight 计算窗口与位移，
+  // 而 CSS 的 gap 在绝对定位分支不生效 —— 列表一超一屏就是「行贴着行」。
+  function stepOf(rowHeight, itemGap) {
     var h = rowHeight > 0 ? rowHeight : 1;
+    var g = (typeof itemGap === 'number' && itemGap > 0) ? itemGap : 0;
+    return h + g;
+  }
+
+  // scrollTop 下渲染 [startIndex, endIndex)，两端各多 buffer 行预渲染
+  function computeVisibleRange(scrollTop, viewportH, rowHeight, total, buffer, itemGap) {
+    var h = stepOf(rowHeight, itemGap);
     var buf = (typeof buffer === 'number' && buffer >= 0) ? buffer : DEFAULT_BUFFER;
     var totalN = Math.max(0, total);
     var top = Math.max(0, scrollTop);
@@ -27,22 +35,29 @@
     return { startIndex: startIndex, endIndex: endIndex };
   }
 
-  // 总高 = 行数 × 行高（撑起滚动条）
-  function computeTotalHeight(count, rowHeight) {
-    return Math.max(0, count || 0) * (rowHeight > 0 ? rowHeight : 0);
+  // 总高 = 行数 × step − 行距（末行后不留多余空隙，保证滚到底最后一行完整可见）
+  function computeTotalHeight(count, rowHeight, itemGap) {
+    var n = Math.max(0, count || 0);
+    if (!n) return 0;
+    // 行高非法（0/负/未测出）时不占位：此时容器高度无意义，返回 0 让外层走空态，
+    // 而不是按 step=1+gap 算出一个假高度（旧行为会产生 100 行 × 9px 的幽灵滚动条）。
+    if (!(rowHeight > 0)) return 0;
+    var rh = rowHeight;
+    var step = stepOf(rowHeight, itemGap);
+    return n * step - (step - rh);
   }
 
   // 一步拿到渲染切片 + 窗口
-  function sliceVisible(items, scrollTop, viewportH, rowHeight, buffer) {
+  function sliceVisible(items, scrollTop, viewportH, rowHeight, buffer, itemGap) {
     var list = items || [];
-    var range = computeVisibleRange(scrollTop, viewportH, rowHeight, list.length, buffer);
+    var range = computeVisibleRange(scrollTop, viewportH, rowHeight, list.length, buffer, itemGap);
     var visible = list.slice(range.startIndex, range.endIndex);
     return {
       visible: visible,
       startIndex: range.startIndex,
       endIndex: range.endIndex,
-      offsetY: range.startIndex * (rowHeight > 0 ? rowHeight : 1),
-      totalHeight: computeTotalHeight(list.length, rowHeight),
+      offsetY: range.startIndex * stepOf(rowHeight, itemGap),
+      totalHeight: computeTotalHeight(list.length, rowHeight, itemGap),
     };
   }
 
@@ -83,6 +98,7 @@
     DEFAULT_BUFFER: DEFAULT_BUFFER,
     computeVisibleRange: computeVisibleRange,
     computeTotalHeight: computeTotalHeight,
+    stepOf: stepOf,
     sliceVisible: sliceVisible,
     getRowKey: getRowKey,
     estimateDynamicRowHeight: estimateDynamicRowHeight,

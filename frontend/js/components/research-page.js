@@ -11,6 +11,12 @@
     template: window.__quantModules.researchPage.view,
     setup() {
       const state = inject('qcState');
+      // v7.19 (FR-9): 术语映射层（后端 label 优先，前端表兜底）——模板里统一走 LX.xxx()
+      const LX = (window.__quantModules && window.__quantModules.researchLexicon)
+        || { sid: function (k) { return k; }, status: function (k) { return k; },
+             mode: function (k) { return k; }, engine: function (k) { return k; },
+             factor: function (n, l) { return l || n; },
+             factorWithCategory: function (n, c, l) { return (l || n) + '（' + (c || '') + '）'; } };
       const savingProfile = Vue.ref(false);
       const variantSaving = Vue.ref(false);
       // V5.2.8 (T-5.2.53): 竞态防护推广 — 页面级请求序号
@@ -417,7 +423,11 @@
       const { researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType, researchHistorySelected, researchDetailId } = __history;
       const { researchCompareRows, researchCompareLoading, researchExportLoading, researchTypeLabel, goShortterm, openResearchHistory } = __history;
       const { loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail, runResearchCompare, deleteResearchHistory } = __history;
-      const { overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor } = __history;  // v7.15 (FR-7)
+      const { overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)
+        // v7.19 (T3.2): 策略工作台
+        strategyOverview, strategyOverviewLoading, strategyOverviewError, strategyOverviewDegraded,
+        overviewKeyword, overviewSortKey, overviewOnlyEnabled, strategyCardRows,
+        loadStrategyOverview, strategyStatusText, openStrategyManageFor } = __history;
 
       watch(
         function () {
@@ -441,6 +451,10 @@
           // v7.14 (FR-1): 进入回测页时加载策略注册表填充下拉
           if (key === 'research/backtest' && state.loadBacktestStrategies) {
             state.loadBacktestStrategies();
+          }
+          // v7.19 (T3.2): 策略管理 / 回测两页首屏都是「策略工作台」，进入即拉聚合数据
+          if (key === 'research/backtest' || key === 'research/strategy-manage') {
+            loadStrategyOverview();
           }
           // 进入「市场复盘」且未停留在详情时加载列表 (V5.2.3: 移入短线复盘后 key=shortterm/market-review)
           if ((key === 'research/market-review' || key === 'shortterm/market-review') && !selectedReviewDate.value) {
@@ -733,6 +747,7 @@
         profiles, profileSelect, profileName,
         loadProfiles, saveProfile, applyProfile, deleteProfile,
         govEnabled, govSchedule, govUniverse, govRunning, lastHoldings,
+        LX,
         loadGov, updateGov, runOnceActive, openLastHoldings, cloneStrategy,
         govShowCalendar,
         factorKey, factorIcLoading, factorLayerLoading,
@@ -759,6 +774,10 @@
         lastRunSymbols, scoreAutoLoading, scoreAutoMsg, prefillFromRun, autoEstimateDims,
         // v7.15 (FR-7): 总览跨策略对比
         overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,
+        // v7.19 (T3.2): 策略工作台
+        strategyOverview, strategyOverviewLoading, strategyOverviewError, strategyOverviewDegraded,
+        overviewKeyword, overviewSortKey, overviewOnlyEnabled, strategyCardRows,
+        loadStrategyOverview, strategyStatusText, openStrategyManageFor,
       };
     },
   };

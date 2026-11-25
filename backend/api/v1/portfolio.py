@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from auth import get_current_active_user
 import db
+import portfolio_plan
 from data_sources import data_source_manager
 
 logger = logging.getLogger(__name__)
@@ -414,3 +415,151 @@ async def get_portfolio_risk_rules(days: int = 60,
     note = "数据不可达降级" if not vols else ""
     return {"success": True, "rules": results, "rebalance": rebalance,
             "note": note, "count": len(positions)}
+
+
+# ─── v7.19 (FR-6): 自选等权均分建仓计划 ────────────────────────
+
+DEFAULT_PLAN_CAPITAL = 1_000_000
+
+
+def _resolve_plan_items(user: dict, body: dict):
+    """组装建仓标的: 显式 codes 优先, 否则取全部自选股 → (source, items)"""
+    raw = body.get("codes") or []
+    source = (body.get("source") or ("codes" if raw else "watchlist")).strip().lower()
+    picked = []
+    if raw:
+        for c in raw:
+            if isinstance(c, dict):
+                code = (c.get("stock_code") or c.get("code") or "").strip()
+                name = (c.get("stock_name") or c.get("name") or "").strip()
+            else:
+                code, name = str(c or "").strip(), ""
+            if code:
+                picked.append({"stock_code": code, "stock_name": name})
+    else:
+        watch = _load_watchlist_items(user["username"])
+        for w in watch:
+            picked.append({"stock_code": w.get("stock_code", ""), "stock_name": w.get("name") or ""})
+    return source, picked
+
+
+def _load_watchlist_items(username: str) -> list:
+    """自选股 → [{stock_code, name}]。
+
+    复用自选域自己的读取口径 (SQLite 优先 / JSON 回退), 避免「自选页有、建仓页没有」。
+    """
+    try:
+        from api.v1.watchlist import load_watchlist
+        rows = load_watchlist(username) or []
+        return [{"stock_code": (r.get("code") or "").strip(), "name": (r.get("name") or "").strip()}
+                for r in rows if r.get("code")]
+    except Exception as e:
+        logger.warning("读取自选股失败, 回退 db 直读: %s", e)
+    try:
+        return [{"stock_code": r.get("stock_code", ""), "name": r.get("name") or ""}
+                for r in db.watchlist_get(username)]
+    except Exception as e:
+        logger.warning("自选股回退读取也失败, 按空自选处理: %s", e)
+        return []
+
+
+def _fill_plan_prices(items: list):
+    """批量取现价 (一次请求) + 补齐中文名 → (items, degraded)。
+
+    取价失败不抛错: price 留 None, 由 build_plan 记为「现价不可用」的 skipped 项,
+    保证前端永远拿到可读的计划而不是 500。
+    """
+    codes = [i["stock_code"] for i in items]
+    quotes, degraded = {}, False
+    if codes:
+        try:
+            from realtime_quotes import RealtimeQuoteSource
+            quotes, degraded = RealtimeQuoteSource().fetch_quotes(codes)
+        except Exception as e:
+            logger.warning("建仓计划批量取价失败, 按现价不可用降级: %s", e)
+            quotes, degraded = {}, True
+    if any(not i["stock_name"] for i in items):
+        try:
+            from stock_info import stock_manager
+            # 名称服务是可选增强: 取不到 get_name 或抛错都只影响「代码回退显示」
+            get_name = getattr(stock_manager, "get_name", None)
+            if callable(get_name):
+                for i in items:
+                    if not i["stock_name"]:
+                        i["stock_name"] = get_name(i["stock_code"]) or i["stock_code"]
+        except Exception as e:
+            logger.warning("建仓计划补股票名失败, 回退代码显示: %s", e)
+    for i in items:
+        q = quotes.get(i["stock_code"]) or {}
+        i["price"] = _num(q.get("price"))
+    return items, degraded
+
+
+def _build_plan_of(user: dict, body: dict):
+    """请求体 → (plan, degraded); 参数非法抛 400"""
+    source, items = _resolve_plan_items(user, body)
+    items, degraded = _fill_plan_prices(items)
+    total = _num(body.get("total_capital"), None)
+    if total is None:
+        total = DEFAULT_PLAN_CAPITAL
+    if total <= 0:
+        raise HTTPException(status_code=400, detail="总资金须为正数")
+    try:
+        plan = portfolio_plan.build_plan(items, total,
+                                         mode=(body.get("mode") or "equal"), source=source)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    plan["degraded"] = degraded
+    return plan, degraded
+
+
+@router.post("/plans/preview")
+async def preview_plan(body: dict, user: dict = Depends(get_current_active_user)):
+    """建仓计划预览 (只算不落库): 等权均分 + 整手取整 + 尾差现金"""
+    plan, degraded = _build_plan_of(user, body)
+    return {
+        "success": True,
+        "plan": plan,
+        "degraded": degraded,
+        "note": "现价不可达, 部分标的未能纳入计划" if degraded else "",
+        "generated_at": plan.get("generated_at"),
+    }
+
+
+@router.post("/plans")
+async def create_plan(body: dict, user: dict = Depends(get_current_active_user)):
+    """确认建仓: 落库计划快照 + 写入持仓 (append 加权合并 / overwrite 覆盖)。
+
+    幂等: 同一 (代码, 数量) 指纹已确认过 → 直接返回 already_applied, 不重复加仓。
+    """
+    plan, _degraded = _build_plan_of(user, body)
+    if plan["position_count"] <= 0:
+        raise HTTPException(status_code=400, detail="没有可建仓的标的(资金不足一手或现价不可用)")
+    overwrite = bool(body.get("overwrite"))
+    fingerprint = portfolio_plan.plan_fingerprint(plan)
+    if not overwrite:
+        applied_id = portfolio_plan.find_applied_plan(user["username"], fingerprint)
+        if applied_id:
+            return {"success": True, "already_applied": True, "plan_id": applied_id,
+                    "plan": plan, "written": 0,
+                    "message": "该计划此前已建仓, 未重复加仓"}
+    plan_id = portfolio_plan.save_plan(user["username"], plan, status="preview")
+    result = portfolio_plan.apply_plan(user["username"], plan, overwrite=overwrite)
+    portfolio_plan.mark_applied(user["username"], plan_id)
+    _audit("portfolio_plan_apply", user["username"], {
+        "plan_id": plan_id, "positions": result["updated"],
+        "write_mode": result["write_mode"], "cleared": result["cleared"],
+        "total_capital": plan["total_capital"], "invested": plan["invested"],
+    })
+    message = "已按计划建仓 %d 只 (投入 %.2f 元, 留现金 %.2f 元)" % (
+        result["updated"], plan["invested"], plan["cash_reserve"])
+    return {"success": True, "plan_id": plan_id, "plan": plan,
+            "written": result["updated"], "cleared": result["cleared"],
+            "write_mode": result["write_mode"], "message": message}
+
+
+@router.get("/plans")
+async def list_plans(limit: int = 20, user: dict = Depends(get_current_active_user)):
+    """建仓计划历史 (新→旧)"""
+    rows = portfolio_plan.list_plans(user["username"], limit=max(1, min(int(limit or 20), 100)))
+    return {"success": True, "plans": rows, "count": len(rows)}

@@ -74,6 +74,9 @@
       const sectorErrTitle = ref('数据加载失败');
       const sectorErrDesc = ref('请检查服务后重试');
       const sectorFlowSource = ref('');
+      // v7.19 (FR-5): 错误分级 —— 快照态单独承接, 不与「服务端错误」混为一谈
+      const sectorErrorCode = ref('');
+      const sectorStale = ref('');
       const review = ref(null);
       const reviewRunning = ref(false);
       const intradaySnapshots = ref(null);
@@ -177,6 +180,58 @@
         return rows.filter(function (r) { return r.boards === ztBoardFilter.value; });
       });
       function clearBoardFilter() { ztBoardFilter.value = null; }
+      // v7.18 (FR-902): 涨停池分页 —— 原实现 189 行一次渲染, 页面总高 10,253px。
+      // 复用本页既有 PAGE_SIZE(50)/lhbPageRows 模式, 不引入第二套分页约定。
+      const ztPage = ref(1);
+      const ztPageRows = computed(function () {
+        const rows = filteredZt.value || [];
+        const start = (ztPage.value - 1) * PAGE_SIZE;
+        return rows.slice(start, start + PAGE_SIZE);
+      });
+      function gotoTzPage(p) {
+        ztPage.value = p;
+        const el = document.getElementById('ztPoolList');
+        if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+      // 筛选变化 / 数据刷新后回到第 1 页, 避免停留在越界空页
+      Vue.watch(filteredZt, function () {
+        const maxPage = Math.max(1, Math.ceil((filteredZt.value || []).length / PAGE_SIZE));
+        if (ztPage.value > maxPage) ztPage.value = 1;
+      });
+
+      // v7.18 (FR-901): 窄屏卡片数据 —— 只做"取哪些字段", 格式化沿用页面既有 fmtPct/fmtAmount/riseFall
+      function toCards(rows, mode) {
+        return (rows || []).map(function (r, i) {
+          var lines = [];
+          if (mode === 'zt') {
+            lines.push({ label: '连板', value: r.boards != null ? r.boards + ' 板' : '—' });
+            lines.push({ label: '首封', value: r.first_seal_time || '—' });
+            lines.push({ label: '炸板', value: r.break_times != null ? r.break_times + ' 次' : '—' });
+            lines.push({ label: '封单', value: fmtAmount(r.seal_amount) });
+          } else if (mode === 'zb') {
+            lines.push({ label: '炸板', value: r.break_times != null ? r.break_times + ' 次' : '—' });
+            lines.push({ label: '首封', value: r.first_seal_time || '—' });
+          } else {
+            lines.push({ label: '连续跌停', value: r.consec_dt != null ? r.consec_dt + ' 天' : '—' });
+          }
+          if (r.industry) lines.push({ label: '行业', value: r.industry });
+          return {
+            key: (r.ts_code || '') + '#' + i,
+            row: r,
+            title: r.name || '—',
+            sub: r.ts_code || '',
+            badge: fmtPct(r.pct_chg),
+            badgeClass: riseFall(r.pct_chg),
+            lines: lines,
+            note: mode === 'zt' ? (r.reason || '') : '',
+            footer: r.board || '',
+          };
+        });
+      }
+      const ztCards = computed(function () { return toCards(ztPageRows.value, 'zt'); });
+      const zbCards = computed(function () { return toCards(pools.value && pools.value.zb, 'zb'); });
+      const dtCards = computed(function () { return toCards(pools.value && pools.value.dt, 'dt'); });
+      function onCardPick(it) { if (it && it.row) openStock(it.row); }
       // 6.3.1 (T-6.3.1.3): 三池皆空判定 — 真实数组/梯队规模, 供 ztpool 空态承接
       const hasAnyPool = computed(function () {
         const p = pools.value;
@@ -448,40 +503,79 @@
         }
       }
 
+      // v7.17 (FR-103 / D-03): 「板块资金」曾整页只剩一行错误 + 约 400px 空白, 无自动重试、无具体原因。
+      // 现在: ① 失败自动重试 1 次 (300ms 退避, 第二次绕过缓存) ② 错误态给出可读原因
+      //       ③ 模板侧保留手动「重试」入口 (qc-state-panel @retry)
+      function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+      async function _fetchSectorOnce(force) {
+        const url = '/api/shortterm/sector-flow?indicator=' + encodeURIComponent(sectorIndicator.value)
+          + '&sector_type=' + encodeURIComponent(sectorType.value);
+        const res = await cachedGet(url, force);
+        if (res && res.success && res.available) return { ok: true, res: res };
+        // v7.19 (FR-5): 按 error_code 分级 —— 数据源断供 / 服务端异常 / 超时 文案与动作各不相同
+        const code = (res && res.error_code) || '';
+        const rawReason = res && res.reason ? String(res.reason).replace(/^\[[^\]]*\]\s*/, '') : '';
+        const tried = res && Array.isArray(res.tried) && res.tried.length
+          ? '（尝试：' + res.tried.slice(0, 3).join('；') + '）' : '';
+        if (code === 'data_unavailable') {
+          return { ok: false, title: '数据源暂不可用',
+                   desc: (rawReason || '东财 / 同花顺行情接口均未返回数据') + tried
+                     + '。这不是服务端故障：可稍后重试，或到「系统状态」查看数据源健康度。' };
+        }
+        if (code === 'server_error') {
+          return { ok: false, title: '服务端处理异常',
+                   desc: (rawReason || '接口内部异常') + '。请稍后重试；若持续出现请联系管理员。' };
+        }
+        if (code === 'timeout') {
+          return { ok: false, title: '数据请求超时', desc: '行情接口响应超时，请稍后重试。' };
+        }
+        let title = '板块资金暂不可用';
+        let desc = '接口未返回数据，请稍后重试';
+        if (rawReason) {
+          desc = rawReason;
+        } else if (res && res.detail) {
+          title = '需要登录后查看';
+          desc = String(res.detail);
+        }
+        return { ok: false, title: title, desc: desc };
+      }
+
       async function loadSectorFlow(force) {
         const seq = ++_reqSeq;
         sectorLoading.value = true;
         sectorError.value = false;
-        try {
-          const url = '/api/shortterm/sector-flow?indicator=' + encodeURIComponent(sectorIndicator.value)
-            + '&sector_type=' + encodeURIComponent(sectorType.value);
-          const res = await cachedGet(url, force);
-          if (seq !== _reqSeq) return;
-          if (res && res.success && res.available) {
-            sectorRows.value = res.rows || [];
-            sectorFlowSource.value = res.source || (res.note ? '同花顺' : '东财');
-            sectorPage.value = 1;
-          } else if (res && res.reason) {
-            sectorError.value = true;
-            sectorErrTitle.value = '数据加载失败';
-            sectorErrDesc.value = String(res.reason).replace(/^\[[^\]]*\]\s*/, '');
-          } else if (res && res.detail) {
-            sectorError.value = true;
-            sectorErrTitle.value = String(res.detail);
-            sectorErrDesc.value = '请先登录后再查看';
-          } else {
-            sectorError.value = true;
-            sectorErrTitle.value = '数据加载失败';
-            sectorErrDesc.value = '请检查服务后重试';
+        let fail = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            const r = await _fetchSectorOnce(attempt > 0 ? true : force);
+            if (seq !== _reqSeq) return;
+            if (r.ok) {
+              sectorRows.value = r.res.rows || [];
+              sectorFlowSource.value = r.res.source || (r.res.note ? '同花顺' : '东财');
+              sectorErrorCode.value = r.res.error_code || '';
+              sectorStale.value = r.res.error_code === 'stale' ? String(r.res.captured_at || '') : '';
+              sectorPage.value = 1;
+              sectorError.value = false;
+              sectorLoading.value = false;
+              return;
+            }
+            fail = r;
+          } catch (e) {
+            if (seq !== _reqSeq) return;
+            fail = {
+              ok: false,
+              title: '数据加载失败',
+              desc: '网络或服务异常：' + ((e && e.message) ? e.message : '未知错误'),
+            };
           }
-        } catch (e) {
-          if (seq !== _reqSeq) return;
-          sectorError.value = true;
-          sectorErrTitle.value = '数据加载失败';
-          sectorErrDesc.value = '请检查服务后重试';
-        } finally {
-          if (seq === _reqSeq) sectorLoading.value = false;
+          if (attempt === 0) await _sleep(300);
         }
+        if (seq !== _reqSeq) return;
+        sectorError.value = true;
+        sectorErrTitle.value = fail.title;
+        sectorErrDesc.value = fail.desc;
+        sectorLoading.value = false;
       }
 
       async function loadReview(force) {
@@ -643,9 +737,12 @@
       return {
         currentPage, currentSubPage,
         shortDate, pools, poolLoading, poolError, ztBoardFilter, filteredZt, clearBoardFilter, hasAnyPool,
+        // v7.18: 涨停池分页 + 窄屏卡片
+        ztPage, ztPageRows, gotoTzPage, ztCards, zbCards, dtCards, onCardPick,
         // v7.3.1-fix: 四态面板的标题/描述 refs 之前未返回 → 错误态标题空白
         poolErrTitle, poolErrDesc, lhbErrTitle, lhbErrDesc,
         overviewErrTitle, overviewErrDesc, sectorErrTitle, sectorErrDesc,
+        sectorErrorCode, sectorStale,
         lhbRows, lhbLoading, lhbError, lhbReason, lhbPageRows, lhbPage,
         overview, overviewLoading, overviewError,
         dateList, dateListLoading, loadDateList, pickDate,

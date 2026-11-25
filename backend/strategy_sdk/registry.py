@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List
 
 from strategy_sdk.base import BaseStrategy
+from strategy_sdk.labels import label_of
 from strategy_sdk.builtin.multi_factor import MultiFactorStrategy
 from strategy_sdk.builtin.sector_rotation import SectorRotationStrategy
 from strategy_sdk.builtin.index_enhance import IndexEnhanceStrategy
@@ -68,13 +69,18 @@ class StrategyRegistry:
             {
                 "id": s.id,
                 "name": s.name,
+                # v7.19 (FR-9): id 的中文名（策略名已是中文时同值），前端不用再维护一份映射
+                "id_cn": label_of('sid', s.id, s.name),
                 "version": s.version,
                 "description": s.description,
                 "schema": s.params_schema(),
                 # V4.0 M2-3: 暴露因子声明, 前端因子下拉不再硬编码
+                # v7.19 (FR-9): 同时给出 label / category_cn，避免前端渲染英文枚举
                 "factor_specs": [
                     {"name": f.name, "category": f.category, "inputs": list(f.inputs),
-                     "params": dict(f.params)}
+                     "params": dict(f.params),
+                     "label": getattr(f, 'label', '') or label_of('factor', f.name, ''),
+                     "category_cn": getattr(f, 'category_cn', '') or label_of('category', f.category, '')}
                     for f in getattr(s, "factor_specs", []) or []
                 ],
             }

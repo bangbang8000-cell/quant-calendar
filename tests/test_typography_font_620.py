@@ -18,10 +18,14 @@ def _read(rel, root=FRONTEND):
 
 
 def test_main_js_imports_inter_fonts():
-    """构建入口应副作用导入 @fontsource/inter (latin 400/500/600/700)"""
+    """v7.18 (FR-802/TC-40): 字体改走 /static/fonts 稳定路径 —
+    main.js 不再 import fontsource (会生成第 3 个阻塞 CSS), @font-face 固化进 tokens.css"""
     main = _read("src/main.js")
+    assert "@fontsource/inter/latin-" not in main, "main.js 不应再 import fontsource (产生阻塞 CSS)"
+    tokens = _read("css/tokens.css")
     for w in ("400", "500", "600", "700"):
-        assert f"@fontsource/inter/latin-{w}.css" in main, f"main.js 应引入 Inter latin-{w}"
+        assert f"/static/fonts/inter-latin-{w}-normal.woff2" in tokens, f"tokens.css 应声明 Inter {w} @font-face"
+        assert "font-display: swap" in tokens, "font-display 必须 swap"
 
 
 def test_font_stack_leads_with_inter():
@@ -40,13 +44,11 @@ def test_inter_is_declared_dependency():
 
 
 def test_dist_contains_inter_woff2():
-    """构建产物应含 Inter 字体文件 (woff2 随 assets 输出)"""
-    dist_assets = os.path.join(FRONTEND, "dist", "assets")
-    if not os.path.isdir(dist_assets):
-        return  # 未构建时跳过 (构建冒烟另行断言)
-    names = os.listdir(dist_assets)
-    fonts = [n for n in names if "inter" in n.lower() or "Inter" in n]
-    assert fonts, "dist/assets 应包含 Inter 字体文件 (woff2)"
+    """v7.18: Inter 字体文件固化在 frontend/fonts 稳定路径 (经 /static/fonts 服务)"""
+    fonts_dir = os.path.join(FRONTEND, "fonts")
+    names = os.listdir(fonts_dir) if os.path.isdir(fonts_dir) else []
+    w2 = [n for n in names if n.startswith("inter-latin-") and n.endswith(".woff2")]
+    assert len(w2) == 4, "frontend/fonts 应含 4 个 Inter woff2 (400/500/600/700), 实测 %d" % len(w2)
 
 
 def test_animations_css_not_truncated():

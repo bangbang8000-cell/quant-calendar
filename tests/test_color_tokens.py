@@ -193,6 +193,10 @@ def test_no_hardcoded_colors_outside_token_sources():
         rel = os.path.relpath(path, FRONTEND).replace("\\", "/")  # Windows 反斜杠归一, 保证 _SRC_OK 匹配
         if rel in _SRC_OK:
             continue
+        # v7.18 (FR-802): css/app.css 为 build_css.py 按 manifest 合并的生成物,
+        # 内容逐行来自已扫描的源文件 (tokens/themes 源已豁免) — 不重复扫描
+        if rel == "css/app.css":
+            continue
         in_block = False
         for i, line in enumerate(open(path, encoding="utf-8", errors="ignore"), 1):
             st = line.strip()

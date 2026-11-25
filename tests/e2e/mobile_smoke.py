@@ -114,7 +114,7 @@ def _dismiss_overlays(page, max_tries=12):
 
 def _click_nav(page, text):
     return page.evaluate(
-        "(t) => { const el=[...document.querySelectorAll('.mobile-nav-item')].find(e=>e.textContent.includes(t)); if(el){el.click();return true;} return false; }",
+        "(t) => { const el=[...document.querySelectorAll('.qc-mobile-tab')].find(e=>e.textContent.includes(t)); if(el){el.click();return true;} return false; }",
         text,
     )
 
@@ -185,7 +185,7 @@ def smoke_layout_nav(page):
     log('M-01 375px 布局 + 底部导航可达')
     ok, info = _overflow_ok(page)
     check('M-01 策略总览无横向溢出', ok, str(info))
-    nav = page.evaluate("() => ({ items: document.querySelectorAll('.mobile-nav-item').length, display: getComputedStyle(document.querySelector('.mobile-nav')).display, sidebar: getComputedStyle(document.querySelector('.sidebar')).display })")
+    nav = page.evaluate("() => ({ items: document.querySelectorAll('.qc-mobile-tab').length, display: getComputedStyle(document.querySelector('.qc-mobile-nav')).display, sidebar: getComputedStyle(document.querySelector('.qc-sidebar')).display })")
     check('M-01 底部导航可见(5项) + 侧边栏隐藏',
           nav['items'] >= 5 and nav['display'] != 'none' and nav['sidebar'] == 'none',
           str(nav))

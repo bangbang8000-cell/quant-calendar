@@ -123,3 +123,25 @@ def resolve_portal(universe: Optional[list] = None, seed: int = 2026) -> tuple:
     dates = date_range(_start.isoformat(), _end.isoformat(), 40)
     symbols = universe or [f'{600000 + i:06d}.SH' for i in range(24)]
     return FakePortal(dates=dates, symbols=symbols, seed=seed), False
+
+
+def symbol_names(symbols):
+    """v7.19 (FR-9): 代码 → 中文名批量映射（只查本地名称库，不发网络请求）。
+
+    缺失的代码**不写入**（前端据此渲染 `—`），避免旧行为「代码即名称」的伪装。
+    """
+    if not symbols:
+        return {}
+    try:
+        from stock_info import stock_manager
+    except Exception:  # noqa: BLE001
+        return {}
+    out = {}
+    for code in symbols:
+        try:
+            name = stock_manager.get_name(code)
+        except Exception:  # noqa: BLE001
+            name = ''
+        if name and name != code:
+            out[code] = name
+    return out
