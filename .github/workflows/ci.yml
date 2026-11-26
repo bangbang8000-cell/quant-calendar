@@ -1,6 +1,7 @@
 name: CI
 
 # V4.0 精简: CI 只在里程碑版本(tag v*)或手动触发(workflow_dispatch)时运行, 不再随每次 push 触发
+# 2026-11-27: 内联 shell 已抽到 scripts/ci/ 共享层，GitHub 与 GitLab 复用同一批门禁脚本。
 on:
   push:
     tags:
@@ -31,34 +32,17 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: '0.11.7'
-      - name: 校验依赖锁文件未漂移 (FR-3.10.2) — 失败修复命令见输出
-        run: |
-          # 跳过文件头 3 行: 头部注释含 -o 输出路径, 与编译目标路径不同, 直接 diff 会恒红
-          uv pip compile --universal --python-version 3.11 requirements.in -o /tmp/check-runtime.lock
-          diff -u <(tail -n +4 requirements.lock) <(tail -n +4 /tmp/check-runtime.lock)
-          uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/check-dev.lock
-          diff -u <(tail -n +4 requirements-dev.lock) <(tail -n +4 /tmp/check-dev.lock)
+      - name: "校验依赖锁文件未漂移 (FR-3.10.2) — scripts/ci/gate-lock-drift.sh"
+        run: bash scripts/ci/gate-lock-drift.sh
       - name: 安装 ruff（版本取自 dev 锁文件，避免工具漂移）
         run: |
-          # v7.3.2-fix: 原步骤直接用 `ruff` 但从未安装 → exit 127 command not found
           V=$(grep -oP '^ruff==\K[0-9.]+' requirements-dev.lock)
           echo "锁定 ruff 版本: ${V}"
           uv pip install --system "ruff==${V}"
       - name: "Lint（ruff，失败时本地跑: ruff check backend/ --select=E,F,W --ignore=E501 --fix）"
-        run: ruff check backend/ --select=E,F,W --ignore=E501
-      - name: 版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5; workflow_dispatch 仅校验存在)
-        run: |
-          V=$(grep -oP 'APP_VERSION = "\K[0-9.]+' backend/main_new.py || true)
-          if [ -z "$V" ]; then echo "未找到 APP_VERSION"; exit 1; fi
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            TAG=${GITHUB_REF_NAME#v}
-            if [ "$TAG" != "$V" ]; then echo "tag=$TAG 与 APP_VERSION=$V 不一致"; exit 1; fi
-            echo "版本一致: $V"
-          else
-            echo "workflow_dispatch/分支触发: 仅校验 APP_VERSION 存在 ($V)"
-          fi
-      - name: "6.1.X 版本治理门禁 (T-6.1.0.1) — 失败修复命令: python scripts/bump_version.py <版本号>"
-        run: python scripts/bump_version.py --check
+        run: bash scripts/ci/gate-lint.sh
+      - name: "版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5) + 版本治理 (T-6.1.0.1)"
+        run: bash scripts/ci/gate-version.sh "${GITHUB_REF_NAME:-}"
 
   # 第②层 单测 + 接口覆盖率: 全量 pytest + 总/模块覆盖率 + 变更覆盖率
   layer2-unit-tests:
@@ -80,100 +64,17 @@ jobs:
           version: '0.11.7'
       - name: 按锁文件安装依赖
         run: uv pip install --system -r requirements.lock -r requirements-dev.lock
-      - name: 生成测试股票名映射 (data/stock_info.json, 供 _resolve_stock_name 等测试)
-        run: |
-          mkdir -p data
-          python - <<'EOF'
-          import json
-          stock_map = {
-              "600085.SH": "同仁堂",
-              "000002.SZ": "万科A",
-              "600519.SH": "贵州茅台",
-              "000001.SZ": "平安银行",
-              "600000.SH": "浦发银行",
-              "600036.SH": "招商银行",
-              "000858.SZ": "五粮液",
-              "300750.SZ": "宁德时代",
-          }
-          with open("data/stock_info.json", "w", encoding="utf-8") as f:
-              json.dump(stock_map, f, ensure_ascii=False)
-          print(f"stock_info.json written: {len(stock_map)} entries")
-          EOF
-      - name: 测试 + 总覆盖率护栏 (≥40%, FR-3.18.13; e2e/network 场景单独跑, FR-651)
-        run: python -m pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-report=json:coverage.json --cov-fail-under=40 -m "not e2e and not network"
-      - name: "变更覆盖率门禁 (FR-652 第 2 条: 变更行 ≥60% / 核心模块 ≥70%) — 失败修复命令见输出"
+      - name: "测试 + 总覆盖率护栏 (≥40%, FR-3.18.13) — scripts/ci/gate-unit.sh"
+        run: bash scripts/ci/gate-unit.sh
+      - name: "变更覆盖率门禁 (FR-652 第 2 条) — scripts/ci/gate-diff-coverage.sh"
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            git fetch origin "$GITHUB_BASE_REF" --depth=1 || true
-            python scripts/check_diff_coverage.py --base "origin/$GITHUB_BASE_REF" --gate
+            bash scripts/ci/gate-diff-coverage.sh "$GITHUB_BASE_REF"
           else
-            python scripts/check_diff_coverage.py --gate || echo "[diff-cov] 非 PR 触发无变更行, 跳过"
+            bash scripts/ci/gate-diff-coverage.sh
           fi
-      - name: "核心/新模块覆盖率门禁 (FR-3.18.13: 美林≥70%; 因子IC/事实护栏/决策复盘数据层≥70%; 数据源自愈/复盘激活/事件提醒≥60%)"
-        run: |
-          # v7.3.3-fix: 补入 test_v66_merrill_correction.py —— 否则 merrill_clock/_correction.py 覆盖 0%
-          # （56 行全未命中），模块总覆盖被拖到 68.85% → 门禁恒红。补入后实测 78.27%。
-          python -m pytest tests/test_merrill_clock.py tests/test_data_sources.py \
-            tests/test_v66_merrill_correction.py \
-            --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
-          python -m pytest tests/test_factor_ic.py tests/test_fact_check.py tests/test_eval_track.py \
-            tests/test_factor_ic_detail.py \
-            --cov=factor_ic --cov=fact_check --cov=eval_track --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # 数据源自愈门禁含既有 data_sources 测试 (test_data_sources/test_data_sources_fetch),
-          # 否则仅路由测试对 data_sources 覆盖不足 (40% < 60%), CI 恒红
-          # V5.7.1: 补入 test_kline_minute_v540 (覆盖 _manager 限流逻辑, 58%→63%)
-          # v7.3.3-fix: 补入 6.7~7.3 新模块的测试 —— 否则 data_sources/_fuyao.py 只有 20%、
-          # 模块合计 56.66% < 60% → 门禁恒红。补入后实测 66.69%。
-          python -m pytest tests/test_data_source_routing.py tests/test_data_sources.py tests/test_data_sources_fetch.py \
-            tests/test_market_review_activation.py tests/test_event_alert_live.py tests/test_market_review.py \
-            tests/test_kline_minute_v540.py tests/test_fuyao_client.py tests/test_fuyao_units.py \
-            tests/test_fuyao_switches.py tests/test_fuyao_secret_guard.py tests/test_data_tier_guard.py \
-            --cov=data_sources --cov=market_review --cov=event_alert --cov-report=term --cov-fail-under=60 -m "not e2e"
-          # V5.0.1 (T-5.0.11~5.0.16): 数据中台模块覆盖率门禁 ≥70% (TEST-PLAN 2.3)
-          python -m pytest tests/test_data_portal2.py tests/test_data_quality.py tests/test_pit_no_lookahead.py             tests/test_data_dict.py tests/test_survivorship.py tests/test_data_lineage.py             --cov=data_portal2 --cov=data_quality --cov=pit --cov=data_dict --cov=survivorship --cov=lineage             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.2 (T-5.0.21~5.0.26): 回测模块覆盖率门禁 ≥70% + 成本敏感度/样本外进入门禁 (TEST-PLAN 3.3)
-          python -m pytest tests/test_cost_model.py tests/test_backtest_benchmark.py tests/test_walkforward.py             tests/test_param_stability.py tests/test_attribution.py tests/test_backtest_report.py             --cov=cost_model --cov=benchmark --cov=walkforward --cov=param_stability             --cov=attribution --cov=backtest_report             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.3 (T-5.0.31~5.0.35): 风险/组合模块覆盖率门禁 ≥70% (TEST-PLAN 4.3)
-          python -m pytest tests/test_risk_metrics.py tests/test_position_sizing.py tests/test_risk_rules.py             tests/test_risk_events.py tests/test_portfolio_risk_api.py             --cov=risk --cov=rules --cov=risk_events             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.4 T-5.0.41/5.0.42: 通知通道 + 事件引擎 覆盖率门禁 (TEST-PLAN 5.3)
-          python -m pytest tests/test_notify_channels.py tests/test_event_engine.py tests/test_alert_rules.py             tests/test_alerts_api.py --cov=notify --cov=events --cov=rules_alert             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.5 T-5.0.51/5.0.52/5.0.53/5.0.55: 报表中心模块覆盖率门禁 ≥70% (TEST-PLAN 6.3)
-          python -m pytest tests/test_report_templates.py tests/test_report_export.py             tests/test_report_subscribe.py tests/test_today_highlights.py             --cov=report_center --cov=report_export --cov=report_subscribe             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.7 T-5.0.71/5.0.72/5.0.74: 缓存/任务队列/降采样覆盖率门禁 ≥70% (TEST-PLAN 8.3, 阻塞)
-          python -m pytest tests/test_cache2.py tests/test_jobs_queue.py tests/test_jobs_integration.py             tests/test_downsample.py --cov=jobs --cov=cache --cov=downsample             --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.8 T-5.0.81/5.0.82/5.0.83/5.0.84/5.0.85: RBAC/协作/APIv3/SDK/插件SDK 覆盖率门禁 ≥70% (TEST-PLAN 9.3, 阻塞)
-          python -m pytest tests/test_rbac_matrix.py --cov=rbac --cov-report=term --cov-fail-under=70 -m "not e2e"
-          python -m pytest tests/test_collaboration.py --cov=collaboration --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # v7.3.3-fix: 补入 test_watchlist.py —— 否则 api/v1/watchlist.py 只有 56%，
-          # 该项合计 64.51% < 70% → 门禁恒红。补入后实测 76.94%。
-          python -m pytest tests/test_api_v3.py tests/test_sdk.py tests/test_watchlist.py --cov=api.v3 --cov=api.v1.watchlist --cov-report=term --cov-fail-under=70 -m "not e2e"
-          python -m pytest tests/test_plugins_v2.py --cov=plugin_sdk --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): AI 评估拆分后覆盖率不降门禁 ≥50% (拆前 ai_evaluator 同测试集基线)
-          python -m pytest tests/test_ai_evaluator.py tests/test_ai_mock.py tests/test_eval_track.py tests/test_fact_check.py             tests/test_api_ai_models.py tests/test_api_batch_evaluate_stream.py tests/test_batch_evaluate_stream.py             tests/test_ai_eval_ui.py --cov=ai_eval --cov=ai_evaluator --cov-report=term --cov-fail-under=50 -m "not e2e"
-          # V5.0.9 T-5.0.92 (TEST-PLAN 10.3): 调度器拆分后覆盖率不降门禁 ≥30% (拆前 scheduler.py 同测试集基线)
-          python -m pytest tests/test_scheduler.py tests/test_file_watch.py tests/test_market_review_activation.py             tests/test_v492_day_view_fix.py tests/test_v492_daily_execution.py tests/test_reliability_atomic.py             tests/test_reliability_faults.py tests/test_metrics.py tests/test_holdings_concurrency.py             --cov=scheduler --cov-report=term --cov-fail-under=30 -m "not e2e"
-          # V5.0.9 T-5.0.93 (TEST-PLAN 10.3): 数据源/美林时钟拆分后覆盖率不降门禁 (拆前同测试集基线)
-          # v7.3.3-fix: 与上面那处同因 —— 该命令未含 6.7~7.3 的 Fuyao 测试，
-          # data_sources/_fuyao.py 只有 20%，合计 52.33% < 60% 恒红。补入后 >60%。
-          python -m pytest tests/test_data_sources.py tests/test_data_sources_fetch.py tests/test_data_source_routing.py             tests/test_batch_fetch.py             tests/test_fuyao_client.py tests/test_fuyao_units.py tests/test_fuyao_switches.py             tests/test_data_tier_guard.py --cov=data_sources --cov-report=term --cov-fail-under=60 -m "not e2e"
-          # v7.3.3-fix: 第二处 merrill 门禁同样缺 correction 测试（_correction.py 覆盖 0%
-          # → 合计 68.85% 恒红）；补入后 78%+
-          python -m pytest tests/test_merrill_clock.py tests/test_merrill_timeline.py tests/test_v66_merrill_correction.py --cov=merrill_clock --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.9 T-5.0.94 (TEST-PLAN 10.3): 迁移框架覆盖率门禁 ≥70% (阻塞)
-          python -m pytest tests/test_migrations.py --cov=migrations --cov-report=term --cov-fail-under=70 -m "not e2e"
-          # V5.0.9 T-5.0.95 (TEST-PLAN 10.5): 一键升级/回滚工具覆盖率门禁 ≥80% (阻塞)
-          python -m pytest tests/test_upgrade_rollback.py --cov=deploy_tool --cov-report=term --cov-fail-under=80 -m "not e2e"
-          # V5.0.9 T-5.0.96 (TEST-PLAN 10.6): 观测性 2.0 覆盖率门禁 ≥80% (阻塞)
-          python -m pytest tests/test_observability.py tests/test_metrics.py --cov=metrics --cov=structured_log --cov-report=term --cov-fail-under=80 -m "not e2e"
-          # V5.0.9 T-5.0.97 (TEST-PLAN 10.7): 契约/property/脚手架门禁 (阻塞)
-          python -m pytest tests/test_contract_openapi.py tests/test_property_based.py -q -m "not e2e"
-          python -m pytest tests/test_scaffold.py --cov=scripts_scaffold --cov-report=term --cov-fail-under=80 -m "not e2e"
-      - name: "6.3.1 拆分产物覆盖率门禁 (T-6.3.1.7: 结构分治产出的片段须有装配/注册/引用, 无孤儿文件)"
-        run: python -m pytest tests/test_coverage_gate_631.py -q -m "not e2e"
-      - name: "6.3.2 效率与可靠性门禁 (T-6.3.2.1~.4: 日志口径/备份校验调度/告警联动/日志轮转)"
-        run: python -m pytest tests/test_logging_consistency_632.py tests/test_backup_schedule_632.py             tests/test_alert_linkage_632.py tests/test_log_rotation_632.py -q -m "not e2e"
-      - name: "6.3.3 智能化收敛门禁 (T-6.3.3.1/.2: AI 降级口径统一 / AI 观测用量统计)"
-        run: python -m pytest tests/test_ai_fallback_633.py tests/test_ai_obs_633.py -q -m "not e2e"
+      - name: "核心/新模块覆盖率门禁 (FR-3.18.13 + 6.3.1~6.3.3) — scripts/ci/gate-coverage-modules.sh"
+        run: bash scripts/ci/gate-coverage-modules.sh
 
   # V5.0.9 T-5.0.91 (TEST-PLAN 10.3): 拆分对拍独立 job — 方法集/import 兼容/行为 golden/覆盖冒烟, fail 即红
   split-parity-gate:
@@ -187,10 +88,8 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.lock -r requirements-dev.lock
       - name: 拆分对拍 (符号/结构/import/行为/覆盖)
-        run: python -m pytest tests/test_split_parity.py -v --tb=short
+        run: bash scripts/ci/gate-split-parity.sh
 
-  # 视觉回归 (FR-3.11.9 / TC-11.14): 截图对比产出 HTML diff 报告。
-  # 信息性检查 —— continue-on-error: 有差异不阻塞发布, 报告作为工件供人工审阅。
   # V5.0.8 T-5.0.81 (TEST-PLAN 9.3): RBAC 权限矩阵独立 job — deny-by-default 守护延续, fail 即红
   rbac-matrix-gate:
     runs-on: ubuntu-latest
@@ -203,7 +102,7 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.lock -r requirements-dev.lock
       - name: RBAC 权限矩阵 (deny-by-default, 独立红)
-        run: python -m pytest tests/test_rbac_matrix.py -v --tb=short
+        run: bash scripts/ci/gate-rbac.sh
 
   # V5.0.1 PIT 强制门禁 (TEST-PLAN 2.3): 防前视断言四路径, fail 即红, 独立 job
   pit-gate:
@@ -217,12 +116,11 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.lock -r requirements-dev.lock
       - name: PIT 防前视断言 (end<=as_of 四路径)
-        run: python -m pytest tests/test_pit_no_lookahead.py -v --tb=short
+        run: bash scripts/ci/gate-pit.sh
 
   performance-gate:
     runs-on: ubuntu-latest
     needs: layer2-unit-tests
-    # V5.3.0 (T-5.3.4.5 / FR-5.3.4.5): 性能基准入 CI 门禁 — 必跑, 退化即红
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -230,19 +128,27 @@ jobs:
           python-version: "3.11"
       - name: 安装依赖
         run: pip install -r requirements.lock -r requirements-dev.lock
-      - name: 性能回归 (降采样/分页/骨架屏)
-        run: python -m pytest tests/test_performance.py -v --tb=short
-      - name: "前端体积预算门禁 (T-5.3.4.1: 主逻辑 ≤80KB, 源码 JS 总量 ≤1.3MB)"
-        run: python -m pytest tests/test_bundle_budget_v534.py -v --tb=short
-      - name: "虚拟滚动覆盖守护 (T-5.3.4.2: 长表虚拟滚动/分页)"
-        run: python -m pytest tests/test_virtual_scope_v534.py -v --tb=short
-      - name: "6.4.3 运行效率门禁 (FR-647/648: 体积阈值 / Top10 P95 / 降采样 / 长任务)"
-        run: python -m pytest tests/test_release_643_perf.py -q -m "not e2e"
+      - name: "性能回归 / 体积预算 / 虚拟滚动 / 运行效率 — scripts/ci/gate-perf.sh"
+        run: bash scripts/ci/gate-perf.sh
 
+  # 前端 dist 与源码一致性（阻塞门）：重新构建后逐字节比对入库产物。
+  # POC 已验证构建确定性（2026-11-27，10 文件 sha256 两次完全一致）。
+  dist-sync-gate:
+    runs-on: ubuntu-latest
+    needs: layer2-unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: "重新构建并校验 dist / app.css — scripts/ci/gate-dist-sync.sh"
+        run: bash scripts/ci/gate-dist-sync.sh
 
-  # 6.4.3 (FR-647 第 4 条): 构建体积门禁 — 真实构建后按 raw+gzip 度量并输出超限 chunk。
-  # 现状: 首屏业务 JS 974KB / vendor-ep 928KB 均超预算 (分包与 EP 按需为 6.5.x 专项),
-  # 故本 job 先以 continue-on-error 作为"可见的告警门", 达标后去掉该开关即转为阻塞门。
+  # 6.4.3: 构建体积门禁 — 真实构建后按 raw+gzip 度量。
+  # continue-on-error: 该项为"可见的告警门"，达标后再去掉开关转阻塞。
   bundle-size-gate:
     runs-on: ubuntu-latest
     needs: layer2-unit-tests
@@ -255,14 +161,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: 前端依赖 (锁 package-lock)
-        run: npm --prefix frontend ci
-      - name: 构建
-        run: npm --prefix frontend run build
-      - name: 体积报告 + 阈值门禁 (总量 ≤1800KB / 首屏业务 JS ≤400KB / Element Plus ≤600KB)
-        run: |
-          mkdir -p data
-          python scripts/report_bundle_size.py --gate --json data/bundle_size.json
+      - name: 前端依赖 + 构建 (scripts/ci/build-frontend.sh)
+        run: bash scripts/ci/build-frontend.sh
+      - name: "体积报告 + 阈值门禁 — scripts/ci/gate-bundle.sh"
+        run: bash scripts/ci/gate-bundle.sh
       - name: 上传体积报告工件
         if: always()
         uses: actions/upload-artifact@v4
@@ -272,6 +174,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # 视觉回归 (FR-3.11.9 / TC-11.14): 截图 diff 报告。信息性检查，不阻塞发布。
+  # 保留内联：uvicorn 启动与 Playwright 依赖属于平台细节，不进共享脚本层。
   e2e-visual:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -290,7 +194,6 @@ jobs:
       - name: 按锁文件安装依赖
         run: uv pip install --system -r requirements.lock -r requirements-dev.lock
       - name: 安装 Playwright chromium
-        # 与 --system 安装一致: 直接调用系统 python (uv run 会创建空 venv 导致 No module named playwright)
         run: python -m playwright install --with-deps chromium
       - name: 启动 dev server 并跑视觉回归
         run: |
