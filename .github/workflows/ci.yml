@@ -270,6 +270,7 @@ jobs:
           name: bundle-size-report
           path: data/bundle_size.json
           if-no-files-found: ignore
+          retention-days: 14
 
   e2e-visual:
     runs-on: ubuntu-latest
@@ -312,3 +313,4 @@ jobs:
             tests/e2e/reports/
             tests/e2e/screenshots/
           if-no-files-found: ignore
+          retention-days: 14
