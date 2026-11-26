@@ -19,9 +19,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   # 留存上限：保留最近 KEEP_VERSIONS 个发行版本，更早的连同其浮动别名标签一并删除。
-  # 2026-11-03 用户决策：当前 5 个全部保留 → 上限放到 10；新版本累积到 10 个后开始滚动淘汰最老的。
-  # 想收紧回 5：把 10 改成 5 即可（下一次 prune 立即按新上限裁）。
-  KEEP_VERSIONS: 10
+  # 2026-11-27 用户决策：清理老版本，只保留最近 2 个发行版（含 latest 硬保护）。
+  # 调整此项后下一次 prune 立即按新上限裁；历史镜像删除不可逆，故始终保持「先建新镜像再 prune」的顺序。
+  KEEP_VERSIONS: 2
 
 jobs:
   build-and-push:
