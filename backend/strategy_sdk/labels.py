@@ -15,7 +15,7 @@
 前端 `frontend/js/research-lexicon.js` 是同一张表的兜底副本，两处需保持一致
 （`tests/test_v719_i18n_lexicon.py` 会做一致性断言）。
 """
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 STRATEGY_LABELS = {
     'multi_factor': '多因子选股',

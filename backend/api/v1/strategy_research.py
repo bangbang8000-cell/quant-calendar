@@ -19,23 +19,20 @@ from strategy_db import StrategyBusyError, append_run, finish_run, get_run, list
 from strategy_sdk.base import StrategyContext
 from strategy_sdk.labels import localize_run
 from strategy_sdk.registry import registry, StrategyNotFoundError
-from research_store import save_experiment
-
-logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix='/strategies', tags=['策略研究'])
-
 
 # v7.14: 支撑层拆分 — 动态窗口/门户解析/实验持久化/面板工具 (使主文件回到 ≤700 行门禁内)
 from .strategy_research_support import (
     symbol_names as _symbol_names,
     default_research_range as _default_research_range,
     default_end_sync as _default_end_sync,
-    date_range as _date_range,
     future_returns as _future_returns,
     record_experiment as _record_experiment,
     resolve_portal as _resolve_portal,
 )
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix='/strategies', tags=['策略研究'])
 
 
 @router.get('')

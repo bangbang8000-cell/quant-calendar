@@ -100,7 +100,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                 await asyncio.sleep(max((target - now).total_seconds(), 10))
                 if not self.running:
                     break
-                from timeutil import cst_today as _cst_today; today = _cst_today()
+                from timeutil import cst_today as _cst_today
+                today = _cst_today()
                 if last_date == today:
                     await asyncio.sleep(60)
                     continue
@@ -129,7 +130,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                     ok = run_ok and _ok and not errors and holdings_count > 0
                     detail = f"策略持仓已生成 {today}; {_detail}; 执行策略数={len(executed or [])}, 持仓行数={holdings_count}; 策略:{','.join(executed or []) or '无'}"[:200]
                     if holdings_count <= 0:
-                        detail += "; 持仓0行按失败处理(未标fresh)"; logger.error("[FR-2] %s 策略运行产出持仓0行, 按失败处理", today)
+                        detail += "; 持仓0行按失败处理(未标fresh)"
+                        logger.error("[FR-2] %s 策略运行产出持仓0行, 按失败处理", today)
                     if errors:
                         detail += "; 失败:" + ";".join(e["sid"] + ":" + e["error"] for e in errors)[:100]
                     self.execution_progress = {

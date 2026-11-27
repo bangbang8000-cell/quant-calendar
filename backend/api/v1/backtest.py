@@ -6,11 +6,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 import logging
 
-logger = logging.getLogger(__name__)
 from typing import Dict, Any
 
 from backtest import backtest_engine, save_backtest_result, get_backtest_history
 from auth import get_non_guest_user, get_current_active_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/backtest", tags=["策略回测"])
 

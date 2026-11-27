@@ -11,12 +11,17 @@
 """
 import logging
 from dataclasses import asdict
-from datetime import date, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
+
+# v7.20: 信号字典单一事实来源 (策略判断 -> 界面文案)
+from timing.signal_dict import (
+    SIGNAL_DICTIONARY, action_display, signal_display, matrix_legend,
+)
 
 from auth import get_non_guest_user
 
@@ -29,11 +34,6 @@ _STATE_EXPOSURE = {
     "bear_shock": 0.5, "bear_trend": 0.2, "unknown": 0.5,
 }
 _TRADE_ACTIONS = ("buy", "sell", "add", "reduce")
-
-# v7.20: 信号字典单一事实来源 (策略判断 -> 界面文案)
-from timing.signal_dict import (
-    SIGNAL_DICTIONARY, action_display, signal_display, matrix_legend,
-)
 
 
 
