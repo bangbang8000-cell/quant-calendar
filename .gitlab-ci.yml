@@ -1,0 +1,165 @@
+# quant-calendar CI/CD — GitLab 侧（v7.23）
+#
+# 与 GitHub Actions 共用 scripts/ci/ 下的全部门禁脚本；本文件只做编排。
+# 阶段：bootstrap → security → gate → build，**不含 deploy**。
+#
+# 前置（需在 GitLab UI 确认，见工作计划 P0）：
+#   1. 项目有可用 runner（docker executor 最佳；shell 亦可）
+#   2. Container Registry 状态（默认不启用镜像构建，见 build:image 注释）
+#   3. 若 runner 带标签，在 default.tags 补上，例如 tags: [docker]
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - when: manual
+      allow_failure: true
+
+stages:
+  - bootstrap
+  - security
+  - gate
+  - build
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
+  GIT_DEPTH: "20"
+
+default:
+  # node:20-bookworm-slim 自带 Node 20 与 Python 3.11（Debian bookworm），
+  # 同时满足 pytest 与 vite/build_css.py 的需要，避免两套镜像漂移。
+  image: node:20-bookworm-slim
+  timeout: 30m
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/uv
+      - .cache/pip
+      - .cache/npm
+      - frontend/node_modules
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv curl > /dev/null
+    - pip3 install --break-system-packages -q uv==0.11.7
+    - uv pip install --system -r requirements.lock -r requirements-dev.lock
+
+# ─────────────────────────── 1. 初始化 ───────────────────────────
+bootstrap:
+  stage: bootstrap
+  script:
+    - bash scripts/ci/gate-lock-drift.sh
+
+# ─────────────────────────── 2. 代码安全 ───────────────────────────
+security:static:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/security-static.sh
+
+security:sast:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/security-sast.sh
+
+security:secrets:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/security-secrets.sh
+
+security:deps:
+  stage: security
+  needs: [bootstrap]
+  allow_failure: true   # 首版 report-only：存量 CVE 与网络波动不阻塞
+  script:
+    - bash scripts/ci/security-deps.sh
+
+# ─────────────────────────── 3. 门禁 ───────────────────────────
+gate:unit:
+  stage: gate
+  needs: [bootstrap, security:sast, security:secrets]
+  script:
+    - bash scripts/ci/gate-unit.sh
+
+gate:coverage-modules:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/gate-coverage-modules.sh
+
+gate:diff-coverage:
+  stage: gate
+  needs: [bootstrap]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - bash scripts/ci/gate-diff-coverage.sh "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+
+gate:split-parity:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/gate-split-parity.sh
+
+gate:rbac:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/gate-rbac.sh
+
+gate:pit:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/gate-pit.sh
+
+gate:perf:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/ci/gate-perf.sh
+
+gate:version:
+  stage: gate
+  needs: [bootstrap]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - bash scripts/ci/gate-version.sh "$CI_COMMIT_TAG"
+
+# ─────────────────────────── 4. 构建（不含部署） ───────────────────────────
+build:dist-sync:
+  stage: build
+  needs: [gate:unit, gate:coverage-modules]
+  script:
+    - bash scripts/ci/gate-dist-sync.sh
+  artifacts:
+    when: always
+    paths:
+      - frontend/dist/
+      - frontend/css/app.css
+    expire_in: 1 week
+
+build:image:
+  stage: build
+  needs: [build:dist-sync]
+  allow_failure: true   # 依赖 runner 的 docker 能力与 Container Registry 开关（P0-2/P0-3 待确认）
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/ && $QC_BUILD_IMAGE == "1"'
+  script:
+    - echo "IMAGE_BUILD_PLACEHOLDER — 待确认 runner docker 能力后启用 scripts/ci/build-image.sh"
+
+build:package:
+  stage: build
+  needs: [build:dist-sync]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - echo "PACKAGE_BUILD_PLACEHOLDER — P6 接入 scripts/ci/build-package.sh"
+  artifacts:
+    paths:
+      - dist/quant-calendar-*.tar.gz
+    expire_in: 90 days
