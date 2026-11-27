@@ -158,7 +158,7 @@ build:package:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   script:
-    - echo "PACKAGE_BUILD_PLACEHOLDER — P6 接入 scripts/ci/build-package.sh"
+    - bash scripts/ci/build-package.sh
   artifacts:
     paths:
       - dist/quant-calendar-*.tar.gz

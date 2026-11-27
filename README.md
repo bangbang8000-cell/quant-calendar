@@ -6,7 +6,7 @@
   </p>
   <p align="center">
     <a href="https://github.com/bangbang8000-cell/quant-calendar/releases"><img src="https://img.shields.io/github/v/release/bangbang8000-cell/quant-calendar?color=blue&label=release" alt="release"></a>
-    <img src="https://img.shields.io/badge/version-7.22.0-brightgreen" alt="version">
+    <img src="https://img.shields.io/badge/version-7.23.0-brightgreen" alt="version">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
     <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="python">
     <img src="https://img.shields.io/badge/vue-3.x-42b883" alt="vue">
@@ -273,7 +273,8 @@ quant-calendar/
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | **v7.15.0** | 2026-11 | 7.15.X 迭代（见 docs/PRD-7.15.X.md） |
-| **v7.22.0** | 2026-11 | **当前开发版本** — UI 细节修复（见 PRD-UI细节修复-v7.22.md） |
+| **v7.23.0** | 2026-11 | **当前开发版本** — 7.23.X 迭代（见 docs/PRD-7.23.X.md） |
+| **v7.22.0** | 2026-11 | UI 细节修复（见 PRD-UI细节修复-v7.22.md） |
 | **v7.21.0** | 2026-11 | 7.21.X 迭代（见 docs/PRD-7.21.X.md） |
 | **v7.20.0** | 2026-11 | 7.20.X 迭代（见 docs/PRD-7.20.X.md） |
 | **v7.19.0** | 2026-11 | v7.18 按域懒加载（system/ai/research/shortterm 四 chunk）+ 骨架屏 + 个股行统一；v7.19 建仓模块 / 美林时钟四象限与数据新鲜度 / 回测默认 18 个月·100 万 / 短线错误分级（见 验收报告-UI改进V1.0-20261124.md §10） |
