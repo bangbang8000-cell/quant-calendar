@@ -39,6 +39,8 @@ default:
   timeout: 45m
   before_script:
     - bash scripts/gitlab/env-bootstrap.sh
+    # 子脚本 export 不传回父 shell，需 source 持久 env 文件让后续 script 行拿到 venv PATH
+    - source .ci-venv/env.sh
 
 # ─────────────────────────── 1. 初始化 ───────────────────────────
 bootstrap:

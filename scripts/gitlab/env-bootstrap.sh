@@ -82,6 +82,15 @@ else
   qc_log "环境自举完成"
 fi
 
+# 把环境导出写进持久文件，供 before_script 在子脚本退出后 source
+# （GitLab 每个 script 行是独立 shell，子脚本 export 不会传回父 shell）。
+ENV_FILE="$ROOT/.ci-venv/env.sh"
+cat > "$ENV_FILE" <<EOF
+export PATH="$CI_VENV/bin:$CI_BIN:\$PATH"
+export VIRTUAL_ENV="$CI_VENV"
+EOF
+
+# 本脚本内也 export，供自身版本快照使用
 export PATH="$CI_VENV/bin:$CI_BIN:$PATH"
 export VIRTUAL_ENV="$CI_VENV"
 
