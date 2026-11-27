@@ -6,6 +6,9 @@ cd "$QC_CI_ROOT"
 # 依赖锁漂移校验：跳过文件头 3 行（头部注释含 -o 输出路径，与编译目标不同）
 qc_log "requirements.lock / requirements-dev.lock 漂移校验"
 qc_require uv
+# 必须先删旧临时文件：uv pip compile 会把已存在的 -o 目标当作约束，
+# 复用 /tmp 旧文件会导致门禁"假通过"（本地绿、CI 红）。
+rm -f /tmp/qc-check-runtime.lock /tmp/qc-check-dev.lock
 uv pip compile --universal --python-version 3.11 requirements.in -o /tmp/qc-check-runtime.lock
 diff -u <(tail -n +4 requirements.lock) <(tail -n +4 /tmp/qc-check-runtime.lock)
 uv pip compile --universal --python-version 3.11 -c requirements.lock requirements-dev.in -o /tmp/qc-check-dev.lock
