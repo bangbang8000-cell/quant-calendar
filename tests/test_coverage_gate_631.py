@@ -16,6 +16,16 @@ import os
 import re
 import sys
 
+
+def _ci_scripts_text():
+    """CI 命令已抽到 scripts/ci/ 共享层；契约断言须同时检查 YAML 与脚本。"""
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "scripts", "ci")
+    if not os.path.isdir(d):
+        return ""
+    return "\n".join(open(os.path.join(d, f), encoding="utf-8").read()
+                      for f in sorted(os.listdir(d)) if f.endswith(".sh"))
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -75,7 +85,7 @@ def test_view_assembly_wires_all_parts():
 
 def test_ci_runs_split_product_coverage_gate():
     """CI 需在覆盖率门禁块内运行本门禁（拆分产物纳入覆盖率统计）"""
-    ci = _read(".github/workflows/ci.yml")
+    ci = _read(".github/workflows/ci.yml") + _ci_scripts_text()
     assert "tests/test_coverage_gate_631.py" in ci, (
         "ci.yml 未运行拆分产物覆盖率门禁 —— 拆分后新模块无人统计")
     assert "--ignore=tests" not in ci, "CI 覆盖率步骤不得忽略 tests/ 目录"

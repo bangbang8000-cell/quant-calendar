@@ -15,6 +15,17 @@ import pytest
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_JS = os.path.join(BASE, "frontend", "js", "virtual-list-core.js")
 
+
+
+def _ci_scripts_text():
+    """CI 命令已抽到 scripts/ci/ 共享层；契约断言须同时检查 YAML 与脚本。"""
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "scripts", "ci")
+    if not os.path.isdir(d):
+        return ""
+    return "\n".join(open(os.path.join(d, f), encoding="utf-8").read()
+                      for f in sorted(os.listdir(d)) if f.endswith(".sh"))
+
 NEEDS_NODE = pytest.mark.skipif(subprocess.run(["node", "--version"], capture_output=True).returncode != 0,
                                 reason="需要 node")
 
@@ -124,5 +135,6 @@ def test_100k_rows_slice_latency():
 def test_ci_has_jobs_cache_coverage_gate():
     """ci.yml 含 jobs/cache/downsample 覆盖率门禁 (阻塞, 无 continue-on-error)"""
     ci = open(os.path.join(BASE, ".github", "workflows", "ci.yml"), encoding="utf-8").read()
+    ci += _ci_scripts_text()
     assert "--cov=jobs" in ci and "--cov=cache" in ci and "--cov=downsample" in ci
     assert "--cov-fail-under=70" in ci

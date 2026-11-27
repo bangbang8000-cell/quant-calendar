@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-定时任务调度器
-"""
+"""定时任务调度器"""
 import asyncio
 import logging
 import os

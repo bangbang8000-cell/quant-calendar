@@ -14,6 +14,18 @@ import importlib.util
 import json
 import os
 
+
+
+def _ci_scripts_text():
+    """CI commands moved to scripts/ci/; contract assertions scan both YAML and scripts."""
+    import os
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "scripts", "ci")
+    if not os.path.isdir(d):
+        return ""
+    return chr(10).join(open(os.path.join(d, f), encoding="utf-8").read()
+                     for f in sorted(os.listdir(d)) if f.endswith(".sh"))
+
 import pytest
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -146,5 +158,5 @@ def test_tc652_03_gate_failure_prints_fix_command(tmp_path, capsys):
 
 def test_tc652_04_ci_main_gate_excludes_network():
     """TC-652-04: CI 主门禁命令排除 e2e 与 network"""
-    ci = _read(".github", "workflows", "ci.yml")
+    ci = _read(".github", "workflows", "ci.yml") + _ci_scripts_text()
     assert '-m "not e2e and not network"' in ci

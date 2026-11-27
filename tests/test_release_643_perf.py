@@ -16,6 +16,19 @@
 import importlib.util
 import json
 import os
+
+
+
+def _ci_scripts_text():
+    """CI commands moved to scripts/ci/; contract assertions scan both YAML and scripts."""
+    import os
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "scripts", "ci")
+    if not os.path.isdir(d):
+        return ""
+    return chr(10).join(open(os.path.join(d, f), encoding="utf-8").read()
+                     for f in sorted(os.listdir(d)) if f.endswith(".sh"))
+
 import shutil
 import subprocess
 import sys
@@ -152,10 +165,11 @@ def test_tc647_03_measure_baseline_runs(tmp_path):
 
 def test_tc647_04_ci_bundle_gate():
     """TC-647-04: CI 接入 npm build + 体积门禁，并输出报告工件"""
-    ci = _read(".github", "workflows", "ci.yml")
+    ci = _read(".github", "workflows", "ci.yml") + _ci_scripts_text()
     assert "bundle-size-gate" in ci
-    assert "npm --prefix frontend ci" in ci.replace("npm ci --prefix frontend", "npm --prefix frontend ci")
-    assert "npm --prefix frontend run build" in ci
+    # 脚本层在 frontend/ 目录内执行 npm ci / npm run build:direct，等价于旧 --prefix 形式
+    assert "npm ci" in ci
+    assert "npm run build:direct" in ci or "npm --prefix frontend run build" in ci
     assert "report_bundle_size.py --gate" in ci
 
 
