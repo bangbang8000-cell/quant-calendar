@@ -44,10 +44,29 @@ jobs:
       - name: "版本纪律门禁 (tag v* ↔ APP_VERSION 一致, FR-4.5.5) + 版本治理 (T-6.1.0.1)"
         run: bash scripts/ci/gate-version.sh "${GITHUB_REF_NAME:-}"
 
+  # 代码安全 (v7.23): SAST / 密钥泄露阻塞，依赖 CVE 首版仅报告。
+  # 放在单测之前：静态问题几十秒即可定位，不必等 8 分钟全量 pytest。
+  security:
+    runs-on: ubuntu-latest
+    needs: layer1-lint-contract
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 按锁文件安装依赖（含安全工具）
+        run: pip install -r requirements.lock -r requirements-dev.lock
+      - name: "SAST — scripts/ci/security-sast.sh"
+        run: bash scripts/ci/security-sast.sh
+      - name: "密钥泄露扫描 — scripts/ci/security-secrets.sh"
+        run: bash scripts/ci/security-secrets.sh
+      - name: "依赖 CVE（report-only）— scripts/ci/security-deps.sh"
+        run: bash scripts/ci/security-deps.sh
+
   # 第②层 单测 + 接口覆盖率: 全量 pytest + 总/模块覆盖率 + 变更覆盖率
   layer2-unit-tests:
     runs-on: ubuntu-latest
-    needs: layer1-lint-contract
+    needs: [layer1-lint-contract, security]
     steps:
       - uses: actions/checkout@v4
         with:
