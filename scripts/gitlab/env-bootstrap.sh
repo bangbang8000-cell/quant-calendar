@@ -38,13 +38,18 @@ else
   # 1. 下载 uv 静态二进制（无 sudo / 无 pip 也能装）
   if [ ! -x "$CI_BIN/uv" ]; then
     echo "下载 uv $UV_VERSION 静态二进制..."
-    curl -LsSf "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" \
-      -o /tmp/qc-uv.tar.gz
-    tar -xzf /tmp/qc-uv.tar.gz -C /tmp
-    cp "/tmp/uv-${UV_VERSION}-x86_64-unknown-linux-gnu/uv" "$CI_BIN/uv"
-    cp "/tmp/uv-${UV_VERSION}-x86_64-unknown-linux-gnu/uvx" "$CI_BIN/uvx" 2>/dev/null || true
+    UV_SRC="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"
+    curl -LsSf "$UV_SRC" -o /tmp/qc-uv.tar.gz
+    rm -rf /tmp/qc-uv-extract && mkdir -p /tmp/qc-uv-extract
+    tar -xzf /tmp/qc-uv.tar.gz -C /tmp/qc-uv-extract
+    # 目录名随版本变化（0.11.7 为 uv-x86_64-unknown-linux-gnu），动态定位二进制
+    UV_BIN_PATH="$(find /tmp/qc-uv-extract -type f -name uv -perm -u+x | head -1)"
+    [ -n "$UV_BIN_PATH" ] || { echo "ERROR: uv 二进制解压后未找到"; tar -tzf /tmp/qc-uv.tar.gz | head; exit 1; }
+    cp "$UV_BIN_PATH" "$CI_BIN/uv"
+    UVX_BIN_PATH="$(dirname "$UV_BIN_PATH")/uvx"
+    [ -f "$UVX_BIN_PATH" ] && cp "$UVX_BIN_PATH" "$CI_BIN/uvx"
     chmod +x "$CI_BIN/uv"
-    rm -rf /tmp/qc-uv.tar.gz "/tmp/uv-${UV_VERSION}-x86_64-unknown-linux-gnu"
+    rm -rf /tmp/qc-uv.tar.gz /tmp/qc-uv-extract
   fi
   UV="$CI_BIN/uv"
   "$UV" --version
