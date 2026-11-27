@@ -30,6 +30,9 @@ stages:
 variables:
   GIT_DEPTH: "20"
   GIT_STRATEGY: fetch
+  # 保留 .ci-venv / .ci-bin 自举产物，避免每个 job 重复下载 24MB uv + Python 3.11。
+  # 副作用：untracked 文件（测试生成数据）会残留，但不影响门禁正确性。
+  GIT_CLEAN_FLAGS: none
   QC_GITLAB_CI: "1"
 
 default:
