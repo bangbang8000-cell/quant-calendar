@@ -1,25 +1,142 @@
-# 临时环境探测配置（正式全套门禁配置将在探测后写入）
-# 此 job 只读取 runner 宿主的工具链信息，不执行任何构建/测试。
+# quant-calendar GitLab 独立 CI/CD 流水线（v7.23+）
+#
+# 与 GitHub Actions 完全隔离：
+#   - 脚本层在 scripts/gitlab/（有自己的 _lib.sh / 基线 / 自举脚本），不依赖 scripts/ci/。
+#   - 配置只在本文件；GitHub 侧 .github/workflows/ 不受任何影响。
+#   - push 到 GitLab 自动触发；push 到 GitHub 只触发 GitHub Actions。
+#
+# 阶段：bootstrap → security → gate → build，**不含 deploy**。
+#
+# runner：ubuntu-git-shell（shell executor，Ubuntu 24.04，无 sudo/pip3/uv）。
+#         default.before_script 调 env-bootstrap.sh 自举 uv + Python 3.11 + 依赖，
+#         产物落在 .ci-venv / .ci-bin（构建目录持久，跨 job 复用）。
+#
+# 触发：master push、v* 版本 tag、Web 手动；MR 不自动跑全套（避免 fork 风险）。
+# 注意：workflow.rules 不支持 when:manual（GitLab 19.x 拒绝，会导致 0 job failed）。
 
-probe:
-  stage: build
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+stages:
+  - bootstrap
+  - security
+  - gate
+  - build
+
+variables:
+  GIT_DEPTH: "20"
+  GIT_STRATEGY: fetch
+  QC_GITLAB_CI: "1"
+
+default:
+  timeout: 45m
+  before_script:
+    - bash scripts/gitlab/env-bootstrap.sh
+
+# ─────────────────────────── 1. 初始化 ───────────────────────────
+bootstrap:
+  stage: bootstrap
   script:
-    - echo "=== WHOAMI / PWD ==="
-    - whoami; pwd; uname -a
-    - echo "=== OS ==="
-    - cat /etc/os-release 2>/dev/null | head -5
-    - echo "=== PYTHON ==="
-    - (python3 --version && which python3) || echo "python3 MISSING"
-    - (pip3 --version && which pip3) || echo "pip3 MISSING"
-    - echo "=== NODE ==="
-    - (node --version && which node) || echo "node MISSING"
-    - (npm --version && which npm) || echo "npm MISSING"
-    - echo "=== UV ==="
-    - (uv --version && which uv) || echo "uv MISSING"
-    - echo "=== GIT / CURL ==="
-    - git --version; curl --version | head -1
-    - echo "=== SUDO ==="
-    - (sudo -n true 2>/dev/null && echo "sudo NOPASSWD OK") || echo "sudo NOT AVAILABLE"
-    - echo "=== PATH ==="
-    - echo "$PATH"
-    - echo "=== PROBE DONE ==="
+    - bash scripts/gitlab/gate-lock-drift.sh
+
+# ─────────────────────────── 2. 代码安全 ───────────────────────────
+security:static:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/security-static.sh
+
+security:sast:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/security-sast.sh
+
+security:secrets:
+  stage: security
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/security-secrets.sh
+
+security:deps:
+  stage: security
+  needs: [bootstrap]
+  allow_failure: true   # report-only：存量 CVE 与网络波动不阻塞
+  script:
+    - bash scripts/gitlab/security-deps.sh
+
+# ─────────────────────────── 3. 门禁 ───────────────────────────
+gate:unit:
+  stage: gate
+  needs: [bootstrap, security:sast, security:secrets]
+  script:
+    - bash scripts/gitlab/gate-unit.sh
+
+gate:coverage-modules:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/gate-coverage-modules.sh
+
+gate:split-parity:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/gate-split-parity.sh
+
+gate:rbac:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/gate-rbac.sh
+
+gate:pit:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/gate-pit.sh
+
+gate:perf:
+  stage: gate
+  needs: [bootstrap]
+  script:
+    - bash scripts/gitlab/gate-perf.sh
+
+gate:version:
+  stage: gate
+  needs: [bootstrap]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - when: never
+  script:
+    - bash scripts/gitlab/gate-version.sh "$CI_COMMIT_TAG"
+
+# ─────────────────────────── 4. 构建（不含部署） ───────────────────────────
+build:dist-sync:
+  stage: build
+  needs: [gate:unit, gate:coverage-modules]
+  script:
+    - bash scripts/gitlab/gate-dist-sync.sh
+  artifacts:
+    when: always
+    paths:
+      - frontend/dist/
+      - frontend/css/app.css
+    expire_in: 1 week
+
+build:package:
+  stage: build
+  needs: [build:dist-sync]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - when: never
+  script:
+    - bash scripts/gitlab/build-package.sh
+  artifacts:
+    paths:
+      - dist/quant-calendar-*.tar.gz
+    expire_in: 90 days

@@ -21,6 +21,11 @@ venv/
 .venv/
 env/
 .env
+# GitLab 独立 CI 自举产物（uv 二进制 + Python 3.11 venv，构建目录内生成）
+.ci-venv/
+.ci-bin/
+.coverage
+coverage.json
 
 # Environment files (secrets)
 .env
