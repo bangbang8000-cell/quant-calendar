@@ -152,6 +152,10 @@ class TestFileWatchHoldings:
         f.write_text("x\n")
         snap1 = scan_csv_files([str(tmp_path)], recursive=True)
         f.write_text("x,y\n")  # 内容变动 → mtime 变化
+        # 部分文件系统（NFS / overlay）mtime 粒度粗到秒，连续写入会落同一时间戳，
+        # 导致 detect_csv_changes 误判为"无变动"。显式推高 mtime 保证跨平台稳定。
+        old_mtime = snap1[str(f)]
+        os.utime(f, (old_mtime + 2, old_mtime + 2))
         snap2 = scan_csv_files([str(tmp_path)], recursive=True)
         changed, desc = detect_csv_changes(snap1, snap2)
         assert changed is True
