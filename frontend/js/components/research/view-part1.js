@@ -9,7 +9,7 @@ window.__quantModules.researchPage.part1 = `
                     <!-- V6.9.3 (F11.2): 策略研究菜单恒显 — 移除 researchMenuEnabled 占位分支 -->
                     <!-- V4.9 (P2): 研究概览子页 -->
                     <div v-if="currentSubPage === 'research-overview'" class="card">
-                        <div class="card-title"><qc-icon name="bar-chart-3" :size="16" /> 资产总览</div>
+                        <qc-page-head icon="bar-chart-3" title="资产总览"></qc-page-head>
                         <!-- 6.3.1 (T-6.3.1.3): 四态统一 — 加载/错误/空态收敛到 qc-state-panel -->
                         <qc-state-panel v-if="strategiesLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="strategiesError" type="error" :title="strategiesErrorText || t('state.strategiesError')" :desc="t('state.descService')" @retry="loadStrategies"></qc-state-panel>
@@ -133,7 +133,7 @@ window.__quantModules.researchPage.part1 = `
                         </template>
                     </div>
                     <div v-if="currentSubPage === 'quant-research'" class="card">
-                        <div class="card-title">{{ t('research.quantResearch') }}</div>
+                        <qc-page-head :title="t('research.quantResearch')"></qc-page-head>
                         <!-- v7.14 (FR-6): 页内锚点导航 — 策略运行 / 因子研究 / 个股评分 / 参数扫描 -->
                         <div class="qr-anchor-nav" role="navigation" aria-label="页面区块导航">
                             <el-button size="small" text type="primary" @click="researchAnchorScroll('qr-run')">策略运行</el-button>
@@ -453,7 +453,7 @@ window.__quantModules.researchPage.part1 = `
                     </div>
                     <div v-else-if="currentSubPage === 'strategy-manage'" class="card">
                         <!-- V6.6.1 (PRD F-6.6.7): 策略管理 = 模板编辑(原策略编写) + 全新创建(原全新策略) 两态 -->
-                        <div class="card-title"><qc-icon name="layers" :size="16" /> 策略管理 <span class="text-sm-tertiary">模板编辑：复制母本微调 · 全新创建：AI 代写</span></div>
+                        <qc-page-head icon="layers" title="策略管理" desc="模板编辑：复制母本微调 · 全新创建：AI 代写"></qc-page-head>
                         <!-- v7.19 (T3.2): 策略工作台 —— 先罗列，再在列表上操作 (PRD 需求 ⑧) -->
                         <qc-strategy-board
                             :rows="strategyCardRows" :loading="strategyOverviewLoading"
@@ -464,6 +464,44 @@ window.__quantModules.researchPage.part1 = `
                             @update:onlyEnabled="overviewOnlyEnabled = $event"
                             @backtest="goBacktestFor" @detail="openStrategyManageFor"
                             @retry="loadStrategyOverview(true)"></qc-strategy-board>
+
+                        <!-- v7.26 (FR-16 / T-7.25.32): 策略管理 → 回测记录（单条/批量删除，legacy 只读） -->
+                        <div v-if="activeStrategyId" class="card mt-8">
+                            <div class="card-title flex-between">
+                                <span><qc-icon name="history" :size="16" /> 回测记录
+                                    <span class="text-sm-tertiary">{{ smBtRows.length }} 条 · {{ activeStrategyId }}</span></span>
+                                <div class="flex-c-gap-8">
+                                    <el-button size="small" @click="loadSmBtRecords()" :loading="smBtLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
+                                    <el-button size="small" type="danger" plain :disabled="!smBtSelected.length" @click="batchDeleteSmBtRecords">批量删除（{{ smBtSelected.length }}）</el-button>
+                                </div>
+                            </div>
+                            <qc-state-panel v-if="smBtLoading" type="loading"></qc-state-panel>
+                            <qc-state-panel v-else-if="smBtError" type="error" title="回测记录加载失败" :desc="t('state.descNetwork')" @retry="loadSmBtRecords()"></qc-state-panel>
+                            <div v-else-if="!smBtRows.length" class="text-sm-tertiary">该策略暂无回测记录；运行回测后结果将记录在此。</div>
+                            <template v-else>
+                                <div class="flex-c-gap-8 mb-8">
+                                    <el-checkbox v-model="smBtAllSelected" @change="toggleSmBtSelectAll">全选</el-checkbox>
+                                    <span class="text-xs-tertiary">旧版记录只读，不提供删除</span>
+                                </div>
+                                <div v-for="r in smBtRows" :key="r.id || (r.ts + '-' + r.sid)" class="strategy-item">
+                                    <div class="flex-between-start-wrap">
+                                        <div class="flex-c-gap-8">
+                                            <el-checkbox v-if="r.id && !r.legacy" :model-value="smBtSelected.includes(r.id)" @change="toggleSmBtSelect(r.id)"></el-checkbox>
+                                            <div>
+                                                <span class="strategy-name">{{ r.sid_cn || r.sid }}</span>
+                                                <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
+                                                <span v-if="r.legacy" class="strategy-tag ml-8">旧版记录</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-c-gap-8">
+                                            <span class="strategy-tag" v-if="r.summary">年化 {{ fmtPct(r.summary.annual_return) }}</span>
+                                            <span class="strategy-tag" v-if="r.summary">回撤 {{ fmtPct(r.summary.max_drawdown) }}</span>
+                                            <el-button v-if="r.id && !r.legacy" size="small" link type="danger" @click="deleteSmBtRecord(r)">删除</el-button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
 
                         <!-- v7.11 (FR-7.11-4): 参数锁定与追踪 — 消费 /api/strategies/{sid}/lock* (v7.14: 默认折叠, 未使用者不占首屏) -->
                         <div v-if="activeStrategyId && strategyManageMode === 'template'" class="qc711-mt12">

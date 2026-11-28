@@ -11,10 +11,7 @@
     name: 'qc-marketplace-panel',
     template: `
       <div class="qc711-panel">
-        <div class="qc711-head">
-          <div class="card-title"><qc-icon name="package" :size="14" /> 策略市场</div>
-          <span class="qc711-hint">发布为不可变快照 · 导入生成副本，不影响原物</span>
-        </div>
+        <qc-page-head icon="package" title="策略市场" desc="发布为不可变快照 · 导入生成副本，不影响原物"></qc-page-head>
 
         <div class="qc711-stats">
           <div class="qc711-stat"><div class="qc711-stat-v">{{ stats.total || 0 }}</div><div class="qc711-stat-l">条目总数</div></div>

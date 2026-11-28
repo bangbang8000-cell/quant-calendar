@@ -55,7 +55,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         </template>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest'" class="card">
-                        <div class="card-title">{{ t('research.backtest') }}</div>
+                        <qc-page-head :title="t('research.backtest')"></qc-page-head>
                         <!-- v7.19 (T3.2): 策略工作台 —— 先罗列，再在列表上操作 (PRD 需求 ⑧) -->
                         <qc-strategy-board
                             :rows="strategyCardRows" :loading="strategyOverviewLoading"
@@ -93,6 +93,10 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         <div v-if="backtestDegraded" class="qr-degraded-banner" role="alert">
                             <qc-icon name="alert-triangle" :size="14" /> 数据源不可达，以下结果基于模拟数据，不可作为研究结论
                         </div>
+                        <!-- v7.24 FR-3: 可信度门禁未通过（未来函数/样本/口径）→ 阻断正常展示 -->
+                        <div v-if="backtestResult && backtestResult.credible === false" class="qr-degraded-banner" role="alert">
+                            <qc-icon name="alert-triangle" :size="14" /> 结论不可信：{{ (backtestResult.credibility_reasons || []).join('；') }}
+                        </div>
                         <!-- 回测结果 -->
                         <template v-if="backtestResult">
                             <div class="grid-auto-fit-140-mb16">
@@ -101,8 +105,8 @@ window.__quantModules.researchPage.part2 = `                            </div>
                                     <el-tooltip content="区间累计收益率 = (期末净值 / 期初净值 - 1) × 100%" placement="top"><div class="stat-label">总收益率 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
-                                    <div class="stat-value text-lg">{{ fmtPct(backtestResult.annual_return_pct) }}</div>
-                                    <el-tooltip content="年化收益 = 区间收益折算为 1 年期复利收益; 样本过短时数字仅供参考" placement="top"><div class="stat-label">年化收益 ⓘ</div></el-tooltip>
+                                    <div class="stat-value text-lg" :title="backtestResult.annual_return_reason || ''">{{ backtestResult.sample_insufficient ? '样本不足（<18个月）' : fmtPct(backtestResult.annual_return_pct) }}</div>
+                                    <el-tooltip content="年化收益 = 区间收益折算为 1 年期复利收益; 样本不足 18 个月时不输出年化" placement="top"><div class="stat-label">年化收益 ⓘ</div></el-tooltip>
                                 </div>
                                 <div class="stat-card p-12">
                                     <div class="stat-value text-lg">{{ fmtPct(backtestResult.max_drawdown_pct) }}</div>
@@ -133,31 +137,41 @@ window.__quantModules.researchPage.part2 = `                            </div>
                         <qc-state-panel v-else type="empty" icon="bar-chart-3" title="准备开始回测" desc="选择策略和日期范围后点击「运行回测」" action-text="去选择策略" action-key="go_strategy"></qc-state-panel>
                     </div>
                     <div v-else-if="currentSubPage === 'backtest-history'" class="card">
-                        <div class="card-title flex-between">
-                            <span>{{ t('research.backtestHistory') }}</span>
-                            <div class="flex-c-gap-8">
+                        <qc-page-head :title="t('research.backtestHistory')">
+                            <template #actions>
                                 <el-select class="w-select-sm" size="small" v-model="btHistoryDays" @change="loadBtHistory">
                                     <el-option label="近7天" :value="7" />
                                     <el-option label="近30天" :value="30" />
                                     <el-option label="近90天" :value="90" />
                                 </el-select>
                                 <el-button size="small" @click="loadBtHistory" :loading="btHistoryLoading"><qc-icon name="refresh" :size="14" /> 刷新</el-button>
-                            </div>
-                        </div>
+                            </template>
+                        </qc-page-head>
                         <qc-state-panel v-if="btHistoryLoading" type="loading"></qc-state-panel>
                         <qc-state-panel v-else-if="btHistoryError" type="error" title="加载失败" :desc="t('state.descNetwork')" @retry="loadBtHistory"></qc-state-panel>
                         <qc-state-panel v-else-if="!btHistory.length" type="empty" icon="bar-chart-3" title="暂无回测记录" desc="运行回测后，结果将自动记录在此" action-text="刷新数据" action-key="refresh"></qc-state-panel>
                         <div v-else>
-                            <div v-for="r in btHistory" :key="r.ts + '-' + r.sid" class="card mb-12">
+                            <!-- v7.24 FR-16: 批量删除回测结果 -->
+                            <div class="flex-c-gap-8 mb-8">
+                                <el-checkbox v-model="btAllSelected" @change="toggleBtSelectAll">全选</el-checkbox>
+                                <el-button size="small" type="danger" plain :disabled="!btHistorySelected.length" @click="batchDeleteBtHistory">批量删除（{{ btHistorySelected.length }}）</el-button>
+                                <span class="text-xs-tertiary">旧版记录只读，不提供删除</span>
+                            </div>
+                            <div v-for="r in btHistory" :key="r.id || (r.ts + '-' + r.sid)" class="card mb-12">
                                 <div class="flex-between-start-wrap">
-                                    <div>
-                                        <span class="strategy-name">{{ r.sid_cn || r.sid }}</span>
-                                        <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
+                                    <div class="flex-c-gap-8">
+                                        <el-checkbox v-if="r.id && !r.legacy" v-model="btHistorySelected" :value="r.id"></el-checkbox>
+                                        <div>
+                                            <span class="strategy-name">{{ r.sid_cn || r.sid }}</span>
+                                            <span class="text-xs-tertiary ml-8">{{ r.ts }}</span>
+                                            <span v-if="r.legacy" class="strategy-tag ml-8">旧版记录</span>
+                                        </div>
                                     </div>
                                     <div class="flex-c-gap-8">
-                                        <span class="strategy-tag" v-if="r.summary">年化 {{ fmtPct(r.summary.annual_return) }}</span>
+                                        <span class="strategy-tag" v-if="r.summary">{{ r.summary.annual_return == null ? '样本不足（<18个月）' : '年化 ' + fmtPct(r.summary.annual_return) }}</span>
                                         <span class="strategy-tag" v-if="r.summary">回撤 {{ fmtPct(r.summary.max_drawdown) }}</span>
                                         <span class="strategy-tag" v-if="r.summary">夏普 {{ fmtNum(r.summary.sharpe_ratio) }}</span>
+                                        <el-button v-if="r.id && !r.legacy" size="small" link type="danger" @click="deleteBtHistory(r)">删除</el-button>
                                     </div>
                                 </div>
                                 <div v-if="r.summary" class="flex-wrap-gap-12-mb16-c mt-8">
@@ -170,7 +184,7 @@ window.__quantModules.researchPage.part2 = `                            </div>
                     </div>
                     <!-- 5.1.0 (T-5.1.4): 研究历史子页 (实验持久化列表/对比) -->
                     <div v-else-if="currentSubPage === 'research-history'" class="card">
-                        <div class="card-title"><qc-icon name="folder" :size="16" /> 研究历史 <span class="text-sm-tertiary-normal">{{ researchHistory.length }} 条实验</span></div>
+                        <qc-page-head icon="folder" title="研究历史" :desc="researchHistory.length + ' 条实验'"></qc-page-head>
                         <!-- 类型过滤 -->
                         <div class="flex-wrap-gap-12-mb16-c">
                             <el-radio-group v-model="researchHistoryType" size="small" @change="loadResearchHistory">

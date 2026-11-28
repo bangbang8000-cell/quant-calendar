@@ -79,5 +79,7 @@ def param_sweep(strategy, param_grid: Dict[str, List[Any]],
                 results.append(entry)
         except Exception as e:
             logger.info("参数组合 %s 扫描失败: %s", params, e)
-    results.sort(key=lambda r: r.get(metric, -999.0), reverse=True)
+    # v7.24 FR-1: 年化可能为 None（样本不足），排序时视为最低值而非报错
+    results.sort(key=lambda r: r.get(metric) if r.get(metric) is not None else float('-inf'),
+                 reverse=True)
     return results

@@ -428,6 +428,10 @@
         strategyOverview, strategyOverviewLoading, strategyOverviewError, strategyOverviewDegraded,
         overviewKeyword, overviewSortKey, overviewOnlyEnabled, strategyCardRows,
         loadStrategyOverview, strategyStatusText, openStrategyManageFor } = __history;
+      // v7.26 (FR-16 / T-7.25.32): 策略管理 → 回测记录（单条/批量删除）
+      const { smBtRows, smBtLoading, smBtError, smBtSelected, smBtAllSelected } = __history;
+      const { loadSmBtRecords, toggleSmBtSelect, toggleSmBtSelectAll } = __history;
+      const { deleteSmBtRecord, batchDeleteSmBtRecords } = __history;
 
       watch(
         function () {
@@ -472,6 +476,15 @@
           }
         },
         { immediate: true }
+      );
+
+      // v7.26 (FR-16 / T-7.25.32): 进入策略管理或切换母本策略时，拉取该策略的回测记录
+      watch(
+        function () {
+          if (state.currentSubPage.value !== 'strategy-manage') return '';
+          return String((state.activeStrategyId && state.activeStrategyId.value) || '');
+        },
+        function (sid) { if (sid) loadSmBtRecords(sid); }
       );
 
       // ===== v3.22 (I3A): 策略微调向导 — variant 复制 / SelectionSpec / AI 交易码 =====
@@ -699,6 +712,69 @@
       const btHistoryLoading = Vue.ref(false);
       const btHistoryError = Vue.ref(false);
       const btHistoryDays = Vue.ref(30);
+      const btHistorySelected = Vue.ref([]);
+      const btAllSelected = Vue.ref(false);
+
+      function _btHeaders() {
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        return (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+      }
+
+      function _ep() { return window.ElementPlus || {}; }
+
+      async function _confirmDelete(message) {
+        if (!_ep().ElMessageBox) return false;
+        try {
+          await _ep().ElMessageBox.confirm(message, '确认删除', { type: 'warning' });
+          return true;
+        } catch (e) { return false; }
+      }
+
+      function _notifyError(message) {
+        if (_ep().ElMessage && _ep().ElMessage.error) _ep().ElMessage.error(message);
+      }
+
+      function toggleBtSelectAll(val) {
+        const ids = val
+          ? btHistory.value.filter(function (r) { return r.id && !r.legacy; }).map(function (r) { return r.id; })
+          : [];
+        btHistorySelected.value = ids;
+      }
+
+      async function deleteBtHistory(row) {
+        if (!row || !row.id || row.legacy) return;
+        if (!(await _confirmDelete('确定删除该条回测结果？删除后不可恢复。'))) return;
+        try {
+          const res = await fetchJsonWithTimeout('/api/strategies/research-history/' + encodeURIComponent(row.id), {
+            method: 'DELETE', headers: _btHeaders(),
+          });
+          if (!res || !res.deleted) throw new Error((res && res.detail) || '删除失败');
+          await loadBtHistory();
+          if (typeof loadResearchHistory === 'function') await loadResearchHistory();
+        } catch (e) {
+          console.error('[backtest] 删除失败:', e);
+          _notifyError('删除失败: ' + e.message);
+        }
+      }
+
+      async function batchDeleteBtHistory() {
+        const ids = (btHistorySelected.value || []).slice(0, 50);
+        if (!ids.length) return;
+        if (!(await _confirmDelete('确定删除选中的 ' + ids.length + ' 条回测结果？删除后不可恢复。'))) return;
+        try {
+          const res = await fetchJsonWithTimeout('/api/strategies/research-history/batch-delete', {
+            method: 'POST', headers: _btHeaders(), body: JSON.stringify({ ids: ids }),
+          });
+          if (!res) throw new Error('删除失败');
+          btHistorySelected.value = [];
+          btAllSelected.value = false;
+          await loadBtHistory();
+          if (typeof loadResearchHistory === 'function') await loadResearchHistory();
+        } catch (e) {
+          console.error('[backtest] 批量删除失败:', e);
+          _notifyError('批量删除失败: ' + e.message);
+        }
+      }
 
       async function loadBtHistory() {
         const _s = seqOf('btHistory');
@@ -728,6 +804,10 @@
         ...state,
         strategyManageMode, openStrategyManage,
         btHistory, btHistoryLoading, btHistoryError, btHistoryDays, loadBtHistory,
+        btHistorySelected, btAllSelected, toggleBtSelectAll, deleteBtHistory, batchDeleteBtHistory,
+        // v7.26 (FR-16 / T-7.25.32): 策略管理 → 回测记录
+        smBtRows, smBtLoading, smBtError, smBtSelected, smBtAllSelected,
+        loadSmBtRecords, toggleSmBtSelect, toggleSmBtSelectAll, deleteSmBtRecord, batchDeleteSmBtRecords,
         // 5.1.0 (T-5.1.4): 研究历史
         researchHistory, researchHistoryLoading, researchHistoryError, researchHistoryType,
         researchHistorySelected, researchDetailId, researchCompareRows, researchCompareLoading,

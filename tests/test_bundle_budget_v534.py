@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """V5.3.0 (T-5.3.4.1 / FR-5.3.4.1): 前端源码体积预算门禁
 
-项目为零构建架构 (backend 直接 serve frontend/ 源码, dist 非部署物)。
-体积预算作用于源码 JS: 主逻辑文件 app-logic.js 与总 JS 体量设上限,
-防无节制膨胀导致首屏/加载退化。
+原口径为「零构建架构下 frontend/js 全量源码」。v4.3+ 改为 Vite 构建、v7.18 起 5 个域
+按需 import 后，该口径已与首屏实际下载脱节（懒加载域源码不进首屏 chunk）。
+现行两层门禁：
+  1) 本文件：首屏静态 import 闭包 ≤ 1.4MB；app-logic.js ≤ 104KB；
+  2) scripts/report_bundle_size.py：dist 总量 / 首屏 chunk / Element Plus（真正用户侧体积）。
 """
+import io
 import os
+import re
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JS_DIR = os.path.join(BASE, "frontend", "js")
@@ -39,7 +43,13 @@ MAIN_LOGIC_BUDGET = 104 * 1024
 # 后端 strategy_sdk/labels.py 的镜像，一致性由 test_v719_i18n 双向校验）+ 美林滞回/错误分级/
 # 虚拟行距的注释与防御分支。无新增第三方依赖。
 # 仍欠：shortterm-page.js 拆分（PENDING_SPLIT v7.18-T1），拆完后本预算回调至 ≤1,750,000。
-TOTAL_JS_BUDGET = 1800000
+# v7.26 收尾: 原「frontend/js 全量源码」口径已与 v4.3+ 的 Vite 构建 / v7.18 按域懒加载脱节 ——
+#   源码目录包含 5 个懒加载域（system/ai/research/shortterm/ops），它们不打进首屏 chunk；
+#   真正对用户生效的总量门禁是 scripts/report_bundle_size.py（dist raw 2441KB < 2670KB）。
+#   这里不再统计「全量源码」，改为统计**首屏静态可达源码**（src/main.js 静态 import 闭包，
+#   排除动态 import() 的懒加载域），预算按实测 1,294,438B + ~8% 定 1,400,000B —— 比原
+#   1,800,000B 更紧，且只覆盖真正影响首屏下载/解析的代码。总量仍由 dist 门禁兜底。
+FIRST_SCREEN_JS_BUDGET = 1400000
 # v7.18: +~11.3KB 为批准功能增量(涨停池分页+窄屏卡片降级 FR-1002/骨架屏 FR-1001/
 # FR-1003 fmtPct 层); 对价是 dist 首屏 2329KB→1903KB(7 域代码分割 FR-501)。
 # 下一刀: shortterm-page.js 拆分(已登记 PENDING_SPLIT v7.18-T1), 目标回到 ≤1740KB。
@@ -52,6 +62,50 @@ def _js_files():
                 yield os.path.join(root, f)
 
 
+def _resolve_import(src_path, spec):
+    """把相对 import 解析为磁盘文件（无扩展名时依次尝试 .js/.mjs/.vue）。"""
+    if not spec.startswith("."):
+        return None
+    p = os.path.normpath(os.path.join(os.path.dirname(src_path), spec))
+    if os.path.isfile(p):
+        return p
+    if not os.path.splitext(p)[1]:
+        for ext in (".js", ".mjs", ".vue"):
+            if os.path.isfile(p + ext):
+                return p + ext
+    return None
+
+
+def _first_screen_source_files():
+    """src/main.js 静态 import 闭包（排除 import() 的懒加载域）。
+
+    与运行时一致：静态导入的模块进入首屏 chunk；`import('...')` 的域（system/ai/
+    research/shortterm/ops）由 __lazyLoaders 按需加载，不计入首屏预算。
+    """
+    entry = os.path.join(BASE, "frontend", "src", "main.js")
+    static_re = re.compile(r"""import\s+(?:[^'"]*?from\s*)?['"]([^'"]+)['"]""")
+    dynamic_re = re.compile(r"""import\(\s*['"]([^'"]+)['"]\s*\)""")
+    seen, stack = set(), [entry]
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        try:
+            with io.open(cur, encoding="utf-8", errors="ignore") as f:
+                src = f.read()
+        except OSError:
+            continue
+        dynamic = {_resolve_import(cur, m.group(1)) for m in dynamic_re.finditer(src)}
+        for m in static_re.finditer(src):
+            tgt = _resolve_import(cur, m.group(1))
+            if tgt and tgt not in dynamic and tgt not in seen:
+                stack.append(tgt)
+    return [p for p in seen
+            if os.path.abspath(p).startswith(os.path.join(BASE, "frontend", "js") + os.sep)
+            and p.endswith(".js")]
+
+
 def test_main_logic_budget():
     """app-logic.js (主逻辑) 不超过预算"""
     p = os.path.join(JS_DIR, "app-logic.js")
@@ -59,10 +113,13 @@ def test_main_logic_budget():
     assert size <= MAIN_LOGIC_BUDGET, f"app-logic.js 超预算: {size} > {MAIN_LOGIC_BUDGET}"
 
 
-def test_total_js_budget():
-    """frontend/js 源码 JS 总量不超过预算"""
-    total = sum(os.path.getsize(p) for p in _js_files())
-    assert total <= TOTAL_JS_BUDGET, f"源码 JS 总量超预算: {total} > {TOTAL_JS_BUDGET}"
+def test_first_screen_js_budget():
+    """首屏静态可达源码不超过预算（懒加载域不计入；总量由 dist 门禁兜底）"""
+    files = _first_screen_source_files()
+    assert files, "首屏静态 import 闭包不应为空（src/main.js 解析失败？）"
+    total = sum(os.path.getsize(p) for p in files)
+    assert total <= FIRST_SCREEN_JS_BUDGET, (
+        f"首屏源码 JS 超预算: {total} > {FIRST_SCREEN_JS_BUDGET} ({len(files)} 个文件)")
 
 
 def test_no_generated_bundle_in_src():

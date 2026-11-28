@@ -3,23 +3,6 @@
 window.__quantModules = window.__quantModules || {};
 window.__quantModules.systemPage = window.__quantModules.systemPage || {};
 window.__quantModules.systemPage.part2 = `                            <el-form-item label="API Token">
-                                <!-- 6.3.5 (BUG-FIX): 眼睛移出 #suffix 插槽 —— 禁用输入框的 suffix 不可点击 -->
-                                <div class="key-field-row">
-                                    <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" :disabled="!datasourceConfig.tushare._editing" @update:model-value="val => { if (datasourceConfig.tushare._editing) { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; } }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig"></el-input>
-                                    <span class="key-reveal-toggle" :title="datasourceConfig.tushare._editing ? '锁定（重新掩码）' : '编辑（查看完整 Token，需密码）'" @click="toggleDatasourceEdit('tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.tushare._editing))"></span>
-                                </div>
-                            </el-form-item>
-                            <el-form-item label="Endpoint">
-                                <el-input v-model="datasourceConfig.tushare.endpoint" placeholder="http://api.tushare.pro" @change="saveDatasourceConfig" />
-                            </el-form-item>
-                            <el-form-item label="超时 (秒)">
-                                <el-input-number v-model="datasourceConfig.tushare.timeout" :min="5" :max="120" @change="saveDatasourceConfig" />
-                            </el-form-item>
-                            <el-form-item>
-                                <el-button @click="testDatasource('tushare')" :loading="datasourceStatus.tushare === 'testing'" type="primary" size="small"><qc-icon name="flask-conical" :size="14" /> 测试连接</el-button>
-                            </el-form-item>
-                        </el-form>
-                    </div>
 
                     <!-- akshare 卡片 -->
                     <div class="card mb-14">
@@ -47,7 +30,20 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                     <div v-else-if="currentSubPage === 'feature'">
                         <qc-state-panel v-if="feishuConfigError" type="error" :title="t('state.featureConfigError')" :desc="t('state.descService')" @retry="loadFeishuConfig"></qc-state-panel>
                         <template v-else>
-                        <div class="card">
+                        <!-- v7.26 (FR-14): 设置页紧凑化 — 左侧分组锚点 + 右侧两列表单 + 分组折叠,
+                             默认只展开「界面」; 各分组独立保存 (字段变更即存, 不跨组写 AI/数据源配置)。 -->
+                        <div class="qc-settings-layout">
+                          <nav class="qc-settings-nav" aria-label="设置分组">
+                            <button v-for="g in settingsGroups" :key="g.id" type="button"
+                                    class="qc-settings-nav-item" :class="{ active: settingsOpen === g.id }"
+                                    @click="toggleSettingsGroup(g.id)">{{ g.label }}</button>
+                          </nav>
+                          <div class="qc-settings-body">
+                        <div class="qc-settings-group-head" @click="toggleSettingsGroup('strategy')" role="button" tabindex="0">
+                          <span><qc-icon name="target" :size="14" /> 策略与任务</span>
+                          <span class="qc-settings-group-toggle">{{ settingsOpen === 'strategy' ? '收起' : '展开' }}</span>
+                        </div>
+                        <div class="card" v-show="settingsOpen === 'strategy'">
                         <div class="card-title"><qc-icon name="sliders-horizontal" :size="14" /> 策略筛选</div>
                         <div class="mb-12">
                             <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
@@ -75,7 +71,11 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                     </div>
 
                     <!-- v3.3.0-T8: 数据备份与恢复 -->
-                    <div class="card mt-14">
+                    <div class="qc-settings-group-head" @click="toggleSettingsGroup('data')" role="button" tabindex="0">
+                      <span><qc-icon name="database" :size="14" /> 数据与同步</span>
+                      <span class="qc-settings-group-toggle">{{ settingsOpen === 'data' ? '收起' : '展开' }}</span>
+                    </div>
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="hard-drive" :size="14" /> 数据备份与恢复</div>
                         <div class="flex-wrap-gap-10-mb12">
                             <el-button size="small" type="primary" :loading="backupCreating" @click="createBackup">立即备份</el-button>
@@ -90,7 +90,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                         <div class="text-sm-tertiary" v-else>暂无备份</div>
                     </div>
                     <!-- V5.3.0 (T-5.3.5.5): 报表导出 (PDF/Excel/HTML) -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="file-text" :size="14" /> 报表导出</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">量化选股日报 (当日) · 可导出 PDF / Excel / HTML</span>
@@ -103,7 +103,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                         <div class="text-sm-tertiary" v-if="reportExportMsg">{{ reportExportMsg }}</div>
                     </div>
                     <!-- v2.0: 美林时钟配置 -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'strategy'">
                         <div class="card-title"><qc-icon name="clock" :size="14" /> 美林时钟</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
@@ -134,7 +134,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                     </div>
 
                     <!-- v1.8.0: 数据刷新配置 -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="refresh" :size="14" /> 策略数据刷新</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
@@ -220,7 +220,11 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                     </div>
                     <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 (V6.4: 动态页签开关已移除) -->
                     <!-- V6.6.1 (F-6.6.9): 三形态说明文案 (V6.4 P0 遗留) -->
-                    <div class="card mt-4">
+                    <div class="qc-settings-group-head" @click="toggleSettingsGroup('ui')" role="button" tabindex="0">
+                      <span><qc-icon name="palette" :size="14" /> 界面</span>
+                      <span class="qc-settings-group-toggle">{{ settingsOpen === 'ui' ? '收起' : '展开' }}</span>
+                    </div>
+                    <div class="card" v-show="settingsOpen === 'ui'">
                         <div class="card-title"><qc-icon name="layout-dashboard" :size="14" /> 界面与导航</div>
                         <div class="flex-c-gap-12">
                             <div class="flex-c-gap-6">
@@ -235,7 +239,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                         <div class="text-sm-tertiary-mt8">中栏二级（默认）：左侧一级 + 中栏常驻二级，适合二级页较多的页面。侧栏树状：二级直接展开在侧栏内，节省中栏空间。顶部二级标签：二级以横排标签置于头部，适合二级项较少的页面。</div>
                     </div>
                     <!-- V6.6.1 (PRD F-6.6.8 方案A): 界面与个性化 — 外观/语言/K线显示自 status 归位至此 (个性化设置集中) -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'ui'">
                         <div class="card-title"><qc-icon name="palette" :size="14" /> 界面与个性化 <span class="text-sm-tertiary">主题 · 语言 · 图表 · 详情展示</span></div>
                         <!-- V5.16 (F2): 详情展示模式 — 内嵌双栏 / 弹窗 (移动端强制弹窗) -->
                         <div class="theme-section-label">详情展示模式 <span class="text-xs-tertiary" v-if="isNarrow">窄屏自动使用弹窗</span></div>
@@ -259,11 +263,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                 </div>
                             </div>
                         </div>
-                        <div class="flex-c-gap-12 mt-8">
-                            <span class="text-sm-secondary w-60">自定义</span>
-                            <el-slider class="w-220" :model-value="themeHue" :min="0" :max="359" :step="1"
-                                @change="setThemeHue" aria-label="自定义主题色相" />
-                        </div>
+                        <!-- v7.26 (FR-14): 移除自定义色相滑块 —— 主题色收敛为 6 档品牌色 -->
                         <div class="section-sub-block-top">
                             <label class="text-base-primary-nowrap">{{ t('system.language') }}</label>
                             <div class="flex-c-gap-12-wrap mt-8">
@@ -286,6 +286,8 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                             </div>
                         </div>
                     </div>
+                          </div><!-- /qc-settings-body -->
+                        </div><!-- /qc-settings-layout -->
                         </template>
                 </div>
                     <div v-else-if="currentSubPage === 'datadict'">
@@ -355,7 +357,7 @@ window.__quantModules.systemPage.part2 = `                            <el-form-i
                                             </span>
                                             <span class="user-group-tag" :class="'group-' + (user.group === 'admin' ? 'admin' : user.group === 'guest' ? 'guest' : 'user')">{{ getGroupName(user.group || user.role) }}</span>
                                             <span v-if="user.enabled === false" class="user-disabled-badge">已禁用</span>
-                                            <span v-if="user.theme" class="user-theme-dot" :class="'dot-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : 'blue')" :title="themes[user.theme]?.name || user.theme"></span>
+                                            <!-- v7.26 (FR-14): 不再展示 legacy 主题名/圆点 (主题收敛为个人 6 档偏好) -->
                                         </div>
                                         <div class="user-meta-info">
                                             <span class="mr-12" v-if="user.created_at">

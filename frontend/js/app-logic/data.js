@@ -21,6 +21,9 @@
       // 6.3.1 (T-6.3.1.3): 共识/视图取数失败标志 (loadConsensusData 主备接口均失败时置 true)
       const consensusError = ref(false);
       const viewNote = ref('');  // V4.9.4: 日视图对比基准/沿用持仓提示(来自 /api/view note 字段)
+      // v7.24 FR-5: 日历空态三分类（非交易日 / 尚未生成 / 生成失败）
+      const calEmptyStatus = ref(null);
+      const calGenerating = ref(false);
 
       // ===== v3.11 (FR-3.11.4): 数据缓存与静默刷新 =====
       // 请求级 TTL 缓存（同参数短 TTL）+ 后台静默刷新 + 变更提示
@@ -88,6 +91,38 @@
         window.open(url, '_blank');
       }
 
+      // v7.24 FR-5: 空态探测 — 区分非交易日/尚未生成/生成失败
+      async function probeCalendarEmptyStatus() {
+        if (!selectedDate.value) { calEmptyStatus.value = null; return; }
+        try {
+          const res = await fetch('/api/view/status/' + encodeURIComponent(selectedDate.value));
+          if (!res.ok) { calEmptyStatus.value = null; return; }
+          const data = await res.json();
+          calEmptyStatus.value = (data && data.status) ? data : null;
+        } catch (e) {
+          calEmptyStatus.value = null;
+        }
+      }
+
+      // v7.24 FR-5: 立即生成今日持仓（后台任务，稍后自动刷新）
+      async function generateTodayHoldings() {
+        if (calGenerating.value) return;
+        calGenerating.value = true;
+        try {
+          const res = await fetch('/api/view/generate-today', { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.detail || '触发失败');
+          ElementPlus.ElMessage.success(data.message || '已开始生成今日持仓，请稍后刷新');
+          setTimeout(async () => {
+            try { await loadDates(); await loadConsensusData(); } catch (e) { /* 忽略自动刷新失败 */ }
+          }, 15000);
+        } catch (e) {
+          ElementPlus.ElMessage.error((e && e.message) ? e.message : '触发失败');
+        } finally {
+          calGenerating.value = false;
+        }
+      }
+
       async function loadConsensusData() {
         consensusError.value = false;
         if (!selectedDate.value) return;
@@ -104,6 +139,8 @@
           consensus.value = stocks;
           viewNote.value = note || '';
           viewCache.set(cacheKey, { stocks, note: note || '' });
+          if (!stocks.length) probeCalendarEmptyStatus();
+          else calEmptyStatus.value = null;
         };
         // V4.9.4: 应用完整视图数据(含 note 提示), 供主请求/缓存命中/后台静默刷新共用
         const applyViewData = (data) => {
@@ -182,6 +219,7 @@
 
       return {
         loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote, consensusError,
+        calEmptyStatus, calGenerating, generateTodayHoldings,
         loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached,
       };
     },

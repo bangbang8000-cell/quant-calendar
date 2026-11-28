@@ -16,7 +16,9 @@
 - 北交所 (8/4 开头): 100 股起, 之后可按 1 股递增 → 本模块按 100 股整数倍保守处理
 """
 import hashlib
+import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 import db
@@ -279,3 +281,140 @@ def apply_plan(username: str, plan: dict, overwrite: bool = False) -> dict:
                                      _num(r.get('price'), 0) or 0, _num(r.get('quantity'), 0) or 0)
     return {'updated': len(rows), 'cleared': cleared,
             'write_mode': 'replace' if overwrite else 'append'}
+
+
+# ─── v7.25 (FR-7): 持仓组网 — 自选同步 / 只增不删 / 自动同步开关 ───
+
+def network_diff(watchlist, positions):
+    """自选 vs 持仓差集：to_add = 自选−持仓；only_in_portfolio = 持仓−自选（只提示不删除）。"""
+    pos_codes = {str(p.get('stock_code') or '').strip() for p in (positions or [])}
+    watch_codes = {str(w.get('stock_code') or w.get('code') or '').strip()
+                   for w in (watchlist or [])}
+    to_add = [
+        {'stock_code': str(w.get('stock_code') or w.get('code') or '').strip(),
+         'stock_name': str(w.get('stock_name') or w.get('name') or '').strip()}
+        for w in (watchlist or [])
+        if str(w.get('stock_code') or w.get('code') or '').strip() not in pos_codes
+    ]
+    only_in_portfolio = [
+        {'stock_code': str(p.get('stock_code') or '').strip(),
+         'stock_name': str(p.get('stock_name') or '').strip()}
+        for p in (positions or [])
+        if str(p.get('stock_code') or '').strip() not in watch_codes
+    ]
+    return {
+        'to_add': to_add,
+        'only_in_portfolio': only_in_portfolio,
+        'watchlist_count': len(watch_codes),
+        'position_count': len(pos_codes),
+    }
+
+
+def merge_targets(watchlist, positions):
+    """组网目标 = 现有持仓 ∪ 自选股（只增不删，持仓优先保留顺序）。"""
+    merged, seen = [], set()
+    for p in (positions or []):
+        code = str(p.get('stock_code') or '').strip()
+        if code and code not in seen:
+            seen.add(code)
+            merged.append({'stock_code': code, 'stock_name': p.get('stock_name') or ''})
+    for w in (watchlist or []):
+        code = str(w.get('stock_code') or w.get('code') or '').strip()
+        if code and code not in seen:
+            seen.add(code)
+            merged.append({'stock_code': code,
+                           'stock_name': str(w.get('stock_name') or w.get('name') or '').strip()})
+    return merged
+
+
+def annotate_network_plan(plan: dict, positions) -> dict:
+    """给计划明细补充 is_new / 原持仓数量与成本（供前端预览与"保留成本价"说明）。"""
+    pos_map = {str(p.get('stock_code') or '').strip(): p for p in (positions or [])}
+    for row in (plan.get('items') or []):
+        p = pos_map.get(str(row.get('stock_code') or '').strip())
+        row['is_new'] = p is None
+        row['existing_quantity'] = round((p or {}).get('quantity') or 0, 2)
+        row['existing_cost_price'] = round((p or {}).get('cost_price') or 0, 2)
+    plan['network'] = True
+    return plan
+
+
+def _set_position(username: str, stock_code: str, stock_name: str = '',
+                  quantity: float = 0, price: float = 0) -> None:
+    """把持仓数量设为绝对目标值（重新均分用）；已有持仓保留原成本价，新仓以 price 作成本。"""
+    with db._db_lock:
+        conn = db.get_conn()
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        row = conn.execute(
+            "SELECT id, cost_price FROM portfolio_positions WHERE username=? AND stock_code=?",
+            (username, stock_code)
+        ).fetchone()
+        if row:
+            cost = row['cost_price'] or 0
+            if not cost:
+                cost = price or 0
+            conn.execute(
+                "UPDATE portfolio_positions SET stock_name=?, cost_price=?, quantity=?, updated_at=? WHERE id=?",
+                (stock_name or '', round(cost, 2), round(quantity or 0, 2), now, row['id'])
+            )
+        else:
+            conn.execute(
+                "INSERT INTO portfolio_positions (username, stock_code, stock_name, cost_price, quantity, created_at, updated_at) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (username, stock_code, stock_name or '', round(price or 0, 2), round(quantity or 0, 2), now, now)
+            )
+        conn.commit()
+        conn.close()
+
+
+def apply_network_plan(username: str, plan: dict) -> dict:
+    """落网：数量设为计划目标值；已有持仓保留原成本价；绝不删除计划外持仓。"""
+    positions = db.portfolio_get_positions(username)
+    pos_map = {str(p.get('stock_code') or '').strip(): p for p in positions}
+    updated = added = 0
+    for r in (plan.get('items') or []):
+        qty = _num(r.get('quantity'), 0) or 0
+        if qty <= 0:
+            continue
+        code = str(r.get('stock_code') or '').strip()
+        existing = pos_map.get(code)
+        if existing:
+            _set_position(username, code, r.get('stock_name') or existing.get('stock_name') or '',
+                          qty, existing.get('cost_price') or 0)
+            updated += 1
+        else:
+            _set_position(username, code, r.get('stock_name') or '',
+                          qty, _num(r.get('price'), 0) or 0)
+            added += 1
+    return {'updated': updated, 'added': added, 'kept': len(positions) - updated}
+
+
+def _prefs_path() -> str:
+    import paths
+    return os.path.join(paths.DATA_DIR, 'portfolio_network_prefs.json')
+
+
+def _load_prefs() -> dict:
+    try:
+        with open(_prefs_path(), encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def get_auto_sync(username: str) -> bool:
+    return bool((_load_prefs().get(username) or {}).get('auto_sync'))
+
+
+def set_auto_sync(username: str, enabled: bool) -> bool:
+    prefs = _load_prefs()
+    prefs.setdefault(username, {})['auto_sync'] = bool(enabled)
+    path = _prefs_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(prefs, f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return bool(enabled)
+

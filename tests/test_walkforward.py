@@ -76,10 +76,10 @@ class TestEvaluateWalkforward:
         const = 0.005
         res = evaluate_walkforward(rets, lambda tr: [const] * 10,
                                    train_frac=0.5, n_folds=4)
-        # 项目 compute_period_metrics 语义: total_return = 简单求和 × 100 (%)
-        expect = sum([const] * 10) * 100
+        # v7.24 FR-1: compute_period_metrics 改为净值复利口径
+        expect = ((1 + const) ** 10 - 1) * 100
         for f in res["folds"]:
-            assert f["oos_total_return"] == pytest.approx(expect, rel=1e-6)
+            assert f["oos_total_return"] == pytest.approx(expect, abs=0.01)
 
     def test_summary_has_mean_and_std(self):
         rets = _rets(seed=8)

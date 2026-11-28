@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""6.2.1 (F11): 主题色扩展门禁 — 新增 青(180)/橙(25)/靛(250) 预设
+"""v7.26 (FR-14) 主题色收敛门禁 — 由 6.2.1 的 9 色扩展收敛回 6 档
 
-方案: 色相机制任意 0-359, 求解器自动保证对比度; 仅需同步 app-logic themeHues/
-themeHueNames 两数组 + themes.js HUES (一致性), 面板 swatch 由 hueColor 自动渲染。
+主题色只剩 金45/蓝220/红0/绿140/紫270/青180; 粉320/橙25/靛蓝250/中性-1 不再作为可选项,
+但 themes.js 的 LEGACY_MAP / legacyThemes 仍保留旧主题只读迁移映射 (不做可选面板)。
 """
 import os
 import re
@@ -10,8 +10,9 @@ import re
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, "frontend")
 
-
 import page_source
+
+
 def _read(rel):
     _b = page_source.bundle(rel)
     if _b is not None:
@@ -27,44 +28,43 @@ def _theme_hues():
     return [int(x.strip()) for x in m.group(1).split(",") if x.strip()]
 
 
-def test_new_hues_present_in_palette():
-    """themeHues 应含新预设 180/25/250"""
+def test_palette_is_exactly_six_presets():
+    """主题色收敛为 6 档: 金/蓝/红/绿/紫/青"""
+    assert _theme_hues() == [45, 220, 0, 140, 270, 180]
+
+
+def test_removed_hues_absent():
+    """粉色/橙色/靛蓝/中性不得再出现在预设与名称映射中"""
     hues = _theme_hues()
-    for h in (180, 25, 250):
-        assert h in hues, f"themeHues 应含 {h} (青/橙/靛)"
-
-
-def test_new_hues_have_names():
-    """themeHueNames 应为新预设提供中文名称映射"""
+    for h in (320, 25, 250, -1):
+        assert h not in hues, f"色相 {h} 应已移除"
     src = _read("js/app-logic.js")
-    assert re.search(r"(?:['\"]?180['\"]?)\s*:\s*'青色'", src), "180 应映射为 青色"
-    assert re.search(r"(?:['\"]?25['\"]?)\s*:\s*'橙色'", src), "25 应映射为 橙色"
-    assert re.search(r"(?:['\"]?250['\"]?)\s*:\s*'靛蓝'", src), "250 应映射为 靛蓝"
+    m = re.search(r"const themeHueNames\s*=\s*\{([^}]*)\}", src)
+    assert m, "应定义 themeHueNames"
+    for name in ("粉色", "橙色", "靛蓝", "中性"):
+        assert name not in m.group(1), f"名称映射不应再含 {name}"
 
 
 def test_every_hue_has_name():
-    """每个非中性预设均有名称映射 (面板不出现「自定义」空档)"""
+    """6 档预设均有名称映射 (面板不出现「自定义」空档)"""
     src = _read("js/app-logic.js")
     m = re.search(r"const themeHueNames\s*=\s*\{([^}]*)\}", src)
     assert m, "应定义 themeHueNames"
     names_block = m.group(1)
     for h in _theme_hues():
-        if h == -1:
-            continue
         assert re.search(r"(?:['\"]?" + str(h) + r"['\"]?)\s*:", names_block), f"色相 {h} 缺名称映射"
 
 
 def test_themes_js_hues_synced():
-    """themes.js HUES 预设应含新色 (与面板一致)"""
+    """themes.js HUES 与面板预设一致 (6 档)"""
     src = _read("js/themes.js")
     m = re.search(r"const HUES\s*=\s*\[([^\]]*)\]", src)
     assert m, "themes.js 应定义 HUES"
     hues = [int(x.strip()) for x in m.group(1).split(",") if x.strip()]
-    for h in (180, 25, 250):
-        assert h in hues, f"themes.js HUES 应含 {h}"
+    assert hues == [45, 220, 0, 140, 270, 180]
 
 
 def test_market_semantics_unchanged():
-    """主题色扩展不触碰市场语义 (红涨绿跌固定) — tokens 中 --market-* 仍存在"""
+    """主题色收敛不触碰市场语义 (红涨绿跌固定) — tokens 中 --market-* 仍存在"""
     tokens = _read("css/tokens.css")
     assert "--market-up-fill" in tokens and "--market-down-fill" in tokens

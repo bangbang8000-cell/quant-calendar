@@ -38,6 +38,71 @@ async def default_research_range(months: int = 6) -> tuple:
     return start, end
 
 
+def scale_equity_to_capital(result: dict, initial_capital: float) -> dict:
+    """v7.19 (T3.1): 把回测引擎的「净值倍数」序列换算成金额序列。
+
+    引擎产出 equity_curve 起点为 1.0（无量纲倍数），金额本身不参与收益计算 ——
+    这里按 initial_capital 换算，并给出期末权益与总盈亏；原始倍数保留在
+    equity_curve_index，避免破坏需要无量纲曲线的既有图表口径。
+    """
+    if not isinstance(result, dict):
+        return result
+    result['initial_capital'] = initial_capital
+    curve = result.get('equity_curve') or []
+    if not curve:
+        return result
+    # v7.24 FR-2: T+1 撮合路径产出的是金额序列，不再二次放大
+    if result.get('execution_mode') == 'T+1_open':
+        amounts = [round(float(x), 2) for x in curve if x is not None]
+        if not amounts:
+            return result
+        result['equity_curve_index'] = [round(x / initial_capital, 6) for x in amounts]
+        result['equity_curve'] = amounts
+        result['final_equity'] = amounts[-1]
+        result['total_pnl'] = round(amounts[-1] - initial_capital, 2)
+        return result
+    try:
+        index = [float(x) for x in curve]
+    except (TypeError, ValueError):
+        return result
+    result['equity_curve_index'] = [round(x, 6) for x in index]
+    amounts = [round(initial_capital * x, 2) for x in index]
+    result['equity_curve'] = amounts
+    result['final_equity'] = amounts[-1]
+    result['total_pnl'] = round(amounts[-1] - initial_capital, 2)
+    return result
+
+
+def attach_lookahead_flags(strategies) -> None:
+    """v7.24 FR-3: 策略列表标注未来函数检查状态（未检查过则不阻塞列表）。"""
+    try:
+        from lookahead_guard import get_strategy_lookahead
+        for s in strategies or []:
+            rep = get_strategy_lookahead(s.get('id'), compute=False)
+            if rep:
+                s['lookahead_passed'] = bool(rep.get('passed'))
+                s['lookahead_reason'] = rep.get('reason', '')
+                s['credible'] = bool(rep.get('passed'))
+    except Exception as e:  # noqa: BLE001
+        logger.info('未来函数报告标注跳过: %s', e)
+
+
+def attach_lookahead_credibility(result: dict, sid: str) -> None:
+    """v7.24 FR-3: 回测结果挂未来函数结论并重算可信度（未通过即阻断展示）。"""
+    try:
+        from credibility_guard import evaluate_backtest_credibility
+        from lookahead_guard import get_strategy_lookahead
+        rep = get_strategy_lookahead(sid)
+        if not rep:
+            return
+        result['lookahead'] = rep
+        result['lookahead_passed'] = bool(rep.get('passed'))
+        result['lookahead_reason'] = rep.get('reason', '')
+        result['credibility'] = evaluate_backtest_credibility(result)
+    except Exception as e:  # noqa: BLE001
+        logger.info('未来函数门禁跳过(%s): %s', sid, e)
+
+
 def default_end_sync() -> str:
     """同步版动态终点(最近工作日), 供 FakePortal 模拟窗口与 as_of 兜底使用。"""
     from datetime import date, timedelta

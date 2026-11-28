@@ -6,15 +6,86 @@
 import csv
 import io
 import logging
+import threading
+from typing import Dict
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
+from auth import get_non_guest_user
 from views_aggregator import views_aggregator
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/view", tags=["多视图聚合"])
+
+
+def _last_strategy_error(date: str) -> str:
+    """v7.24 FR-5: 该日期最近一次策略运行失败原因（无则空串）。"""
+    try:
+        from scheduler import scheduler
+        history = scheduler.get_execution_history(days=30, task='strategy_run', limit=200)
+        for rec in history or []:
+            if rec.get('success'):
+                continue
+            if date in str(rec.get('detail') or ''):
+                return str(rec.get('detail') or '策略运行失败')[:200]
+    except Exception as e:  # noqa: BLE001 — 历史不可读不阻塞状态接口
+        logger.info('读取调度历史失败: %s', e)
+    return ''
+
+
+@router.get('/status/{date}')
+async def view_status(date: str):
+    """v7.24 FR-5: 日历空态三分类 —— 非交易日 / 尚未生成 / 生成失败。"""
+    trading = True
+    try:
+        from stock_calendar import is_trade_date_str
+        trading = bool(is_trade_date_str(date))
+    except Exception as e:  # noqa: BLE001 — 日历不可用时按交易日保守处理
+        logger.info('交易日判断失败: %s', e)
+    total = 0
+    try:
+        total = int((views_aggregator.get_day_view(date) or {}).get('total') or 0)
+    except Exception:
+        total = 0
+    if not trading:
+        status, reason = 'non_trading_day', '所选日期为非交易日'
+    elif total > 0:
+        status, reason = 'ok', ''
+    else:
+        status, reason = 'not_generated', '尚未生成该交易日持仓'
+        err = _last_strategy_error(date)
+        if err:
+            status, reason = 'failed', err
+    return {
+        'success': True,
+        'date': date,
+        'is_trading_day': trading,
+        'has_holdings': total > 0,
+        'total': total,
+        'status': status,
+        'reason': reason,
+        'can_generate': trading and total == 0,
+    }
+
+
+@router.post('/generate-today')
+async def generate_today_holdings(_: Dict = Depends(get_non_guest_user)):
+    """v7.24 FR-5: 立即生成今日持仓（后台执行，避免阻塞请求）。"""
+    def _run():
+        try:
+            from scheduler import run_strategy_once
+            from data_parser import parser as _parser
+            run_strategy_once()
+            _parser.reload()
+            views_aggregator.reload()
+        except Exception as e:  # noqa: BLE001
+            logger.exception('立即生成今日持仓失败: %s', e)
+
+    threading.Thread(target=_run, daemon=True, name='qc-generate-today').start()
+    return {'success': True, 'accepted': True,
+            'message': '已开始生成今日持仓，请稍后刷新'}
 
 
 def _stocks_to_csv(stocks, view_type, date):

@@ -100,7 +100,7 @@
     };
     return [
       { key: 'total_return', label: '总收益', value: pct(s.total_return, 2), suffix: '%', dir: num(s.total_return) >= 0 ? 'up' : 'down' },
-      { key: 'annual_return', label: '年化收益', value: pct(s.annual_return, 2), suffix: '%', dir: num(s.annual_return) >= 0 ? 'up' : 'down' },
+      { key: 'annual_return', label: '年化收益', value: s.annual_return == null ? '样本不足' : pct(s.annual_return, 2), suffix: s.annual_return == null ? '' : '%', dir: s.annual_return == null ? '' : (num(s.annual_return) >= 0 ? 'up' : 'down'), tip: s.annual_return_reason || '' },
       { key: 'max_drawdown', label: '最大回撤', value: pct(s.max_drawdown, 2), suffix: '%', dir: 'down' },
       { key: 'sharpe_ratio', label: '夏普比率', value: pct(s.sharpe_ratio, 2), suffix: '', dir: num(s.sharpe_ratio) >= 0 ? 'up' : 'down' },
       { key: 'win_rate', label: '胜率', value: pct(s.win_rate, 1), suffix: '%', dir: '' },

@@ -207,6 +207,15 @@ def _display_name(sid: str) -> str:
     return sid
 
 
+def effective_date_for(signal_date: str) -> str:
+    """v7.24 FR-5: 信号日 → 持仓生效日（下一交易日），解析失败原样返回。"""
+    try:
+        import stock_calendar as _sc
+        return _sc.next_trade_date_str(signal_date)
+    except Exception:  # noqa: BLE001
+        return signal_date
+
+
 def run_once(sid: str, as_of: str = None) -> dict:
     """run-once: 运行策略 + 生成持仓文件 + 更新纳管状态
 
@@ -216,11 +225,13 @@ def run_once(sid: str, as_of: str = None) -> dict:
     if sid not in BUILTIN_SIDS and not _is_variant(sid):
         raise StrategyNotFoundError(sid)
     date = (as_of or datetime.now().strftime("%Y-%m-%d"))[:10]
+    # v7.24 FR-5: 收盘 T 日计算，产物落盘生效日 T+1（下一交易日）
+    effective_date = effective_date_for(date)
     try:
         holdings, universe = _generate_holdings(sid)
     except Exception as e:
         raise RuntimeError("策略运行失败: %s" % e)
-    out_dir = os.path.join(HOLDINGS_ROOT, date)
+    out_dir = os.path.join(HOLDINGS_ROOT, effective_date)
     path = _write_holdings_matrix(holdings, sid, out_dir, universe)
     if sid in BUILTIN_SIDS:
         state = get_state()
@@ -237,8 +248,8 @@ def run_once(sid: str, as_of: str = None) -> dict:
             "params": d.get("params") or {},
             "enabled": True,
         })
-    return {"sid": sid, "date": date, "holdings_file": path,
-            "symbols": len(list(holdings.columns))}
+    return {"sid": sid, "date": effective_date, "signal_date": date,
+            "holdings_file": path, "symbols": len(list(holdings.columns))}
 
 
 def list_holdings(sid: str) -> list:

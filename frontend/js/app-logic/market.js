@@ -15,6 +15,15 @@
       // 6.3.1 (T-6.3.1.3): 行情取数失败标志 (fetchMarketData catch 置 true, 供四态面板承接)
       const marketError = ref(false);
       let marketRefreshTimer = null;
+      // v7.25 FR-6: 时效元信息（数据时间 / 下次刷新 / 数据源 / 模拟标识）
+      const marketDataTime = ref('');
+      const marketNextRefreshText = ref('');
+      const marketDataSource = ref('');
+      const marketIsMock = ref(false);
+      const marketPhase = ref('');
+      // v7.25 FR-8: 收盘后预计算状态角标
+      const precomputeText = ref('');
+      let _precomputeLoaded = false;
 
       // ===== 指数详情 =====
       const indexDetailVisible = ref(false);
@@ -61,24 +70,69 @@
       const touchStartY = ref(0);
 
       // ===== 市场行情API =====
+      function _marketCore() {
+        return window.QuantMarketRefreshCore || null;
+      }
+      function _fmtClock(ms) {
+        const d = new Date(ms);
+        const p = function (n) { return (n < 10 ? '0' : '') + n; };
+        return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+      }
       async function fetchMarketData() {
         marketError.value = false;
         try {
           const res = await fetch('/api/market/overview');
           const data = await res.json();
           marketData.value = data;
-          // 智能设置下次更新时间
-          scheduleNextMarketRefresh(data);
-        } catch (e) { marketError.value = true; console.error('获取市场行情失败:', e); }
+          // v7.25 FR-6: 时效元信息 + 按阶段调度下次刷新
+          const core = _marketCore();
+          marketDataTime.value = (data && data.date) || '';
+          marketDataSource.value = core ? core.sourceText(data) : ((data && data.data_source) || '');
+          marketIsMock.value = core ? !!core.mockBadge(data) : !!(data && data.is_mock);
+          const plan = core ? core.refreshPlan(data, new Date()) : null;
+          marketPhase.value = plan ? plan.phase : '';
+          loadPrecomputeStatus();
+          scheduleNextMarketRefresh(plan);
+        } catch (e) {
+          marketError.value = true;
+          marketNextRefreshText.value = '';
+          console.error('获取市场行情失败:', e);
+          // 取数失败：60 秒后重试，避免空白页永久停留
+          scheduleNextMarketRefresh({ intervalMs: 60000 });
+        }
       }
 
-      // ===== 智能设置行情刷新 =====
-      function scheduleNextMarketRefresh(data) {
-        if (marketRefreshTimer) clearInterval(marketRefreshTimer);
-        // 交易时间内：每10分钟刷新一次
-        if (data && data.in_trading_hours) {
-          marketRefreshTimer = setInterval(fetchMarketData, 600000);
+      // v7.25 FR-8: 预计算状态（一次性拉取，避免轮询）
+      async function loadPrecomputeStatus() {
+        if (_precomputeLoaded) return;
+        _precomputeLoaded = true;
+        try {
+          const data = await (await fetch('/api/system/precompute/status')).json();
+          if (data && data.success) {
+            precomputeText.value = data.summary || (data.last_run_at ? '部分完成' : '待运行');
+          }
+        } catch (e) {
+          _precomputeLoaded = false;
         }
+      }
+
+      // ===== 智能设置行情刷新（v7.25 FR-6: 交易时段 15–30s / 收盘确认短 TTL） =====
+      function scheduleNextMarketRefresh(plan) {
+        if (marketRefreshTimer) { clearTimeout(marketRefreshTimer); marketRefreshTimer = null; }
+        const intervalMs = plan && plan.intervalMs > 0 ? plan.intervalMs : 0;
+        if (!intervalMs) { marketNextRefreshText.value = ''; return; }
+        marketNextRefreshText.value = _fmtClock(Date.now() + intervalMs);
+        marketRefreshTimer = setTimeout(fetchMarketData, intervalMs);
+      }
+
+      // 页面重新可见时立即刷新一次（后台标签页定时器被节流）
+      function onMarketVisibility() {
+        const core = _marketCore();
+        const visible = typeof document !== 'undefined' ? document.visibilityState : 'hidden';
+        if ((!core || core.shouldRefreshOnVisible(visible)) && fetchMarketData) fetchMarketData();
+      }
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', onMarketVisibility);
       }
 
       // ===== 显示指数详情 =====
@@ -269,6 +323,8 @@
       // 6.6 (T-6.6.26): 本域新增 indexQuoteSummary / loadIndexQuoteSummary (指数行情摘要)
       return {
         marketData, marketRefreshTimer, marketError, fetchMarketData,
+        marketDataTime, marketNextRefreshText, marketDataSource, marketIsMock, marketPhase,
+        precomputeText, loadPrecomputeStatus,
         indexDetailVisible, indexDetail, indexAiResult, indexAiLoading,
         indexQuoteSummary, loadIndexQuoteSummary,
         showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,

@@ -110,7 +110,14 @@
                         // v7.14.1: 后端已返回百分数值(%), 不再 ×100 — 修复总收益 707%/年化 5924% 错位
                         backtestResult.value = {
                             total_return_pct: (r.total_return ?? 0).toFixed(2),
-                            annual_return_pct: (r.annual_return ?? 0).toFixed(2),
+                            // v7.24 FR-1: 样本不足时年化为 null，不得显示成 0%
+                            annual_return_pct: r.annual_return == null ? '' : Number(r.annual_return).toFixed(2),
+                            sample_insufficient: r.annual_return == null,
+                            annual_return_reason: r.annual_return_reason || '',
+                            // v7.24 FR-3: 未来函数/可信度门禁结论
+                            credible: r.credibility ? !!r.credibility.credible : null,
+                            credibility_reasons: (r.credibility && r.credibility.blocking_reasons) || [],
+                            lookahead_passed: r.lookahead_passed,
                             max_drawdown_pct: (r.max_drawdown ?? 0).toFixed(2),
                             sharpe_ratio: (r.sharpe_ratio ?? 0).toFixed(2),
                             win_rate: (r.win_rate ?? 0).toFixed(2),
@@ -472,9 +479,16 @@
                 const themes = ref({ light: { name: '浅色', color: 'var(--surface-canvas)' }, dark: { name: '深色', color: 'hsl(45, 10%, 8%)' } });
                 const currentTheme = ref('light');  // 当前解析后模式: light|dark
                 // V6.9.3 (F6.2): 主题状态全局共享 — Header 主题面板与基础配置子页共用
-                // 色板: 金/蓝/红/绿/紫/粉 + 青/橙/靛 (6.2.1 F11) + 中性无色相 (与 themes.js HUES / NEUTRAL_HUE 一致)
-                const themeHues = [45, 220, 0, 140, 270, 320, 180, 25, 250, -1];
-                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 320: '粉色', 180: '青色', 25: '橙色', 250: '靛蓝', '-1': '中性' };
+                // v7.26 (FR-14): 主题色收敛为 6 档 — 金/蓝/红/绿/紫/青 (与 themes.js HUES 一致)
+                const themeHues = [45, 220, 0, 140, 270, 180];
+                const themeHueNames = { 45: '金色', 220: '蓝色', 0: '红色', 140: '绿色', 270: '紫色', 180: '青色' };
+                // legacy 数值色相只读迁移: 粉320→红0, 橙25→金45, 靛蓝250→蓝220, 中性-1→金45
+                const LEGACY_HUE_MAP = { 320: 0, 25: 45, 250: 220, '-1': 45 };
+                function normalizePresetHue(h) {
+                    const n = parseInt(h, 10);
+                    if (isNaN(n)) return 45;
+                    return LEGACY_HUE_MAP[n] != null ? LEGACY_HUE_MAP[n] : n;
+                }
                 const themeHue = ref(45);
                 // V6.9.4 (F4/H2): themeMode 改响应式 ref — computed 依赖非响应式 getPreference 无法在切换后重算
                 const themeMode = ref((function () {
@@ -484,7 +498,7 @@
                 (function () {
                     const P = window.__quantModules && window.__quantModules.preferences;
                     const h = (P && P.getPreference && P.getPreference('theme_hue'));
-                    if (h != null && h !== '') themeHue.value = parseInt(h, 10);
+                    if (h != null && h !== '') themeHue.value = normalizePresetHue(h);
                 })();
                 // V5.12.0 (FR-5.12.1.1): 信息密度 — 原 applyDensity() 定义了却无调用点, 三档偏好从未生效
                 const density = ref('comfortable');

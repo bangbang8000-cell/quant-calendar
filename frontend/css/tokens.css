@@ -106,9 +106,21 @@
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
-  /* v7.21: 实底信号标签前景色 (与 fill 对比 >=4.5:1), 暗色由 themes.css 覆盖 */
-  --market-up-on: #111111;
-  --market-down-on: #ffffff;
+  /* ─── v7.26 (FR-12): 择时信号四档 (语义固定, 随主题明暗切换) ───
+     买入/加仓=浅红(up) 卖出/减仓=浅绿(down) 持有=浅金(hold) 观望/数据不足=中性灰(flat)。
+     加仓/减仓与买入/卖出同色系, 由描边区分强度; 文字对底色与卡片底均 >=4.5:1。 */
+  --qc-signal-up-bg: #fde8e8;
+  --qc-signal-up-border: #e63946;
+  --qc-signal-up-text: #a02020;
+  --qc-signal-down-bg: #e6f4ea;
+  --qc-signal-down-border: #2e7d32;
+  --qc-signal-down-text: #1b5e20;
+  --qc-signal-hold-bg: #fff4d6;
+  --qc-signal-hold-border: #b8922a;
+  --qc-signal-hold-text: #6d5218;
+  --qc-signal-flat-bg: #eae8e1;
+  --qc-signal-flat-border: #b7b2a2;
+  --qc-signal-flat-text: #5b564c;
 
   /* ─── Navigation Specific Tokens ─── */
   --qc-nav-bg: var(--qc-neutral-0);
@@ -656,6 +668,11 @@ html[data-density="spacious"] {
   --qc-stock-ops-w: 92px;    /* 操作区列宽 = 4 槽 × 20px + 3 × 4px */
   --qc-op-hit: 20px;         /* 操作槽位热区边长 */
   --qc-stock-badge-w: 44px;  /* v7.22: 46→44，让 2px 给策略名 */
+  /* v7.26 (FR-11): 策略区由「无限 1fr」收窄为有上限的两列 (64–72px/列):
+     单列上限 + 总宽（徽章 + 4 + 两列 + 4）只在本块声明一次 —— 三档密度只改字号与 gap,
+     列宽不随密度/屏幕拉伸; 股票列表与策略列表/管理页共用同一组令牌。 */
+  --qc-stock-strat-col-max: 72px;
+  --qc-stock-strat-w: calc(var(--qc-stock-badge-w) + 4px + 2 * var(--qc-stock-strat-col-max) + 4px);
   --qc-stock-icon: 16px;     /* 行内图标尺寸 */
   --qc-stock-tag-font: var(--qc-font-size-xs);  /* 策略 tag 12px */
 }

@@ -44,7 +44,8 @@ def test_matrix_cell_text_label():
     并配同源图例。此断言锁定新契约, 防止回退。
     """
     src = _read("js/components/overlay-radar.js")
-    assert "qc711-sig" in src and ".display" in src, "单元格应渲染统一 display 文案"
+    # v7.26 (FR-12): 类名改由 S.signalClass 统一产出 (四档 + 描边), 仍只渲染后端 display 文案
+    assert "S.signalClass(" in src and ".display" in src, "单元格应渲染统一 display 文案"
     assert "qc711-sig-band" not in src, "外置强/中/弱 span 应移除"
     assert "matrix.legend" in src, "图例须由后端同源下发"
     assert "cellTitle(" in src, "应有 tooltip 函数承载仓位系数/判定理由"
@@ -53,8 +54,10 @@ def test_matrix_cell_text_label():
     assert "<el-tag" not in src.split("qc711-matrix-tools")[1].split("平均仓位")[0], \
         "策略单元格仍不应使用 el-tag（用轻量 span 标签避免撑宽）"
     css = _read("css/components.css")
+    # v7.26 (FR-12): 持有拆出 hold 档 (+ 加仓/减仓描边)
     assert ".qc711-sig.tone-up" in css and ".qc711-sig.tone-down" in css \
-        and ".qc711-sig.tone-flat" in css, "文字标签需按 up/down/flat 三档分色"
+        and ".qc711-sig.tone-hold" in css and ".qc711-sig.tone-flat" in css, \
+        "文字标签需按 up/down/hold/flat 四档分色"
     assert ".qc711-sig-band" not in css, "外置强度档样式应移除"
 
 

@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta, date
 import logging
 from paths import MARKET_CACHE_FILE as CACHE_FILE
+import stock_calendar
 
 logger = logging.getLogger(__name__)
 
@@ -53,19 +54,54 @@ TRADING_MID = (11, 30)   # 11:30
 TRADING_RESTART = (13, 0) # 13:00
 TRADING_END = (15, 0)     # 15:00
 
+# v7.25 FR-6: 行情时效口径
+MARKET_REFRESH_INTERVAL = 20       # 交易时段刷新间隔（秒，PRD 要求 15–30s）
+POST_CLOSE_RETRY = 60              # 收盘确认窗口短 TTL（秒）
+POST_CLOSE_CONFIRM_START = (15, 5) # 15:05 起短 TTL 重试直至确认当日 trade_date
+HISTORICAL_CACHE_TTL = 7 * 86400   # 指定历史日期的指数数据（不随时间变化）
+
+
+def _now():
+    """当前时间（单点可替换，便于单测注入 mock 时钟）"""
+    return datetime.now()
+
+
+def _as_date(value):
+    """datetime/date → date"""
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return _now().date()
+
 
 def is_trading_day(date=None):
-    """判断是否为交易日（简化版，周一到周五）"""
-    if date is None:
-        date = datetime.now()
-    # 0=周一, 4=周五, 5=周六, 6=周日
-    return date.weekday() < 5
+    """判断是否为交易日（v7.25 FR-6: 统一走交易日历，覆盖法定节假日）"""
+    d = _as_date(date) if date is not None else _now().date()
+    try:
+        return bool(stock_calendar.is_trade_day(d))
+    except Exception:  # noqa: BLE001 — 日历不可用时不阻塞行情链路
+        logger.warning("交易日历不可用, 回退 weekday", exc_info=True)
+        return d.weekday() < 5
+
+
+def _next_trade_date(d):
+    """返回 d 之后的下一个交易日（节假日跳过）"""
+    try:
+        return stock_calendar.next_trade_day(d)
+    except Exception:  # noqa: BLE001
+        cursor = d
+        for _ in range(30):
+            cursor = cursor + timedelta(days=1)
+            if cursor.weekday() < 5:
+                return cursor
+        return cursor
 
 
 def is_trading_hours(now=None):
     """判断是否在交易时间内"""
     if now is None:
-        now = datetime.now()
+        now = _now()
 
     if not is_trading_day(now):
         return False
@@ -80,38 +116,47 @@ def is_trading_hours(now=None):
     return morning_trading or afternoon_trading
 
 
-def get_cache_duration(now=None):
-    """获取缓存有效期（秒）"""
+def get_cache_duration(now=None, confirmed=False):
+    """获取缓存有效期（秒）
+
+    v7.25 FR-6:
+    - 交易时段 20s（PRD 15–30s）
+    - 午休/刚收盘（15:00–15:05）短 TTL，触发一次补刷
+    - 15:05 起未确认当日 trade_date → 60s 短 TTL 重试；确认后转长 TTL 至下一交易日 9:25
+    - 非交易日/节假日后按交易日历跳到下一交易日 9:25，不缓存到错误日期
+    """
     if now is None:
-        now = datetime.now()
+        now = _now()
 
-    # 非交易日：缓存到下一个交易日9:25
+    # 非交易日：缓存到下一交易日 9:25
     if not is_trading_day(now):
-        # 找下一个交易日
-        next_trading = now + timedelta(days=1)
-        while next_trading.weekday() >= 5:  # 跳过周六日
-            next_trading += timedelta(days=1)
-        next_trading_925 = next_trading.replace(hour=9, minute=25, second=0, microsecond=0)
-        delta = next_trading_925 - now
-        return int(delta.total_seconds())
+        nxt = _next_trade_date(now.date())
+        target = datetime(nxt.year, nxt.month, nxt.day, 9, 25)
+        return max(60, int((target - now).total_seconds()))
 
-    # 交易日，但非交易时间
-    if not is_trading_hours(now):
-        current_time = (now.hour, now.minute)
-        if current_time < TRADING_START:
-            # 开盘前：缓存到9:30
-            target = now.replace(hour=9, minute=30, second=0, microsecond=0)
-        else:
-            # 收盘后：缓存到下一个交易日9:25
-            next_day = now + timedelta(days=1)
-            while next_day.weekday() >= 5:
-                next_day += timedelta(days=1)
-            target = next_day.replace(hour=9, minute=25, second=0, microsecond=0)
-        delta = target - now
-        return int(delta.total_seconds())
+    current_time = (now.hour, now.minute)
 
-    # 交易时间内：每10分钟更新一次
-    return 600  # 10分钟 = 600秒
+    if is_trading_hours(now):
+        return MARKET_REFRESH_INTERVAL
+
+    # 交易日、开盘前
+    if current_time < TRADING_START:
+        if current_time < (9, 25):
+            target = now.replace(hour=9, minute=25, second=0, microsecond=0)
+            return max(MARKET_REFRESH_INTERVAL, int((target - now).total_seconds()))
+        return MARKET_REFRESH_INTERVAL  # 9:25–9:30 等待开盘
+
+    # 收盘确认窗口（15:05+）：未确认当日终值则短 TTL 重试
+    if current_time >= POST_CLOSE_CONFIRM_START:
+        if not confirmed:
+            return POST_CLOSE_RETRY
+        nxt = _next_trade_date(now.date())
+        target = datetime(nxt.year, nxt.month, nxt.day, 9, 25)
+        return max(60, int((target - now).total_seconds()))
+
+    # 午休（11:30–13:00）或 15:00–15:05：短 TTL，各补刷一次
+    return POST_CLOSE_RETRY
+
 
 
 class MarketData:
@@ -167,17 +212,29 @@ class MarketData:
             # v3.15.1: default=str 兜底 — 任何未被规范化的 date/datetime 不阻塞落盘
             json.dump(self.cache, f, ensure_ascii=False, indent=2, default=str)
 
-    def _is_cache_valid(self, cache_key):
-        """检查缓存是否有效"""
+    def _is_cache_valid(self, cache_key, historical=False):
+        """检查缓存是否有效
+
+        v7.25 FR-6: 收盘后以缓存数据的 trade_date 是否等于今日判定 "已确认当日终值" —
+        未确认则短 TTL 重试，确认后转长 TTL，避免把旧收盘价锁一整晚。
+        指定历史日期的数据不随时间变化，使用固定长 TTL。
+        """
         if cache_key not in self.cache:
             return False
 
         cache_data = self.cache[cache_key]
-        cache_time = datetime.fromisoformat(cache_data['fetch_time'])
-        now = datetime.now()
+        try:
+            cache_time = datetime.fromisoformat(cache_data['fetch_time'])
+        except (KeyError, TypeError, ValueError):
+            return False
+        now = _now()
 
-        # v3.7: 传入 now 而非 cache_time 用于 TTL 计算
-        cache_duration = get_cache_duration(now)
+        if historical:
+            return (now - cache_time).total_seconds() < HISTORICAL_CACHE_TTL
+
+        data = cache_data.get('data') or {}
+        confirmed = str(data.get('trade_date') or '') == now.strftime('%Y%m%d')
+        cache_duration = get_cache_duration(now, confirmed=confirmed)
         return (now - cache_time).total_seconds() < cache_duration
 
     def get_index_daily(self, ts_code, trade_date=None):
@@ -185,7 +242,7 @@ class MarketData:
         cache_key = f"index_{ts_code}_{trade_date or 'latest'}"
 
         # 检查缓存是否有效
-        if self._is_cache_valid(cache_key):
+        if self._is_cache_valid(cache_key, historical=bool(trade_date)):
             return self.cache[cache_key]['data']
 
         # 使用统一数据源管理器
@@ -197,7 +254,7 @@ class MarketData:
                 result['trade_date'] = result['trade_date'].strftime('%Y%m%d')
             # 存入缓存
             self.cache[cache_key] = {
-                'fetch_time': datetime.now().isoformat(),
+                'fetch_time': _now().isoformat(),
                 'data': result
             }
             self._save_cache()
@@ -209,7 +266,7 @@ class MarketData:
     def _get_mock_data(self, ts_code):
         """生成模拟数据（API不可用时）"""
         # 固定随机种子，同一天返回相同结果
-        np.random.seed(int(datetime.now().strftime('%Y%m%d')) + hash(ts_code) % 100000)
+        np.random.seed(int(_now().strftime('%Y%m%d')) + hash(ts_code) % 100000)
         # 基础点位映射
         base_points = {
             '000001.SH': 4135,
@@ -228,7 +285,7 @@ class MarketData:
 
         return {
             'ts_code': ts_code,
-            'trade_date': datetime.now().strftime('%Y%m%d'),
+            'trade_date': _now().strftime('%Y%m%d'),
             'close': round(point, 2),
             'pct_chg': round(change_pct * 100, 2),
             'change': round(change_amount, 2),
@@ -238,12 +295,32 @@ class MarketData:
             'vol': round(np.random.uniform(1000000, 5000000), 0),
             'amount': round(np.random.uniform(100000, 500000), 0),
             'data_source': 'mock',
+            'is_mock': True,
             'mock_reason': '所有数据源(sxsc-tushare/tushare/akshare)均不可用'
         }
 
+    def refresh_market_indices(self, trade_date=None):
+        """强制刷新全部指数（忽略缓存），供收盘/盘前调度使用。
+
+        返回 (ok, detail)：ok=至少一个指数拿到真实数据；detail 描述是否确认当日终值。
+        mock 数据不会被写入持久缓存。
+        """
+        results = []
+        for config in INDEX_CONFIG.values():
+            cache_key = f"index_{config['code']}_{trade_date or 'latest'}"
+            self.cache.pop(cache_key, None)
+            results.append(self.get_index_daily(config['code'], trade_date))
+        self._save_cache()
+        today = _now().strftime('%Y%m%d')
+        real = [r for r in results if r and r.get('data_source') != 'mock']
+        confirmed = bool(real) and all(str(r.get('trade_date') or '') == today for r in real)
+        if not real:
+            return False, '数据源不可用（返回模拟数据）'
+        return True, ('已确认当日终值' if confirmed else '已刷新但未确认当日终值')
+
     def get_market_overview(self, date=None):
         """获取市场概览数据"""
-        now = datetime.now()
+        now = _now()
         is_trading = is_trading_day(now)
         in_trading_hours = is_trading_hours(now)
 
@@ -252,7 +329,8 @@ class MarketData:
             'update_time': now.isoformat(),
             'is_trading_day': is_trading,
             'in_trading_hours': in_trading_hours,
-            'cache_duration': get_cache_duration(),
+            'cache_duration': get_cache_duration(now),
+            'next_refresh_seconds': get_cache_duration(now),
             'indices': []
         }
 
@@ -268,12 +346,18 @@ class MarketData:
                 'change': index_data.get('change', 0),
                 'vol': index_data.get('vol', 0),
                 'amount': index_data.get('amount', 0),
-                'is_mock': index_data.get('data_source') == 'mock',
+                'is_mock': bool(index_data.get('is_mock') or index_data.get('data_source') == 'mock'),
                 'data_source': index_data.get('data_source', 'unknown'),
                 'mock_reason': index_data.get('mock_reason', ''),
                 'trade_date': index_data.get('trade_date', '')
             })
 
+        # v7.25 FR-6: 顶层模拟标识 + 数据源汇总 + 当日终值确认状态（供前端展示）
+        sources = sorted({i['data_source'] for i in overview['indices'] if i['data_source']})
+        overview['is_mock'] = any(i['is_mock'] for i in overview['indices'])
+        overview['data_source'] = sources[0] if len(sources) == 1 else ('mixed' if sources else 'unknown')
+        real = [i for i in overview['indices'] if not i['is_mock']]
+        overview['confirmed'] = bool(real) and all(i['trade_date'] == now.strftime('%Y%m%d') for i in real)
         # 计算整体市场情绪
         chg_list = [idx['pct_chg'] for idx in overview['indices']]
         avg_chg = np.mean(chg_list)

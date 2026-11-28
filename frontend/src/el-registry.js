@@ -13,6 +13,7 @@ import { ElCollapse, ElCollapseItem } from 'element-plus/es/components/collapse/
 import { provideGlobalConfig } from 'element-plus/es/components/config-provider/src/hooks/use-global-config'
 import { ElDatePicker } from 'element-plus/es/components/date-picker/index'
 import { ElDialog } from 'element-plus/es/components/dialog/index'
+import { ElDrawer } from 'element-plus/es/components/drawer/index'
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus/es/components/dropdown/index'
 import { ElForm, ElFormItem } from 'element-plus/es/components/form/index'
 import { ElIcon } from 'element-plus/es/components/icon/index'
@@ -40,6 +41,7 @@ const COMPONENTS = [
   ['ElCollapseItem', ElCollapseItem],
   ['ElDatePicker', ElDatePicker],
   ['ElDialog', ElDialog],
+  ['ElDrawer', ElDrawer],
   ['ElDropdown', ElDropdown],
   ['ElDropdownItem', ElDropdownItem],
   ['ElDropdownMenu', ElDropdownMenu],
@@ -73,7 +75,7 @@ export function installEl(app, locale) {
 }
 
 export const EL_REGISTRY_META = {
-  components: 32,
+  components: 33,
   directives: ['loading'],
-  tags: ['el-alert', 'el-autocomplete', 'el-button', 'el-checkbox', 'el-checkbox-group', 'el-collapse', 'el-collapse-item', 'el-date-picker', 'el-dialog', 'el-dropdown', 'el-dropdown-item', 'el-dropdown-menu', 'el-form', 'el-form-item', 'el-icon', 'el-input', 'el-input-number', 'el-option', 'el-option-group', 'el-pagination', 'el-progress', 'el-radio', 'el-radio-button', 'el-radio-group', 'el-select', 'el-slider', 'el-switch', 'el-table', 'el-table-column', 'el-tag', 'el-time-picker', 'el-tooltip'],
+  tags: ['el-alert', 'el-autocomplete', 'el-button', 'el-checkbox', 'el-checkbox-group', 'el-collapse', 'el-collapse-item', 'el-date-picker', 'el-dialog', 'el-drawer', 'el-dropdown', 'el-dropdown-item', 'el-dropdown-menu', 'el-form', 'el-form-item', 'el-icon', 'el-input', 'el-input-number', 'el-option', 'el-option-group', 'el-pagination', 'el-progress', 'el-radio', 'el-radio-button', 'el-radio-group', 'el-select', 'el-slider', 'el-switch', 'el-table', 'el-table-column', 'el-tag', 'el-time-picker', 'el-tooltip'],
 }

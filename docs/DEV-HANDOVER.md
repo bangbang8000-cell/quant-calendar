@@ -378,7 +378,7 @@ if (key === 'open-pattern-lab') { goTab('research', 'pattern-lab'); return; }
 
 | # | 门禁 | 判据 | 典型报错 | 修复动作 |
 |---|---|---|---|---|
-| 1 | `test_bundle_budget_v534` | 源码 JS 总量 ≤ **1,700,000 B**；`app-logic.js` ≤ **104 KB** | `源码 JS 总量超预算` | **优先拆包/按需 import，不要直接提数字**。提数字须在注释写明"只降不升"并列入审核判断点 |
+| 1 | `test_bundle_budget_v534` | 首屏静态源码 ≤ **1,400,000 B**；`app-logic.js` ≤ **104 KB**；全量 dist 由 `scripts/report_bundle_size.py --gate` 兜底 | `首屏源码 JS 超预算` | **优先拆包/按需 import，不要直接提数字**。提数字须在注释写明"只降不升"并列入审核判断点 |
 | 2 | 同上 `test_no_generated_bundle_in_src` | 文件名 basename 含 `min` 或 `vendor` 即判为构建产物 | `疑似把构建产物提交进 src` | **改文件名**。别改判据（对真 min.js 仍有效）。已踩过：`timing-radar.js` 因 "ti**min**g" 被误判，改名 `overlay-radar.js` |
 | 3 | `test_module_size_630` | 单 py **≤ 700 行** | `超过 700 行` | 按职责拆文件 |
 | 4 | `test_type_scale` / `test_typography_scale_620` | 禁止 CSS 裸 `font-size: Npx` | `硬编码字号` | 映射到 `var(--qc-font-size-*)` |

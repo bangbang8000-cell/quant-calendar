@@ -295,6 +295,27 @@ def delete_experiment(eid: str) -> bool:
     return deleted
 
 
+def delete_experiments(ids: list) -> dict:
+    """v7.24 FR-16: 批量删除实验（单源 experiments，硬删除）。
+
+    返回 {deleted: [id], not_found: [id]}；部分 id 不存在不视为整体失败。
+    """
+    deleted, not_found = [], []
+    clean = [str(x) for x in (ids or []) if str(x).strip()]
+    if not clean:
+        return {'deleted': [], 'not_found': []}
+    with db._db_lock:
+        conn = db.get_conn()
+        try:
+            for eid in clean:
+                cur = conn.execute("DELETE FROM research_experiments WHERE id = ?", (eid,))
+                (deleted if cur.rowcount > 0 else not_found).append(eid)
+            conn.commit()
+        finally:
+            conn.close()
+    return {'deleted': deleted, 'not_found': not_found}
+
+
 def update_experiment(eid: str, fields: dict) -> bool:
     """编辑实验记录 (T-5.1.41 / FR-5.1.4.1): 更新白名单元字段。
 

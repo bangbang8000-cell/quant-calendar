@@ -104,6 +104,7 @@
         } finally {
           loading.value = false;
         }
+        loadNetworkDiff();
       }
 
       async function addPosition() {
@@ -334,6 +335,136 @@
       const planForm = ref({ total_capital: 1000000, overwrite: false });
       const PLAN_QUICK_CAPITAL = [200000, 500000, 1000000, 2000000];
 
+      // ─── v7.25 (FR-7): 持仓组网 — 自选同步 / 重新均分 / 自动同步 ───
+      const networkDiff = ref({ to_add: [], only_in_portfolio: [], watchlist_count: 0, position_count: 0 });
+      const networkLoading = ref(false);
+      const networkSyncing = ref(false);
+      const autoSync = ref(false);
+      let _autoSyncSignature = '';
+
+      const networkSummary = computed(function () {
+        const s = summary.value || {};
+        const total = Number(planForm.value.total_capital) || 0;
+        const invested = s.total_cost != null ? Number(s.total_cost) : null;
+        return {
+          totalCapital: total,
+          invested: invested,
+          cash: invested != null ? Math.max(total - invested, 0) : null,
+          count: positions.value.length,
+          toAdd: (networkDiff.value.to_add || []).length,
+          onlyInPortfolio: (networkDiff.value.only_in_portfolio || []).length,
+        };
+      });
+
+      const networkAddNames = computed(function () {
+        return (networkDiff.value.to_add || []).map(function (x) {
+          return x.stock_name || x.stock_code;
+        }).join('、');
+      });
+
+      async function loadNetworkDiff() {
+        networkLoading.value = true;
+        try {
+          const data = await (await fetch('/api/portfolio/network/diff')).json();
+          if (data && data.success) {
+            networkDiff.value = {
+              to_add: data.to_add || [],
+              only_in_portfolio: data.only_in_portfolio || [],
+              watchlist_count: data.watchlist_count || 0,
+              position_count: data.position_count || 0,
+            };
+            autoSync.value = !!data.auto_sync;
+            await maybeAutoSync();
+          }
+        } catch (e) {
+          console.warn('[portfolio] 加载组网差异失败:', e);
+        } finally {
+          networkLoading.value = false;
+        }
+      }
+
+      async function maybeAutoSync() {
+        if (!autoSync.value) return;
+        const codes = (networkDiff.value.to_add || []).map(function (x) { return x.stock_code; });
+        const sig = codes.slice().sort().join(',');
+        if (!sig || sig === _autoSyncSignature) return;
+        _autoSyncSignature = sig;
+        await syncNetwork(true, true);
+      }
+
+      async function setAutoSync(val) {
+        autoSync.value = !!val;
+        try {
+          await fetch('/api/portfolio/network/auto-sync', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auto_sync: autoSync.value })
+          });
+        } catch (e) {
+          ElementPlus.ElMessage.error('自动同步开关保存失败');
+          autoSync.value = !autoSync.value;
+          return;
+        }
+        if (autoSync.value) {
+          await maybeAutoSync();
+        } else {
+          ElementPlus.ElMessage.success('已关闭自动同步');
+        }
+      }
+
+      async function syncNetwork(rebalance, silent) {
+        networkSyncing.value = true;
+        const body = JSON.stringify({
+          total_capital: Number(planForm.value.total_capital) || 0,
+          mode: 'equal'
+        });
+        try {
+          const preview = await (await fetch('/api/portfolio/network/preview', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
+          })).json();
+          if (!preview || !preview.success) {
+            ElementPlus.ElMessage.error((preview && (preview.detail || preview.message)) || '组网预览失败');
+            return;
+          }
+          const plan = preview.plan || {};
+          if (!plan.position_count) {
+            ElementPlus.ElMessage.warning('没有可建仓的标的，请调整总资金或自选');
+            return;
+          }
+          const added = (preview.diff && preview.diff.to_add ? preview.diff.to_add.length : 0);
+          if (!silent) {
+            const title = rebalance ? '按总资金重新均分' : '同步自选股';
+            const msg = '将按 ' + money(plan.total_capital) + ' 元等权均分 ' + plan.position_count +
+              ' 只（自选新增 ' + added + ' 只），投入 ' + money(plan.invested) + ' 元，留现金 ' +
+              money(plan.cash_reserve) + ' 元。已有持仓保留成本价，且不会删除任何持仓。';
+            try {
+              await ElementPlus.ElMessageBox.confirm(msg, title, {
+                confirmButtonText: '确认', cancelButtonText: '取消', type: 'info'
+              });
+            } catch (e) { return; }
+          }
+          const data = await (await fetch('/api/portfolio/network/sync', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
+          })).json();
+          if (data && data.success) {
+            if (data.already_applied) {
+              ElementPlus.ElMessage.info(data.message || '该计划此前已同步');
+            } else {
+              ElementPlus.ElMessage.success(data.message || '持仓已同步');
+            }
+            await loadPortfolio();
+            await loadNetworkDiff();
+            loadEquity(equityDays.value);
+          } else {
+            ElementPlus.ElMessage.error((data && (data.detail || data.message)) || '同步失败');
+          }
+        } catch (e) {
+          ElementPlus.ElMessage.error('网络异常，同步失败');
+        } finally {
+          networkSyncing.value = false;
+        }
+      }
+
+
       const planTotals = computed(function () {
         const p = planPreview.value;
         if (!p) return null;
@@ -485,6 +616,9 @@
         planVisible, planLoading, planApplying, planPreview, planNote, planForm,
         PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
         openPlanDialog, previewPlan, applyPlan,
+        // v7.25 (FR-7): 持仓组网
+        networkDiff, networkLoading, networkSyncing, autoSync, networkSummary, networkAddNames,
+        loadNetworkDiff, syncNetwork, setAutoSync,
       };
     }
   };

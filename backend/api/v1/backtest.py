@@ -15,6 +15,50 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/backtest", tags=["策略回测"])
 
+# v7.24 FR-4: 最小样本门槛（与 PRD §4 一致）
+MIN_SAMPLE_MONTHS = 18
+MIN_SAMPLE_DAYS = 360
+
+
+def _sample_info(summary: Dict[str, Any]) -> Dict[str, Any]:
+    """回测表单/结果页展示：实际区间 / 数据跨度 / 有效交易日 / 是否满足 18 个月。"""
+    months = float(summary.get('sample_months') or 0.0)
+    days = int(summary.get('total_days') or 0)
+    meets = months >= MIN_SAMPLE_MONTHS and days >= MIN_SAMPLE_DAYS
+    reason = summary.get('annual_return_reason') or ('' if meets else '样本不足（<18个月）')
+    return {
+        'start_date': summary.get('start_date'),
+        'end_date': summary.get('end_date'),
+        'data_span_months': round(months, 1),
+        'effective_days': days,
+        'required_months': MIN_SAMPLE_MONTHS,
+        'required_days': MIN_SAMPLE_DAYS,
+        'meets_min_sample': meets,
+        'reason': reason,
+        'repair': {'endpoint': '/api/dwh/refresh', 'kind': 'daily-k'},
+    }
+
+
+def _data_coverage() -> Dict[str, Any]:
+    """DWH 行情覆盖（不可用时如实返回 available=False，不阻塞回测响应）。"""
+    repair = {'endpoint': '/api/dwh/refresh', 'kind': 'daily-k'}
+    try:
+        from dwh import get_backend
+        st = get_backend().status()
+    except Exception as e:  # noqa: BLE001 — 依赖缺失/未构建时如实降级
+        return {'available': False, 'reason': f'{type(e).__name__}: {str(e)[:120]}',
+                'earliest_date': None, 'latest_date': None,
+                'coverage_months': 0.0, 'meets_18m': False, 'repair': repair}
+    months = float(st.get('coverage_months') or 0.0)
+    return {
+        'available': bool(st.get('available')),
+        'earliest_date': st.get('earliest_date'),
+        'latest_date': st.get('latest_date'),
+        'coverage_months': months,
+        'meets_18m': months >= MIN_SAMPLE_MONTHS,
+        'repair': repair,
+    }
+
 
 @router.post("/export")
 async def export_backtest_report(body: Dict[str, Any],
@@ -87,6 +131,8 @@ async def run_strategy_backtest(
         return {
             "success": result.success,
             "summary": summary,
+            "sample_info": _sample_info(summary),
+            "data_coverage": _data_coverage(),
             "equity_curve": result.equity_curve,
             "monthly_returns": result.monthly_returns,
             "trade_history": result.trade_history,
@@ -118,6 +164,8 @@ async def run_multi_strategy_backtest(
             end_date=params.get("end_date"),
             weights=params.get("weights")
         )
+        if isinstance(result, dict):
+            result["data_coverage"] = _data_coverage()
         return {"success": True, "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"多策略回测失败: {e}")

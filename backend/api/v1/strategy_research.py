@@ -28,6 +28,9 @@ from .strategy_research_support import (
     future_returns as _future_returns,
     record_experiment as _record_experiment,
     resolve_portal as _resolve_portal,
+    attach_lookahead_flags,
+    attach_lookahead_credibility,
+    scale_equity_to_capital as _scale_equity_to_capital,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,6 +42,8 @@ router = APIRouter(prefix='/strategies', tags=['策略研究'])
 async def list_strategies(_: Dict = Depends(get_non_guest_user)):
     """策略列表(内置注册表)"""
     strategies = registry.list()
+    # v7.24 FR-3: 已产出未来函数报告时标注可信状态
+    attach_lookahead_flags(strategies)
     # V6.9.4 (F6.1): 持仓数据文件缺失时附加可诊断提示 (策略定义列表不受影响)
     try:
         from data_parser import parser as _parser
@@ -54,6 +59,14 @@ async def list_strategies(_: Dict = Depends(get_non_guest_user)):
 
 
 # ─── v3.21 (P0-6): 策略纳管中心 ────────────────────
+
+@router.get('/lookahead-report')
+async def lookahead_report(refresh: bool = False,
+                           _: Dict = Depends(get_non_guest_user)):
+    """v7.24 FR-3: 内置策略未来函数批量检查报告（通过/不通过 + 原因）。"""
+    from lookahead_guard import build_lookahead_report
+    return await asyncio.to_thread(build_lookahead_report, refresh)
+
 
 @router.get('/governance')
 async def governance_get(_: Dict = Depends(get_non_guest_user)):
@@ -229,33 +242,6 @@ async def run_strategy(sid: str, body: Dict[str, Any],
     return {'id': rid, 'status': 'running', 'mode': mode}
 
 
-def _scale_equity_to_capital(result: Dict[str, Any], initial_capital: float) -> Dict[str, Any]:
-    """v7.19 (T3.1): 把回测引擎的「净值倍数」序列换算成金额序列。
-
-    引擎产出 equity_curve 起点为 1.0（无量纲倍数），金额本身不参与收益计算 ——
-    所以"初始资金填 100 万还是 1 万"过去得到的是同一条曲线，用户无法回答
-    "这一百万最后变成多少"。这里按 initial_capital 换算，并给出期末权益与总盈亏。
-
-    原始倍数保留在 equity_curve_index，避免破坏需要无量纲曲线的既有图表口径。
-    """
-    if not isinstance(result, dict):
-        return result
-    result['initial_capital'] = initial_capital
-    curve = result.get('equity_curve') or []
-    if not curve:
-        return result
-    try:
-        index = [float(x) for x in curve]
-    except (TypeError, ValueError):
-        return result
-    result['equity_curve_index'] = [round(x, 6) for x in index]
-    amounts = [round(initial_capital * x, 2) for x in index]
-    result['equity_curve'] = amounts
-    result['final_equity'] = amounts[-1]
-    result['total_pnl'] = round(amounts[-1] - initial_capital, 2)
-    return result
-
-
 @router.post('/{sid}/backtest')
 async def backtest_strategy(sid: str, body: Dict[str, Any],
                             _: Dict = Depends(get_non_guest_user)):
@@ -299,28 +285,27 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
             raise HTTPException(status_code=400, detail='fee_rate / slippage 不能为负')
         ctx = StrategyContext(portal=portal, params=params, as_of=end)
         holdings = st.generate_signals(ctx)
-        # 真实收益序列: 取 close 面板 → 日收益率 (date×symbol, 回测器内部防前视)
-        returns = None
+        # 真实收益序列 + v7.24 FR-2 价格面板: 前复权 OHLC → T+1 开盘撮合
+        returns = prices = None
         try:
-            close_panel = portal.get_panel(['close'], start, end, universe=universe)
-            if close_panel is not None and not close_panel.empty:
-                df = close_panel['close'].unstack('symbol').sort_index()
-                returns = df.pct_change()
+            from backtest_execution import panel_to_returns_and_prices
+            returns, prices = panel_to_returns_and_prices(
+                portal.get_panel(['open', 'close', 'high', 'low'], start, end, universe=universe))
         except Exception as e:
-            logger.info('收益序列取数失败(%s), 走模拟收益', e)
+            logger.info('行情面板取数失败(%s), 回退收盘价近似', e)
         result = backtest_holdings(
-            holdings,
-            returns=returns,
-            start_date=body.get('start_date'),
-            end_date=body.get('end_date'),
-            commission_rate=fee_rate,
-            slippage=slippage,
+            holdings, returns=returns, start_date=body.get('start_date'),
+            end_date=body.get('end_date'), commission_rate=fee_rate,
+            slippage=slippage, prices=prices, initial_capital=initial_capital,
         )
         # v7.19 (T3.1): 资金参与计算 —— 引擎产出的是「净值倍数」序列(起点 1.0)，
         # 这里换算成金额序列并给出期末权益/总盈亏，前端才能显示"100 万变成多少"。
         # 保留原始倍数(equity_curve_index) 供需要无量纲曲线的场景使用，避免破坏既有图表口径。
         if isinstance(result, dict) and result.get('success', True):
             _scale_equity_to_capital(result, initial_capital)
+        # v7.24 FR-3: 未来函数检查未过 → credibility 阻断展示
+        if isinstance(result, dict) and result.get('success', True):
+            attach_lookahead_credibility(result, sid)
         # V4.0 M1-2: 数据不可达时透出 data_degraded
         # T-5.1.2: 研究历史持久化 (静默失败不影响返回)
         if isinstance(result, dict) and result.get('success', True):
@@ -328,7 +313,10 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
             _record_experiment(
                 'backtest', sid,
                 {'params': params, 'initial_capital': initial_capital,
-                 'commission_rate': fee_rate, 'slippage': slippage},
+                 'commission_rate': fee_rate, 'slippage': slippage,
+                 'engine_version': _r.get('engine_version', ''),
+                 'execution_mode': _r.get('execution_mode', ''),
+                 'adjust_mode': _r.get('adjust_mode', '')},
                 [start, end],
                 {'total_return': _r.get('total_return'),
                  'annual_return': _r.get('annual_return'),
@@ -338,11 +326,7 @@ async def backtest_strategy(sid: str, body: Dict[str, Any],
                 {'result': result})
         # v7.15 (FR-6 双轨统一): experiments 单源(_record_experiment 已写入),
         # 不再调 save_backtest_result 二次入库(其签名保留供 standalone 端点委托使用)
-        _bt_symbols = []
-        try:
-            _bt_symbols = list(holdings.columns) if holdings is not None else []
-        except Exception:  # noqa: BLE001
-            _bt_symbols = []
+        _bt_symbols = list(holdings.columns) if holdings is not None else []
         # v7.19 (T3.1): 回显本次实际生效的参数 —— 用户能核对"我填的 18 个月/100 万"是否真被采用
         used_params = {'initial_capital': initial_capital, 'fee_rate': fee_rate,
                        'slippage': slippage, 'start_date': start, 'end_date': end,

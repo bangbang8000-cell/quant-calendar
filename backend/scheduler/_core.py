@@ -9,6 +9,7 @@ from data_parser import parser
 from ai_evaluator import ai_evaluator  # noqa: F401  # 原模块级公开名(报告类任务已移至 _core_reports)
 from db import backup_db
 from report_generator import generate_weekly_report  # noqa: F401  # 原模块级公开名(报告类任务已移至 _core_reports)
+from timeutil import cst_today as _cst_today  # v7.24 FR-5
 
 logger = logging.getLogger(__name__)
 import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X") 有效)  # noqa: E402
@@ -23,7 +24,7 @@ _HISTORY_MAX = 5000  # 最多保留 5000 条记录
 # 6.3.0 (T-6.3.0.4): 报告类与健康告警类任务按职责拆至同级子模块, 此处聚合
 from ._core_reports import SchedulerReportsMixin  # noqa: E402
 from ._core_health import SchedulerHealthMixin  # noqa: E402
-from ._helpers import count_holdings_rows  # v7.16 FR-2  # noqa: E402
+from ._helpers import count_holdings_rows, strategy_catchup_due, strategy_effective_date  # noqa: E402
 
 
 class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
@@ -91,15 +92,17 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                         schedule_time = _s.get("schedule") or gov.DEFAULT_SCHEDULE
                         break
                 now = datetime.now()
+                catchup_due = strategy_catchup_due(schedule_time, now)
                 th, tm = map(int, schedule_time.split(":"))
                 target = now.replace(hour=th, minute=tm, second=0, microsecond=0)
                 if target <= now:
                     target += timedelta(days=1)
-                await asyncio.sleep(max((target - now).total_seconds(), 10))
+                if not catchup_due:
+                    await asyncio.sleep(max((target - now).total_seconds(), 10))
                 if not self.running:
                     break
-                from timeutil import cst_today as _cst_today
                 today = _cst_today()
+                effective = strategy_effective_date(today)
                 if last_date == today:
                     await asyncio.sleep(60)
                     continue
@@ -114,19 +117,18 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                         "updated_at": started.strftime("%H:%M:%S"),
                         "detail": f"策略持仓生成中 {today}",
                     }
-
                     def _progress_cb(sid, stage):
                         self.execution_progress.update({
                             "current_sid": sid, "stage": stage,
                             "updated_at": datetime.now().strftime("%H:%M:%S"),
                         })
-
                     run_ok, executed, errors = await asyncio.to_thread(_m.run_strategy_once, _progress_cb)
                     # V4.9.2 (F1.1/F1.2): 刷新 parser+聚合器并校验当日已进日视图
-                    _ok, _detail = self._refresh_after_strategy_run(today)
-                    holdings_count = count_holdings_rows(today)  # v7.16 FR-2: 真实持仓行数(非策略数)
+                    # v7.24 FR-5: 刷新/校验以生效日为准；原调用点 _refresh_after_strategy_run(today)
+                    _ok, _detail = self._refresh_after_strategy_run(effective)
+                    holdings_count = count_holdings_rows(effective)  # v7.16 FR-2 / v7.24 FR-5 生效日
                     ok = run_ok and _ok and not errors and holdings_count > 0
-                    detail = f"策略持仓已生成 {today}; {_detail}; 执行策略数={len(executed or [])}, 持仓行数={holdings_count}; 策略:{','.join(executed or []) or '无'}"[:200]
+                    detail = f"策略持仓已生成 {effective}(信号日 {today}); {_detail}; 执行策略数={len(executed or [])}, 持仓行数={holdings_count}; 策略:{','.join(executed or []) or '无'}"[:200]
                     if holdings_count <= 0:
                         detail += "; 持仓0行按失败处理(未标fresh)"
                         logger.error("[FR-2] %s 策略运行产出持仓0行, 按失败处理", today)
@@ -134,11 +136,10 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
                         detail += "; 失败:" + ";".join(e["sid"] + ":" + e["error"] for e in errors)[:100]
                     self.execution_progress = {
                         "phase": "done" if ok else "failed", "current_sid": None, "stage": "reloaded",
-                        "started_at": started.strftime("%Y-%m-%d %H:%M:%S"),
-                        "updated_at": datetime.now().strftime("%H:%M:%S"), "detail": detail[:200]}
+                        "started_at": started.strftime("%Y-%m-%d %H:%M:%S"), "updated_at": datetime.now().strftime("%H:%M:%S"), "detail": detail[:200]}
                     self._record_task_run("strategy_run", ok, detail[:200])
                     if ok:
-                        self._record_freshness("strategy_holdings", latest_date=today, count=holdings_count,
+                        self._record_freshness("strategy_holdings", latest_date=effective, count=holdings_count,
                                                detail="strategy_run ok; 执行策略数=%d, 持仓行数=%d" % (len(executed or []), holdings_count))
                 except Exception as e:
                     logger.error("策略定期运行失败: %s", e)
@@ -157,7 +158,6 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
             try:
                 from data_refresh_config import load_config
                 config = load_config()
-
                 if not config.get('scheduled_enabled', False):
                     await asyncio.sleep(3600)  # 未启用时每小时检查
                     continue
@@ -642,7 +642,6 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
         logger.info("盘中快照已落盘: %s %s", today, slot)
         return slot
     async def _catchup_shortterm(self):
-
         """V5.2.0 (T-5.2.10) 错过补偿: 启动时若 16:05 已过且当日未抓短线 → 补跑一次"""
         await asyncio.sleep(3)  # 等调度器就绪
         try:
@@ -665,7 +664,8 @@ class SchedulerCoreMixin(SchedulerReportsMixin, SchedulerHealthMixin):
         asyncio.create_task(self.weekly_report_task())
         asyncio.create_task(self.auto_evaluate_task())
         asyncio.create_task(self.strategy_run_task())
-        asyncio.create_task(self.data_refresh_task())
+        for _task in (self.data_refresh_task, self.market_index_refresh_task, self.precompute_pipeline_task):
+            asyncio.create_task(_task())
         asyncio.create_task(self.tushare_pull_task())
         # 6.5.5: 股票基础信息定时刷新 (此前无生产者 → stock_info 长期过期告警)
         asyncio.create_task(self.stock_info_refresh_task())

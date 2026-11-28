@@ -39,7 +39,7 @@
             <template v-if="result && result.current_signal">
               <div class="qc711-kv">
                 <span class="qc711-k">动作</span>
-                <span class="qc711-v"><el-tag size="small" :type="actionTagType()">{{ result.current_signal.label || S.actionLabel(result.current_signal.action) }}</el-tag></span>
+                <span class="qc711-v"><span :class="S.signalClass(result.current_signal.action, result.current_signal.tone)">{{ result.current_signal.label || S.actionLabel(result.current_signal.action) }}</span></span>
               </div>
               <div class="qc711-kv"><span class="qc711-k">信号强度</span><span class="qc711-v">{{ S.num(result.current_signal.strength, 3) }}</span></div>
               <div class="qc711-kv"><span class="qc711-k">目标仓位</span><span class="qc711-v">{{ S.pct(result.current_exposure) }}</span></div>
@@ -149,7 +149,7 @@
                   <template #default="p">
                     <div v-if="p.row.signals && p.row.signals[st.id]" class="qc711-cell"
                          :title="cellTitle(st, p.row.signals[st.id])">
-                      <span class="qc711-sig" :class="'tone-' + (p.row.signals[st.id].tone || 'flat')">{{ p.row.signals[st.id].display }}</span>
+                      <span :class="S.signalClass(p.row.signals[st.id].action, p.row.signals[st.id].tone)">{{ p.row.signals[st.id].display }}</span>
                     </div>
                     <span v-else class="qc711-dim">—</span>
                   </template>
@@ -181,7 +181,7 @@
             <el-table v-if="points.length" :data="points.slice(0, 12)" size="small" border>
               <el-table-column prop="date" label="日期" width="110"></el-table-column>
               <el-table-column label="动作" width="80">
-                <template #default="p"><el-tag size="small" :type="actionTagTypeOf(p.row.action)">{{ p.row.label || S.actionLabel(p.row.action) }}</el-tag></template>
+                <template #default="p"><span :class="S.signalClass(p.row.action, p.row.tone)">{{ p.row.label || S.actionLabel(p.row.action) }}</span></template>
               </el-table-column>
               <el-table-column label="价格" width="90">
                 <template #default="p">{{ S.num(p.row.price, 2) }}</template>
@@ -241,14 +241,6 @@
         const d = new Date(g);
         return isNaN(d.getTime()) ? String(g) : d.toLocaleString('zh-CN', { hour12: false });
       });
-
-      function actionTagType() { return tagOf(result.value && result.value.current_signal && result.value.current_signal.action); }
-      function actionTagTypeOf(a) { return tagOf(a); }
-      function tagOf(a) {
-        if (a === 'buy' || a === 'add') return 'danger';
-        if (a === 'sell' || a === 'reduce') return 'success';
-        return 'info';
-      }
 
       async function loadStrategies() {
         try {
@@ -406,7 +398,6 @@
         S: window.__quantModules.v711,
         symbol, sid, strategies, evaluating, stateLoading, error, result, mktState,
         points, perf, timeline, sourceText,
-        actionTagType, actionTagTypeOf,
         loadStrategies, runEvaluate, loadState,
         matrix, matrixLoading, matrixError, simulatedWarn, aggText, cellTitle, loadMatrix,
         matrixSource, calendarDate, calendarInherited,

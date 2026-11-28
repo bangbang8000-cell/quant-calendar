@@ -30,15 +30,54 @@ def backtest_holdings(holdings: pd.DataFrame,
                       cost_model: Optional[CostModel] = None,
                       benchmark_returns: Optional[List[float]] = None,
                       industry_map: Optional[Dict] = None,
-                      timing_exposure: Optional[Dict[str, float]] = None) -> Dict:
+                      timing_exposure: Optional[Dict[str, float]] = None,
+                      prices: Optional[Dict[str, Dict[str, dict]]] = None,
+                      initial_capital: float = 1_000_000.0) -> Dict:
     """回测持仓矩阵, 返回绩效结果 dict(与 BacktestResult 字段对齐)
 
     Args:
         holdings: index=日期, columns=股票代码, 值=目标权重(t 日收盘生成)
         returns: index=日期, columns=股票代码, 值=日收益率; 缺省时退化为等权市场平均模拟
+        prices: v7.24 FR-2: {code: {date: {open/close/...}}}; 提供时走 T+1 开盘撮合
     """
     if holdings is None or holdings.empty:
         return {"success": False, "message": "持仓矩阵为空, 无法回测"}
+    # v7.24 FR-2: 有完整价格面板 → 统一撮合层（T+1 开盘、涨跌停、停牌、整手、成本）
+    if prices:
+        from backtest_execution import ExecutionConfig, run_execution
+        sig = {}
+        for d in holdings.index:
+            row = holdings.loc[d]
+            key = str(d).replace('-', '').replace('/', '')[:8]
+            sig[key] = {str(c): float(v) for c, v in row.items() if pd.notna(v) and float(v) > 0}
+        exec_res = run_execution(sig, prices, ExecutionConfig(
+            initial_capital=float(initial_capital),
+            commission_rate=commission_rate, slippage=slippage))
+        out = {
+            "success": exec_res.success,
+            "total_return": exec_res.metrics.get("total_return"),
+            "annual_return": exec_res.metrics.get("annual_return"),
+            "annual_return_reason": exec_res.metrics.get("annual_return_reason", ""),
+            "max_drawdown": exec_res.metrics.get("max_drawdown"),
+            "volatility": exec_res.metrics.get("volatility"),
+            "sharpe_ratio": exec_res.metrics.get("sharpe_ratio"),
+            "win_rate": exec_res.metrics.get("win_rate"),
+            "equity_curve": [e["equity"] for e in exec_res.equity_curve],
+            "total_days": exec_res.metrics.get("total_days", 0),
+            "sample_months": exec_res.metrics.get("sample_months", 0.0),
+            "trades": exec_res.trades,
+            "trade_history": exec_res.trades,
+            "rejected": exec_res.rejected,
+            "warnings": exec_res.warnings,
+            "engine_version": "7.24.0",
+            "adjust_mode": "qfq",
+            "execution_mode": "T+1_open",
+            "lookahead_policy": "T 日收盘信号 → T+1 开盘成交",
+            "message": exec_res.message,
+        }
+        from credibility_guard import evaluate_backtest_credibility
+        out["credibility"] = evaluate_backtest_credibility(out)
+        return out
 
     # 对齐日期 (统一 YYYYMMDD 无横线格式比较与索引, 兼容 YYYYMMDD / YYYY-MM-DD)
     def _norm(d):
@@ -77,6 +116,7 @@ def backtest_holdings(holdings: pd.DataFrame,
     #      即整体错位, 现改为逐日按索引配对。
     daily_returns: List[float] = []
     net_costs: List[float] = []
+    eff_dates: List[str] = []
     prev_weights = None
     for idx, d in enumerate(dates):
         w = holdings.loc[d]
@@ -90,6 +130,7 @@ def backtest_holdings(holdings: pd.DataFrame,
                             / prev_weights[common].sum())
                 daily_returns.append(ret)
                 net_costs.append(turnover_costs[idx])
+                eff_dates.append(d)
         prev_weights = w
 
     if len(daily_returns) < 2:
@@ -98,12 +139,16 @@ def backtest_holdings(holdings: pd.DataFrame,
     net_returns = [r - c for r, c in zip(daily_returns, net_costs)]
 
     # 绩效指标 + 样本内外 + 敏感性 + 过拟合
-    metrics = compute_period_metrics(net_returns, annual_trading_days, risk_free_rate)
+    # v7.24 FR-1: 回测结果年化受 18 个月样本门槛约束
+    metrics = compute_period_metrics(net_returns, annual_trading_days, risk_free_rate,
+                                     dates=eff_dates, require_min_sample=True)
     in_rets, out_rets = split_insample_outsample(net_returns, out_ratio=0.2)
     in_metrics = compute_period_metrics(in_rets, annual_trading_days, risk_free_rate)
     out_metrics = compute_period_metrics(out_rets, annual_trading_days, risk_free_rate)
-    sens = sensitivity_analysis(metrics["annual_return"],
-                                lambda pct: metrics["annual_return"] * (1 + pct))
+    _sens_base = metrics["annual_return"]
+    if _sens_base is None:
+        _sens_base = metrics["total_return"]
+    sens = sensitivity_analysis(_sens_base, lambda pct: _sens_base * (1 + pct))
     overfit = overfitting_assessment(in_metrics, out_metrics, sens)
 
     # v7.4 FR-7.4-5: 金额口径 profit_factor + Kelly 建议仓位
@@ -131,11 +176,18 @@ def backtest_holdings(holdings: pd.DataFrame,
         "win_rate": metrics["win_rate"],
         "equity_curve": equity_curve,
         "total_days": len(net_returns),
+        "sample_months": metrics.get("sample_months", 0.0),
+        "annual_return_reason": metrics.get("annual_return_reason", ""),
+        "engine_version": "7.24.0",
+        "adjust_mode": "qfq",
+        "execution_mode": "close_approx",
+        "warnings": ([metrics["annual_return_reason"]]
+                     if metrics.get("annual_return") is None else []),
         "insample_total_return": in_metrics["total_return"],
         "outsample_total_return": out_metrics["total_return"],
         "out_sample_ratio": 0.2,
         "parameter_sensitivity": sens,
-        "overfit_warning": overfit.get("warning", False),
+        "overfit_warning": overfit.get("overfit", False),
         "overfit_reason": overfit.get("reason", ""),
         # v7.4 回测口径校准
         "profit_factor": pf,
@@ -161,6 +213,8 @@ def backtest_holdings(holdings: pd.DataFrame,
                                      "waterfall": build_waterfall(items)}
         except Exception as exc:
             logger.warning("行业归因失败: %s", exc)
+    from credibility_guard import evaluate_backtest_credibility
+    result["credibility"] = evaluate_backtest_credibility(result)
     return result
 
 

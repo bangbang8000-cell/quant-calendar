@@ -88,7 +88,17 @@ def test_qcstate_key_count_stable():
     #   backtestMonths, setBacktestMonths（研究页回测子页，+2）
     #   btSlippage, btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS（回测工作台，+4）
     # v7.22 FR-3 +2: chatHistoryScope / onChatHistoryEmptyAction（管理员只读全量视图与空态接线）
-    assert len(set(keys)) == 547, f"qcState 唯一键数异常: {len(set(keys))} (期望 547; v7.19 FR-7 +1: chatHistoryMeta(问股历史分级空态计数, 漏暴露会让模板拿到 undefined 而静默降级); v7.19 净 +1: merrillStale/merrillDataAsOf (+2) 与 getStageAngle (−1); v7.18 FR-1003 +1: fmtPct(占位符不粘单位); 原 536: 6.6 +13: M1 自选列表 P0-1a/1b realtimeWsStateText/watchlistRenderGuard/auditWatchlistRender/dismissWatchlistRenderGuard/exportPageDiagnostics/reloadPage +6, M2 美林订正 merrillCorrection/fetchMerrillCorrection +2, M3 市值与多周期 indexQuoteSummary/loadIndexQuoteSummary/stockQuoteSummary/loadStockQuoteSummary +4, AC-18/D9 量比涨速无数据隐藏 realtimeRatioAvailable +1;  6.5.0 FR-654.1 +1: currentSubName; 6.4.4 FR-650 +4: stockChatContext/stockChatToolData/clearStockChatContext/stockChatQuickAsks; 6.4.2 FR-644 +2: loadExamplePool/removeExamplePool; 前基线 514 含 v6.4 FR-6.4.2 +2: realtimeDegradedReason/realtimeDegradedText; 2026-09-21 校正: 6.1.0 -1 移除孤儿导出 timeSinceRefresh 与 6.2.2 +1 新增 externalStockActive(markExternalStock 双栏抑制) 相抵, 基线回到 503; V6.10 配色专项: 色板新增「中性无色相」档, 基线按实测校订; V6.9.3 主题共享 +6: themeHues/themeHueNames/themeHue/themeMode/hueColor/hueName; F11.2 策略研究恒显 -2: researchMenuEnabled/toggleResearchMenu; V5.16 详情双栏 +4: detailDisplayMode/setDetailDisplayMode/isNarrow/detailSplitEnabled; V5.17 中栏拖拽 +3: splitWidth/setSplitWidth/SPLIT_DEFAULT_PCT; 6.3.1 (T-6.3.1.3) 四态错误标志 +9: overviewError/feishuConfigError/merrillError/marketError/consensusError/sysMonitorError/healthDetailError/factCheckError/backtestError); v7.14 策略研究改进 +2: backtestDegraded/loadBacktestStrategies(因子域新键经 research-page 自身 return 暴露, 不入 qcState 字面量)"
+    # v7.24 批次一 +7: FR-5 日历空态 calEmptyStatus/calGenerating/generateTodayHoldings (+3);
+    #   FR-4 样本信息 btSampleInfo/btDataCoverage/btRepairing/repairBacktestData (+4)。
+    # v7.25 FR-6 +5: 行情时效 marketDataTime/marketNextRefreshText/marketDataSource/
+    #   marketIsMock/marketPhase（数据时间、下次刷新、数据源、模拟数据标识、刷新阶段）。
+    # v7.25 FR-8 +1: precomputeText（收盘后预计算时间角标）。
+    # v7.26 FR-15 +5: datasourceTestResults/datasourceTestingAll/testAllDatasources/
+    #   datasourceName/DATASOURCE_PRIORITY（数据源统一表、一键全测与按优先级降级展示）。
+    assert len(set(keys)) == 565, (
+        "qcState 唯一键数异常: %d (期望 565; 新增键须在上方注释登记理由)" % len(set(keys))
+    )
+
 
 
 def test_watch_currentpage_single():

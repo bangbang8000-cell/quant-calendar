@@ -469,6 +469,36 @@ async function saveDatasourceConfig() {
         globalConfigDirty.value = true;
     } catch (e) { console.warn('saveDatasourceConfig failed:', e); }
 }
+// v7.26 (FR-15): 数据源统一表 — 一键全测 (按优先级), 失败原因可展开
+const datasourceTestResults = ref({});
+const datasourceTestingAll = ref(false);
+const DATASOURCE_LABELS = { sxsc_tushare: '东财', tushare: 'Tushare', akshare: 'AkShare', fuyao: 'Fuyao' };
+const DATASOURCE_PRIORITY = ['sxsc_tushare', 'tushare', 'akshare', 'fuyao'];
+function datasourceName(src) { return DATASOURCE_LABELS[src] || src; }
+async function testAllDatasources() {
+    datasourceTestingAll.value = true;
+    try {
+        const res = await fetch('/api/market/datasource/test-all', { method: 'POST' });
+        const data = await res.json();
+        const rows = (data && data.results) || [];
+        const map = {};
+        rows.forEach(function (r) {
+            map[r.source] = r;
+            if (r.skipped) return;
+            datasourceStatus.value[r.source] = r.connected ? 'connected' : 'disconnected';
+        });
+        datasourceTestResults.value = map;
+        if (data && data.first_healthy) {
+            ElementPlus.ElMessage.success('全测完成 · 当前降级落点: ' + datasourceName(data.first_healthy));
+        } else {
+            ElementPlus.ElMessage.warning('全测完成 · 无可用数据源，请检查 Token / 网络');
+        }
+    } catch (e) {
+        ElementPlus.ElMessage.error('全测失败: ' + (e.message || ''));
+    } finally {
+        datasourceTestingAll.value = false;
+    }
+}
 async function testDatasource(source) {
     datasourceStatus.value[source] = 'testing';
     try {
@@ -591,6 +621,7 @@ async function loadDashboardData() {
         saveAiConfig, testAiApi, exportConfig, importConfig,
         saveAllConfig, resetAllConfig, testTushareConnection, checkTushareConnection,
         syncStockData, loadTushareConfig, loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal,
+        datasourceTestResults, datasourceTestingAll, testAllDatasources, datasourceName, DATASOURCE_PRIORITY,
         toggleDatasourceEdit,
         loadFeishuConfig, loadAiConfig, loadUserConfig, loadSystemStatus, loadDashboardData,
         overviewError, feishuConfigError,

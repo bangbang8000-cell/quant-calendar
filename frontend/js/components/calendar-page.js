@@ -83,11 +83,21 @@
                             <!-- v3.11 (FR-3.11.5): 统一四态组件（加载/空态） -->
                             <qc-state-panel v-if="loading" type="loading"></qc-state-panel>
 
-                            <qc-state-panel v-else-if="stockPool.length === 0" type="empty" :title="t('common.empty')">
+                            <qc-state-panel v-else-if="stockPool.length === 0" type="empty"
+                                :title="(calEmptyStatus && calEmptyStatus.status === 'non_trading_day') ? '非交易日'
+                                    : ((calEmptyStatus && calEmptyStatus.status === 'failed') ? '持仓生成失败' : '尚未生成今日持仓')">
                                 <template #action>
                                     <div class="qc-example-pool-actions">
-                                        <el-button size="small" type="primary" @click="loadExamplePool">载入示例组合（6 只）</el-button>
-                                        <el-button size="small" @click="goDatasource">去配置数据池</el-button>
+                                        <template v-if="calEmptyStatus && calEmptyStatus.status === 'non_trading_day'">
+                                            <span class="bt-form-hint">所选日期为非交易日，无需生成持仓。</span>
+                                        </template>
+                                        <template v-else>
+                                            <el-button v-if="!calEmptyStatus || calEmptyStatus.can_generate" size="small" type="primary"
+                                                :loading="calGenerating" @click="generateTodayHoldings">立即生成今日持仓</el-button>
+                                            <span v-if="calEmptyStatus && calEmptyStatus.status === 'failed'" class="bt-form-hint">{{ calEmptyStatus.reason || '上次生成失败，可重新生成' }}</span>
+                                            <el-button size="small" @click="loadExamplePool">载入示例组合（6 只）</el-button>
+                                            <el-button size="small" @click="goDatasource">去配置数据池</el-button>
+                                        </template>
                                     </div>
                                 </template>
                             </qc-state-panel>

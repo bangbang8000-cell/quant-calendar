@@ -28,14 +28,8 @@
                         <el-option v-for="(g, gid) in allGroups" :key="gid" :label="g.name" :value="gid" :disabled="userForm.username === 'admin' || userForm.username === 'guest'" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="默认主题">
-                    <el-select class="w-select-sm" v-model="userForm.theme">
-                        <!-- T-6.3.4: 用户关联主题下拉须用 legacyThemes(8 主题, 与后端 THEMES 一致) —
-                            修复前用 qcState.themes({light,dark}) 导致: ①选项只剩浅色/深色
-                            ②存量用户 legacy 主题值不在选项中无法回显 ③保存 light/dark 破坏用户列表主题点 -->
-                        <el-option v-for="(theme, key) in themeOptions" :key="key" :label="theme.name" :value="key" />
-                    </el-select>
-                </el-form-item>
+                <!-- v7.26 (FR-14): 主题色收敛为 6 档 (个人偏好), 用户管理不再暴露 legacy 8 主题选项;
+                     存量 user.theme 仅保留只读迁移映射, 不参与新增/编辑。 -->
             </el-form>
             <template #footer>
                 <el-button @click="showAddUser = false">取消</el-button>
@@ -46,14 +40,7 @@
     setup() {
       const state = inject('qcState');
       if (!state) return {};
-      // T-6.3.4: 用户关联主题选项 = legacyThemes (8 主题, 与后端 user_manager.THEMES 键一致)。
-      // 兜底回退 qcState.themes, 避免模块未装配时下拉空白。
-      const legacyThemes = (window.__quantModules && window.__quantModules.themes
-        && window.__quantModules.themes.legacyThemes) || {};
-      const themeOptions = Object.keys(legacyThemes).length
-        ? legacyThemes
-        : (state.themes || { light: { name: '浅色' }, dark: { name: '深色' } });
-      return { ...state, themeOptions };
+      return { ...state };
     },
   };
 })();

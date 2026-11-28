@@ -211,7 +211,9 @@ def test_fr1101_stocklist_builtin_row_ops():
     assert "is-count" in src, "「N 策略」徽章应有独立前置渲染"
     assert "showTagsCount" in src, "计数徽章应经 showTagsCount 前置 (而非网格首格)"
     assert "countTitle" in src, "计数徽章悬浮应含全量策略名 (countTitle)"
-    assert "is-empty" in src, "空策略位应由 tagCells 输出 is-empty 虚线占位 (网格起始恒定)"
+    # v7.26 (FR-11): 填充规则移到 stock-list-core.mjs —— 0/1 个策略保留 is-empty 提示格, ≥2 不再补空框
+    core = _read("src/components/common/stock-list-core.mjs")
+    assert "is-empty" in core, "空策略位应由 tagCellsOf 输出 is-empty 提示格"
     assert "qc-stock-badge-wrap" not in src, "独立徽章列应已并入 tags 网格 (窄栏容量)"
 
 
@@ -291,14 +293,16 @@ def test_v719_row_size_tokens_three_tiers():
 
 
 def test_v719_stock_row_grid_structure():
-    """个股行栅格 = [序号 16px][信息列·定宽令牌][策略区·弹性][操作区·定宽令牌]"""
+    """个股行栅格 = [序号 16px][信息列·定宽令牌][策略区·上限令牌][操作区·定宽下限]"""
     css = _read("css/components.css")
     row_idx = css.find(".qc-stock-row {")
     assert row_idx > 0, ".qc-stock-row 必须有样式定义"
-    row_block = css[row_idx:row_idx + 1600]
-    assert ("grid-template-columns: 16px var(--qc-stock-info-w) minmax(0, 1fr) var(--qc-stock-ops-w)"
-            in row_block), ("四列栅格应 = 序号 + 信息列令牌 + 弹性策略区 + 操作区令牌；"
-                            "信息列绝不能再是 1fr —— 富余宽度必须全给策略区，否则名称右侧出死区、策略区被推到最右")
+    row_block = css[row_idx:row_idx + 2200]
+    # v7.26 (FR-11): 策略区由无限 1fr 改为有上限的 --qc-stock-strat-w，操作区吃余量并右对齐
+    assert ("grid-template-columns: 16px var(--qc-stock-info-w) "
+            "minmax(0, var(--qc-stock-strat-w)) minmax(var(--qc-stock-ops-w), 1fr)"
+            in row_block), ("四列栅格应 = 序号 + 信息列令牌 + 策略区上限令牌 + 操作区令牌；"
+                            "策略区不得再是无限 1fr (会随屏幕拉伸)")
     assert "height: var(--qc-row-h)" in row_block, "行高应读 --qc-row-h 令牌 (三档密度生效的前提)"
     assert "overflow: hidden" in row_block, "行走 overflow:hidden (策略 tag 不得撑破行)"
 

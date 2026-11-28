@@ -94,7 +94,8 @@ def test_split_insample_outsample():
 def test_compute_period_metrics():
     from backtest import compute_period_metrics
     m = compute_period_metrics([0.01] * 10)
-    assert m['total_return'] == pytest.approx(10.0, abs=0.1)
+    # v7.24 FR-1: 总收益改为净值复利（(1.01^10-1)*100），不再是算术和
+    assert m['total_return'] == pytest.approx((1.01 ** 10 - 1) * 100, abs=0.01)
     assert m['win_rate'] == 100.0
     empty = compute_period_metrics([])
     assert empty['total_return'] == 0.0 and empty['win_rate'] == 0.0

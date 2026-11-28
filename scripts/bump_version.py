@@ -27,10 +27,12 @@ ROOT = Path(__file__).resolve().parent.parent
 MAIN = ROOT / "backend" / "main_new.py"
 README = ROOT / "README.md"
 HANDOVER = ROOT / "docs" / "HANDOVER.md"
+PKG = ROOT / "frontend" / "package.json"
 
 APP_RE = re.compile(r'^APP_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"')
 README_ROW_RE = re.compile(r"^\| \*\*v([0-9]+\.[0-9]+\.[0-9]+)\*\* \| 2026-[0-9]{2} \| \*\*当前开发版本\*\*")
 HANDOVER_STATE_RE = re.compile(r"^> 当前状态: \*\*v([0-9]+\.[0-9]+\.[0-9]+)")
+PKG_RE = re.compile(r'^  "version": "([0-9]+\.[0-9]+\.[0-9]+)",', re.MULTILINE)
 
 
 def _ver_tuple(v: str) -> tuple:
@@ -64,6 +66,7 @@ def check() -> int:
     app = read_version(MAIN, APP_RE)
     readme = read_version(README, README_ROW_RE)
     handover = read_version(HANDOVER, HANDOVER_STATE_RE)
+    pkg = read_version(PKG, PKG_RE)
     tag = latest_tag()
     bad = []
     if not app:
@@ -72,11 +75,15 @@ def check() -> int:
         bad.append("② README 版本历史首行缺失 (需含 **当前开发版本** 行)")
     if not handover:
         bad.append("③ HANDOVER 顶部「当前状态」缺失")
+    if not pkg:
+        bad.append("⑥ frontend/package.json version 缺失")
     if app and readme and app != readme:
         bad.append(f"② README 首行 {readme} ≠ APP_VERSION {app}")
     if app and handover and app != handover:
         bad.append(f"③ HANDOVER 状态 {handover} ≠ APP_VERSION {app}")
-    print(f"[版本门禁] APP_VERSION={app} README={readme} HANDOVER={handover} tag={tag}")
+    if app and pkg and app != pkg:
+        bad.append(f"⑥ package.json {pkg} ≠ APP_VERSION {app}")
+    print(f"[版本门禁] APP_VERSION={app} README={readme} HANDOVER={handover} pkg={pkg} tag={tag}")
     if tag and app:
         if _ver_tuple(tag) == _ver_tuple(app):
             print("  ✓ 最近 tag 与 APP_VERSION 一致")
@@ -106,6 +113,14 @@ def bump(version: str) -> int:
         print(f"✗ 未能替换 APP_VERSION (当前 {read_version(MAIN, APP_RE)} → {version})")
         return 1
     MAIN.write_text(new_text, encoding="utf-8")
+
+    # frontend/package.json: 与 APP_VERSION 保持三处一致 (构建注入版本)
+    ptext = PKG.read_text(encoding="utf-8")
+    pnew = PKG_RE.sub(f'  "version": "{version}",', ptext, count=1)
+    if pnew == ptext and f'"version": "{version}"' not in ptext:
+        print(f"✗ 未能替换 package.json version (当前 {read_version(PKG, PKG_RE)} → {version})")
+        return 1
+    PKG.write_text(pnew, encoding="utf-8")
 
     # README 版本历史首行: 旧首行降级为普通行, 新版本行插入表顶
     rtext = README.read_text(encoding="utf-8")

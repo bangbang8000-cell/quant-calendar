@@ -17,6 +17,7 @@ import os
 import shutil
 import sys
 import time
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +181,7 @@ def status(db_path):
     con = connect(db_path)
     try:
         latest = con.execute('SELECT MAX(date) FROM raw_kline_daily').fetchone()[0]
+        earliest = con.execute('SELECT MIN(date) FROM raw_kline_daily').fetchone()[0]
         rows = con.execute('SELECT COUNT(*) FROM raw_kline_daily').fetchone()[0]
         symbols = con.execute('SELECT COUNT(DISTINCT thscode) FROM raw_kline_daily').fetchone()[0]
         events = con.execute('SELECT COUNT(*) FROM raw_adjustment_events').fetchone()[0]
@@ -189,13 +191,27 @@ def status(db_path):
     return {
         'available': True,
         'path': db_path,
+        'earliest_date': str(earliest) if earliest else None,
         'latest_date': str(latest) if latest else None,
+        'coverage_months': _coverage_months(earliest, latest),
         'rows': int(rows or 0),
         'symbols': int(symbols or 0),
         'adjust_events': int(events or 0),
         'factor_rows': int(factors or 0),
         'size_bytes': os.path.getsize(db_path),
     }
+
+
+def _coverage_months(earliest, latest):
+    """v7.24 FR-4: 数据跨度（自然月，保留 1 位小数）。"""
+    try:
+        a = earliest if isinstance(earliest, date) else _parse_date(earliest)
+        b = latest if isinstance(latest, date) else _parse_date(latest)
+        if not a or not b or b < a:
+            return 0.0
+        return round((b - a).days / 30.44, 1)
+    except Exception:  # noqa: BLE001
+        return 0.0
 
 
 def query(db_path, sql, params=None, limit=None):

@@ -39,6 +39,10 @@
       const btRunning = ref(false);
       const btResult = ref(null);
       const btError = ref('');
+      // v7.24 FR-4: 样本信息与数据覆盖（实际区间 / 数据跨度 / 有效交易日 / 18 个月门槛）
+      const btSampleInfo = ref(null);
+      const btDataCoverage = ref(null);
+      const btRepairing = ref(false);
 
       function defaultDateRange(months) {
         const n = months || BT_DEFAULT_MONTHS;
@@ -82,6 +86,14 @@
           start_date: s.start_date,
           end_date: s.end_date,
           total_days: s.total_days,
+          sample_months: s.sample_months != null ? Number(s.sample_months) : 0,
+          annual_return_reason: s.annual_return_reason || '',
+          execution_mode: s.execution_mode || '',
+          adjust_mode: s.adjust_mode || '',
+          warnings: Array.isArray(s.warnings) ? s.warnings : [],
+          lookahead_passed: s.lookahead_passed,
+          lookahead_reason: s.lookahead_reason || '',
+          credibility: s.credibility || null,
           total_return: s.total_return,
           annual_return: s.annual_return,
           max_drawdown: s.max_drawdown,
@@ -111,8 +123,28 @@
         }));
       }
 
+      // v7.24 FR-4: 后端未提供 sample_info 时按同一口径前端推导
+      function deriveSampleInfo(summary) {
+        const months = Number(summary.sample_months || 0);
+        const days = Number(summary.total_days || 0);
+        const meets = months >= 18 && days >= 360;
+        return {
+          start_date: summary.start_date,
+          end_date: summary.end_date,
+          data_span_months: Math.round(months * 10) / 10,
+          effective_days: days,
+          required_months: 18,
+          required_days: 360,
+          meets_min_sample: meets,
+          reason: summary.annual_return_reason || (meets ? '' : '样本不足（<18个月）'),
+          repair: { endpoint: '/api/dwh/refresh', kind: 'daily-k' },
+        };
+      }
+
       function assembleSingle(sid, data) {
         const summary = normalizeSummary(data);
+        btSampleInfo.value = data.sample_info || deriveSampleInfo(summary);
+        btDataCoverage.value = data.data_coverage || null;
         const equityCurve = equityPoints(data.equity_curve);
         const monthlyReturns = data.monthly_returns || {};
         const trades = Array.isArray(data.trade_history) ? data.trade_history : [];
@@ -137,6 +169,8 @@
       }
 
       function assembleMulti(ids, data) {
+        btDataCoverage.value = data.data_coverage || null;
+        btSampleInfo.value = null;
         const results = data.strategy_results || {};
         const strategies = ids
           .map((id) => {
@@ -154,6 +188,7 @@
           })
           .filter((s) => s && s.summary.success !== false);
         const firstOk = strategies.length ? strategies[0] : null;
+        if (firstOk) btSampleInfo.value = deriveSampleInfo(firstOk.summary);
         let benchmark = null;
         if (btIncludeBenchmark.value) {
           // 等权组合净值作为基准线（后端 multi 返回 portfolio_equity）
@@ -223,6 +258,8 @@
         const headers = { 'Content-Type': 'application/json' };
         btRunning.value = true;
         btResult.value = null;
+        btSampleInfo.value = null;
+        btDataCoverage.value = null;
         btError.value = '';
         try {
           if (ids.length === 1) {
@@ -265,6 +302,26 @@
           ElementPlus.ElMessage.error(btError.value);
         } finally {
           btRunning.value = false;
+        }
+      }
+
+      // v7.24 FR-4: 数据缺口修复入口 —— 触发行情增量刷新（需管理员）
+      async function repairBacktestData() {
+        if (btRepairing.value) return;
+        btRepairing.value = true;
+        try {
+          const res = await fetch('/api/dwh/refresh?kind=daily-k', { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(res.status === 401 || res.status === 403
+              ? '需要管理员权限才能刷新行情数据' : (data.detail || '数据刷新失败'));
+          }
+          if (data.success === false) throw new Error(data.message || '数据刷新失败');
+          ElementPlus.ElMessage.success('已触发行情数据刷新，完成后请重新回测');
+        } catch (e) {
+          ElementPlus.ElMessage.error((e && e.message) ? e.message : '数据刷新失败');
+        } finally {
+          btRepairing.value = false;
         }
       }
 
@@ -426,6 +483,7 @@
         btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
         btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
         btRunning, btResult, btError,
+        btSampleInfo, btDataCoverage, btRepairing, repairBacktestData,
         btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
         runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum,
       };

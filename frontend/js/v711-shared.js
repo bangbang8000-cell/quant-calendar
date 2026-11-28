@@ -70,6 +70,17 @@
   function stateLabel(s) { return STATE_LABELS[s] || s || '—'; }
   function stateTone(s) { return STATE_TONE[s] || STATE_TONE.unknown; }
   function actionLabel(a) { return ACTION_LABELS[a] || a || '—'; }
+
+  // v7.26 (FR-12): 信号四档 — 买入/加仓红(up), 卖出/减仓绿(down), 持有金(hold), 观望灰(flat)。
+  // 加仓/减仓与买入/卖出同色相, 由 is-outline（描边/透明底）区分强度, 不新增色相。
+  var SIGNAL_TONE = { buy: 'up', add: 'up', sell: 'down', reduce: 'down', hold: 'hold', wait: 'flat' };
+  function signalTone(a) { return SIGNAL_TONE[a] || 'flat'; }
+  // tone 参数优先用后端下发的档位（展示单一事实来源）, 缺失时按 action 推导。
+  function signalClass(a, tone) {
+    var cls = 'qc711-sig tone-' + (tone || signalTone(a));
+    if (a === 'add' || a === 'reduce') cls += ' is-outline';
+    return cls;
+  }
   function planStatus(s) { return PLAN_STATUS[s] || s || '—'; }
   function legStatus(s) { return LEG_STATUS[s] || s || '—'; }
 
@@ -90,6 +101,8 @@
     stateLabel: stateLabel,
     stateTone: stateTone,
     actionLabel: actionLabel,
+    signalTone: signalTone,
+    signalClass: signalClass,
     planStatus: planStatus,
     legStatus: legStatus,
     pnlTone: pnlTone,

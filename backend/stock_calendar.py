@@ -10,7 +10,7 @@
 对外: is_trade_day(date) / is_trade_date_str(date_str) / is_holiday(date_str)
 """
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +102,21 @@ def is_trade_date_str(date_str: str) -> bool:
 
 def is_degraded() -> bool:
     return _degraded
+
+
+def next_trade_day(d: date) -> date:
+    """v7.24 FR-5: 返回 d 之后的下一个交易日（最多向前找 30 天）。"""
+    cursor = d
+    for _ in range(30):
+        cursor = cursor + timedelta(days=1)
+        if is_trade_day(cursor):
+            return cursor
+    return cursor
+
+
+def next_trade_date_str(date_str: str) -> str:
+    """v7.24 FR-5: 字符串版下一交易日（YYYY-MM-DD）；解析失败原样返回。"""
+    try:
+        return next_trade_day(datetime.strptime(date_str, '%Y-%m-%d').date()).strftime('%Y-%m-%d')
+    except Exception:
+        return date_str

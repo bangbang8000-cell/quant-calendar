@@ -440,6 +440,75 @@ window.__quantModules.systemPage.part1 = `
                                 </template>
                             </el-dropdown>
                         </div>
+                        <!-- v7.26 (FR-15): AI 总览表 — 一屏看全状态/顺位, 拖拽调整降级顺序, 行内抽屉编辑 -->
+                        <div class="ai-overview mb-12" v-if="!aiModelsError && aiVendors.length">
+                            <div class="text-sm-tertiary mb-6">拖拽「⋮⋮」调整降级顺序（自上而下 = 厂商 → 模型串行调用）；列表只显示状态，密钥在抽屉中掩码编辑。</div>
+                            <el-table :data="aiVendors" size="small" row-key="vendor_key">
+                                <el-table-column label="" width="42">
+                                    <template #default="{ $index }">
+                                        <span class="ai-drag-handle" draggable="true" title="拖拽调整顺位"
+                                              @dragstart="aiDragStart($index)" @dragover.prevent @drop="aiDrop($index)">⋮⋮</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="顺位" width="58"><template #default="{ $index }">{{ $index + 1 }}</template></el-table-column>
+                                <el-table-column label="启用" width="64">
+                                    <template #default="{ row }">
+                                        <span :class="aiVendorEnabled(row) ? 'qc-text-success' : 'qc-text-muted'">{{ aiVendorEnabled(row) ? '启用' : '停用' }}</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="name" label="厂商" min-width="120" />
+                                <el-table-column prop="kind" label="类型" width="100" />
+                                <el-table-column label="模型数" width="74"><template #default="{ row }">{{ (row.models || []).length }}</template></el-table-column>
+                                <el-table-column label="最近调用" width="86"><template #default="{ row }">{{ aiVendorCalls(row) }}</template></el-table-column>
+                                <el-table-column label="成功率" width="76"><template #default>{{ '—' }}</template></el-table-column>
+                                <el-table-column label="延迟" width="76"><template #default>{{ '—' }}</template></el-table-column>
+                                <el-table-column label="操作" width="110" fixed="right">
+                                    <template #default="{ row }">
+                                        <el-button size="small" type="text" @click="openAiDrawer(row)">编辑</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+
+                        <!-- 编辑抽屉: 密钥掩码输入 + 模型启停; 保存分组化 (仅写 AI 配置) -->
+                        <el-drawer v-model="aiDrawerOpen" :title="aiDrawerVendor ? ('编辑厂商 · ' + aiDrawerVendor.name) : '编辑厂商'" size="420px">
+                            <div v-if="aiDrawerVendor">
+                                <el-form label-width="82px" size="small">
+                                    <el-form-item label="厂商名"><el-input v-model="aiDrawerVendor.name" :disabled="aiDrawerVendor.locked" /></el-form-item>
+                                    <el-form-item label="类型">
+                                        <el-select class="w-select-md" v-model="aiDrawerVendor.kind" :disabled="aiDrawerVendor.locked">
+                                            <el-option label="国内" value="国内" /><el-option label="国外" value="国外" />
+                                            <el-option label="CodingPlan" value="CodingPlan" /><el-option label="自定义" value="自定义" />
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="Base URL"><el-input v-model="aiDrawerVendor.base_url" placeholder="https://.../v1" /></el-form-item>
+                                    <el-form-item label="API Key">
+                                        <div class="key-field-row">
+                                            <el-input :model-value="(aiDrawerVendor._editing || aiDrawerVendor._revealed) ? aiDrawerVendor.api_key : aiDrawerVendor._masked"
+                                                      :disabled="!aiDrawerVendor._editing" placeholder="掩码显示，解锁后可编辑"
+                                                      @update:model-value="val => { if (aiDrawerVendor._editing) { aiDrawerVendor.api_key = val; } else { aiDrawerVendor._masked = val; } }" />
+                                            <span class="key-reveal-toggle" :title="aiDrawerVendor._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'"
+                                                  @click="toggleVendorKeyReveal(aiDrawerVendor)" v-html="sanitizeHtml(viewIcon(aiDrawerVendor._revealed))"></span>
+                                        </div>
+                                    </el-form-item>
+                                    <el-form-item label="超时(秒)"><el-input-number v-model="aiDrawerVendor.timeout" :min="10" :max="300" /></el-form-item>
+                                    <el-form-item label="模型">
+                                        <div class="w-100">
+                                            <div class="model-row" v-for="(m, mi) in aiDrawerVendor.models" :key="mi">
+                                                <span class="model-index">{{ mi + 1 }}</span>
+                                                <el-switch v-model="m.enabled" size="small" />
+                                                <span class="ml-6">{{ m.name }}</span>
+                                            </div>
+                                        </div>
+                                    </el-form-item>
+                                </el-form>
+                                <div class="flex-c-gap-8">
+                                    <el-button size="small" @click="toggleVendorEdit(aiDrawerVendor)">{{ aiDrawerVendor._editing ? '锁定密钥' : '解锁密钥' }}</el-button>
+                                    <el-button size="small" type="primary" :loading="savingAiModels" @click="saveAiVendors">保存</el-button>
+                                </div>
+                            </div>
+                        </el-drawer>
+
                         <qc-state-panel v-if="aiModelsError" type="error" :title="aiModelsError" :desc="t('state.descAiModels')" @retry="loadAiVendors"></qc-state-panel>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
@@ -593,91 +662,4 @@ window.__quantModules.systemPage.part1 = `
                         </div>
                     </div>
 
-                    <!-- datasource: 多数据源配置 -->
-                    <div v-else-if="currentSubPage === 'datasource'">
-                    <!-- 优先级说明条 -->
-                    <div class="info-banner">
-                        <span><qc-icon name="bar-chart-3" :size="14" /> 数据源优先级:</span>
-                        <span class="text-medium">① sxsc-tushare → ② tushare → ③ akshare</span>
-                        <span class="color-tertiary-ml-auto">按优先级依次尝试</span>
-                    </div>
-
-                    <!-- 6.1.2 (B5): 数据新鲜度 -->
-                    <div class="card mb-14">
-                        <div class="card-title flex-between">
-                            <span><qc-icon name="activity" :size="14" /> 数据新鲜度</span>
-                            <el-button size="small" text @click="loadFreshness"><qc-icon name="refresh" :size="12" /> 刷新</el-button>
-                        </div>
-                        <div v-if="freshnessLoading" class="qc-glossary-loading">加载中…</div>
-                        <qc-state-panel v-else-if="freshnessError" type="error" :title="t('state.freshnessError')" :desc="t('state.descService')" @retry="loadFreshness"></qc-state-panel>
-                        <qc-state-panel v-else-if="freshnessItems.length === 0" type="empty" icon="inbox" :title="t('state.emptyFreshness')" :desc="t('state.descEmptyFreshness')" action-text="去刷新数据" action-key="go_status"></qc-state-panel>
-                        <el-table v-else :data="freshnessItems" size="small" max-height="320">
-                            <el-table-column prop="label" label="数据表" width="120" />
-                            <el-table-column prop="source" label="来源" width="110" />
-                            <el-table-column label="最后成功" width="150">
-                                <template #default="{ row }">{{ row.last_success ? row.last_success.slice(5, 16) : '-' }}</template>
-                            </el-table-column>
-                            <el-table-column label="行数" width="80">
-                                <template #default="{ row }">{{ row.rows != null ? row.rows : '-' }}</template>
-                            </el-table-column>
-                            <el-table-column label="间隔" width="80">
-                                <template #default="{ row }">{{ row.expected_hours }}h</template>
-                            </el-table-column>
-                            <el-table-column label="状态" width="90">
-                                <template #default="{ row }">
-                                    <span :class="row.stale ? 'qc-text-error' : 'qc-text-success'">{{ row.stale ? '过期' : '正常' }}</span>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </div>
-
-                    <!-- 数据同步入口 (syncStockData) -->
-                    <div class="card mb-14">
-                        <div class="card-title"><qc-icon name="refresh" :size="14" /> 数据同步</div>
-                        <div class="flex-c-gap-12-wrap">
-                            <el-button type="primary" :loading="syncingData" @click="syncStockData"><qc-icon name="download" :size="14" /> 同步股票数据</el-button>
-                            <span class="text-sm-secondary">从 Tushare 拉取最新行情并更新本地缓存</span>
-                        </div>
-                    </div>
-
-                    <!-- sxsc-tushare 卡片 -->
-                    <div class="card mb-14">
-                        <div class="card-title flex-between">
-                            <span><qc-icon name="external-link" :size="14" /> sxsc-tushare（券商版）</span>
-                            <div class="flex-c-gap-10">
-                                <el-switch v-model="datasourceConfig.sxsc_tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span class="text-success-sm" v-if="datasourceStatus.sxsc_tushare === 'connected'">已连接</span>
-                                <span class="text-warning-sm" v-else-if="datasourceStatus.sxsc_tushare === 'testing'">测试中...</span>
-                                <span class="text-sm-tertiary" v-else><qc-icon name="clock" :size="12" /> 未检测</span>
-                            </div>
-                        </div>
-                        <el-form label-width="80px">
-                            <el-form-item label="API Token">
-                                <!-- 6.3.5 (BUG-FIX): 眼睛移出 #suffix 插槽 —— 禁用输入框的 suffix 不可点击 -->
-                                <div class="key-field-row">
-                                    <el-input :model-value="datasourceConfig.sxsc_tushare._revealed ? datasourceConfig.sxsc_tushare.token : datasourceConfig.sxsc_tushare._masked" :disabled="!datasourceConfig.sxsc_tushare._editing" @update:model-value="val => { if (datasourceConfig.sxsc_tushare._editing) { datasourceConfig.sxsc_tushare.token = val; if (!datasourceConfig.sxsc_tushare._revealed) datasourceConfig.sxsc_tushare._masked = val; } }" placeholder="输入 sxsc-tushare Token" @change="saveDatasourceConfig"></el-input>
-                                    <span class="key-reveal-toggle" :title="datasourceConfig.sxsc_tushare._editing ? '锁定（重新掩码）' : '编辑（查看完整 Token，需密码）'" @click="toggleDatasourceEdit('sxsc_tushare')" v-html="sanitizeHtml(viewIcon(datasourceConfig.sxsc_tushare._editing))"></span>
-                                </div>
-                            </el-form-item>
-                            <el-form-item label="超时 (秒)">
-                                <el-input-number v-model="datasourceConfig.sxsc_tushare.timeout" :min="5" :max="120" @change="saveDatasourceConfig" />
-                            </el-form-item>
-                            <el-form-item>
-                                <el-button @click="testDatasource('sxsc_tushare')" :loading="datasourceStatus.sxsc_tushare === 'testing'" type="primary" size="small"><qc-icon name="flask-conical" :size="14" /> 测试连接</el-button>
-                            </el-form-item>
-                        </el-form>
-                    </div>
-
-                    <!-- tushare 卡片 -->
-                    <div class="card mb-14">
-                        <div class="card-title flex-between">
-                            <span><qc-icon name="radio-tower" :size="14" /> tushare（标准版 Pro）</span>
-                            <div class="flex-c-gap-10">
-                                <el-switch v-model="datasourceConfig.tushare.enabled" @change="saveDatasourceConfig" size="small" />
-                                <span class="text-success-sm" v-if="datasourceStatus.tushare === 'connected'">已连接</span>
-                                <span class="text-warning-sm" v-else-if="datasourceStatus.tushare === 'testing'">测试中...</span>
-                                <span class="text-sm-tertiary" v-else><qc-icon name="clock" :size="12" /> 未检测</span>
-                            </div>
-                        </div>
-                        <el-form label-width="80px">
 `;

@@ -53,6 +53,8 @@ import '../js/batch-add-core.js'
 // 6.1.4 (D4): 右键菜单 (核心 + 全局组件)
 import '../js/context-menu-core.js'
 import '../js/components/context-menu.js'
+// v7.25 FR-9: 研究域统一页面头组件
+import '../js/components/page-head.js'
 // 6.1.5 (E5): 请求竞态治理 (stale guard / dedupe / abort)
 import '../js/request-core.js'
 // 6.1.7 (G5): 前端 state 域注册表 (theme/auth/prefs/ui/page 域化 + 快照对拍)
@@ -128,6 +130,8 @@ import '../js/virtual-list-core.js'
 import '../js/watchlist-render-core.js'
 // 6.6 (T-6.6.5/T-6.6.6/T-6.6.7): 实时行情 WS 生命周期纯函数（四态文案/退避/看门狗）
 import '../js/realtime-lifecycle-core.js'
+// v7.25 FR-6: 行情刷新状态机纯函数（阶段判定/刷新间隔/当日终值确认/模拟数据标识）
+import '../js/market-refresh-core.js'
 import '../js/components/virtual-list.js'
 import '../js/mobile-gestures.js'
 import '../js/state-panel-core.js'

@@ -5,13 +5,15 @@
 // V6.9.3 (F1): 新增 showConsensus(共识徽章+进度条) / showPrice(价格涨跌幅) / virtual(虚拟滚动) / name-suffix 插槽
 // v7.18 (FR-1101 个股列表统一 · 20261124 用户定版):
 //   固定行高 78px + 固定四列栅格 [16 | info(1fr) | tags 148 | ops 92] — 列起始位置跨行跨页恒定。
-//   关联策略为 2行×2列 网格 (148px): 「N 策略」徽章独立前置 (定宽 44px), 网格按列优先填充 —
-//   1-2 个策略竖排靠左, 右列留虚线空位 (is-empty), 起始位置恒定; 超出以 +N 收尾于第 4 格。
+//   关联策略为 2行×2列 网格 (列宽上限 --qc-stock-strat-col-max): 「N 策略」徽章前置定宽,
+//   网格按列优先填充, 起始位置恒定; 0/1 个策略保留 1 个提示格, ≥2 个不再补空框。
 //   操作区 92px 定宽 4 槽 (收藏/AI/K线/勾选, 20px 热区): 缺席图标 visibility 占位而非移除 — 零漂移。
 //   独立「N 策略」徽章列与价格列取消 (396px 窄栏容量不足): 徽章并入 tags 网格首格;
 //   价格从未有数据 (恒 null), showPrice 时并入代码行 title 提示。
 //   ops = { watch, ai, kline, manual }: watch/ai/kline 接线 qcState; manual 经 manual-state/manual-busy-code + @manual 接线。
+// v7.26 (FR-11): 策略区收窄为上限两列；策略格填充规则抽到 stock-list-core.mjs (Node 可单测)。
 import { inject, ref, onMounted, onUnmounted } from 'vue'
+import { strategyCountOf as countStrategies, tagCellsOf } from './stock-list-core.mjs'
 
 export default {
   name: 'qc-stock-list',
@@ -81,27 +83,15 @@ export default {
     function select(item) { emit('select', item) }
     // v7.18 (用户定版 20261124 二次调整): 「N 策略」计数徽章独立前置 (定宽), 策略 2行×2列
     //   网格按列优先填充 — 1-2 个策略竖排靠左, 右列留空占位, 超出以 +N 收尾于第 4 格。
-    function strategyCountOf(item) {
-      const n = Number(item.strategy_count)
-      if (isFinite(n) && n > 0) return n
-      const all = (item.strategy_names || item.strategies || [])
-      return all.length || 0
-    }
+    function strategyCountOf(item) { return countStrategies(item) }
     const showTagsCount = !!(props.showConsensus || props.showStrategyCount)
     function countTitle(item) {
       const all = (item.strategy_names || item.strategies || [])
       return (all.join('、') || '') + ' — 共 ' + strategyCountOf(item) + ' 策略'
     }
+    // v7.26 (FR-11): 0/1 个策略保留提示格, ≥2 不再补虚线空框 (规则见 stock-list-core.mjs)
     function tagCells(item) {
-      const all = (item.strategy_names || item.strategies || [])
-      const cap = all.length > 4 ? 3 : 4
-      const shown = all.slice(0, cap)
-      const more = all.length - shown.length
-      const cells = []
-      for (const s of shown) cells.push({ text: s, cls: '', title: s })
-      if (more > 0) cells.push({ text: '+' + more, cls: 'is-more', title: all.slice(shown.length).join('、') })
-      while (cells.length < 4) cells.push({ text: '', cls: 'is-empty', title: '' })
-      return cells
+      return tagCellsOf(item.strategy_names || item.strategies || [])
     }
     function fmtPrice(v) {
       const n = Number(v)

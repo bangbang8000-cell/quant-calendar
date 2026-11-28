@@ -324,3 +324,10 @@ async def save_rate_limit_config_endpoint(req: dict, _: dict = Depends(get_admin
         raise HTTPException(status_code=500, detail="保存限流配置失败")
     rate_limit.simple_limiter.limit_per_minute = api_limit
     return {"success": True, "data": uc.get_rate_limit_config()}
+
+
+@router.get("/precompute/status")
+async def precompute_status():
+    """v7.25 FR-8: 收盘后分批预计算状态（完成项 / 数据版本 / 预计算时间）"""
+    import precompute
+    return {"success": True, **precompute.status()}

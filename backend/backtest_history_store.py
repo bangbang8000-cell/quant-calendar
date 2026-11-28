@@ -76,9 +76,15 @@ def get_backtest_history(days: int = 30, sid: str = '', limit: int = 100) -> lis
             continue
         p = e.get('params')
         out.append({
+            'id': e.get('id') or '',
+            'legacy': False,
             'sid': e.get('subject') or '',
             'ts': str(e.get('created_at') or ''),
             'summary': e.get('summary') or {},
+            'sample_months': (e.get('result') or {}).get('sample_months')
+                             if isinstance(e.get('result'), dict) else None,
+            'execution_mode': ((e.get('params') or {}).get('execution_mode')
+                               if isinstance(e.get('params'), dict) else None),
             'params': p.get('params') if isinstance(p, dict) and isinstance(p.get('params'), dict) else (p or {}),
         })
     if out:

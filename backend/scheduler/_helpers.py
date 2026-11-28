@@ -25,6 +25,30 @@ def count_holdings_rows(date):
     except Exception:
         return 0
 
+def strategy_effective_date(today: str) -> str:
+    """v7.24 FR-5: 信号日 → 下一交易日（生效日），异常时原样返回。"""
+    try:
+        import stock_calendar as _sc
+        return _sc.next_trade_date_str(today)
+    except Exception:  # noqa: BLE001
+        return today
+
+
+def strategy_catchup_due(schedule_time: str, now=None) -> bool:
+    """v7.24 FR-5: 交易日已过计划时间且当日尚无生效日持仓 → 需要补跑。"""
+    try:
+        from datetime import datetime
+        from timeutil import cst_today
+        import stock_calendar as _sc
+        now = now or datetime.now()
+        today = cst_today()
+        if not _sc.is_trade_date_str(today) or now.strftime('%H:%M') < schedule_time:
+            return False
+        return count_holdings_rows(_sc.next_trade_date_str(today)) <= 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def run_strategy_once(progress_cb=None):
     """执行所有启用策略的 run-once (同步, 供调度任务与手工触发共用)
     返回 (ok, executed_sids, errors)

@@ -73,6 +73,61 @@ async def pattern_config(_: Dict = Depends(get_non_guest_user)):
     }
 
 
+_CANDIDATE_SOURCES = ("watchlist", "calendar", "market")
+
+
+@router.get("/candidates")
+async def pattern_candidates(source: str = "watchlist", date: str = "", top_n: int = 50,
+                             user: Dict = Depends(get_non_guest_user)):
+    """v7.26 (FR-13): 候选池来源解析 —— 自选股 / 当日日历新增 / 全市场(受限 TopN)。
+
+    前端「自选股」一键填充直接复用本端点, 候选数与自选数一致; 全市场按本地股票清单
+    截取 TopN 并在响应中标注 requested/truncated, 避免静默超时。
+    """
+    src = (source or "").strip().lower()
+    if src not in _CANDIDATE_SOURCES:
+        raise HTTPException(status_code=400, detail="source 必须为 watchlist|calendar|market")
+    try:
+        limit = max(1, min(int(top_n), 500))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="top_n 必须为整数")
+
+    symbols: List[str] = []
+    requested = 0
+    truncated = False
+    if src == "watchlist":
+        from api.v1.watchlist import _load_watchlist
+        rows = _load_watchlist(str(user.get("username") or "")) or []
+        symbols = [str(r.get("code") or "") for r in rows if r.get("code")]
+        requested = len(symbols)
+    elif src == "calendar":
+        from views_aggregator import views_aggregator
+        day = (date or "").strip() or date_today()
+        view = views_aggregator.get_day_view(day) or {}
+        if not view.get("data_inherited"):
+            for s in view.get("stocks") or []:
+                code = str(s.get("code") or "")
+                if code and views_aggregator.calculate_status(code, day, "day") == "new":
+                    symbols.append(code)
+        requested = len(symbols)
+    else:
+        try:
+            from stock_info import stock_manager
+            all_codes = sorted(stock_manager.stock_map.keys())
+        except Exception as e:  # noqa: BLE001 — 清单不可用如实报错
+            raise HTTPException(status_code=503, detail="全市场股票清单不可用: %s" % e)
+        requested = len(all_codes)
+        symbols = all_codes[:limit]
+        truncated = requested > len(symbols)
+
+    return {"success": True, "source": src, "symbols": symbols, "count": len(symbols),
+            "requested": requested, "truncated": truncated}
+
+
+def date_today() -> str:
+    return date.today().isoformat()
+
+
 @router.get("/cases")
 async def list_pattern_cases(limit: int = 100,
                              _: Dict = Depends(get_non_guest_user)):
@@ -203,13 +258,17 @@ def _run_match(payload: Dict[str, Any], ctx=None) -> Dict[str, Any]:
     top_n = payload.get("top_n")
 
     ranked: List[Dict] = []
+    evaluated = 0
     for item in candidates:
         # v7.12 (L5/L9): 异步任务在候选边界检查暂停/取消; 同步端点 ctx=None 不受影响
+        # v7.26 (FR-13): 进度按「已评估」而非「已入榜」计数 —— 低于阈值/数据不足也计入已评估,
+        # 前端才能诚实显示「已评估 x/y」而不是进度停滞。
         if ctx is not None:
             if not ctx.check_paused():
                 raise jobs_mod.JobCancelled()
-            ctx.progress(int(len(ranked) / max(1, len(candidates)) * 90) + 5,
-                         "matched %d/%d" % (len(ranked), len(candidates)))
+            ctx.progress(int(evaluated / max(1, len(candidates)) * 90) + 5,
+                         "matched %d/%d" % (evaluated, len(candidates)))
+        evaluated += 1
         df = _resolve_bars(item if isinstance(item, dict) else {"bars": item})
         features = extractor.extract(df)
         if not any(features.values()):
@@ -231,6 +290,7 @@ def _run_match(payload: Dict[str, Any], ctx=None) -> Dict[str, Any]:
 
     result: Dict[str, Any] = {
         "items": ranked, "count": len(ranked),
+        "evaluated_count": evaluated, "requested_count": len(candidates),
         "min_similarity": min_sim, "weights": matcher.weights,
         "case_count": len(cases), "holdings_matrix": None, "calendar_opt_in": False,
     }

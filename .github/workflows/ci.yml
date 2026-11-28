@@ -2,17 +2,12 @@ name: CI
 
 # V4.0 精简: CI 只在里程碑版本(tag v*)或手动触发(workflow_dispatch)时运行, 不再随每次 push 触发
 # 2026-11-27: 内联 shell 已抽到 scripts/ci/ 共享层，GitHub 与 GitLab 复用同一批门禁脚本。
+# v7.25 FR-10: GitHub Actions 收敛为「正式发布流水线」——仅 v* tag / 手动触发；
+#              日常提交与 MR 的迭代门禁由 GitLab CI 承担。
 on:
   push:
     tags:
       - 'v*'          # 里程碑版本: tag v4.0.0 等 → 跑 CI + Docker 发布
-  pull_request:
-    branches: [master]
-    paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - 'DEPLOYMENT.md'
-      - 'reports/**'
   workflow_dispatch:  # 手动触发: 我单独要求时在 Actions 页 Run workflow
 
 jobs:

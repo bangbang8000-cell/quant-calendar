@@ -17,8 +17,13 @@ router = APIRouter(prefix="/market", tags=["市场行情"])
 
 @router.get("/overview")
 async def get_market_overview(date: Optional[str] = None):
-    """获取市场概览 - 各主要指数行情"""
-    return market_data.get_market_overview(date)
+    """获取市场概览 - 各主要指数行情
+
+    v7.25 FR-6: 交易日判断走交易日历、数据源取数可能阻塞（秒级），
+    放入工作线程避免阻塞事件循环。
+    """
+    import asyncio
+    return await asyncio.to_thread(market_data.get_market_overview, date)
 
 
 @router.get("/merrill-clock")
@@ -294,6 +299,9 @@ async def test_datasource(source: str, _: Dict = Depends(get_admin_user)):
     from data_sources import data_source_manager
     result = data_source_manager.test_connection(source)
     return result
+
+
+
 
 
 @router.get('/datasource/status')

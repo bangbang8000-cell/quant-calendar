@@ -122,3 +122,31 @@ async def get_quote_summary(code: str):
     except Exception as exc:
         logger.error("quote-summary 失败 %s: %s", code, exc)
         return {"success": False, "code": code, "message": str(exc)}
+
+# v7.26 (FR-15): 数据源一键全测 — 从 market.py 拆出, 维持单文件 <=700 行
+@router.post('/datasource/test-all')
+async def test_all_datasources(_: Dict = Depends(get_admin_user)):
+    """按优先级逐源测试并给出首个可用源；禁用/异常不中断。"""
+    from data_sources import data_source_manager
+    order = ['sxsc_tushare', 'tushare', 'akshare', 'fuyao']
+    results, first_healthy = [], None
+    for src in order:
+        try:
+            cfg = data_source_manager._get_source_config(src) or {}
+        except Exception:  # noqa: BLE001 — 配置缺失按默认启用处理
+            cfg = {}
+        if cfg.get('enabled') is False:
+            results.append({"source": src, "connected": False, "skipped": True, "message": "已禁用"})
+            continue
+        try:
+            r = data_source_manager.test_connection(src) or {}
+        except Exception as e:  # noqa: BLE001 — 单源异常不阻断全测
+            r = {"success": False, "message": str(e)}
+        ok = bool(r.get('success'))
+        item = {"source": src, "connected": ok, "skipped": False,
+                "message": r.get('message') or r.get('error') or ('连接成功' if ok else '连接失败')}
+        if r.get('latency_ms') is not None:
+            item["latency_ms"] = r['latency_ms']
+        results.append(item)
+        first_healthy = first_healthy or (src if ok else None)
+    return {"success": True, "results": results, "first_healthy": first_healthy, "priority": order}

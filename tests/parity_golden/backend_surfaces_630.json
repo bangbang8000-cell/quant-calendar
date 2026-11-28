@@ -146,6 +146,8 @@
       "get_task_status",
       "health_check_task",
       "intraday_snapshot_task",
+      "market_index_refresh_task",
+      "precompute_pipeline_task",
       "report_subscription_task",
       "review_produced_today",
       "run_daily_review",
@@ -208,6 +210,8 @@
       "generate_weekly_report",
       "logger",
       "parser",
+      "strategy_catchup_due",
+      "strategy_effective_date",
       "timedelta"
     ]
   }

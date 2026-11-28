@@ -131,6 +131,11 @@
         }
       }
       async function deleteResearchHistory(id) {
+        // v7.24 FR-16: 二次确认走 ElementPlus（原生弹窗门禁）
+        try {
+          await window.ElementPlus.ElMessageBox.confirm(
+            '确定删除该条实验记录？删除后不可恢复。', '确认删除', { type: 'warning' });
+        } catch (e) { return; }
         try {
           const core = (window.__quantModules && window.__quantModules.core) || {};
           const headers = (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
@@ -144,6 +149,105 @@
           }
         } catch (e) {
           console.error('[research-history] 删除失败:', e);
+        }
+      }
+
+      // ===== v7.26 (FR-16 / T-7.25.32): 策略管理 → 回测记录（按选中策略过滤） =====
+      // 数据源仍是 research_experiments(type=backtest) 单源，经 /api/backtest/history?sid= 读取；
+      // legacy 只读记录（backtest_history.json）无 id/标 legacy，不提供删除入口。
+      const smBtRows = Vue.ref([]);
+      const smBtLoading = Vue.ref(false);
+      const smBtError = Vue.ref(false);
+      const smBtSelected = Vue.ref([]);
+      const smBtAllSelected = Vue.ref(false);
+
+      function _smBtHeaders() {
+        const core = (window.__quantModules && window.__quantModules.core) || {};
+        return (typeof core.authHeaders === 'function') ? core.authHeaders() : {};
+      }
+
+      async function loadSmBtRecords(sid) {
+        const target = sid || (state && state.activeStrategyId && state.activeStrategyId.value) || '';
+        if (!target) { smBtRows.value = []; smBtSelected.value = []; return; }
+        const _s = seqOf('smBtRecords');
+        const seq = ++_s.n;
+        smBtLoading.value = true;
+        smBtError.value = false;
+        try {
+          const res = await fetch('/api/backtest/history?days=0&limit=100&sid=' + encodeURIComponent(target),
+            { headers: _smBtHeaders() }).then(function (r) { return r.json(); });
+          if (seq !== _s.n) return;
+          smBtRows.value = (res && res.data) || [];
+          // 选择器只保留仍存在的 id
+          const alive = smBtRows.value.filter(function (r) { return r.id && !r.legacy; })
+            .map(function (r) { return r.id; });
+          smBtSelected.value = smBtSelected.value.filter(function (id) { return alive.indexOf(id) >= 0; });
+        } catch (e) {
+          if (seq !== _s.n) return;
+          console.error('[strategy-manage] 回测记录加载失败:', e);
+          smBtError.value = true;
+        } finally {
+          smBtLoading.value = false;
+        }
+      }
+
+      function toggleSmBtSelect(id) {
+        if (!id) return;
+        const i = smBtSelected.value.indexOf(id);
+        if (i >= 0) smBtSelected.value.splice(i, 1);
+        else smBtSelected.value.push(id);
+      }
+
+      function toggleSmBtSelectAll(val) {
+        smBtSelected.value = val
+          ? smBtRows.value.filter(function (r) { return r.id && !r.legacy; }).map(function (r) { return r.id; })
+          : [];
+      }
+
+      async function _smBtConfirm(message) {
+        const ep = window.ElementPlus || {};
+        if (!ep.ElMessageBox) return false;
+        try {
+          await ep.ElMessageBox.confirm(message, '确认删除', { type: 'warning' });
+          return true;
+        } catch (e) { return false; }
+      }
+
+      async function deleteSmBtRecord(row) {
+        if (!row || !row.id || row.legacy) return;
+        if (!(await _smBtConfirm('确定删除该条回测结果？删除后不可恢复。'))) return;
+        try {
+          const res = await fetch('/api/strategies/research-history/' + encodeURIComponent(row.id),
+            { method: 'DELETE', headers: _smBtHeaders() }).then(function (r) { return r.json(); });
+          if (!res || !res.deleted) throw new Error((res && res.detail) || '删除失败');
+          await loadSmBtRecords();
+          await loadResearchHistory();
+        } catch (e) {
+          console.error('[strategy-manage] 删除回测记录失败:', e);
+          const ep = window.ElementPlus || {};
+          if (ep.ElMessage && ep.ElMessage.error) ep.ElMessage.error('删除失败: ' + e.message);
+        }
+      }
+
+      async function batchDeleteSmBtRecords() {
+        const ids = (smBtSelected.value || []).slice(0, 50);
+        if (!ids.length) return;
+        if (!(await _smBtConfirm('确定删除选中的 ' + ids.length + ' 条回测结果？删除后不可恢复。'))) return;
+        try {
+          const res = await fetch('/api/strategies/research-history/batch-delete', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, _smBtHeaders()),
+            body: JSON.stringify({ ids: ids }),
+          }).then(function (r) { return r.json(); });
+          if (!res) throw new Error('删除失败');
+          smBtSelected.value = [];
+          smBtAllSelected.value = false;
+          await loadSmBtRecords();
+          await loadResearchHistory();
+        } catch (e) {
+          console.error('[strategy-manage] 批量删除回测记录失败:', e);
+          const ep = window.ElementPlus || {};
+          if (ep.ElMessage && ep.ElMessage.error) ep.ElMessage.error('批量删除失败: ' + e.message);
         }
       }
 
@@ -269,6 +373,10 @@
         researchExportLoading, researchTypeLabel, researchSubjectLabel, goShortterm, openResearchHistory,
         loadResearchHistory, exportResearchHistory, toggleResearchSelect, toggleResearchDetail,
         runResearchCompare, deleteResearchHistory,
+        // v7.26 (FR-16 / T-7.25.32): 策略管理 → 回测记录
+        smBtRows, smBtLoading, smBtError, smBtSelected, smBtAllSelected,
+        loadSmBtRecords, toggleSmBtSelect, toggleSmBtSelectAll,
+        deleteSmBtRecord, batchDeleteSmBtRecords,
         overviewCompareRows, overviewCompareLoading, loadOverviewCompare, goBacktestFor,  // v7.15 (FR-7)
         // v7.19 (T3.2): 策略工作台
         strategyOverview, strategyOverviewLoading, strategyOverviewError, strategyOverviewDegraded,

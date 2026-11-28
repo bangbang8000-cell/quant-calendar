@@ -60,3 +60,36 @@ def credibility_report(trades: int, sample_days: int, has_benchmark: bool,
         'grade': grade,
         'checks': checks,
     }
+
+
+def evaluate_backtest_credibility(result: Dict) -> Dict:
+    """v7.24 FR-3: 回测结论可信度门禁（不可信时阻断展示）。
+
+    返回 {credible, blocking_reasons, checks, warnings}；任一硬条件不满足即 credible=False。
+    """
+    r = result or {}
+    reasons = []
+    checks = {
+        'execution_mode': r.get('execution_mode') == 'T+1_open',
+        'adjust_mode': r.get('adjust_mode') == 'qfq',
+        'sample_sufficient': r.get('annual_return') is not None,
+        'no_anomaly': not bool(r.get('annual_return_anomaly')),
+        'has_days': int(r.get('total_days') or 0) >= 2,
+    }
+    # v7.24 FR-3: 未来函数检查未通过 → 阻断（未提供检查结果时不误判为失败）
+    if r.get('lookahead_passed') is not None:
+        checks['lookahead_passed'] = bool(r.get('lookahead_passed'))
+    if not checks['execution_mode']:
+        reasons.append('成交口径非 T+1 开盘（%s）' % (r.get('execution_mode') or '未声明'))
+    if not checks['adjust_mode']:
+        reasons.append('复权口径非前复权（%s）' % (r.get('adjust_mode') or '未声明'))
+    if not checks['sample_sufficient']:
+        reasons.append(r.get('annual_return_reason') or '样本不足（<18个月）')
+    if not checks['no_anomaly']:
+        reasons.append(r.get('annual_return_reason') or '年化异常（>1000%）')
+    if not checks['has_days']:
+        reasons.append('有效交易日不足')
+    if checks.get('lookahead_passed') is False:
+        reasons.append(r.get('lookahead_reason') or '未通过未来函数检查')
+    return {'credible': not reasons, 'blocking_reasons': reasons, 'checks': checks,
+            'warnings': list(r.get('warnings') or [])}

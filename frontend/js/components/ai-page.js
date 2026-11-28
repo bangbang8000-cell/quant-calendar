@@ -87,6 +87,8 @@
         planVisible, planLoading, planApplying, planPreview, planNote, planForm,
         PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
         openPlanDialog, previewPlan, applyPlan,
+        networkDiff, networkLoading, networkSyncing, autoSync, networkSummary, networkAddNames,
+        loadNetworkDiff, syncNetwork, setAutoSync,
       } = __portfolioDomain;
       // v3.17.10 (FR-3.17.10): 持仓纳入本地拼音检索索引（自选/持仓/评估历史构造可测索引）
       watch(positions, function (list) {
@@ -186,6 +188,8 @@
         planVisible, planLoading, planApplying, planPreview, planNote, planForm,
         PLAN_QUICK_CAPITAL, planTotals, money, setPlanCapital,
         openPlanDialog, previewPlan, applyPlan,
+        networkDiff, networkLoading, networkSyncing, autoSync, networkSummary, networkAddNames,
+        loadNetworkDiff, syncNetwork, setAutoSync,
       };
     },
   };

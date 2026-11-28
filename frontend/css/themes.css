@@ -143,8 +143,19 @@
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
             --market-up-text: #ff8080; --market-down-text: #5fd07a;
-            --market-up-on: #1a1512;
-            --market-down-on: #102014;
+            /* v7.26 (FR-12): 择时信号四档暗色变体 — 暗底提亮文字, 对比度 >=4.5:1 */
+            --qc-signal-up-bg: #4a1f24;
+            --qc-signal-up-border: #ff8080;
+            --qc-signal-up-text: #ffb3b3;
+            --qc-signal-down-bg: #173a24;
+            --qc-signal-down-border: #5fd07a;
+            --qc-signal-down-text: #9ae6b0;
+            --qc-signal-hold-bg: #3d3422;
+            --qc-signal-hold-border: #d4b352;
+            --qc-signal-hold-text: #ffd166;
+            --qc-signal-flat-bg: #393528;
+            --qc-signal-flat-border: #afaca1;
+            --qc-signal-flat-text: #c7c4bd;
             --badge-success-bg: #0a2e1a; --badge-success-text: #64ffda;
             --badge-warning-bg: #2e1f0a; --badge-warning-text: #ffb74d;
             --badge-danger-bg: #2e0a0a; --badge-danger-text: #ff5252;

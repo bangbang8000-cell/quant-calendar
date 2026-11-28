@@ -16,6 +16,87 @@ import scheduler as _m  # 共享状态经包级解析 (测试 patch("scheduler.X
 
 class SchedulerHealthMixin:
     """健康检查/告警类定时任务 (_core 拆分)"""
+    async def market_index_refresh_task(self):
+        """v7.25 FR-6: 交易日 09:25 盘前 / 15:05 收盘后强制刷新指数终值。
+
+        收盘后 15:05 起短 TTL 重试的前提是缓存里有"当日 trade_date"——
+        调度器在 15:05 主动拉取一次，把终值落缓存；盘前 09:25 再刷一次覆盖隔夜。
+        成功刷新后写入 freshness(market_daily)，供健康面板识别数据断档。
+        """
+        last_slot = None
+        while self.running:
+            try:
+                await asyncio.sleep(30)
+                if not self.running:
+                    break
+                now = datetime.now()
+                from market_data import is_trading_day
+                if not is_trading_day(now):
+                    await asyncio.sleep(300)
+                    continue
+                hm = now.hour * 60 + now.minute
+                slot = None
+                if 9 * 60 + 25 <= hm < 9 * 60 + 35:
+                    slot = 'pre_open'
+                elif 15 * 60 + 5 <= hm < 15 * 60 + 30:
+                    slot = 'after_close'
+                if slot is None:
+                    await asyncio.sleep(60)
+                    continue
+                key = f"{now.strftime('%Y-%m-%d')}:{slot}"
+                if last_slot == key:
+                    await asyncio.sleep(120)
+                    continue
+                last_slot = key
+                from market_data import market_data
+                ok, detail = await asyncio.to_thread(market_data.refresh_market_indices)
+                self._record_task_run("market_index_refresh", bool(ok), f"{slot} {detail}")
+                if ok:
+                    self._record_freshness("market_daily",
+                                           latest_date=now.strftime('%Y-%m-%d'),
+                                           detail=f"market_index:{slot}")
+                await asyncio.sleep(120)
+            except Exception as e:  # noqa: BLE001
+                logger.error("指数刷新任务异常: %s", e)
+                await asyncio.sleep(300)
+
+    async def precompute_pipeline_task(self):
+        """v7.25 FR-8: 收盘后分批预计算 15:30 行情 / 18:00 研究 / 20:00 策略。"""
+        done = set()
+        last_day = None
+        while self.running:
+            try:
+                await asyncio.sleep(30)
+                if not self.running:
+                    break
+                now = datetime.now()
+                from market_data import is_trading_day
+                if not is_trading_day(now):
+                    continue
+                day = now.strftime('%Y-%m-%d')
+                if last_day != day:
+                    done = set()
+                    last_day = day
+                hm = now.hour * 60 + now.minute
+                phase = None
+                if 15 * 60 + 30 <= hm < 16 * 60:
+                    phase = 'market'
+                elif 18 * 60 <= hm < 18 * 60 + 30:
+                    phase = 'research'
+                elif 20 * 60 <= hm < 20 * 60 + 30:
+                    phase = 'strategy'
+                if phase is None or phase in done:
+                    continue
+                done.add(phase)
+                import precompute
+                res = await asyncio.to_thread(precompute.run_phase, phase)
+                ok = res.get('ok', 0) > 0
+                self._record_task_run('precompute_%s' % phase, ok,
+                                      '%d/%d' % (res.get('ok', 0), res.get('total', 0)))
+            except Exception as e:  # noqa: BLE001
+                logger.error("预计算任务异常: %s", e)
+                await asyncio.sleep(300)
+
     async def freshness_alert_task(self):
         """6.3.2 (T-6.3.2.3): 健康与新鲜度联动告警 — 数据过期与任务连续失败入面板告警
 

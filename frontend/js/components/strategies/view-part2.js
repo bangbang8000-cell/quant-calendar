@@ -14,7 +14,7 @@ window.__quantModules.strategiesPage.part2 = `                                <s
                                        :class="marketData.market_sentiment.avg_pct_chg >= 0 ? 'up' : 'down'">{{ marketData.market_sentiment.avg_pct_chg >= 0 ? '+' : '' }}{{ fmtPct(marketData.market_sentiment.avg_pct_chg) }}</b>
                                 </span>
                             </span>
-                            <span class="text-xs-tertiary">{{ marketData.date }}</span>
+                            <span class="text-xs-tertiary"><span v-if="marketIsMock" class="chip-warning">模拟数据</span> 数据时间 {{ marketDataTime || marketData.date }}<template v-if="marketDataSource"> · 数据源 {{ marketDataSource }}</template><template v-if="marketNextRefreshText"> · 下次刷新 {{ marketNextRefreshText }}</template><template v-if="precomputeText"> · 预计算 {{ precomputeText }}</template></span>
                         </div>
                         <!-- V5.16 (F4): 中栏指数列表 + 右栏指数详情工作区 (C4-A; 弹窗模式时仅列表全宽) -->
                         <qc-detail-split :enabled="detailSplitEnabled">
@@ -141,6 +141,38 @@ window.__quantModules.strategiesPage.part2 = `                                <s
 
                         <!-- 结果区 -->
                         <template v-if="btResult && btResult.success">
+                            <!-- v7.24 FR-4: 样本与数据口径 -->
+                            <div v-if="btSampleInfo" class="card">
+                                <div class="card-title">样本与数据口径</div>
+                                <div class="bt-sample-grid">
+                                    <div class="bt-sample-item">
+                                        <span class="bt-sample-label">实际生效区间</span>
+                                        <span class="bt-sample-value">{{ btSampleInfo.start_date || '--' }} ~ {{ btSampleInfo.end_date || '--' }}</span>
+                                    </div>
+                                    <div class="bt-sample-item">
+                                        <span class="bt-sample-label">数据跨度</span>
+                                        <span class="bt-sample-value">{{ btSampleInfo.data_span_months || 0 }} 个月</span>
+                                    </div>
+                                    <div class="bt-sample-item">
+                                        <span class="bt-sample-label">有效交易日</span>
+                                        <span class="bt-sample-value">{{ btSampleInfo.effective_days || 0 }} 天</span>
+                                    </div>
+                                    <div class="bt-sample-item">
+                                        <span class="bt-sample-label">18 个月门槛</span>
+                                        <span class="bt-sample-value">{{ btSampleInfo.meets_min_sample ? '已满足' : '未满足' }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="!btSampleInfo.meets_min_sample" class="bt-sample-warn">
+                                    <span>{{ btSampleInfo.reason || '样本不足（<18个月）' }}，年化收益不展示。</span>
+                                    <el-button size="small" :loading="btRepairing" @click="repairBacktestData">补数据</el-button>
+                                </div>
+                                <div class="bt-sample-meta">
+                                    成交口径 T+1 开盘 · 复权 前复权 · 数据源 DWH
+                                    <span v-if="btDataCoverage"> · 行情覆盖 {{ btDataCoverage.coverage_months || 0 }} 个月（{{ btDataCoverage.earliest_date || '--' }} ~ {{ btDataCoverage.latest_date || '--' }}）</span>
+                                    <span v-if="btDataCoverage && btDataCoverage.available === false"> · 数据仓库不可用</span>
+                                </div>
+                            </div>
+
                             <!-- 指标卡 -->
                             <div class="card">
                                 <div class="card-title">核心指标 <span class="bt-period">{{ btResult.period }}</span></div>

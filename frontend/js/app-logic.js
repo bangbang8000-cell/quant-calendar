@@ -105,7 +105,8 @@
                     getLoadDashboardData, getLastRefreshTime, getFetchPoolSignals,
                 });
                 const { loading, loadingView, viewCache, dates, selectedDate, lastLoadTime, consensus, viewNote,
-                        loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached, consensusError } = __data;
+                        loadDates, refreshCalendarData, exportCSV, loadConsensusData, loadDashboardCached, consensusError,
+                        calEmptyStatus, calGenerating, generateTodayHoldings } = __data;
                 // v3.17.11.1: 行情/指数详情/评分动画/触摸手势域 (js/app-logic/market.js)
                 const __market = window.__quantAppLogic.market.create({
                     currentKlinePeriod, loadIndexKline, rememberDialogTrigger, menus,
@@ -113,7 +114,7 @@
                 });
                 // 6.6: 补齐 5 个既有缺口(域返回但装配未解构 → 依赖方拿到 undefined):
 // marketRefreshTimer/touchStartX/touchStartY/triggerScorePulse/animateScoreChange
-const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, triggerScorePulse, animateScoreChange, indexDetailVisible, indexDetail, indexQuoteSummary, loadIndexQuoteSummary, indexAiResult, indexAiLoading,
+const { marketData, marketError, marketDataTime, marketNextRefreshText, marketDataSource, marketIsMock, marketPhase, precomputeText, marketRefreshTimer, touchStartX, touchStartY, triggerScorePulse, animateScoreChange, indexDetailVisible, indexDetail, indexQuoteSummary, loadIndexQuoteSummary, indexAiResult, indexAiLoading,
                         fetchMarketData, showIndexDetail, loadCachedIndexEval, doIndexAiEvaluate,
                         disposeStockKline, isMobile, zoomKlineRange,
                         scoreAnimating, scoreDelta, scorePulse,
@@ -250,6 +251,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                         btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
                         btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
                         btRunning, btResult, btError,
+                        btSampleInfo, btDataCoverage, btRepairing, repairBacktestData,
                         btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
                         runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum } = __backtestDomain;
                 const __systemDomain = (window.__quantModules && window.__quantModules.system)
@@ -351,13 +353,14 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     t, locale, changeLanguage,
                     currentPageName, currentSubName, subPageNames, searchQuery, searchStocks, onSearchSelect,
                     selectedDate, onDateChange, disabledDate, refreshCalendarData, exportCSV, viewNote,
+                    calEmptyStatus, calGenerating, generateTodayHoldings,
                     loading, lastLoadTime, resetSetupWizard, showChangePassword,
                     themes, currentTheme, changeTheme, changeThemeMode, changeThemeHue, handleLogout,
                     // V6.9.3 (F6.2): 主题面板全局共享状态
                     themeHues, themeHueNames, themeHue, themeMode, hueColor, hueName,
                     density, changeDensity,
 
-                    marketData, marketError, merrillData, merrillError, merrillStale, merrillDataAsOf, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
+                    marketData, marketError, marketDataTime, marketNextRefreshText, marketDataSource, marketIsMock, marketPhase, precomputeText, merrillData, merrillError, merrillStale, merrillDataAsOf, merrillTimeline, timelineLoading, merrillStagesConfig, fetchMerrillStages,
                     merrillSnapshots, merrillSnapshotsTotal, healthMetrics, feishuConfig, feishuTestStatus, feishuTestMessage,
                     shortcutHelpVisible, shortcutHelpItems, commandPaletteVisible,
                     tourVisible, tourStep, tourSteps, skipTour, finishTour,
@@ -379,6 +382,7 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     btDateRange, btCapital, btCommissionRate, btSlippage, btIncludeBenchmark,
                     btQuickRange, setBtQuickRange, BT_DEFAULT_MONTHS,
                     btRunning, btResult, btError,
+                    btSampleInfo, btDataCoverage, btRepairing, repairBacktestData,
                     btMetrics, btAnnualReturns, btTrades, btStrategyMetricsRows, btDrawdownRegion,
                     runBacktestWorkbench, exportBacktestCSV, registerBacktestNavChart, btFmtNum,
                     fetchMarketData, fetchMerrillClock, testFeishuWebhook, saveFeishuConfig,
@@ -477,6 +481,8 @@ const { marketData, marketError, marketRefreshTimer, touchStartX, touchStartY, t
                     // v1.8.0: 多数据源
                     datasourceConfig, datasourceStatus,
                     loadDatasourceConfig, saveDatasourceConfig, testDatasource, toggleDatasourceKeyReveal, toggleDatasourceEdit,
+                    // v7.26 (FR-15): 数据源统一表 + 一键全测
+                    datasourceTestResults, datasourceTestingAll, testAllDatasources, datasourceName, DATASOURCE_PRIORITY,
                     strategyFilter, strategyFilterOptions, strategyFilterCounts, strategyPreviewCount, saveStrategyFilter,
                     filteredConsensusRank, currentPoolSize, filteredStrategyCounts, strategyDistribution,
                     expandedStrategies,

@@ -563,3 +563,90 @@ async def list_plans(limit: int = 20, user: dict = Depends(get_current_active_us
     """建仓计划历史 (新→旧)"""
     rows = portfolio_plan.list_plans(user["username"], limit=max(1, min(int(limit or 20), 100)))
     return {"success": True, "plans": rows, "count": len(rows)}
+
+
+# ─── v7.25 (FR-7): 持仓组网 — 自选同步 / 重新均分 / 自动同步 ─────────
+
+def _network_inputs(user: dict):
+    watch = _load_watchlist_items(user["username"])
+    positions = db.portfolio_get_positions(user["username"])
+    return watch, positions
+
+
+def _build_network_plan_of(user: dict, body: dict):
+    """自选 ∪ 现有持仓 → 等权均分计划 + 差集（只增不删）"""
+    watch, positions = _network_inputs(user)
+    targets = portfolio_plan.merge_targets(watch, positions)
+    items, degraded = _fill_plan_prices(targets)
+    total = _num(body.get("total_capital"), None)
+    if total is None:
+        total = DEFAULT_PLAN_CAPITAL
+    if total <= 0:
+        raise HTTPException(status_code=400, detail="总资金须为正数")
+    try:
+        plan = portfolio_plan.build_plan(items, total,
+                                         mode=(body.get("mode") or "equal"), source="network")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    portfolio_plan.annotate_network_plan(plan, positions)
+    plan["degraded"] = degraded
+    return plan, portfolio_plan.network_diff(watch, positions), degraded
+
+
+@router.get("/network/diff")
+async def get_network_diff(user: dict = Depends(get_current_active_user)):
+    """自选与组合的差异（只增不删）：to_add / only_in_portfolio + 自动同步开关"""
+    watch, positions = _network_inputs(user)
+    diff = portfolio_plan.network_diff(watch, positions)
+    return {"success": True, **diff,
+            "auto_sync": portfolio_plan.get_auto_sync(user["username"])}
+
+
+@router.get("/network/auto-sync")
+async def get_network_auto_sync(user: dict = Depends(get_current_active_user)):
+    return {"success": True, "auto_sync": portfolio_plan.get_auto_sync(user["username"])}
+
+
+@router.put("/network/auto-sync")
+async def put_network_auto_sync(body: dict, user: dict = Depends(get_current_active_user)):
+    enabled = portfolio_plan.set_auto_sync(user["username"], bool(body.get("auto_sync")))
+    _audit("portfolio_network_auto_sync", user["username"], {"auto_sync": enabled})
+    return {"success": True, "auto_sync": enabled}
+
+
+@router.post("/network/preview")
+async def preview_network_plan(body: dict, user: dict = Depends(get_current_active_user)):
+    """组网预览：现有持仓 ∪ 自选 等权均分（已有持仓保留成本价，只增不删）"""
+    plan, diff, degraded = _build_network_plan_of(user, body)
+    return {
+        "success": True, "plan": plan, "diff": diff, "degraded": degraded,
+        "note": "现价不可达, 部分标的未能纳入计划" if degraded else "",
+        "generated_at": plan.get("generated_at"),
+    }
+
+
+@router.post("/network/sync")
+async def sync_network_plan(body: dict, user: dict = Depends(get_current_active_user)):
+    """同步自选/重新均分：按总资金等权均分并落网（已有持仓保留成本价，绝不删除持仓）。"""
+    plan, diff, _degraded = _build_network_plan_of(user, body)
+    if plan["position_count"] <= 0:
+        raise HTTPException(status_code=400, detail="没有可建仓的标的(资金不足一手或现价不可用)")
+    fingerprint = portfolio_plan.plan_fingerprint(plan)
+    applied_id = portfolio_plan.find_applied_plan(user["username"], fingerprint)
+    if applied_id:
+        return {"success": True, "already_applied": True, "plan_id": applied_id,
+                "plan": plan, "diff": diff, "written": 0,
+                "message": "该均分计划此前已同步, 未重复加仓"}
+    plan_id = portfolio_plan.save_plan(user["username"], plan, status="preview")
+    result = portfolio_plan.apply_network_plan(user["username"], plan)
+    portfolio_plan.mark_applied(user["username"], plan_id)
+    _audit("portfolio_network_sync", user["username"], {
+        "plan_id": plan_id, "added": result["added"], "updated": result["updated"],
+        "to_add": len(diff["to_add"]), "total_capital": plan["total_capital"],
+    })
+    message = "已同步 %d 只自选(新增 %d 只); 共 %d 只, 投入 %.2f 元, 留现金 %.2f 元" % (
+        len(diff["to_add"]), result["added"], plan["position_count"],
+        plan["invested"], plan["cash_reserve"])
+    return {"success": True, "plan_id": plan_id, "plan": plan, "diff": diff,
+            "written": result["updated"] + result["added"],
+            "added": result["added"], "updated": result["updated"], "message": message}

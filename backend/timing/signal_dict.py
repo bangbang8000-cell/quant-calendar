@@ -14,7 +14,8 @@ overlay 契约里 buy/add/hold 的目标仓位系数都是 1.0(100%),
 - action 是权威(见 timing/base.py VALID_ACTIONS), 字典必须完整覆盖 5 个 + wait 兜底。
 - 仓位系数(exposure)是 overlay 注入回测的内部量, 降级为辅助信息, 不占单元格主视觉。
 - strength 是信号强度(0~1), 用「强/中/弱」文字档表达, 不用进度条误导为「胜率」。
-- 涨跌配色沿用 A 股口径: 买入/加仓=红(up), 卖出/减仓=绿(down), 持有/观望=灰(flat)。
+- 涨跌配色沿用 A 股口径: 买入/加仓=红(up), 卖出/减仓=绿(down);
+  v7.26 (FR-12): 持有拆为独立档 hold(浅金), 观望/数据不足=灰(flat), 四档不再合并。
 """
 from typing import Any, Dict
 
@@ -30,7 +31,7 @@ def _display_text(label, band):
 
 # 字典: action -> 展示元数据
 # label    单元格主文字(用户第一眼要读的)
-# tone     配色档: up(红)/down(绿)/flat(灰), 与 A 股涨跌口径一致
+# tone     配色档: up(红)/down(绿)/hold(浅金)/flat(灰), 与 A 股涨跌口径一致
 # meaning  一句话语义, 用于 tooltip / 报告
 # exposure 目标仓位系数的文字说明(辅助信息, 非主视觉)
 SIGNAL_DICTIONARY: Dict[str, Dict[str, str]] = {
@@ -45,7 +46,7 @@ SIGNAL_DICTIONARY: Dict[str, Dict[str, str]] = {
         "exposure": "目标仓位 100%",
     },
     "hold": {
-        "label": "持有", "tone": "flat", "short": "维持",
+        "label": "持有", "tone": "hold", "short": "维持",
         "meaning": "无信号，维持原仓位（不代表满仓买入）",
         "exposure": "维持原仓位",
     },
@@ -87,7 +88,7 @@ def signal_display(sig: TimingSignal) -> Dict[str, Any]:
         exposure      原始目标仓位系数(辅助, tooltip 用)
         message       策略给出的判定理由
         label         明确文字: 买入/加仓/持有/减仓/卖出/观望
-        tone          配色档: up/down/flat
+        tone          配色档: up/down/hold/flat
         strength_band 强度文字档: 强/中/弱 (hold 恒弱)
         meaning       字典语义(tooltip)
         exposure_note 仓位系数文字说明(tooltip)
@@ -112,7 +113,7 @@ def signal_display(sig: TimingSignal) -> Dict[str, Any]:
 
 
 def matrix_legend() -> str:
-    """矩阵图例: 颜色语义 + 动作语义 + 强度档说明, 与字典同源。"""
+    """矩阵图例: 颜色语义 + 动作语义 + 强度档说明, 与字典同源 (v7.26 四档)。"""
     order = ("buy", "add", "hold", "reduce", "sell", "wait")
     def group(tone):
         return "/".join(SIGNAL_DICTIONARY[k]["label"] for k in order
@@ -120,7 +121,8 @@ def matrix_legend() -> str:
     items = "；".join(
         SIGNAL_DICTIONARY[k]["label"] + "（" + SIGNAL_DICTIONARY[k]["short"] + "）"
         for k in order)
-    return ("图例：红=" + group("up") + "，绿=" + group("down") + "，灰=" + group("flat")
+    return ("图例：红=" + group("up") + "（描边=加仓），绿=" + group("down") + "（描边=减仓），"
+            "金=" + group("hold") + "，灰=" + group("flat")
             + "；" + items + "。·强/中/弱=信号强度（非方向），—=该动作无强度档；悬停看仓位系数与判定理由。")
 
 

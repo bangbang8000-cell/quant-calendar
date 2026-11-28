@@ -436,6 +436,75 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                                 </template>
                             </el-dropdown>
                         </div>
+                        <!-- v7.26 (FR-15): AI 总览表 — 一屏看全状态/顺位, 拖拽调整降级顺序, 行内抽屉编辑 -->
+                        <div class="ai-overview mb-12" v-if="!aiModelsError && aiVendors.length">
+                            <div class="text-sm-tertiary mb-6">拖拽「⋮⋮」调整降级顺序（自上而下 = 厂商 → 模型串行调用）；列表只显示状态，密钥在抽屉中掩码编辑。</div>
+                            <el-table :data="aiVendors" size="small" row-key="vendor_key">
+                                <el-table-column label="" width="42">
+                                    <template #default="{ $index }">
+                                        <span class="ai-drag-handle" draggable="true" title="拖拽调整顺位"
+                                              @dragstart="aiDragStart($index)" @dragover.prevent @drop="aiDrop($index)">⋮⋮</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="顺位" width="58"><template #default="{ $index }">{{ $index + 1 }}</template></el-table-column>
+                                <el-table-column label="启用" width="64">
+                                    <template #default="{ row }">
+                                        <span :class="aiVendorEnabled(row) ? 'qc-text-success' : 'qc-text-muted'">{{ aiVendorEnabled(row) ? '启用' : '停用' }}</span>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="name" label="厂商" min-width="120" />
+                                <el-table-column prop="kind" label="类型" width="100" />
+                                <el-table-column label="模型数" width="74"><template #default="{ row }">{{ (row.models || []).length }}</template></el-table-column>
+                                <el-table-column label="最近调用" width="86"><template #default="{ row }">{{ aiVendorCalls(row) }}</template></el-table-column>
+                                <el-table-column label="成功率" width="76"><template #default>{{ '—' }}</template></el-table-column>
+                                <el-table-column label="延迟" width="76"><template #default>{{ '—' }}</template></el-table-column>
+                                <el-table-column label="操作" width="110" fixed="right">
+                                    <template #default="{ row }">
+                                        <el-button size="small" type="text" @click="openAiDrawer(row)">编辑</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+
+                        <!-- 编辑抽屉: 密钥掩码输入 + 模型启停; 保存分组化 (仅写 AI 配置) -->
+                        <el-drawer v-model="aiDrawerOpen" :title="aiDrawerVendor ? ('编辑厂商 · ' + aiDrawerVendor.name) : '编辑厂商'" size="420px">
+                            <div v-if="aiDrawerVendor">
+                                <el-form label-width="82px" size="small">
+                                    <el-form-item label="厂商名"><el-input v-model="aiDrawerVendor.name" :disabled="aiDrawerVendor.locked" /></el-form-item>
+                                    <el-form-item label="类型">
+                                        <el-select class="w-select-md" v-model="aiDrawerVendor.kind" :disabled="aiDrawerVendor.locked">
+                                            <el-option label="国内" value="国内" /><el-option label="国外" value="国外" />
+                                            <el-option label="CodingPlan" value="CodingPlan" /><el-option label="自定义" value="自定义" />
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="Base URL"><el-input v-model="aiDrawerVendor.base_url" placeholder="https://.../v1" /></el-form-item>
+                                    <el-form-item label="API Key">
+                                        <div class="key-field-row">
+                                            <el-input :model-value="(aiDrawerVendor._editing || aiDrawerVendor._revealed) ? aiDrawerVendor.api_key : aiDrawerVendor._masked"
+                                                      :disabled="!aiDrawerVendor._editing" placeholder="掩码显示，解锁后可编辑"
+                                                      @update:model-value="val => { if (aiDrawerVendor._editing) { aiDrawerVendor.api_key = val; } else { aiDrawerVendor._masked = val; } }" />
+                                            <span class="key-reveal-toggle" :title="aiDrawerVendor._revealed ? '收起（重新掩码）' : '查看完整密钥（需密码）'"
+                                                  @click="toggleVendorKeyReveal(aiDrawerVendor)" v-html="sanitizeHtml(viewIcon(aiDrawerVendor._revealed))"></span>
+                                        </div>
+                                    </el-form-item>
+                                    <el-form-item label="超时(秒)"><el-input-number v-model="aiDrawerVendor.timeout" :min="10" :max="300" /></el-form-item>
+                                    <el-form-item label="模型">
+                                        <div class="w-100">
+                                            <div class="model-row" v-for="(m, mi) in aiDrawerVendor.models" :key="mi">
+                                                <span class="model-index">{{ mi + 1 }}</span>
+                                                <el-switch v-model="m.enabled" size="small" />
+                                                <span class="ml-6">{{ m.name }}</span>
+                                            </div>
+                                        </div>
+                                    </el-form-item>
+                                </el-form>
+                                <div class="flex-c-gap-8">
+                                    <el-button size="small" @click="toggleVendorEdit(aiDrawerVendor)">{{ aiDrawerVendor._editing ? '锁定密钥' : '解锁密钥' }}</el-button>
+                                    <el-button size="small" type="primary" :loading="savingAiModels" @click="saveAiVendors">保存</el-button>
+                                </div>
+                            </div>
+                        </el-drawer>
+
                         <qc-state-panel v-if="aiModelsError" type="error" :title="aiModelsError" :desc="t('state.descAiModels')" @retry="loadAiVendors"></qc-state-panel>
                         <div class="text-center-tertiary-pad20" v-if="!aiModelsError && aiVendors.length===0">加载中...</div>
                         <div v-if="!aiModelsError && aiVendors.length>0">
@@ -589,6 +658,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         </div>
                     </div>
 
+`;window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage=window.__quantModules.systemPage||{};window.__quantModules.systemPage.part1b=`
                     <!-- datasource: 多数据源配置 -->
                     <div v-else-if="currentSubPage === 'datasource'">
                     <!-- 优先级说明条 -->
@@ -596,6 +666,50 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         <span><qc-icon name="bar-chart-3" :size="14" /> 数据源优先级:</span>
                         <span class="text-medium">① sxsc-tushare → ② tushare → ③ akshare</span>
                         <span class="color-tertiary-ml-auto">按优先级依次尝试</span>
+                    </div>
+
+                    <!-- v7.26 (FR-15): 数据源统一表 — 启用/名称/类型/优先级/最近成功/最近错误/操作, 支持一键全测 -->
+                    <div class="card mb-14">
+                        <div class="card-title flex-between">
+                            <span><qc-icon name="database" :size="14" /> 数据源统一表</span>
+                            <el-button size="small" type="primary" :loading="datasourceTestingAll" @click="testAllDatasources">
+                                <qc-icon name="flask-conical" :size="12" /> 全部测试
+                            </el-button>
+                        </div>
+                        <el-table :data="DATASOURCE_PRIORITY" size="small">
+                            <el-table-column type="expand">
+                                <template #default="{ row }">
+                                    <div class="text-sm-secondary" style="padding: 4px 12px">
+                                        最近测试：{{ (datasourceTestResults[row] && datasourceTestResults[row].message) || '尚未测试' }}
+                                    </div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="启用" width="64">
+                                <template #default="{ row }">
+                                    <el-switch :model-value="datasourceConfig[row] && datasourceConfig[row].enabled" size="small"
+                                               @change="val => { if (datasourceConfig[row]) { datasourceConfig[row].enabled = val; saveDatasourceConfig(); } }" />
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="名称" width="110"><template #default="{ row }">{{ datasourceName(row) }}</template></el-table-column>
+                            <el-table-column label="类型" width="120"><template #default="{ row }">{{ row === 'akshare' ? '本地库' : 'Tushare 协议' }}</template></el-table-column>
+                            <el-table-column label="优先级" width="72"><template #default="{ $index }">{{ $index + 1 }}</template></el-table-column>
+                            <el-table-column label="最近成功" width="100">
+                                <template #default="{ row }">
+                                    <span :class="datasourceStatus[row] === 'connected' ? 'qc-text-success' : 'color-tertiary'">{{ datasourceStatus[row] === 'connected' ? '已连接' : '—' }}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="最近错误" min-width="180">
+                                <template #default="{ row }">
+                                    <span v-if="datasourceTestResults[row] && !datasourceTestResults[row].connected && !datasourceTestResults[row].skipped" class="qc-text-error">{{ datasourceTestResults[row].message }}</span>
+                                    <span v-else class="color-tertiary">—</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="88">
+                                <template #default="{ row }">
+                                    <el-button size="small" type="text" :loading="datasourceStatus[row] === 'testing'" @click="testDatasource(row)">测试</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
                     </div>
 
                     <!-- 6.1.2 (B5): 数据新鲜度 -->
@@ -676,7 +790,6 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                             </div>
                         </div>
                         <el-form label-width="80px">
-`;window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage=window.__quantModules.systemPage||{};window.__quantModules.systemPage.part2=`                            <el-form-item label="API Token">
                                 <!-- 6.3.5 (BUG-FIX): 眼睛移出 #suffix 插槽 —— 禁用输入框的 suffix 不可点击 -->
                                 <div class="key-field-row">
                                     <el-input :model-value="datasourceConfig.tushare._revealed ? datasourceConfig.tushare.token : datasourceConfig.tushare._masked" :disabled="!datasourceConfig.tushare._editing" @update:model-value="val => { if (datasourceConfig.tushare._editing) { datasourceConfig.tushare.token = val; if (!datasourceConfig.tushare._revealed) datasourceConfig.tushare._masked = val; } }" placeholder="输入 Tushare Token" @change="saveDatasourceConfig"></el-input>
@@ -694,6 +807,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                             </el-form-item>
                         </el-form>
                     </div>
+`;window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage=window.__quantModules.systemPage||{};window.__quantModules.systemPage.part2=`                            <el-form-item label="API Token">
 
                     <!-- akshare 卡片 -->
                     <div class="card mb-14">
@@ -721,7 +835,20 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                     <div v-else-if="currentSubPage === 'feature'">
                         <qc-state-panel v-if="feishuConfigError" type="error" :title="t('state.featureConfigError')" :desc="t('state.descService')" @retry="loadFeishuConfig"></qc-state-panel>
                         <template v-else>
-                        <div class="card">
+                        <!-- v7.26 (FR-14): 设置页紧凑化 — 左侧分组锚点 + 右侧两列表单 + 分组折叠,
+                             默认只展开「界面」; 各分组独立保存 (字段变更即存, 不跨组写 AI/数据源配置)。 -->
+                        <div class="qc-settings-layout">
+                          <nav class="qc-settings-nav" aria-label="设置分组">
+                            <button v-for="g in settingsGroups" :key="g.id" type="button"
+                                    class="qc-settings-nav-item" :class="{ active: settingsOpen === g.id }"
+                                    @click="toggleSettingsGroup(g.id)">{{ g.label }}</button>
+                          </nav>
+                          <div class="qc-settings-body">
+                        <div class="qc-settings-group-head" @click="toggleSettingsGroup('strategy')" role="button" tabindex="0">
+                          <span><qc-icon name="target" :size="14" /> 策略与任务</span>
+                          <span class="qc-settings-group-toggle">{{ settingsOpen === 'strategy' ? '收起' : '展开' }}</span>
+                        </div>
+                        <div class="card" v-show="settingsOpen === 'strategy'">
                         <div class="card-title"><qc-icon name="sliders-horizontal" :size="14" /> 策略筛选</div>
                         <div class="mb-12">
                             <el-checkbox-group v-model="strategyFilter.selected" @change="saveStrategyFilter">
@@ -749,7 +876,11 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                     </div>
 
                     <!-- v3.3.0-T8: 数据备份与恢复 -->
-                    <div class="card mt-14">
+                    <div class="qc-settings-group-head" @click="toggleSettingsGroup('data')" role="button" tabindex="0">
+                      <span><qc-icon name="database" :size="14" /> 数据与同步</span>
+                      <span class="qc-settings-group-toggle">{{ settingsOpen === 'data' ? '收起' : '展开' }}</span>
+                    </div>
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="hard-drive" :size="14" /> 数据备份与恢复</div>
                         <div class="flex-wrap-gap-10-mb12">
                             <el-button size="small" type="primary" :loading="backupCreating" @click="createBackup">立即备份</el-button>
@@ -764,7 +895,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         <div class="text-sm-tertiary" v-else>暂无备份</div>
                     </div>
                     <!-- V5.3.0 (T-5.3.5.5): 报表导出 (PDF/Excel/HTML) -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="file-text" :size="14" /> 报表导出</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">量化选股日报 (当日) · 可导出 PDF / Excel / HTML</span>
@@ -777,7 +908,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         <div class="text-sm-tertiary" v-if="reportExportMsg">{{ reportExportMsg }}</div>
                     </div>
                     <!-- v2.0: 美林时钟配置 -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'strategy'">
                         <div class="card-title"><qc-icon name="clock" :size="14" /> 美林时钟</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
@@ -808,7 +939,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                     </div>
 
                     <!-- v1.8.0: 数据刷新配置 -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'data'">
                         <div class="card-title"><qc-icon name="refresh" :size="14" /> 策略数据刷新</div>
                         <div class="flex-between-mb12">
                             <span class="text-base-secondary">
@@ -894,7 +1025,11 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                     </div>
                     <!-- V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态 (V6.4: 动态页签开关已移除) -->
                     <!-- V6.6.1 (F-6.6.9): 三形态说明文案 (V6.4 P0 遗留) -->
-                    <div class="card mt-4">
+                    <div class="qc-settings-group-head" @click="toggleSettingsGroup('ui')" role="button" tabindex="0">
+                      <span><qc-icon name="palette" :size="14" /> 界面</span>
+                      <span class="qc-settings-group-toggle">{{ settingsOpen === 'ui' ? '收起' : '展开' }}</span>
+                    </div>
+                    <div class="card" v-show="settingsOpen === 'ui'">
                         <div class="card-title"><qc-icon name="layout-dashboard" :size="14" /> 界面与导航</div>
                         <div class="flex-c-gap-12">
                             <div class="flex-c-gap-6">
@@ -909,7 +1044,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         <div class="text-sm-tertiary-mt8">中栏二级（默认）：左侧一级 + 中栏常驻二级，适合二级页较多的页面。侧栏树状：二级直接展开在侧栏内，节省中栏空间。顶部二级标签：二级以横排标签置于头部，适合二级项较少的页面。</div>
                     </div>
                     <!-- V6.6.1 (PRD F-6.6.8 方案A): 界面与个性化 — 外观/语言/K线显示自 status 归位至此 (个性化设置集中) -->
-                    <div class="card mt-4">
+                    <div class="card" v-show="settingsOpen === 'ui'">
                         <div class="card-title"><qc-icon name="palette" :size="14" /> 界面与个性化 <span class="text-sm-tertiary">主题 · 语言 · 图表 · 详情展示</span></div>
                         <!-- V5.16 (F2): 详情展示模式 — 内嵌双栏 / 弹窗 (移动端强制弹窗) -->
                         <div class="theme-section-label">详情展示模式 <span class="text-xs-tertiary" v-if="isNarrow">窄屏自动使用弹窗</span></div>
@@ -933,11 +1068,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                                 </div>
                             </div>
                         </div>
-                        <div class="flex-c-gap-12 mt-8">
-                            <span class="text-sm-secondary w-60">自定义</span>
-                            <el-slider class="w-220" :model-value="themeHue" :min="0" :max="359" :step="1"
-                                @change="setThemeHue" aria-label="自定义主题色相" />
-                        </div>
+                        <!-- v7.26 (FR-14): 移除自定义色相滑块 —— 主题色收敛为 6 档品牌色 -->
                         <div class="section-sub-block-top">
                             <label class="text-base-primary-nowrap">{{ t('system.language') }}</label>
                             <div class="flex-c-gap-12-wrap mt-8">
@@ -960,6 +1091,8 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                             </div>
                         </div>
                     </div>
+                          </div><!-- /qc-settings-body -->
+                        </div><!-- /qc-settings-layout -->
                         </template>
                 </div>
                     <div v-else-if="currentSubPage === 'datadict'">
@@ -1029,7 +1162,7 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                                             </span>
                                             <span class="user-group-tag" :class="'group-' + (user.group === 'admin' ? 'admin' : user.group === 'guest' ? 'guest' : 'user')">{{ getGroupName(user.group || user.role) }}</span>
                                             <span v-if="user.enabled === false" class="user-disabled-badge">已禁用</span>
-                                            <span v-if="user.theme" class="user-theme-dot" :class="'dot-' + (user.theme === 'rose-red' ? 'rose' : user.theme === 'vibrant-orange' ? 'orange' : 'blue')" :title="themes[user.theme]?.name || user.theme"></span>
+                                            <!-- v7.26 (FR-14): 不再展示 legacy 主题名/圆点 (主题收敛为个人 6 档偏好) -->
                                         </div>
                                         <div class="user-meta-info">
                                             <span class="mr-12" v-if="user.created_at">
@@ -1369,4 +1502,4 @@ window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage
                         </div>
                     </div>
                     </div>
-    `;window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage=window.__quantModules.systemPage||{};window.__quantModules.systemPage.view=window.__quantModules.systemPage.part1+window.__quantModules.systemPage.part2;(function(){const{inject:ie}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:window.__quantModules.systemPage.view,setup(){const s=ie("qcState");if(!s)return{};function ne(e){s.currentSubPage.value=e}function ce(){c.value=!1,m(),V(),T()}Vue.watch(()=>s.currentSubPage&&s.currentSubPage.value,e=>{e==="autoeval"&&s.loadAiVendors&&s.loadAiVendors(),e==="datadict"&&Y(),e==="health"&&X(),e==="notification"&&ce(),e==="datasource"&&O(),e!=="usage"&&W()});const oe=s.themeHues||[45,220,0,140,270,320,180,25,250,-1],L=s.themeHueNames||{},re=s.themeMode||Vue.computed(()=>"light"),de=s.themeHue||Vue.ref(45);function ue(e){s.changeThemeMode&&s.changeThemeMode(e)}function ve(e){s.changeThemeHue&&s.changeThemeHue(parseInt(e,10))}function pe(e){return s.hueColor?s.hueColor(e):e<0?"hsl(0, 0%, 46%)":"hsl("+e+", 75%, 42%)"}function me(e){return s.hueName?s.hueName(e):L[e]||"自定义 "+e}function ge(e){s.setNavMode&&s.setNavMode(e)}const N=Vue.ref([]),K=Vue.ref([]),b=Vue.ref(!1),g=Vue.ref(!1);async function O(){b.value=!0,g.value=!1;try{const a=await(await fetch("/api/meta/freshness")).json();a&&a.success?K.value=a.items||[]:g.value=!0}catch{g.value=!0}b.value=!1}const y=Vue.ref(""),U=Vue.ref("read"),d=Vue.ref(""),w=Vue.ref(!1),n=()=>window.__quantModules&&window.__quantModules.core||{},x=Vue.ref([]),k=Vue.ref(!1);async function he(){k.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:n().authHeaders?n().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});x.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),x.value=[]}finally{k.value=!1}}const _=Vue.ref(!1),z=Vue.ref(null),B=Vue.ref(null),G=Vue.ref([]),h=Vue.ref(null);function fe(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function f(){try{const a=await(await fetch("/api/jobs?limit=20")).json();a&&a.success&&(G.value=a.data&&a.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function be(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),f()}catch(a){console.warn("[system] 取消任务失败:",a)}}function ye(){f(),h.value=window.setInterval(f,15e3)}function W(){h.value&&(clearInterval(h.value),h.value=null)}Vue.onBeforeUnmount&&Vue.onBeforeUnmount(function(){W()});const v=Vue.ref({items:[]}),q=Vue.ref([]),J=Vue.ref(null),Q=Vue.ref({data_sources:[],alerts:[]}),we=function(){return n().authHeaders?n().authHeaders():{}},p=function(e){return fetch(e,{headers:we()}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()})};async function X(){_.value=!0,z.value=null;try{const[e,a,t,r]=await Promise.all([p("/api/reliability/freshness"),p("/api/reliability/heal-history?limit=20"),p("/api/reliability/startup-report"),p("/api/reliability/source-health")]);v.value=e&&e.data||{items:[]},q.value=a&&a.data||[],J.value=t&&t.data||null,Q.value=r||{data_sources:[],alerts:[]},B.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),z.value="健康数据加载失败: "+(e.message||""),v.value={items:[]},q.value=[]}finally{_.value=!1}}const C=Vue.ref(!1),M=Vue.ref(""),P=Vue.ref(""),A=Vue.ref({fields:[]});async function Y(){C.value=!0,M.value="";try{const e="/api/data-dict"+(P.value?"?category="+P.value:""),a=await p(e);A.value=a&&a.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),M.value="数据字典加载失败: "+(e.message||""),A.value={fields:[]}}finally{C.value=!1}}function xe(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function ke(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const _e=Vue.computed(()=>(v.value?v.value.items||[]:[]).filter(a=>a.status==="stale"||a.status==="missing").length),$=Vue.ref("rules"),Z=Vue.ref([]),ee=Vue.ref([]),ae=Vue.ref([]),i=Vue.ref(!1),D=Vue.ref(""),R=Vue.ref("price_above"),S=Vue.ref(""),u=Vue.ref(!1),se=Vue.ref(60),l=Vue.ref(""),c=Vue.ref(!1);function ze(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function m(){i.value=!0,c.value=!1;try{const e=await(await fetch("/api/alerts/rules")).json();Z.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e,c.value=!0}finally{i.value=!1}}async function V(){i.value=!0,c.value=!1;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();ee.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e,c.value=!0}finally{i.value=!1}}async function T(){i.value=!0,c.value=!1;try{const e=await(await fetch("/api/alerts/channels")).json(),a=await(await fetch("/api/alerts/silence")).json();ae.value=e&&e.channels||[],u.value=!!(a&&a.silenced)}catch(e){l.value="通道状态加载失败: "+e,c.value=!0}finally{i.value=!1}}function qe(e){$.value=e,e==="rules"?m():e==="history"?V():T()}async function Ce(){const e=D.value.trim();if(!e){l.value="请填写股票代码";return}i.value=!0;try{const a={stock_code:e,rule_type:R.value};if(R.value!=="new_pool"){const r=Number(S.value);if(isNaN(r)){l.value="阈值必须为数值";return}a.threshold=r}const t=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})).json();t&&t.rule?(l.value="规则已添加",D.value="",S.value="",m()):l.value=t&&t.detail||"添加失败"}catch(a){l.value="添加失败: "+a}finally{i.value=!1}}async function Me(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(a){l.value="切换失败: "+a}}async function Pe(e){try{const a=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();a&&a.success?(l.value="规则已删除",m()):l.value="删除失败"}catch(a){l.value="删除失败: "+a}}async function te(){try{const e=u.value?se.value:0,a=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();u.value=!!(a&&a.silenced),l.value=u.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function Ae(){u.value=!1,await te()}function De(e){return!!e&&!e.degraded}const Re=Vue.computed(()=>(s&&s.analyticsRank&&s.analyticsRank.value||[]).reduce((a,t)=>Math.max(a,t.views||0),0)||1),E=()=>n().OPENAPI_ROUTE_BASE||"/api/openapi";async function H(){w.value=!0;try{const e=await n().apiFetch(E()+"/keys");N.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{w.value=!1}}async function Se(){try{const e=await n().apiFetch(E()+"/keys",{method:"POST",body:JSON.stringify({name:y.value||"未命名",role:U.value||"read",expire_days:365})});e&&e.success?(d.value=e.api_key||"",y.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await H()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function Ve(){if(d.value)try{await navigator.clipboard.writeText(d.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function Te(e){try{const a=await n().apiFetch(E()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),d.value&&e.prefix&&d.value.includes(e.prefix)&&(d.value=""),await H()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const Ee={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function He(e){return Ee[e]||e}const Fe=computed(()=>{var e;return(((e=s.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:He(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function Ie(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function je(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const o=s.aiUsage||Vue.ref({}),F=Vue.computed(()=>{const e=o.value&&o.value.by_model||{};return Object.entries(e).map(([a,t])=>({name:a,count:t})).sort((a,t)=>t.count-a.count)}),Le=Vue.computed(()=>F.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Ne=Vue.computed(()=>F.value.reduce((e,a)=>e+a.count,0)||1),Ke=Vue.computed(()=>I.value.reduce((e,a)=>Math.max(e,a.count),0)||0),I=Vue.computed(()=>{const e=o.value&&o.value.by_day||{},a=[],t=new Date;for(let r=29;r>=0;r--){const j=new Date(t.getFullYear(),t.getMonth(),t.getDate()-r),le=j.getFullYear()+"-"+String(j.getMonth()+1).padStart(2,"0")+"-"+String(j.getDate()).padStart(2,"0");a.push({day:le,count:e[le]||0})}return a}),Oe=Vue.computed(()=>I.value.reduce((e,a)=>Math.max(e,a.count),0)||1),Ue=Vue.computed(()=>{const e=o.value&&o.value.by_day||{},a=new Date,t=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[t]||0}),Be=Vue.computed(()=>{const e=o.value&&o.value.by_day||{},a=Object.keys(e).filter(t=>(e[t]||0)>0);return a.length?a[a.length-1]:""});function Ge(e){s.analyticsDays&&(s.analyticsDays.value=e),typeof s.loadAnalytics=="function"&&s.loadAnalytics()}const We='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',Je='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function Qe(e){return e?Je:We}return ye(),{...s,themeHues:oe,themeHueNames:L,themeMode:re,themeHue:de,onThemeModeChange:ue,setThemeHue:ve,hueColor:pe,hueName:me,onNavModeChange:ge,analyticsMaxViews:Re,aiModelRank:F,aiModelMax:Le,aiDayTrend:I,aiDayMax:Oe,todayAiCalls:Ue,lastAiCallDay:Be,aiTotal:Ne,aiDayPeak:Ke,setAnalyticsDays:Ge,viewIcon:Qe,openApiKeys:N,openApiKeyName:y,openApiKeyRole:U,newOpenApiKey:d,openApiLoading:w,loadOpenApiKeys:H,generateOpenApiKey:Se,copyOpenApiKey:Ve,revokeOpenApiKey:Te,healthRows:Fe,healthClass:Ie,fmtAge:je,staleAssetCount:_e,jobQueue:G,loadJobQueue:f,cancelJob:be,jobStatusText:fe,auditLogs:x,auditLoading:k,loadAuditLogs:he,healthLoading:_,healthError:z,healthUpdatedAt:B,freshnessData:v,healHistory:q,startupReport:J,sourceHealth:Q,refreshHealth:X,statusColor:xe,statusLabel:ke,sourceOk:De,dictLoading:C,dictError:M,dictCategory:P,dictData:A,loadDataDict:Y,ncTab:$,ncRules:Z,ncHistory:ee,ncChannels:ae,ncLoading:i,ncNewCode:D,ncNewType:R,ncNewThreshold:S,ncSilence:u,ncSilenceMinutes:se,ncMsg:l,ncTypeLabel:ze,onNcTab:qe,loadAlertRules:m,loadAlertHistory:V,loadAlertChannels:T,addAlertRule:Ce,toggleAlertRule:Me,removeAlertRule:Pe,applySilence:te,clearSilence:Ae,freshnessItems:K,freshnessLoading:b,freshnessError:g,loadFreshness:O,ncError:c,goSystemSub:ne}}}})();
+    `;window.__quantModules=window.__quantModules||{};window.__quantModules.systemPage=window.__quantModules.systemPage||{};window.__quantModules.systemPage.view=window.__quantModules.systemPage.part1+window.__quantModules.systemPage.part1b+window.__quantModules.systemPage.part2;(function(){const{inject:re}=Vue;window.__quantComponents=window.__quantComponents||{},window.__quantComponents.SystemPage={name:"qc-system-page",template:window.__quantModules.systemPage.view,setup(){const s=re("qcState");if(!s)return{};function de(e){s.currentSubPage.value=e}function ue(){o.value=!1,m(),T(),E()}Vue.watch(()=>s.currentSubPage&&s.currentSubPage.value,e=>{e==="autoeval"&&s.loadAiVendors&&s.loadAiVendors(),e==="datadict"&&ee(),e==="health"&&Z(),e==="notification"&&ue(),e==="datasource"&&B(),e!=="usage"&&Q()});const ve=s.themeHues||[45,220,0,140,270,180],N=s.themeHueNames||{},pe=s.themeMode||Vue.computed(()=>"light"),me=s.themeHue||Vue.ref(45);function ge(e){s.changeThemeMode&&s.changeThemeMode(e)}function he(e){s.changeThemeHue&&s.changeThemeHue(parseInt(e,10))}function fe(e){return s.hueColor?s.hueColor(e):e<0?"hsl(0, 0%, 46%)":"hsl("+e+", 75%, 42%)"}function be(e){return s.hueName?s.hueName(e):N[e]||"自定义 "+e}function ye(e){s.setNavMode&&s.setNavMode(e)}const we=[{id:"ui",label:"界面"},{id:"data",label:"数据与同步"},{id:"strategy",label:"策略与任务"}],K=Vue.ref("ui");function xe(e){K.value=e}const U=Vue.ref([]),G=Vue.ref([]),y=Vue.ref(!1),g=Vue.ref(!1);async function B(){y.value=!0,g.value=!1;try{const a=await(await fetch("/api/meta/freshness")).json();a&&a.success?G.value=a.items||[]:g.value=!0}catch{g.value=!0}y.value=!1}const w=Vue.ref(""),W=Vue.ref("read"),d=Vue.ref(""),x=Vue.ref(!1),c=()=>window.__quantModules&&window.__quantModules.core||{},k=Vue.ref([]),_=Vue.ref(!1);async function ke(){_.value=!0;try{const e=await fetch("/api/audit/logs?limit=20",{headers:c().authHeaders?c().authHeaders():{}}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()});k.value=e&&e.logs||[]}catch(e){console.error("[system] 审计加载失败:",e),k.value=[]}finally{_.value=!1}}const z=Vue.ref(!1),q=Vue.ref(null),J=Vue.ref(null),$=Vue.ref([]),h=Vue.ref(null);function _e(e){return e==="completed"?"完成":e==="running"?"运行中":e==="pending"?"排队中":e==="cancelled"?"已取消":"失败"}async function f(){try{const a=await(await fetch("/api/jobs?limit=20")).json();a&&a.success&&($.value=a.data&&a.data.tasks||[])}catch(e){console.warn("[system] 加载任务队列失败:",e)}}async function ze(e){try{await fetch("/api/jobs/"+e+"/cancel",{method:"POST"}),ElementPlus.ElMessage.success("已请求取消任务"),f()}catch(a){console.warn("[system] 取消任务失败:",a)}}function qe(){f(),h.value=window.setInterval(f,15e3)}function Q(){h.value&&(clearInterval(h.value),h.value=null)}Vue.onBeforeUnmount&&Vue.onBeforeUnmount(function(){Q()});const v=Vue.ref({items:[]}),C=Vue.ref([]),Y=Vue.ref(null),X=Vue.ref({data_sources:[],alerts:[]}),Ce=function(){return c().authHeaders?c().authHeaders():{}},p=function(e){return fetch(e,{headers:Ce()}).then(function(a){if(!a.ok)throw new Error("HTTP "+a.status);return a.json()})};async function Z(){z.value=!0,q.value=null;try{const[e,a,t,i]=await Promise.all([p("/api/reliability/freshness"),p("/api/reliability/heal-history?limit=20"),p("/api/reliability/startup-report"),p("/api/reliability/source-health")]);v.value=e&&e.data||{items:[]},C.value=a&&a.data||[],Y.value=t&&t.data||null,X.value=i||{data_sources:[],alerts:[]},J.value=new Date().toLocaleTimeString()}catch(e){console.warn("[health] 加载失败:",e),q.value="健康数据加载失败: "+(e.message||""),v.value={items:[]},C.value=[]}finally{z.value=!1}}const D=Vue.ref(!1),V=Vue.ref(""),M=Vue.ref(""),A=Vue.ref({fields:[]});async function ee(){D.value=!0,V.value="";try{const e="/api/data-dict"+(M.value?"?category="+M.value:""),a=await p(e);A.value=a&&a.data||{fields:[]}}catch(e){console.warn("[dict] 加载失败:",e),V.value="数据字典加载失败: "+(e.message||""),A.value={fields:[]}}finally{D.value=!1}}function De(e){return{fresh:"var(--color-success)",stale:"var(--color-danger)",missing:"var(--text-tertiary)",unknown:"var(--color-warning)"}[e]||"var(--text-secondary)"}function Ve(e){return{fresh:"正常",stale:"过期",missing:"缺失",unknown:"未知"}[e]||e}const Me=Vue.computed(()=>(v.value?v.value.items||[]:[]).filter(a=>a.status==="stale"||a.status==="missing").length),ae=Vue.ref("rules"),se=Vue.ref([]),te=Vue.ref([]),le=Vue.ref([]),n=Vue.ref(!1),P=Vue.ref(""),R=Vue.ref("price_above"),S=Vue.ref(""),u=Vue.ref(!1),ie=Vue.ref(60),l=Vue.ref(""),o=Vue.ref(!1);function Ae(e){return{price_above:"价格突破",price_below:"价格跌破",pct_change:"涨跌幅超",volume_surge:"量比异动",new_pool:"入池"}[e]||e}async function m(){n.value=!0,o.value=!1;try{const e=await(await fetch("/api/alerts/rules")).json();se.value=e&&e.rules||[]}catch(e){l.value="规则加载失败: "+e,o.value=!0}finally{n.value=!1}}async function T(){n.value=!0,o.value=!1;try{const e=await(await fetch("/api/alerts/history?limit=50")).json();te.value=e&&e.history||[]}catch(e){l.value="历史加载失败: "+e,o.value=!0}finally{n.value=!1}}async function E(){n.value=!0,o.value=!1;try{const e=await(await fetch("/api/alerts/channels")).json(),a=await(await fetch("/api/alerts/silence")).json();le.value=e&&e.channels||[],u.value=!!(a&&a.silenced)}catch(e){l.value="通道状态加载失败: "+e,o.value=!0}finally{n.value=!1}}function Pe(e){ae.value=e,e==="rules"?m():e==="history"?T():E()}async function Re(){const e=P.value.trim();if(!e){l.value="请填写股票代码";return}n.value=!0;try{const a={stock_code:e,rule_type:R.value};if(R.value!=="new_pool"){const i=Number(S.value);if(isNaN(i)){l.value="阈值必须为数值";return}a.threshold=i}const t=await(await fetch("/api/alerts/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})).json();t&&t.rule?(l.value="规则已添加",P.value="",S.value="",m()):l.value=t&&t.detail||"添加失败"}catch(a){l.value="添加失败: "+a}finally{n.value=!1}}async function Se(e){try{await fetch("/api/alerts/rules/"+e.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!e.enabled})}),e.enabled=!e.enabled}catch(a){l.value="切换失败: "+a}}async function Te(e){try{const a=await(await fetch("/api/alerts/rules/"+e.id,{method:"DELETE"})).json();a&&a.success?(l.value="规则已删除",m()):l.value="删除失败"}catch(a){l.value="删除失败: "+a}}async function ne(){try{const e=u.value?ie.value:0,a=await(await fetch("/api/alerts/silence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({minutes:e})})).json();u.value=!!(a&&a.silenced),l.value=u.value?"已静默":"已恢复推送"}catch(e){l.value="静默设置失败: "+e}}async function Ee(){u.value=!1,await ne()}function Ie(e){return!!e&&!e.degraded}const Fe=Vue.computed(()=>(s&&s.analyticsRank&&s.analyticsRank.value||[]).reduce((a,t)=>Math.max(a,t.views||0),0)||1),I=()=>c().OPENAPI_ROUTE_BASE||"/api/openapi";async function F(){x.value=!0;try{const e=await c().apiFetch(I()+"/keys");U.value=e&&e.data||[]}catch(e){ElementPlus.ElMessage.error("加载 API Key 失败: "+(e.message||""))}finally{x.value=!1}}async function He(){try{const e=await c().apiFetch(I()+"/keys",{method:"POST",body:JSON.stringify({name:w.value||"未命名",role:W.value||"read",expire_days:365})});e&&e.success?(d.value=e.api_key||"",w.value="",ElementPlus.ElMessage.success("API Key 已生成（明文仅展示一次）"),await F()):ElementPlus.ElMessage.error(e&&(e.detail||e.message)||"生成失败")}catch(e){ElementPlus.ElMessage.error("生成失败: "+(e.message||""))}}async function je(){if(d.value)try{await navigator.clipboard.writeText(d.value),ElementPlus.ElMessage.success("已复制")}catch{ElementPlus.ElMessage.error("复制失败，请手动复制")}}async function Oe(e){try{const a=await c().apiFetch(I()+"/keys/"+e.id,{method:"DELETE"});a&&a.success?(ElementPlus.ElMessage.success("Key 已吊销"),d.value&&e.prefix&&d.value.includes(e.prefix)&&(d.value=""),await F()):ElementPlus.ElMessage.error(a&&(a.detail||a.message)||"吊销失败")}catch(a){ElementPlus.ElMessage.error("吊销失败: "+(a.message||""))}}const Le={sxsc_tushare:"东财",tushare:"Tushare",akshare:"AkShare"};function Ne(e){return Le[e]||e}const Ke=computed(()=>{var e;return(((e=s.healthMetrics)==null?void 0:e.value)||[]).map(a=>({name:Ne(a.name),source:a.name,success_rate:a.success_rate,avg_latency_ms:a.avg_latency_ms,calls:a.calls||0,degraded:!!a.degraded,data_age_hours:a.data_age_hours!=null?a.data_age_hours:null,stale:!!a.stale,last_fetch:a.last_fetch||a.last_success||null}))});function Ue(e){return e.degraded?"degraded":e.success_rate==null?"unknown":e.success_rate>=90?"ok":e.success_rate>=60?"warn":"bad"}function Ge(e){return e==null?"":e<1?"刚刚":e<24?Math.round(e)+"小时前":Math.floor(e/24)+"天前"}const r=s.aiUsage||Vue.ref({}),b=Vue.computed(()=>{const e=r.value&&r.value.by_model||{};return Object.entries(e).map(([a,t])=>({name:a,count:t})).sort((a,t)=>t.count-a.count)}),Be=Vue.computed(()=>b.value.reduce((e,a)=>Math.max(e,a.count),0)||1),ce=Vue.ref(!1),H=Vue.ref(""),We=Vue.computed(()=>(s.aiVendors&&s.aiVendors.value||[]).find(a=>a.vendor_key===H.value)||null);function Je(e){H.value=e.vendor_key,ce.value=!0}function $e(e){return(e&&e.models||[]).some(a=>a.enabled!==!1)}function Qe(e){const a=(e&&e.models||[]).map(t=>t.name);return b.value.filter(t=>a.indexOf(t.name)>=0).reduce((t,i)=>t+i.count,0)}const j=Vue.ref(-1);function Ye(e){j.value=e}function Xe(e){const a=s.aiVendors&&s.aiVendors.value,t=j.value;if(j.value=-1,!a||t<0||t===e)return;const i=a.splice(t,1)[0];a.splice(e,0,i),s.saveAiVendors&&s.saveAiVendors()}const Ze=Vue.computed(()=>b.value.reduce((e,a)=>e+a.count,0)||1),ea=Vue.computed(()=>O.value.reduce((e,a)=>Math.max(e,a.count),0)||0),O=Vue.computed(()=>{const e=r.value&&r.value.by_day||{},a=[],t=new Date;for(let i=29;i>=0;i--){const L=new Date(t.getFullYear(),t.getMonth(),t.getDate()-i),oe=L.getFullYear()+"-"+String(L.getMonth()+1).padStart(2,"0")+"-"+String(L.getDate()).padStart(2,"0");a.push({day:oe,count:e[oe]||0})}return a}),aa=Vue.computed(()=>O.value.reduce((e,a)=>Math.max(e,a.count),0)||1),sa=Vue.computed(()=>{const e=r.value&&r.value.by_day||{},a=new Date,t=a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");return e[t]||0}),ta=Vue.computed(()=>{const e=r.value&&r.value.by_day||{},a=Object.keys(e).filter(t=>(e[t]||0)>0);return a.length?a[a.length-1]:""});function la(e){s.analyticsDays&&(s.analyticsDays.value=e),typeof s.loadAnalytics=="function"&&s.loadAnalytics()}const ia='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',na='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';function ca(e){return e?na:ia}return qe(),{...s,themeHues:ve,themeHueNames:N,themeMode:pe,themeHue:me,onThemeModeChange:ge,setThemeHue:he,hueColor:fe,hueName:be,onNavModeChange:ye,settingsGroups:we,settingsOpen:K,toggleSettingsGroup:xe,analyticsMaxViews:Fe,aiModelRank:b,aiModelMax:Be,aiDayTrend:O,aiDayMax:aa,todayAiCalls:sa,lastAiCallDay:ta,aiDrawerOpen:ce,aiDrawerKey:H,aiDrawerVendor:We,openAiDrawer:Je,aiVendorEnabled:$e,aiVendorCalls:Qe,aiDragStart:Ye,aiDrop:Xe,aiTotal:Ze,aiDayPeak:ea,setAnalyticsDays:la,viewIcon:ca,openApiKeys:U,openApiKeyName:w,openApiKeyRole:W,newOpenApiKey:d,openApiLoading:x,loadOpenApiKeys:F,generateOpenApiKey:He,copyOpenApiKey:je,revokeOpenApiKey:Oe,healthRows:Ke,healthClass:Ue,fmtAge:Ge,staleAssetCount:Me,jobQueue:$,loadJobQueue:f,cancelJob:ze,jobStatusText:_e,auditLogs:k,auditLoading:_,loadAuditLogs:ke,healthLoading:z,healthError:q,healthUpdatedAt:J,freshnessData:v,healHistory:C,startupReport:Y,sourceHealth:X,refreshHealth:Z,statusColor:De,statusLabel:Ve,sourceOk:Ie,dictLoading:D,dictError:V,dictCategory:M,dictData:A,loadDataDict:ee,ncTab:ae,ncRules:se,ncHistory:te,ncChannels:le,ncLoading:n,ncNewCode:P,ncNewType:R,ncNewThreshold:S,ncSilence:u,ncSilenceMinutes:ie,ncMsg:l,ncTypeLabel:Ae,onNcTab:Pe,loadAlertRules:m,loadAlertHistory:T,loadAlertChannels:E,addAlertRule:Re,toggleAlertRule:Se,removeAlertRule:Te,applySilence:ne,clearSilence:Ee,freshnessItems:G,freshnessLoading:y,freshnessError:g,loadFreshness:B,ncError:o,goSystemSub:de}}}})();

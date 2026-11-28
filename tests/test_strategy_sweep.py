@@ -27,10 +27,11 @@ def _portal():
 
 def test_param_sweep_runs_combos_sorted():
     st = registry.get("multi_factor")
+    # v7.24 FR-1: 90 天样本不足 → annual_return 为 None，排序改用总收益口径
     results = param_sweep(st, {"top_n": [10, 20]}, _portal(),
-                          "2026-01-05", "2026-04-30", metric="annual_return")
+                          "2026-01-05", "2026-04-30", metric="total_return")
     assert len(results) == 2, results
-    assert results[0]["annual_return"] >= results[1]["annual_return"]
+    assert results[0]["total_return"] >= results[1]["total_return"]
     for r in results:
         assert set(r) >= {"params", "total_return", "annual_return",
                           "max_drawdown", "sharpe_ratio"}

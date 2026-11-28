@@ -7,7 +7,7 @@
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import logging
-import numpy as np
+import math
 
 from data_parser import parser
 
@@ -23,9 +23,18 @@ class BacktestResult:
     total_days: int = 0
 
     # 收益率指标
-    total_return: float = 0.0  # 总收益率
-    annual_return: float = 0.0  # 年化收益率
+    total_return: float = 0.0  # 总收益率（复利）
+    annual_return: Optional[float] = 0.0  # 年化收益率；样本不足时为 None
+    annual_return_reason: str = ""  # 年化缺省原因（如"样本不足（<18个月）"）
+    sample_months: float = 0.0  # 样本跨度（自然月）
     daily_returns: List[float] = field(default_factory=list)  # 日收益率序列
+
+    # v7.24 FR-1: 结果口径契约
+    engine_version: str = ""
+    cost_model_version: str = ""
+    adjust_mode: str = "qfq"
+    execution_mode: str = "T+1_open"
+    warnings: List[str] = field(default_factory=list)
 
     # 风险指标
     max_drawdown: float = 0.0  # 最大回撤
@@ -69,6 +78,11 @@ OUT_SAMPLE_RATIO = 0.2        # 后 20% 交易日为样本外
 SENSITIVITY_PCTS = (-0.2, -0.1, 0.1, 0.2)  # 核心参数 ±10% / ±20% 扰动
 OUTSAMPLE_RETURN_RATIO = 0.7  # 样本外收益 < 样本内 70% → 疑似过拟合
 SENSITIVITY_SPREAD_RATIO = 0.5  # 参数扰动收益极差 > |基准| 50% → 过度敏感
+
+# v7.24 FR-1: 回测最小样本门槛（用户决策：18 个自然月且 ≥360 有效交易日）
+TRADING_DAYS_PER_MONTH = 20.0
+MIN_SAMPLE_MONTHS = 18
+MIN_SAMPLE_DAYS = 360
 
 
 def split_insample_outsample(daily_returns, out_ratio: float = OUT_SAMPLE_RATIO):
@@ -124,28 +138,85 @@ def kelly_fraction(win_rate: float, avg_win: float, avg_loss: float,
         return 0.0
 
 
-def compute_period_metrics(daily_returns, annual_trading_days: int = 252, risk_free_rate: float = 0.03) -> Dict:
-    """由日收益率序列计算 {total_return, annual_return, max_drawdown, volatility, sharpe_ratio, win_rate}"""
+def compute_period_metrics(daily_returns, annual_trading_days: int = 252,
+                           risk_free_rate: float = 0.03, dates=None,
+                           require_min_sample: bool = False,
+                           min_sample_months: float = MIN_SAMPLE_MONTHS,
+                           min_sample_days: int = MIN_SAMPLE_DAYS) -> Dict:
+    """由日收益率序列计算绩效指标（v7.24 FR-1：复利口径 + 样本门槛）。
+
+    - total_return 一律按净值复利：期末净值 / 期初净值 - 1，禁止日收益算术和。
+    - annual_return 使用复利净值与实际区间跨度；``require_min_sample=True`` 时
+      样本不足（跨度 <18 自然月或有效交易日 <360）返回 ``None`` 并给出去因。
+    - 默认 ``require_min_sample=False`` 保留旧调用方（因子分层/滚动评估等）语义。
+    """
     rets = [float(r) for r in daily_returns if r is not None]
     n = len(rets)
+    sample_months = _sample_months(dates, n)
     if n == 0:
-        return {'total_return': 0.0, 'annual_return': 0.0, 'max_drawdown': 0.0,
-                'volatility': 0.0, 'sharpe_ratio': 0.0, 'win_rate': 0.0}
-    total = sum(rets)
+        return {'total_return': 0.0, 'annual_return': None if require_min_sample else 0.0,
+                'max_drawdown': 0.0, 'volatility': 0.0, 'sharpe_ratio': 0.0,
+                'win_rate': 0.0, 'total_days': 0, 'sample_months': 0.0,
+                'annual_return_reason': '无有效交易日' if require_min_sample else '',
+                'annual_return_anomaly': False}
     equity, peak, max_dd = 1.0, 1.0, 0.0
     for r in rets:
         equity *= (1 + r)
         peak = max(peak, equity)
         max_dd = min(max_dd, (equity - peak) / peak)
-    annual = (1 + total) ** (annual_trading_days / n) - 1
+    total = equity - 1.0
+    samples_ok = sample_months >= min_sample_months and n >= min_sample_days
+    years = n / float(annual_trading_days) if annual_trading_days else 0.0
+    annual_reason = ''
+    annual = None
+    annual_anomaly = False
+    try:
+        annual = math.exp(math.log(equity) / years) - 1 if years > 0 and equity > 0 else 0.0
+    except (OverflowError, ValueError):
+        annual = None
+        annual_reason = '年化数值溢出（收益异常），请核查样本与成交约束'
+    if annual is not None and abs(annual) > 10:  # >1000%
+        annual_anomaly = True
+        annual_reason = '年化超过 1000%，请核查样本、成本与成交约束'
+    if require_min_sample and not samples_ok:
+        annual = None
+        annual_reason = '样本不足（<18个月）'
     mean = total / n
     std = (sum((r - mean) ** 2 for r in rets) / n) ** 0.5 if n > 1 else 0.0
     vol = std * (annual_trading_days ** 0.5)
     sharpe = ((mean - risk_free_rate / annual_trading_days) / std * (annual_trading_days ** 0.5)) if (n > 1 and std > 0) else 0.0
     win = sum(1 for r in rets if r > 0) / n * 100
-    return {'total_return': round(total * 100, 2), 'annual_return': round(annual * 100, 2),
+    return {'total_return': round(total * 100, 2),
+            'annual_return': None if annual is None else round(annual * 100, 2),
             'max_drawdown': round(max_dd * 100, 2), 'volatility': round(vol * 100, 2),
-            'sharpe_ratio': round(sharpe, 2), 'win_rate': round(win, 2)}
+            'sharpe_ratio': round(sharpe, 2), 'win_rate': round(win, 2),
+            'total_days': n, 'sample_months': sample_months,
+            'annual_return_reason': annual_reason,
+            'annual_return_anomaly': annual_anomaly}
+
+
+def _sample_months(dates, n: int) -> float:
+    """样本跨度（自然月）：有日期用首尾日期差，否则按 20 交易日/月估算。"""
+    if dates and len(dates) >= 2:
+        try:
+            first = _parse_ymd(dates[0])
+            last = _parse_ymd(dates[-1])
+            if first and last and last >= first:
+                return round((last - first).days / 30.4375, 2)
+        except Exception:  # noqa: BLE001
+            logger.debug('样本跨度解析失败，回退交易日估算', exc_info=True)
+    return round(n / TRADING_DAYS_PER_MONTH, 2)
+
+
+def _parse_ymd(value):
+    from datetime import date as _date
+    s = str(value or '').strip().replace('-', '').replace('/', '')[:8]
+    if len(s) != 8 or not s.isdigit():
+        return None
+    try:
+        return _date(int(s[:4]), int(s[4:6]), int(s[6:8]))
+    except ValueError:
+        return None
 
 
 def sensitivity_analysis(base_value, evaluate, pcts=SENSITIVITY_PCTS) -> Dict:
@@ -293,141 +364,84 @@ class BacktestEngine:
 
             result.total_days = len(backtest_dates)
 
-            # ========== 运行回测 ==========
-            capital = initial_capital
-            equity_curve = []
-            daily_returns = []
-            trade_history = []
+            # ========== 运行回测（v7.24 FR-2：T+1 开盘撮合，禁止随机模拟） ==========
+            from backtest_execution import (ExecutionConfig, load_qfq_bars,
+                                            run_execution)
 
-            total_positions = 0
+            def _norm(d):
+                return str(d).replace('-', '').replace('/', '')[:8]
 
-            for i, date in enumerate(backtest_dates):
-                # 获取当日持仓
+            signal_weights = {}
+            codes = set()
+            for date in backtest_dates:
                 holdings = parser.get_holdings_by_date(date)
-                # 解析策略ID (移除前缀数字)
-                today_stocks = set()
-                for sid, data in holdings.items():
-                    # 匹配策略名，支持前缀数字格式
+                today_stocks = []
+                for sid, data in (holdings or {}).items():
                     if strategy_id in sid or sid in strategy_id:
-                        # stocks 元素为 {code, name} dict, 提取 code
                         raw = data.get("stocks", [])
-                        today_stocks = {s.get("code") if isinstance(s, dict) else s for s in raw}
+                        today_stocks = [s.get("code") if isinstance(s, dict) else s
+                                        for s in raw]
+                        today_stocks = [c for c in today_stocks if c]
                         break
-                else:
-                    # v3.2.0 fix: 策略不匹配时不应静默 fallback 到第一个策略
-                    # 若无任何策略匹配, 标记无数据并跳过 (保持回测结果的正确性)
-                    today_stocks = set()
-                total_positions += len(today_stocks)
-
-                # 模拟持仓变化和收益率计算
-                # 这里使用简化的等权重分配
                 if today_stocks:
-                    # 简单模拟：假设每只股票日收益率在 -3% ~ +3% 之间
-                    # 真实场景应该接入真实的历史行情数据
-                    np.random.seed(hash(f"{strategy_id}_{date}") % 1000000)
-                    stock_returns = np.random.normal(0.001, 0.025, len(today_stocks))
-                    # 限制涨跌停
-                    stock_returns = np.clip(stock_returns, -0.099, 0.099)
+                    weight = 1.0 / len(today_stocks)
+                    signal_weights[_norm(date)] = {c: weight for c in today_stocks}
+                    codes.update(today_stocks)
 
-                    portfolio_return = float(np.mean(stock_returns))
+            if not codes:
+                result.success = False
+                result.message = "回测区间内无该策略持仓，无法回测"
+                return result
 
-                    # 扣除交易成本（如果有调仓）— V5.0.2 T-5.0.21: 成本模型 2.0
-                    if i > 0:
-                        prev_stocks = set(equity_curve[-1].get("stocks", []))
-                        turnover = len(today_stocks - prev_stocks) / max(1, len(prev_stocks))
-                        cm = cost_model or self.cost_model
-                        if cm is None:
-                            from cost_model import CostConfig, CostModel
-                            cm = CostModel(CostConfig(commission_rate=commission_rate,
-                                                      slippage=slippage))
-                        portfolio_return -= turnover * cm.turnover_rate()
-                else:
-                    portfolio_return = 0.0  # 空仓
+            bars = load_qfq_bars(sorted(codes), start=start_date, end=end_date)
+            if not bars:
+                result.success = False
+                result.message = "无前复权行情面板（DWH 不可用或数据缺失），已拒绝随机模拟"
+                return result
 
-                # 更新资金
-                capital *= (1 + portfolio_return)
+            cfg = ExecutionConfig(initial_capital=float(initial_capital or 1.0),
+                                  commission_rate=commission_rate,
+                                  slippage=slippage)
+            exec_res = run_execution(signal_weights, bars, cfg)
+            if not exec_res.success:
+                result.success = False
+                result.message = exec_res.message or "撮合失败"
+                return result
 
-                # 记录净值
-                equity_curve.append({
-                    "date": date,
-                    "equity": round(capital, 2),
-                    "return": round(portfolio_return * 100, 2),
-                    "stocks": list(today_stocks)
-                })
-
-                daily_returns.append(portfolio_return)
-
-                # 记录交易
-                if i > 0 and today_stocks:
-                    prev_stocks = set(equity_curve[-2].get("stocks", []))
-                    buys = today_stocks - prev_stocks
-                    sells = prev_stocks - today_stocks
-                    for stock in buys:
-                        trade_history.append({
-                            "date": date,
-                            "stock": stock,
-                            "action": "buy",
-                            "reason": "策略调仓"
-                        })
-                    for stock in sells:
-                        trade_history.append({
-                            "date": date,
-                            "stock": stock,
-                            "action": "sell",
-                            "reason": "策略调仓"
-                        })
-
-            # ========== 计算指标 ==========
-            result.equity_curve = equity_curve
-            result.daily_returns = daily_returns
-            result.trade_history = trade_history
-            result.total_trades = len(trade_history)
-
-            # v7.16 FR-12: 空序列/零基数除零保护
-            _n_days = len(backtest_dates) or 0
-            _base = initial_capital if initial_capital else 1.0
-            result.total_return = (capital - initial_capital) / _base * 100
+            result.equity_curve = [{
+                "date": e["date"], "equity": e["equity"], "return": e["return"],
+                "stocks": list(e.get("positions", {}).keys()),
+            } for e in exec_res.equity_curve]
+            result.daily_returns = exec_res.daily_returns
+            result.trade_history = [{
+                "date": t["date"], "stock": t["code"], "action": t["side"],
+                "shares": t["shares"], "price": t["price"], "reason": "策略调仓",
+            } for t in exec_res.trades]
+            result.total_trades = len(result.trade_history)
+            result.total_days = int(exec_res.metrics.get("total_days") or 0)
+            result.total_return = float(exec_res.metrics.get("total_return") or 0.0)
+            result.annual_return = exec_res.metrics.get("annual_return")
+            result.annual_return_reason = exec_res.metrics.get("annual_return_reason", "")
+            result.sample_months = float(exec_res.metrics.get("sample_months") or 0.0)
+            result.max_drawdown = abs(float(exec_res.metrics.get("max_drawdown") or 0.0))
+            result.volatility = float(exec_res.metrics.get("volatility") or 0.0)
+            result.sharpe_ratio = float(exec_res.metrics.get("sharpe_ratio") or 0.0)
+            result.win_rate = float(exec_res.metrics.get("win_rate") or 0.0)
+            # FR-12: 空序列/零基数除零保护（v7.24 起撮合层已保证 ≥2 个交易日）
+            _n_days = len(result.daily_returns) or 0
             if _n_days <= 0:
-                result.annual_return = 0.0
-                result.avg_positions_per_day = 0.0
-                result.turnover_rate = 0.0
-            else:
-                years = _n_days / 252.0
-                result.annual_return = ((capital / _base) ** (1 / years) - 1) * 100 if capital > 0 and _base > 0 else 0.0
-                result.avg_positions_per_day = total_positions / _n_days
-                _avg_pos = result.avg_positions_per_day or 0.0
-                result.turnover_rate = (len(trade_history) / _n_days / _avg_pos * 100) if _avg_pos > 0 else 0.0
-
-            # 最大回撤
-            result.max_drawdown, result.max_drawdown_duration = self._calculate_max_drawdown(equity_curve)
-
-            # 波动率 (年化)
-            if len(daily_returns) > 1:
-                result.volatility = float(np.std(daily_returns) * np.sqrt(252) * 100)
-
-            # 夏普比率 (假设无风险收益率 3%)
-            risk_free_rate = 0.03
-            excess_returns = np.array(daily_returns) - risk_free_rate / 252
-            if len(excess_returns) > 1 and np.std(excess_returns) > 0:
-                result.sharpe_ratio = float(np.sqrt(252) * np.mean(excess_returns) / np.std(excess_returns))
-
-            # 索提诺比率
-            negative_returns = [r for r in daily_returns if r < 0]
-            if len(negative_returns) > 0 and np.std(negative_returns) > 0:
-                result.sortino_ratio = float(np.sqrt(252) * np.mean(excess_returns) / np.std(negative_returns))
-
-            # 胜率
-            winning_days = sum(1 for r in daily_returns if r > 0)
-            result.win_rate = winning_days / len(daily_returns) * 100
-
-            # 盈亏比
-            gains = [r for r in daily_returns if r > 0]
-            losses = [abs(r) for r in daily_returns if r < 0]
-            if gains and losses:
-                result.profit_loss_ratio = sum(gains) / sum(losses)
-
-            # 月度收益率统计
-            result.monthly_returns = self._calculate_monthly_returns(equity_curve)
+                logger.warning("回测无有效交易日, 绩效指标置零")
+            result.engine_version = "7.24.0"
+            result.adjust_mode = "qfq"
+            result.execution_mode = "T+1_open"
+            result.warnings = list(exec_res.warnings or [])
+            _pos_counts = [len(e.get("positions") or {}) for e in exec_res.equity_curve]
+            result.avg_positions_per_day = (
+                sum(_pos_counts) / len(_pos_counts)) if _pos_counts else 0.0
+            result.turnover_rate = (
+                result.total_trades / result.total_days / result.avg_positions_per_day * 100
+                if result.total_days and result.avg_positions_per_day else 0.0)
+            result.monthly_returns = self._calculate_monthly_returns(result.equity_curve)
 
             # v3.18 (FR-3.18.8): 回测真实性 — 样本内/外 + 敏感性 + 过拟合警示
             try:
@@ -589,7 +603,14 @@ class BacktestEngine:
 
             # 收益指标
             'total_return': round(result.total_return, 2),
-            'annual_return': round(result.annual_return, 2),
+            'annual_return': None if result.annual_return is None else round(result.annual_return, 2),
+            'annual_return_reason': getattr(result, 'annual_return_reason', ''),
+            'sample_months': getattr(result, 'sample_months', 0.0),
+            'engine_version': getattr(result, 'engine_version', ''),
+            'cost_model_version': getattr(result, 'cost_model_version', ''),
+            'adjust_mode': getattr(result, 'adjust_mode', 'qfq'),
+            'execution_mode': getattr(result, 'execution_mode', 'T+1_open'),
+            'warnings': list(getattr(result, 'warnings', []) or []),
 
             # 风险指标
             'max_drawdown': round(result.max_drawdown, 2),

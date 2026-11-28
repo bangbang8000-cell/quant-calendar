@@ -305,6 +305,34 @@
 .bt-dd-info { font-size: var(--qc-font-size-base); color: var(--text-secondary); }
 .bt-dd-info b { color: var(--color-fall); font-weight: var(--font-semibold); }
 
+/* v7.24 FR-4: 样本与数据口径 */
+.bt-sample-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+.bt-sample-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-light);
+    border-radius: var(--qc-radius-medium);
+}
+.bt-sample-label { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.bt-sample-value { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); color: var(--text-primary); }
+.bt-sample-warn {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: var(--qc-font-size-sm);
+    color: var(--warning-text, var(--color-accent));
+}
+.bt-sample-meta { margin-top: 8px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+
 .bt-chart { width: 100%; height: 340px; }
 
 .bt-annual-table,
@@ -428,6 +456,16 @@
 .portfolio-chart-empty { text-align: center; color: var(--text-tertiary); padding: 48px 0; font-size: var(--qc-font-size-sm); }
 .portfolio-chart-note { margin-top: 8px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 .portfolio-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+/* v7.25 (FR-9): 研究域统一页面头骨架 */
+.qc-page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.qc-page-head-main { min-width: 0; }
+.qc-page-head-title { display: flex; align-items: center; gap: 6px; font-size: var(--qc-font-size-md); font-weight: 600; color: var(--text-primary); }
+.qc-page-head-desc { margin-top: 4px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.qc-page-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* v7.25 (FR-7): 持仓组网操作区与常驻摘要 */
+.portfolio-network-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.portfolio-network-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: var(--qc-font-size-xs); color: var(--text-secondary); margin-bottom: 8px; }
+.portfolio-network-hint { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-top: 4px; line-height: 1.6; }
 .portfolio-add-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; padding: 12px; background: var(--bg-card-header); border-radius: var(--qc-radius-medium); }
 .portfolio-form-item { width: 150px; }
 .portfolio-table-wrap { overflow-x: auto; }

@@ -1,5 +1,6 @@
 {
   "name": "quant-calendar-frontend",
+  "version": "7.26.0",
   "private": true,
   "description": "Vite 构建层 — 业务 JS 按域分包(首屏 index + 5 域懒加载), 首屏哈希缓存破坏; CSS 由 scripts/build_css.py 合并为 app.css",
   "scripts": {

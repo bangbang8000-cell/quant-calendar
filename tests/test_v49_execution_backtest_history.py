@@ -80,7 +80,7 @@ class TestBacktestHistory:
         hist = bt_mod.get_backtest_history(days=30)
         assert len(hist) == 2
         assert hist[0]["sid"] == "sid2"  # 时间倒序
-        assert "legacy" not in hist[0]  # 单源记录不带 legacy 标记
+        assert hist[0]["legacy"] is False  # v7.24 FR-16: 单源记录带 legacy=False 与 id
         only1 = bt_mod.get_backtest_history(days=30, sid="sid1")
         assert len(only1) == 1
         assert only1[0]["params"]["start_date"] == "2026-01-01"

@@ -64,6 +64,10 @@ class StrategyRegistry:
             raise StrategyNotFoundError(f"策略 {sid} 不存在")
         return s
 
+    def objects(self) -> List[BaseStrategy]:
+        """v7.24 FR-3: 返回已注册策略对象（未来函数批量检查需要实例而不仅是元数据）。"""
+        return list(self._strategies.values())
+
     def list(self) -> List[dict]:
         return [
             {

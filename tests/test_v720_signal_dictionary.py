@@ -39,7 +39,8 @@ def test_d1_dictionary_covers_all_actions():
         "字典必须覆盖全部合法 action + wait 兜底"
     for key, meta in SIGNAL_DICTIONARY.items():
         assert set(meta.keys()) == {"label", "tone", "meaning", "exposure", "short"}, key
-        assert meta["tone"] in ("up", "down", "flat"), key
+        # v7.26 (FR-12): 持有从 flat 拆出独立 hold 档 (浅金)
+        assert meta["tone"] in ("up", "down", "hold", "flat"), key
         assert meta["label"], key
 
 
@@ -47,7 +48,7 @@ def test_d2_action_to_label_tone_mapping():
     expected = {
         "buy": ("买入", "up"),
         "add": ("加仓", "up"),
-        "hold": ("持有", "flat"),
+        "hold": ("持有", "hold"),
         "reduce": ("减仓", "down"),
         "sell": ("卖出", "down"),
         "wait": ("观望", "flat"),

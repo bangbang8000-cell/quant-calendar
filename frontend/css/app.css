@@ -112,9 +112,21 @@
   /* 语义文字色 (浅色主题; 暗色由 themes.css dark-pro 块覆盖) */
   --success-text: #15803d; --warning-text: #b45309; --danger-text: #b91c1c; --info-text: #1d4ed8;
   --market-up-text: #c62828; --market-down-text: #1b5e20;
-  /* v7.21: 实底信号标签前景色 (与 fill 对比 >=4.5:1), 暗色由 themes.css 覆盖 */
-  --market-up-on: #111111;
-  --market-down-on: #ffffff;
+  /* ─── v7.26 (FR-12): 择时信号四档 (语义固定, 随主题明暗切换) ───
+     买入/加仓=浅红(up) 卖出/减仓=浅绿(down) 持有=浅金(hold) 观望/数据不足=中性灰(flat)。
+     加仓/减仓与买入/卖出同色系, 由描边区分强度; 文字对底色与卡片底均 >=4.5:1。 */
+  --qc-signal-up-bg: #fde8e8;
+  --qc-signal-up-border: #e63946;
+  --qc-signal-up-text: #a02020;
+  --qc-signal-down-bg: #e6f4ea;
+  --qc-signal-down-border: #2e7d32;
+  --qc-signal-down-text: #1b5e20;
+  --qc-signal-hold-bg: #fff4d6;
+  --qc-signal-hold-border: #b8922a;
+  --qc-signal-hold-text: #6d5218;
+  --qc-signal-flat-bg: #eae8e1;
+  --qc-signal-flat-border: #b7b2a2;
+  --qc-signal-flat-text: #5b564c;
 
   /* ─── Navigation Specific Tokens ─── */
   --qc-nav-bg: var(--qc-neutral-0);
@@ -662,6 +674,11 @@ html[data-density="spacious"] {
   --qc-stock-ops-w: 92px;    /* 操作区列宽 = 4 槽 × 20px + 3 × 4px */
   --qc-op-hit: 20px;         /* 操作槽位热区边长 */
   --qc-stock-badge-w: 44px;  /* v7.22: 46→44，让 2px 给策略名 */
+  /* v7.26 (FR-11): 策略区由「无限 1fr」收窄为有上限的两列 (64–72px/列):
+     单列上限 + 总宽（徽章 + 4 + 两列 + 4）只在本块声明一次 —— 三档密度只改字号与 gap,
+     列宽不随密度/屏幕拉伸; 股票列表与策略列表/管理页共用同一组令牌。 */
+  --qc-stock-strat-col-max: 72px;
+  --qc-stock-strat-w: calc(var(--qc-stock-badge-w) + 4px + 2 * var(--qc-stock-strat-col-max) + 4px);
   --qc-stock-icon: 16px;     /* 行内图标尺寸 */
   --qc-stock-tag-font: var(--qc-font-size-xs);  /* 策略 tag 12px */
 }
@@ -840,8 +857,19 @@ html[data-density="spacious"] {
             /* V5.31: 暗色语义文字色 (浅色 token 在暗底不可读, 如 #2e7d32 on #16233b 仅 3.06:1) */
             --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171; --info-text: #60a5fa;
             --market-up-text: #ff8080; --market-down-text: #5fd07a;
-            --market-up-on: #1a1512;
-            --market-down-on: #102014;
+            /* v7.26 (FR-12): 择时信号四档暗色变体 — 暗底提亮文字, 对比度 >=4.5:1 */
+            --qc-signal-up-bg: #4a1f24;
+            --qc-signal-up-border: #ff8080;
+            --qc-signal-up-text: #ffb3b3;
+            --qc-signal-down-bg: #173a24;
+            --qc-signal-down-border: #5fd07a;
+            --qc-signal-down-text: #9ae6b0;
+            --qc-signal-hold-bg: #3d3422;
+            --qc-signal-hold-border: #d4b352;
+            --qc-signal-hold-text: #ffd166;
+            --qc-signal-flat-bg: #393528;
+            --qc-signal-flat-border: #afaca1;
+            --qc-signal-flat-text: #c7c4bd;
             --badge-success-bg: #0a2e1a; --badge-success-text: #64ffda;
             --badge-warning-bg: #2e1f0a; --badge-warning-text: #ffb74d;
             --badge-danger-bg: #2e0a0a; --badge-danger-text: #ff5252;
@@ -4951,6 +4979,34 @@ text {
 .bt-dd-info { font-size: var(--qc-font-size-base); color: var(--text-secondary); }
 .bt-dd-info b { color: var(--color-fall); font-weight: var(--font-semibold); }
 
+/* v7.24 FR-4: 样本与数据口径 */
+.bt-sample-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+.bt-sample-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-light);
+    border-radius: var(--qc-radius-medium);
+}
+.bt-sample-label { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.bt-sample-value { font-size: var(--qc-font-size-base); font-weight: var(--font-semibold); color: var(--text-primary); }
+.bt-sample-warn {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: var(--qc-font-size-sm);
+    color: var(--warning-text, var(--color-accent));
+}
+.bt-sample-meta { margin-top: 8px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+
 .bt-chart { width: 100%; height: 340px; }
 
 .bt-annual-table,
@@ -5074,6 +5130,16 @@ text {
 .portfolio-chart-empty { text-align: center; color: var(--text-tertiary); padding: 48px 0; font-size: var(--qc-font-size-sm); }
 .portfolio-chart-note { margin-top: 8px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
 .portfolio-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+/* v7.25 (FR-9): 研究域统一页面头骨架 */
+.qc-page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.qc-page-head-main { min-width: 0; }
+.qc-page-head-title { display: flex; align-items: center; gap: 6px; font-size: var(--qc-font-size-md); font-weight: 600; color: var(--text-primary); }
+.qc-page-head-desc { margin-top: 4px; font-size: var(--qc-font-size-xs); color: var(--text-tertiary); }
+.qc-page-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* v7.25 (FR-7): 持仓组网操作区与常驻摘要 */
+.portfolio-network-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.portfolio-network-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: var(--qc-font-size-xs); color: var(--text-secondary); margin-bottom: 8px; }
+.portfolio-network-hint { font-size: var(--qc-font-size-xs); color: var(--text-tertiary); margin-top: 4px; line-height: 1.6; }
 .portfolio-add-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; padding: 12px; background: var(--bg-card-header); border-radius: var(--qc-radius-medium); }
 .portfolio-form-item { width: 150px; }
 .portfolio-table-wrap { overflow-x: auto; }
@@ -8218,10 +8284,10 @@ body.qc-split-resizing * {
      396px 窄栏实测: 内容区 364 = 16+68~70+182+84+12(3 gaps) ✓ 精确填满。
      策略 tag 10px (--qc-font-size-3xs): 6 字策略名 66px/格完整显示不截断;
      ops 84 = 4 槽×18px 热区 + 3×4 gap。旧 92/148/11px 组合致 6 字名截断, 用户复核后取消。 */
-  /* v7.19 (FR-1): 四列 = [序号][信息列·定宽][策略区·吃掉剩余宽度][操作区·定宽]。
-     信息列不再用 1fr —— 旧实现把富余宽度全吸进信息列，名称右边形成死区、策略区被推到最右。
-     现在富余宽度全部给策略区，视觉上「策略计数/矩阵整体左移并放大」。 */
-  grid-template-columns: 16px var(--qc-stock-info-w) minmax(0, 1fr) var(--qc-stock-ops-w);
+  /* v7.26 (FR-11): 四列 = [序号][信息列·定宽][策略区·上限列][操作区·定宽下限+吃余量]。
+     策略区由 v7.19 的无限 1fr 收窄为 --qc-stock-strat-w（2×64–72px + 计数徽章），
+     396/1600 下上限一致、不再随屏幕拉伸；富余宽度进入末列留白，操作区右对齐。 */
+  grid-template-columns: 16px var(--qc-stock-info-w) minmax(0, var(--qc-stock-strat-w)) minmax(var(--qc-stock-ops-w), 1fr);
   gap: var(--qc-space-1);
   height: var(--qc-row-h);
   padding: var(--qc-space-2) var(--qc-space-4);
@@ -8399,8 +8465,10 @@ body.qc-split-resizing * {
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  /* v7.19 (FR-1): 列宽与槽位热区都读令牌（标准 92 = 4×20 + 3×4） */
+  /* v7.19 (FR-1): 列宽与槽位热区都读令牌（标准 92 = 4×20 + 3×4）
+     v7.26 (FR-11): 末列吃余量后，操作区定宽并右对齐 —— 余量成为图标左侧留白。 */
   width: var(--qc-stock-ops-w);
+  justify-self: end;
 }
 .qc-stock-actions > * { flex: 0 0 auto; }
 .qc-stock-actions .gold-link,
@@ -8470,6 +8538,72 @@ body.qc-split-resizing * {
 .theme-section-label + .theme-list { margin-bottom: var(--qc-space-3); }
 .w-60 { width: 60px; }
 .w-220 { width: 220px; }
+
+/* v7.26 (FR-14): 设置页紧凑化 —— 左分组锚点 + 右两列表单 + 分组折叠 (默认只展开界面) */
+.qc-settings-layout {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--qc-space-4);
+  align-items: start;
+}
+.qc-settings-nav {
+  position: sticky;
+  top: var(--qc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qc-settings-nav-item {
+  text-align: left;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--qc-radius-medium);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--qc-font-size-sm);
+  cursor: pointer;
+}
+.qc-settings-nav-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+.qc-settings-nav-item.active {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--primary-text);
+  font-weight: 600;
+}
+.qc-settings-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qc-space-3);
+  align-items: start;
+}
+.qc-settings-body > .card { margin: 0 !important; }
+.qc-settings-group-head {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 2px 4px;
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: var(--qc-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.qc-settings-group-toggle { font-weight: 400; color: var(--text-tertiary); }
+@media (max-width: 1100px) {
+  .qc-settings-layout { grid-template-columns: 1fr; }
+  .qc-settings-body { grid-template-columns: 1fr; }
+}
+
+/* v7.26 (FR-15): AI 模型总览表 — 拖拽手柄 (拖拽调整降级顺位) */
+.ai-overview { margin-bottom: var(--qc-space-3); }
+.ai-overview .ai-drag-handle {
+  cursor: grab;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  user-select: none;
+}
+.ai-overview .ai-drag-handle:active { cursor: grabbing; }
 
 /* ─── §3.1 今日一屏状态点 (● 交易中/休市 — 文本已含 ●, 仅统一字重/色) ── */
 .today-hero-status {
@@ -8949,9 +9083,16 @@ body.qc-split-resizing * {
   line-height: 1.5;
   white-space: nowrap;
 }
-.qc711-sig.tone-up { background: var(--market-up-fill); border-color: var(--market-up-fill); color: var(--market-up-on); }
-.qc711-sig.tone-down { background: var(--market-down-fill); border-color: var(--market-down-fill); color: var(--market-down-on); }
-.qc711-sig.tone-flat { background: var(--qc-muted); border-color: var(--qc-border); color: var(--text-secondary); }
+/* v7.26 (FR-12): 四档信号令牌 — 买入/加仓红, 卖出/减仓绿, 持有金, 观望灰;
+   加仓/减仓用描边（同色相、透明底）区分强度, 不新增色相。 */
+.qc711-sig.tone-up { background: var(--qc-signal-up-bg); border-color: var(--qc-signal-up-border); color: var(--qc-signal-up-text); }
+.qc711-sig.tone-down { background: var(--qc-signal-down-bg); border-color: var(--qc-signal-down-border); color: var(--qc-signal-down-text); }
+.qc711-sig.tone-hold { background: var(--qc-signal-hold-bg); border-color: var(--qc-signal-hold-border); color: var(--qc-signal-hold-text); }
+.qc711-sig.tone-flat { background: var(--qc-signal-flat-bg); border-color: var(--qc-signal-flat-border); color: var(--qc-signal-flat-text); }
+.qc711-sig.tone-up.is-outline,
+.qc711-sig.tone-down.is-outline { background: transparent; }
+.qc711-sig.tone-up.is-outline { border-color: var(--qc-signal-up-border); color: var(--qc-signal-up-text); }
+.qc711-sig.tone-down.is-outline { border-color: var(--qc-signal-down-border); color: var(--qc-signal-down-text); }
 .qc711-dot {
   flex: 0 0 auto;
   width: 8px;

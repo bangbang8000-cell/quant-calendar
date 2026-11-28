@@ -32,7 +32,7 @@
         if (sub !== 'usage') _stopJobQueuePolling();
       });
       // V6.9.3 (F6.2): 主题状态全局共享 — 复用 app-logic 的 themeHues/themeMode/themeHue/hueColor/hueName (Header 与基础配置子页一致)
-      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 320, 180, 25, 250, -1];  // 金/蓝/红/绿/紫/粉 + 青/橙/靛 + 中性无色相
+      const themeHues = state.themeHues || [45, 220, 0, 140, 270, 180];  // v7.26 (FR-14): 6 档 — 金/蓝/红/绿/紫/青
       const themeHueNames = state.themeHueNames || {};
       const themeMode = state.themeMode || Vue.computed(() => 'light');
       const themeHue = state.themeHue || Vue.ref(45);
@@ -42,6 +42,14 @@
       function hueName(h) { return state.hueName ? state.hueName(h) : (themeHueNames[h] || ('自定义 ' + h)); }
       // V6.3 (PRD-6.3 F4): 界面与导航 — 导航形态即时生效 (V6.4: 页签开关已移除; state.navMode/setNavMode 经 ...state 展开)
       function onNavModeChange(v) { if (state.setNavMode) state.setNavMode(v); }
+      // v7.26 (FR-14): 设置页分组折叠 — 默认只展开「界面」; 点击锚点/组头切换 (手风琴, 一次一组)
+      const settingsGroups = [
+        { id: 'ui', label: '界面' },
+        { id: 'data', label: '数据与同步' },
+        { id: 'strategy', label: '策略与任务' },
+      ];
+      const settingsOpen = Vue.ref('ui');
+      function toggleSettingsGroup(id) { settingsOpen.value = id; }
       // 展开全部状态 (100+ 字段, 避免遗漏导致模板静默 undefined)
       // v3.17.15 (FR-3.17.15): 开放 API — API Key 管理 (组件本地状态/方法, 不进 qcState)
       const openApiKeys = Vue.ref([]);
@@ -390,6 +398,33 @@
         return Object.entries(by).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
       });
       const aiModelMax = Vue.computed(() => aiModelRank.value.reduce((m, r) => Math.max(m, r.count), 0) || 1);
+      // v7.26 (FR-15): AI 总览表 — 行内启停状态/调用数/抽屉编辑/拖拽顺位
+      const aiDrawerOpen = Vue.ref(false);
+      const aiDrawerKey = Vue.ref('');
+      const aiDrawerVendor = Vue.computed(() => {
+        const arr = (state.aiVendors && state.aiVendors.value) || [];
+        return arr.find((v) => v.vendor_key === aiDrawerKey.value) || null;
+      });
+      function openAiDrawer(v) { aiDrawerKey.value = v.vendor_key; aiDrawerOpen.value = true; }
+      function aiVendorEnabled(v) {
+        return ((v && v.models) || []).some((m) => m.enabled !== false);
+      }
+      function aiVendorCalls(v) {
+        const names = ((v && v.models) || []).map((m) => m.name);
+        return aiModelRank.value.filter((r) => names.indexOf(r.name) >= 0)
+          .reduce((s, r) => s + r.count, 0);
+      }
+      const aiDragIndex = Vue.ref(-1);
+      function aiDragStart(vi) { aiDragIndex.value = vi; }
+      function aiDrop(vi) {
+        const arr = state.aiVendors && state.aiVendors.value;
+        const from = aiDragIndex.value;
+        aiDragIndex.value = -1;
+        if (!arr || from < 0 || from === vi) return;
+        const moved = arr.splice(from, 1)[0];
+        arr.splice(vi, 0, moved);
+        if (state.saveAiVendors) state.saveAiVendors();
+      }
       // v3.18.2 (UI 优化): 模型总调用数 / 趋势峰值 (用于占比与峰值标注)
       const aiTotal = Vue.computed(() => aiModelRank.value.reduce((s, r) => s + r.count, 0) || 1);
       const aiDayPeak = Vue.computed(() => aiDayTrend.value.reduce((m, d) => Math.max(m, d.count), 0) || 0);
@@ -437,8 +472,13 @@
         onThemeModeChange, setThemeHue, hueColor, hueName,
         // V6.3 (PRD-6.3 F4): 界面与导航
         onNavModeChange,
+        // v7.26 (FR-14): 设置页分组折叠
+        settingsGroups, settingsOpen, toggleSettingsGroup,
         analyticsMaxViews,
         aiModelRank, aiModelMax, aiDayTrend, aiDayMax, todayAiCalls, lastAiCallDay,
+        // v7.26 (FR-15): AI 总览表 / 抽屉 / 拖拽顺位
+        aiDrawerOpen, aiDrawerKey, aiDrawerVendor, openAiDrawer,
+        aiVendorEnabled, aiVendorCalls, aiDragStart, aiDrop,
         aiTotal, aiDayPeak,
         setAnalyticsDays,
         viewIcon,

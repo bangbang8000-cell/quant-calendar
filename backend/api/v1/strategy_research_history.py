@@ -153,13 +153,52 @@ async def research_history_compare(body: Dict[str, Any],
 
 @router.delete('/research-history/{eid}')
 async def research_history_delete(eid: str,
-                                  _: Dict = Depends(get_non_guest_user)):
-    """删除一条研究实验。"""
-    from research_store import delete_experiment
+                                  user: Dict = Depends(get_non_guest_user)):
+    """删除一条研究实验（v7.24 FR-16：审计留痕）。"""
+    from research_store import delete_experiment, get_experiment
+    exp = get_experiment(eid)
     ok = delete_experiment(eid)
     if not ok:
         raise HTTPException(status_code=404, detail=f'实验 {eid} 不存在')
+    _audit_delete(user, 'single', [eid], [exp] if exp else [])
     return {'deleted': True, 'id': eid}
+
+
+@router.post('/research-history/batch-delete')
+async def research_history_batch_delete(body: Dict[str, Any],
+                                        user: Dict = Depends(get_non_guest_user)):
+    """v7.24 FR-16: 批量删除研究实验（单次 ≤50）。
+
+    body: {ids: [eid, ...]} → {deleted: n, deleted_ids: [], not_found: []}
+    """
+    from research_store import delete_experiments, get_experiment
+    ids = [str(x) for x in ((body or {}).get('ids') or []) if str(x).strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail='ids 不能为空')
+    if len(ids) > 50:
+        raise HTTPException(status_code=400, detail='一次最多删除 50 条')
+    summaries = [get_experiment(i) for i in ids]
+    out = delete_experiments(ids)
+    _audit_delete(user, 'batch', out.get('deleted', []),
+                  [s for s in summaries if s])
+    return {'deleted': len(out.get('deleted', [])),
+            'deleted_ids': out.get('deleted', []),
+            'not_found': out.get('not_found', [])}
+
+
+def _audit_delete(user: Dict, source: str, ids: list, experiments: list):
+    """v7.24 FR-16: 回测结果删除审计（失败不影响主流程）。"""
+    try:
+        from audit_log import log
+        log('backtest_result.delete', (user or {}).get('username'), {
+            'source': source,
+            'ids': ids,
+            'count': len(ids),
+            'subjects': [str((e or {}).get('subject') or '')[:80] for e in experiments][:50],
+            'created_at': [str((e or {}).get('created_at') or '')[:19] for e in experiments][:50],
+        })
+    except Exception as e:  # noqa: BLE001
+        logger.warning('删除审计写入失败: %s', e)
 
 
 @router.put('/research-history/{eid}')

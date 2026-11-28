@@ -121,6 +121,7 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                 </div>
                                 <div class="flex-gap-8">
                                     <el-button size="small" @click="selectAllWatchlist">{{ selectedWatchlistCodes.length === watchlist.length ? '取消全选' : '全选' }}</el-button>
+                                    <el-button size="small" @click="currentSubPage = 'portfolio'"><qc-icon name="link" :size="14" /> 持仓组网</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="primary" @click="batchEvaluateSelected" :disabled="aiLoading"><qc-icon name="bar-chart-3" :size="14" /> 评估选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" type="danger" @click="batchRemoveWatchlist"><qc-icon name="trash-2" :size="14" /> 移除选中</el-button>
                                     <el-button v-if="selectedWatchlistCodes.length > 0" size="small" @click="clearWatchlistSelection">取消选择</el-button>
@@ -297,6 +298,31 @@ window.__quantModules.aiPage.part2 = `                        <qc-detail-split :
                                 </div>
                             </div>
                             <div v-if="summary && summary.note" class="portfolio-summary-note">{{ summary.note }}</div>
+                        </div>
+
+                        <!-- v7.25 (FR-7): 持仓组网 — 自选同步 / 重新均分 / 自动同步 -->
+                        <div class="card">
+                            <div class="card-title">{{ t('ai.portfolioNetwork') }}</div>
+                            <div class="portfolio-network-bar">
+                                <el-button size="small" type="primary" :loading="networkSyncing" @click="syncNetwork(false)">{{ t('ai.portfolioSyncWatchlist') }}</el-button>
+                                <el-button size="small" :loading="networkSyncing" @click="syncNetwork(true)">{{ t('ai.portfolioRebalance') }}</el-button>
+                                <el-switch v-model="autoSync" :active-text="t('ai.portfolioAutoSync')" @change="setAutoSync" />
+                                <span class="text-xs-tertiary">{{ t('ai.portfolioAutoSyncHint') }}</span>
+                                <el-button size="small" text :loading="networkLoading" @click="loadNetworkDiff">{{ t('ai.portfolioRefreshDiff') }}</el-button>
+                            </div>
+                            <div class="portfolio-network-summary">
+                                <span>{{ t('ai.portfolioTotalCapital') }} {{ money(networkSummary.totalCapital) }}</span>
+                                <span>{{ t('ai.portfolioInvested') }} {{ money(networkSummary.invested) }}</span>
+                                <span>{{ t('ai.portfolioCashLeft') }} {{ money(networkSummary.cash) }}</span>
+                                <span>{{ t('ai.portfolioTargetCount') }} {{ networkSummary.count }}</span>
+                                <span>{{ t('ai.portfolioLotRule') }}</span>
+                            </div>
+                            <div v-if="networkSummary.toAdd" class="portfolio-network-hint">
+                                {{ t('ai.portfolioToAdd', { n: networkSummary.toAdd }) }}<template v-if="networkAddNames">：{{ networkAddNames }}</template>
+                            </div>
+                            <div v-if="networkSummary.onlyInPortfolio" class="portfolio-network-hint">
+                                {{ t('ai.portfolioOnlyInPortfolio', { n: networkSummary.onlyInPortfolio }) }}
+                            </div>
                         </div>
 
                         <!-- 组合收益曲线 -->
