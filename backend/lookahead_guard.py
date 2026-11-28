@@ -53,7 +53,7 @@ class SyntheticPortal:
         self.start = min(f.index.min() for f in self._frames.values())
 
     def _make_frame(self, symbol: str) -> pd.DataFrame:
-        seed = int(hashlib.md5(symbol.encode('utf-8')).hexdigest()[:8], 16)
+        seed = int(hashlib.md5(symbol.encode('utf-8'), usedforsecurity=False).hexdigest()[:8], 16)
         rng = np.random.RandomState(seed)
         dates = pd.bdate_range(end=self.end, periods=self.days).strftime('%Y-%m-%d')
         n = len(dates)
